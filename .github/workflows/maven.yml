@@ -24,6 +24,10 @@ jobs:
         java-version: '17'
         distribution: 'adopt'
         cache: maven
+    - name: Restore Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: restore
     - name: maven-settings-action
       uses: s4u/maven-settings-action@v2.4.1
       with:
@@ -36,4 +40,8 @@ jobs:
     - name: Cat settings.xml
       run: cat /home/runner/.m2/settings.xml
     - name: Build with Maven
-      run: mvn -U -B package --file pom.xml
+      run: mvn -B package --file pom.xml
+    - name: Save Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: save
