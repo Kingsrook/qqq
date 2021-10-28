@@ -16,6 +16,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: maven-settings-xml-action
+      uses: whelk-io/maven-settings-xml-action@v20
+      with:
+        repositories: '[{ "id": "github-qqq-maven-registry", "url": "https://maven.pkg.github.com/Kingsrook/qqq-maven-registry" }]'
+        servers: '[{ "id": "github-qqq-maven-registry", "username": "${env.QQQ_MAVEN_REGISTRY_USERNAME}", "password": "${env.QQQ_MAVEN_REGISTRY_PASSWORD}" }]'
     - name: Set up JDK 17
       uses: actions/setup-java@v2
       with:
