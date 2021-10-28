@@ -24,11 +24,15 @@ jobs:
         java-version: '17'
         distribution: 'adopt'
         cache: maven
-    - name: maven-settings-xml-action
-      uses: whelk-io/maven-settings-xml-action@v20
+    - name: maven-settings-action
+      uses: s4u/maven-settings-action@v2.4.1
       with:
-        repositories: '[{ "id": "github", "url": "https://maven.pkg.github.com/Kingsrook/qqq-maven-registry", "snapshots": { "enabled": "true" }}]'
-        servers: '[{ "id": "github", "username": "${{ secrets.QQQ_MAVEN_REGISTRY_USERNAME }}", "password": "${{ secrets.QQQ_MAVEN_REGISTRY_PASSWORD }}" }]'
+        servers: |
+          [{
+            "id": "github",
+            "username": "${{ secrets.QQQ_MAVEN_REGISTRY_USERNAME }}",
+            "password": "${{ secrets.QQQ_MAVEN_REGISTRY_PASSWORD }}"
+          }]
     - name: Cat settings.xml
       run: cat /home/runner/.m2/settings.xml
     - name: Build with Maven
