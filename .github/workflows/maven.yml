@@ -34,7 +34,5 @@ jobs:
             "username": "${{ secrets.QQQ_MAVEN_REGISTRY_USERNAME }}",
             "password": "${{ secrets.QQQ_MAVEN_REGISTRY_PASSWORD }}"
           }]
-    - name: Cat settings.xml
-      run: cat /home/runner/.m2/settings.xml
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B deploy --file pom.xml

@@ -128,7 +128,6 @@
       </repository>
    </repositories>
 
-<!--
    <distributionManagement>
       <repository>
         <id>github-qqq-maven-registry</id>
@@ -136,6 +135,5 @@
         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
       </repository>
    </distributionManagement>
--->
 
 </project>
