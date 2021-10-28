@@ -20,7 +20,7 @@ jobs:
       uses: whelk-io/maven-settings-xml-action@v20
       with:
         repositories: '[{ "id": "github", "url": "https://maven.pkg.github.com/Kingsrook/qqq-maven-registry", "snapshots": { "enabled": "true" }}]'
-        servers: '[{ "id": "github", "username": "${env.QQQ_MAVEN_REGISTRY_USERNAME}", "password": "${env.QQQ_MAVEN_REGISTRY_PASSWORD}" }]'
+        servers: '[{ "id": "github", "username": "${{ secrets.QQQ_MAVEN_REGISTRY_USERNAME }}", "password": "${{ secrets.QQQ_MAVEN_REGISTRY_PASSWORD }}" }]'
     - name: Cat settings.xml
       run: cat /home/runner/.m2/settings.xml
     - name: Set up JDK 17
