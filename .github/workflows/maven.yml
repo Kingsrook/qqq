@@ -25,9 +25,9 @@ jobs:
         distribution: 'adopt'
         cache: maven
     - name: Restore Maven cache
-        uses: skjolber/maven-cache-github-action@v1
-        with:
-          step: restore
+      uses: skjolber/maven-cache-github-action@v1
+      with:
+        step: restore
     - name: maven-settings-action
       uses: s4u/maven-settings-action@v2.4.1
       with:
@@ -42,6 +42,6 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Save Maven cache
-        uses: skjolber/maven-cache-github-action@v1
-        with:
-          step: save
+      uses: skjolber/maven-cache-github-action@v1
+      with:
+        step: save
