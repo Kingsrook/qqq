@@ -10,7 +10,7 @@ import java.util.Map;
  *******************************************************************************/
 public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
 {
-   private Map<Integer, String> mapping;
+   private Map<String, Integer> mapping;
 
 
 
@@ -18,14 +18,14 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
     **
     *******************************************************************************/
    @Override
-   public String getMappedField(Integer key)
+   public Integer getFieldSource(String fieldName)
    {
       if(mapping == null)
       {
          return (null);
       }
 
-      return (mapping.get(key));
+      return (mapping.get(fieldName));
    }
 
 
@@ -33,13 +33,24 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addMapping(Integer key, String fieldName)
+   @Override
+   public SourceType getSourceType()
+   {
+      return (SourceType.INDEX);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addMapping(String fieldName, Integer key)
    {
       if(mapping == null)
       {
          mapping = new LinkedHashMap<>();
       }
-      mapping.put(key, fieldName);
+      mapping.put(fieldName, key);
    }
 
 
@@ -47,9 +58,9 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QIndexBasedFieldMapping withMapping(Integer key, String fieldName)
+   public QIndexBasedFieldMapping withMapping(String fieldName, Integer key)
    {
-      addMapping(key, fieldName);
+      addMapping(fieldName, key);
       return (this);
    }
 
@@ -59,7 +70,7 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
     ** Getter for mapping
     **
     *******************************************************************************/
-   public Map<Integer, String> getMapping()
+   public Map<String, Integer> getMapping()
    {
       return mapping;
    }
@@ -70,7 +81,7 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
     ** Setter for mapping
     **
     *******************************************************************************/
-   public void setMapping(Map<Integer, String> mapping)
+   public void setMapping(Map<String, Integer> mapping)
    {
       this.mapping = mapping;
    }

@@ -94,6 +94,15 @@ public class JsonUtils
       ObjectMapper mapper = new ObjectMapper()
          .registerModule(new JavaTimeModule())
          .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+      /* todo - some future version we may need to do inclusion/exclusion lists like this:
+      // this is what we'd put on the class or member we wanted to 'filter':  @JsonFilter("secretsFilter")
+
+      SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+      filterProvider.addFilter("secretsFilter", SimpleBeanPropertyFilter.serializeAllExcept("password"));
+      mapper.setFilterProvider(filterProvider);
+       */
+
       return (mapper);
    }
 

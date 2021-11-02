@@ -31,6 +31,22 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** true if c is null or it's empty
+    **
+    *******************************************************************************/
+   public static boolean nullSafeIsEmpty(Map c)
+   {
+      if(c == null || c.isEmpty())
+      {
+         return (true);
+      }
+
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
     ** true if c is NOT null and it's not empty
     **
     *******************************************************************************/
@@ -42,10 +58,37 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** true if c is NOT null and it's not empty
+    **
+    *******************************************************************************/
+   public static boolean nullSafeHasContents(Map c)
+   {
+      return (!nullSafeIsEmpty(c));
+   }
+
+
+
+   /*******************************************************************************
     ** 0 if c is empty, otherwise, its size.
     **
     *******************************************************************************/
    public static int nullSafeSize(Collection c)
+   {
+      if(c == null)
+      {
+         return (0);
+      }
+
+      return (c.size());
+   }
+
+
+
+   /*******************************************************************************
+    ** 0 if c is empty, otherwise, its size.
+    **
+    *******************************************************************************/
+   public static int nullSafeSize(Map c)
    {
       if(c == null)
       {

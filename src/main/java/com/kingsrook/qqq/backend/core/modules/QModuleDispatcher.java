@@ -52,7 +52,7 @@ public class QModuleDispatcher
       }
       catch(Exception e)
       {
-         throw (new QModuleDispatchException("Error getting module", e));
+         throw (new QModuleDispatchException("Error getting q backend module of type: " + backend.getType(), e));
       }
    }
 }

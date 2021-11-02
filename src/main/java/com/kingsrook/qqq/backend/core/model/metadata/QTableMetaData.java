@@ -1,9 +1,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -13,10 +11,10 @@ import java.util.Map;
 public class QTableMetaData
 {
    private String name;
+   private String label;
    private String backendName;
    private String primaryKeyField;
-   private List<QFieldMetaData> fields;
-   private Map<String, QFieldMetaData> _fieldMap;
+   private Map<String, QFieldMetaData> fields;
 
 
 
@@ -30,32 +28,13 @@ public class QTableMetaData
          throw (new IllegalArgumentException("Table [" + name + "] does not have its fields defined."));
       }
 
-      QFieldMetaData field = getFieldMap().get(fieldName);
+      QFieldMetaData field = getFields().get(fieldName);
       if(field == null)
       {
          throw (new IllegalArgumentException("Field [" + fieldName + "] was not found in table [" + name + "]."));
       }
 
       return (field);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private Map<String, QFieldMetaData> getFieldMap()
-   {
-      if(_fieldMap == null)
-      {
-         _fieldMap = new LinkedHashMap<>();
-         for(QFieldMetaData field : fields)
-         {
-            _fieldMap.put(field.getName(), field);
-         }
-      }
-
-      return (_fieldMap);
    }
 
 
@@ -86,6 +65,37 @@ public class QTableMetaData
    public QTableMetaData withName(String name)
    {
       this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withLabel(String label)
+   {
+      this.label = label;
       return (this);
    }
 
@@ -158,7 +168,7 @@ public class QTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QFieldMetaData> getFields()
+   public Map<String, QFieldMetaData> getFields()
    {
       return fields;
    }
@@ -166,9 +176,10 @@ public class QTableMetaData
 
 
    /*******************************************************************************
+    ** Setter for fields
     **
     *******************************************************************************/
-   public void setFields(List<QFieldMetaData> fields)
+   public void setFields(Map<String, QFieldMetaData> fields)
    {
       this.fields = fields;
    }
@@ -178,7 +189,7 @@ public class QTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QTableMetaData withFields(List<QFieldMetaData> fields)
+   public QTableMetaData withFields(Map<String, QFieldMetaData> fields)
    {
       this.fields = fields;
       return (this);
@@ -193,9 +204,9 @@ public class QTableMetaData
    {
       if(this.fields == null)
       {
-         this.fields = new ArrayList<>();
+         this.fields = new LinkedHashMap<>();
       }
-      this.fields.add(field);
+      this.fields.put(field.getName(), field);
    }
 
 
@@ -207,9 +218,9 @@ public class QTableMetaData
    {
       if(this.fields == null)
       {
-         this.fields = new ArrayList<>();
+         this.fields = new LinkedHashMap<>();
       }
-      this.fields.add(field);
+      this.fields.put(field.getName(), field);
       return (this);
    }
 

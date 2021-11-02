@@ -2,8 +2,8 @@ package com.kingsrook.qqq.backend.core.model.actions;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.QInstance;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************

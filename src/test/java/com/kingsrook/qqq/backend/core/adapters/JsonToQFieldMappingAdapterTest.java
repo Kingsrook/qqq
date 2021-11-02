@@ -2,6 +2,7 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.QIndexBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.QKeyBasedFieldMapping;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +52,7 @@ class JsonToQFieldMappingAdapterTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildMappingFromJson_validInput()
+   public void test_buildMappingFromJson_validKeyBasedInput()
    {
       JsonToQFieldMappingAdapter jsonToQFieldMappingAdapter = new JsonToQFieldMappingAdapter();
       AbstractQFieldMapping<String> mapping = (QKeyBasedFieldMapping) jsonToQFieldMappingAdapter.buildMappingFromJson("""
@@ -63,9 +64,67 @@ class JsonToQFieldMappingAdapterTest
       System.out.println(mapping);
       assertNotNull(mapping);
 
-      // todo - are we backwards here??
-      assertEquals("source1", mapping.getMappedField("Field1"));
-      assertEquals("source2", mapping.getMappedField("Field2"));
+      assertEquals("source1", mapping.getFieldSource("Field1"));
+      assertEquals("source2", mapping.getFieldSource("Field2"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_buildMappingFromJson_validIndexBasedInput()
+   {
+      JsonToQFieldMappingAdapter jsonToQFieldMappingAdapter = new JsonToQFieldMappingAdapter();
+      AbstractQFieldMapping<Integer> mapping = (QIndexBasedFieldMapping) jsonToQFieldMappingAdapter.buildMappingFromJson("""
+         {
+            "Field1": 1,
+            "Field2": 2,
+         }
+         """);
+      System.out.println(mapping);
+      assertNotNull(mapping);
+
+      assertEquals(1, mapping.getFieldSource("Field1"));
+      assertEquals(2, mapping.getFieldSource("Field2"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_buildMappingFromJson_unsupportedTypeForSource()
+   {
+      testExpectedToThrow("""
+         {
+            "Field1": [1, 2],
+            "Field2": {"A": "B"}
+         }
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_buildMappingFromJson_emptyMapping()
+   {
+      testExpectedToThrow("{}");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_buildMappingFromJson_inputJsonList()
+   {
+      testExpectedToThrow("[]");
    }
 
 

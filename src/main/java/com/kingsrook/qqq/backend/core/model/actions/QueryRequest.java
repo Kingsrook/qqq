@@ -1,7 +1,7 @@
 package com.kingsrook.qqq.backend.core.model.actions;
 
 
-import com.kingsrook.qqq.backend.core.model.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************

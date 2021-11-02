@@ -1,10 +1,10 @@
-package com.kingsrook.qqq.backend.core.model;
+package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.util.HashMap;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 
 
 /*******************************************************************************
@@ -12,8 +12,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
  *******************************************************************************/
 public class QInstance
 {
+   ///////////////////////////////////////////////////////////////////////////////
+   // Do not let the backend data be serialized - e.g., sent to a frontend user //
+   ///////////////////////////////////////////////////////////////////////////////
+   @JsonIgnore
    private Map<String, QBackendMetaData> backends = new HashMap<>();
+
    private Map<String, QTableMetaData> tables = new HashMap<>();
+
+   // todo - lock down the object (no more changes allowed) after it's been validated?
+   @JsonIgnore
+   private boolean hasBeenValidated = false;
 
 
 
@@ -29,12 +38,23 @@ public class QInstance
       }
 
       QBackendMetaData backend = backends.get(table.getBackendName());
-      if(backend == null)
-      {
-         throw (new IllegalArgumentException("Table [" + tableName + "] specified a backend name [" + table.getBackendName() + "] which was found in this instance."));
-      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // validation should already let us know that this is valid, so no need to check/throw here //
+      //////////////////////////////////////////////////////////////////////////////////////////////
 
       return (backend);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasBeenValidated
+    **
+    *******************************************************************************/
+   public void setHasBeenValidated(QInstanceValidationKey key)
+   {
+      this.hasBeenValidated = true;
    }
 
 
@@ -140,4 +160,16 @@ public class QInstance
    {
       this.tables = tables;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasBeenValidated
+    **
+    *******************************************************************************/
+   public boolean getHasBeenValidated()
+   {
+      return hasBeenValidated;
+   }
+
 }

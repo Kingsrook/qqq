@@ -3,6 +3,7 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -65,7 +66,7 @@ class JsonToQRecordAdapterTest
       try
       {
          JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
-         List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson(json);
+         List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson(json, TestUtils.defineTablePerson(), null);
          System.out.println(qRecords);
       }
       catch(IllegalArgumentException iae)
@@ -86,7 +87,7 @@ class JsonToQRecordAdapterTest
    public void test_buildRecordsFromJson_emptyList()
    {
       JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
-      List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson("[]");
+      List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson("[]", TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertTrue(qRecords.isEmpty());
    }
@@ -105,7 +106,7 @@ class JsonToQRecordAdapterTest
             "field1":"value1",
             "field2":"value2"
          }
-         """);
+         """, TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertEquals(1, qRecords.size());
       assertEquals("value1", qRecords.get(0).getValue("field1"));
@@ -126,7 +127,7 @@ class JsonToQRecordAdapterTest
             { "field1":"value1", "field2":"value2" },
             { "fieldA":"valueA", "fieldB":"valueB" }
          ]
-         """);
+         """, TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertEquals(2, qRecords.size());
       assertEquals("value1", qRecords.get(0).getValue("field1"));

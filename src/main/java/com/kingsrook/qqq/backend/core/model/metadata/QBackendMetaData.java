@@ -3,6 +3,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonFilter;
 
 
 /*******************************************************************************
@@ -12,6 +13,8 @@ public class QBackendMetaData
 {
    private String name;
    private String type;
+
+   @JsonFilter("secretsFilter")
    private Map<String, String> values;
 
 

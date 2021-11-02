@@ -41,6 +41,11 @@
          <artifactId>json</artifactId>
          <version>20210307</version>
       </dependency>
+      <dependency>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-csv</artifactId>
+         <version>1.8</version>
+      </dependency>
 
       <!-- Common deps for all qqq modules -->
       <dependency>
@@ -123,12 +128,19 @@
 
 <!--
    <distributionManagement>
+      <snapshotRepository>
+         <id>nexus-snapshots</id>
+         <url>http://localhost:8088/repository/maven-snapshots</url>
+      </snapshotRepository>
+   </distributionManagement>
+-->
+
+   <distributionManagement>
       <repository>
         <id>github</id>
         <name>GitHub kingsrook Maven Packages</name>
         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
       </repository>
    </distributionManagement>
--->
 
 </project>

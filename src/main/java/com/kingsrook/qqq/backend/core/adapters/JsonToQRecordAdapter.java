@@ -4,7 +4,9 @@ package com.kingsrook.qqq.backend.core.adapters;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.json.JSONArray;
@@ -21,7 +23,7 @@ public class JsonToQRecordAdapter
    /*******************************************************************************
     ** todo - meta-data validation, mapping, type handling
     *******************************************************************************/
-   public List<QRecord> buildRecordsFromJson(String json)
+   public List<QRecord> buildRecordsFromJson(String json, QTableMetaData table, AbstractQFieldMapping<?> mapping)
    {
       if(!StringUtils.hasContent(json))
       {

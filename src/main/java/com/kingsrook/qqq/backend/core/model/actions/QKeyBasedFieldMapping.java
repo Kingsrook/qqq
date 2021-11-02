@@ -18,14 +18,14 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
     **
     *******************************************************************************/
    @Override
-   public String getMappedField(String key)
+   public String getFieldSource(String fieldName)
    {
       if(mapping == null)
       {
          return (null);
       }
 
-      return (mapping.get(key));
+      return (mapping.get(fieldName));
    }
 
 
@@ -33,13 +33,24 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addMapping(String key, String fieldName)
+   @Override
+   public SourceType getSourceType()
+   {
+      return (SourceType.KEY);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addMapping(String fieldName, String key)
    {
       if(mapping == null)
       {
          mapping = new LinkedHashMap<>();
       }
-      mapping.put(key, fieldName);
+      mapping.put(fieldName, key);
    }
 
 
@@ -47,9 +58,9 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QKeyBasedFieldMapping withMapping(String key, String fieldName)
+   public QKeyBasedFieldMapping withMapping(String fieldName, String key)
    {
-      addMapping(key, fieldName);
+      addMapping(fieldName, key);
       return (this);
    }
 

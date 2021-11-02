@@ -1,8 +1,8 @@
 package com.kingsrook.qqq.backend.core.model.actions;
 
 
-import com.kingsrook.qqq.backend.core.model.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 
 
@@ -18,11 +18,11 @@ public abstract class AbstractQTableRequest extends AbstractQRequest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
    public QBackendMetaData getBackend()
    {
       return (instance.getBackendForTable(getTableName()));
    }
+
 
 
    /*******************************************************************************
