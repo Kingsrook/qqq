@@ -23,8 +23,8 @@ public class QModuleDispatcher
    public QModuleDispatcher()
    {
       backendTypeToModuleClassNameMap = new HashMap<>();
+      backendTypeToModuleClassNameMap.put("mock", "com.kingsrook.qqq.backend.core.modules.mock.MockModule");
       backendTypeToModuleClassNameMap.put("rdbms", "com.kingsrook.qqq.backend.module.rdbms.RDBSMModule");
-      backendTypeToModuleClassNameMap.put("nosql", "com.kingsrook.qqq.backend.module.nosql.NoSQLModule");
       // todo - let user define custom type -> classes
    }
 

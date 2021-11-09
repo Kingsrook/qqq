@@ -71,6 +71,24 @@ class JsonUtilsTest
     **
     *******************************************************************************/
    @Test
+   public void test_toJSONObject_malformed()
+   {
+      // todo - what do we want to throw here?
+      assertThrows(JSONException.class, () ->
+      {
+         JsonUtils.toJSONObject("""
+            {
+               "Foo": "Bar",
+            """);
+      });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void test_toJSONObjectNonJsonObject()
    {
       try

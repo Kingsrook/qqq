@@ -251,7 +251,7 @@ public class CollectionUtils
    {
       List<List<T>> rs = new LinkedList<>();
 
-      if(values.isEmpty())
+      if(values == null || values.isEmpty())
       {
          //////////////////////////////////////////////////////////////////
          // if there are no input values, return an empty list of lists. //

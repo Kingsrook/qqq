@@ -33,12 +33,7 @@ public class TestUtils
    {
       return new QBackendMetaData()
          .withName("default")
-         .withType("rdbms")
-         .withValue("vendor", "h2")
-         .withValue("hostName", "mem")
-         .withValue("databaseName", "test_database")
-         .withValue("username", "sa")
-         .withValue("password", "");
+         .withType("mock");
    }
 
 
