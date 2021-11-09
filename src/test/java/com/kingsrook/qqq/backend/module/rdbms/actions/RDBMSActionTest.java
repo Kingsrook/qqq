@@ -4,7 +4,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
@@ -59,6 +59,7 @@ public class RDBMSActionTest
    {
       return new QTableMetaData()
          .withName("person")
+         .withLabel("Person")
          .withBackendName(defineBackend().getName())
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))

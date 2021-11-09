@@ -1,7 +1,6 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
-import java.io.Serializable;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +8,6 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
-import com.kingsrook.qqq.backend.core.model.actions.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
@@ -37,7 +34,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          InsertResult rs = new InsertResult();
          QTableMetaData table = insertRequest.getTable();
 
-         List<QFieldMetaData> insertableFields = table.getFields().stream()
+         List<QFieldMetaData> insertableFields = table.getFields().values().stream()
             .filter(field -> !field.getName().equals("id")) // todo - intent here is to avoid non-insertable fields.
             .toList();
 
@@ -96,73 +93,6 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
       {
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String makeWhereClause(QTableMetaData table, List<QFilterCriteria> criteria, List<Serializable> params) throws IllegalArgumentException
-   {
-      List<String> clauses = new ArrayList<>();
-      for(QFilterCriteria criterion : criteria)
-      {
-         QFieldMetaData field = table.getField(criterion.getFieldName());
-         String column = getColumnName(field);
-         String clause = column;
-         Integer expectedNoOfParams = null;
-         switch(criterion.getOperator())
-         {
-            case EQUALS:
-            {
-               clause += " = ? ";
-               expectedNoOfParams = 1;
-               break;
-            }
-            case NOT_EQUALS:
-            {
-               clause += " != ? ";
-               expectedNoOfParams = 1;
-               break;
-            }
-            case IN:
-            {
-               clause += " IN (" + criterion.getValues().stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
-               break;
-            }
-            default:
-            {
-               throw new IllegalArgumentException("Unexpected operator: " + criterion.getOperator());
-            }
-         }
-         clauses.add(clause);
-         if(expectedNoOfParams != null && criterion.getValues().size() != expectedNoOfParams)
-         {
-            throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
-         }
-         params.addAll(criterion.getValues());
-      }
-
-      return (String.join(" AND ", clauses));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys)
-   {
-      List<String> clauses = new ArrayList<>();
-
-      for(QFilterOrderBy orderBy : orderBys)
-      {
-         QFieldMetaData field = table.getField(orderBy.getFieldName());
-         String column = getColumnName(field);
-         clauses.add(column + " " + (orderBy.getIsAscending() ? "ASC" : "DESC"));
-      }
-      return (String.join(", ", clauses));
    }
 
 }

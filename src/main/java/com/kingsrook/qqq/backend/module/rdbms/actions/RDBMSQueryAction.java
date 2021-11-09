@@ -41,7 +41,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          QTableMetaData table = queryRequest.getTable();
          String tableName = table.getName();
 
-         String columns = table.getFields().stream()
+         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
+         String columns = fieldList.stream()
             .map(this::getColumnName)
             .collect(Collectors.joining(", "));
 
@@ -93,7 +94,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
                for(int i = 1; i <= metaData.getColumnCount(); i++)
                {
-                  QFieldMetaData qFieldMetaData = table.getFields().get(i - 1);
+                  QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
                   String value = QueryManager.getString(resultSet, i); // todo - types!
                   values.put(qFieldMetaData.getName(), value);
                   if(qFieldMetaData.getName().equals(table.getPrimaryKeyField()))
