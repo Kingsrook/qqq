@@ -20,7 +20,6 @@ public class QueryRequest extends AbstractQTableRequest
     *******************************************************************************/
    public QueryRequest()
    {
-      System.out.println("In the Query Request void-constructor!");
    }
 
 
