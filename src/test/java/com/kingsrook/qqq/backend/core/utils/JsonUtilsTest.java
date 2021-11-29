@@ -1,16 +1,27 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -194,4 +205,30 @@ class JsonUtilsTest
       assertTrue(JsonUtils.looksLikeArray("\n\n\n  [ \n]\n\n\n"));
    }
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_toObject() throws IOException
+   {
+      String json = JsonUtils.toJson(new QQueryFilter()
+         .withCriteria(new QFilterCriteria().withFieldName("id").withOperator(QCriteriaOperator.EQUALS).withValues(List.of(1)))
+         .withCriteria(new QFilterCriteria().withFieldName("name").withOperator(QCriteriaOperator.IN).withValues(List.of("Darin", "James")))
+         .withOrderBy(new QFilterOrderBy().withFieldName("age").withIsAscending(true)));
+
+      System.out.println(json);
+
+      QQueryFilter qQueryFilter = JsonUtils.toObject(json, QQueryFilter.class);
+      assertEquals(2, qQueryFilter.getCriteria().size());
+      assertEquals("id", qQueryFilter.getCriteria().get(0).getFieldName());
+      assertEquals(QCriteriaOperator.EQUALS, qQueryFilter.getCriteria().get(0).getOperator());
+      assertEquals(List.of(1), qQueryFilter.getCriteria().get(0).getValues());
+      assertEquals("name", qQueryFilter.getCriteria().get(1).getFieldName());
+      assertEquals(QCriteriaOperator.IN, qQueryFilter.getCriteria().get(1).getOperator());
+      assertEquals(List.of("Darin", "James"), qQueryFilter.getCriteria().get(1).getValues());
+      assertEquals(1, qQueryFilter.getOrderBys().size());
+      assertEquals("age", qQueryFilter.getOrderBys().get(0).getFieldName());
+      assertTrue(qQueryFilter.getOrderBys().get(0).getIsAscending());
+   }
 }

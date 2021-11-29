@@ -1,6 +1,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.IOException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -60,6 +61,17 @@ public class JsonUtils
          LOG.error("Error serializing object of type [" + object.getClass().getSimpleName() + "] to json", e);
          throw new IllegalArgumentException("Error in JSON Serialization", e);
       }
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T> T toObject(String json, Class<T> targetClass) throws IOException
+   {
+      ObjectMapper objectMapper = newObjectMapper();
+      T t = objectMapper.reader().readValue(json, targetClass);
+      return t;
    }
 
 
