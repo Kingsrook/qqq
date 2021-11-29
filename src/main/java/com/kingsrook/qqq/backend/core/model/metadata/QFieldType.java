@@ -10,7 +10,7 @@ public enum QFieldType
    INTEGER,
    DECIMAL,
    DATE,
-   TIME,
+   // TIME,
    DATE_TIME,
    TEXT,
    HTML,
