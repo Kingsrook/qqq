@@ -8,7 +8,6 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
@@ -262,7 +261,7 @@ public class QPicoCliImplementation
                      case INTEGER -> Integer.class;
                      case DECIMAL -> BigDecimal.class;
                      case DATE -> LocalDate.class;
-                     case TIME -> LocalTime.class;
+                     // case TIME -> LocalTime.class;
                      case DATE_TIME -> LocalDateTime.class;
                      default -> throw new IllegalStateException("Unsupported field type: " + field.getType());
                   }
