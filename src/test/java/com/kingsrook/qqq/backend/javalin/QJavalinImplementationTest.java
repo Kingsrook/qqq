@@ -1,6 +1,11 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -129,5 +134,56 @@ class QJavalinImplementationTest
       assertTrue(record0.has("primaryKey"));
       JSONObject values0 = record0.getJSONObject("values");
       assertTrue(values0.has("firstName"));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataQueryWithFilter()
+   {
+      String filterJson = "{\"criteria\":[{\"fieldName\":\"firstName\",\"operator\":\"EQUALS\",\"values\":[\"Tim\"]}]}";
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals("Tim", values0.getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataInsert()
+   {
+      Map<String, Serializable> body = new HashMap<>();
+      body.put("firstName", "Bobby");
+      body.put("lastName", "Hull");
+
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
+         .header("Content-Type", "application/json")
+         .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      assertEquals("person", record0.getString("tableName"));
+      assertTrue(record0.has("primaryKey"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertTrue(values0.has("firstName"));
+      assertEquals("Bobby", values0.getString("firstName"));
    }
 }

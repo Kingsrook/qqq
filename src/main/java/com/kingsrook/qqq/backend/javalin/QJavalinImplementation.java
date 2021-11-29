@@ -1,16 +1,25 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
+import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
 import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
 import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -148,7 +157,36 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataInsert(Context context)
    {
-      context.result("{\"insertResult\":{}}");
+      try
+      {
+         String table = context.pathParam("table");
+         List<QRecord> recordList = new ArrayList<>();
+         QRecord record = new QRecord();
+         record.setTableName(table);
+         recordList.add(record);
+
+         Map<?, ?> map = context.bodyAsClass(Map.class);
+         for(Map.Entry<?, ?> entry : map.entrySet())
+         {
+            if(StringUtils.hasContent(String.valueOf(entry.getValue())))
+            {
+               record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
+            }
+         }
+
+         InsertRequest insertRequest = new InsertRequest(qInstance);
+         insertRequest.setTableName(table);
+         insertRequest.setRecords(recordList);
+
+         InsertAction insertAction = new InsertAction();
+         InsertResult insertResult = insertAction.execute(insertRequest);
+
+         context.result(JsonUtils.toJson(insertResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
    }
 
 
@@ -164,7 +202,19 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    **
+    *
+    * Filter parameter is a serialized QQueryFilter object, that is to say:
+    *
+    * <pre>
+    *   filter=
+    *    {"criteria":[
+    *       {"fieldName":"id","operator":"EQUALS","values":[1]},
+    *       {"fieldName":"name","operator":"IN","values":["Darin","James"]}
+    *     ],
+    *     "orderBys":[
+    *       {"fieldName":"age","isAscending":true}
+    *     ]}
+    * </pre>
     *******************************************************************************/
    static void dataQuery(Context context)
    {
@@ -174,6 +224,12 @@ public class QJavalinImplementation
          queryRequest.setTableName(context.pathParam("table"));
          queryRequest.setSkip(integerQueryParam(context, "skip"));
          queryRequest.setLimit(integerQueryParam(context, "limit"));
+
+         String filter = stringQueryParam(context, "filter");
+         if(filter != null)
+         {
+            queryRequest.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
 
          QueryAction queryAction = new QueryAction();
          QueryResult queryResult = queryAction.execute(queryRequest);
@@ -265,6 +321,23 @@ public class QJavalinImplementation
       if(StringUtils.hasContent(value))
       {
          return (Integer.parseInt(value));
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Returns String if context has a valid query parameter by the given name,
+    *  Returns null if no param (or empty value).
+    *******************************************************************************/
+   private static String stringQueryParam(Context context, String name) throws NumberFormatException
+   {
+      String value = context.queryParam(name);
+      if(StringUtils.hasContent(value))
+      {
+         return (value);
       }
 
       return (null);
