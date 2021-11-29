@@ -34,6 +34,18 @@ public class QFilterOrderBy
 
 
    /*******************************************************************************
+    ** Fluent Setter for fieldName
+    **
+    *******************************************************************************/
+   public QFilterOrderBy withFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for isAscending
     **
     *******************************************************************************/
@@ -52,4 +64,17 @@ public class QFilterOrderBy
    {
       isAscending = ascending;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for isAscending
+    **
+    *******************************************************************************/
+   public QFilterOrderBy withIsAscending(boolean ascending)
+   {
+      this.isAscending = ascending;
+      return (this);
+   }
+
 }
