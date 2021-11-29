@@ -1146,6 +1146,24 @@ public class QueryManager
     **
     *******************************************************************************/
    @SuppressWarnings("deprecation")
+   public static LocalDateTime getLocalDateTime(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      LocalDateTime dateTime = LocalDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0);
+      return (dateTime);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
    public static OffsetDateTime getOffsetDateTime(ResultSet resultSet, String column) throws SQLException
    {
       Timestamp value = resultSet.getTimestamp(column);

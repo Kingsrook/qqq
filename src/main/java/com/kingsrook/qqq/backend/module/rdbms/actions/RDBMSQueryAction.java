@@ -5,9 +5,11 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.QFilterCriteria;
@@ -17,6 +19,7 @@ import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -95,7 +98,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                for(int i = 1; i <= metaData.getColumnCount(); i++)
                {
                   QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
-                  String value = QueryManager.getString(resultSet, i); // todo - types!
+                  Serializable value = getValue(qFieldMetaData, resultSet, i);
                   values.put(qFieldMetaData.getName(), value);
                   if(qFieldMetaData.getName().equals(table.getPrimaryKeyField()))
                   {
@@ -120,12 +123,53 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    /*******************************************************************************
     **
     *******************************************************************************/
+   private Serializable getValue(QFieldMetaData qFieldMetaData, ResultSet resultSet, int i) throws SQLException
+   {
+      switch(qFieldMetaData.getType())
+      {
+         case STRING:
+         case TEXT:
+         case HTML:
+         case PASSWORD:
+         {
+            return (QueryManager.getString(resultSet, i));
+         }
+         case INTEGER:
+         {
+            return (QueryManager.getInteger(resultSet, i));
+         }
+         case DECIMAL:
+         {
+            return (QueryManager.getBigDecimal(resultSet, i));
+         }
+         case DATE:
+         {
+            return (QueryManager.getDate(resultSet, i));
+         }
+         case DATE_TIME:
+         {
+            return (QueryManager.getLocalDateTime(resultSet, i));
+         }
+         default:
+         {
+            throw new IllegalStateException("Unexpected field type: " + qFieldMetaData.getType());
+         }
+      }
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private String makeWhereClause(QTableMetaData table, List<QFilterCriteria> criteria, List<Serializable> params) throws IllegalArgumentException
    {
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
       {
          QFieldMetaData field = table.getField(criterion.getFieldName());
+         List<Serializable> values = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
          String column = getColumnName(field);
          String clause = column;
          Integer expectedNoOfParams = null;
@@ -145,7 +189,98 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             }
             case IN:
             {
-               clause += " IN (" + criterion.getValues().stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               break;
+            }
+            case NOT_IN:
+            {
+               clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               break;
+            }
+            case STARTS_WITH:
+            {
+               clause += " LIKE ? ";
+               editFirstValue(values, (s -> s + "%"));
+               expectedNoOfParams = 1;
+               break;
+            }
+            case ENDS_WITH:
+            {
+               clause += " LIKE ? ";
+               editFirstValue(values, (s -> "%" + s));
+               expectedNoOfParams = 1;
+               break;
+            }
+            case CONTAINS:
+            {
+               clause += " LIKE ? ";
+               editFirstValue(values, (s -> "%" + s + "%"));
+               expectedNoOfParams = 1;
+               break;
+            }
+            case NOT_STARTS_WITH:
+            {
+               clause += " NOT LIKE ? ";
+               editFirstValue(values, (s -> s + "%"));
+               expectedNoOfParams = 1;
+               break;
+            }
+            case NOT_ENDS_WITH:
+            {
+               clause += " NOT LIKE ? ";
+               editFirstValue(values, (s -> "%" + s));
+               expectedNoOfParams = 1;
+               break;
+            }
+            case NOT_CONTAINS:
+            {
+               clause += " NOT LIKE ? ";
+               editFirstValue(values, (s -> "%" + s + "%"));
+               expectedNoOfParams = 1;
+               break;
+            }
+            case LESS_THAN:
+            {
+               clause += " < ? ";
+               expectedNoOfParams = 1;
+               break;
+            }
+            case LESS_THAN_OR_EQUALS:
+            {
+               clause += " <= ? ";
+               expectedNoOfParams = 1;
+               break;
+            }
+            case GREATER_THAN:
+            {
+               clause += " > ? ";
+               expectedNoOfParams = 1;
+               break;
+            }
+            case GREATER_THAN_OR_EQUALS:
+            {
+               clause += " >= ? ";
+               expectedNoOfParams = 1;
+               break;
+            }
+            case IS_BLANK:
+            {
+               clause += " IS NULL ";
+               if(isString(field.getType()))
+               {
+                  clause += " OR " + column + " = '' ";
+               }
+               expectedNoOfParams = 0;
+               break;
+            }
+            case IS_NOT_BLANK:
+            {
+               clause += " IS NOT NULL ";
+               if(isString(field.getType()))
+               {
+                  clause += " AND " + column + " !+ '' ";
+               }
+               expectedNoOfParams = 0;
                break;
             }
             default:
@@ -153,15 +288,42 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                throw new IllegalArgumentException("Unexpected operator: " + criterion.getOperator());
             }
          }
-         clauses.add(clause);
-         if(expectedNoOfParams != null && criterion.getValues().size() != expectedNoOfParams)
+         clauses.add("(" + clause + ")");
+         if(expectedNoOfParams != null)
          {
-            throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
+            if(!expectedNoOfParams.equals(values.size()))
+            {
+               throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
+            }
          }
-         params.addAll(criterion.getValues());
+
+         params.addAll(values);
       }
 
       return (String.join(" AND ", clauses));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void editFirstValue(List<Serializable> values, Function<String, String> editFunction)
+   {
+      if(values.size() > 0)
+      {
+         values.set(0, editFunction.apply(String.valueOf(values.get(0))));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean isString(QFieldType fieldType)
+   {
+      return fieldType == QFieldType.STRING || fieldType == QFieldType.TEXT || fieldType == QFieldType.HTML || fieldType == QFieldType.PASSWORD;
    }
 
 
