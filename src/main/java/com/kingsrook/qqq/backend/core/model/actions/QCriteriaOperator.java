@@ -21,5 +21,7 @@ public enum QCriteriaOperator
    GREATER_THAN,
    GREATER_THAN_OR_EQUALS,
    IS_BLANK,
-   IS_NOT_BLANK
+   IS_NOT_BLANK,
+   BETWEEN,
+   NOT_BETWEEN
 }

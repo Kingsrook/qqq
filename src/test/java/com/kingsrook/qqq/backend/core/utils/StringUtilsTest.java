@@ -1,0 +1,227 @@
+package com.kingsrook.qqq.backend.core.utils;
+
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
+/*******************************************************************************
+ **
+ *******************************************************************************/
+class StringUtilsTest
+{
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_hasContent()
+   {
+      assertFalse(StringUtils.hasContent(""));
+      assertFalse(StringUtils.hasContent("   "));
+      assertFalse(StringUtils.hasContent(" \n  "));
+      assertFalse(StringUtils.hasContent(null));
+      assertTrue(StringUtils.hasContent("a"));
+      assertTrue(StringUtils.hasContent(" a "));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_nvlString()
+   {
+      assertEquals("foo", StringUtils.nvl("foo", "bar"));
+      assertEquals("bar", StringUtils.nvl(null, "bar"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_nvlObject()
+   {
+      assertEquals("1701", StringUtils.nvl(1701, "bar"));
+      assertEquals("bar", StringUtils.nvl((Integer) null, "bar"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_allCapsToMixedCase()
+   {
+      assertNull(StringUtils.allCapsToMixedCase(null));
+      assertEquals("Foo", StringUtils.allCapsToMixedCase("FOO"));
+      assertEquals("Foo Bar", StringUtils.allCapsToMixedCase("FOO BAR"));
+      assertEquals("Foo bar", StringUtils.allCapsToMixedCase("FOO bar"));
+      assertEquals("Foo bar", StringUtils.allCapsToMixedCase("FOo bar"));
+      assertEquals("Foo Bar", StringUtils.allCapsToMixedCase("FOo BAr"));
+      assertEquals("foo bar", StringUtils.allCapsToMixedCase("foo bar"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_safeTruncate2()
+   {
+      assertNull(StringUtils.safeTruncate(null, 5));
+      assertEquals("123", StringUtils.safeTruncate("123", 5));
+      assertEquals("12345", StringUtils.safeTruncate("1234567", 5));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_safeTruncate3()
+   {
+      assertNull(StringUtils.safeTruncate(null, 5, "..."));
+      assertEquals("123", StringUtils.safeTruncate("123", 5, "..."));
+      assertEquals("12345", StringUtils.safeTruncate("12345", 5, "..."));
+      assertEquals("12...", StringUtils.safeTruncate("123456", 5, "..."));
+      assertEquals("12...", StringUtils.safeTruncate("1234567890", 5, "..."));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_safeTrim()
+   {
+      assertNull(StringUtils.safeTrim(null));
+      assertEquals("foo", StringUtils.safeTrim("foo "));
+      assertEquals("foo", StringUtils.safeTrim(" foo "));
+      assertEquals("foo", StringUtils.safeTrim(" foo"));
+      assertEquals("foo", StringUtils.safeTrim("    foo   \n   "));
+      assertEquals("foo", StringUtils.safeTrim("\nfoo  \r  \n   "));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_join()
+   {
+      assertNull(StringUtils.join(",", null));
+      assertEquals("1", StringUtils.join(",", List.of(1)));
+      assertEquals("", StringUtils.join(",", List.of()));
+      assertEquals("1,2,3", StringUtils.join(",", List.of(1, 2, 3)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_joinWithCommasAndAnd()
+   {
+      assertNull(StringUtils.joinWithCommasAndAnd(null));
+      assertEquals("", StringUtils.joinWithCommasAndAnd(List.of()));
+      assertEquals("A", StringUtils.joinWithCommasAndAnd(List.of("A")));
+      assertEquals("A and B", StringUtils.joinWithCommasAndAnd(List.of("A", "B")));
+      assertEquals("A, B, and C", StringUtils.joinWithCommasAndAnd(List.of("A", "B", "C")));
+      assertEquals("A, B, C, and D", StringUtils.joinWithCommasAndAnd(List.of("A", "B", "C", "D")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_ltrim()
+   {
+      assertEquals("", StringUtils.ltrim(null));
+      assertEquals("123", StringUtils.ltrim("123"));
+      assertEquals("123", StringUtils.ltrim(" 123"));
+      assertEquals("123", StringUtils.ltrim("    123"));
+      assertEquals("123", StringUtils.ltrim("  \n\n  123"));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_rtrim()
+   {
+      assertEquals("", StringUtils.rtrim(null));
+      assertEquals("123", StringUtils.rtrim("123"));
+      assertEquals("123", StringUtils.rtrim("123 "));
+      assertEquals("123", StringUtils.rtrim("123    "));
+      assertEquals("123", StringUtils.rtrim("123  \n\n  "));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_pluralCollection()
+   {
+      assertEquals("s", StringUtils.plural(List.of()));
+      assertEquals("", StringUtils.plural(List.of(1)));
+      assertEquals("s", StringUtils.plural(List.of(1, 2)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_pluralInteger()
+   {
+      assertEquals("s", StringUtils.plural(0));
+      assertEquals("", StringUtils.plural(1));
+      assertEquals("s", StringUtils.plural(2));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_pluralCollectionStringString()
+   {
+      assertEquals("es", StringUtils.plural(List.of(), "", "es"));
+      assertEquals("", StringUtils.plural(List.of(1), "", "es"));
+      assertEquals("es", StringUtils.plural(List.of(1, 2), "", "es"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_pluralIntegerStringString()
+   {
+      assertEquals("es", StringUtils.plural(0, "", "es"));
+      assertEquals("", StringUtils.plural(1, "", "es"));
+      assertEquals("es", StringUtils.plural(2, "", "es"));
+   }
+}

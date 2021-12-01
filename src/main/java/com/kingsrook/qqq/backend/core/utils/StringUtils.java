@@ -1,9 +1,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -177,6 +175,11 @@ public class StringUtils
     *******************************************************************************/
    public static String join(String glue, Collection<? extends Object> collection)
    {
+      if(collection == null)
+      {
+         return (null);
+      }
+
       StringBuffer rs = new StringBuffer();
 
       int i = 0;
@@ -208,6 +211,11 @@ public class StringUtils
     *******************************************************************************/
    public static String joinWithCommasAndAnd(List<String> input)
    {
+      if(input == null)
+      {
+         return (null);
+      }
+
       StringBuilder rs = new StringBuilder();
       int size = input.size();
 
@@ -230,58 +238,6 @@ public class StringUtils
 
       return (rs.toString());
 
-   }
-
-
-
-   /*******************************************************************************
-    ** isNullOrEmptyString
-    **
-    ** @param input
-    *******************************************************************************/
-   private static boolean isNullOrBlankString(Object input)
-   {
-      if(input == null)
-      {
-         return (true);
-      }
-      else if(input instanceof String && !StringUtils.hasContent((String) input))
-      {
-         return (true);
-      }
-      else
-      {
-         return (false);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Split a string into tokens, broken up around a given regular expression pattern.
-    **
-    ** @param   original the string to do the splitting to.
-    ** @param   pattern  the pattern to split on.
-    ** @return a LinkedList with the elements found in the original string
-    *******************************************************************************/
-   public static LinkedList<String> split(String original, String pattern)
-   {
-      return (new LinkedList<String>(Arrays.asList(original.split(pattern))));
-   }
-
-
-
-   /*******************************************************************************
-    ** Split a string into tokens, broken up around a given regular expression pattern.
-    **
-    ** @param   original the string to do the splitting to.
-    ** @param   pattern  the pattern to split on.
-    ** @param   limit    the max number of splits to make
-    ** @return a List with the elements found in the original string
-    *******************************************************************************/
-   public static LinkedList<String> split(String original, String pattern, Integer limit)
-   {
-      return (new LinkedList<String>(Arrays.asList(original.split(pattern, limit))));
    }
 
 
