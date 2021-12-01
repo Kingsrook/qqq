@@ -20,6 +20,7 @@ public class SampleJavalinServer
    private QInstance qInstance;
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -38,8 +39,14 @@ public class SampleJavalinServer
       qInstance = SampleMetaDataProvider.defineInstance();
 
       QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
-      Javalin service = Javalin.create().start(PORT);
+      Javalin service = Javalin.create(config ->
+      {
+         // todo - not all!!
+         config.enableCorsForAllOrigins();
+      }).start(PORT);
       service.routes(qJavalinImplementation.getRoutes());
+      service.after(ctx ->
+         ctx.res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
    }
 
 }

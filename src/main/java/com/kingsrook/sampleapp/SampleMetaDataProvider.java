@@ -44,7 +44,7 @@ public class SampleMetaDataProvider
       backend.setValue("port", "3306");
       backend.setValue("databaseName", "opspath");
       backend.setValue("username", "root");
-      backend.setValue("password", "8BNWyoav8s79oi}Lqk");
+      backend.setValue("password", "8BNWyoav8s79oi}Lqk"); // todo - load securely
       return (backend);
    }
 
