@@ -349,6 +349,46 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   public void testBetweenQuery() throws QException
+   {
+      QueryRequest queryRequest = initQueryRequest();
+      queryRequest.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("id")
+            .withOperator(QCriteriaOperator.BETWEEN)
+            .withValues(List.of(2, 4))
+         ));
+      QueryResult queryResult = new RDBMSQueryAction().execute(queryRequest);
+      Assertions.assertEquals(3, queryResult.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryResult.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(2) || r.getValueInteger("id").equals(3) || r.getValueInteger("id").equals(4)), "Should find expected ids");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testNotBetweenQuery() throws QException
+   {
+      QueryRequest queryRequest = initQueryRequest();
+      queryRequest.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("id")
+            .withOperator(QCriteriaOperator.NOT_BETWEEN)
+            .withValues(List.of(2, 4))
+         ));
+      QueryResult queryResult = new RDBMSQueryAction().execute(queryRequest);
+      Assertions.assertEquals(2, queryResult.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryResult.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(5)), "Should find expected ids");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QueryRequest initQueryRequest()
    {
       QueryRequest queryRequest = new QueryRequest();

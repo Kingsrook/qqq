@@ -283,6 +283,18 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                expectedNoOfParams = 0;
                break;
             }
+            case BETWEEN:
+            {
+               clause += " BETWEEN ? AND ? ";
+               expectedNoOfParams = 2;
+               break;
+            }
+            case NOT_BETWEEN:
+            {
+               clause += " NOT BETWEEN ? AND ? ";
+               expectedNoOfParams = 2;
+               break;
+            }
             default:
             {
                throw new IllegalArgumentException("Unexpected operator: " + criterion.getOperator());
