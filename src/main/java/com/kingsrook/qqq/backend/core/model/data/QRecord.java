@@ -34,6 +34,17 @@ public class QRecord
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord withValue(String fieldName, Serializable value)
+   {
+      setValue(fieldName, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for tableName
     **
     *******************************************************************************/
@@ -56,6 +67,18 @@ public class QRecord
 
 
    /*******************************************************************************
+    ** Setter for tableName
+    **
+    *******************************************************************************/
+   public QRecord withTableName(String tableName)
+   {
+      this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for primaryKey
     **
     *******************************************************************************/
@@ -73,6 +96,18 @@ public class QRecord
    public void setPrimaryKey(Serializable primaryKey)
    {
       this.primaryKey = primaryKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for primaryKey
+    **
+    *******************************************************************************/
+   public QRecord withPrimaryKey(Serializable primaryKey)
+   {
+      this.primaryKey = primaryKey;
+      return (this);
    }
 
 
