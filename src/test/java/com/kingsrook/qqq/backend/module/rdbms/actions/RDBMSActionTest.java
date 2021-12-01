@@ -90,4 +90,16 @@ public class RDBMSActionTest
          QueryManager.executeUpdate(connection, sql);
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
+   {
+      ConnectionManager connectionManager = new ConnectionManager();
+      Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(defineBackend()));
+      QueryManager.executeStatement(connection, sql, resultSetProcessor);
+   }
 }

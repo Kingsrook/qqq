@@ -1,9 +1,11 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
 
@@ -31,5 +33,16 @@ public class RDBSMModule implements QModuleInterface
    public InsertInterface getInsertInterface()
    {
       return (new RDBMSInsertAction());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public DeleteInterface getDeleteInterface()
+   {
+      return (new RDBMSDeleteAction());
    }
 }
