@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -98,6 +100,7 @@ class QJavalinImplementationTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -106,7 +109,7 @@ class QJavalinImplementationTest
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/metaData/notAnActualTable").asString();
 
-      assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+      assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus()); // todo 404?
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals(1, jsonObject.keySet().size(), "Number of top-level keys");
       String error = jsonObject.getString("error");
@@ -135,6 +138,7 @@ class QJavalinImplementationTest
       JSONObject values0 = record0.getJSONObject("values");
       assertTrue(values0.has("firstName"));
    }
+
 
 
    /*******************************************************************************
@@ -185,5 +189,34 @@ class QJavalinImplementationTest
       JSONObject values0 = record0.getJSONObject("values");
       assertTrue(values0.has("firstName"));
       assertEquals("Bobby", values0.getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataDelete() throws Exception
+   {
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/data/person/3")
+         .header("Content-Type", "application/json")
+         .asString();
+
+      assertEquals(200, response.getStatus());
+
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertEquals(1, jsonObject.getJSONArray("records").length());
+      assertEquals(3, jsonObject.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+      TestUtils.runTestSql("SELECT id FROM person", (rs -> {
+         int rowsFound = 0;
+         while(rs.next())
+         {
+            rowsFound++;
+            assertFalse(rs.getInt(1) == 3);
+         }
+         assertEquals(4, rowsFound);
+      }));
    }
 }

@@ -5,11 +5,14 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
 import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
@@ -137,7 +140,25 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataDelete(Context context)
    {
-      context.result("{\"deleteResult\":{}}");
+      try
+      {
+         String table = context.pathParam("table");
+         List<Serializable> primaryKeys = new ArrayList<>();
+         primaryKeys.add(context.pathParam("id"));
+
+         DeleteRequest deleteRequest = new DeleteRequest(qInstance);
+         deleteRequest.setTableName(table);
+         deleteRequest.setPrimaryKeys(primaryKeys);
+
+         DeleteAction deleteAction = new DeleteAction();
+         DeleteResult deleteResult = deleteAction.execute(deleteRequest);
+
+         context.result(JsonUtils.toJson(deleteResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
    }
 
 

@@ -44,6 +44,18 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
+   {
+      ConnectionManager connectionManager = new ConnectionManager();
+      Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(defineBackend()));
+      QueryManager.executeStatement(connection, sql, resultSetProcessor);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static QInstance defineInstance()
    {
       QInstance qInstance = new QInstance();
