@@ -163,6 +163,31 @@ class QPicoCliImplementationTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   public void test_tableDelete() throws Exception
+   {
+      TestOutput testOutput = testCli("person", "delete", "--primaryKey", "2,4");
+      JSONObject deleteResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(deleteResult);
+      assertEquals(2, deleteResult.getJSONArray("records").length());
+      assertEquals(2, deleteResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+      assertEquals(4, deleteResult.getJSONArray("records").getJSONObject(1).getInt("primaryKey"));
+      TestUtils.runTestSql("SELECT id FROM person", (rs -> {
+         int rowsFound = 0;
+         while(rs.next())
+         {
+            rowsFound++;
+            assertTrue(rs.getInt(1) == 1 || rs.getInt(1) == 3 || rs.getInt(1) == 5);
+         }
+         assertEquals(3, rowsFound);
+      }));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private TestOutput testCli(String... args)
    {
       QInstance qInstance = TestUtils.defineInstance();

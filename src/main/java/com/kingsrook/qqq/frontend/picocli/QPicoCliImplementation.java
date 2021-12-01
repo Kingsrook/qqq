@@ -5,11 +5,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
@@ -19,6 +22,8 @@ import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
 import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
@@ -140,6 +145,7 @@ public class QPicoCliImplementation
          tableCommand.addSubcommand("meta-data", defineMetaDataCommand(table));
          tableCommand.addSubcommand("query", defineQueryCommand(table));
          tableCommand.addSubcommand("insert", defineInsertCommand(table));
+         tableCommand.addSubcommand("delete", defineDeleteCommand(table));
       });
 
       CommandLine commandLine = new CommandLine(topCommandSpec);
@@ -230,7 +236,6 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private CommandSpec defineInsertCommand(QTableMetaData table)
    {
       CommandSpec insertCommand = CommandSpec.create();
@@ -254,21 +259,47 @@ public class QPicoCliImplementation
       for(QFieldMetaData field : table.getFields().values())
       {
          insertCommand.addOption(OptionSpec.builder("--field-" + field.getName())
-            .type(
-               switch(field.getType())
-                  {
-                     case STRING, TEXT, HTML, PASSWORD -> String.class;
-                     case INTEGER -> Integer.class;
-                     case DECIMAL -> BigDecimal.class;
-                     case DATE -> LocalDate.class;
-                     // case TIME -> LocalTime.class;
-                     case DATE_TIME -> LocalDateTime.class;
-                     default -> throw new IllegalStateException("Unsupported field type: " + field.getType());
-                  }
-            )
+            .type(getClassForField(field))
             .build());
       }
       return insertCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private CommandSpec defineDeleteCommand(QTableMetaData table)
+   {
+      CommandSpec deleteCommand = CommandSpec.create();
+
+      QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
+      deleteCommand.addOption(OptionSpec.builder("--primaryKey")
+         .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
+         .build());
+
+      return deleteCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:Indentation")
+   private Class<?> getClassForField(QFieldMetaData field)
+   {
+      return switch(field.getType())
+         {
+            case STRING, TEXT, HTML, PASSWORD -> String.class;
+            case INTEGER -> Integer.class;
+            case DECIMAL -> BigDecimal.class;
+            case DATE -> LocalDate.class;
+            // case TIME -> LocalTime.class;
+            case DATE_TIME -> LocalDateTime.class;
+            default -> throw new IllegalStateException("Unsupported field type: " + field.getType());
+         };
    }
 
 
@@ -315,6 +346,10 @@ public class QPicoCliImplementation
             case "insert":
             {
                return runTableInsert(commandLine, tableName, subParseResult);
+            }
+            case "delete":
+            {
+               return runTableDelete(commandLine, tableName, subParseResult);
             }
             default:
             {
@@ -463,6 +498,31 @@ public class QPicoCliImplementation
       InsertAction insertAction = new InsertAction();
       InsertResult insertResult = insertAction.execute(insertRequest);
       commandLine.getOut().println(JsonUtils.toPrettyJson(insertResult));
+      return commandLine.getCommandSpec().exitCodeOnSuccess();
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private int runTableDelete(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
+   {
+      DeleteRequest deleteRequest = new DeleteRequest(qInstance);
+      deleteRequest.setTableName(tableName);
+      QTableMetaData table = qInstance.getTable(tableName);
+
+      /////////////////////////////////////////////
+      // get the pKeys that the user specified //
+      /////////////////////////////////////////////
+      List<Serializable> primaryKeyList = null;
+
+      String primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
+      String[] primaryKeyValues = primaryKeyOption.split(",");
+      deleteRequest.setPrimaryKeys(Arrays.asList(primaryKeyValues));
+
+      DeleteAction deleteAction = new DeleteAction();
+      DeleteResult deleteResult = deleteAction.execute(deleteRequest);
+      commandLine.getOut().println(JsonUtils.toPrettyJson(deleteResult));
       return commandLine.getCommandSpec().exitCodeOnSuccess();
    }
 
