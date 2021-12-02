@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -39,6 +40,42 @@ class JsonUtilsTest
       QRecord qRecord = getQRecord();
       String json = JsonUtils.toJson(qRecord);
       assertEquals("{\"tableName\":\"foo\",\"primaryKey\":1,\"values\":{\"foo\":\"Foo\",\"bar\":3.14159}}", json);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static class LooksLikeAnEntityButJustThrowsInItsGetterMethod
+   {
+      public String getValue()
+      {
+         throw new IllegalStateException("Test");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_toJsonNull()
+   {
+      assertThrowsExactly(IllegalArgumentException.class,
+         () -> JsonUtils.toJson(new LooksLikeAnEntityButJustThrowsInItsGetterMethod()));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_toPrettyJsonNull()
+   {
+      assertThrowsExactly(IllegalArgumentException.class,
+         () -> JsonUtils.toPrettyJson(new LooksLikeAnEntityButJustThrowsInItsGetterMethod()));
    }
 
 
@@ -204,6 +241,7 @@ class JsonUtilsTest
       assertTrue(JsonUtils.looksLikeArray("\n[\n{}\n}\n"));
       assertTrue(JsonUtils.looksLikeArray("\n\n\n  [ \n]\n\n\n"));
    }
+
 
 
    /*******************************************************************************
