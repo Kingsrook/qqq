@@ -2,12 +2,17 @@ package com.kingsrook.qqq.frontend.picocli;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.io.FileUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
+ ** Unit test for the QPicoCliImplementation.
  **
  *******************************************************************************/
 class QPicoCliImplementationTest
@@ -27,6 +33,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** Fully rebuild the test-database before each test runs, for completely known state.
     **
     *******************************************************************************/
    @BeforeEach
@@ -38,6 +45,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test that w/ no arguments you just get usage.
     **
     *******************************************************************************/
    @Test
@@ -50,6 +58,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test that --help gives you usage.
     **
     *******************************************************************************/
    @Test
@@ -63,6 +72,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test the --verion argument
     **
     *******************************************************************************/
    @Test
@@ -75,6 +85,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** Test that an unrecognized opttion gives an error
     **
     *******************************************************************************/
    @Test
@@ -89,6 +100,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test the top-level --meta-data option
     **
     *******************************************************************************/
    @Test
@@ -108,6 +120,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test giving a table-name, gives usage for that table
     **
     *******************************************************************************/
    @Test
@@ -121,6 +134,22 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test unknown command under table, prints error and usage.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUnknownCommand()
+   {
+      String badCommand = "qwuijibo";
+      TestOutput testOutput = testCli("person", badCommand);
+      assertTrue(testOutput.getError().contains("Unmatched argument at index 1: '" + badCommand + "'"));
+      assertTrue(testOutput.getError().contains("Usage: " + CLI_NAME + " person [COMMAND]"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test requesting table meta-data
     **
     *******************************************************************************/
    @Test
@@ -144,6 +173,7 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test running a query on a table
     **
     *******************************************************************************/
    @Test
@@ -161,6 +191,134 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test running an insert w/o specifying any fields, prints usage
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableInsertNoFieldsPrintsUsage()
+   {
+      TestOutput testOutput = testCli("person", "insert");
+      assertTrue(testOutput.getOutput().contains("Usage: " + CLI_NAME + " person insert"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an insert w/ fields as arguments
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableInsertFieldArguments()
+   {
+      TestOutput testOutput = testCli("person", "insert",
+         "--field-firstName=Lucy",
+         "--field-lastName=Lu");
+      JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(insertResult);
+      assertEquals(1, insertResult.getJSONArray("records").length());
+      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an insert w/ a mapping and json as an argument
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableInsertJsonObjectArgumentWithMapping()
+   {
+      String mapping = """
+         --mapping={"firstName":"first","lastName":"ln"}
+         """;
+
+      String jsonBody = """
+         --jsonBody={"first":"Chester","ln":"Cheese"}
+         """;
+
+      TestOutput testOutput = testCli("person", "insert", mapping, jsonBody);
+      JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(insertResult);
+      assertEquals(1, insertResult.getJSONArray("records").length());
+      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+      assertEquals("Chester", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("firstName"));
+      assertEquals("Cheese", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an insert w/ a mapping and json as a multi-record file
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableInsertJsonArrayFileWithMapping() throws IOException
+   {
+      String mapping = """
+         --mapping={"firstName":"first","lastName":"ln"}
+         """;
+
+      String jsonContents = """
+         [{"first":"Charlie","ln":"Bear"},{"first":"Coco","ln":"Bean"}]
+         """;
+
+      File file = new File("/tmp/" + UUID.randomUUID() + ".json");
+      file.deleteOnExit();
+      FileUtils.writeStringToFile(file, jsonContents);
+
+      TestOutput testOutput = testCli("person", "insert", mapping, "--jsonFile=" + file.getAbsolutePath());
+      JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(insertResult);
+      JSONArray records = insertResult.getJSONArray("records");
+      assertEquals(2, records.length());
+      assertEquals(6, records.getJSONObject(0).getInt("primaryKey"));
+      assertEquals(7, records.getJSONObject(1).getInt("primaryKey"));
+      assertEquals("Charlie", records.getJSONObject(0).getJSONObject("values").getString("firstName"));
+      assertEquals("Bear", records.getJSONObject(0).getJSONObject("values").getString("lastName"));
+      assertEquals("Coco", records.getJSONObject(1).getJSONObject("values").getString("firstName"));
+      assertEquals("Bean", records.getJSONObject(1).getJSONObject("values").getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an insert w/ an index-based mapping and csv file
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableInsertCsvFileWithIndexMapping() throws IOException
+   {
+      String mapping = """
+         --mapping={"firstName":1,"lastName":3}
+         """;
+
+      String csvContents = """
+         "Louis","P","Willikers",1024,
+         "Nestle","G","Crunch",1701,
+         
+         """;
+
+      File file = new File("/tmp/" + UUID.randomUUID() + ".csv");
+      file.deleteOnExit();
+      FileUtils.writeStringToFile(file, csvContents);
+
+      TestOutput testOutput = testCli("person", "insert", mapping, "--csvFile=" + file.getAbsolutePath());
+      JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(insertResult);
+      JSONArray records = insertResult.getJSONArray("records");
+      assertEquals(2, records.length());
+      assertEquals(6, records.getJSONObject(0).getInt("primaryKey"));
+      assertEquals(7, records.getJSONObject(1).getInt("primaryKey"));
+      assertEquals("Louis", records.getJSONObject(0).getJSONObject("values").getString("firstName"));
+      assertEquals("Willikers", records.getJSONObject(0).getJSONObject("values").getString("lastName"));
+      assertEquals("Nestle", records.getJSONObject(1).getJSONObject("values").getString("firstName"));
+      assertEquals("Crunch", records.getJSONObject(1).getJSONObject("values").getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a delete against a table
     **
     *******************************************************************************/
    @Test

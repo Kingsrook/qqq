@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,8 +40,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
@@ -52,14 +49,15 @@ import picocli.CommandLine.UnmatchedArgumentException;
 
 
 /*******************************************************************************
+ ** QQQ PicoCLI implementation.  Given a QInstance, produces an entire CLI
+ ** for working with all tables in that instance.
+ **
  ** Note:  Please do not use System.out or .err here -- rather, use the CommandLine
  ** object's out & err members - so the unit test can see the output!
- *
+ **
  *******************************************************************************/
 public class QPicoCliImplementation
 {
-   private static final Logger LOG = LogManager.getLogger(QPicoCliImplementation.class);
-
    public static final int DEFAULT_LIMIT = 20;
 
    private static QInstance qInstance;
@@ -274,7 +272,6 @@ public class QPicoCliImplementation
    {
       CommandSpec deleteCommand = CommandSpec.create();
 
-      QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
       deleteCommand.addOption(OptionSpec.builder("--primaryKey")
          .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
          .build());
@@ -287,19 +284,19 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private Class<?> getClassForField(QFieldMetaData field)
    {
+      // @formatter:off // IJ can't do new-style switch correctly yet...
       return switch(field.getType())
-         {
-            case STRING, TEXT, HTML, PASSWORD -> String.class;
-            case INTEGER -> Integer.class;
-            case DECIMAL -> BigDecimal.class;
-            case DATE -> LocalDate.class;
-            // case TIME -> LocalTime.class;
-            case DATE_TIME -> LocalDateTime.class;
-            default -> throw new IllegalStateException("Unsupported field type: " + field.getType());
-         };
+      {
+         case STRING, TEXT, HTML, PASSWORD -> String.class;
+         case INTEGER -> Integer.class;
+         case DECIMAL -> BigDecimal.class;
+         case DATE -> LocalDate.class;
+         // case TIME -> LocalTime.class;
+         case DATE_TIME -> LocalDateTime.class;
+      };
+      // @formatter:on
    }
 
 
@@ -436,7 +433,7 @@ public class QPicoCliImplementation
       /////////////////////////////////////////////
       // get the records that the user specified //
       /////////////////////////////////////////////
-      List<QRecord> recordList = null;
+      List<QRecord> recordList;
       if(subParseResult.hasMatchedOption("--jsonBody"))
       {
          String json = subParseResult.matchedOptionValue("--jsonBody", "");
@@ -502,6 +499,7 @@ public class QPicoCliImplementation
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -509,13 +507,10 @@ public class QPicoCliImplementation
    {
       DeleteRequest deleteRequest = new DeleteRequest(qInstance);
       deleteRequest.setTableName(tableName);
-      QTableMetaData table = qInstance.getTable(tableName);
 
       /////////////////////////////////////////////
       // get the pKeys that the user specified //
       /////////////////////////////////////////////
-      List<Serializable> primaryKeyList = null;
-
       String primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
       String[] primaryKeyValues = primaryKeyOption.split(",");
       deleteRequest.setPrimaryKeys(Arrays.asList(primaryKeyValues));

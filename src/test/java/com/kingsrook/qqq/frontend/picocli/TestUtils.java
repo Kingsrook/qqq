@@ -17,12 +17,14 @@ import static junit.framework.Assert.assertNotNull;
 
 
 /*******************************************************************************
+ ** Utility methods for unit tests.
  **
  *******************************************************************************/
 public class TestUtils
 {
 
    /*******************************************************************************
+    ** Prime a test database (e.g., h2, in-memory)
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
@@ -43,6 +45,7 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Run an SQL Query in the test database
     **
     *******************************************************************************/
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
@@ -55,6 +58,7 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the q-instance for testing (h2 rdbms and 'person' table)
     **
     *******************************************************************************/
    public static QInstance defineInstance()
@@ -68,6 +72,7 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the h2 rdbms backend
     **
     *******************************************************************************/
    public static QBackendMetaData defineBackend()
@@ -85,6 +90,7 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the person table
     **
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
