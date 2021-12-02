@@ -5,6 +5,10 @@ import java.util.List;
 
 
 /*******************************************************************************
+ ** Wrapper on a QRecord, to add status information after an action took place.
+ ** e.g., any errors that occurred.
+ **
+ ** TODO - expand?
  **
  *******************************************************************************/
 public class QRecordWithStatus extends QRecord

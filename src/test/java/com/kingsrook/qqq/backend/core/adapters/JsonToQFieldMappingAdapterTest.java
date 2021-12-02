@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
+ ** Unit test for JsonToQFieldMappingAdapter
  **
  *******************************************************************************/
 class JsonToQFieldMappingAdapterTest

@@ -7,7 +7,9 @@ package com.kingsrook.qqq.backend.core.exceptions;
  *******************************************************************************/
 public class QException extends Exception
 {
+
    /*******************************************************************************
+    ** Constructor of message
     **
     *******************************************************************************/
    public QException(String message)
@@ -18,6 +20,7 @@ public class QException extends Exception
 
 
    /*******************************************************************************
+    ** Constructor of message & cause
     **
     *******************************************************************************/
    public QException(String message, Throwable cause)

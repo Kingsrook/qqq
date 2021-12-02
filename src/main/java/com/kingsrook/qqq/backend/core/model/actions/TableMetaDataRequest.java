@@ -5,6 +5,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
+ ** Request for meta-data for a table.
  **
  *******************************************************************************/
 public class TableMetaDataRequest extends AbstractQRequest

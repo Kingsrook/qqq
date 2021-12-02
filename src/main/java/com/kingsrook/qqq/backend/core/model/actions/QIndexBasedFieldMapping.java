@@ -6,7 +6,11 @@ import java.util.Map;
 
 
 /*******************************************************************************
- ** Note;  1-based index!!
+ ** Field Mapping implementation that uses Integer keys (e.g., from a CSV file
+ ** WITHOUT a header row).
+ **
+ ** Note:  1-based index!!
+ **
  *******************************************************************************/
 public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
 {
@@ -15,6 +19,8 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
 
 
    /*******************************************************************************
+    ** Get the field source  (e.g., integer index of a CSV column) corresponding to a 
+    ** propery qqq table fieldName.
     **
     *******************************************************************************/
    @Override
@@ -31,6 +37,7 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
 
 
    /*******************************************************************************
+    ** Tell framework what kind of keys this mapping class uses (INDEX)
     **
     *******************************************************************************/
    @Override
@@ -42,6 +49,8 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
 
 
    /*******************************************************************************
+    ** Add a single mapping to this mapping object.  fieldName = qqq metaData fieldName,
+    ** key = field index (integer) in the CSV
     **
     *******************************************************************************/
    public void addMapping(String fieldName, Integer key)
@@ -56,6 +65,8 @@ public class QIndexBasedFieldMapping extends AbstractQFieldMapping<Integer>
 
 
    /*******************************************************************************
+    ** Fluently add a single mapping to this mapping object.  fieldName = qqq metaData 
+    ** fieldName, key = field index (integer) in the CSV
     **
     *******************************************************************************/
    public QIndexBasedFieldMapping withMapping(String fieldName, Integer key)

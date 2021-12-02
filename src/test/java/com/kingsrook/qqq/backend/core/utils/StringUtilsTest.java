@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
+ ** Unit test for StringUtils
  **
  *******************************************************************************/
 class StringUtilsTest

@@ -8,6 +8,7 @@ import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 
 
 /*******************************************************************************
+ ** Container for all meta-data in a running instance of a QQQ application.
  **
  *******************************************************************************/
 public class QInstance

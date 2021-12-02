@@ -6,8 +6,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- * Result for a query action
- *
+ ** Result for a query action
+ **
  *******************************************************************************/
 public class QueryResult extends AbstractQResult
 {

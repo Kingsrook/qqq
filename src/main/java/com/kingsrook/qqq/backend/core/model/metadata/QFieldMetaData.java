@@ -2,6 +2,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 /*******************************************************************************
+ ** Meta-data to represent a single field in a table.
  **
  *******************************************************************************/
 public class QFieldMetaData

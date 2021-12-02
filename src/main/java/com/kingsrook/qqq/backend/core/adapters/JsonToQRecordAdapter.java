@@ -15,13 +15,17 @@ import org.json.JSONObject;
 
 
 /*******************************************************************************
+ ** Adapter class to convert a JSON string into a list of QRecords.
  **
  *******************************************************************************/
 public class JsonToQRecordAdapter
 {
 
    /*******************************************************************************
-    ** todo - meta-data validation, mapping, type handling
+    ** convert a JSON String into a List of QRecords, for a given table, optionally
+    ** using a given mapping.
+    **
+    ** todo - meta-data validation, use the mapping, type handling
     *******************************************************************************/
    public List<QRecord> buildRecordsFromJson(String json, QTableMetaData table, AbstractQFieldMapping<?> mapping)
    {
@@ -69,6 +73,8 @@ public class JsonToQRecordAdapter
 
 
    /*******************************************************************************
+    ** private method to build one QRecord from one jsonObject
+    **
     ** todo - meta-data validation, mapping, type handling
     *******************************************************************************/
    private QRecord buildRecordFromJsonObject(JSONObject jsonObject)

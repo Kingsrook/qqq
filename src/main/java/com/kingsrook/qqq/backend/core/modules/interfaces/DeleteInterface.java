@@ -7,6 +7,7 @@ import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
 
 
 /*******************************************************************************
+ ** Interface for the Delete action.
  **
  *******************************************************************************/
 public interface DeleteInterface

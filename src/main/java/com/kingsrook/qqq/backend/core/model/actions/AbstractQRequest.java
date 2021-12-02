@@ -7,6 +7,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
+ ** Base request class for all Q actions.
  **
  *******************************************************************************/
 public abstract class AbstractQRequest

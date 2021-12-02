@@ -7,6 +7,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
+ ** Request for a Delete action.
  **
  *******************************************************************************/
 public class DeleteRequest extends AbstractQTableRequest

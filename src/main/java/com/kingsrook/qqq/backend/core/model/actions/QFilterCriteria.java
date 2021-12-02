@@ -6,7 +6,7 @@ import java.util.List;
 
 
 /*******************************************************************************
- * Component of a Query
+ * A single criteria Component of a Query
  *
  *******************************************************************************/
 public class QFilterCriteria

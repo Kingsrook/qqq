@@ -8,8 +8,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 
 
 /*******************************************************************************
- * Version of QTableMetaData that's meant for transmitting to a frontend.
+ * Version of QFieldMetaData that's meant for transmitting to a frontend.
  * e.g., it excludes backend-only details.
+ *
  *******************************************************************************/
 @JsonInclude(Include.NON_NULL)
 public class QFrontendFieldMetaData

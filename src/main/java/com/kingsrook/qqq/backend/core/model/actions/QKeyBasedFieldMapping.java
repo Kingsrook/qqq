@@ -6,6 +6,8 @@ import java.util.Map;
 
 
 /*******************************************************************************
+ ** Field Mapping implementation that uses string keys (e.g., from a CSV file
+ ** with a header row, or from one JSON object to the proper qqq field names)
  **
  *******************************************************************************/
 public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
@@ -15,6 +17,8 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
 
 
    /*******************************************************************************
+    ** Get the source field (e.g., name that's in the CSV header or the input json
+    ** object) corresponding to a propery qqq table fieldName.
     **
     *******************************************************************************/
    @Override
@@ -31,6 +35,7 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
 
 
    /*******************************************************************************
+    ** Tell framework what kind of keys this mapping class uses (KEY)
     **
     *******************************************************************************/
    @Override
@@ -42,6 +47,8 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
 
 
    /*******************************************************************************
+    ** Add a single mapping to this mapping object.  fieldName = qqq metaData fieldName,
+    ** key = field name in the CSV or source-json, for example.
     **
     *******************************************************************************/
    public void addMapping(String fieldName, String key)
@@ -56,6 +63,8 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
 
 
    /*******************************************************************************
+    ** Fluently add a single mapping to this mapping object.  fieldName = qqq metaData fieldName,
+    ** key = field name in the CSV or source-json, for example.
     **
     *******************************************************************************/
    public QKeyBasedFieldMapping withMapping(String fieldName, String key)

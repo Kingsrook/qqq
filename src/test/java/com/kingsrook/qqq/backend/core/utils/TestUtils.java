@@ -9,11 +9,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 
 
 /*******************************************************************************
+ ** Utility class for backend-core test classes
  **
  *******************************************************************************/
 public class TestUtils
 {
    /*******************************************************************************
+    ** Define the instance used in standard tests.
     **
     *******************************************************************************/
    public static QInstance defineInstance()
@@ -27,7 +29,7 @@ public class TestUtils
 
 
    /*******************************************************************************
-    **
+    ** Define the backend used in standard tests - using 'mock' type.
     *******************************************************************************/
    public static QBackendMetaData defineBackend()
    {
@@ -39,7 +41,7 @@ public class TestUtils
 
 
    /*******************************************************************************
-    **
+    ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
    {

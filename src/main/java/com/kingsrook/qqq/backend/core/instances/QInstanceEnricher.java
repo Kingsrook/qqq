@@ -9,6 +9,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
+ ** As part of helping a QInstance be created and/or validated, apply some default
+ ** transfomations to it, such as populating missing labels based on names.
  **
  *******************************************************************************/
 public class QInstanceEnricher

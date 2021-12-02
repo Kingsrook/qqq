@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 /*******************************************************************************
+ ** Unit test for ExceptionUtils
  **
  *******************************************************************************/
 class ExceptionUtilsTest

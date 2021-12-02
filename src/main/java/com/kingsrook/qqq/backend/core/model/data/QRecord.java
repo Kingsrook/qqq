@@ -7,7 +7,7 @@ import java.util.Map;
 
 
 /*******************************************************************************
- * Data Record within qqq
+ * Data Record within qqq.  e.g., a single row from a database.
  *
  *******************************************************************************/
 public class QRecord

@@ -10,6 +10,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
 
 
 /*******************************************************************************
+ ** Action to delete 1 or more records.
  **
  *******************************************************************************/
 public class DeleteAction

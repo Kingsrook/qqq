@@ -13,12 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 /*******************************************************************************
+ ** Unit test for DeleteAction
  **
  *******************************************************************************/
 class DeleteActionTest
 {
 
    /*******************************************************************************
+    ** At the core level, there isn't much that can be asserted, as it uses the
+    ** mock implementation - just confirming that all of the "wiring" works.
     **
     *******************************************************************************/
    @Test

@@ -12,6 +12,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 
 
 /*******************************************************************************
+ ** Mocked up version of query action.
  **
  *******************************************************************************/
 public class MockQueryAction implements QueryInterface

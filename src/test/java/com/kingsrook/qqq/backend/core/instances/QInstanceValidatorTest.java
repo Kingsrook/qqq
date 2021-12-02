@@ -12,12 +12,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
+ ** Unit test for QInstanceValidator.
  **
  *******************************************************************************/
 class QInstanceValidatorTest
 {
 
    /*******************************************************************************
+    ** Test a valid instance - should just pass
     **
     *******************************************************************************/
    @Test
@@ -29,6 +31,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test an instane with null backends - should throw.
     **
     *******************************************************************************/
    @Test
@@ -50,6 +53,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test an instane with empty map of backends - should throw.
     **
     *******************************************************************************/
    @Test
@@ -71,6 +75,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test an instane with null tables - should throw.
     **
     *******************************************************************************/
    @Test
@@ -92,6 +97,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test an instane with empty map of tables - should throw.
     **
     *******************************************************************************/
    @Test
@@ -113,6 +119,8 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test an instane where a table and a backend each have a name attribute that
+    ** doesn't match the key that those objects have in the instance's maps - should throw.
     **
     *******************************************************************************/
    @Test
@@ -136,6 +144,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test that if a table has a null backend, that it fails.
     **
     *******************************************************************************/
    @Test
@@ -157,6 +166,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test that if a table specifies a backend that doesn't exist, that it fails.
     **
     *******************************************************************************/
    @Test
@@ -178,6 +188,8 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** utility method for asserting that a specific reason string is found within
+    ** the list of reasons in the QInstanceValidationException.
     **
     *******************************************************************************/
    private void assertReason(String reason, QInstanceValidationException e)

@@ -8,6 +8,10 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 
 
 /*******************************************************************************
+ ** A Mock implementation of the QModuleInterface.
+ **
+ ** Mostly just exists to allow the backend-core repository to be able to run
+ ** tests over all the actions available through the QModuleInterface.
  **
  *******************************************************************************/
 public class MockModule implements QModuleInterface

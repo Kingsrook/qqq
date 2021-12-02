@@ -15,6 +15,8 @@ import org.json.JSONObject;
 
 
 /*******************************************************************************
+ ** Utility class for working with JSON.
+ **
  ** See: https://www.baeldung.com/jackson-vs-gson
  **
  *******************************************************************************/
@@ -25,6 +27,9 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** Serialize any object into a JSON String.
+    **
+    ** Internally using jackson - so jackson annotations apply!
     **
     *******************************************************************************/
    public static String toJson(Object object)
@@ -45,6 +50,9 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** Serialize any object into a "pretty" / formatted JSON String.
+    **
+    ** Internally using jackson - so jackson annotations apply!
     **
     *******************************************************************************/
    public static String toPrettyJson(Object object)
@@ -65,6 +73,9 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** De-serialize a json string into an object of the specified class.
+    **
+    ** Internally using jackson - so jackson annotations apply!
     **
     *******************************************************************************/
    public static <T> T toObject(String json, Class<T> targetClass) throws IOException
@@ -77,6 +88,7 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** De-serialize a json string into a JSONObject (string must start with "{")
     **
     *******************************************************************************/
    public static JSONObject toJSONObject(String json) throws JSONException
@@ -88,6 +100,7 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** De-serialize a json string into a JSONArray (string must start with "[")
     **
     *******************************************************************************/
    public static JSONArray toJSONArray(String json) throws JSONException
@@ -99,6 +112,7 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** Standard private method to build jackson ObjectMapper with standard features.
     **
     *******************************************************************************/
    private static ObjectMapper newObjectMapper()
@@ -121,6 +135,8 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** Check if a string looks like it could be a JSON object (e.g., starts with "{"
+    ** (plus optional whitespace))
     **
     *******************************************************************************/
    public static boolean looksLikeObject(String json)
@@ -131,6 +147,8 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** Check if a string looks like it could be a JSON array (e.g., starts with "["
+    ** (plus optional whitespace))
     **
     *******************************************************************************/
    public static boolean looksLikeArray(String json)

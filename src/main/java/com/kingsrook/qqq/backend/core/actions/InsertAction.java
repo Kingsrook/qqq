@@ -10,6 +10,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
 
 
 /*******************************************************************************
+ ** Action to insert one or more records.
  **
  *******************************************************************************/
 public class InsertAction

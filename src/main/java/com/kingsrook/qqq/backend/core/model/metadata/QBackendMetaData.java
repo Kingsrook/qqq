@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 
 
 /*******************************************************************************
+ ** Meta-data to provide details of a backend (e.g., RDBMS instance, S3 buckets,
+ ** NoSQL table, etc) within a qqq instance
  **
  *******************************************************************************/
 public class QBackendMetaData

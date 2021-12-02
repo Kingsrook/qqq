@@ -2,12 +2,14 @@ package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- * Base class for checked exceptions thrown in qqq.
+ * Exception thrown while doing module-dispatch
  *
  *******************************************************************************/
 public class QModuleDispatchException extends QException
 {
+
    /*******************************************************************************
+    ** Constructor of message
     **
     *******************************************************************************/
    public QModuleDispatchException(String message)
@@ -18,6 +20,7 @@ public class QModuleDispatchException extends QException
 
 
    /*******************************************************************************
+    ** Constructor of message & cause
     **
     *******************************************************************************/
    public QModuleDispatchException(String message, Throwable cause)

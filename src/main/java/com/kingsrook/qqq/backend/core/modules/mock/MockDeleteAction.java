@@ -10,6 +10,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 
 
 /*******************************************************************************
+ ** Mocked up version of delete action.
  **
  *******************************************************************************/
 public class MockDeleteAction implements DeleteInterface

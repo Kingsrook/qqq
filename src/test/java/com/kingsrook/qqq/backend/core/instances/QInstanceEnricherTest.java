@@ -11,12 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
+ ** Unit test for QInstanceEnricher
  **
  *******************************************************************************/
 class QInstanceEnricherTest
 {
 
    /*******************************************************************************
+    ** Test that a table missing a label gets the default label applied (name w/ UC-first).
     **
     *******************************************************************************/
    @Test
@@ -32,6 +34,8 @@ class QInstanceEnricherTest
 
 
    /*******************************************************************************
+    ** Test that a table missing a label and a name doesn't NPE, but just keeps
+    ** the name & label both null.
     **
     *******************************************************************************/
    @Test
@@ -50,6 +54,7 @@ class QInstanceEnricherTest
 
 
    /*******************************************************************************
+    ** Test that a field missing a label gets the default label applied (name w/ UC-first)
     **
     *******************************************************************************/
    @Test

@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 
 /*******************************************************************************
+ ** Utility class for working with Collections.
  **
  *******************************************************************************/
 public class CollectionUtils
@@ -101,6 +102,7 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** add all values from one map to another.
     **
     *******************************************************************************/
    public static <K, V> void addAllToMap(Map<K, V> addingTo, Map<K, V> addingFrom)
@@ -114,6 +116,8 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** Build a map from a list, supplying a function that extracts keys from the
+    ** objects in the list (the objects in the list become the values in the map).
     **
     *******************************************************************************/
    public static <K, V> Map<K, V> listToMap(List<V> values, Function<V, ? extends K> keyFunction)
@@ -135,6 +139,9 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** Build a map from a list, supplying a function that extracts keys from the
+    ** objects in the list, and another function that extracts the values from the
+    ** objects in the list.
     **
     *******************************************************************************/
    public static <E, K, V> Map<K, V> listToMap(List<E> elements, Function<E, ? extends K> keyFunction, Function<E, ? extends V> valueFunction)
@@ -156,6 +163,8 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** Build a listingHash from a list, supplying a function that extracts keys from the
+    ** objects in the list (the objects in the list become the values in the map).
     **
     *******************************************************************************/
    public static <K, V> ListingHash<K, V> listToListingHash(List<V> values, Function<V, ? extends K> keyFunction)
@@ -218,6 +227,9 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** Convert a list to a 2-level Map (ie., Map of Map of Key,Value), where 2
+    ** lambdas are provided for extract the two levels of keys from the objects in
+    ** the list, and the values in the map are the values in the list.
     **
     *******************************************************************************/
    public static <K1, K2, V> Map<K1, Map<K2, V>> listTo2LevelMap(List<V> values, Function<V, ? extends K1> keyFunction1, Function<V, ? extends K2> keyFunction2)
@@ -279,6 +291,8 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** build comma-delimited string of question marks from a collection (e.g., for
+    ** an sql string)
     **
     *******************************************************************************/
    public static String getQuestionMarks(Collection<?> c)

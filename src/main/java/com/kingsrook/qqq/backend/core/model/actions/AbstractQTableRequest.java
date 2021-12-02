@@ -7,6 +7,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 
 
 /*******************************************************************************
+ ** Base class for any qqq action that works against a table.
  **
  *******************************************************************************/
 public abstract class AbstractQTableRequest extends AbstractQRequest

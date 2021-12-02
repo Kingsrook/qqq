@@ -5,7 +5,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMeta
 
 
 /*******************************************************************************
- * Result for a metaData action
+ * Result for a table-metaData action
  *
  *******************************************************************************/
 public class TableMetaDataResult extends AbstractQResult

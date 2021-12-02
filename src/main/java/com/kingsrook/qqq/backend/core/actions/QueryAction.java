@@ -10,6 +10,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
 
 
 /*******************************************************************************
+ ** Action to run a query against a table.
  **
  *******************************************************************************/
 public class QueryAction

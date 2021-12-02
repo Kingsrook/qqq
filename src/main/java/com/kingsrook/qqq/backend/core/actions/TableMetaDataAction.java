@@ -10,6 +10,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMeta
 
 
 /*******************************************************************************
+ ** Action to fetch meta-data for a table.
  **
  *******************************************************************************/
 public class TableMetaDataAction

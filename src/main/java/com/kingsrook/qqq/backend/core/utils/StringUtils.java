@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 
 /*******************************************************************************
+ ** Utility methods for working with Strings
  **
  *******************************************************************************/
 public class StringUtils
@@ -111,8 +112,8 @@ public class StringUtils
 
 
    /*******************************************************************************
-    * truncate a string (null safely) at a max length.
-    *
+    ** truncate a string (null- and index-bounds- safely) at a max length.
+    **
     *******************************************************************************/
    public static String safeTruncate(String input, int maxLength)
    {
@@ -132,7 +133,10 @@ public class StringUtils
 
 
    /*******************************************************************************
-    *
+    ** null- and index-bounds- safely truncate a string to a max length, appending
+    ** a suffix (like "...") if it did get truncated.  Note that the returned string,
+    ** with the suffix added, will be at most maxLength.
+    **
     *******************************************************************************/
    public static String safeTruncate(String input, int maxLength, String suffix)
    {
@@ -289,6 +293,8 @@ public class StringUtils
 
 
    /*******************************************************************************
+    ** Switch between strings based on if the size of the parameter collection.  If
+    ** it is 1 (the singular) or not-1 (0 or 2+, the plural). Get back "" or "s"
     **
     *******************************************************************************/
    public static String plural(Collection<?> collection)
@@ -299,6 +305,8 @@ public class StringUtils
 
 
    /*******************************************************************************
+    ** Switch between strings based on if the 'size' parameter is 1 (the singular)
+    ** or not-1 (0 or 2+, the plural).  Get back "" or "s"
     **
     *******************************************************************************/
    public static String plural(Integer size)
@@ -309,6 +317,9 @@ public class StringUtils
 
 
    /*******************************************************************************
+    ** Switch between strings based on if the size of the parameter collection.  If
+    ** it is 1 (the singular) or not-1 (0 or 2+, the plural).  Specify/customize the
+    ** values that you get back (e.g., "y", "ies")
     **
     *******************************************************************************/
    public static String plural(Collection<?> collection, String ifOne, String ifNotOne)
@@ -319,6 +330,9 @@ public class StringUtils
 
 
    /*******************************************************************************
+    ** Switch between strings based on if the 'size' parameter is 1 (the singular)
+    ** or not-1 (0 or 2+, the plural).  Specify/customize the values that you get back
+    ** (e.g., "y", "ies")
     **
     *******************************************************************************/
    public static String plural(Integer size, String ifOne, String ifNotOne)

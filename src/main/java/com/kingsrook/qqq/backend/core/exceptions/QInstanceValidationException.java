@@ -7,6 +7,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
+ ** Exception thrown during qqq-starup, if a QInstance is found to have validation
+ ** issues.  Contains a list of reasons (to avoid spoon-feeding as much as possible).
  **
  *******************************************************************************/
 public class QInstanceValidationException extends QException
@@ -16,6 +18,7 @@ public class QInstanceValidationException extends QException
 
 
    /*******************************************************************************
+    ** Constructor of message - does not populate reasons!
     **
     *******************************************************************************/
    public QInstanceValidationException(String message)
@@ -26,6 +29,7 @@ public class QInstanceValidationException extends QException
 
 
    /*******************************************************************************
+    ** Constructor of a list of reasons.  They feed into the core exception message.
     **
     *******************************************************************************/
    public QInstanceValidationException(List<String> reasons)
@@ -44,6 +48,7 @@ public class QInstanceValidationException extends QException
 
 
    /*******************************************************************************
+    ** Constructor of an array/varargs of reasons.  They feed into the core exception message.
     **
     *******************************************************************************/
    public QInstanceValidationException(String... reasons)
@@ -62,6 +67,7 @@ public class QInstanceValidationException extends QException
 
 
    /*******************************************************************************
+    ** Constructor of message & cause - does not populate reasons!
     **
     *******************************************************************************/
    public QInstanceValidationException(String message, Throwable cause)

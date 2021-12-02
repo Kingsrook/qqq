@@ -5,6 +5,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
+ ** Request data for the Query action
  **
  *******************************************************************************/
 public class QueryRequest extends AbstractQTableRequest

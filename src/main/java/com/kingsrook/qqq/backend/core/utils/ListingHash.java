@@ -82,6 +82,9 @@ public class ListingHash<K, V> implements Map<K, List<V>>, Serializable
 
 
    /*******************************************************************************
+    ** Add all object from another ListingHash ('that') to this one.  Note, does it
+    ** at the level of the whole key=list (e.g., if a key was already in this, it'll
+    ** be replaced with the list from 'that'.
     **
     *******************************************************************************/
    public void addAll(ListingHash<K, V> that)

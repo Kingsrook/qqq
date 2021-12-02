@@ -6,7 +6,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 
 
 /*******************************************************************************
- * Result for a query action
+ * Result for an insert action
  *
  *******************************************************************************/
 public class InsertResult extends AbstractQResult

@@ -2,6 +2,7 @@ package com.kingsrook.qqq.backend.core.model.actions;
 
 
 /*******************************************************************************
+ ** Bean representing an element of a query order-by clause.
  **
  *******************************************************************************/
 public class QFilterOrderBy

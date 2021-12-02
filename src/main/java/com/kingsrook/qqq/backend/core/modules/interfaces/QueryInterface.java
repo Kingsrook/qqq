@@ -7,6 +7,7 @@ import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
 
 
 /*******************************************************************************
+ ** Interface for the Query action.
  **
  *******************************************************************************/
 public interface QueryInterface

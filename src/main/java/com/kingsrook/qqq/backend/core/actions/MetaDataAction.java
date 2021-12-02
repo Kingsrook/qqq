@@ -11,6 +11,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMeta
 
 
 /*******************************************************************************
+ ** Action to fetch top-level meta-data in a qqq instance.
  **
  *******************************************************************************/
 public class MetaDataAction

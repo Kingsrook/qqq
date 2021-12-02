@@ -18,13 +18,17 @@ import org.apache.commons.csv.CSVRecord;
 
 
 /*******************************************************************************
+ ** Adapter class to convert a CSV string into a list of QRecords.
  **
  *******************************************************************************/
 public class CsvToQRecordAdapter
 {
 
    /*******************************************************************************
-    ** todo - meta-data validation, mapping, type handling
+    ** convert a CSV String into a List of QRecords, for a given table, optionally
+    ** using a given mapping.
+    **
+    ** todo - meta-data validation, type handling
     *******************************************************************************/
    public List<QRecord> buildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping)
    {

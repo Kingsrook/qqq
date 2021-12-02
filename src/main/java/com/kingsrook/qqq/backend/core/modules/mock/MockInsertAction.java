@@ -9,6 +9,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 
 
 /*******************************************************************************
+ ** Mocked up version of insert action.
  **
  *******************************************************************************/
 public class MockInsertAction implements InsertInterface

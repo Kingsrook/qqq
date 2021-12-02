@@ -7,6 +7,7 @@ import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
 
 
 /*******************************************************************************
+ ** Interface for the Insert action.
  **
  *******************************************************************************/
 public interface InsertInterface

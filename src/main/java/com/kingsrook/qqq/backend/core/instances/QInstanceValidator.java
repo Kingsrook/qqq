@@ -11,6 +11,13 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
+ ** Class that knows how to take a look at the data in a QInstance, and report
+ ** if it is all valid - e.g., non-null things are set; references line-up (e.g.,
+ ** a table's backend must be a defined backend).
+ **
+ ** Prior to doing validation, the the QInstanceEnricher is ran over the QInstance,
+ ** e.g., to fill in things that can be defaulted or assumed.  TODO let the instance
+ ** customize or opt-out of Enrichment.
  **
  *******************************************************************************/
 public class QInstanceValidator
@@ -34,6 +41,7 @@ public class QInstanceValidator
          /////////////////////////////////////////////////////////////////////////////////////////////////
          // before validation, enrich the object (e.g., to fill in values that the user doesn't have to //
          /////////////////////////////////////////////////////////////////////////////////////////////////
+         // TODO - possible point of customization (use a different enricher, or none, or pass it options).
          new QInstanceEnricher().enrich(qInstance);
       }
       catch(Exception e)

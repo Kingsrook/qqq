@@ -11,12 +11,17 @@ import org.json.JSONObject;
 
 
 /*******************************************************************************
+ ** Adapter class to convert a JSON string into a QFieldMapping object
  **
  *******************************************************************************/
 public class JsonToQFieldMappingAdapter
 {
 
    /*******************************************************************************
+    ** adapts a json string into an AbstractQFieldMapping.
+    **
+    ** The mapping will be a QKeyBasedFieldMapping if the keys in the json object are
+    ** Strings.  It will be a QIndexBasedFieldMapping if the keys are integers.
     **
     *******************************************************************************/
    public AbstractQFieldMapping<?> buildMappingFromJson(String json)

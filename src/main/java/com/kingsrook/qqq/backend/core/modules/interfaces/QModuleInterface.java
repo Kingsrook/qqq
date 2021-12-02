@@ -2,6 +2,10 @@ package com.kingsrook.qqq.backend.core.modules.interfaces;
 
 
 /*******************************************************************************
+ ** Interface that a QModule must implement.
+ **
+ ** Note, methods all have a default version, which throws a 'not implement'
+ ** exception.
  **
  *******************************************************************************/
 public interface QModuleInterface

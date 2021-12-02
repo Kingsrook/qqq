@@ -2,6 +2,7 @@ package com.kingsrook.qqq.backend.core.model.actions;
 
 
 /*******************************************************************************
+ ** Possible query criteria field operators
  **
  *******************************************************************************/
 public enum QCriteriaOperator

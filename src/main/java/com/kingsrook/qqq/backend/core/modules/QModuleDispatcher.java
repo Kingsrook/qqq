@@ -9,6 +9,10 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
 
 
 /*******************************************************************************
+ ** This class is responsible for loading a backend module, by its name, and 
+ ** returning an instance.
+ **
+ ** TODO - make this mapping runtime-bound, not pre-compiled in.
  **
  *******************************************************************************/
 public class QModuleDispatcher
