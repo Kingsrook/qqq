@@ -41,6 +41,8 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 
 
 /*******************************************************************************
+ ** QQQ Javalin implementation.  Given a QInstance, defines all routes needed
+ ** to respond to http requests and route down into the qqq backend.
  **
  *******************************************************************************/
 public class QJavalinImplementation
@@ -168,7 +170,7 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataUpdate(Context context)
    {
-      context.result("{\"updateResult\":{}}");
+      context.result("{\"todo\":\"not-done\",\"updateResult\":{}}");
    }
 
 
@@ -217,7 +219,7 @@ public class QJavalinImplementation
     ********************************************************************************/
    private static void dataGet(Context context)
    {
-      context.result("{\"getResult\":{}}");
+      context.result("{\"todo\":\"not-done\",\"getResult\":{}}");
    }
 
 

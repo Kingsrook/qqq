@@ -22,7 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
- ** based on https://javalin.io/tutorials/testing
+ ** Unit terst for the QJavalinImplementation
+ **
+ ** based on https://javalin.io/tutorials/testing - starts a javalin instance
+ ** and actually makes http requests into it.
  **
  *******************************************************************************/
 class QJavalinImplementationTest
@@ -33,6 +36,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
    @BeforeAll
@@ -45,6 +49,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** Fully rebuild the test-database before each test runs, for completely known state.
     **
     *******************************************************************************/
    @BeforeEach
@@ -56,6 +61,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test the top-level meta-data endpoint
     **
     *******************************************************************************/
    @Test
@@ -78,6 +84,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test the table-level meta-data endpoint
     **
     *******************************************************************************/
    @Test
@@ -102,6 +109,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test the table-level meta-data endpoint for a non-real name
     **
     *******************************************************************************/
    @Test
@@ -119,6 +127,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test a table query
     **
     *******************************************************************************/
    @Test
@@ -142,6 +151,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test a table query using an actual filter.
     **
     *******************************************************************************/
    @Test
@@ -163,6 +173,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test an insert
     **
     *******************************************************************************/
    @Test
@@ -194,6 +205,7 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test a delete
     **
     *******************************************************************************/
    @Test
