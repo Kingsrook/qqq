@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -40,7 +41,7 @@ public class JsonToQRecordAdapter
          if(JsonUtils.looksLikeObject(json))
          {
             JSONObject jsonObject = JsonUtils.toJSONObject(json);
-            rs.add(buildRecordFromJsonObject(jsonObject));
+            rs.add(buildRecordFromJsonObject(jsonObject, table, mapping));
          }
          else if(JsonUtils.looksLikeArray(json))
          {
@@ -49,7 +50,7 @@ public class JsonToQRecordAdapter
             {
                if(object instanceof JSONObject jsonObject)
                {
-                  rs.add(buildRecordFromJsonObject(jsonObject));
+                  rs.add(buildRecordFromJsonObject(jsonObject, table, mapping));
                }
                else
                {
@@ -75,15 +76,20 @@ public class JsonToQRecordAdapter
    /*******************************************************************************
     ** private method to build one QRecord from one jsonObject
     **
-    ** todo - meta-data validation, mapping, type handling
+    ** todo - meta-data validation, type handling
     *******************************************************************************/
-   private QRecord buildRecordFromJsonObject(JSONObject jsonObject)
+   private QRecord buildRecordFromJsonObject(JSONObject jsonObject, QTableMetaData table, AbstractQFieldMapping<?> mapping)
    {
       QRecord record = new QRecord();
 
-      for(String key : jsonObject.keySet())
+      for(QFieldMetaData field : table.getFields().values())
       {
-         record.setValue(key, (Serializable) jsonObject.get(key));
+         String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
+         // todo - so if the mapping didn't say how to map this field, does that mean we should use the default name for the field?
+         if(jsonObject.has(fieldSource))
+         {
+            record.setValue(field.getName(), (Serializable) jsonObject.get(fieldSource));
+         }
       }
 
       return (record);

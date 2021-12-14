@@ -104,14 +104,14 @@ class JsonToQRecordAdapterTest
       JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
       List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson("""
          {
-            "field1":"value1",
-            "field2":"value2"
+            "firstName":"Joe",
+            "lastName":"Dimagio"
          }
          """, TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertEquals(1, qRecords.size());
-      assertEquals("value1", qRecords.get(0).getValue("field1"));
-      assertEquals("value2", qRecords.get(0).getValue("field2"));
+      assertEquals("Joe", qRecords.get(0).getValue("firstName"));
+      assertEquals("Dimagio", qRecords.get(0).getValue("lastName"));
    }
 
 
@@ -125,16 +125,16 @@ class JsonToQRecordAdapterTest
       JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
       List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson("""
          [
-            { "field1":"value1", "field2":"value2" },
-            { "fieldA":"valueA", "fieldB":"valueB" }
+            { "firstName":"Tyler", "lastName":"Samples" },
+            { "firstName":"Tim", "lastName":"Chamberlain" }
          ]
          """, TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertEquals(2, qRecords.size());
-      assertEquals("value1", qRecords.get(0).getValue("field1"));
-      assertEquals("value2", qRecords.get(0).getValue("field2"));
-      assertEquals("valueA", qRecords.get(1).getValue("fieldA"));
-      assertEquals("valueB", qRecords.get(1).getValue("fieldB"));
+      assertEquals("Tyler", qRecords.get(0).getValue("firstName"));
+      assertEquals("Samples", qRecords.get(0).getValue("lastName"));
+      assertEquals("Tim", qRecords.get(1).getValue("firstName"));
+      assertEquals("Chamberlain", qRecords.get(1).getValue("lastName"));
    }
 
 

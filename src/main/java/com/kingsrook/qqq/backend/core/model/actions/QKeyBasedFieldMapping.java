@@ -18,7 +18,7 @@ public class QKeyBasedFieldMapping extends AbstractQFieldMapping<String>
 
    /*******************************************************************************
     ** Get the source field (e.g., name that's in the CSV header or the input json
-    ** object) corresponding to a propery qqq table fieldName.
+    ** object) corresponding to a proper qqq table fieldName.
     **
     *******************************************************************************/
    @Override
