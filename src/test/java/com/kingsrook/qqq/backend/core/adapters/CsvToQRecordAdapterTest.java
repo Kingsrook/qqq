@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
+ */
+
 package com.kingsrook.qqq.backend.core.adapters;
 
 
@@ -39,17 +43,6 @@ class CsvToQRecordAdapterTest
    {
       testExpectedToThrow("");
    }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   /* todo?
-   @Test
-   public void test_buildRecordsFromCsv_inputDoesntLookLikeCsv()
-   {
-      testExpectedToThrow("CSV");
-   }
-   */
 
 
 
@@ -191,6 +184,7 @@ class CsvToQRecordAdapterTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -218,6 +212,5 @@ class CsvToQRecordAdapterTest
       assertEquals("Jane", qRecord2.getValue("firstName"));
       assertEquals("1981-01-01", qRecord2.getValue("birthDate"));
    }
-
 
 }
