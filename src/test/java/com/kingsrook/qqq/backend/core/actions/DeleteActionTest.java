@@ -7,8 +7,8 @@ package com.kingsrook.qqq.backend.core.actions;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;

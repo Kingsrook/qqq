@@ -6,8 +6,8 @@ package com.kingsrook.qqq.backend.core.modules.mock;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;

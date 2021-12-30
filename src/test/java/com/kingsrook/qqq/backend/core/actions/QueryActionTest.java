@@ -6,8 +6,8 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

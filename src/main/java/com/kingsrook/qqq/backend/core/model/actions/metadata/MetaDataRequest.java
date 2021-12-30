@@ -2,29 +2,25 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions;
+package com.kingsrook.qqq.backend.core.model.actions.metadata;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- * Result for a delete action
- *
+ ** Request for the meta-data action
+ **
  *******************************************************************************/
-public class DeleteResult extends AbstractQResult
+public class MetaDataRequest extends AbstractQRequest
 {
-   List<QRecordWithStatus> records;
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecordWithStatus> getRecords()
+   public MetaDataRequest()
    {
-      return records;
    }
 
 
@@ -32,8 +28,9 @@ public class DeleteResult extends AbstractQResult
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void setRecords(List<QRecordWithStatus> records)
+   public MetaDataRequest(QInstance instance)
    {
-      this.records = records;
+      super(instance);
    }
+
 }

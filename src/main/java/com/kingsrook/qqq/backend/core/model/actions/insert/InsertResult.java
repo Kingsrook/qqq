@@ -2,40 +2,39 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions;
+package com.kingsrook.qqq.backend.core.model.actions.insert;
 
 
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
+import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 
 
 /*******************************************************************************
- * Result for a metaData action
+ * Result for an insert action
  *
  *******************************************************************************/
-public class MetaDataResult extends AbstractQResult
+public class InsertResult extends AbstractQResult
 {
-   Map<String, QFrontendTableMetaData> tables;
+   List<QRecordWithStatus> records;
 
 
 
    /*******************************************************************************
-    ** Getter for tables
     **
     *******************************************************************************/
-   public Map<String, QFrontendTableMetaData> getTables()
+   public List<QRecordWithStatus> getRecords()
    {
-      return tables;
+      return records;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tables
     **
     *******************************************************************************/
-   public void setTables(Map<String, QFrontendTableMetaData> tables)
+   public void setRecords(List<QRecordWithStatus> records)
    {
-      this.tables = tables;
+      this.records = records;
    }
 }

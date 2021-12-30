@@ -2,28 +2,27 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions;
+package com.kingsrook.qqq.backend.core.model.actions.metadata.table;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Request data handler for the Insert action
+ ** Request for meta-data for a table.
  **
  *******************************************************************************/
-public class InsertRequest extends AbstractQTableRequest
+public class TableMetaDataRequest extends AbstractQRequest
 {
-   private List<QRecord> records;
+   private String tableName;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertRequest()
+   public TableMetaDataRequest()
    {
    }
 
@@ -32,7 +31,7 @@ public class InsertRequest extends AbstractQTableRequest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertRequest(QInstance instance)
+   public TableMetaDataRequest(QInstance instance)
    {
       super(instance);
    }
@@ -40,22 +39,22 @@ public class InsertRequest extends AbstractQTableRequest
 
 
    /*******************************************************************************
-    ** Getter for records
+    ** Getter for tableName
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public String getTableName()
    {
-      return records;
+      return tableName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for records
+    ** Setter for tableName
     **
     *******************************************************************************/
-   public void setRecords(List<QRecord> records)
+   public void setTableName(String tableName)
    {
-      this.records = records;
+      this.tableName = tableName;
    }
 }

@@ -2,29 +2,64 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions;
+package com.kingsrook.qqq.backend.core.model.actions.query;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /*******************************************************************************
- ** Request data for the Query action
- **
+ * Full "filter" for a query - a list of criteria and order-bys
+ *
  *******************************************************************************/
-public class QueryRequest extends AbstractQTableRequest
+public class QQueryFilter
 {
-   private QQueryFilter filter;
-   private Integer skip;
-   private Integer limit;
+   private List<QFilterCriteria> criteria = new ArrayList<>();
+   private List<QFilterOrderBy> orderBys = new ArrayList<>();
 
 
 
    /*******************************************************************************
+    ** Getter for criteria
     **
     *******************************************************************************/
-   public QueryRequest()
+   public List<QFilterCriteria> getCriteria()
    {
+      return criteria;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for criteria
+    **
+    *******************************************************************************/
+   public void setCriteria(List<QFilterCriteria> criteria)
+   {
+      this.criteria = criteria;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for order
+    **
+    *******************************************************************************/
+   public List<QFilterOrderBy> getOrderBys()
+   {
+      return orderBys;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for order
+    **
+    *******************************************************************************/
+   public void setOrderBys(List<QFilterOrderBy> orderBys)
+   {
+      this.orderBys = orderBys;
    }
 
 
@@ -32,74 +67,49 @@ public class QueryRequest extends AbstractQTableRequest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryRequest(QInstance instance)
+   public void addCriteria(QFilterCriteria qFilterCriteria)
    {
-      super(instance);
+      if(criteria == null)
+      {
+         criteria = new ArrayList<>();
+      }
+      criteria.add(qFilterCriteria);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for filter
     **
     *******************************************************************************/
-   public QQueryFilter getFilter()
+   public QQueryFilter withCriteria(QFilterCriteria qFilterCriteria)
    {
-      return filter;
+      addCriteria(qFilterCriteria);
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filter
     **
     *******************************************************************************/
-   public void setFilter(QQueryFilter filter)
+   public void addOrderBy(QFilterOrderBy qFilterOrderBy)
    {
-      this.filter = filter;
+      if(orderBys == null)
+      {
+         orderBys = new ArrayList<>();
+      }
+      orderBys.add(qFilterOrderBy);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for skip
     **
     *******************************************************************************/
-   public Integer getSkip()
+   public QQueryFilter withOrderBy(QFilterOrderBy qFilterOrderBy)
    {
-      return skip;
+      addOrderBy(qFilterOrderBy);
+      return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Setter for skip
-    **
-    *******************************************************************************/
-   public void setSkip(Integer skip)
-   {
-      this.skip = skip;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for limit
-    **
-    *******************************************************************************/
-   public Integer getLimit()
-   {
-      return limit;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for limit
-    **
-    *******************************************************************************/
-   public void setLimit(Integer limit)
-   {
-      this.limit = limit;
-   }
 }

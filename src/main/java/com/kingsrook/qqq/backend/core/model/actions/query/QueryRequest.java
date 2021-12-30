@@ -2,121 +2,105 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions;
+package com.kingsrook.qqq.backend.core.model.actions.query;
 
 
-import java.io.Serializable;
-import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- * A single criteria Component of a Query
- *
+ ** Request data for the Query action
+ **
  *******************************************************************************/
-public class QFilterCriteria
+public class QueryRequest extends AbstractQTableRequest
 {
-   private String fieldName;
-   private QCriteriaOperator operator;
-   private List<Serializable> values;
+   private QQueryFilter filter;
+   private Integer skip;
+   private Integer limit;
 
 
 
    /*******************************************************************************
-    ** Getter for fieldName
     **
     *******************************************************************************/
-   public String getFieldName()
+   public QueryRequest()
    {
-      return fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
     **
     *******************************************************************************/
-   public void setFieldName(String fieldName)
+   public QueryRequest(QInstance instance)
    {
-      this.fieldName = fieldName;
+      super(instance);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
+    ** Getter for filter
     **
     *******************************************************************************/
-   public QFilterCriteria withFieldName(String fieldName)
+   public QQueryFilter getFilter()
    {
-      this.fieldName = fieldName;
-      return this;
+      return filter;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for operator
+    ** Setter for filter
     **
     *******************************************************************************/
-   public QCriteriaOperator getOperator()
+   public void setFilter(QQueryFilter filter)
    {
-      return operator;
+      this.filter = filter;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for operator
+    ** Getter for skip
     **
     *******************************************************************************/
-   public void setOperator(QCriteriaOperator operator)
+   public Integer getSkip()
    {
-      this.operator = operator;
+      return skip;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for operator
+    ** Setter for skip
     **
     *******************************************************************************/
-   public QFilterCriteria withOperator(QCriteriaOperator operator)
+   public void setSkip(Integer skip)
    {
-      this.operator = operator;
-      return this;
+      this.skip = skip;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for values
+    ** Getter for limit
     **
     *******************************************************************************/
-   public List<Serializable> getValues()
+   public Integer getLimit()
    {
-      return values;
+      return limit;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
+    ** Setter for limit
     **
     *******************************************************************************/
-   public void setValues(List<Serializable> values)
+   public void setLimit(Integer limit)
    {
-      this.values = values;
-   }
-
-
-   /*******************************************************************************
-    ** Setter for values
-    **
-    *******************************************************************************/
-   public QFilterCriteria withValues(List<Serializable> values)
-   {
-      this.values = values;
-      return this;
+      this.limit = limit;
    }
 }

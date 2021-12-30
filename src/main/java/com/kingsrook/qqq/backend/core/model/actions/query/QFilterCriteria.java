@@ -2,114 +2,121 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions;
+package com.kingsrook.qqq.backend.core.model.actions.query;
 
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
 
 
 /*******************************************************************************
- * Full "filter" for a query - a list of criteria and order-bys
+ * A single criteria Component of a Query
  *
  *******************************************************************************/
-public class QQueryFilter
+public class QFilterCriteria
 {
-   private List<QFilterCriteria> criteria = new ArrayList<>();
-   private List<QFilterOrderBy> orderBys = new ArrayList<>();
+   private String fieldName;
+   private QCriteriaOperator operator;
+   private List<Serializable> values;
 
 
 
    /*******************************************************************************
-    ** Getter for criteria
+    ** Getter for fieldName
     **
     *******************************************************************************/
-   public List<QFilterCriteria> getCriteria()
+   public String getFieldName()
    {
-      return criteria;
+      return fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for criteria
+    ** Setter for fieldName
     **
     *******************************************************************************/
-   public void setCriteria(List<QFilterCriteria> criteria)
+   public void setFieldName(String fieldName)
    {
-      this.criteria = criteria;
+      this.fieldName = fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for order
+    ** Setter for fieldName
     **
     *******************************************************************************/
-   public List<QFilterOrderBy> getOrderBys()
+   public QFilterCriteria withFieldName(String fieldName)
    {
-      return orderBys;
+      this.fieldName = fieldName;
+      return this;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for order
+    ** Getter for operator
     **
     *******************************************************************************/
-   public void setOrderBys(List<QFilterOrderBy> orderBys)
+   public QCriteriaOperator getOperator()
    {
-      this.orderBys = orderBys;
+      return operator;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for operator
     **
     *******************************************************************************/
-   public void addCriteria(QFilterCriteria qFilterCriteria)
+   public void setOperator(QCriteriaOperator operator)
    {
-      if(criteria == null)
-      {
-         criteria = new ArrayList<>();
-      }
-      criteria.add(qFilterCriteria);
+      this.operator = operator;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for operator
     **
     *******************************************************************************/
-   public QQueryFilter withCriteria(QFilterCriteria qFilterCriteria)
+   public QFilterCriteria withOperator(QCriteriaOperator operator)
    {
-      addCriteria(qFilterCriteria);
-      return (this);
+      this.operator = operator;
+      return this;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for values
     **
     *******************************************************************************/
-   public void addOrderBy(QFilterOrderBy qFilterOrderBy)
+   public List<Serializable> getValues()
    {
-      if(orderBys == null)
-      {
-         orderBys = new ArrayList<>();
-      }
-      orderBys.add(qFilterOrderBy);
+      return values;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for values
     **
     *******************************************************************************/
-   public QQueryFilter withOrderBy(QFilterOrderBy qFilterOrderBy)
+   public void setValues(List<Serializable> values)
    {
-      addOrderBy(qFilterOrderBy);
-      return (this);
+      this.values = values;
    }
 
+
+   /*******************************************************************************
+    ** Setter for values
+    **
+    *******************************************************************************/
+   public QFilterCriteria withValues(List<Serializable> values)
+   {
+      this.values = values;
+      return this;
+   }
 }

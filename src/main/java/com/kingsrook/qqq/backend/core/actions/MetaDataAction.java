@@ -8,8 +8,8 @@ package com.kingsrook.qqq.backend.core.actions;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 

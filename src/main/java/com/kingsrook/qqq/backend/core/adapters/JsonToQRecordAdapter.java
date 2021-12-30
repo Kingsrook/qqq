@@ -8,7 +8,7 @@ package com.kingsrook.qqq.backend.core.adapters;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;

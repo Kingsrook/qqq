@@ -6,8 +6,8 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.QIndexBasedFieldMapping;
-import com.kingsrook.qqq.backend.core.model.actions.QKeyBasedFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;

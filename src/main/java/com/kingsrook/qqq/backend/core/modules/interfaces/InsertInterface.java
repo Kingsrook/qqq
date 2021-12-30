@@ -6,8 +6,8 @@ package com.kingsrook.qqq.backend.core.modules.interfaces;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 
 
 /*******************************************************************************

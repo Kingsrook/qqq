@@ -5,9 +5,9 @@
 package com.kingsrook.qqq.backend.core.adapters;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
-import com.kingsrook.qqq.backend.core.model.actions.QIndexBasedFieldMapping;
-import com.kingsrook.qqq.backend.core.model.actions.QKeyBasedFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

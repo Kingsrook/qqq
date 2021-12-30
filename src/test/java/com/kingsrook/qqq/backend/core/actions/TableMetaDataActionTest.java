@@ -7,8 +7,8 @@ package com.kingsrook.qqq.backend.core.actions;
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;

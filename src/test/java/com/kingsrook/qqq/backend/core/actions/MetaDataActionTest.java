@@ -6,8 +6,8 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
