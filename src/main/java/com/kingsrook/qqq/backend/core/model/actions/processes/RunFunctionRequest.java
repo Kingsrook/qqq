@@ -2,259 +2,282 @@
  * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
- ** Container for all meta-data in a running instance of a QQQ application.
+ ** Request data container for the RunFunction action
  **
  *******************************************************************************/
-public class QInstance
+public class RunFunctionRequest extends AbstractQRequest
 {
-   ///////////////////////////////////////////////////////////////////////////////
-   // Do not let the backend data be serialized - e.g., sent to a frontend user //
-   ///////////////////////////////////////////////////////////////////////////////
-   @JsonIgnore
-   private Map<String, QBackendMetaData> backends = new HashMap<>();
-
-   private Map<String, QTableMetaData> tables = new HashMap<>();
-   private Map<String, QProcessMetaData> processes = new HashMap<>();
-
-   // todo - lock down the object (no more changes allowed) after it's been validated?
-   @JsonIgnore
-   private boolean hasBeenValidated = false;
+   private String processName;
+   private String functionName;
+   private List<QRecord> records;
+   private Map<String, Serializable> values;
+   private QProcessCallback callback;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBackendMetaData getBackendForTable(String tableName)
+   public RunFunctionRequest()
    {
-      QTableMetaData table = tables.get(tableName);
-      if(table == null)
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public RunFunctionRequest(QInstance instance)
+   {
+      super(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFunctionMetaData getFunctionMetaData()
+   {
+      return (instance.getFunction(getProcessName(), getFunctionName()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processName
+    **
+    *******************************************************************************/
+   public String getProcessName()
+   {
+      return processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processName
+    **
+    *******************************************************************************/
+   public void setProcessName(String processName)
+   {
+      this.processName = processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processName
+    **
+    *******************************************************************************/
+   public RunFunctionRequest withProcessName(String processName)
+   {
+      this.processName = processName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for functionName
+    **
+    *******************************************************************************/
+   public String getFunctionName()
+   {
+      return functionName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for functionName
+    **
+    *******************************************************************************/
+   public void setFunctionName(String functionName)
+   {
+      this.functionName = functionName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for functionName
+    **
+    *******************************************************************************/
+   public RunFunctionRequest withFunctionName(String functionName)
+   {
+      this.functionName = functionName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for records
+    **
+    *******************************************************************************/
+   public List<QRecord> getRecords()
+   {
+      return records;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for records
+    **
+    *******************************************************************************/
+   public void setRecords(List<QRecord> records)
+   {
+      this.records = records;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for records
+    **
+    *******************************************************************************/
+   public RunFunctionRequest withRecords(List<QRecord> records)
+   {
+      this.records = records;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for values
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getValues()
+   {
+      return values;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for values
+    **
+    *******************************************************************************/
+   public void setValues(Map<String, Serializable> values)
+   {
+      this.values = values;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for values
+    **
+    *******************************************************************************/
+   public RunFunctionRequest withValues(Map<String, Serializable> values)
+   {
+      this.values = values;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for values
+    **
+    *******************************************************************************/
+   public RunFunctionRequest addValue(String fieldName, Serializable value)
+   {
+      if(this.values == null)
       {
-         throw (new IllegalArgumentException("No table with name [" + tableName + "] found in this instance."));
+         this.values = new HashMap<>();
       }
-
-      QBackendMetaData backend = backends.get(table.getBackendName());
-
-      //////////////////////////////////////////////////////////////////////////////////////////////
-      // validation should already let us know that this is valid, so no need to check/throw here //
-      //////////////////////////////////////////////////////////////////////////////////////////////
-
-      return (backend);
-   }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public List<QProcessMetaData> getProcessesForTable(String tableName)
-   {
-      List<QProcessMetaData> rs = new ArrayList<>();
-      for(QProcessMetaData process : processes.values())
-      {
-         if (tableName.equals(process.getTableName()))
-         {
-            rs.add(process);
-         }
-      }
-      return (rs);
-   }
-
-
-   /*******************************************************************************
-    ** Setter for hasBeenValidated
-    **
-    *******************************************************************************/
-   public void setHasBeenValidated(QInstanceValidationKey key)
-   {
-      this.hasBeenValidated = true;
+      this.values.put(fieldName, value);
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for callback
     **
     *******************************************************************************/
-   public void addBackend(QBackendMetaData backend)
+   public QProcessCallback getCallback()
    {
-      this.backends.put(backend.getName(), backend);
+      return callback;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for callback
     **
     *******************************************************************************/
-   public void addBackend(String name, QBackendMetaData backend)
+   public void setCallback(QProcessCallback callback)
    {
-      this.backends.put(name, backend);
+      this.callback = callback;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for callback
     **
     *******************************************************************************/
-   public QBackendMetaData getBackend(String name)
+   public RunFunctionRequest withCallback(QProcessCallback callback)
    {
-      return (this.backends.get(name));
+      this.callback = callback;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for a single field's value
     **
     *******************************************************************************/
-   public void addTable(QTableMetaData table)
+   public Serializable getValue(String fieldName)
    {
-      this.tables.put(table.getName(), table);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addProcess(QProcessMetaData process)
-   {
-      this.processes.put(process.getName(), process);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addTable(String name, QTableMetaData table)
-   {
-      this.tables.put(name, table);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QTableMetaData getTable(String name)
-   {
-      return (this.tables.get(name));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFunctionMetaData getFunction(String processName, String functionName)
-   {
-      QProcessMetaData qProcessMetaData = this.processes.get(processName);
-      if(qProcessMetaData == null)
+      if(values == null)
       {
          return (null);
       }
-
-      return (qProcessMetaData.getFunction(functionName));
+      return (values.get(fieldName));
    }
 
 
 
    /*******************************************************************************
+    ** Getter for a single field's value
     **
     *******************************************************************************/
-   public QProcessMetaData getProcess(String name)
+   public String getValueString(String fieldName)
    {
-      return (this.processes.get(name));
+      return ((String) getValue(fieldName));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for backends
+    ** Getter for a single field's value
     **
     *******************************************************************************/
-   public Map<String, QBackendMetaData> getBackends()
+   public Integer getValueInteger(String fieldName)
    {
-      return backends;
+      return ((Integer) getValue(fieldName));
    }
-
-
-
-   /*******************************************************************************
-    ** Setter for backends
-    **
-    *******************************************************************************/
-   public void setBackends(Map<String, QBackendMetaData> backends)
-   {
-      this.backends = backends;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for tables
-    **
-    *******************************************************************************/
-   public Map<String, QTableMetaData> getTables()
-   {
-      return tables;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tables
-    **
-    *******************************************************************************/
-   public void setTables(Map<String, QTableMetaData> tables)
-   {
-      this.tables = tables;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for processes
-    **
-    *******************************************************************************/
-   public Map<String, QProcessMetaData> getProcesses()
-   {
-      return processes;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for processes
-    **
-    *******************************************************************************/
-   public void setProcesses(Map<String, QProcessMetaData> processes)
-   {
-      this.processes = processes;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for hasBeenValidated
-    **
-    *******************************************************************************/
-   public boolean getHasBeenValidated()
-   {
-      return hasBeenValidated;
-   }
-
 
 }
