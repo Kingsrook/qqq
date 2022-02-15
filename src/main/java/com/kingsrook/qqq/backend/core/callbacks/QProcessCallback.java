@@ -19,6 +19,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
  *******************************************************************************/
 public interface QProcessCallback
 {
+   /*******************************************************************************
+    ** Get the filter query for this callback.
+    *******************************************************************************/
    QQueryFilter getQueryFilter();
+
+   /*******************************************************************************
+    ** Get the field values for this callback.
+    *******************************************************************************/
    Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields);
 }
