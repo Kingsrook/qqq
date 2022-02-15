@@ -7,11 +7,11 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

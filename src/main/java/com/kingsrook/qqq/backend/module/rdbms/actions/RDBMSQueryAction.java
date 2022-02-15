@@ -16,18 +16,18 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.QFilterOrderBy;
-import com.kingsrook.qqq.backend.core.model.actions.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.rdbms.RDBSMBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
@@ -81,7 +81,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          // todo sql customization - can edit sql and/or param list
 
          ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(queryRequest.getBackend()));
+         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(queryRequest.getBackend()));
 
          QueryResult rs = new QueryResult();
          List<QRecord> records = new ArrayList<>();

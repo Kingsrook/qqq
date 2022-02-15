@@ -8,7 +8,7 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import com.kingsrook.qqq.backend.module.rdbms.RDBSMBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -20,7 +20,7 @@ public class ConnectionManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Connection getConnection(RDBSMBackendMetaData backend) throws SQLException
+   public Connection getConnection(RDBMSBackendMetaData backend) throws SQLException
    {
       String jdbcURL;
 

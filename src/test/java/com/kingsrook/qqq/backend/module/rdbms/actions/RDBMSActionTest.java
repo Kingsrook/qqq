@@ -13,7 +13,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.RDBSMBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.IOUtils;
@@ -84,7 +84,7 @@ public class RDBMSActionTest
    protected void primeTestDatabase() throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(defineBackend()));
+      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(defineBackend()));
       InputStream primeTestDatabaseSqlStream = RDBMSActionTest.class.getResourceAsStream("/prime-test-database.sql");
       assertNotNull(primeTestDatabaseSqlStream);
       List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
@@ -103,7 +103,7 @@ public class RDBMSActionTest
    protected void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(defineBackend()));
+      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(defineBackend()));
       QueryManager.executeStatement(connection, sql, resultSetProcessor);
    }
 }

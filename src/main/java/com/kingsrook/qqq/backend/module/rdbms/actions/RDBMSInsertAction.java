@@ -10,14 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.module.rdbms.RDBSMBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
@@ -70,7 +70,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          // todo sql customization - can edit sql and/or param list
 
          ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(insertRequest.getBackend()));
+         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(insertRequest.getBackend()));
 
          // QueryResult rs = new QueryResult();
          // List<QRecord> records = new ArrayList<>();

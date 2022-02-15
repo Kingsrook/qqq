@@ -6,8 +6,8 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.junit.jupiter.api.BeforeEach;

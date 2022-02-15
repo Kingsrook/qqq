@@ -11,13 +11,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RDBSMBackendMetaData extends QBackendMetaData
+public class RDBMSBackendMetaData extends QBackendMetaData
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RDBSMBackendMetaData(QBackendMetaData source)
+   public RDBMSBackendMetaData(QBackendMetaData source)
    {
       super();
       setName(source.getName());

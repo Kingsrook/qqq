@@ -11,13 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.module.rdbms.RDBSMBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
@@ -52,7 +52,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          // todo sql customization - can edit sql and/or param list
 
          ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(deleteRequest.getBackend()));
+         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(deleteRequest.getBackend()));
 
          QueryManager.executeUpdateForRowCount(connection, sql, params);
          List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
