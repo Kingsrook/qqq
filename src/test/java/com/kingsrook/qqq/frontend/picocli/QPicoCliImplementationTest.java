@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -19,10 +20,12 @@ import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -56,7 +59,7 @@ class QPicoCliImplementationTest
    public void test_noArgs()
    {
       TestOutput testOutput = testCli();
-      assertTrue(testOutput.getOutput().contains("Usage: " + CLI_NAME));
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME);
    }
 
 
@@ -69,8 +72,8 @@ class QPicoCliImplementationTest
    public void test_help()
    {
       TestOutput testOutput = testCli("--help");
-      assertTrue(testOutput.getOutput().contains("Usage: " + CLI_NAME));
-      assertTrue(testOutput.getOutput().matches("(?s).*Commands:.*person.*"));
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME);
+      assertTestOutputContains(testOutput, "Commands:.*person");
    }
 
 
@@ -83,7 +86,7 @@ class QPicoCliImplementationTest
    public void test_version()
    {
       TestOutput testOutput = testCli("--version");
-      assertTrue(testOutput.getOutput().contains(CLI_NAME + " v1.0"));
+      assertTestOutputContains(testOutput, CLI_NAME + " v1.0");
    }
 
 
@@ -97,8 +100,8 @@ class QPicoCliImplementationTest
    {
       String badOption = "--asdf";
       TestOutput testOutput = testCli(badOption);
-      assertTrue(testOutput.getError().contains("Unknown option: '" + badOption + "'"));
-      assertTrue(testOutput.getError().contains("Usage: " + CLI_NAME));
+      assertTestErrorContains(testOutput, "Unknown option: '" + badOption + "'");
+      assertTestErrorContains(testOutput, "Usage: " + CLI_NAME);
    }
 
 
@@ -131,8 +134,17 @@ class QPicoCliImplementationTest
    public void test_table()
    {
       TestOutput testOutput = testCli("person");
-      assertTrue(testOutput.getOutput().contains("Usage: " + CLI_NAME + " person [COMMAND]"));
-      assertTrue(testOutput.getOutput().matches("(?s).*Commands:.*query.*"));
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person \\[COMMAND\\]");
+      assertTestOutputContains(testOutput, "Commands:.*query.*process");
+
+      ///////////////////////////////////////////////////////
+      // make sure that if there are no processes for the  //
+      // table, that the processes sub-command isn't given //
+      ///////////////////////////////////////////////////////
+      QInstance qInstanceWithoutProcesses = TestUtils.defineInstance();
+      qInstanceWithoutProcesses.setProcesses(new HashMap<>());
+      testOutput = testCli(qInstanceWithoutProcesses, "person");
+      assertTestOutputDoesNotContain(testOutput, "process");
    }
 
 
@@ -146,8 +158,8 @@ class QPicoCliImplementationTest
    {
       String badCommand = "qwuijibo";
       TestOutput testOutput = testCli("person", badCommand);
-      assertTrue(testOutput.getError().contains("Unmatched argument at index 1: '" + badCommand + "'"));
-      assertTrue(testOutput.getError().contains("Usage: " + CLI_NAME + " person [COMMAND]"));
+      assertTestErrorContains(testOutput, "Unmatched argument at index 1: '" + badCommand + "'");
+      assertTestErrorContains(testOutput, "Usage: " + CLI_NAME + " person \\[COMMAND\\]");
    }
 
 
@@ -202,7 +214,7 @@ class QPicoCliImplementationTest
    public void test_tableInsertNoFieldsPrintsUsage()
    {
       TestOutput testOutput = testCli("person", "insert");
-      assertTrue(testOutput.getOutput().contains("Usage: " + CLI_NAME + " person insert"));
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person insert");
    }
 
 
@@ -299,7 +311,7 @@ class QPicoCliImplementationTest
       String csvContents = """
          "Louis","P","Willikers",1024,
          "Nestle","G","Crunch",1701,
-         
+                  
          """;
 
       File file = new File("/tmp/" + UUID.randomUUID() + ".csv");
@@ -348,11 +360,110 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test requesting the list of processes for a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableProcess() throws Exception
+   {
+      TestOutput testOutput = testCli("person", "process");
+
+      ////////////////////////////////////////////////
+      // should list the processes under this table //
+      ////////////////////////////////////////////////
+      assertTestOutputContains(testOutput, "Commands.*greet");
+   }
+
+
+
+   /*******************************************************************************
+    ** test trying to run a process, but giving an invalid name.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableProcessUnknownName() throws Exception
+   {
+      String badProcessName = "not-a-process";
+      TestOutput testOutput = testCli("person", "process", badProcessName);
+      assertTestErrorContains(testOutput, "Unmatched argument at index 2: '" + badProcessName + "'");
+      assertTestErrorContains(testOutput, "Usage: " + CLI_NAME + " person process \\[COMMAND\\]");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a process on a table
+    **
+    *******************************************************************************/
+   @Test
+   @Disabled // not yet done.
+   public void test_tableProcessGreet() throws Exception
+   {
+      TestOutput testOutput = testCli("person", "process", "greet");
+
+      fail("Assertion not written...");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertTestOutputContains(TestOutput testOutput, String expectedRegexSubstring)
+   {
+      if(!testOutput.getOutput().matches("(?s).*" + expectedRegexSubstring + ".*"))
+      {
+         fail("Expected output to contain this regex pattern:\n" + expectedRegexSubstring
+            + "\nBut it did not.  The full output was:\n" + testOutput.getOutput());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertTestOutputDoesNotContain(TestOutput testOutput, String expectedRegexSubstring)
+   {
+      if(testOutput.getOutput().matches("(?s).*" + expectedRegexSubstring + ".*"))
+      {
+         fail("Expected output to not contain this regex pattern:\n" + expectedRegexSubstring
+            + "\nBut it did.  The full output was:\n" + testOutput.getOutput());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertTestErrorContains(TestOutput testOutput, String expectedRegexSubstring)
+   {
+      if(!testOutput.getError().matches("(?s).*" + expectedRegexSubstring + ".*"))
+      {
+         fail("Expected error-output to contain this regex pattern:\n" + expectedRegexSubstring
+            + "\nBut it did not.  The full error-output was:\n" + testOutput.getOutput());
+      }
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private TestOutput testCli(String... args)
    {
       QInstance qInstance = TestUtils.defineInstance();
+      return testCli(qInstance, args);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private TestOutput testCli(QInstance qInstance, String... args)
+   {
       QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
 
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

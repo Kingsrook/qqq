@@ -14,34 +14,43 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQFieldMapping;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
-import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataResult;
-import com.kingsrook.qqq.backend.core.model.actions.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
-import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
 import picocli.CommandLine;
@@ -65,6 +74,7 @@ public class QPicoCliImplementation
    public static final int DEFAULT_LIMIT = 20;
 
    private static QInstance qInstance;
+   private static QSession session;
 
 
 
@@ -115,6 +125,7 @@ public class QPicoCliImplementation
     **  my-app-cli $table delete (--primaryKey=|--$uc=...)
     **  my-app-cli $table insert (--body=|--$field=...)
     **  my-app-cli $table update (--primaryKey=|--$uc=...) (--body=|--$field=...)
+    **  my-app-cli $table process $process ...
     **
     *******************************************************************************/
    public int runCli(String name, String[] args, PrintStream out, PrintStream err)
@@ -148,6 +159,12 @@ public class QPicoCliImplementation
          tableCommand.addSubcommand("query", defineQueryCommand(table));
          tableCommand.addSubcommand("insert", defineInsertCommand(table));
          tableCommand.addSubcommand("delete", defineDeleteCommand(table));
+
+         List<QProcessMetaData> processes = qInstance.getProcessesForTable(tableName);
+         if(CollectionUtils.nullSafeHasContents(processes))
+         {
+            tableCommand.addSubcommand("process", defineTableProcessesCommand(table, processes));
+         }
       });
 
       CommandLine commandLine = new CommandLine(topCommandSpec);
@@ -156,6 +173,9 @@ public class QPicoCliImplementation
 
       try
       {
+         setupSession(args);
+         // todo - think about, do some tables get turned off based on authentication?
+
          ParseResult parseResult = commandLine.parseArgs(args);
 
          ///////////////////////////////////////////
@@ -198,6 +218,22 @@ public class QPicoCliImplementation
          commandLine.getErr().println("Error: " + ex.getMessage());
          return (commandLine.getCommandSpec().exitCodeOnExecutionException());
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setupSession(String[] args) throws QModuleDispatchException
+   {
+      QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
+      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
+
+      // todo - does this need some per-provider logic actually?  mmm...
+      Map<String, String> authenticationContext = new HashMap<>();
+      authenticationContext.put("sessionId", System.getenv("sessionId"));
+      session = authenticationModule.createSession(authenticationContext);
    }
 
 
@@ -288,6 +324,24 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private CommandSpec defineTableProcessesCommand(QTableMetaData table, List<QProcessMetaData> processes)
+   {
+      CommandSpec processesCommand = CommandSpec.create();
+
+      for(QProcessMetaData process : processes)
+      {
+         CommandSpec processCommand = CommandSpec.create();
+         processesCommand.addSubcommand(process.getName(), processCommand);
+      }
+
+      return (processesCommand);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private Class<?> getClassForField(QFieldMetaData field)
    {
       // @formatter:off // IJ can't do new-style switch correctly yet...
@@ -334,7 +388,8 @@ public class QPicoCliImplementation
       if(tableParseResult.hasSubcommand())
       {
          ParseResult subParseResult = tableParseResult.subcommand();
-         switch(subParseResult.commandSpec().name())
+         String subCommandName = subParseResult.commandSpec().name();
+         switch(subCommandName)
          {
             case "meta-data":
             {
@@ -352,9 +407,14 @@ public class QPicoCliImplementation
             {
                return runTableDelete(commandLine, tableName, subParseResult);
             }
+            case "process":
+            {
+               CommandLine subCommandLine = commandLine.getSubcommands().get(subCommandName);
+               return runTableProcess(subCommandLine, tableName, subParseResult);
+            }
             default:
             {
-               commandLine.getErr().println("Unknown command: " + subParseResult.commandSpec().name());
+               commandLine.getErr().println("Unknown command: " + subCommandName);
                commandLine.usage(commandLine.getOut());
                return commandLine.getCommandSpec().exitCodeOnUsageHelp();
             }
@@ -372,9 +432,45 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private int runTableProcess(CommandLine commandLine, String tableName, ParseResult subParseResult)
+   {
+      if(!subParseResult.hasSubcommand())
+      {
+         commandLine.usage(commandLine.getOut());
+         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+      }
+      else
+      {
+         String subCommandName = subParseResult.subcommand().commandSpec().name();
+         CommandLine subCommandLine = commandLine.getSubcommands().get(subCommandName);
+         return runTableProcessLevelCommand(subCommandLine, tableName, subParseResult.subcommand());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private int runTableProcessLevelCommand(CommandLine subCommandLine, String tableName, ParseResult processParseResult)
+   {
+      String processName = processParseResult.commandSpec().name();
+      QTableMetaData table = qInstance.getTable(tableName);
+      QProcessMetaData process = qInstance.getProcess(processName);
+      RunFunctionAction runFunctionAction = new RunFunctionAction();
+      // todo!
+      return 0;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private int runTableMetaData(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
       TableMetaDataRequest tableMetaDataRequest = new TableMetaDataRequest(qInstance);
+      tableMetaDataRequest.setSession(session);
       tableMetaDataRequest.setTableName(tableName);
       TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
       TableMetaDataResult tableMetaDataResult = tableMetaDataAction.execute(tableMetaDataRequest);
@@ -390,6 +486,7 @@ public class QPicoCliImplementation
    private int runTableQuery(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
       QueryRequest queryRequest = new QueryRequest(qInstance);
+      queryRequest.setSession(session);
       queryRequest.setTableName(tableName);
       queryRequest.setSkip(subParseResult.matchedOptionValue("skip", null));
       queryRequest.setLimit(subParseResult.matchedOptionValue("limit", DEFAULT_LIMIT));
@@ -423,6 +520,7 @@ public class QPicoCliImplementation
    private int runTableInsert(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
       InsertRequest insertRequest = new InsertRequest(qInstance);
+      insertRequest.setSession(session);
       insertRequest.setTableName(tableName);
       QTableMetaData table = qInstance.getTable(tableName);
 
@@ -510,6 +608,7 @@ public class QPicoCliImplementation
    private int runTableDelete(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
       DeleteRequest deleteRequest = new DeleteRequest(qInstance);
+      deleteRequest.setSession(session);
       deleteRequest.setTableName(tableName);
 
       /////////////////////////////////////////////
@@ -535,6 +634,7 @@ public class QPicoCliImplementation
       if(parseResult.hasMatchedOption("--meta-data"))
       {
          MetaDataRequest metaDataRequest = new MetaDataRequest(qInstance);
+         metaDataRequest.setSession(session);
          MetaDataAction metaDataAction = new MetaDataAction();
          MetaDataResult metaDataResult = metaDataAction.execute(metaDataRequest);
          commandLine.getOut().println(JsonUtils.toPrettyJson(metaDataResult));
