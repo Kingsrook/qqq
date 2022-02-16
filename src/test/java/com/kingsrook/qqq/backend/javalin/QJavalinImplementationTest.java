@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
- ** Unit terst for the QJavalinImplementation
+ ** Unit test for the QJavalinImplementation
  **
  ** based on https://javalin.io/tutorials/testing - starts a javalin instance
  ** and actually makes http requests into it.

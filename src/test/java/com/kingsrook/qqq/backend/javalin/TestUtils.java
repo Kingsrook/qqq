@@ -8,12 +8,13 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.RDBSMBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.IOUtils;
@@ -35,7 +36,7 @@ public class TestUtils
    public static void primeTestDatabase() throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(TestUtils.defineBackend()));
+      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(TestUtils.defineBackend()));
       InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
       assertNotNull(primeTestDatabaseSqlStream);
       List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
@@ -55,7 +56,7 @@ public class TestUtils
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBSMBackendMetaData(defineBackend()));
+      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(defineBackend()));
       QueryManager.executeStatement(connection, sql, resultSetProcessor);
    }
 
@@ -68,9 +69,23 @@ public class TestUtils
    public static QInstance defineInstance()
    {
       QInstance qInstance = new QInstance();
+      qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the authentication used in standard tests - using 'mock' type.
+    **
+    *******************************************************************************/
+   private static QAuthenticationMetaData defineAuthentication()
+   {
+      return new QAuthenticationMetaData()
+         .withName("mock")
+         .withType("mock");
    }
 
 

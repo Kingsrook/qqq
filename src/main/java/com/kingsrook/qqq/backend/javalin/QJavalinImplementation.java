@@ -7,6 +7,7 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
@@ -14,20 +15,25 @@ import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.DeleteResult;
-import com.kingsrook.qqq.backend.core.model.actions.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.InsertResult;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.MetaDataResult;
-import com.kingsrook.qqq.backend.core.model.actions.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.QueryResult;
-import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
+import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
+import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
+import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -52,6 +58,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 public class QJavalinImplementation
 {
    private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
+   private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
 
    private static QInstance qInstance;
 
@@ -144,6 +151,25 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void setupSession(Context context, AbstractQRequest request) throws QModuleDispatchException
+   {
+      QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
+      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
+
+      // todo - does this need some per-provider logic actually?  mmm...
+      Map<String, String> authenticationContext = new HashMap<>();
+      authenticationContext.put("sessionId", context.cookie("sessionId"));
+      QSession session = authenticationModule.createSession(authenticationContext);
+      request.setSession(session);
+
+      context.cookie("sessionId", session.getIdReference(), SESSION_COOKIE_AGE);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void dataDelete(Context context)
    {
       try
@@ -153,6 +179,7 @@ public class QJavalinImplementation
          primaryKeys.add(context.pathParam("id"));
 
          DeleteRequest deleteRequest = new DeleteRequest(qInstance);
+         setupSession(context, deleteRequest);
          deleteRequest.setTableName(table);
          deleteRequest.setPrimaryKeys(primaryKeys);
 
@@ -202,6 +229,7 @@ public class QJavalinImplementation
          }
 
          InsertRequest insertRequest = new InsertRequest(qInstance);
+         setupSession(context, insertRequest);
          insertRequest.setTableName(table);
          insertRequest.setRecords(recordList);
 
@@ -231,7 +259,6 @@ public class QJavalinImplementation
    /*******************************************************************************
     *
     * Filter parameter is a serialized QQueryFilter object, that is to say:
-    *
     * <pre>
     *   filter=
     *    {"criteria":[
@@ -248,6 +275,7 @@ public class QJavalinImplementation
       try
       {
          QueryRequest queryRequest = new QueryRequest(qInstance);
+         setupSession(context, queryRequest);
          queryRequest.setTableName(context.pathParam("table"));
          queryRequest.setSkip(integerQueryParam(context, "skip"));
          queryRequest.setLimit(integerQueryParam(context, "limit"));
@@ -279,6 +307,7 @@ public class QJavalinImplementation
       try
       {
          MetaDataRequest metaDataRequest = new MetaDataRequest(qInstance);
+         setupSession(context, metaDataRequest);
          MetaDataAction metaDataAction = new MetaDataAction();
          MetaDataResult metaDataResult = metaDataAction.execute(metaDataRequest);
 
@@ -300,6 +329,7 @@ public class QJavalinImplementation
       try
       {
          TableMetaDataRequest tableMetaDataRequest = new TableMetaDataRequest(qInstance);
+         setupSession(context, tableMetaDataRequest);
          tableMetaDataRequest.setTableName(context.pathParam("table"));
          TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
          TableMetaDataResult tableMetaDataResult = tableMetaDataAction.execute(tableMetaDataRequest);
@@ -331,7 +361,7 @@ public class QJavalinImplementation
          LOG.warn("Exception in javalin request", e);
          e.printStackTrace();
          context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-            .result("{\"error\":\"" + e.getClass().getSimpleName() + "\"}");
+            .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
       }
    }
 
