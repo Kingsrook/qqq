@@ -20,7 +20,7 @@ import org.apache.logging.log4j.Logger;
 public class MockAuthenticationModule implements QAuthenticationModuleInterface
 {
    private static final Logger logger = LogManager.getLogger(MockAuthenticationModule.class);
-
+   private static final int USER_ID_MODULO = 10_000;
 
 
    /*******************************************************************************
@@ -30,7 +30,7 @@ public class MockAuthenticationModule implements QAuthenticationModuleInterface
    public QSession createSession(Map<String, String> context)
    {
       QUser qUser = new QUser();
-      qUser.setIdReference("User:" + (System.currentTimeMillis() % 10_000));
+      qUser.setIdReference("User:" + (System.currentTimeMillis() % USER_ID_MODULO));
       qUser.setFullName("John Smith");
 
       QSession qSession = new QSession();
