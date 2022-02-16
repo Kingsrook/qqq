@@ -24,6 +24,8 @@ public class TableMetaDataAction
     *******************************************************************************/
    public TableMetaDataResult execute(TableMetaDataRequest tableMetaDataRequest) throws QException
    {
+      ActionHelper.validateSession(tableMetaDataRequest);
+
       // todo pre-customization - just get to modify the request?
       TableMetaDataResult tableMetaDataResult = new TableMetaDataResult();
 

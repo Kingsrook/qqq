@@ -7,7 +7,9 @@ package com.kingsrook.qqq.backend.core.model.actions;
 
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -17,7 +19,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 public abstract class AbstractQRequest
 {
    protected QInstance instance;
-   // todo session
+   protected QSession session;
 
 
 
@@ -41,7 +43,7 @@ public abstract class AbstractQRequest
       // if this instance hasn't been validated yet, do so now  //
       // noting that this will also enrich any missing metaData //
       ////////////////////////////////////////////////////////////
-      if(! instance.getHasBeenValidated())
+      if(!instance.getHasBeenValidated())
       {
          try
          {
@@ -53,6 +55,16 @@ public abstract class AbstractQRequest
             throw (new IllegalArgumentException("QInstance failed validation" + e.getMessage()));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAuthenticationMetaData getAuthenticationMetaData()
+   {
+      return (instance.getAuthentication());
    }
 
 
@@ -75,5 +87,27 @@ public abstract class AbstractQRequest
    public void setInstance(QInstance instance)
    {
       this.instance = instance;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for session
+    **
+    *******************************************************************************/
+   public QSession getSession()
+   {
+      return session;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for session
+    **
+    *******************************************************************************/
+   public void setSession(QSession session)
+   {
+      this.session = session;
    }
 }

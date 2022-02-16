@@ -1,51 +1,59 @@
 /*
- * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
+ * Copyright © 2021-2022. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.modules.interfaces;
+package com.kingsrook.qqq.backend.core.model.session;
 
 
 /*******************************************************************************
- ** Interface that a QModule must implement.
- **
- ** Note, methods all have a default version, which throws a 'not implement'
- ** exception.
  **
  *******************************************************************************/
-public interface QModuleInterface
+public class QUser
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryInterface getQueryInterface()
-   {
-      throwNotImplemented("Query");
-      return null;
-   }
+   private String idReference;
+   private String fullName;
+
+
 
    /*******************************************************************************
+    ** Getter for idReference
     **
     *******************************************************************************/
-   default InsertInterface getInsertInterface()
+   public String getIdReference()
    {
-      throwNotImplemented("Insert");
-      return null;
+      return idReference;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default DeleteInterface getDeleteInterface()
-   {
-      throwNotImplemented("Delete");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Setter for idReference
     **
     *******************************************************************************/
-   private void throwNotImplemented(String actionName)
+   public void setIdReference(String idReference)
    {
-      throw new IllegalStateException(actionName + " is not implemented in this module: " + this.getClass().getSimpleName());
+      this.idReference = idReference;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fullName
+    **
+    *******************************************************************************/
+   public String getFullName()
+   {
+      return fullName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fullName
+    **
+    *******************************************************************************/
+   public void setFullName(String fullName)
+   {
+      this.fullName = fullName;
    }
 }

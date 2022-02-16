@@ -27,6 +27,8 @@ public class QInstance
    @JsonIgnore
    private Map<String, QBackendMetaData> backends = new HashMap<>();
 
+   private QAuthenticationMetaData authentication = null;
+
    private Map<String, QTableMetaData> tables = new HashMap<>();
    private Map<String, QProcessMetaData> processes = new HashMap<>();
 
@@ -257,4 +259,24 @@ public class QInstance
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for authentication
+    **
+    *******************************************************************************/
+   public QAuthenticationMetaData getAuthentication()
+   {
+      return authentication;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for authentication
+    **
+    *******************************************************************************/
+   public void setAuthentication(QAuthenticationMetaData authentication)
+   {
+      this.authentication = authentication;
+   }
 }

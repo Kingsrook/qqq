@@ -35,6 +35,8 @@ public class RunFunctionAction
     *******************************************************************************/
    public RunFunctionResult execute(RunFunctionRequest runFunctionRequest) throws QException
    {
+      ActionHelper.validateSession(runFunctionRequest);
+
       ///////////////////////////////////////////////////////
       // todo - shouldn't meta-data validation catch this? //
       ///////////////////////////////////////////////////////
@@ -109,6 +111,7 @@ public class RunFunctionAction
          if(runFunctionRequest.getRecords() == null)
          {
             QueryRequest queryRequest = new QueryRequest(runFunctionRequest.getInstance());
+            queryRequest.setSession(runFunctionRequest.getSession());
             queryRequest.setTableName(inputMetaData.getRecordListMetaData().getTableName());
 
             // todo - handle this being async (e.g., http)

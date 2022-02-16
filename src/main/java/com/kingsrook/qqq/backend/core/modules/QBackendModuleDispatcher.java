@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
@@ -19,7 +19,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
  ** TODO - make this mapping runtime-bound, not pre-compiled in.
  **
  *******************************************************************************/
-public class QModuleDispatcher
+public class QBackendModuleDispatcher
 {
    private Map<String, String> backendTypeToModuleClassNameMap;
 
@@ -28,11 +28,11 @@ public class QModuleDispatcher
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QModuleDispatcher()
+   public QBackendModuleDispatcher()
    {
       backendTypeToModuleClassNameMap = new HashMap<>();
-      backendTypeToModuleClassNameMap.put("mock", "com.kingsrook.qqq.backend.core.modules.mock.MockModule");
-      backendTypeToModuleClassNameMap.put("rdbms", "com.kingsrook.qqq.backend.module.rdbms.RDBSMModule");
+      backendTypeToModuleClassNameMap.put("mock", "com.kingsrook.qqq.backend.core.modules.mock.MockBackendModule");
+      backendTypeToModuleClassNameMap.put("rdbms", "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule");
       // todo - let user define custom type -> classes
    }
 
@@ -41,7 +41,7 @@ public class QModuleDispatcher
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QModuleInterface getQModule(QBackendMetaData backend) throws QModuleDispatchException
+   public QBackendModuleInterface getQModule(QBackendMetaData backend) throws QModuleDispatchException
    {
       try
       {
@@ -52,7 +52,7 @@ public class QModuleDispatcher
          }
 
          Class<?> moduleClass = Class.forName(className);
-         return (QModuleInterface) moduleClass.getDeclaredConstructor().newInstance();
+         return (QBackendModuleInterface) moduleClass.getDeclaredConstructor().newInstance();
       }
       catch(QModuleDispatchException qmde)
       {
@@ -60,7 +60,7 @@ public class QModuleDispatcher
       }
       catch(Exception e)
       {
-         throw (new QModuleDispatchException("Error getting q backend module of type: " + backend.getType(), e));
+         throw (new QModuleDispatchException("Error getting backend module of type: " + backend.getType(), e));
       }
    }
 }

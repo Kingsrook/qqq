@@ -29,6 +29,7 @@ class QueryActionTest
    public void test() throws QException
    {
       QueryRequest request = new QueryRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
       request.setTableName("person");
       QueryResult result = new QueryAction().execute(request);
       assertNotNull(result);

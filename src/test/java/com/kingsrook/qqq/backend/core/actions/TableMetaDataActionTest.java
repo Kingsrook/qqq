@@ -31,6 +31,7 @@ class TableMetaDataActionTest
    public void test() throws QException
    {
       TableMetaDataRequest request = new TableMetaDataRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
       request.setTableName("person");
       TableMetaDataResult result = new TableMetaDataAction().execute(request);
       assertNotNull(result);
@@ -50,6 +51,7 @@ class TableMetaDataActionTest
    {
       assertThrows(QUserFacingException.class, () -> {
          TableMetaDataRequest request = new TableMetaDataRequest(TestUtils.defineInstance());
+         request.setSession(TestUtils.getMockSession());
          request.setTableName("willNotBeFound");
          new TableMetaDataAction().execute(request);
       });

@@ -27,6 +27,8 @@ public class RunProcessAction
     *******************************************************************************/
    public RunProcessResult execute(RunProcessRequest runProcessRequest) throws QException
    {
+      ActionHelper.validateSession(runProcessRequest);
+
       ///////////////////////////////////////////////////////
       // todo - shouldn't meta-data validation catch this? //
       ///////////////////////////////////////////////////////

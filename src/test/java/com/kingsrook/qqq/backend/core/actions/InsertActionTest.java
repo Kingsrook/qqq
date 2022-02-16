@@ -32,6 +32,7 @@ class InsertActionTest
    public void test() throws QException
    {
       InsertRequest request = new InsertRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
       request.setTableName("person");
       List<QRecord> records =new ArrayList<>();
       QRecord record = new QRecord();

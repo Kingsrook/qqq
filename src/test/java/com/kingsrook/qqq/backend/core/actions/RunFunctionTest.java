@@ -38,6 +38,7 @@ public class RunFunctionTest
    {
       TestCallback callback = new TestCallback();
       RunFunctionRequest request = new RunFunctionRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
       request.setProcessName("greet");
       request.setFunctionName("prepare");
       request.setCallback(callback);

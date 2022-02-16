@@ -27,6 +27,7 @@ class MetaDataActionTest
    public void test() throws QException
    {
       MetaDataRequest request = new MetaDataRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
       MetaDataResult result = new MetaDataAction().execute(request);
       assertNotNull(result);
       assertNotNull(result.getTables());

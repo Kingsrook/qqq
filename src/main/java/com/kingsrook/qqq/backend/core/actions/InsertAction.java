@@ -8,9 +8,8 @@ package com.kingsrook.qqq.backend.core.actions;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.modules.QModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
@@ -24,11 +23,10 @@ public class InsertAction
     *******************************************************************************/
    public InsertResult execute(InsertRequest insertRequest) throws QException
    {
-      QModuleDispatcher qModuleDispatcher = new QModuleDispatcher();
+      ActionHelper.validateSession(insertRequest);
 
-      QBackendMetaData backend = insertRequest.getBackend();
-
-      QModuleInterface qModule = qModuleDispatcher.getQModule(backend);
+      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
+      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQModule(insertRequest.getBackend());
       // todo pre-customization - just get to modify the request?
       InsertResult insertResult = qModule.getInsertInterface().execute(insertRequest);
       // todo post-customization - can do whatever w/ the result if you want

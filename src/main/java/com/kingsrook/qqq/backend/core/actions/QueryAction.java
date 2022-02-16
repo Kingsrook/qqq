@@ -8,9 +8,8 @@ package com.kingsrook.qqq.backend.core.actions;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.modules.QModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
@@ -24,11 +23,10 @@ public class QueryAction
     *******************************************************************************/
    public QueryResult execute(QueryRequest queryRequest) throws QException
    {
-      QModuleDispatcher qModuleDispatcher = new QModuleDispatcher();
+      ActionHelper.validateSession(queryRequest);
 
-      QBackendMetaData backend = queryRequest.getBackend();
-
-      QModuleInterface qModule = qModuleDispatcher.getQModule(backend);
+      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
+      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQModule(queryRequest.getBackend());
       // todo pre-customization - just get to modify the request?
       QueryResult queryResult = qModule.getQueryInterface().execute(queryRequest);
       // todo post-customization - can do whatever w/ the result if you want

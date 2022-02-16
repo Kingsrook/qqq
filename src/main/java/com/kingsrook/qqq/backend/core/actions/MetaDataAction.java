@@ -25,6 +25,8 @@ public class MetaDataAction
     *******************************************************************************/
    public MetaDataResult execute(MetaDataRequest metaDataRequest) throws QException
    {
+      ActionHelper.validateSession(metaDataRequest);
+
       // todo pre-customization - just get to modify the request?
       MetaDataResult metaDataResult = new MetaDataResult();
 

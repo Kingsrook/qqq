@@ -32,6 +32,7 @@ class DeleteActionTest
    public void test() throws QException
    {
       DeleteRequest request = new DeleteRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
       request.setTableName("person");
       request.setPrimaryKeys(List.of(1, 2));
       DeleteResult result = new DeleteAction().execute(request);

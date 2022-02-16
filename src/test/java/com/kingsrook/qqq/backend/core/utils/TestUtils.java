@@ -6,6 +6,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
@@ -21,6 +22,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QOutputView;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListView;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
 
 
 /*******************************************************************************
@@ -36,10 +39,24 @@ public class TestUtils
    public static QInstance defineInstance()
    {
       QInstance qInstance = new QInstance();
+      qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
       qInstance.addProcess(defineProcessGreetPeople());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the authentication used in standard tests - using 'mock' type.
+    **
+    *******************************************************************************/
+   private static QAuthenticationMetaData defineAuthentication()
+   {
+      return new QAuthenticationMetaData()
+         .withName("mock")
+         .withType("mock");
    }
 
 
@@ -109,4 +126,14 @@ public class TestUtils
          );
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QSession getMockSession()
+   {
+      MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
+      return (mockAuthenticationModule.createSession(null));
+   }
 }
