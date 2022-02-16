@@ -130,16 +130,6 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addProcess(QProcessMetaData process)
-   {
-      this.processes.put(process.getName(), process);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    public void addTable(String name, QTableMetaData table)
    {
       this.tables.put(name, table);
@@ -169,6 +159,16 @@ public class QInstance
       }
 
       return (qProcessMetaData.getFunction(functionName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addProcess(QProcessMetaData process)
+   {
+      this.processes.put(process.getName(), process);
    }
 
 
