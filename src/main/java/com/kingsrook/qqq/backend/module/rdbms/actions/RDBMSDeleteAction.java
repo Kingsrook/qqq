@@ -59,7 +59,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          rs.setRecords(recordsWithStatus);
          for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
          {
-            QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withPrimaryKey(primaryKey);
+            QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
             // todo uh, identify any errors?
             QRecordWithStatus recordWithStatus = new QRecordWithStatus(qRecord);
             recordsWithStatus.add(recordWithStatus);

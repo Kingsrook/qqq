@@ -9,9 +9,11 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
+import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
 
 
 /*******************************************************************************
@@ -37,6 +39,16 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    public InsertInterface getInsertInterface()
    {
       return (new RDBMSInsertAction());
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public UpdateInterface getUpdateInterface()
+   {
+      return (new RDBMSUpdateAction());
    }
 
 

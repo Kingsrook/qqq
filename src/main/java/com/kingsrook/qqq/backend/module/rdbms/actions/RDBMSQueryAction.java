@@ -93,6 +93,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             while(resultSet.next())
             {
                // todo - should refactor this for view etc to use too.
+               // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
                QRecord record = new QRecord();
                records.add(record);
                record.setTableName(table.getName());
@@ -104,10 +105,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                   QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
                   Serializable value = getValue(qFieldMetaData, resultSet, i);
                   values.put(qFieldMetaData.getName(), value);
-                  if(qFieldMetaData.getName().equals(table.getPrimaryKeyField()))
-                  {
-                     record.setPrimaryKey(value);
-                  }
                }
             }
 

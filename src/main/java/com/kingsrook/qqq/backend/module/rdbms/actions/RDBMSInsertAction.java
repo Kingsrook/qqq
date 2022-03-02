@@ -86,7 +86,6 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          {
             Integer id = idList.get(index++);
             QRecordWithStatus recordWithStatus = new QRecordWithStatus(record);
-            recordWithStatus.setPrimaryKey(id);
             recordWithStatus.setValue(table.getPrimaryKeyField(), id);
             recordsWithStatus.add(recordWithStatus);
          }
