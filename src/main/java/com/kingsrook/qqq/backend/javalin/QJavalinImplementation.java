@@ -5,6 +5,8 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +17,8 @@ import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.UpdateAction;
+import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
@@ -29,8 +33,11 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaData
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
+import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
@@ -40,6 +47,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpStatus;
@@ -48,6 +56,7 @@ import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.patch;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.put;
 
 
 /*******************************************************************************
@@ -91,12 +100,13 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    ** Setter for qInstance
     **
     *******************************************************************************/
-   public static void setQInstance(QInstance qInstance)
+   public QJavalinImplementation(String qInstanceFilePath) throws IOException
    {
-      QJavalinImplementation.qInstance = qInstance;
+      LOG.info("Loading qInstance from file (assuming json): " + qInstanceFilePath);
+      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath));
+      QJavalinImplementation.qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
    }
 
 
@@ -134,11 +144,13 @@ public class QJavalinImplementation
             path("/:table", () ->
             {
                get("/", QJavalinImplementation::dataQuery);
-               post("/", QJavalinImplementation::dataInsert);
-               path("/:id", () ->
+               post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
+               // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
+               path("/:primaryKey", () ->
                {
                   get("", QJavalinImplementation::dataGet);
                   patch("", QJavalinImplementation::dataUpdate);
+                  put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
                   delete("", QJavalinImplementation::dataDelete);
                });
             });
@@ -176,7 +188,7 @@ public class QJavalinImplementation
       {
          String table = context.pathParam("table");
          List<Serializable> primaryKeys = new ArrayList<>();
-         primaryKeys.add(context.pathParam("id"));
+         primaryKeys.add(context.pathParam("primaryKey"));
 
          DeleteRequest deleteRequest = new DeleteRequest(qInstance);
          setupSession(context, deleteRequest);
@@ -201,7 +213,41 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataUpdate(Context context)
    {
-      context.result("{\"todo\":\"not-done\",\"updateResult\":{}}");
+      try
+      {
+         String table = context.pathParam("table");
+         List<QRecord> recordList = new ArrayList<>();
+         QRecord record = new QRecord();
+         record.setTableName(table);
+         recordList.add(record);
+
+         Map<?, ?> map = context.bodyAsClass(Map.class);
+         for(Map.Entry<?, ?> entry : map.entrySet())
+         {
+            if(StringUtils.hasContent(String.valueOf(entry.getValue())))
+            {
+               record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
+            }
+         }
+
+         QTableMetaData tableMetaData = qInstance.getTable(table);
+
+         record.setValue(tableMetaData.getPrimaryKeyField(), context.pathParam("primaryKey"));
+
+         UpdateRequest updateRequest = new UpdateRequest(qInstance);
+         setupSession(context, updateRequest);
+         updateRequest.setTableName(table);
+         updateRequest.setRecords(recordList);
+
+         UpdateAction updateAction = new UpdateAction();
+         UpdateResult updateResult = updateAction.execute(updateRequest);
+
+         context.result(JsonUtils.toJson(updateResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
    }
 
 

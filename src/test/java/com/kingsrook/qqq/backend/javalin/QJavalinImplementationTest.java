@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -147,9 +147,9 @@ class QJavalinImplementationTest
       JSONObject record0 = records.getJSONObject(0);
       assertTrue(record0.has("values"));
       assertEquals("person", record0.getString("tableName"));
-      assertTrue(record0.has("primaryKey"));
       JSONObject values0 = record0.getJSONObject("values");
       assertTrue(values0.has("firstName"));
+      assertTrue(values0.has("id"));
    }
 
 
@@ -200,10 +200,42 @@ class QJavalinImplementationTest
       JSONObject record0 = records.getJSONObject(0);
       assertTrue(record0.has("values"));
       assertEquals("person", record0.getString("tableName"));
-      assertTrue(record0.has("primaryKey"));
       JSONObject values0 = record0.getJSONObject("values");
       assertTrue(values0.has("firstName"));
       assertEquals("Bobby", values0.getString("firstName"));
+      assertTrue(values0.has("id"));
+      assertEquals(6, values0.getInt("id"));
+   }
+
+
+   /*******************************************************************************
+    ** test an update
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataUpdate()
+   {
+      Map<String, Serializable> body = new HashMap<>();
+      body.put("firstName", "Free");
+      //? body.put("id", 4);
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
+         .header("Content-Type", "application/json")
+         .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      assertEquals("person", record0.getString("tableName"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals(4, values0.getInt("id"));
+      assertEquals("Free", values0.getString("firstName"));
+      // mmm, whole record isn't loaded.  should it be? assertEquals("Samples", values0.getString("lastName"));
    }
 
 
@@ -224,13 +256,13 @@ class QJavalinImplementationTest
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
       assertEquals(1, jsonObject.getJSONArray("records").length());
-      assertEquals(3, jsonObject.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+      assertEquals(3, jsonObject.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
       TestUtils.runTestSql("SELECT id FROM person", (rs -> {
          int rowsFound = 0;
          while(rs.next())
          {
             rowsFound++;
-            assertFalse(rs.getInt(1) == 3);
+            assertNotEquals(3, rs.getInt(1));
          }
          assertEquals(4, rowsFound);
       }));
