@@ -9,9 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,9 +21,11 @@ import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
+import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
@@ -42,15 +42,15 @@ import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
+import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
 import picocli.CommandLine;
@@ -81,17 +81,29 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void main(String[] args)
+   public static void main(String[] args) throws IOException
    {
-      QInstance qInstance = new QInstance();
-
-      // todo - parse args to look up metaData and prime instance
       // todo - authentication
       // qInstance.addBackend(QMetaDataProvider.getQBackend());
 
-      QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-      int exitCode = qPicoCliImplementation.runCli("qapi", args);
-      System.exit(exitCode);
+      // parse args to look up metaData and prime instance
+      if(args.length > 0 && args[0].startsWith("--qInstanceJsonFile="))
+      {
+         String filePath = args[0].replaceFirst("--.*=", "");
+         String qInstanceJson = FileUtils.readFileToString(new File(filePath));
+         qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
+
+         String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+
+         QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
+         int exitCode = qPicoCliImplementation.runCli("qapi", subArgs);
+         System.exit(exitCode);
+      }
+      else
+      {
+         System.err.println("To run this main class directly, you must specify: --qInstanceJsonFile=path/to/qInstance.json");
+         System.exit(1);
+      }
    }
 
 
@@ -107,7 +119,8 @@ public class QPicoCliImplementation
 
 
    /*******************************************************************************
-    **
+    ** Driver method that uses System out & err streams.
+    *
     *******************************************************************************/
    public int runCli(String name, String[] args)
    {
@@ -117,6 +130,8 @@ public class QPicoCliImplementation
 
 
    /*******************************************************************************
+    ** Actual driver methods that takes streams as params.
+    *
     ** examples - todo, make docs complete!
     **  my-app-cli [--all] [--format=]
     **  my-app-cli $table meta-data [--format=]
@@ -130,42 +145,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    public int runCli(String name, String[] args, PrintStream out, PrintStream err)
    {
-      //////////////////////////////////
-      // define the top-level command //
-      //////////////////////////////////
-      CommandSpec topCommandSpec = CommandSpec.create();
-      topCommandSpec.name(name);
-      topCommandSpec.version(name + " v1.0"); // todo... uh?
-      topCommandSpec.mixinStandardHelpOptions(true); // usageHelp and versionHelp options
-      topCommandSpec.addOption(OptionSpec.builder("-m", "--meta-data")
-         .type(boolean.class)
-         .description("Output the meta-data for this CLI")
-         .build());
-
-      /////////////////////////////////////
-      // add each table as a sub-command //
-      /////////////////////////////////////
-      qInstance.getTables().keySet().stream().sorted().forEach(tableName ->
-      {
-         QTableMetaData table = qInstance.getTable(tableName);
-
-         CommandSpec tableCommand = CommandSpec.create();
-         topCommandSpec.addSubcommand(table.getName(), tableCommand);
-
-         ///////////////////////////////////////////////////
-         // add table-specific sub-commands for the table //
-         ///////////////////////////////////////////////////
-         tableCommand.addSubcommand("meta-data", defineMetaDataCommand(table));
-         tableCommand.addSubcommand("query", defineQueryCommand(table));
-         tableCommand.addSubcommand("insert", defineInsertCommand(table));
-         tableCommand.addSubcommand("delete", defineDeleteCommand(table));
-
-         List<QProcessMetaData> processes = qInstance.getProcessesForTable(tableName);
-         if(CollectionUtils.nullSafeHasContents(processes))
-         {
-            tableCommand.addSubcommand("process", defineTableProcessesCommand(table, processes));
-         }
-      });
+      CommandSpec topCommandSpec = new QCommandBuilder(qInstance).buildCommandSpec(name);
 
       CommandLine commandLine = new CommandLine(topCommandSpec);
       commandLine.setOut(new PrintWriter(out, true));
@@ -215,6 +195,7 @@ public class QPicoCliImplementation
          ///////////////////////////////////////////
          // handle exceptions from business logic //
          ///////////////////////////////////////////
+         ex.printStackTrace();
          commandLine.getErr().println("Error: " + ex.getMessage());
          return (commandLine.getCommandSpec().exitCodeOnExecutionException());
       }
@@ -234,127 +215,6 @@ public class QPicoCliImplementation
       Map<String, String> authenticationContext = new HashMap<>();
       authenticationContext.put("sessionId", System.getenv("sessionId"));
       session = authenticationModule.createSession(authenticationContext);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private CommandSpec defineMetaDataCommand(QTableMetaData table)
-   {
-      return CommandSpec.create();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private CommandSpec defineQueryCommand(QTableMetaData table)
-   {
-      CommandSpec queryCommand = CommandSpec.create();
-      queryCommand.addOption(OptionSpec.builder("-l", "--limit")
-         .type(int.class)
-         .build());
-      queryCommand.addOption(OptionSpec.builder("-s", "--skip")
-         .type(int.class)
-         .build());
-      queryCommand.addOption(OptionSpec.builder("-c", "--criteria")
-         .type(String[].class)
-         .build());
-
-      // todo - add the fields as explicit params?
-
-      return queryCommand;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private CommandSpec defineInsertCommand(QTableMetaData table)
-   {
-      CommandSpec insertCommand = CommandSpec.create();
-
-      insertCommand.addOption(OptionSpec.builder("--jsonBody")
-         .type(String.class)
-         .build());
-
-      insertCommand.addOption(OptionSpec.builder("--jsonFile")
-         .type(String.class)
-         .build());
-
-      insertCommand.addOption(OptionSpec.builder("--csvFile")
-         .type(String.class)
-         .build());
-
-      insertCommand.addOption(OptionSpec.builder("--mapping")
-         .type(String.class)
-         .build());
-
-      for(QFieldMetaData field : table.getFields().values())
-      {
-         insertCommand.addOption(OptionSpec.builder("--field-" + field.getName())
-            .type(getClassForField(field))
-            .build());
-      }
-      return insertCommand;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private CommandSpec defineDeleteCommand(QTableMetaData table)
-   {
-      CommandSpec deleteCommand = CommandSpec.create();
-
-      deleteCommand.addOption(OptionSpec.builder("--primaryKey")
-         .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
-         .build());
-
-      return deleteCommand;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private CommandSpec defineTableProcessesCommand(QTableMetaData table, List<QProcessMetaData> processes)
-   {
-      CommandSpec processesCommand = CommandSpec.create();
-
-      for(QProcessMetaData process : processes)
-      {
-         CommandSpec processCommand = CommandSpec.create();
-         processesCommand.addSubcommand(process.getName(), processCommand);
-      }
-
-      return (processesCommand);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private Class<?> getClassForField(QFieldMetaData field)
-   {
-      // @formatter:off // IJ can't do new-style switch correctly yet...
-      return switch(field.getType())
-      {
-         case STRING, TEXT, HTML, PASSWORD -> String.class;
-         case INTEGER -> Integer.class;
-         case DECIMAL -> BigDecimal.class;
-         case DATE -> LocalDate.class;
-         // case TIME -> LocalTime.class;
-         case DATE_TIME -> LocalDateTime.class;
-      };
-      // @formatter:on
    }
 
 
@@ -402,6 +262,10 @@ public class QPicoCliImplementation
             case "insert":
             {
                return runTableInsert(commandLine, tableName, subParseResult);
+            }
+            case "update":
+            {
+               return runTableUpdate(commandLine, tableName, subParseResult);
             }
             case "delete":
             {
@@ -605,6 +469,57 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private int runTableUpdate(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
+   {
+      UpdateRequest updateRequest = new UpdateRequest(qInstance);
+      updateRequest.setSession(session);
+      updateRequest.setTableName(tableName);
+      QTableMetaData table = qInstance.getTable(tableName);
+
+      List<QRecord> recordList = new ArrayList<>();
+
+      boolean anyFields = false;
+
+      String primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
+      Serializable[] primaryKeyValues = primaryKeyOption.split(",");
+      for(Serializable primaryKeyValue : primaryKeyValues)
+      {
+         QRecord record = new QRecord();
+
+         recordList.add(record);
+         record.setValue(table.getPrimaryKeyField(), primaryKeyValue);
+
+         for(OptionSpec matchedOption : subParseResult.matchedOptions())
+         {
+            if(matchedOption.longestName().startsWith("--field-"))
+            {
+               anyFields = true;
+               String fieldName = matchedOption.longestName().substring(8);
+               record.setValue(fieldName, matchedOption.getValue());
+            }
+         }
+      }
+
+      if(!anyFields || recordList.isEmpty())
+      {
+         CommandLine subCommandLine = commandLine.getSubcommands().get("update");
+         subCommandLine.usage(commandLine.getOut());
+         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+      }
+
+      updateRequest.setRecords(recordList);
+
+      UpdateAction updateAction = new UpdateAction();
+      UpdateResult updateResult = updateAction.execute(updateRequest);
+      commandLine.getOut().println(JsonUtils.toPrettyJson(updateResult));
+      return commandLine.getCommandSpec().exitCodeOnSuccess();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private int runTableDelete(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
       DeleteRequest deleteRequest = new DeleteRequest(qInstance);
@@ -615,7 +530,7 @@ public class QPicoCliImplementation
       // get the pKeys that the user specified //
       /////////////////////////////////////////////
       String primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
-      String[] primaryKeyValues = primaryKeyOption.split(",");
+      Serializable[] primaryKeyValues = primaryKeyOption.split(",");
       deleteRequest.setPrimaryKeys(Arrays.asList(primaryKeyValues));
 
       DeleteAction deleteAction = new DeleteAction();

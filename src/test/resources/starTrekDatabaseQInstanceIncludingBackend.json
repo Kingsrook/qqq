@@ -1,0 +1,70 @@
+{
+  "tables": {
+    "series": {
+      "primaryKeyField": "id",
+      "name": "series",
+      "backendName": "wherenooneMysql",
+      "label": "Person",
+      "fields": {
+        "name": {
+          "name": "name",
+          "backendName": null,
+          "label": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "abbreviation": {
+          "name": "abbreviation",
+          "backendName": null,
+          "label": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "id": {
+          "name": "id",
+          "backendName": null,
+          "label": null,
+          "type": "INTEGER",
+          "possibleValueSourceName": null
+        },
+        "createDate": {
+          "name": "createDate",
+          "backendName": "create_date",
+          "label": "Create Date",
+          "type": "DATE_TIME",
+          "possibleValueSourceName": null
+        },
+        "modifyDate": {
+          "name": "modifyDate",
+          "backendName": "modify_date",
+          "label": "Modify Date",
+          "type": "DATE_TIME",
+          "possibleValueSourceName": null
+        }
+      }
+    }
+  },
+  "processes": {
+  },
+  "possibleValueSources": {
+  },
+  "backends": {
+    "wherenooneMysql": {
+      "values": {
+         "vendor": "mysql",
+         "hostName": "localhost",
+         "port": "3306",
+         "databaseName": "wherenoone",
+         "username": "root",
+         "password": "password"
+      },
+      "name": "wherenooneMysql",
+      "type": "rdbms"
+    }
+  },
+  "authentication": {
+    "values": null,
+    "name": "mock",
+    "type": "mock"
+  }
+}

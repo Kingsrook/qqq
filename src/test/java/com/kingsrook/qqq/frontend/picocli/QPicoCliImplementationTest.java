@@ -198,10 +198,11 @@ class QPicoCliImplementationTest
       TestOutput testOutput = testCli("person", "query", "--skip=1", "--limit=2", "--criteria", "id NOT_EQUALS 3");
       JSONObject queryResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(queryResult);
-      assertEquals(2, queryResult.getJSONArray("records").length());
+      JSONArray records = queryResult.getJSONArray("records");
+      assertEquals(2, records.length());
       // query for id != 3, and skipping 1, expect to get back rows 2 & 4
-      assertEquals(2, queryResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
-      assertEquals(4, queryResult.getJSONArray("records").getJSONObject(1).getInt("primaryKey"));
+      assertEquals(2, records.getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(4, records.getJSONObject(1).getJSONObject("values").getInt("id"));
    }
 
 
@@ -232,7 +233,7 @@ class QPicoCliImplementationTest
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       assertEquals(1, insertResult.getJSONArray("records").length());
-      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
    }
 
 
@@ -256,7 +257,7 @@ class QPicoCliImplementationTest
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       assertEquals(1, insertResult.getJSONArray("records").length());
-      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
+      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
       assertEquals("Chester", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Cheese", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("lastName"));
    }
@@ -287,8 +288,8 @@ class QPicoCliImplementationTest
       assertNotNull(insertResult);
       JSONArray records = insertResult.getJSONArray("records");
       assertEquals(2, records.length());
-      assertEquals(6, records.getJSONObject(0).getInt("primaryKey"));
-      assertEquals(7, records.getJSONObject(1).getInt("primaryKey"));
+      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(7, insertResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
       assertEquals("Charlie", records.getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Bear", records.getJSONObject(0).getJSONObject("values").getString("lastName"));
       assertEquals("Coco", records.getJSONObject(1).getJSONObject("values").getString("firstName"));
@@ -323,12 +324,62 @@ class QPicoCliImplementationTest
       assertNotNull(insertResult);
       JSONArray records = insertResult.getJSONArray("records");
       assertEquals(2, records.length());
-      assertEquals(6, records.getJSONObject(0).getInt("primaryKey"));
-      assertEquals(7, records.getJSONObject(1).getInt("primaryKey"));
+      assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(7, insertResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
       assertEquals("Louis", records.getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Willikers", records.getJSONObject(0).getJSONObject("values").getString("lastName"));
       assertEquals("Nestle", records.getJSONObject(1).getJSONObject("values").getString("firstName"));
       assertEquals("Crunch", records.getJSONObject(1).getJSONObject("values").getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/o specifying any fields, prints usage
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateNoFieldsPrintsUsage()
+   {
+      TestOutput testOutput = testCli("person", "update");
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person update");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArguments() throws Exception
+   {
+      assertRowValueById("person", "first_name", "Garret", 5);
+      TestOutput testOutput = testCli("person", "update",
+         "--primaryKey=5",
+         "--field-firstName=Lucy",
+         "--field-lastName=Lu");
+      JSONObject updateResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(updateResult);
+      assertEquals(1, updateResult.getJSONArray("records").length());
+      assertEquals(5, updateResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertRowValueById("person", "first_name", "Lucy", 5);
+   }
+
+
+
+   private void assertRowValueById(String tableName, String columnName, String value, Integer id) throws Exception
+   {
+      TestUtils.runTestSql("SELECT " + columnName + " FROM " + tableName + " WHERE id=" + id, (rs -> {
+         if(rs.next())
+         {
+            assertEquals(value, rs.getString(1));
+         }
+         else
+         {
+            fail("Row not found");
+         }
+      }));
    }
 
 
@@ -343,9 +394,10 @@ class QPicoCliImplementationTest
       TestOutput testOutput = testCli("person", "delete", "--primaryKey", "2,4");
       JSONObject deleteResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(deleteResult);
-      assertEquals(2, deleteResult.getJSONArray("records").length());
-      assertEquals(2, deleteResult.getJSONArray("records").getJSONObject(0).getInt("primaryKey"));
-      assertEquals(4, deleteResult.getJSONArray("records").getJSONObject(1).getInt("primaryKey"));
+      JSONArray records = deleteResult.getJSONArray("records");
+      assertEquals(2, records.length());
+      assertEquals(2, records.getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(4, records.getJSONObject(1).getJSONObject("values").getInt("id"));
       TestUtils.runTestSql("SELECT id FROM person", (rs -> {
          int rowsFound = 0;
          while(rs.next())
