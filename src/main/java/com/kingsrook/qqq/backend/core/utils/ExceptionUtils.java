@@ -24,10 +24,9 @@ public class ExceptionUtils
          return (null);
       }
 
-      if(e.getClass().equals(targetClass))
+      if(targetClass.isInstance(e))
       {
-         //noinspection unchecked
-         return ((T) e);
+         return targetClass.cast(e);
       }
 
       if(e.getCause() == null)

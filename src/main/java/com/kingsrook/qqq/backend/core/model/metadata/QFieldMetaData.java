@@ -16,6 +16,8 @@ public class QFieldMetaData
    private String backendName;
    private QFieldType type;
 
+   private String possibleValueSourceName;
+
 
 
    /*******************************************************************************
@@ -165,4 +167,36 @@ public class QFieldMetaData
       this.backendName = backendName;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getPossibleValueSourceName()
+   {
+      return possibleValueSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setPossibleValueSourceName(String possibleValueSourceName)
+   {
+      this.possibleValueSourceName = possibleValueSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData withPossibleValueSourceName(String possibleValueSourceName)
+   {
+      this.possibleValueSourceName = possibleValueSourceName;
+      return (this);
+   }
+
 }

@@ -13,12 +13,18 @@ import java.util.Map;
 /*******************************************************************************
  * Data Record within qqq.  e.g., a single row from a database.
  *
+ * Actual values (e.g., as stored in the backend system) are in the `values`
+ * map.  Keys in this map are fieldNames from the QTableMetaData.
+ *
+ * "Display values" (e.g., labels for possible values, or formatted numbers
+ * (e.g., quantities with commas)) are in the displayValues map.
  *******************************************************************************/
 public class QRecord
 {
    private String tableName;
-   private Serializable primaryKey;
-   private Map<String, Serializable> values;
+   //x private Serializable primaryKey;
+   private Map<String, Serializable> values = new LinkedHashMap<>();
+   private Map<String, String> displayValues = new LinkedHashMap<>();
 
 
 
@@ -27,11 +33,6 @@ public class QRecord
     *******************************************************************************/
    public void setValue(String fieldName, Serializable value)
    {
-      if(values == null)
-      {
-         values = new LinkedHashMap<>();
-      }
-
       values.put(fieldName, value);
    }
 
@@ -43,6 +44,27 @@ public class QRecord
    public QRecord withValue(String fieldName, Serializable value)
    {
       setValue(fieldName, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setDisplayValue(String fieldName, String displayValue)
+   {
+      displayValues.put(fieldName, displayValue);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord withDisplayValue(String fieldName, String displayValue)
+   {
+      setDisplayValue(fieldName, displayValue);
       return (this);
    }
 
@@ -82,37 +104,37 @@ public class QRecord
 
 
 
-   /*******************************************************************************
-    ** Getter for primaryKey
-    **
-    *******************************************************************************/
-   public Serializable getPrimaryKey()
-   {
-      return primaryKey;
-   }
+   //x /*******************************************************************************
+   //x  ** Getter for primaryKey
+   //x  **
+   //x  *******************************************************************************/
+   //x public Serializable getPrimaryKey()
+   //x {
+   //x    return primaryKey;
+   //x }
 
 
 
-   /*******************************************************************************
-    ** Setter for primaryKey
-    **
-    *******************************************************************************/
-   public void setPrimaryKey(Serializable primaryKey)
-   {
-      this.primaryKey = primaryKey;
-   }
+   //x /*******************************************************************************
+   //x  ** Setter for primaryKey
+   //x  **
+   //x  *******************************************************************************/
+   //x public void setPrimaryKey(Serializable primaryKey)
+   //x {
+   //x    this.primaryKey = primaryKey;
+   //x }
 
 
 
-   /*******************************************************************************
-    ** Setter for primaryKey
-    **
-    *******************************************************************************/
-   public QRecord withPrimaryKey(Serializable primaryKey)
-   {
-      this.primaryKey = primaryKey;
-      return (this);
-   }
+   //x /*******************************************************************************
+   //x  ** Setter for primaryKey
+   //x  **
+   //x  *******************************************************************************/
+   //x public QRecord withPrimaryKey(Serializable primaryKey)
+   //x {
+   //x    this.primaryKey = primaryKey;
+   //x    return (this);
+   //x }
 
 
 
@@ -145,6 +167,39 @@ public class QRecord
    public Serializable getValue(String fieldName)
    {
       return (values.get(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for displayValues
+    **
+    *******************************************************************************/
+   public Map<String, String> getDisplayValues()
+   {
+      return displayValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for displayValues
+    **
+    *******************************************************************************/
+   public void setDisplayValues(Map<String, String> displayValues)
+   {
+      this.displayValues = displayValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public String getDisplayValue(String fieldName)
+   {
+      return (displayValues.get(fieldName));
    }
 
 

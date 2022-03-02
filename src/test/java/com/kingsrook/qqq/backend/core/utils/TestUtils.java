@@ -15,6 +15,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
@@ -42,8 +44,23 @@ public class TestUtils
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
       qInstance.addProcess(defineProcessGreetPeople());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the "states" possible value source used in standard tests
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource<String> defineStatesPossibleValueSource()
+   {
+      return new QPossibleValueSource<String>()
+         .withName("state")
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(List.of("IL", "MO"));
    }
 
 
@@ -52,7 +69,7 @@ public class TestUtils
     ** Define the authentication used in standard tests - using 'mock' type.
     **
     *******************************************************************************/
-   private static QAuthenticationMetaData defineAuthentication()
+   public static QAuthenticationMetaData defineAuthentication()
    {
       return new QAuthenticationMetaData()
          .withName("mock")
@@ -89,7 +106,8 @@ public class TestUtils
          .withField(new QFieldMetaData("firstName", QFieldType.STRING))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
-         .withField(new QFieldMetaData("email", QFieldType.STRING));
+         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("homeState", QFieldType.STRING).withPossibleValueSourceName("state"));
    }
 
 

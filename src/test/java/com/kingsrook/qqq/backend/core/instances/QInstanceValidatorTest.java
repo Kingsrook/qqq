@@ -35,7 +35,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
-    ** Test an instane with null backends - should throw.
+    ** Test an instance with null backends - should throw.
     **
     *******************************************************************************/
    @Test
@@ -57,7 +57,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
-    ** Test an instane with empty map of backends - should throw.
+    ** Test an instance with empty map of backends - should throw.
     **
     *******************************************************************************/
    @Test
@@ -79,7 +79,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
-    ** Test an instane with null tables - should throw.
+    ** Test an instance with null tables - should throw.
     **
     *******************************************************************************/
    @Test
@@ -101,7 +101,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
-    ** Test an instane with empty map of tables - should throw.
+    ** Test an instance with empty map of tables - should throw.
     **
     *******************************************************************************/
    @Test
@@ -123,7 +123,7 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
-    ** Test an instane where a table and a backend each have a name attribute that
+    ** Test an instance where a table and a backend each have a name attribute that
     ** doesn't match the key that those objects have in the instance's maps - should throw.
     **
     *******************************************************************************/
@@ -186,6 +186,62 @@ class QInstanceValidatorTest
       catch(QInstanceValidationException e)
       {
          assertReason("Unrecognized backend", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that a table with no fields fails.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateTableWithNoFields()
+   {
+      try
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.getTable("person").setFields(null);
+         new QInstanceValidator().validate(qInstance);
+         fail("Should have thrown validationException");
+      }
+      catch(QInstanceValidationException e)
+      {
+         assertReason("At least 1 field", e);
+      }
+
+      try
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.getTable("person").setFields(new HashMap<>());
+         new QInstanceValidator().validate(qInstance);
+         fail("Should have thrown validationException");
+      }
+      catch(QInstanceValidationException e)
+      {
+         assertReason("At least 1 field", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that if a field specifies a backend that doesn't exist, that it fails.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateFieldWithMissingPossibleValueSource()
+   {
+      try
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.getTable("person").getField("homeState").setPossibleValueSourceName("not a real possible value source");
+         new QInstanceValidator().validate(qInstance);
+         fail("Should have thrown validationException");
+      }
+      catch(QInstanceValidationException e)
+      {
+         assertReason("Unrecognized possibleValueSourceName", e);
       }
    }
 

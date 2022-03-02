@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
@@ -30,9 +31,11 @@ public class QInstance
    private QAuthenticationMetaData authentication = null;
 
    private Map<String, QTableMetaData> tables = new HashMap<>();
+   private Map<String, QPossibleValueSource<?>> possibleValueSources = new HashMap<>();
    private Map<String, QProcessMetaData> processes = new HashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
+
    @JsonIgnore
    private boolean hasBeenValidated = false;
 
@@ -150,6 +153,36 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void addPossibleValueSource(QPossibleValueSource<?> possibleValueSource)
+   {
+      this.possibleValueSources.put(possibleValueSource.getName(), possibleValueSource);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addPossibleValueSource(String name, QPossibleValueSource possibleValueSource)
+   {
+      this.possibleValueSources.put(name, possibleValueSource);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QPossibleValueSource getPossibleValueSource(String name)
+   {
+      return (this.possibleValueSources.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public QFunctionMetaData getFunction(String processName, String functionName)
    {
       QProcessMetaData qProcessMetaData = this.processes.get(processName);
@@ -223,6 +256,28 @@ public class QInstance
    public void setTables(Map<String, QTableMetaData> tables)
    {
       this.tables = tables;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleValueSources
+    **
+    *******************************************************************************/
+   public Map<String, QPossibleValueSource<?>> getPossibleValueSources()
+   {
+      return possibleValueSources;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for possibleValueSources
+    **
+    *******************************************************************************/
+   public void setPossibleValueSources(Map<String, QPossibleValueSource<?>> possibleValueSources)
+   {
+      this.possibleValueSources = possibleValueSources;
    }
 
 

@@ -35,6 +35,15 @@ public interface QBackendModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   default UpdateInterface getUpdateInterface()
+   {
+      throwNotImplemented("Update");
+      return null;
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    default DeleteInterface getDeleteInterface()
    {
       throwNotImplemented("Delete");

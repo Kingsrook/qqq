@@ -6,32 +6,30 @@ package com.kingsrook.qqq.backend.core.modules.mock;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
+import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 
 
 /*******************************************************************************
- ** Mocked up version of delete action.
+ ** Mocked up version of update action.
  **
  *******************************************************************************/
-public class MockDeleteAction implements DeleteInterface
+public class MockUpdateAction implements UpdateInterface
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public DeleteResult execute(DeleteRequest deleteRequest) throws QException
+   public UpdateResult execute(UpdateRequest updateRequest) throws QException
    {
       try
       {
-         DeleteResult rs = new DeleteResult();
+         UpdateResult rs = new UpdateResult();
 
-         rs.setRecords(deleteRequest.getPrimaryKeys().stream().map(primaryKey ->
+         rs.setRecords(updateRequest.getRecords().stream().map(qRecord ->
          {
-            QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
             return new QRecordWithStatus(qRecord);
          }).toList());
 
@@ -39,7 +37,7 @@ public class MockDeleteAction implements DeleteInterface
       }
       catch(Exception e)
       {
-         throw new QException("Error executing delete: " + e.getMessage(), e);
+         throw new QException("Error executing update: " + e.getMessage(), e);
       }
    }
 

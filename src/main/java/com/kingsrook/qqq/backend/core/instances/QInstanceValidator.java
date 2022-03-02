@@ -60,26 +60,57 @@ public class QInstanceValidator
       List<String> errors = new ArrayList<>();
       try
       {
-         if(assertCondition(errors, CollectionUtils.nullSafeHasContents(qInstance.getBackends()), "At least 1 backend must be defined."))
+         if(assertCondition(errors, CollectionUtils.nullSafeHasContents(qInstance.getBackends()),
+            "At least 1 backend must be defined."))
          {
             qInstance.getBackends().forEach((backendName, backend) ->
             {
-               assertCondition(errors, Objects.equals(backendName, backend.getName()), "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
+               assertCondition(errors, Objects.equals(backendName, backend.getName()),
+                  "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
             });
          }
 
-         if(assertCondition(errors, CollectionUtils.nullSafeHasContents(qInstance.getTables()), "At least 1 table must be defined."))
+         /////////////////////////
+         // validate the tables //
+         /////////////////////////
+         if(assertCondition(errors, CollectionUtils.nullSafeHasContents(qInstance.getTables()),
+            "At least 1 table must be defined."))
          {
             qInstance.getTables().forEach((tableName, table) ->
             {
-               assertCondition(errors, Objects.equals(tableName, table.getName()), "Inconsistent naming for table: " + tableName + "/" + table.getName() + ".");
+               assertCondition(errors, Objects.equals(tableName, table.getName()),
+                  "Inconsistent naming for table: " + tableName + "/" + table.getName() + ".");
 
-               if(assertCondition(errors, StringUtils.hasContent(table.getBackendName()), "Missing backend name for table " + tableName + "."))
+               ////////////////////////////////////////
+               // validate the backend for the table //
+               ////////////////////////////////////////
+               if(assertCondition(errors, StringUtils.hasContent(table.getBackendName()),
+                  "Missing backend name for table " + tableName + "."))
                {
                   if(CollectionUtils.nullSafeHasContents(qInstance.getBackends()))
                   {
-                     assertCondition(errors, qInstance.getBackendForTable(tableName) != null, "Unrecognized backend " + table.getBackendName() + " for table " + tableName + ".");
+                     assertCondition(errors, qInstance.getBackendForTable(tableName) != null,
+                        "Unrecognized backend " + table.getBackendName() + " for table " + tableName + ".");
                   }
+               }
+
+               //////////////////////////////////
+               // validate fields in the table //
+               //////////////////////////////////
+               if(assertCondition(errors, CollectionUtils.nullSafeHasContents(table.getFields()),
+                  "At least 1 field must be defined in table " + tableName + "."))
+               {
+                  table.getFields().forEach((fieldName, field) ->
+                  {
+                     assertCondition(errors, Objects.equals(fieldName, field.getName()),
+                        "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
+
+                     if(field.getPossibleValueSourceName() != null)
+                     {
+                        assertCondition(errors, qInstance.getPossibleValueSource(field.getPossibleValueSourceName()) != null,
+                           "Unrecognized possibleValueSourceName " + field.getPossibleValueSourceName() + " in table " + tableName + " for field " + fieldName + ".");
+                     }
+                  });
                }
             });
          }

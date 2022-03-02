@@ -44,7 +44,7 @@ class JsonUtilsTest
    {
       QRecord qRecord = getQRecord();
       String json = JsonUtils.toJson(qRecord);
-      assertEquals("{\"tableName\":\"foo\",\"primaryKey\":1,\"values\":{\"foo\":\"Foo\",\"bar\":3.14159}}", json);
+      assertEquals("{\"tableName\":\"foo\",\"values\":{\"foo\":\"Foo\",\"bar\":3.14159},\"displayValues\":{}}", json);
    }
 
 
@@ -188,7 +188,7 @@ class JsonUtilsTest
    {
       QRecord qRecord = new QRecord();
       qRecord.setTableName("foo");
-      qRecord.setPrimaryKey(1);
+      qRecord.setValue("id", 1);
       Map<String, Serializable> values = new LinkedHashMap<>();
       qRecord.setValues(values);
       values.put("foo", "Foo");

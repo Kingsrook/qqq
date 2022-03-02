@@ -1,30 +1,30 @@
 /*
- * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
+ * Copyright © 2021-2022. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
  */
 
-package com.kingsrook.qqq.backend.core.model.data;
+package com.kingsrook.qqq.backend.core.model.actions.update;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Wrapper on a QRecord, to add status information after an action took place.
- ** e.g., any errors that occurred.
- **
- ** TODO - expand?
+ ** Request data handler for the update action
  **
  *******************************************************************************/
-public class QRecordWithStatus extends QRecord
+public class UpdateRequest extends AbstractQTableRequest
 {
-   private List<Exception> errors;
+   private List<QRecord> records;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QRecordWithStatus()
+   public UpdateRequest()
    {
    }
 
@@ -33,31 +33,30 @@ public class QRecordWithStatus extends QRecord
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QRecordWithStatus(QRecord record)
+   public UpdateRequest(QInstance instance)
    {
-      super.setTableName(record.getTableName());
-      super.setValues(record.getValues());
+      super(instance);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for errors
+    ** Getter for records
     **
     *******************************************************************************/
-   public List<Exception> getErrors()
+   public List<QRecord> getRecords()
    {
-      return errors;
+      return records;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for errors
+    ** Setter for records
     **
     *******************************************************************************/
-   public void setErrors(List<Exception> errors)
+   public void setRecords(List<QRecord> records)
    {
-      this.errors = errors;
+      this.records = records;
    }
 }

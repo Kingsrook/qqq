@@ -7,6 +7,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.IOException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -86,6 +87,21 @@ public class JsonUtils
    {
       ObjectMapper objectMapper = newObjectMapper();
       T t = objectMapper.reader().readValue(json, targetClass);
+      return t;
+   }
+
+
+
+   /*******************************************************************************
+    ** De-serialize a json string into an object of the specified class.
+    **
+    ** Internally using jackson - so jackson annotations apply!
+    **
+    *******************************************************************************/
+   public static <T> T toObject(String json, TypeReference<T> typeReference) throws IOException
+   {
+      ObjectMapper objectMapper = newObjectMapper();
+      T t = objectMapper.readValue(json, typeReference);
       return t;
    }
 

@@ -49,12 +49,22 @@ public class QAuthenticationModuleDispatcher
          throw (new QModuleDispatchException("No authentication meta data defined."));
       }
 
+      return getQModule(authenticationMetaData.getType());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAuthenticationModuleInterface getQModule(String authenticationType) throws QModuleDispatchException
+   {
       try
       {
-         String className = authenticationTypeToModuleClassNameMap.get(authenticationMetaData.getType());
+         String className = authenticationTypeToModuleClassNameMap.get(authenticationType);
          if(className == null)
          {
-            throw (new QModuleDispatchException("Unrecognized authentication type [" + authenticationMetaData.getType() + "] in dispatcher."));
+            throw (new QModuleDispatchException("Unrecognized authentication type [" + authenticationType + "] in dispatcher."));
          }
 
          Class<?> moduleClass = Class.forName(className);
@@ -66,7 +76,8 @@ public class QAuthenticationModuleDispatcher
       }
       catch(Exception e)
       {
-         throw (new QModuleDispatchException("Error getting authentication module of type: " + authenticationMetaData.getType(), e));
+         throw (new QModuleDispatchException("Error getting authentication module of type: " + authenticationType, e));
       }
    }
+
 }

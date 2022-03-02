@@ -9,6 +9,7 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 
 
 /*******************************************************************************
@@ -38,6 +39,16 @@ public class MockBackendModule implements QBackendModuleInterface
    public InsertInterface getInsertInterface()
    {
       return (new MockInsertAction());
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public UpdateInterface getUpdateInterface()
+   {
+      return (new MockUpdateAction());
    }
 
 

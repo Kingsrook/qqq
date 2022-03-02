@@ -1,0 +1,156 @@
+{
+  "authentication": {
+    "name": "mock",
+    "type": "mock",
+    "values": null
+  },
+  "tables": {
+    "person": {
+      "name": "person",
+      "label": "Person",
+      "backendName": "default",
+      "primaryKeyField": "id",
+      "fields": {
+        "id": {
+          "name": "id",
+          "label": null,
+          "backendName": null,
+          "type": "INTEGER",
+          "possibleValueSourceName": null
+        },
+        "createDate": {
+          "name": "createDate",
+          "label": null,
+          "backendName": null,
+          "type": "DATE_TIME",
+          "possibleValueSourceName": null
+        },
+        "modifyDate": {
+          "name": "modifyDate",
+          "label": null,
+          "backendName": null,
+          "type": "DATE_TIME",
+          "possibleValueSourceName": null
+        },
+        "firstName": {
+          "name": "firstName",
+          "label": null,
+          "backendName": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "lastName": {
+          "name": "lastName",
+          "label": null,
+          "backendName": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "birthDate": {
+          "name": "birthDate",
+          "label": null,
+          "backendName": null,
+          "type": "DATE",
+          "possibleValueSourceName": null
+        },
+        "email": {
+          "name": "email",
+          "label": null,
+          "backendName": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "homeState": {
+          "name": "homeState",
+          "label": null,
+          "backendName": null,
+          "type": "STRING",
+          "possibleValueSourceName": "state"
+        }
+      }
+    }
+  },
+  "possibleValueSources": {
+    "state": {
+      "name": "state",
+      "type": "ENUM",
+      "enumValues": [
+        "IL",
+        "MO"
+      ]
+    }
+  },
+  "processes": {
+    "greet": {
+      "name": "greet",
+      "tableName": "person",
+      "functionList": [
+        {
+          "name": "prepare",
+          "label": null,
+          "inputMetaData": {
+            "recordListMetaData": {
+              "tableName": "person",
+              "fields": null
+            },
+            "fieldList": [
+              {
+                "name": "greetingPrefix",
+                "label": null,
+                "backendName": null,
+                "type": "STRING",
+                "possibleValueSourceName": null
+              },
+              {
+                "name": "greetingSuffix",
+                "label": null,
+                "backendName": null,
+                "type": "STRING",
+                "possibleValueSourceName": null
+              }
+            ]
+          },
+          "outputMetaData": {
+            "recordListMetaData": {
+              "tableName": "person",
+              "fields": {
+                "fullGreeting": {
+                  "name": "fullGreeting",
+                  "label": null,
+                  "backendName": null,
+                  "type": "STRING",
+                  "possibleValueSourceName": null
+                }
+              }
+            },
+            "fieldList": [
+              {
+                "name": "outputMessage",
+                "label": null,
+                "backendName": null,
+                "type": "STRING",
+                "possibleValueSourceName": null
+              }
+            ]
+          },
+          "code": {
+            "name": "com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody",
+            "codeType": "JAVA",
+            "codeUsage": "FUNCTION"
+          },
+          "outputView": {
+            "messageField": "outputMessage",
+            "recordListView": {
+              "fieldNames": [
+                "id",
+                "firstName",
+                "lastName",
+                "fullGreeting"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
