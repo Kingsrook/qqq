@@ -26,6 +26,13 @@ public class ConnectionManager
 
       switch (backend.getVendor())
       {
+         case "aurora":
+         {
+            //TODO AWS version not working and why ssl=false required?
+            jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
+            //jdbcURL = "jdbc:mysql:aws://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
+            break;
+         }
          case "mysql":
          {
             jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
