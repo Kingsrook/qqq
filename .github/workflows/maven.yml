@@ -25,8 +25,8 @@ jobs:
     - name: maven-settings-xml-action
       uses: whelk-io/maven-settings-xml-action@v20
       with:
+        servers: '[{ "id": "github", "username": "tsamplesKR", "password": "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" }]'
         repositories: '[{ "id": "github", "url": "https://maven.pkg.github.com/Kingsrook/qqq-maven-registry", "snapshots": { "enabled": "true" }}]'
-        servers: '[{ "id": "github", "username": "${{ secrets.QQQ_MAVEN_REGISTRY_USERNAME }}", "password": "${{ secrets.QQQ_MAVEN_REGISTRY_PASSWORD }}" }]'
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Publish to GitHub Packages Apache Maven
