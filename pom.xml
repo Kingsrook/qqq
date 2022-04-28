@@ -151,4 +151,21 @@
       </plugins>
    </build>
 
+
+   <repositories>
+      <repository>
+         <id>github</id>
+         <name>GitHub QQQ Maven Registry</name>
+         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
+      </repository>
+   </repositories>
+
+   <distributionManagement>
+      <repository>
+         <id>github-qqq-maven-registry</id>
+         <name>GitHub QQQ Maven Registry</name>
+         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
+      </repository>
+   </distributionManagement>
+
 </project>
