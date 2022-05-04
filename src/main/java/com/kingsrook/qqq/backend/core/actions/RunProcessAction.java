@@ -83,6 +83,7 @@ public class RunProcessAction
 
 
    /*******************************************************************************
+    ** Load an instance of the appropriate state provider
     **
     *******************************************************************************/
    private StateProviderInterface getStateProvider()
@@ -94,6 +95,10 @@ public class RunProcessAction
 
 
 
+   /*******************************************************************************
+    ** Store the process state from a function result to the state provider
+    **
+    *******************************************************************************/
    private void storeState(UUIDStateKey stateKey, RunFunctionResult runFunctionResult)
    {
       getStateProvider().put(stateKey, runFunctionResult.getProcessState());
@@ -101,6 +106,10 @@ public class RunProcessAction
 
 
 
+   /*******************************************************************************
+    ** Load the process state into a function request from the state provider
+    **
+    *******************************************************************************/
    private void loadState(UUIDStateKey stateKey, RunFunctionRequest runFunctionRequest)
    {
       ProcessState processState = getStateProvider().get(ProcessState.class, stateKey);

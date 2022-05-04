@@ -30,6 +30,7 @@ public class MockQueryAction implements QueryInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("checkstyle:Indentation") // for switch expression
    public QueryResult execute(QueryRequest queryRequest) throws QException
    {
       try
