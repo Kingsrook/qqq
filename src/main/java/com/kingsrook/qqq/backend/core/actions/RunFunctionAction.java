@@ -21,6 +21,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -61,9 +62,7 @@ public class RunFunctionAction
       ////////////////////////////////////////////////////////////////////
       // load and run the user-defined code that actually does the work //
       ////////////////////////////////////////////////////////////////////
-      RunFunctionResult runFunctionResult = runFunctionBodyCode(function.getCode(), runFunctionRequest);
-
-      return (runFunctionResult);
+      return (runFunctionBodyCode(function.getCode(), runFunctionRequest));
    }
 
 
@@ -88,11 +87,14 @@ public class RunFunctionAction
          }
       }
 
-      Map<String, Serializable> fieldValues = runFunctionRequest.getCallback().getFieldValues(fieldsToGet);
-      for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
+      if(!fieldsToGet.isEmpty())
       {
-         runFunctionRequest.addValue(entry.getKey(), entry.getValue());
-         // todo - check to make sure got values back?
+         Map<String, Serializable> fieldValues = runFunctionRequest.getCallback().getFieldValues(fieldsToGet);
+         for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
+         {
+            runFunctionRequest.addValue(entry.getKey(), entry.getValue());
+            // todo - check to make sure got values back?
+         }
       }
    }
 
@@ -108,7 +110,7 @@ public class RunFunctionAction
       QRecordListMetaData recordListMetaData = inputMetaData.getRecordListMetaData();
       if(recordListMetaData != null)
       {
-         if(runFunctionRequest.getRecords() == null)
+         if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
          {
             QueryRequest queryRequest = new QueryRequest(runFunctionRequest.getInstance());
             queryRequest.setSession(runFunctionRequest.getSession());
@@ -133,18 +135,19 @@ public class RunFunctionAction
     *******************************************************************************/
    private RunFunctionResult runFunctionBodyCode(QCodeReference code, RunFunctionRequest runFunctionRequest)
    {
-      RunFunctionResult runFunctionResult;
+      RunFunctionResult runFunctionResult = new RunFunctionResult();
       try
       {
+         runFunctionResult.seedFromRequest(runFunctionRequest);
+
          Class<?> codeClass = Class.forName(code.getName());
          Object codeObject = codeClass.getConstructor().newInstance();
-         if(!(codeObject instanceof FunctionBody))
+         if(!(codeObject instanceof FunctionBody functionBodyCodeObject))
          {
             throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of FunctionBody"));
          }
 
-         FunctionBody functionBodyCodeObject = (FunctionBody) codeObject;
-         runFunctionResult = functionBodyCodeObject.run(runFunctionRequest);
+         functionBodyCodeObject.run(runFunctionRequest, runFunctionResult);
       }
       catch(Exception e)
       {

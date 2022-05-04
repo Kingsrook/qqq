@@ -17,7 +17,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 public class QFunctionInputMetaData
 {
    private QRecordListMetaData recordListMetaData;
-   private List<QFieldMetaData> fieldList;
+   private List<QFieldMetaData> fieldList = new ArrayList<>();
 
 
 

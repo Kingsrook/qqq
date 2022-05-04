@@ -6,7 +6,6 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
@@ -19,8 +18,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class RunFunctionResult extends AbstractQResult
 {
-   private List<QRecord> records;
-   private Map<String, Serializable> values;
+   private ProcessState processState;
    private String error;
 
 
@@ -30,6 +28,18 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public RunFunctionResult()
    {
+      this.processState = new ProcessState();
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., populate the process state (records, values) in this result object.
+    **
+    *******************************************************************************/
+   public void seedFromRequest(RunFunctionRequest runFunctionRequest)
+   {
+      this.processState = runFunctionRequest.getProcessState();
    }
 
 
@@ -40,7 +50,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public List<QRecord> getRecords()
    {
-      return records;
+      return processState.getRecords();
    }
 
 
@@ -51,7 +61,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public void setRecords(List<QRecord> records)
    {
-      this.records = records;
+      this.processState.setRecords(records);
    }
 
 
@@ -62,7 +72,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public RunFunctionResult withRecords(List<QRecord> records)
    {
-      this.records = records;
+      this.processState.setRecords(records);
       return (this);
    }
 
@@ -74,7 +84,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public Map<String, Serializable> getValues()
    {
-      return values;
+      return processState.getValues();
    }
 
 
@@ -85,7 +95,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public void setValues(Map<String, Serializable> values)
    {
-      this.values = values;
+      this.processState.setValues(values);
    }
 
 
@@ -96,7 +106,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public RunFunctionResult withValues(Map<String, Serializable> values)
    {
-      this.values = values;
+      this.processState.setValues(values);
       return (this);
    }
 
@@ -108,11 +118,7 @@ public class RunFunctionResult extends AbstractQResult
     *******************************************************************************/
    public RunFunctionResult addValue(String fieldName, Serializable value)
    {
-      if(this.values == null)
-      {
-         this.values = new HashMap<>();
-      }
-      this.values.put(fieldName, value);
+      this.processState.getValues().put(fieldName, value);
       return (this);
    }
 
@@ -136,5 +142,16 @@ public class RunFunctionResult extends AbstractQResult
    public void setError(String error)
    {
       this.error = error;
+   }
+
+
+
+   /*******************************************************************************
+    ** Accessor for processState
+    **
+    *******************************************************************************/
+   public ProcessState getProcessState()
+   {
+      return processState;
    }
 }

@@ -46,6 +46,7 @@ public class TestUtils
       qInstance.addTable(defineTablePerson());
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
       qInstance.addProcess(defineProcessGreetPeople());
+      qInstance.addProcess(defineProcessAddToPeoplesAge());
       return (qInstance);
    }
 
@@ -142,6 +143,53 @@ public class TestUtils
                .withMessageField("outputMessage")
                .withRecordListView(new QRecordListView().withFieldNames(List.of("id", "firstName", "lastName", "fullGreeting"))))
          );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the "add to people's age" process
+    **
+    ** Works on a list of rows from the person table.
+    ** - first function reports the current min & max age for all input rows.
+    ** - user is then prompted for how much they want to add to everyone.
+    ** - then the second function adds that value to their age, and shows the results.
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessAddToPeoplesAge()
+   {
+      return new QProcessMetaData()
+         .withName("addToPeoplesAge")
+         .withTableName("person")
+         .addFunction(new QFunctionMetaData()
+            .withName("getAgeStatistics")
+            .withCode(new QCodeReference()
+               .withName("com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics")
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.FUNCTION))
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName("person")))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("age", QFieldType.INTEGER)))
+               .withFieldList(List.of(
+                  new QFieldMetaData("minAge", QFieldType.INTEGER),
+                  new QFieldMetaData("maxAge", QFieldType.INTEGER))))
+            .withOutputView(new QOutputView()
+               .withMessageField("outputMessage"))) // todo - wut?
+         .addFunction(new QFunctionMetaData()
+            .withName("addAge")
+            .withCode(new QCodeReference()
+               .withName("com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge")
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.FUNCTION))
+            .withInputData(new QFunctionInputMetaData()
+               .withFieldList(List.of(new QFieldMetaData("yearsToAdd", QFieldType.INTEGER))))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("newAge", QFieldType.INTEGER)))));
+
    }
 
 

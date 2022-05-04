@@ -18,16 +18,11 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
 public class MockFunctionBody implements FunctionBody
 {
    @Override
-   public RunFunctionResult run(RunFunctionRequest runFunctionRequest)
+   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult)
    {
-      RunFunctionResult runFunctionResult = new RunFunctionResult();
-      runFunctionResult.setRecords(runFunctionRequest.getRecords());
-
       runFunctionResult.getRecords().forEach(r -> r.setValue("mockValue", "Ha ha!"));
 
       runFunctionResult.setValues(runFunctionRequest.getValues());
       runFunctionResult.addValue("mockValue", "You so silly");
-
-      return (runFunctionResult);
    }
 }

@@ -5,6 +5,11 @@
 package com.kingsrook.qqq.backend.core.modules.mock;
 
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -41,7 +46,20 @@ public class MockQueryAction implements QueryInterface
 
          for(String field : table.getFields().keySet())
          {
-            record.setValue(field, "1");
+            Serializable value = switch (table.getField(field).getType())
+            {
+               case STRING -> "Foo";
+               case INTEGER -> 42;
+               case DECIMAL -> new BigDecimal("3.14159");
+               case DATE -> LocalDate.of(1970, Month.JANUARY, 1);
+               case DATE_TIME -> LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0);
+               case TEXT -> "Four score and seven years ago...";
+               case HTML -> "<b>BOLD</b>";
+               case PASSWORD -> "abc***234";
+               default -> throw new IllegalStateException("Unexpected value: " + table.getField(field).getType());
+            };
+
+            record.setValue(field, value);
          }
 
          return rs;

@@ -6,6 +6,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ import java.util.Map;
  * "Display values" (e.g., labels for possible values, or formatted numbers
  * (e.g., quantities with commas)) are in the displayValues map.
  *******************************************************************************/
-public class QRecord
+public class QRecord implements Serializable
 {
    private String tableName;
    //x private Serializable primaryKey;
@@ -102,8 +103,6 @@ public class QRecord
       return (this);
    }
 
-
-
    //x /*******************************************************************************
    //x  ** Getter for primaryKey
    //x  **
@@ -113,8 +112,6 @@ public class QRecord
    //x    return primaryKey;
    //x }
 
-
-
    //x /*******************************************************************************
    //x  ** Setter for primaryKey
    //x  **
@@ -123,8 +120,6 @@ public class QRecord
    //x {
    //x    this.primaryKey = primaryKey;
    //x }
-
-
 
    //x /*******************************************************************************
    //x  ** Setter for primaryKey
@@ -222,6 +217,17 @@ public class QRecord
    public Integer getValueInteger(String fieldName)
    {
       return ((Integer) values.get(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public LocalDate getValueDate(String fieldName)
+   {
+      return ((LocalDate) values.get(fieldName));
    }
 
 }

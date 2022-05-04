@@ -99,17 +99,6 @@ public class QRecordListMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QRecordListMetaData withFields(Map<String, QFieldMetaData> fields)
-   {
-      this.fields = fields;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    public QRecordListMetaData addField(QFieldMetaData field)
    {
       if(this.fields == null)

@@ -17,5 +17,5 @@ public interface FunctionBody
    /*******************************************************************************
     ** TODO - document!
     *******************************************************************************/
-   RunFunctionResult run(RunFunctionRequest runFunctionRequest);
+   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult);
 }

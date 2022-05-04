@@ -6,7 +6,6 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
@@ -22,10 +21,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData
  *******************************************************************************/
 public class RunFunctionRequest extends AbstractQRequest
 {
+   private ProcessState processState;
    private String processName;
    private String functionName;
-   private List<QRecord> records;
-   private Map<String, Serializable> values;
    private QProcessCallback callback;
 
 
@@ -35,6 +33,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public RunFunctionRequest()
    {
+      processState = new ProcessState();
    }
 
 
@@ -45,6 +44,19 @@ public class RunFunctionRequest extends AbstractQRequest
    public RunFunctionRequest(QInstance instance)
    {
       super(instance);
+      processState = new ProcessState();
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., for steps after the first step in a process, seed the data in a run
+    ** function request from a process state.
+    **
+    *******************************************************************************/
+   public void seedFromProcessState(ProcessState processState)
+   {
+      this.processState = processState;
    }
 
 
@@ -133,7 +145,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public List<QRecord> getRecords()
    {
-      return records;
+      return processState.getRecords();
    }
 
 
@@ -144,7 +156,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public void setRecords(List<QRecord> records)
    {
-      this.records = records;
+      this.processState.setRecords(records);
    }
 
 
@@ -155,7 +167,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public RunFunctionRequest withRecords(List<QRecord> records)
    {
-      this.records = records;
+      this.processState.setRecords(records);
       return (this);
    }
 
@@ -167,7 +179,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public Map<String, Serializable> getValues()
    {
-      return values;
+      return processState.getValues();
    }
 
 
@@ -178,7 +190,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public void setValues(Map<String, Serializable> values)
    {
-      this.values = values;
+      this.processState.setValues(values);
    }
 
 
@@ -189,7 +201,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public RunFunctionRequest withValues(Map<String, Serializable> values)
    {
-      this.values = values;
+      this.processState.setValues(values);
       return (this);
    }
 
@@ -201,11 +213,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public RunFunctionRequest addValue(String fieldName, Serializable value)
    {
-      if(this.values == null)
-      {
-         this.values = new HashMap<>();
-      }
-      this.values.put(fieldName, value);
+      this.processState.getValues().put(fieldName, value);
       return (this);
    }
 
@@ -251,11 +259,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public Serializable getValue(String fieldName)
    {
-      if(values == null)
-      {
-         return (null);
-      }
-      return (values.get(fieldName));
+      return (processState.getValues().get(fieldName));
    }
 
 
@@ -280,4 +284,15 @@ public class RunFunctionRequest extends AbstractQRequest
       return ((Integer) getValue(fieldName));
    }
 
+
+
+   /*******************************************************************************
+    ** Accessor for processState - protected, because we generally want to access
+    ** its members through wrapper methods, we think
+    **
+    *******************************************************************************/
+   protected ProcessState getProcessState()
+   {
+      return processState;
+   }
 }
