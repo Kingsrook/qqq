@@ -30,7 +30,6 @@ public class MockQueryAction implements QueryInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation") // for switch expression
    public QueryResult execute(QueryRequest queryRequest) throws QException
    {
       try
@@ -47,19 +46,7 @@ public class MockQueryAction implements QueryInterface
 
          for(String field : table.getFields().keySet())
          {
-            Serializable value = switch (table.getField(field).getType())
-            {
-               case STRING -> "Foo";
-               case INTEGER -> 42;
-               case DECIMAL -> new BigDecimal("3.14159");
-               case DATE -> LocalDate.of(1970, Month.JANUARY, 1);
-               case DATE_TIME -> LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0);
-               case TEXT -> "Four score and seven years ago...";
-               case HTML -> "<b>BOLD</b>";
-               case PASSWORD -> "abc***234";
-               default -> throw new IllegalStateException("Unexpected value: " + table.getField(field).getType());
-            };
-
+            Serializable value = getValue(table, field);
             record.setValue(field, value);
          }
 
@@ -70,6 +57,30 @@ public class MockQueryAction implements QueryInterface
          e.printStackTrace();
          throw new QException("Error executing query", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a mock value to use, based on its type.
+    **
+    *******************************************************************************/
+   private Serializable getValue(QTableMetaData table, String field)
+   {
+      // @formatter:off // IJ can't do new-style switch correctly yet...
+      return switch(table.getField(field).getType())
+      {
+         case STRING -> "Foo";
+         case INTEGER -> 42;
+         case DECIMAL -> new BigDecimal("3.14159");
+         case DATE -> LocalDate.of(1970, Month.JANUARY, 1);
+         case DATE_TIME -> LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0);
+         case TEXT -> "Four score and seven years ago...";
+         case HTML -> "<b>BOLD</b>";
+         case PASSWORD -> "abc***234";
+         default -> throw new IllegalStateException("Unexpected value: " + table.getField(field).getType());
+      };
+      // @formatter:on
    }
 
 }
