@@ -11,25 +11,24 @@ orbs:
 workflows:
   main:
     jobs:
-      ##################################################################################
-      ## Job (based on maven orb) to test the codebase.  Should run for all branches. ##
-      ##################################################################################
+      ##############################################################################
+      ## Job (from maven orb) to test the codebase.  Should run for all branches. ##
+      ##############################################################################
       - maven/test:
           name: run_tests
           executor: java17
 
-      ##############################################################################################
-      ## Job (based on maven orb) to do a mvn deploy to publish jar to github qqq-maven-registry. ##
-      ##############################################################################################
+      #############################################################################################
+      ## Job (from maven orb) to do a mvn deploy to publish jar to github qqq-maven-registry.    ##
+      ## Note: despite "/test" in the name, we specify the mvn sub-command w/ the command param. ##
+      #############################################################################################
       - maven/test:
           name: deploy_to_github
           executor: java17
           command: 'deploy -DskipTests' ## tests were previously ran, so okay to skip them here,
           settings_file: .circleci/mvn-settings.xml
-          context:
-            - Production
-          requires:
-            - run_tests
+          context: qqq-maven-registry-credentials
+          requires: [ run_tests ]
           filters:
             branches:
               only: circleci-project-setup ## todo - change to main
