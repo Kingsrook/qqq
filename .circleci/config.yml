@@ -29,13 +29,6 @@ jobs:
           when: always
       - store_test_results:
           path: ~/test-results
-      - persist_to_workspace:
-          root: target
-          paths:
-            - qqq-backend-core-*.jar
-      - store_artifacts:
-          path: target/qqq-backend-core-*.jar
-          destination: qqq-backend-core.jar
       - save_cache:
           paths:
             - ~/.m2
@@ -48,10 +41,6 @@ jobs:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run: |
-          echo "working dir:"
-          pwd
-          echo "listing"
-          ls -l
           mvn -s .circleci/mvn-settings.xml deploy -DskipTests
 
 workflows:
@@ -59,6 +48,8 @@ workflows:
     jobs:
       - maven_package
       - github_release:
+          context:
+            - Production
           requires:
             - maven_package
           filters:
