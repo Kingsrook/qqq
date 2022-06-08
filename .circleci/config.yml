@@ -17,6 +17,9 @@ workflows:
       - maven/test:
           name: run_tests
           executor: java17
+          filters:
+            branches:
+              ignore: circleci-project-setup ## todo - change to main
 
       #############################################################################################
       ## Job (from maven orb) to do a mvn deploy to publish jar to github qqq-maven-registry.    ##
@@ -25,10 +28,9 @@ workflows:
       - maven/test:
           name: deploy_to_github
           executor: java17
-          command: 'deploy -DskipTests' ## tests were previously ran, so okay to skip them here,
+          command: deploy
           settings_file: .circleci/mvn-settings.xml
           context: qqq-maven-registry-credentials
-          requires: [ run_tests ]
           filters:
             branches:
               only: circleci-project-setup ## todo - change to main
