@@ -43,12 +43,17 @@ jobs:
   github_release:
     executor: java17
     steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
       - run: |
           echo "working dir:"
           pwd
           echo "listing"
           ls -l
-          mvn -s .circleci/mvn-settings.xml deploy
+          mvn -s .circleci/mvn-settings.xml deploy -DskipTests
+
 workflows:
   main:
     jobs:
