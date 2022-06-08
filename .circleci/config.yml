@@ -20,7 +20,7 @@ workflows:
       - maven/test:
           name: deploy_to_github
           executor: java17
-          command: 'deploy -DskipTests'
+          command: 'deploy:deploy'
           settings_file: .circleci/mvn-settings.xml
           context:
             - Production
