@@ -40,8 +40,17 @@ jobs:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
+  github_release:
+    executor: java17
+    steps:
+      - run:
+          echo "i don't know how to github release..."
 
 workflows:
   main:
     jobs:
       - maven_package
+      - github_release:
+          filters:
+            branches:
+              only: circleci-project-setup ## todo - change to main
