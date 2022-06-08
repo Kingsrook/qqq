@@ -1,0 +1,38 @@
+version: 2.1
+
+executors:
+  java17:
+    docker:
+      - image: 'cimg/openjdk:17.0'
+
+orbs:
+  maven: circleci/maven@1.3.0
+
+# Define a job to be invoked later in a workflow.
+jobs:
+  build:
+    executor: java17
+    steps:
+      # todo - ssh keys?
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Build with tests
+          command: |
+            mvn clean install
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - persist_to_workspace:
+          root: target
+          paths:
+            - qqq-backend-core-*.jar          
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
