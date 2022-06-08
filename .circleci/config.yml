@@ -44,7 +44,7 @@ jobs:
     executor: java17
     steps:
       - run:
-          echo "i don't know how to github release..."
+          mvn -s .circleci/mvn-settings.xml deploy
 
 workflows:
   main:
