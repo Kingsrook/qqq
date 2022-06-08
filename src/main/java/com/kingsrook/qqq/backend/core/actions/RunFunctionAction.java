@@ -1,5 +1,22 @@
 /*
- * Copyright © 2021-2021. Kingsrook LLC <contact@kingsrook.com>.  All Rights Reserved.
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.kingsrook.qqq.backend.core.actions;
@@ -21,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -61,9 +79,7 @@ public class RunFunctionAction
       ////////////////////////////////////////////////////////////////////
       // load and run the user-defined code that actually does the work //
       ////////////////////////////////////////////////////////////////////
-      RunFunctionResult runFunctionResult = runFunctionBodyCode(function.getCode(), runFunctionRequest);
-
-      return (runFunctionResult);
+      return (runFunctionBodyCode(function.getCode(), runFunctionRequest));
    }
 
 
@@ -88,11 +104,14 @@ public class RunFunctionAction
          }
       }
 
-      Map<String, Serializable> fieldValues = runFunctionRequest.getCallback().getFieldValues(fieldsToGet);
-      for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
+      if(!fieldsToGet.isEmpty())
       {
-         runFunctionRequest.addValue(entry.getKey(), entry.getValue());
-         // todo - check to make sure got values back?
+         Map<String, Serializable> fieldValues = runFunctionRequest.getCallback().getFieldValues(fieldsToGet);
+         for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
+         {
+            runFunctionRequest.addValue(entry.getKey(), entry.getValue());
+            // todo - check to make sure got values back?
+         }
       }
    }
 
@@ -108,7 +127,7 @@ public class RunFunctionAction
       QRecordListMetaData recordListMetaData = inputMetaData.getRecordListMetaData();
       if(recordListMetaData != null)
       {
-         if(runFunctionRequest.getRecords() == null)
+         if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
          {
             QueryRequest queryRequest = new QueryRequest(runFunctionRequest.getInstance());
             queryRequest.setSession(runFunctionRequest.getSession());
@@ -133,18 +152,19 @@ public class RunFunctionAction
     *******************************************************************************/
    private RunFunctionResult runFunctionBodyCode(QCodeReference code, RunFunctionRequest runFunctionRequest)
    {
-      RunFunctionResult runFunctionResult;
+      RunFunctionResult runFunctionResult = new RunFunctionResult();
       try
       {
+         runFunctionResult.seedFromRequest(runFunctionRequest);
+
          Class<?> codeClass = Class.forName(code.getName());
          Object codeObject = codeClass.getConstructor().newInstance();
-         if(!(codeObject instanceof FunctionBody))
+         if(!(codeObject instanceof FunctionBody functionBodyCodeObject))
          {
             throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of FunctionBody"));
          }
 
-         FunctionBody functionBodyCodeObject = (FunctionBody) codeObject;
-         runFunctionResult = functionBodyCodeObject.run(runFunctionRequest);
+         functionBodyCodeObject.run(runFunctionRequest, runFunctionResult);
       }
       catch(Exception e)
       {
