@@ -11,7 +11,10 @@ orbs:
 workflows:
   maven_test:
     jobs:
-      - maven/test # checkout, build, test, and upload test results
+      - maven/test: # checkout, build, test, and upload test results
+          executor: java17
+
+
 
 ## I think this job won't run anymore, after I add a workflow.  Just leaving it here for reference, and to confirm that.
 jobs:
