@@ -51,6 +51,8 @@ workflows:
     jobs:
       - maven_package
       - github_release:
+          requires:
+            - maven_package
           filters:
             branches:
               only: circleci-project-setup ## todo - change to main
