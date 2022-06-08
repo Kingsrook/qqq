@@ -11,16 +11,20 @@ orbs:
 workflows:
   main:
     jobs:
-      ## Job (based on maven orb) to test the codebase.  Should run for all branches.  
+      ##################################################################################
+      ## Job (based on maven orb) to test the codebase.  Should run for all branches. ##
+      ##################################################################################
       - maven/test:
           name: run_tests
           executor: java17
 
-      ## Job (based on maven orb) to do a mvn deploy to publish jar to github qqq-maven-registry
+      ##############################################################################################
+      ## Job (based on maven orb) to do a mvn deploy to publish jar to github qqq-maven-registry. ##
+      ##############################################################################################
       - maven/test:
           name: deploy_to_github
           executor: java17
-          command: 'deploy:deploy'
+          command: 'deploy -DskipTests' ## tests were previously ran, so okay to skip them here,
           settings_file: .circleci/mvn-settings.xml
           context:
             - Production
