@@ -43,9 +43,12 @@ jobs:
   github_release:
     executor: java17
     steps:
-      - run:
+      - run: |
+          echo "working dir:"
+          pwd
+          echo "listing"
+          ls -l
           mvn -s .circleci/mvn-settings.xml deploy
-
 workflows:
   main:
     jobs:
