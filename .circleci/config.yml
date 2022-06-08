@@ -36,23 +36,24 @@ jobs:
   github_release:
     executor: java17
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run: |
-          mvn -s .circleci/mvn-settings.xml deploy -DskipTests
+      - maven/test:
+          executor: java17
 
 workflows:
   main:
     jobs:
       - maven/test:
+          name: run_tests
           executor: java17
-      - github_release:
+      - maven/test:
+          name: deploy_to_github
+          executor: java17
+          command: 'deploy -DskipTests'
+          settings_file: .circleci/mvn-settings.xml
           context:
             - Production
           requires:
-            - maven/test
+            - run_tests
           filters:
             branches:
               only: circleci-project-setup ## todo - change to main
