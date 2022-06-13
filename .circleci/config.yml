@@ -4,33 +4,74 @@ executors:
   java17:
     docker:
       - image: 'cimg/openjdk:17.0'
+    resource_class: small
 
 orbs:
-  maven: circleci/maven@1.3.0
+  slack: circleci/slack@4.10.1
+
+commands:
+  run_maven:
+    parameters:
+      maven_subcommand:
+        default: test
+        type: string
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Run Maven
+          command: |
+            mvn -s .circleci/mvn-settings.xml << parameters.maven_subcommand >>
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/test-results
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+jobs:
+  mvn_test:
+    executor: java17
+    steps:
+      - run_maven:
+          maven_subcommand: test
+      - slack/notify:
+          event: fail
+
+  mvn_deploy:
+    executor: java17
+    steps:
+      - run_maven:
+          maven_subcommand: deploy
+      - slack/notify:
+          event: always
 
 workflows:
-  main:
+  test_only:
     jobs:
-      ##############################################################################
-      ## Job (from maven orb) to test the codebase.  Should run for all branches. ##
-      ##############################################################################
-      - maven/test:
-          name: run_tests
-          executor: java17
+      - mvn_test:
+          context: [ qqq-maven-registry-credentials, kingsrook-slack ]
           filters:
             branches:
-              ignore: circleci-project-setup ## todo - change to main
+              ignore: /dev/
+            tags:
+              ignore: /version-.*/
 
-      #############################################################################################
-      ## Job (from maven orb) to do a mvn deploy to publish jar to github qqq-maven-registry.    ##
-      ## Note: despite "/test" in the name, we specify the mvn sub-command w/ the command param. ##
-      #############################################################################################
-      - maven/test:
-          name: deploy_to_github
-          executor: java17
-          command: deploy
-          settings_file: .circleci/mvn-settings.xml
-          context: qqq-maven-registry-credentials
+  deploy:
+    jobs:
+      - mvn_deploy:
+          context: [ qqq-maven-registry-credentials, kingsrook-slack ]
           filters:
             branches:
-              only: circleci-project-setup ## todo - change to main
+              only: /dev/
+            tags:
+              only: /version-.*/
+
