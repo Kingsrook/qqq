@@ -20,14 +20,18 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <modelVersion>4.0.0</modelVersion>
 
    <groupId>com.kingsrook.qqq</groupId>
    <artifactId>qqq-middleware-javalin</artifactId>
-   <version>0.0-SNAPSHOT</version>
+   <version>0.0.0-SNAPSHOT</version>
+
+   <scm>
+     <connection>scm:git:git@github.com:Kingsrook/qqq-middleware-javalin.git</connection>
+     <developerConnection>scm:git:git@github.com:Kingsrook/qqq-middleware-javalin.git</developerConnection>
+     <tag>HEAD</tag>
+   </scm>
 
    <properties>
       <!-- props specifically to this module -->
@@ -47,12 +51,12 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.0-SNAPSHOT</version>
+         <version>0.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>0.0-SNAPSHOT</version>
+         <version>0.0.0-SNAPSHOT</version>
          <scope>test</scope>
       </dependency>
 
@@ -165,13 +169,28 @@
                </execution>
             </executions>
          </plugin>
+         <plugin>
+            <groupId>com.amashchenko.maven.plugin</groupId>
+            <artifactId>gitflow-maven-plugin</artifactId>
+            <version>1.18.0</version>
+            <configuration>
+               <gitFlowConfig>
+                  <productionBranch>main</productionBranch>
+                  <developmentBranch>dev</developmentBranch>
+                  <versionTagPrefix>version-</versionTagPrefix>
+               </gitFlowConfig>
+               <skipFeatureVersion>true</skipFeatureVersion> <!-- Keep feature names out of versions -->
+               <postReleaseGoals>install</postReleaseGoals>  <!-- Let CI run deploys -->
+               <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
+               <versionDigitToIncrement>1</versionDigitToIncrement> <!-- In general, we update the minor -->
+            </configuration>
+         </plugin>
       </plugins>
    </build>
 
-
    <repositories>
       <repository>
-         <id>github</id>
+         <id>github-qqq-maven-registry</id>
          <name>GitHub QQQ Maven Registry</name>
          <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
       </repository>
