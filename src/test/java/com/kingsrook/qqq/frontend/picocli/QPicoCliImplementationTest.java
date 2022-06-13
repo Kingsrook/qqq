@@ -246,7 +246,8 @@ class QPicoCliImplementationTest
    {
       TestOutput testOutput = testCli("person", "insert",
          "--field-firstName=Lucy",
-         "--field-lastName=Lu");
+         "--field-lastName=Lu",
+         "--field-email=lucy@kingsrook.com");
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       assertEquals(1, insertResult.getJSONArray("records").length());
@@ -263,11 +264,11 @@ class QPicoCliImplementationTest
    public void test_tableInsertJsonObjectArgumentWithMapping()
    {
       String mapping = """
-         --mapping={"firstName":"first","lastName":"ln"}
+         --mapping={"firstName":"first","lastName":"ln","email":"email"}
          """;
 
       String jsonBody = """
-         --jsonBody={"first":"Chester","ln":"Cheese"}
+         --jsonBody={"first":"Chester","ln":"Cheese","email":"chester@kingsrook.com"}
          """;
 
       TestOutput testOutput = testCli("person", "insert", mapping, jsonBody);
@@ -277,6 +278,7 @@ class QPicoCliImplementationTest
       assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
       assertEquals("Chester", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Cheese", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("lastName"));
+      assertEquals("chester@kingsrook.com", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("email"));
    }
 
 
@@ -289,11 +291,14 @@ class QPicoCliImplementationTest
    public void test_tableInsertJsonArrayFileWithMapping() throws IOException
    {
       String mapping = """
-         --mapping={"firstName":"first","lastName":"ln"}
+         --mapping={"firstName":"first","lastName":"ln","email":"email"}
          """;
 
       String jsonContents = """
-         [{"first":"Charlie","ln":"Bear"},{"first":"Coco","ln":"Bean"}]
+         [
+            {"first":"Charlie","ln":"Bear","email":"charlie-bear@kingsrook.com"},
+            {"first":"Coco","ln":"Bean","email":"coco-bean@kingsrook.com"}
+         ]
          """;
 
       File file = new File("/tmp/" + UUID.randomUUID() + ".json");
@@ -309,8 +314,10 @@ class QPicoCliImplementationTest
       assertEquals(7, insertResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
       assertEquals("Charlie", records.getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Bear", records.getJSONObject(0).getJSONObject("values").getString("lastName"));
+      assertEquals("charlie-bear@kingsrook.com", records.getJSONObject(0).getJSONObject("values").getString("email"));
       assertEquals("Coco", records.getJSONObject(1).getJSONObject("values").getString("firstName"));
       assertEquals("Bean", records.getJSONObject(1).getJSONObject("values").getString("lastName"));
+      assertEquals("coco-bean@kingsrook.com", records.getJSONObject(1).getJSONObject("values").getString("email"));
    }
 
 
@@ -323,12 +330,12 @@ class QPicoCliImplementationTest
    public void test_tableInsertCsvFileWithIndexMapping() throws IOException
    {
       String mapping = """
-         --mapping={"firstName":1,"lastName":3}
+         --mapping={"firstName":1,"lastName":3,"email":5}
          """;
 
       String csvContents = """
-         "Louis","P","Willikers",1024,
-         "Nestle","G","Crunch",1701,
+         "Louis","P","Willikers",1024,"louis@kingsrook.com",
+         "Nestle","G","Crunch",1701,"nestle@kingsrook.com",
                   
          """;
 
