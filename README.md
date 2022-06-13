@@ -9,8 +9,7 @@ It has a Javalin (http) server, and a Pico-CLI - both very very thin, just basic
 QQQ - Low-code Application Framework for Engineers. \
 Copyright (C) 2022.  Kingsrook, LLC \
 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States \
-contact@kingsrook.com
-https://github.com/Kingsrook/intellij-commentator-plugin
+contact@kingsrook.com | https://github.com/Kingsrook/
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
