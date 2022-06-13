@@ -203,6 +203,7 @@ class QJavalinImplementationTest
       Map<String, Serializable> body = new HashMap<>();
       body.put("firstName", "Bobby");
       body.put("lastName", "Hull");
+      body.put("email", "bobby@hull.com");
 
       HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
          .header("Content-Type", "application/json")
