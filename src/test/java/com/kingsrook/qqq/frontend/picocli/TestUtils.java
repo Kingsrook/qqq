@@ -67,6 +67,7 @@ public class TestUtils
       InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
       assertNotNull(primeTestDatabaseSqlStream);
       List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+      lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
       String joinedSQL = String.join("\n", lines);
       for(String sql : joinedSQL.split(";"))
       {
