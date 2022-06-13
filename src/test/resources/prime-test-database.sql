@@ -22,7 +22,7 @@
 DROP TABLE IF EXISTS person;
 CREATE TABLE person
 (
-   id SERIAL,
+   id INT AUTO_INCREMENT,
    create_date TIMESTAMP DEFAULT now(),
    modify_date TIMESTAMP DEFAULT now(),
 
