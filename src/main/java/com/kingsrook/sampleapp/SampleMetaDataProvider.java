@@ -22,6 +22,7 @@
 package com.kingsrook.sampleapp;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
@@ -44,10 +45,23 @@ public class SampleMetaDataProvider
    public static QInstance defineInstance()
    {
       QInstance qInstance = new QInstance();
+      qInstance.setAuthentication(SampleMetaDataProvider.defineAuthentication());
       qInstance.addBackend(SampleMetaDataProvider.defineBackend());
       qInstance.addTable(SampleMetaDataProvider.defineTableCarrier());
       qInstance.addTable(SampleMetaDataProvider.defineTablePerson());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QAuthenticationMetaData defineAuthentication()
+   {
+      return new QAuthenticationMetaData()
+         .withName("Anonymous")
+         .withType("fullyAnonymous");
    }
 
 
