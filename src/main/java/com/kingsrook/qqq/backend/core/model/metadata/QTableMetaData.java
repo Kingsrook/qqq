@@ -34,6 +34,15 @@ public class QTableMetaData
 {
    private String name;
    private String label;
+
+   // TODO:  resolve confusion over:
+   //    Is this name of what backend the table is stored in (yes)
+   //    Or the "name" of the table WITHIN the backend (no)
+   //       although that's how "backendName" is used in QFieldMetaData.
+   //    Idea:
+   //       rename "backendName" here to "backend"
+   //       add "nameInBackend" (or similar) for the table name in the backend
+   //       OR - add a whole "backendDetails" object, with different details per backend-type
    private String backendName;
    private String primaryKeyField;
 

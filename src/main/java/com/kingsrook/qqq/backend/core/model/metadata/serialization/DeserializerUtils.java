@@ -86,7 +86,6 @@ public class DeserializerUtils
       try
       {
          T output = outputClass.getConstructor().newInstance();
-         System.out.println("Reflectively deserializing a: " + outputClass.getName());
 
          Map<String, Consumer<String>> setterMap = new HashMap<>();
          for(Method method : outputClass.getMethods())
@@ -174,7 +173,6 @@ public class DeserializerUtils
       while(fieldNamesIterator.hasNext())
       {
          String fieldName = fieldNamesIterator.next();
-         System.out.println("Handling field [" + fieldName + "]");
 
          if(!setterMap.containsKey(fieldName))
          {

@@ -85,10 +85,11 @@ public class QBackendMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBackendMetaData withName(String name)
+   @SuppressWarnings("unchecked")
+   public <T extends QBackendMetaData> T withName(String name)
    {
       this.name = name;
-      return (this);
+      return (T) this;
    }
 
 
@@ -137,10 +138,11 @@ public class QBackendMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBackendMetaData withBackendType(String backendType)
+   @SuppressWarnings("unchecked")
+   public <T extends QBackendMetaData> T withBackendType(String backendType)
    {
       this.backendType = backendType;
-      return (this);
+      return (T) this;
    }
 
 
