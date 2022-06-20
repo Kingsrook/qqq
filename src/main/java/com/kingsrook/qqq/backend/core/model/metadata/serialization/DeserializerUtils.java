@@ -81,15 +81,15 @@ public class DeserializerUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static <T> T reflectivelyDeserialize(Class<T> _class, TreeNode treeNode) throws IOException
+   public static <T> T reflectivelyDeserialize(Class<T> outputClass, TreeNode treeNode) throws IOException
    {
       try
       {
-         T output = _class.getConstructor().newInstance();
-         System.out.println("Reflectively deserializing a: " + _class.getName());
+         T output = outputClass.getConstructor().newInstance();
+         System.out.println("Reflectively deserializing a: " + outputClass.getName());
 
          Map<String, Consumer<String>> setterMap = new HashMap<>();
-         for(Method method : _class.getMethods())
+         for(Method method : outputClass.getMethods())
          {
             if(method.getName().startsWith("set") && method.getParameterTypes().length == 1)
             {
@@ -131,7 +131,7 @@ public class DeserializerUtils
                         ////////////////////////////////////////////////////////////////////////
                         // if we hit this, we might want to add an else-if to handle the type //
                         ////////////////////////////////////////////////////////////////////////
-                        throw (new RuntimeException("Field " + fieldName + " is of an unhandled type " + parameterType.getName() + " when deserializing " + _class.getName()));
+                        throw (new RuntimeException("Field " + fieldName + " is of an unhandled type " + parameterType.getName() + " when deserializing " + outputClass.getName()));
                      }
                      else
                      {

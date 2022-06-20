@@ -60,18 +60,6 @@ public abstract class QTableBackendDetails
 
 
    /*******************************************************************************
-    ** Fluent Setter for backendType
-    **
-    *******************************************************************************/
-   public QTableBackendDetails withBackendType(String backendType)
-   {
-      this.backendType = backendType;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Setter for backendType
     **
     *******************************************************************************/
@@ -88,6 +76,20 @@ public abstract class QTableBackendDetails
       }
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent Setter for backendType
+    **
+    *******************************************************************************/
+   public QTableBackendDetails withBackendType(String backendType)
+   {
+      this.backendType = backendType;
+      return (this);
+   }
+
+
+
    /*******************************************************************************
     ** Fluent Setter for backendType
     **
@@ -97,7 +99,5 @@ public abstract class QTableBackendDetails
       setBackendType(backendModuleClass);
       return (this);
    }
-
-
 
 }
