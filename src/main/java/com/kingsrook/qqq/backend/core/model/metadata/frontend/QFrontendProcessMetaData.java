@@ -19,88 +19,85 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.mock;
+package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
+import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
- ** A Mock implementation of the QModuleInterface.
- **
- ** Mostly just exists to allow the backend-core repository to be able to run
- ** tests over all the actions available through the QModuleInterface.
- **
+ * Version of QProcessMetaData that's meant for transmitting to a frontend.
+ * e.g., it excludes backend-only details.
+ *
  *******************************************************************************/
-public class MockBackendModule implements QBackendModuleInterface
+@JsonInclude(Include.NON_NULL)
+public class QFrontendProcessMetaData
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   @Override
-   public String getBackendType()
-   {
-      return ("mock");
-   }
+   private String name;
+   private String label;
+   private String tableName;
+   private Map<String, QFrontendFieldMetaData> fields;
 
-
-
-   /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
-    *******************************************************************************/
-   @Override
-   public Class<? extends QBackendMetaData> getBackendMetaDataClass()
-   {
-      return (QBackendMetaData.class);
-   }
+   //////////////////////////////////////////////////////////////////////////////////
+   // do not add setters.  take values from the source-object in the constructor!! //
+   //////////////////////////////////////////////////////////////////////////////////
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public QueryInterface getQueryInterface()
+   public QFrontendProcessMetaData(QProcessMetaData processMetaData)
    {
-      return new MockQueryAction();
+      this.name = processMetaData.getName();
+      // todo? this.label = processMetaData.getLabel();
+      this.tableName = processMetaData.getTableName();
    }
 
 
 
    /*******************************************************************************
+    ** Getter for name
     **
     *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
+   public String getName()
    {
-      return (new MockInsertAction());
+      return name;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for label
     **
     *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
+   public String getLabel()
    {
-      return (new MockUpdateAction());
+      return label;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for primaryKeyField
     **
     *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
+   public String getTableName()
    {
-      return (new MockDeleteAction());
+      return tableName;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for fields
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendFieldMetaData> getFields()
+   {
+      return fields;
+   }
 }

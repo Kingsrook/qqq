@@ -36,7 +36,19 @@ public class QTableMetaData
    private String label;
    private String backendName;
    private String primaryKeyField;
+
    private Map<String, QFieldMetaData> fields;
+
+   private QTableBackendDetails backendDetails;
+
+
+
+   /*******************************************************************************
+    ** Default constructor.
+    *******************************************************************************/
+   public QTableMetaData()
+   {
+   }
 
 
 
@@ -243,6 +255,39 @@ public class QTableMetaData
          this.fields = new LinkedHashMap<>();
       }
       this.fields.put(field.getName(), field);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendDetails
+    **
+    *******************************************************************************/
+   public QTableBackendDetails getBackendDetails()
+   {
+      return backendDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendDetails
+    **
+    *******************************************************************************/
+   public void setBackendDetails(QTableBackendDetails backendDetails)
+   {
+      this.backendDetails = backendDetails;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent Setter for backendDetails
+    **
+    *******************************************************************************/
+   public QTableMetaData withBackendDetails(QTableBackendDetails backendDetails)
+   {
+      this.backendDetails = backendDetails;
       return (this);
    }
 

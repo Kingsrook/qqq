@@ -19,34 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions;
+package com.kingsrook.qqq.backend.core.model.metadata.serialization;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
-import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
+import java.io.IOException;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
- ** Action to update one or more records.
- **
+ ** Jackson custom deserialization class, to return an appropriate sub-type of
+ ** QTableBackendDetails, based on the backendType of the containing table.
  *******************************************************************************/
-public class UpdateAction
+public class QTableBackendDetailsDeserializer extends JsonDeserializer<QTableBackendDetails>
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public UpdateResult execute(UpdateRequest updateRequest) throws QException
+   @Override
+   public QTableBackendDetails deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException
    {
-      ActionHelper.validateSession(updateRequest);
-
-      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(updateRequest.getBackend());
-      // todo pre-customization - just get to modify the request?
-      UpdateResult updateResult = qModule.getUpdateInterface().execute(updateRequest);
-      // todo post-customization - can do whatever w/ the result if you want
-      return updateResult;
+      TreeNode                treeNode      = jsonParser.readValueAsTree();
+      QBackendModuleInterface backendModule = DeserializerUtils.getBackendModule(treeNode);
+      return DeserializerUtils.reflectivelyDeserialize(backendModule.getTableBackendDetailsClass(), treeNode);
    }
+
 }

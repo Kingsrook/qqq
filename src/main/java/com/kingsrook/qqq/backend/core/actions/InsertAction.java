@@ -43,7 +43,7 @@ public class InsertAction
       ActionHelper.validateSession(insertRequest);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQModule(insertRequest.getBackend());
+      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(insertRequest.getBackend());
       // todo pre-customization - just get to modify the request?
       InsertResult insertResult = qModule.getInsertInterface().execute(insertRequest);
       // todo post-customization - can do whatever w/ the result if you want

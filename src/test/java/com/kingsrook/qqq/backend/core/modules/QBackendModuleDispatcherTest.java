@@ -44,7 +44,7 @@ class QBackendModuleDispatcherTest
    @Test
    public void test_getQModule_valid() throws QModuleDispatchException
    {
-      QBackendModuleInterface qModule = new QBackendModuleDispatcher().getQModule(TestUtils.defineBackend());
+      QBackendModuleInterface qModule = new QBackendModuleDispatcher().getQBackendModule(TestUtils.defineBackend());
       assertNotNull(qModule);
    }
 
@@ -60,8 +60,8 @@ class QBackendModuleDispatcherTest
       assertThrows(QModuleDispatchException.class, () ->
       {
          QBackendMetaData qBackendMetaData = TestUtils.defineBackend();
-         qBackendMetaData.setType("aTypeThatWontEverExist");
-         new QBackendModuleDispatcher().getQModule(qBackendMetaData);
+         qBackendMetaData.setBackendType("aTypeThatWontEverExist");
+         new QBackendModuleDispatcher().getQBackendModule(qBackendMetaData);
       });
    }
 

@@ -103,7 +103,7 @@ public class TestUtils
    {
       return new QBackendMetaData()
          .withName("default")
-         .withType("mock");
+         .withBackendType("mock");
    }
 
 

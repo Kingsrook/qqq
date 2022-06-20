@@ -150,9 +150,8 @@
   },
   "backends": {
     "default": {
-      "values": null,
       "name": "default",
-      "type": "mock"
+      "backendType": "mock"
     }
   },
   "authentication": {

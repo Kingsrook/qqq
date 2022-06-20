@@ -23,73 +23,17 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.kingsrook.qqq.backend.core.model.metadata.serialization.QBackendMetaDataDeserializer;
+import com.kingsrook.qqq.backend.core.model.metadata.serialization.QTableBackendDetailsDeserializer;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of a backend (e.g., RDBMS instance, S3 buckets,
- ** NoSQL table, etc) within a qqq instance
- **
+ ** Base class where backends can specify additional per-table meta-data.
  *******************************************************************************/
-@JsonDeserialize(using = QBackendMetaDataDeserializer.class)
-public class QBackendMetaData
+@JsonDeserialize(using = QTableBackendDetailsDeserializer.class)
+public abstract class QTableBackendDetails
 {
-   private String name;
    private String backendType;
-
-   // todo - at some point, we may want to apply this to secret properties on subclasses?
-   // @JsonFilter("secretsFilter")
-
-
-   /*******************************************************************************
-    ** Default Constructor.
-    *******************************************************************************/
-   public QBackendMetaData()
-   {
-   }
-
-
-
-   /*******************************************************************************
-    ** Copy Constructor.  Meant for use by sub-classes.  Should copy all fields!
-    *******************************************************************************/
-   protected QBackendMetaData(QBackendMetaData source)
-   {
-      this.name = source.name;
-      this.backendType = source.backendType;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String getName()
-   {
-      return name;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QBackendMetaData withName(String name)
-   {
-      this.name = name;
-      return (this);
-   }
 
 
 
@@ -116,6 +60,18 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
+    ** Fluent Setter for backendType
+    **
+    *******************************************************************************/
+   public QTableBackendDetails withBackendType(String backendType)
+   {
+      this.backendType = backendType;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for backendType
     **
     *******************************************************************************/
@@ -132,26 +88,16 @@ public class QBackendMetaData
       }
    }
 
-
-
    /*******************************************************************************
+    ** Fluent Setter for backendType
     **
     *******************************************************************************/
-   public QBackendMetaData withBackendType(String backendType)
-   {
-      this.backendType = backendType;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QBackendMetaData withBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)
+   public QTableBackendDetails withBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)
    {
       setBackendType(backendModuleClass);
       return (this);
    }
+
+
 
 }
