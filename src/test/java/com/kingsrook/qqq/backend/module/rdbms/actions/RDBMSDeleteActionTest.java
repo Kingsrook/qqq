@@ -26,6 +26,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,8 +114,8 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    private DeleteRequest initDeleteRequest()
    {
       DeleteRequest deleteRequest = new DeleteRequest();
-      deleteRequest.setInstance(defineInstance());
-      deleteRequest.setTableName(defineTablePerson().getName());
+      deleteRequest.setInstance(TestUtils.defineInstance());
+      deleteRequest.setTableName(TestUtils.defineTablePerson().getName());
       return deleteRequest;
    }
 

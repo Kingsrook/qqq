@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
@@ -72,7 +72,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
                .map(f -> this.getColumnName(f) + " = ?")
                .collect(Collectors.joining(", "));
 
-            String tableName = table.getName();
+            String tableName = getTableName(table);
             StringBuilder sql = new StringBuilder("UPDATE ").append(tableName)
                .append(" SET ").append(columns)
                .append(" WHERE ").append(getColumnName(table.getField(table.getPrimaryKeyField()))).append(" = ?");
@@ -80,7 +80,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             // todo sql customization - can edit sql and/or param list
 
             ConnectionManager connectionManager = new ConnectionManager();
-            Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(updateRequest.getBackend()));
+            Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) updateRequest.getBackend());
 
             QRecordWithStatus recordWithStatus = new QRecordWithStatus(record);
             recordsWithStatus.add(recordWithStatus);

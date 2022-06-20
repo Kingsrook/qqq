@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
@@ -66,7 +66,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             .map(x -> "?")
             .collect(Collectors.joining(", "));
 
-         String tableName = table.getName();
+         String tableName = getTableName(table);
          StringBuilder sql = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
          List<Object> params = new ArrayList<>();
 
@@ -87,7 +87,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          // todo sql customization - can edit sql and/or param list
 
          ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(insertRequest.getBackend()));
+         Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) insertRequest.getBackend());
 
          // QueryResult rs = new QueryResult();
          // List<QRecord> records = new ArrayList<>();

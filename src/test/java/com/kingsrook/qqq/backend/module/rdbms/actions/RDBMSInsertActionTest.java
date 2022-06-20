@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -135,8 +136,8 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    private InsertRequest initInsertRequest()
    {
       InsertRequest insertRequest = new InsertRequest();
-      insertRequest.setInstance(defineInstance());
-      insertRequest.setTableName(defineTablePerson().getName());
+      insertRequest.setInstance(TestUtils.defineInstance());
+      insertRequest.setTableName(TestUtils.defineTablePerson().getName());
       return insertRequest;
    }
 

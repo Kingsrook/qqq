@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
@@ -31,6 +33,8 @@ import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 
 
 /*******************************************************************************
@@ -38,6 +42,38 @@ import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
  *******************************************************************************/
 public class RDBMSBackendModule implements QBackendModuleInterface
 {
+   /*******************************************************************************
+    ** Method where a backend module must be able to provide its type (name).
+    *******************************************************************************/
+   public String getBackendType()
+   {
+      return ("rdbms");
+   }
+
+
+
+   /*******************************************************************************
+    ** Method to identify the class used for backend meta data for this module.
+    *******************************************************************************/
+   @Override
+   public Class<? extends QBackendMetaData> getBackendMetaDataClass()
+   {
+      return (RDBMSBackendMetaData.class);
+   }
+
+
+
+   /*******************************************************************************
+    ** Method to identify the class used for table-backend details for this module.
+    *******************************************************************************/
+   @Override
+   public Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
+   {
+      return RDBMSTableBackendDetails.class;
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -59,6 +95,7 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -78,4 +115,5 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    {
       return (new RDBMSDeleteAction());
    }
+
 }

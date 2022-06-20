@@ -44,7 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
@@ -63,7 +63,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       try
       {
          QTableMetaData table = queryRequest.getTable();
-         String tableName = table.getName();
+         String tableName = getTableName(table);
 
          List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
          String columns = fieldList.stream()
@@ -98,7 +98,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          // todo sql customization - can edit sql and/or param list
 
          ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(queryRequest.getBackend()));
+         Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) queryRequest.getBackend());
 
          QueryResult rs = new QueryResult();
          List<QRecord> records = new ArrayList<>();

@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -148,8 +149,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    private UpdateRequest initUpdateRequest()
    {
       UpdateRequest updateRequest = new UpdateRequest();
-      updateRequest.setInstance(defineInstance());
-      updateRequest.setTableName(defineTablePerson().getName());
+      updateRequest.setInstance(TestUtils.defineInstance());
+      updateRequest.setTableName(TestUtils.defineTablePerson().getName());
       return updateRequest;
    }
 

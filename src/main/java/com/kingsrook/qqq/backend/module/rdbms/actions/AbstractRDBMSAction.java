@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 
 
 /*******************************************************************************
@@ -30,6 +33,23 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
  *******************************************************************************/
 public abstract class AbstractRDBMSAction
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String getTableName(QTableMetaData table)
+   {
+      if(table.getBackendDetails() instanceof RDBMSTableBackendDetails details)
+      {
+         if(StringUtils.hasContent(details.getTableName()))
+         {
+            return (details.getTableName());
+         }
+      }
+      return (table.getName());
+   }
+
+
 
    /*******************************************************************************
     **
