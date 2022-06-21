@@ -40,7 +40,7 @@ commands:
 
 jobs:
   mvn_test:
-    executor: localstack/default
+    executor: java17
     steps:
       - localstack/startup
       - run_maven:
@@ -49,7 +49,7 @@ jobs:
           event: fail
 
   mvn_deploy:
-    executor: localstack/default
+    executor: java17
     steps:
       - localstack/startup
       - run_maven:
