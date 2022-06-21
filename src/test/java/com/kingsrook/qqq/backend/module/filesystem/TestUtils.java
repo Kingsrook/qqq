@@ -139,7 +139,7 @@ public class TestUtils
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withBackendDetails(new FilesystemTableBackendDetails()
             .withPath("persons")
-            .withRecordFormat("csv")
+            .withRecordFormat("json")
             .withCardinality("many")
          );
    }

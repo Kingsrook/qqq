@@ -69,7 +69,7 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    {
       QueryRequest queryRequest = initQueryRequest();
       QueryResult  queryResult  = new FilesystemQueryAction().execute(queryRequest);
-      Assertions.assertEquals(5, queryResult.getRecords().size(), "Unfiltered query should find all rows");
+      Assertions.assertEquals(3, queryResult.getRecords().size(), "Unfiltered query should find all rows");
    }
 
 
