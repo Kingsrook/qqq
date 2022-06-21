@@ -8,6 +8,7 @@ executors:
 
 orbs:
   slack: circleci/slack@4.10.1
+  localstack: localstack/platform@1.0
 
 commands:
   run_maven:
@@ -39,16 +40,18 @@ commands:
 
 jobs:
   mvn_test:
-    executor: java17
+    executor: localstack/default
     steps:
+      - localstack/startup
       - run_maven:
           maven_subcommand: test
       - slack/notify:
           event: fail
 
   mvn_deploy:
-    executor: java17
+    executor: localstack/default
     steps:
+      - localstack/startup
       - run_maven:
           maven_subcommand: deploy
       - slack/notify:
