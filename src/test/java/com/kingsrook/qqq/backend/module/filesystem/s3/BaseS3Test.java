@@ -22,35 +22,28 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3;
 
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
+import cloud.localstack.ServiceName;
+import cloud.localstack.awssdkv1.TestUtils;
+import cloud.localstack.docker.LocalstackDockerExtension;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Testcontainers
+@ExtendWith(LocalstackDockerExtension.class)
+@LocalstackDockerProperties(services = { ServiceName.S3 })
 public class BaseS3Test
 {
-   private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("localstack/localstack");
-
    public static final String BUCKET_NAME = "localstack-test-bucket";
    public static final String TEST_FOLDER = "test-files";
    public static final String SUB_FOLDER  = "sub-folder";
-
-   @Container
-   private static LocalStackContainer localStack = new LocalStackContainer(DEFAULT_IMAGE_NAME)
-      .withServices(LocalStackContainer.Service.S3);
 
 
 
@@ -99,12 +92,7 @@ public class BaseS3Test
     *******************************************************************************/
    protected AmazonS3 getAmazonS3()
    {
-      BasicAWSCredentials basicAWSCredentials = new BasicAWSCredentials(localStack.getAccessKey(), localStack.getSecretKey());
-      AmazonS3 amazonS3 = AmazonS3ClientBuilder.standard()
-         .withEndpointConfiguration(localStack.getEndpointConfiguration(LocalStackContainer.Service.S3))
-         .withCredentials(new AWSStaticCredentialsProvider(basicAWSCredentials))
-         .build();
-      return (amazonS3);
+      return (TestUtils.getClientS3());
    }
 
 
