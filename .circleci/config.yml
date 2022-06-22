@@ -27,9 +27,10 @@ commands:
       - checkout
       - restore_cache:
           keys:
-            - usr-lib-jvm
-          keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
+      - restore_cache:
+          keys:
+            - usr-lib-jvm
       - run:
           name: Run Maven
           command: |
