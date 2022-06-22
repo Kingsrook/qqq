@@ -16,18 +16,13 @@ orbs:
 commands:
   install_java17:
     steps:
-      - restore_cache:
-          keys:
-            - usr-lib-jvm
       - run:
           name: Install Java 17
           command: |
-            if [ ! -e "/usr/lib/jvm/java-17-openjdk-amd64" ]; then sudo add-apt-repository -y ppa:openjdk-r/ppa && sudo apt install -y openjdk-17-jdk; else echo "java 17 already installed"; fi
-            sudo rm /etc/alternatives/java && sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
-      - save_cache:
-          paths:
-            - /usr/lib/jvm/
-          key: usr-lib-jvm
+            sudo add-apt-repository -y ppa:openjdk-r/ppa
+            sudo apt install -y openjdk-17-jdk
+            sudo rm /etc/alternatives/java
+            sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
   run_maven:
     parameters:
       maven_subcommand:
@@ -57,7 +52,9 @@ commands:
 
 jobs:
   mvn_test:
-    executor: localstack/default
+    executor:
+      name: localstack/default
+      resource_class: small
     steps:
       - localstack/startup
       - install_java17
@@ -67,7 +64,9 @@ jobs:
           event: fail
 
   mvn_deploy:
-    executor: localstack/default
+    executor:
+      name: localstack/default
+      resource_class: small
     steps:
       - localstack/startup
       - install_java17
