@@ -52,9 +52,7 @@ commands:
 
 jobs:
   mvn_test:
-    executor:
-      name: localstack/default
-      resource_class: small
+    executor: localstack/default
     steps:
       - localstack/startup
       - install_java17
@@ -64,9 +62,7 @@ jobs:
           event: fail
 
   mvn_deploy:
-    executor:
-      name: localstack/default
-      resource_class: small
+    executor: localstack/default
     steps:
       - localstack/startup
       - install_java17
