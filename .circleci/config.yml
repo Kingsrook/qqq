@@ -1,3 +1,6 @@
+## Deviations from qqq-java library standard circleci config:
+## - To test AWS S3, uses localstsack executor, orb, and startup step
+## - This docker image doesn't have java-17, so we install (and cache) jvm-17
 version: 2.1
 
 executors:
