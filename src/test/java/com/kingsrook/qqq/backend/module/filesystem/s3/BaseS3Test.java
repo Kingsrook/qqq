@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 
 /*******************************************************************************
- **
+ ** Base class for tests that want to be able to work with localstack s3.
  *******************************************************************************/
 @ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(services = { ServiceName.S3 }, portEdge = "2960", portElasticSearch = "2961")

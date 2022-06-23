@@ -59,6 +59,10 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public abstract InputStream readFile(FILE file) throws IOException;
 
+   /*******************************************************************************
+    ** Add backend details to records about the file that they are in.
+    *******************************************************************************/
+   protected abstract void addBackendDetailsToRecords(List<QRecord> recordsInFile, FILE file);
 
 
    /*******************************************************************************
@@ -133,6 +137,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                {
                   String        fileContents  = IOUtils.toString(readFile(file));
                   List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
+                  addBackendDetailsToRecords(recordsInFile, file);
 
                   records.addAll(recordsInFile);
                   break;
@@ -141,6 +146,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                {
                   String        fileContents  = IOUtils.toString(readFile(file));
                   List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
+                  addBackendDetailsToRecords(recordsInFile, file);
 
                   records.addAll(recordsInFile);
                   break;

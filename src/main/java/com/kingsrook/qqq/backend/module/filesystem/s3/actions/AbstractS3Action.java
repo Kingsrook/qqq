@@ -26,8 +26,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
@@ -96,4 +98,19 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    {
       return (getS3Utils().getObjectAsInputStream(s3ObjectSummary));
    }
+
+
+
+   /*******************************************************************************
+    ** Add backend details to records about the file that they are in.
+    *******************************************************************************/
+   @Override
+   protected void addBackendDetailsToRecords(List<QRecord> recordsInFile, S3ObjectSummary s3ObjectSummary)
+   {
+      recordsInFile.forEach(record ->
+      {
+         record.withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, s3ObjectSummary.getKey());
+      });
+   }
+
 }

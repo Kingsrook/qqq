@@ -31,12 +31,17 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
  ** Utility methods for working with AWS S3.
+ **
+ ** Note:  May need a constructor (or similar) in the future that takes the
+ ** S3BackendMetaData - e.g., if we need some metaData to construct the AmazonS3
+ ** (api client) object, such as region, or authentication.
  *******************************************************************************/
 public class S3Utils
 {
@@ -111,13 +116,56 @@ public class S3Utils
    }
 
 
+
    /*******************************************************************************
-    **
+    ** Get the contents (as an InputStream) for an object in s3
     *******************************************************************************/
    public InputStream getObjectAsInputStream(S3ObjectSummary s3ObjectSummary)
    {
       return getS3().getObject(s3ObjectSummary.getBucketName(), s3ObjectSummary.getKey()).getObjectContent();
    }
+
+
+
+   /*******************************************************************************
+    ** Delete an object (file) from a bucket
+    *******************************************************************************/
+   public void deleteObject(String bucketName, String key) throws FilesystemException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // note, aws s3 api does not appear to have any way to check the success or failure here... //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         getS3().deleteObject(bucketName, key);
+      }
+      catch(Exception e)
+      {
+         throw (new FilesystemException("Error deleting s3 object " + key + " in bucket " + bucketName, e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Move an object (file) within a bucket
+    *******************************************************************************/
+   public void moveObject(String bucketName, String source, String destination) throws FilesystemException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // note, aws s3 api does not appear to have any way to check the success or failure here... //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         getS3().copyObject(bucketName, source, bucketName, destination);
+         getS3().deleteObject(bucketName, source);
+      }
+      catch(Exception e)
+      {
+         throw (new FilesystemException("Error moving s3 object " + source + " to " + destination + " in bucket " + bucketName, e));
+      }
+   }
+
 
 
    /*******************************************************************************
@@ -142,6 +190,5 @@ public class S3Utils
 
       return s3;
    }
-
 
 }

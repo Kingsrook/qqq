@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,9 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
       QueryRequest queryRequest = initQueryRequest();
       QueryResult  queryResult  = new FilesystemQueryAction().execute(queryRequest);
       Assertions.assertEquals(3, queryResult.getRecords().size(), "Unfiltered query should find all rows");
+      Assertions.assertTrue(queryResult.getRecords().stream()
+            .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains(TestUtils.BASE_PATH)),
+         "All records should have a full-path in their backend details, matching the test folder name");
    }
 
 

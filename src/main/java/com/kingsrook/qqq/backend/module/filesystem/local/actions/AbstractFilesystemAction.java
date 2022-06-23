@@ -27,9 +27,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 
 
@@ -47,7 +50,14 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
    {
       String fullPath  = getFullPath(table, backendBase);
       File   directory = new File(fullPath);
-      return Arrays.asList(directory.listFiles());
+      File[] files     = directory.listFiles();
+
+      if(files == null)
+      {
+         return Collections.emptyList();
+      }
+
+      return (Arrays.stream(files).filter(File::isFile).toList());
    }
 
 
@@ -59,6 +69,20 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
    public InputStream readFile(File file) throws IOException
    {
       return (new FileInputStream(file));
+   }
+
+
+
+   /*******************************************************************************
+    ** Add backend details to records about the file that they are in.
+    *******************************************************************************/
+   @Override
+   protected void addBackendDetailsToRecords(List<QRecord> recordsInFile, File file)
+   {
+      recordsInFile.forEach(record ->
+      {
+         record.withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, file.getAbsolutePath());
+      });
    }
 
 }

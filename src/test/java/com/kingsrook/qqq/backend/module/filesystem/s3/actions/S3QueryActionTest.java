@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -44,11 +45,14 @@ public class S3QueryActionTest extends BaseS3Test
    @Test
    public void testQuery1() throws QException
    {
-      QueryRequest queryRequest = initQueryRequest();
+      QueryRequest  queryRequest  = initQueryRequest();
       S3QueryAction s3QueryAction = new S3QueryAction();
       s3QueryAction.setS3Utils(getS3Utils());
-      QueryResult  queryResult  = s3QueryAction.execute(queryRequest);
+      QueryResult queryResult = s3QueryAction.execute(queryRequest);
       Assertions.assertEquals(5, queryResult.getRecords().size(), "Expected # of rows from unfiltered query");
+      Assertions.assertTrue(queryResult.getRecords().stream()
+            .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains(BaseS3Test.TEST_FOLDER)),
+         "All records should have a full-path in their backend details, matching the test folder name");
    }
 
 

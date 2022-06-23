@@ -43,7 +43,7 @@ public class FilesystemActionTest
    /*******************************************************************************
     ** Set up the file system
     *******************************************************************************/
-   protected void primeFilesystem() throws IOException
+   public void primeFilesystem() throws IOException
    {
       TestUtils.cleanInstanceFiles();
       TestUtils.increaseTestInstanceCounter();
@@ -94,7 +94,7 @@ public class FilesystemActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected void cleanFilesystem() throws IOException
+   public void cleanFilesystem() throws IOException
    {
       TestUtils.cleanInstanceFiles();
    }

@@ -43,8 +43,15 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TestUtils
 {
-   private static       int    testInstanceCounter = 0;
-   private final static String BASE_PATH           = "/tmp/filesystem-tests";
+   public static final String TABLE_NAME_PERSON    = "person";
+   public static final String TABLE_NAME_PERSON_S3 = "person-s3";
+
+   ///////////////////////////////////////////////////////////////////
+   // shouldn't be accessed directly, as we append a counter to it. //
+   ///////////////////////////////////////////////////////////////////
+   public static final String BASE_PATH = "/tmp/filesystem-tests";
+
+   private static int testInstanceCounter = 0;
 
 
 
@@ -126,7 +133,7 @@ public class TestUtils
    public static QTableMetaData defineLocalFilesystemCSVPersonTable()
    {
       return new QTableMetaData()
-         .withName("person")
+         .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(defineLocalFilesystemBackend().getName())
          .withPrimaryKeyField("id")
@@ -165,7 +172,7 @@ public class TestUtils
    public static QTableMetaData defineS3CSVPersonTable()
    {
       return new QTableMetaData()
-         .withName("person-s3")
+         .withName(TABLE_NAME_PERSON_S3)
          .withLabel("Person S3 Table")
          .withBackendName(defineS3Backend().getName())
          .withPrimaryKeyField("id")
