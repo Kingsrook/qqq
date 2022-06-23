@@ -22,13 +22,9 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
-import java.util.ArrayList;
-import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -44,6 +40,8 @@ public class S3InsertAction implements InsertInterface
     *******************************************************************************/
    public InsertResult execute(InsertRequest insertRequest) throws QException
    {
+      throw new NotImplementedException("S3 insert not implemented");
+      /*
       try
       {
          InsertResult rs = new InsertResult();
@@ -52,7 +50,6 @@ public class S3InsertAction implements InsertInterface
          List<QRecord> recordsWithStatus = new ArrayList<>();
          rs.setRecords(recordsWithStatus);
 
-         throw new NotImplementedException("S3 insert not implemented");
 
          // return rs;
       }
@@ -60,6 +57,7 @@ public class S3InsertAction implements InsertInterface
       {
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
+      */
    }
 
 }

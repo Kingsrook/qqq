@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -41,12 +40,13 @@ public class FilesystemDeleteAction implements DeleteInterface
     *******************************************************************************/
    public DeleteResult execute(DeleteRequest deleteRequest) throws QException
    {
+      throw new NotImplementedException("Filesystem delete not implemented");
+      /*
       try
       {
          DeleteResult rs = new DeleteResult();
          QTableMetaData table = deleteRequest.getTable();
 
-         throw new NotImplementedException("Filesystem delete not implemented");
 
          // return rs;
       }
@@ -54,6 +54,7 @@ public class FilesystemDeleteAction implements DeleteInterface
       {
          throw new QException("Error executing delete: " + e.getMessage(), e);
       }
+      */
    }
 
 }

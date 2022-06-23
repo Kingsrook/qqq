@@ -26,10 +26,13 @@ import java.io.File;
 import java.io.IOException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
@@ -43,8 +46,10 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TestUtils
 {
-   public static final String TABLE_NAME_PERSON    = "person";
-   public static final String TABLE_NAME_PERSON_S3 = "person-s3";
+   public static final String BACKEND_NAME_LOCAL_FS      = "local-filesystem";
+   public static final String BACKEND_NAME_S3            = "s3";
+   public static final String TABLE_NAME_PERSON_LOCAL_FS = "person";
+   public static final String TABLE_NAME_PERSON_S3       = "person-s3";
 
    ///////////////////////////////////////////////////////////////////
    // shouldn't be accessed directly, as we append a counter to it. //
@@ -103,6 +108,7 @@ public class TestUtils
    public static QInstance defineInstance() throws QInstanceValidationException
    {
       QInstance qInstance = new QInstance();
+      qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineLocalFilesystemBackend());
       qInstance.addTable(defineLocalFilesystemCSVPersonTable());
       qInstance.addBackend(defineS3Backend());
@@ -116,13 +122,26 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the authentication used in standard tests - using 'mock' type.
+    **
+    *******************************************************************************/
+   public static QAuthenticationMetaData defineAuthentication()
+   {
+      return new QAuthenticationMetaData()
+         .withName("mock")
+         .withType("mock");
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public static FilesystemBackendMetaData defineLocalFilesystemBackend()
    {
       return (new FilesystemBackendMetaData()
          .withBasePath(BASE_PATH + File.separator + testInstanceCounter)
-         .withName("local-filesystem"));
+         .withName(BACKEND_NAME_LOCAL_FS));
    }
 
 
@@ -133,7 +152,7 @@ public class TestUtils
    public static QTableMetaData defineLocalFilesystemCSVPersonTable()
    {
       return new QTableMetaData()
-         .withName(TABLE_NAME_PERSON)
+         .withName(TABLE_NAME_PERSON_LOCAL_FS)
          .withLabel("Person")
          .withBackendName(defineLocalFilesystemBackend().getName())
          .withPrimaryKeyField("id")
@@ -161,7 +180,7 @@ public class TestUtils
       return (new S3BackendMetaData()
          .withBucketName(BaseS3Test.BUCKET_NAME)
          .withBasePath(BaseS3Test.TEST_FOLDER)
-         .withName("s3"));
+         .withName(BACKEND_NAME_S3));
    }
 
 
@@ -189,4 +208,14 @@ public class TestUtils
          );
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QSession getMockSession()
+   {
+      MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
+      return (mockAuthenticationModule.createSession(null));
+   }
 }

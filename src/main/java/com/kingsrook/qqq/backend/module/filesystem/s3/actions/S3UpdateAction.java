@@ -22,13 +22,9 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
-import java.util.ArrayList;
-import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -44,6 +40,8 @@ public class S3UpdateAction implements UpdateInterface
     *******************************************************************************/
    public UpdateResult execute(UpdateRequest updateRequest) throws QException
    {
+      throw new NotImplementedException("S3 update not implemented");
+      /*
       try
       {
          UpdateResult rs = new UpdateResult();
@@ -52,14 +50,13 @@ public class S3UpdateAction implements UpdateInterface
          List<QRecord> records = new ArrayList<>();
          rs.setRecords(records);
 
-         throw new NotImplementedException("S3 update not implemented");
-
          // return rs;
       }
       catch(Exception e)
       {
          throw new QException("Error executing update: " + e.getMessage(), e);
       }
+      */
    }
 
 }

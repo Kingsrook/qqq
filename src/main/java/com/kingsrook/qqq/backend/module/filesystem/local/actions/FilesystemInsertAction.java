@@ -22,13 +22,9 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
-import java.util.ArrayList;
-import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -44,6 +40,8 @@ public class FilesystemInsertAction implements InsertInterface
     *******************************************************************************/
    public InsertResult execute(InsertRequest insertRequest) throws QException
    {
+      throw new NotImplementedException("Filesystem insert not implemented");
+      /*
       try
       {
          InsertResult rs = new InsertResult();
@@ -52,14 +50,13 @@ public class FilesystemInsertAction implements InsertInterface
          List<QRecord> recordsWithStatus = new ArrayList<>();
          rs.setRecords(recordsWithStatus);
 
-         throw new NotImplementedException("Filesystem insert not implemented");
-
          // return rs;
       }
       catch(Exception e)
       {
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
+      */
    }
 
 }
