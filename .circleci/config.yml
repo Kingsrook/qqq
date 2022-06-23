@@ -63,7 +63,7 @@ workflows:
             branches:
               ignore: /dev/
             tags:
-              ignore: /version-.*/
+              ignore: /(version|snapshot)-.*/
 
   deploy:
     jobs:
@@ -73,5 +73,5 @@ workflows:
             branches:
               only: /dev/
             tags:
-              only: /version-.*/
+              only: /(version|snapshot)-.*/
 
