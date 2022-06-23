@@ -22,42 +22,47 @@
 package com.kingsrook.qqq.backend.core.state;
 
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
-import org.apache.commons.io.FileUtils;
+import java.util.UUID;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- ** State provider that uses files in the /tmp/ directory.
+ ** Unit test for InMemoryStateProvider
  *******************************************************************************/
-public class TempFileStateProvider implements StateProviderInterface
+public class InMemoryStateProviderTest
 {
-   private static TempFileStateProvider instance;
-
-
 
    /*******************************************************************************
-    ** Private constructor for singleton.
+    **
     *******************************************************************************/
-   private TempFileStateProvider()
+   @Test
+   public void testStateNotFound()
    {
+      InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
+      UUIDStateKey          key           = new UUIDStateKey();
+
+      Assertions.assertNull(stateProvider.get(QRecord.class, key), "Key not found in state should return null");
    }
 
 
-
    /*******************************************************************************
-    ** Singleton accessor
+    **
     *******************************************************************************/
-   public static TempFileStateProvider getInstance()
+   @Test
+   public void testSimpleStateFound()
    {
-      if(instance == null)
-      {
-         instance = new TempFileStateProvider();
-      }
-      return instance;
+      InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
+      UUIDStateKey          key           = new UUIDStateKey();
+
+      String uuid = UUID.randomUUID().toString();
+      QRecord qRecord = new QRecord().withValue("uuid", uuid);
+      stateProvider.put(key, qRecord);
+
+      QRecord qRecordFromState = stateProvider.get(QRecord.class, key);
+      Assertions.assertEquals(uuid, qRecordFromState.getValueString("uuid"), "Should read value from state persistence");
    }
 
 
@@ -65,42 +70,20 @@ public class TempFileStateProvider implements StateProviderInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public <T extends Serializable> void put(AbstractStateKey key, T data)
+   @Test
+   public void testWrongTypeOnGet()
    {
-      try
-      {
-         String json = JsonUtils.toJson(data);
-         FileUtils.writeStringToFile(new File("/tmp/" + key.toString()), json);
-      }
-      catch(IOException e)
-      {
-         // todo better
-         e.printStackTrace();
-      }
-   }
+      InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
+      UUIDStateKey          key           = new UUIDStateKey();
 
+      String uuid = UUID.randomUUID().toString();
+      QRecord qRecord = new QRecord().withValue("uuid", uuid);
+      stateProvider.put(key, qRecord);
 
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public <T extends Serializable> T get(Class<? extends T> type, AbstractStateKey key)
-   {
-      try
+      Assertions.assertThrows(Exception.class, () ->
       {
-         String json = FileUtils.readFileToString(new File("/tmp/" + key.toString()));
-         return JsonUtils.toObject(json, type);
-      }
-      catch(FileNotFoundException fnfe)
-      {
-         return (null);
-      }
-      catch(IOException ie)
-      {
-         throw new RuntimeException("Error loading state from file", ie);
-      }
+         stateProvider.get(QTableMetaData.class, key);
+      });
    }
 
 }

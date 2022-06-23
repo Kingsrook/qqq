@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ import java.util.Map;
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData
+public class QTableMetaData implements Serializable
 {
    private String name;
    private String label;

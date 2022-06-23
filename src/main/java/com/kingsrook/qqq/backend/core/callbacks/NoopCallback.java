@@ -19,59 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.defaults;
+package com.kingsrook.qqq.backend.core.callbacks;
 
 
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.model.session.QUser;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
 /*******************************************************************************
- ** An authentication module with no actual backing system - all users are treated
- ** as anonymous, and all sessions are always valid.
+ ** Simple implementation of a callback, that does no-op (returns empty objects).
+ ** Useful for scaffolding, perhaps tests.
  *******************************************************************************/
-public class FullyAnonymousAuthenticationModule implements QAuthenticationModuleInterface
+public class NoopCallback implements QProcessCallback
 {
-
    /*******************************************************************************
-    **
+    ** Get the filter query for this callback.
     *******************************************************************************/
    @Override
-   public QSession createSession(Map<String, String> context)
+   public QQueryFilter getQueryFilter()
    {
-      QUser qUser = new QUser();
-      qUser.setIdReference("anonymous");
-      qUser.setFullName("Anonymous");
-
-      QSession qSession = new QSession();
-      if(context != null && context.get("sessionId") != null)
-      {
-         qSession.setIdReference(context.get("sessionId"));
-      }
-      else
-      {
-         qSession.setIdReference("Session:" + UUID.randomUUID());
-      }
-      qSession.setUser(qUser);
-
-      return (qSession);
+      return (new QQueryFilter());
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Get the field values for this callback.
     *******************************************************************************/
    @Override
-   public boolean isSessionValid(QSession session)
+   public Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields)
    {
-      if(session == null)
-      {
-         return (false);
-      }
-      return (true);
+      return (Collections.emptyMap());
    }
 }
