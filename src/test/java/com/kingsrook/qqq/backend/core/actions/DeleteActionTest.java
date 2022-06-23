@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -55,7 +54,7 @@ class DeleteActionTest
       DeleteResult result = new DeleteAction().execute(request);
       assertNotNull(result);
       assertEquals(2, result.getRecords().size());
-      assertTrue(result.getRecords().stream().allMatch(r -> r.getErrors() == null));
+      // todo - add errors to QRecord? assertTrue(result.getRecords().stream().allMatch(r -> r.getErrors() == null));
    }
 
 }

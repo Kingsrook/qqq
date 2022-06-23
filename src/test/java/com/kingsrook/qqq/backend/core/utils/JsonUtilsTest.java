@@ -60,8 +60,9 @@ class JsonUtilsTest
    public void test_toJsonQRecordInput()
    {
       QRecord qRecord = getQRecord();
-      String json = JsonUtils.toJson(qRecord);
-      assertEquals("{\"tableName\":\"foo\",\"values\":{\"foo\":\"Foo\",\"bar\":3.14159},\"displayValues\":{}}", json);
+      String  json    = JsonUtils.toJson(qRecord);
+      assertEquals("""
+         {"tableName":"foo","values":{"foo":"Foo","bar":3.14159},"displayValues":{},"backendDetails":{}}""", json);
    }
 
 
@@ -90,6 +91,7 @@ class JsonUtilsTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -109,7 +111,7 @@ class JsonUtilsTest
    public void test_toPrettyJsonQRecordInput()
    {
       QRecord qRecord = getQRecord();
-      String json = JsonUtils.toPrettyJson(qRecord);
+      String  json    = JsonUtils.toPrettyJson(qRecord);
       // todo assertEquals("{\"tableName\":\"foo\",\"primaryKey\":1,\"values\":{\"foo\":\"Foo\",\"bar\":3.14159}}", json);
    }
 

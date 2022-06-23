@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.modules.mock;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 
 
@@ -45,10 +44,7 @@ public class MockInsertAction implements InsertInterface
       {
          InsertResult rs = new InsertResult();
 
-         rs.setRecords(insertRequest.getRecords().stream().map(qRecord ->
-         {
-            return new QRecordWithStatus(qRecord);
-         }).toList());
+         rs.setRecords(insertRequest.getRecords());
 
          return rs;
       }
