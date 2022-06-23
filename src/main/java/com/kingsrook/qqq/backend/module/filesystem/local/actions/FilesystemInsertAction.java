@@ -27,7 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import org.apache.commons.lang.NotImplementedException;
@@ -49,7 +49,7 @@ public class FilesystemInsertAction implements InsertInterface
          InsertResult rs = new InsertResult();
          QTableMetaData table = insertRequest.getTable();
 
-         List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
+         List<QRecord> recordsWithStatus = new ArrayList<>();
          rs.setRecords(recordsWithStatus);
 
          throw new NotImplementedException("Filesystem insert not implemented");

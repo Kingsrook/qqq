@@ -27,7 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 import org.apache.commons.lang.NotImplementedException;
@@ -49,8 +49,8 @@ public class FilesystemUpdateAction implements UpdateInterface
          UpdateResult rs = new UpdateResult();
          QTableMetaData table = updateRequest.getTable();
 
-         List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
-         rs.setRecords(recordsWithStatus);
+         List<QRecord> records = new ArrayList<>();
+         rs.setRecords(records);
 
          throw new NotImplementedException("Filesystem update not implemented");
 
