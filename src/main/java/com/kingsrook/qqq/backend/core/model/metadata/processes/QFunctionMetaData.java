@@ -22,7 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
 /*******************************************************************************
@@ -31,12 +34,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
  *******************************************************************************/
 public class QFunctionMetaData
 {
-   private String name;
-   private String label;
-   private QFunctionInputMetaData inputMetaData;
+   private String                  name;
+   private String                  label;
+   private QFunctionInputMetaData  inputMetaData;
    private QFunctionOutputMetaData outputMetaData;
-   private QCodeReference code;
-   private QOutputView outputView;
+   private QCodeReference          code;
+   private QOutputView             outputView;
 
 
 
@@ -171,7 +174,7 @@ public class QFunctionMetaData
    public QFunctionMetaData withOutputMetaData(QFunctionOutputMetaData outputMetaData)
    {
       this.outputMetaData = outputMetaData;
-      return(this);
+      return (this);
    }
 
 
@@ -241,4 +244,35 @@ public class QFunctionMetaData
       this.outputView = outputView;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the input fields used by this function
+    *******************************************************************************/
+   public List<QFieldMetaData> getInputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+      if(inputMetaData != null && inputMetaData.getFieldList() != null)
+      {
+         rs.addAll(inputMetaData.getFieldList());
+      }
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the output fields used by this function
+    *******************************************************************************/
+   public List<QFieldMetaData> getOutputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+      if(outputMetaData != null && outputMetaData.getFieldList() != null)
+      {
+         rs.addAll(outputMetaData.getFieldList());
+      }
+      return (rs);
+   }
+
 }

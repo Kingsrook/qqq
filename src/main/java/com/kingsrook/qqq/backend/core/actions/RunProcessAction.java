@@ -50,9 +50,6 @@ public class RunProcessAction
    {
       ActionHelper.validateSession(runProcessRequest);
 
-      ///////////////////////////////////////////////////////
-      // todo - shouldn't meta-data validation catch this? //
-      ///////////////////////////////////////////////////////
       QProcessMetaData process = runProcessRequest.getInstance().getProcess(runProcessRequest.getProcessName());
       if(process == null)
       {
@@ -61,7 +58,7 @@ public class RunProcessAction
 
       RunProcessResult runProcessResult = new RunProcessResult();
 
-      UUIDStateKey stateKey = new UUIDStateKey();
+      UUIDStateKey      stateKey           = new UUIDStateKey();
       RunFunctionResult lastFunctionResult = null;
 
       // todo - custom routing?
@@ -70,8 +67,18 @@ public class RunProcessAction
       {
          RunFunctionRequest runFunctionRequest = new RunFunctionRequest(runProcessRequest.getInstance());
 
-         if(lastFunctionResult != null)
+         if(lastFunctionResult == null)
          {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            // for the first request, load state from the run process request to prime the run function request. //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            primeFunction(runProcessRequest, runFunctionRequest);
+         }
+         else
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // for functions after the first one, load from state management to prime the request //
+            ////////////////////////////////////////////////////////////////////////////////////////
             loadState(stateKey, runFunctionRequest);
          }
 
@@ -119,6 +126,17 @@ public class RunProcessAction
    private void storeState(UUIDStateKey stateKey, RunFunctionResult runFunctionResult)
    {
       getStateProvider().put(stateKey, runFunctionResult.getProcessState());
+   }
+
+
+
+   /*******************************************************************************
+    ** Copy data (the state) down from the run-process request, down into the run-
+    ** function request.
+    *******************************************************************************/
+   private void primeFunction(RunProcessRequest runProcessRequest, RunFunctionRequest runFunctionRequest)
+   {
+      runFunctionRequest.seedFromRunProcessRequest(runProcessRequest);
    }
 
 

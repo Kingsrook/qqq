@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.interfaces;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
 
@@ -34,5 +35,5 @@ public interface FunctionBody
    /*******************************************************************************
     ** TODO - document!
     *******************************************************************************/
-   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult);
+   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException;
 }

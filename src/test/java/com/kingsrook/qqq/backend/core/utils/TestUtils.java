@@ -51,6 +51,8 @@ import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
  *******************************************************************************/
 public class TestUtils
 {
+   public static String DEFAULT_BACKEND_NAME = "default";
+
    /*******************************************************************************
     ** Define the instance used in standard tests.
     **
@@ -102,7 +104,7 @@ public class TestUtils
    public static QBackendMetaData defineBackend()
    {
       return new QBackendMetaData()
-         .withName("default")
+         .withName(DEFAULT_BACKEND_NAME)
          .withBackendType("mock");
    }
 

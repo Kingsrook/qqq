@@ -37,7 +37,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -56,7 +55,7 @@ public class RunFunctionAction
       ActionHelper.validateSession(runFunctionRequest);
 
       ///////////////////////////////////////////////////////
-      // todo - shouldn't meta-data validation catch this? //
+      //
       ///////////////////////////////////////////////////////
       QProcessMetaData process = runFunctionRequest.getInstance().getProcess(runFunctionRequest.getProcessName());
       if(process == null)
@@ -92,6 +91,10 @@ public class RunFunctionAction
    private void ensureInputFieldsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function)
    {
       QFunctionInputMetaData inputMetaData = function.getInputMetaData();
+      if (inputMetaData == null)
+      {
+         return;
+      }
 
       List<QFieldMetaData> fieldsToGet = new ArrayList<>();
       for(QFieldMetaData field : inputMetaData.getFieldList())
@@ -124,8 +127,7 @@ public class RunFunctionAction
    private void ensureRecordsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function) throws QException
    {
       QFunctionInputMetaData inputMetaData = function.getInputMetaData();
-      QRecordListMetaData recordListMetaData = inputMetaData.getRecordListMetaData();
-      if(recordListMetaData != null)
+      if(inputMetaData != null && inputMetaData.getRecordListMetaData() != null)
       {
          if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
          {
@@ -157,8 +159,8 @@ public class RunFunctionAction
       {
          runFunctionResult.seedFromRequest(runFunctionRequest);
 
-         Class<?> codeClass = Class.forName(code.getName());
-         Object codeObject = codeClass.getConstructor().newInstance();
+         Class<?> codeClass  = Class.forName(code.getName());
+         Object   codeObject = codeClass.getConstructor().newInstance();
          if(!(codeObject instanceof FunctionBody functionBodyCodeObject))
          {
             throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of FunctionBody"));

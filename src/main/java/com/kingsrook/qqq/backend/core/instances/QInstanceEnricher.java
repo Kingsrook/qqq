@@ -26,6 +26,8 @@ import java.util.Locale;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -41,9 +43,14 @@ public class QInstanceEnricher
     *******************************************************************************/
    public void enrich(QInstance qInstance)
    {
-      if (qInstance.getTables() != null)
+      if(qInstance.getTables() != null)
       {
          qInstance.getTables().values().forEach(this::enrich);
+      }
+
+      if(qInstance.getProcesses() != null)
+      {
+         qInstance.getProcesses().values().forEach(this::enrich);
       }
    }
 
@@ -59,10 +66,44 @@ public class QInstanceEnricher
          table.setLabel(nameToLabel(table.getName()));
       }
 
-      if (table.getFields() != null)
+      if(table.getFields() != null)
       {
          table.getFields().values().forEach(this::enrich);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QProcessMetaData process)
+   {
+      if(!StringUtils.hasContent(process.getLabel()))
+      {
+         process.setLabel(nameToLabel(process.getName()));
+      }
+
+      if(process.getFunctionList() != null)
+      {
+         process.getFunctionList().forEach(this::enrich);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QFunctionMetaData function)
+   {
+      if(!StringUtils.hasContent(function.getLabel()))
+      {
+         function.setLabel(nameToLabel(function.getName()));
+      }
+
+      function.getInputFields().forEach(this::enrich);
+      function.getOutputFields().forEach(this::enrich);
    }
 
 
