@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDe
 
 
 /*******************************************************************************
- **
+ ** QQQ Backend module for working with Relational Databases (RDBMS's).
  *******************************************************************************/
 public class RDBMSBackendModule implements QBackendModuleInterface
 {

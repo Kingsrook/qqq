@@ -30,7 +30,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
@@ -55,8 +54,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          UpdateResult rs = new UpdateResult();
          QTableMetaData table = updateRequest.getTable();
 
-         List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
-         rs.setRecords(recordsWithStatus);
+         List<QRecord> outputRecords = new ArrayList<>();
+         rs.setRecords(outputRecords);
 
          // todo - sql batch for performance
          // todo - if setting a bunch of records to have the same value, a single update where id IN?
@@ -82,8 +81,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             ConnectionManager connectionManager = new ConnectionManager();
             Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) updateRequest.getBackend());
 
-            QRecordWithStatus recordWithStatus = new QRecordWithStatus(record);
-            recordsWithStatus.add(recordWithStatus);
+            QRecord outputRecord = new QRecord(record);
+            outputRecords.add(outputRecord);
 
             try
             {
@@ -98,7 +97,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             }
             catch(Exception e)
             {
-               recordWithStatus.setErrors(new ArrayList<>(List.of(e)));
+               // todo - how to communicate errors??? outputRecord.setErrors(new ArrayList<>(List.of(e)));
+               throw new QException("Error executing update: " + e.getMessage(), e);
             }
          }
 

@@ -30,10 +30,10 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
@@ -50,6 +50,11 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
     *******************************************************************************/
    public InsertResult execute(InsertRequest insertRequest) throws QException
    {
+      if(CollectionUtils.nullSafeIsEmpty(insertRequest.getRecords()))
+      {
+         throw (new QException("Request to insert 0 records."));
+      }
+
       try
       {
          InsertResult rs = new InsertResult();
@@ -96,15 +101,15 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          // todo - non-serial-id style tables
          // todo - other generated values, e.g., createDate...  maybe need to re-select?
          List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
-         List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
-         rs.setRecords(recordsWithStatus);
+         List<QRecord> outputRecords = new ArrayList<>();
+         rs.setRecords(outputRecords);
          int index = 0;
          for(QRecord record : insertRequest.getRecords())
          {
             Integer id = idList.get(index++);
-            QRecordWithStatus recordWithStatus = new QRecordWithStatus(record);
-            recordWithStatus.setValue(table.getPrimaryKeyField(), id);
-            recordsWithStatus.add(recordWithStatus);
+            QRecord outputRecord = new QRecord(record);
+            outputRecord.setValue(table.getPrimaryKeyField(), id);
+            outputRecords.add(outputRecord);
          }
 
          return rs;

@@ -31,7 +31,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
@@ -72,14 +71,14 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          Connection connection = connectionManager.getConnection((RDBMSBackendMetaData)deleteRequest.getBackend());
 
          QueryManager.executeUpdateForRowCount(connection, sql, params);
-         List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
-         rs.setRecords(recordsWithStatus);
+         List<QRecord> outputRecords = new ArrayList<>();
+         rs.setRecords(outputRecords);
          for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
          {
             QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
             // todo uh, identify any errors?
-            QRecordWithStatus recordWithStatus = new QRecordWithStatus(qRecord);
-            recordsWithStatus.add(recordWithStatus);
+            QRecord outputRecord = new QRecord(qRecord);
+            outputRecords.add(outputRecord);
          }
 
          return rs;
