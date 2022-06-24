@@ -153,6 +153,24 @@ public class DeserializerUtils
                      {
                         method.invoke(output, StringUtils.hasContent(value) ? Boolean.parseBoolean(value) : null);
                      }
+                     else if(parameterType.isEnum())
+                     {
+                        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // if the param is an enum, look up the static 'valueOf' method that all enums have.                            //
+                        // call that method, passing it the string value from the json (the null there is because it's a static method) //
+                        // then pass the num value into the output object, via our method.invoke.                                       //
+                        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        if(StringUtils.hasContent(value))
+                        {
+                           Method valueOfMethod = parameterType.getMethod("valueOf", String.class);
+                           Object enumValue     = valueOfMethod.invoke(null, value);
+                           method.invoke(output, enumValue);
+                        }
+                        else
+                        {
+                           method.invoke(output, (Object) null);
+                        }
+                     }
                      else if(parameterType.equals(Class.class))
                      {
                         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +178,7 @@ public class DeserializerUtils
                         // we hit this when trying to de-serialize a QBackendMetaData, and we found its setBackendType(Class) method //
                         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
                      }
-                     else if(parameterType.getPackageName().startsWith("java."))
+                     else
                      {
                         /////////////////////////////////////////////////////////////////////////////////////////////////////////
                         // if we hit this, we might want to add an else-if to handle the type.                                 //
@@ -170,7 +188,7 @@ public class DeserializerUtils
                         throw (new RuntimeException("Field " + fieldName + " is of an unhandled type " + parameterType.getName() + " when deserializing " + outputClass.getName()));
                      }
                   }
-                  catch(IllegalAccessException | InvocationTargetException e)
+                  catch(IllegalAccessException | InvocationTargetException | NoSuchMethodException e)
                   {
                      throw new RuntimeException(e);
                   }
@@ -184,6 +202,7 @@ public class DeserializerUtils
       }
       catch(Exception e)
       {
+         LOG.warn(e);
          throw (new IOException("Error deserializing json object into instance of " + outputClass.getName(), e));
       }
    }
