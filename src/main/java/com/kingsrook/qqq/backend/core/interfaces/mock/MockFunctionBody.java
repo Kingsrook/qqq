@@ -45,6 +45,6 @@ public class MockFunctionBody implements FunctionBody
       /////////////////////////////////
       // mock the "greet" process... //
       /////////////////////////////////
-      runFunctionResult.addValue("outputMessage", runFunctionRequest.getValueString("greetingPrefix") + " X " + runFunctionRequest.getValueString("greetingSuffix") );
+      runFunctionResult.addValue("outputMessage", runFunctionRequest.getValueString("greetingPrefix") + " X " + runFunctionRequest.getValueString("greetingSuffix"));
    }
 }
