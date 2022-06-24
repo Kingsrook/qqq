@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
@@ -43,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListView;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 
 
 /*******************************************************************************
@@ -52,6 +54,8 @@ import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
 public class TestUtils
 {
    public static String DEFAULT_BACKEND_NAME = "default";
+
+
 
    /*******************************************************************************
     ** Define the instance used in standard tests.
@@ -63,9 +67,11 @@ public class TestUtils
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addTable(definePersonFileTable());
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessAddToPeoplesAge());
+      qInstance.addProcess(new BasicETLProcess().defineProcessMetaData());
       return (qInstance);
    }
 
@@ -118,7 +124,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName("person")
          .withLabel("Person")
-         .withBackendName(defineBackend().getName())
+         .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
@@ -128,6 +134,21 @@ public class TestUtils
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withField(new QFieldMetaData("homeState", QFieldType.STRING).withPossibleValueSourceName("state"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a 2nd version of the 'person' table for this test (pretend it's backed by a file)
+    *******************************************************************************/
+   public static QTableMetaData definePersonFileTable()
+   {
+      return (new QTableMetaData()
+         .withName("personFile")
+         .withLabel("Person File")
+         .withBackendName(DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withFields(TestUtils.defineTablePerson().getFields()));
    }
 
 
@@ -143,7 +164,7 @@ public class TestUtils
          .addFunction(new QFunctionMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName("com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody")
+               .withName(MockFunctionBody.class.getName())
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()

@@ -59,7 +59,7 @@ public class QInstance
 
 
    /*******************************************************************************
-    **
+    ** Get the backend for a given table name
     *******************************************************************************/
    public QBackendMetaData getBackendForTable(String tableName)
    {
@@ -69,19 +69,16 @@ public class QInstance
          throw (new IllegalArgumentException("No table with name [" + tableName + "] found in this instance."));
       }
 
-      QBackendMetaData backend = backends.get(table.getBackendName());
-
       //////////////////////////////////////////////////////////////////////////////////////////////
       // validation should already let us know that this is valid, so no need to check/throw here //
       //////////////////////////////////////////////////////////////////////////////////////////////
-
-      return (backend);
+      return (backends.get(table.getBackendName()));
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Get the list of processes associated with a given table name
     *******************************************************************************/
    public List<QProcessMetaData> getProcessesForTable(String tableName)
    {

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.state;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 
 /*******************************************************************************
@@ -63,7 +64,7 @@ public class InMemoryStateProvider implements StateProviderInterface
 
 
    /*******************************************************************************
-    **
+    ** Put a block of data, under a key, into the state store.
     *******************************************************************************/
    @Override
    public <T extends Serializable> void put(AbstractStateKey key, T data)
@@ -74,14 +75,14 @@ public class InMemoryStateProvider implements StateProviderInterface
 
 
    /*******************************************************************************
-    **
+    ** Get a block of data, under a key, from the state store.
     *******************************************************************************/
    @Override
-   public <T extends Serializable> T get(Class<? extends T> type, AbstractStateKey key)
+   public <T extends Serializable> Optional<T> get(Class<? extends T> type, AbstractStateKey key)
    {
       try
       {
-         return type.cast(map.get(key));
+         return Optional.ofNullable(type.cast(map.get(key)));
       }
       catch(ClassCastException cce)
       {

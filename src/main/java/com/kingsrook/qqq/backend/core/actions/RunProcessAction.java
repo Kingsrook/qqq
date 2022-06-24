@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import java.util.List;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
@@ -145,10 +146,11 @@ public class RunProcessAction
     ** Load the process state into a function request from the state provider
     **
     *******************************************************************************/
-   private void loadState(UUIDStateKey stateKey, RunFunctionRequest runFunctionRequest)
+   private void loadState(UUIDStateKey stateKey, RunFunctionRequest runFunctionRequest) throws QException
    {
-      ProcessState processState = getStateProvider().get(ProcessState.class, stateKey);
-      runFunctionRequest.seedFromProcessState(processState);
+      Optional<ProcessState> processState = getStateProvider().get(ProcessState.class, stateKey);
+      runFunctionRequest.seedFromProcessState(processState
+         .orElseThrow(() -> new QException("Could not find process state in state provider.")));
    }
 
 }

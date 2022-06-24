@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
  *******************************************************************************/
 public class BasicETLProcess
 {
+   public static final String PROCESS_NAME            = "etl.basic";
    public static final String FIELD_SOURCE_TABLE      = "sourceTable";
    public static final String FIELD_DESTINATION_TABLE = "destinationTable";
    public static final String FIELD_RECORD_COUNT      = "recordCount";
@@ -70,7 +71,7 @@ public class BasicETLProcess
             .addField(new QFieldMetaData(FIELD_RECORD_COUNT, QFieldType.INTEGER)));
 
       return new QProcessMetaData()
-         .withName("etl.basic")
+         .withName(PROCESS_NAME)
          .addFunction(extractFunction)
          .addFunction(loadFunction);
    }

@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
@@ -54,9 +55,6 @@ public class RunFunctionAction
    {
       ActionHelper.validateSession(runFunctionRequest);
 
-      ///////////////////////////////////////////////////////
-      //
-      ///////////////////////////////////////////////////////
       QProcessMetaData process = runFunctionRequest.getInstance().getProcess(runFunctionRequest.getProcessName());
       if(process == null)
       {
@@ -88,10 +86,10 @@ public class RunFunctionAction
     ** via the callback
     **
     *******************************************************************************/
-   private void ensureInputFieldsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function)
+   private void ensureInputFieldsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function) throws QException
    {
       QFunctionInputMetaData inputMetaData = function.getInputMetaData();
-      if (inputMetaData == null)
+      if(inputMetaData == null)
       {
          return;
       }
@@ -109,7 +107,13 @@ public class RunFunctionAction
 
       if(!fieldsToGet.isEmpty())
       {
-         Map<String, Serializable> fieldValues = runFunctionRequest.getCallback().getFieldValues(fieldsToGet);
+         QProcessCallback callback = runFunctionRequest.getCallback();
+         if(callback == null)
+         {
+            throw (new QException("Function is missing values for fields, but no callback was present to request fields from a user"));
+         }
+
+         Map<String, Serializable> fieldValues = callback.getFieldValues(fieldsToGet);
          for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
          {
             runFunctionRequest.addValue(entry.getKey(), entry.getValue());
@@ -138,7 +142,14 @@ public class RunFunctionAction
             // todo - handle this being async (e.g., http)
             // seems like it just needs to throw, breaking this flow, and to send a response to the frontend, directing it to prompt the user for the needed data
             // then this function can re-run, hopefully with the needed data.
-            queryRequest.setFilter(runFunctionRequest.getCallback().getQueryFilter());
+
+            QProcessCallback callback = runFunctionRequest.getCallback();
+            if(callback == null)
+            {
+               throw (new QException("Function is missing input records, but no callback was present to get a query filter from a user"));
+            }
+
+            queryRequest.setFilter(callback.getQueryFilter());
 
             QueryResult queryResult = new QueryAction().execute(queryRequest);
             runFunctionRequest.setRecords(queryResult.getRecords());

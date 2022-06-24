@@ -38,19 +38,30 @@ import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- **
+ ** Utility methods to help with deserializing JSON streams into QQQ models.
+ ** Specifically meant to be used within a jackson custom deserializer (e.g.,
+ ** an implementation of JsonDeserializer).
  *******************************************************************************/
 public class DeserializerUtils
 {
+   private static final Logger LOG = LogManager.getLogger(DeserializerUtils.class);
+
+
 
    /*******************************************************************************
-    **
+    ** For a given (jackson, JSON) treeNode, look at its backendType property,
+    ** and return an instance of the corresponding QBackendModule.
     *******************************************************************************/
    public static QBackendModuleInterface getBackendModule(TreeNode treeNode) throws IOException
    {
+      /////////////////////////////////////////////////////////////////////////////////
+      // validate the backendType property is present, as text, in the json treeNode //
+      /////////////////////////////////////////////////////////////////////////////////
       TreeNode backendTypeTreeNode = treeNode.get("backendType");
       if(backendTypeTreeNode == null || backendTypeTreeNode instanceof NullNode)
       {
@@ -61,44 +72,67 @@ public class DeserializerUtils
       {
          throw new IOException("backendType is not a string value (is: " + backendTypeTreeNode.getClass().getSimpleName() + ")");
       }
-      else
-      {
-         String backendType = textNode.asText();
 
-         try
-         {
-            return new QBackendModuleDispatcher().getQBackendModule(backendType);
-         }
-         catch(QModuleDispatchException e)
-         {
-            throw (new IOException(e));
-         }
+      try
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // get the value of the backendType json node, and use it to look up the qBackendModule object //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         String backendType = textNode.asText();
+         return new QBackendModuleDispatcher().getQBackendModule(backendType);
+      }
+      catch(QModuleDispatchException e)
+      {
+         throw (new IOException(e));
       }
    }
 
 
 
    /*******************************************************************************
+    ** Using reflection, create & populate an instance of a class, based on the
+    ** properties in a jackson/json treeNode.
     **
     *******************************************************************************/
    public static <T> T reflectivelyDeserialize(Class<T> outputClass, TreeNode treeNode) throws IOException
    {
       try
       {
+         /////////////////////////////////
+         // construct the output object //
+         /////////////////////////////////
          T output = outputClass.getConstructor().newInstance();
 
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up a mapping between field names, and lambdas which will take a String (from the json), //
+         // and set it in the output object, doing type conversion as needed.                           //
+         // do this by iterating over methods on the output class that look like setters.               //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
          Map<String, Consumer<String>> setterMap = new HashMap<>();
          for(Method method : outputClass.getMethods())
          {
+            /////////////////////////////////////////////////////////////
+            // setters start with the word "set", and have 1 parameter //
+            /////////////////////////////////////////////////////////////
             if(method.getName().startsWith("set") && method.getParameterTypes().length == 1)
             {
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // get the parameter type, and the name of the field (remove set from the method name, and downshift the first letter) //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                Class<?> parameterType = method.getParameterTypes()[0];
                String   fieldName     = method.getName().substring(3, 4).toLowerCase(Locale.ROOT) + method.getName().substring(4);
 
+               ///////////////////////////////////////////////////////////////////////////////////
+               // put the entry in the map - where the value here is a consumer lambda function //
+               ///////////////////////////////////////////////////////////////////////////////////
                setterMap.put(fieldName, (String value) ->
                {
                   try
                   {
+                     //////////////////////////////////////////////////////////////////////////////////////////////////
+                     // based on the parameter type, handle it differently - either type-converting (e.g., parseInt) //
+                     // or gracefully ignoring, or failing.                                                          //
+                     //////////////////////////////////////////////////////////////////////////////////////////////////
                      if(parameterType.equals(String.class))
                      {
                         method.invoke(output, value);
@@ -121,22 +155,19 @@ public class DeserializerUtils
                      }
                      else if(parameterType.equals(Class.class))
                      {
-                        ////////////////////////////////////////////////////////////
-                        // specifically do NOT try to handle Class type arguments //
-                        ////////////////////////////////////////////////////////////
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // specifically do NOT try to handle Class type arguments                                                    //
+                        // we hit this when trying to de-serialize a QBackendMetaData, and we found its setBackendType(Class) method //
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
                      }
                      else if(parameterType.getPackageName().startsWith("java."))
                      {
-                        ////////////////////////////////////////////////////////////////////////
-                        // if we hit this, we might want to add an else-if to handle the type //
-                        ////////////////////////////////////////////////////////////////////////
+                        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // if we hit this, we might want to add an else-if to handle the type.                                 //
+                        // otherwise, either find some jackson annotation that makes sense, and apply it to the setter method, //
+                        // or if no jackson annotation is right, then come up with annotation of our own.                      //
+                        /////////////////////////////////////////////////////////////////////////////////////////////////////////
                         throw (new RuntimeException("Field " + fieldName + " is of an unhandled type " + parameterType.getName() + " when deserializing " + outputClass.getName()));
-                     }
-                     else
-                     {
-                        ////////////////////////////////////
-                        // gracefully ignore other types. //
-                        ////////////////////////////////////
                      }
                   }
                   catch(IllegalAccessException | InvocationTargetException e)
@@ -153,9 +184,8 @@ public class DeserializerUtils
       }
       catch(Exception e)
       {
-         throw (new IOException("Error reflectively deserializing table details", e));
+         throw (new IOException("Error deserializing json object into instance of " + outputClass.getName(), e));
       }
-
    }
 
 
@@ -169,24 +199,35 @@ public class DeserializerUtils
     *******************************************************************************/
    private static void deserializeBean(TreeNode treeNode, Map<String, Consumer<String>> setterMap) throws IOException
    {
+      ///////////////////////////////////////////////////////
+      // iterate over fields in the json object (treeNode) //
+      ///////////////////////////////////////////////////////
       Iterator<String> fieldNamesIterator = treeNode.fieldNames();
       while(fieldNamesIterator.hasNext())
       {
          String fieldName = fieldNamesIterator.next();
 
+         //////////////////////////////////////////////////////////////////////////
+         // error if we find a field in the json that we don't have a setter for //
+         //////////////////////////////////////////////////////////////////////////
          if(!setterMap.containsKey(fieldName))
          {
-            throw (new IllegalArgumentException("Unexpected value: " + fieldName));
+            throw (new IOException("Unexpected field (no corresponding setter): " + fieldName));
          }
 
+         // call the setter -
          TreeNode fieldNode = treeNode.get(fieldName);
          if(fieldNode instanceof NullNode)
          {
             setterMap.get(fieldName).accept(null);
          }
+         else if(fieldNode instanceof TextNode textNode)
+         {
+            setterMap.get(fieldName).accept(textNode.asText());
+         }
          else
          {
-            setterMap.get(fieldName).accept(((TextNode) fieldNode).asText());
+            throw (new IOException("Unexpected node type (" + fieldNode.getClass() + ") for field: " + fieldName));
          }
       }
    }

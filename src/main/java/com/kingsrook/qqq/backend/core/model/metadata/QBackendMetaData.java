@@ -42,22 +42,12 @@ public class QBackendMetaData
    // @JsonFilter("secretsFilter")
 
 
+
    /*******************************************************************************
     ** Default Constructor.
     *******************************************************************************/
    public QBackendMetaData()
    {
-   }
-
-
-
-   /*******************************************************************************
-    ** Copy Constructor.  Meant for use by sub-classes.  Should copy all fields!
-    *******************************************************************************/
-   protected QBackendMetaData(QBackendMetaData source)
-   {
-      this.name = source.name;
-      this.backendType = source.backendType;
    }
 
 
@@ -83,7 +73,7 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter, returning generically, to help sub-class fluent flows
     *******************************************************************************/
    @SuppressWarnings("unchecked")
    public <T extends QBackendMetaData> T withName(String name)
@@ -136,7 +126,7 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter, returning generically, to help sub-class fluent flows
     *******************************************************************************/
    @SuppressWarnings("unchecked")
    public <T extends QBackendMetaData> T withBackendType(String backendType)

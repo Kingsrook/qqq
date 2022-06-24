@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -63,7 +64,7 @@ public class TempFileStateProvider implements StateProviderInterface
 
 
    /*******************************************************************************
-    **
+    ** Put a block of data, under a key, into the state store.
     *******************************************************************************/
    @Override
    public <T extends Serializable> void put(AbstractStateKey key, T data)
@@ -83,19 +84,19 @@ public class TempFileStateProvider implements StateProviderInterface
 
 
    /*******************************************************************************
-    **
+    ** Get a block of data, under a key, from the state store.
     *******************************************************************************/
    @Override
-   public <T extends Serializable> T get(Class<? extends T> type, AbstractStateKey key)
+   public <T extends Serializable> Optional<T> get(Class<? extends T> type, AbstractStateKey key)
    {
       try
       {
          String json = FileUtils.readFileToString(new File("/tmp/" + key.toString()));
-         return JsonUtils.toObject(json, type);
+         return (Optional.of(JsonUtils.toObject(json, type)));
       }
       catch(FileNotFoundException fnfe)
       {
-         return (null);
+         return (Optional.empty());
       }
       catch(IOException ie)
       {

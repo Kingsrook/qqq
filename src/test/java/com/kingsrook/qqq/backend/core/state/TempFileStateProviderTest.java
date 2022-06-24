@@ -44,7 +44,7 @@ public class TempFileStateProviderTest
       TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
       UUIDStateKey          key           = new UUIDStateKey();
 
-      Assertions.assertNull(stateProvider.get(QRecord.class, key), "Key not found in state should return null");
+      Assertions.assertTrue(stateProvider.get(QRecord.class, key).isEmpty(), "Key not found in state should return empty");
    }
 
 
@@ -61,7 +61,7 @@ public class TempFileStateProviderTest
       QRecord qRecord = new QRecord().withValue("uuid", uuid);
       stateProvider.put(key, qRecord);
 
-      QRecord qRecordFromState = stateProvider.get(QRecord.class, key);
+      QRecord qRecordFromState = stateProvider.get(QRecord.class, key).get();
       Assertions.assertEquals(uuid, qRecordFromState.getValueString("uuid"), "Should read value from state persistence");
    }
 
