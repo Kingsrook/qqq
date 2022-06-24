@@ -44,9 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -97,13 +95,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
-         ConnectionManager connectionManager = new ConnectionManager();
-         Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) queryRequest.getBackend());
-
          QueryResult rs = new QueryResult();
          List<QRecord> records = new ArrayList<>();
          rs.setRecords(records);
 
+         Connection connection = getConnection(queryRequest);
          QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
          {
             ResultSetMetaData metaData = resultSet.getMetaData();

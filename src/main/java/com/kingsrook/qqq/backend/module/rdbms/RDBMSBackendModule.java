@@ -69,7 +69,7 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    @Override
    public Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
    {
-      return RDBMSTableBackendDetails.class;
+      return (RDBMSTableBackendDetails.class);
    }
 
 
@@ -80,7 +80,7 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    @Override
    public QueryInterface getQueryInterface()
    {
-      return new RDBMSQueryAction();
+      return (new RDBMSQueryAction());
    }
 
 

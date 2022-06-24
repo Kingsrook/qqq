@@ -33,9 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -67,9 +65,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
          // todo sql customization - can edit sql and/or param list
 
-         ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection((RDBMSBackendMetaData)deleteRequest.getBackend());
-
+         Connection connection = getConnection(deleteRequest);
          QueryManager.executeUpdateForRowCount(connection, sql, params);
          List<QRecord> outputRecords = new ArrayList<>();
          rs.setRecords(outputRecords);

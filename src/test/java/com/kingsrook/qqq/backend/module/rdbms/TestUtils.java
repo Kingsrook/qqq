@@ -72,7 +72,7 @@ public class TestUtils
    public static QTableMetaData defineTablePerson()
    {
       return new QTableMetaData()
-         .withName("a-person")
+         .withName("a-person") // use this name, so it isn't the same as the actual database-table name (which must come from the backend details)
          .withLabel("Person")
          .withBackendName(defineBackend().getName())
          .withPrimaryKeyField("id")
@@ -83,7 +83,8 @@ public class TestUtils
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
-         .withBackendDetails(new RDBMSTableBackendDetails().withTableName("person"));
+         .withBackendDetails(new RDBMSTableBackendDetails()
+            .withTableName("person"));
    }
 
 }

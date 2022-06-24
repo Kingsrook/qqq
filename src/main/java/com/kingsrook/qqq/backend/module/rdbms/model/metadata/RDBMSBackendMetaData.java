@@ -27,7 +27,7 @@ import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 
 
 /*******************************************************************************
- **
+ ** Meta-data to provide details of an RDBMS backend (e.g., connection params)
  *******************************************************************************/
 public class RDBMSBackendMetaData extends QBackendMetaData
 {

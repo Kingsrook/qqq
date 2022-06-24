@@ -33,9 +33,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -51,7 +49,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    {
       try
       {
-         UpdateResult rs = new UpdateResult();
+         UpdateResult   rs    = new UpdateResult();
          QTableMetaData table = updateRequest.getTable();
 
          List<QRecord> outputRecords = new ArrayList<>();
@@ -59,7 +57,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 
          // todo - sql batch for performance
          // todo - if setting a bunch of records to have the same value, a single update where id IN?
-         int recordIndex = 0;
+         Connection connection  = getConnection(updateRequest);
+         int        recordIndex = 0;
          for(QRecord record : updateRequest.getRecords())
          {
             List<QFieldMetaData> updateableFields = table.getFields().values().stream()
@@ -78,9 +77,6 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 
             // todo sql customization - can edit sql and/or param list
 
-            ConnectionManager connectionManager = new ConnectionManager();
-            Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) updateRequest.getBackend());
-
             QRecord outputRecord = new QRecord(record);
             outputRecords.add(outputRecord);
 
@@ -92,6 +88,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
                   params.add(record.getValue(field.getName()));
                }
                params.add(record.getValue(table.getPrimaryKeyField()));
+
                QueryManager.executeUpdate(connection, sql.toString(), params);
                // todo - auto-updated values, e.g., modifyDate...  maybe need to re-select?
             }

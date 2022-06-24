@@ -34,9 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -91,15 +89,13 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
          // todo sql customization - can edit sql and/or param list
 
-         ConnectionManager connectionManager = new ConnectionManager();
-         Connection        connection        = connectionManager.getConnection((RDBMSBackendMetaData) insertRequest.getBackend());
-
          // QueryResult rs = new QueryResult();
          // List<QRecord> records = new ArrayList<>();
          // rs.setRecords(records);
 
          // todo - non-serial-id style tables
          // todo - other generated values, e.g., createDate...  maybe need to re-select?
+         Connection connection = getConnection(insertRequest);
          List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
          List<QRecord> outputRecords = new ArrayList<>();
          rs.setRecords(outputRecords);

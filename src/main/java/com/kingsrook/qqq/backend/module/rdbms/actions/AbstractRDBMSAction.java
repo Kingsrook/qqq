@@ -22,20 +22,27 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 
 
 /*******************************************************************************
- **
+ ** Base class for all core actions in the RDBMS module.
  *******************************************************************************/
 public abstract class AbstractRDBMSAction
 {
 
    /*******************************************************************************
+    ** Get the table name to use in the RDBMS from a QTableMetaData.
     **
+    ** That is, table.backendDetails.tableName if set -- else, table.name
     *******************************************************************************/
    protected String getTableName(QTableMetaData table)
    {
@@ -52,7 +59,9 @@ public abstract class AbstractRDBMSAction
 
 
    /*******************************************************************************
+    ** Get the column name to use for a field in the RDBMS, from the fieldMetaData.
     **
+    ** That is, field.backendName if set -- else, field.name
     *******************************************************************************/
    protected String getColumnName(QFieldMetaData field)
    {
@@ -63,4 +72,14 @@ public abstract class AbstractRDBMSAction
       return (field.getName());
    }
 
+
+
+   /*******************************************************************************
+    ** Get a database connection, per the backend in the request.
+    *******************************************************************************/
+   protected Connection getConnection(AbstractQTableRequest qTableRequest) throws SQLException
+   {
+      ConnectionManager connectionManager = new ConnectionManager();
+      return connectionManager.getConnection((RDBMSBackendMetaData) qTableRequest.getBackend());
+   }
 }
