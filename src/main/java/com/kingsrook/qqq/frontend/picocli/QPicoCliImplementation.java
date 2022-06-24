@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
-import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
+import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
@@ -53,6 +53,8 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
@@ -62,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFiel
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -91,7 +94,7 @@ public class QPicoCliImplementation
    public static final int DEFAULT_LIMIT = 20;
 
    private static QInstance qInstance;
-   private static QSession session;
+   private static QSession  session;
 
 
 
@@ -106,14 +109,14 @@ public class QPicoCliImplementation
       // parse args to look up metaData and prime instance
       if(args.length > 0 && args[0].startsWith("--qInstanceJsonFile="))
       {
-         String filePath = args[0].replaceFirst("--.*=", "");
+         String filePath      = args[0].replaceFirst("--.*=", "");
          String qInstanceJson = FileUtils.readFileToString(new File(filePath));
          qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
 
          String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
 
          QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-         int exitCode = qPicoCliImplementation.runCli("qapi", subArgs);
+         int                    exitCode               = qPicoCliImplementation.runCli("qapi", subArgs);
          System.exit(exitCode);
       }
       else
@@ -226,7 +229,7 @@ public class QPicoCliImplementation
    private static void setupSession(String[] args) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
 
       // todo - does this need some per-provider logic actually?  mmm...
       Map<String, String> authenticationContext = new HashMap<>();
@@ -247,9 +250,23 @@ public class QPicoCliImplementation
       }
       else
       {
-         String subCommandName = parseResult.subcommand().commandSpec().name();
+         ParseResult subParseResult = parseResult.subcommand();
+         String      subCommandName = subParseResult.commandSpec().name();
          CommandLine subCommandLine = commandLine.getSubcommands().get(subCommandName);
-         return runTableLevelCommand(subCommandLine, parseResult.subcommand());
+         switch(subCommandName)
+         {
+            case "processes":
+            {
+               return runTableProcess(subCommandLine, null, subParseResult);
+            }
+            default:
+            {
+               /////////////////////////////////////////////////////////
+               // by default, assume the command here is a table name //
+               /////////////////////////////////////////////////////////
+               return runTableLevelCommand(subCommandLine, subParseResult);
+            }
+         }
       }
    }
 
@@ -265,7 +282,7 @@ public class QPicoCliImplementation
       if(tableParseResult.hasSubcommand())
       {
          ParseResult subParseResult = tableParseResult.subcommand();
-         String subCommandName = subParseResult.commandSpec().name();
+         String      subCommandName = subParseResult.commandSpec().name();
          switch(subCommandName)
          {
             case "meta-data":
@@ -322,7 +339,7 @@ public class QPicoCliImplementation
       }
       else
       {
-         String subCommandName = subParseResult.subcommand().commandSpec().name();
+         String      subCommandName = subParseResult.subcommand().commandSpec().name();
          CommandLine subCommandLine = commandLine.getSubcommands().get(subCommandName);
          return runTableProcessLevelCommand(subCommandLine, tableName, subParseResult.subcommand());
       }
@@ -335,11 +352,44 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableProcessLevelCommand(CommandLine subCommandLine, String tableName, ParseResult processParseResult)
    {
-      String processName = processParseResult.commandSpec().name();
-      QTableMetaData table = qInstance.getTable(tableName);
-      QProcessMetaData process = qInstance.getProcess(processName);
-      RunFunctionAction runFunctionAction = new RunFunctionAction();
-      // todo!
+      String            processName = processParseResult.commandSpec().name();
+      QProcessMetaData  process     = qInstance.getProcess(processName);
+      RunProcessRequest request     = new RunProcessRequest(qInstance);
+
+      request.setSession(session);
+      request.setProcessName(processName);
+      request.setCallback(new PicoCliProcessCallback(subCommandLine));
+
+      for(OptionSpec matchedOption : processParseResult.matchedOptions())
+      {
+         if(matchedOption.longestName().startsWith("--field-"))
+         {
+            String fieldName = matchedOption.longestName().substring(8);
+            request.addValue(fieldName, matchedOption.getValue());
+         }
+      }
+
+      try
+      {
+         RunProcessResult result = new RunProcessAction().execute(request);
+         subCommandLine.getOut().println("Process Results: "); // todo better!!
+         for(QFieldMetaData outputField : process.getOutputFields())
+         {
+            subCommandLine.getOut().format("   %s: %s\n", outputField.getLabel(), result.getValues().get(outputField.getName()));
+         }
+
+         if(result.getError() != null)
+         {
+            subCommandLine.getOut().println("Process Error message: " + result.getError());
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         subCommandLine.getOut().println("Caught Exception running process: " + e); // todo better!
+         return 1;
+      }
+
       return 0;
    }
 
@@ -379,7 +429,7 @@ public class QPicoCliImplementation
       for(String criterion : criteria)
       {
          // todo - parse!
-         String[] parts = criterion.split(" ");
+         String[]        parts          = criterion.split(" ");
          QFilterCriteria qQueryCriteria = new QFilterCriteria();
          qQueryCriteria.setFieldName(parts[0]);
          qQueryCriteria.setOperator(QCriteriaOperator.valueOf(parts[1]));
@@ -440,7 +490,7 @@ public class QPicoCliImplementation
          try
          {
             String path = subParseResult.matchedOptionValue("--csvFile", "");
-            String csv = FileUtils.readFileToString(new File(path));
+            String csv  = FileUtils.readFileToString(new File(path));
             recordList = new CsvToQRecordAdapter().buildRecordsFromCsv(csv, table, mapping);
          }
          catch(IOException e)
@@ -497,7 +547,7 @@ public class QPicoCliImplementation
 
       boolean anyFields = false;
 
-      String primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
+      String         primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
       Serializable[] primaryKeyValues = primaryKeyOption.split(",");
       for(Serializable primaryKeyValue : primaryKeyValues)
       {
@@ -546,7 +596,7 @@ public class QPicoCliImplementation
       /////////////////////////////////////////////
       // get the pKeys that the user specified //
       /////////////////////////////////////////////
-      String primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
+      String         primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
       Serializable[] primaryKeyValues = primaryKeyOption.split(",");
       deleteRequest.setPrimaryKeys(Arrays.asList(primaryKeyValues));
 

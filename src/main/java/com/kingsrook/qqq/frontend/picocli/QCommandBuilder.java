@@ -25,12 +25,16 @@ package com.kingsrook.qqq.frontend.picocli;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import picocli.CommandLine;
 
 
@@ -94,9 +98,27 @@ public class QCommandBuilder
          List<QProcessMetaData> processes = qInstance.getProcessesForTable(tableName);
          if(CollectionUtils.nullSafeHasContents(processes))
          {
-            tableCommand.addSubcommand("process", defineTableProcessesCommand(table, processes));
+            tableCommand.addSubcommand("process", defineProcessesCommand(processes));
          }
       });
+
+      ///////////////////////////////////////////////////////////////////////////
+      // add all orphan processes (e.g., ones without tables) to the top-level //
+      ///////////////////////////////////////////////////////////////////////////
+      List<QProcessMetaData> orphanProcesses = new ArrayList<>();
+      for(QProcessMetaData process : qInstance.getProcesses().values())
+      {
+         if(!StringUtils.hasContent(process.getTableName()))
+         {
+            orphanProcesses.add(process);
+         }
+      }
+
+      if(!orphanProcesses.isEmpty())
+      {
+         topCommandSpec.addSubcommand("processes", defineProcessesCommand(orphanProcesses));
+      }
+
       return topCommandSpec;
    }
 
@@ -233,14 +255,34 @@ public class QCommandBuilder
    /*******************************************************************************
     **
     *******************************************************************************/
-   private CommandLine.Model.CommandSpec defineTableProcessesCommand(QTableMetaData table, List<QProcessMetaData> processes)
+   private CommandLine.Model.CommandSpec defineProcessesCommand(List<QProcessMetaData> processes)
    {
       CommandLine.Model.CommandSpec processesCommand = CommandLine.Model.CommandSpec.create();
 
       for(QProcessMetaData process : processes)
       {
+         ///////////////////////////////////////////
+         // add the sub-command to run the proces //
+         ///////////////////////////////////////////
          CommandLine.Model.CommandSpec processCommand = CommandLine.Model.CommandSpec.create();
          processesCommand.addSubcommand(process.getName(), processCommand);
+
+         //////////////////////////////////////////////////////////////////////////////////
+         // add all (distinct, by name) input fields to the command as --field-* options //
+         //////////////////////////////////////////////////////////////////////////////////
+         Map<String, QFieldMetaData> inputFieldMap = new LinkedHashMap<>();
+         for(QFieldMetaData inputField : process.getInputFields())
+         {
+            inputFieldMap.put(inputField.getName(), inputField);
+         }
+
+         for(QFieldMetaData field : inputFieldMap.values())
+         {
+            processCommand.addOption(CommandLine.Model.OptionSpec.builder("--field-" + field.getName())
+               .type(getClassForField(field))
+               .build());
+         }
+
       }
 
       return (processesCommand);

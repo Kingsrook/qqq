@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
@@ -41,7 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QOutputView;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListView;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.IOUtils;
@@ -62,9 +61,9 @@ public class TestUtils
    @SuppressWarnings("unchecked")
    public static void primeTestDatabase() throws Exception
    {
-      ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(TestUtils.defineBackend()));
-      InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
+      ConnectionManager connectionManager          = new ConnectionManager();
+      Connection        connection                 = connectionManager.getConnection(TestUtils.defineBackend());
+      InputStream       primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
       assertNotNull(primeTestDatabaseSqlStream);
       List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
       lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
@@ -84,7 +83,7 @@ public class TestUtils
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(defineBackend()));
+      Connection        connection        = connectionManager.getConnection(defineBackend());
       QueryManager.executeStatement(connection, sql, resultSetProcessor);
    }
 
@@ -123,16 +122,15 @@ public class TestUtils
     ** Define the h2 rdbms backend
     **
     *******************************************************************************/
-   public static QBackendMetaData defineBackend()
+   public static RDBMSBackendMetaData defineBackend()
    {
-      return new QBackendMetaData()
-         .withName("default")
-         .withType("rdbms")
-         .withValue("vendor", "h2")
-         .withValue("hostName", "mem")
-         .withValue("databaseName", "test_database")
-         .withValue("username", "sa")
-         .withValue("password", "");
+      return (new RDBMSBackendMetaData()
+         .withVendor("h2")
+         .withHostName("mem")
+         .withDatabaseName("test_database")
+         .withUsername("sa")
+         .withPassword("")
+         .withName("default"));
    }
 
 
