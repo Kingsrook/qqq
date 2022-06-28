@@ -59,6 +59,7 @@ public class BaseS3Test
       amazonS3.putObject(BUCKET_NAME, "0.csv", getCSVHeader());
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/1.csv", getCSVData1());
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/2.csv", getCSVData2());
+      amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/text.txt", "This is a text test");
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/" + SUB_FOLDER + "/3.csv", getCSVData3());
    }
 

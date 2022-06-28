@@ -23,8 +23,6 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 
 import java.io.File;
-import java.util.Set;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
@@ -43,7 +41,8 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
-import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,11 +51,20 @@ import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendD
  *******************************************************************************/
 public class BasicETLCleanupSourceFilesFunction implements FunctionBody
 {
+   private static final Logger LOG = LogManager.getLogger(BasicETLCleanupSourceFilesFunction.class);
+
    public static final String FIELD_MOVE_OR_DELETE        = "moveOrDelete";
    public static final String FIELD_DESTINATION_FOR_MOVES = "destinationForMoves";
 
+   public static final String VALUE_MOVE   = "move";
+   public static final String VALUE_DELETE  = "delete";
+   public static final String FUNCTION_NAME = "cleanupSourceFiles";
 
 
+
+   /*******************************************************************************
+    ** Execute the function - using the request as input, and the result as output.
+    *******************************************************************************/
    @Override
    public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
    {
@@ -70,17 +78,22 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
          throw (new QException("Backend " + table.getBackendName() + " for table " + sourceTableName + " does not support this function."));
       }
 
-      Set<String> sourceFiles = runFunctionRequest.getRecords().stream()
-         .map(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH))
-         .collect(Collectors.toSet());
+      String sourceFilePaths = runFunctionRequest.getValueString(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS);
+      if(!StringUtils.hasContent(sourceFilePaths))
+      {
+         LOG.info("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS + "]");
+         return;
+      }
+
+      String[] sourceFiles = sourceFilePaths.split(",");
       for(String sourceFile : sourceFiles)
       {
          String moveOrDelete = runFunctionRequest.getValueString(FIELD_MOVE_OR_DELETE);
-         if("delete".equals(moveOrDelete))
+         if(VALUE_DELETE.equals(moveOrDelete))
          {
-            filesystemModule.deleteFile(runFunctionRequest.getInstance(), table, sourceFile);
+            filesystemModule.getActionBase().deleteFile(runFunctionRequest.getInstance(), table, sourceFile);
          }
-         else if("move".equals(moveOrDelete))
+         else if(VALUE_MOVE.equals(moveOrDelete))
          {
             String destinationForMoves = runFunctionRequest.getValueString(FIELD_DESTINATION_FOR_MOVES);
             if(!StringUtils.hasContent(destinationForMoves))
@@ -89,11 +102,12 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
             }
             File   file            = new File(sourceFile);
             String destinationPath = destinationForMoves + File.separator + file.getName();
-            filesystemModule.moveFile(runFunctionRequest.getInstance(), table, sourceFile, destinationPath);
+            filesystemModule.getActionBase().moveFile(runFunctionRequest.getInstance(), table, sourceFile, destinationPath);
          }
          else
          {
-            throw (new QException("Unexpected value [" + moveOrDelete + "] for field [" + FIELD_MOVE_OR_DELETE + "].  Must be either [move] or [delete]."));
+            throw (new QException("Unexpected value [" + moveOrDelete + "] for field [" + FIELD_MOVE_OR_DELETE + "].  "
+               + "Must be either [" + VALUE_MOVE + "] or [" + VALUE_DELETE + "]."));
          }
       }
    }
@@ -101,12 +115,12 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
 
 
    /*******************************************************************************
-    **
+    ** define the metaData that describes this function
     *******************************************************************************/
    public QFunctionMetaData defineFunctionMetaData()
    {
       return (new QFunctionMetaData()
-         .withName("cleanupSourceFiles")
+         .withName(FUNCTION_NAME)
          .withCode(new QCodeReference()
             .withName(this.getClass().getName())
             .withCodeType(QCodeType.JAVA)

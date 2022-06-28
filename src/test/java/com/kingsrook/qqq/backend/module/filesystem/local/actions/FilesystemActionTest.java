@@ -29,6 +29,8 @@ import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -39,6 +41,28 @@ import static org.junit.jupiter.api.Assertions.fail;
  *******************************************************************************/
 public class FilesystemActionTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   public void beforeEach() throws Exception
+   {
+      primeFilesystem();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   public void afterEach() throws Exception
+   {
+      cleanFilesystem();
+   }
+
+
 
    /*******************************************************************************
     ** Set up the file system
@@ -61,14 +85,17 @@ public class FilesystemActionTest
 
 
 
+   /*******************************************************************************
+    ** Write some data files into the directory for the filesystem module.
+    *******************************************************************************/
    private void writePersonFiles(File baseDirectory) throws IOException
    {
       String fullPath = baseDirectory.getAbsolutePath();
-      if (TestUtils.defineLocalFilesystemCSVPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
+      if (TestUtils.defineLocalFilesystemJSONPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
       {
-         if (StringUtils.hasContent(details.getPath()))
+         if (StringUtils.hasContent(details.getBasePath()))
          {
-            fullPath += File.separatorChar + details.getPath();
+            fullPath += File.separatorChar + details.getBasePath();
          }
       }
       fullPath += File.separatorChar;

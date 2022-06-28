@@ -19,21 +19,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.base;
+package com.kingsrook.qqq.backend.module.filesystem.s3;
 
 
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import cloud.localstack.awssdkv1.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
+import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
 
 
 /*******************************************************************************
- ** Interface to add additional functionality commonly among the various filesystem
- ** module implementations.
+ ** Subclass of the S3Backend module, meant for use in unit tests, if/where we
+ ** need to make sure we use the localstack version of the S3 client.
  *******************************************************************************/
-public interface FilesystemBackendModuleInterface<FILE>
+public class S3BackendModuleSubclassForTest extends S3BackendModule
 {
+
    /*******************************************************************************
-    ** For filesystem backends, get the module-specific action base-class, that helps
-    ** with functions like listing and deleting files.
+    ** Seed the AbstractS3Action with an s3Utils object that has the localstack
+    ** s3 client in it
     *******************************************************************************/
-   AbstractBaseFilesystemAction<FILE> getActionBase();
+   @Override
+   public AbstractBaseFilesystemAction<S3ObjectSummary> getActionBase()
+   {
+      AbstractS3Action actionBase = (AbstractS3Action) super.getActionBase();
+      S3Utils          s3Utils    = new S3Utils();
+      s3Utils.setAmazonS3(TestUtils.getClientS3());
+      actionBase.setS3Utils(s3Utils);
+      return (actionBase);
+   }
+
 }

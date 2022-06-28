@@ -29,11 +29,14 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -41,6 +44,9 @@ import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFile
  *******************************************************************************/
 public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 {
+   private static final Logger LOG = LogManager.getLogger(AbstractFilesystemAction.class);
+
+
 
    /*******************************************************************************
     ** List the files for this table.
@@ -48,7 +54,8 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
    @Override
    public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase)
    {
-      String fullPath  = getFullPath(table, backendBase);
+      // todo - needs rewritten to do globbing...
+      String fullPath  = getFullBasePath(table, backendBase);
       File   directory = new File(fullPath);
       File[] files     = directory.listFiles();
 
@@ -74,15 +81,106 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 
 
    /*******************************************************************************
-    ** Add backend details to records about the file that they are in.
+    ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
    @Override
-   protected void addBackendDetailsToRecords(List<QRecord> recordsInFile, File file)
+   public void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException
    {
-      recordsInFile.forEach(record ->
+      FileUtils.writeByteArrayToFile(new File(path), contents);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a string that represents the full path to a file.
+    *******************************************************************************/
+   @Override
+   protected String getFullPathForFile(File file)
+   {
+      return (file.getAbsolutePath());
+   }
+
+
+
+   /*******************************************************************************
+    ** In contrast with the DeleteAction, which deletes RECORDS - this is a
+    ** filesystem-(or s3, sftp, etc)-specific extension to delete an entire FILE
+    ** e.g., for post-ETL.
+    **
+    ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
+    *******************************************************************************/
+   @Override
+   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   {
+      File file = new File(fileReference);
+      if(!file.exists())
       {
-         record.withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, file.getAbsolutePath());
-      });
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // if the file doesn't exist, just exit with noop.  don't throw an error - that should only //
+         // happen if the "contract" of the method is broken, and the file still exists              //
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         LOG.debug("Not deleting file [{}], because it does not exist.", file);
+         return;
+      }
+
+      if(!file.delete())
+      {
+         throw (new FilesystemException("Failed to delete file: " + fileReference));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Move a file from a source path, to a destination path.
+    **
+    ** @param destination assumed to be a file path - not a directory
+    ** @throws FilesystemException if the delete is known to have failed
+    *******************************************************************************/
+   @Override
+   public void moveFile(QInstance instance, QTableMetaData table, String source, String destination) throws FilesystemException
+   {
+      File sourceFile        = new File(source);
+      File destinationFile   = new File(destination);
+      File destinationParent = destinationFile.getParentFile();
+
+      if(!sourceFile.exists())
+      {
+         throw (new FilesystemException("Cannot move file " + source + ", as it does not exist."));
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////
+      // if the destination folder doesn't exist, try to make it - and fail if that fails //
+      //////////////////////////////////////////////////////////////////////////////////////
+      if(!destinationParent.exists())
+      {
+         LOG.debug("Making destination directory {} for move", destinationParent.getAbsolutePath());
+         if(!destinationParent.mkdirs())
+         {
+            throw (new FilesystemException("Failed to make destination directory " + destinationParent.getAbsolutePath() + " to move " + source + " into."));
+         }
+      }
+
+      if(!sourceFile.renameTo(destinationFile))
+      {
+         throw (new FilesystemException("Failed to move (rename) file " + source + " to " + destination));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., with a base path of /foo/
+    ** and a table path of /bar/
+    ** and a file at /foo/bar/baz.txt
+    ** give us just the baz.txt part.
+    *******************************************************************************/
+   @Override
+   public String stripBackendAndTableBasePathsFromFileName(File file, QBackendMetaData backend, QTableMetaData table)
+   {
+      String tablePath    = getFullBasePath(table, backend);
+      String strippedPath = file.getAbsolutePath().replaceFirst(".*" + tablePath, "");
+      return (strippedPath);
    }
 
 }

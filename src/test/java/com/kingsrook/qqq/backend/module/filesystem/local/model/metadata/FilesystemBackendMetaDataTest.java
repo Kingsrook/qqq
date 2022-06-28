@@ -71,7 +71,7 @@ class FilesystemBackendMetaDataTest
 
       QInstance deserialized = qInstanceAdapter.jsonToQInstanceIncludingBackends(json);
       assertThat(deserialized).usingRecursiveComparison()
-         .ignoringFields("hasBeenValidated")
+         .ignoringFields("hasBeenValidated") // note, this field is @JsonIgnore
          .isEqualTo(qInstance);
    }
 }

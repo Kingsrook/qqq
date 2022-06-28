@@ -19,21 +19,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.base;
-
-
-import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+package com.kingsrook.qqq.backend.module.filesystem.base.model.metadata;
 
 
 /*******************************************************************************
- ** Interface to add additional functionality commonly among the various filesystem
- ** module implementations.
+ ** How are records stored in the files in a filesystem backend?  CSV, JSON,
+ ** future types may XML, or more exotic ones, like "BINARY" or "TEXT" (e.g., 1
+ ** record and 1 field per-file)
  *******************************************************************************/
-public interface FilesystemBackendModuleInterface<FILE>
+public enum RecordFormat
 {
-   /*******************************************************************************
-    ** For filesystem backends, get the module-specific action base-class, that helps
-    ** with functions like listing and deleting files.
-    *******************************************************************************/
-   AbstractBaseFilesystemAction<FILE> getActionBase();
+   CSV,
+   JSON
 }

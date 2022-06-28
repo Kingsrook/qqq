@@ -22,16 +22,20 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QSecretReader;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 
 
 /*******************************************************************************
- ** (local) Filesystem backend meta data.
+ ** S3 backend meta data.
  *******************************************************************************/
 public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
 {
    private String bucketName;
+   private String accessKey;
+   private String secretKey;
+   private String region;
 
 
 
@@ -77,6 +81,126 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
    {
       this.bucketName = bucketName;
       return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for accessKey
+    **
+    *******************************************************************************/
+   public String getAccessKey()
+   {
+      return accessKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for accessKey
+    **
+    *******************************************************************************/
+   public void setAccessKey(String accessKey)
+   {
+      this.accessKey = accessKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for accessKey
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public <T extends S3BackendMetaData> T withAccessKey(String accessKey)
+   {
+      this.accessKey = accessKey;
+      return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for secretKey
+    **
+    *******************************************************************************/
+   public String getSecretKey()
+   {
+      return secretKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for secretKey
+    **
+    *******************************************************************************/
+   public void setSecretKey(String secretKey)
+   {
+      this.secretKey = secretKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for secretKey
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public <T extends S3BackendMetaData> T withSecretKey(String secretKey)
+   {
+      this.secretKey = secretKey;
+      return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for region
+    **
+    *******************************************************************************/
+   public String getRegion()
+   {
+      return region;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for region
+    **
+    *******************************************************************************/
+   public void setRegion(String region)
+   {
+      this.region = region;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for region
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public <T extends S3BackendMetaData> T withRegion(String region)
+   {
+      this.region = region;
+      return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Called by the QInstanceEnricher - to do backend-type-specific enrichments.
+    ** Original use case is:  reading secrets into fields (e.g., passwords).
+    *******************************************************************************/
+   @Override
+   public void enrich()
+   {
+      super.enrich();
+      QSecretReader secretReader = new QSecretReader();
+      accessKey = secretReader.readSecret(accessKey);
+      secretKey = secretReader.readSecret(secretKey);
    }
 
 }

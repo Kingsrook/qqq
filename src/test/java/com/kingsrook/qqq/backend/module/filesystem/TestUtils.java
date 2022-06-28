@@ -33,6 +33,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
@@ -56,6 +58,10 @@ public class TestUtils
    ///////////////////////////////////////////////////////////////////
    public static final String BASE_PATH = "/tmp/filesystem-tests";
 
+   //////////////////////////////////////////////////////////////////////////////
+   // Used to make each test method have a unique folder path, more or less... //
+   // See methods that work with it.                                           //
+   //////////////////////////////////////////////////////////////////////////////
    private static int testInstanceCounter = 0;
 
 
@@ -110,7 +116,7 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineLocalFilesystemBackend());
-      qInstance.addTable(defineLocalFilesystemCSVPersonTable());
+      qInstance.addTable(defineLocalFilesystemJSONPersonTable());
       qInstance.addBackend(defineS3Backend());
       qInstance.addTable(defineS3CSVPersonTable());
 
@@ -149,7 +155,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QTableMetaData defineLocalFilesystemCSVPersonTable()
+   public static QTableMetaData defineLocalFilesystemJSONPersonTable()
    {
       return new QTableMetaData()
          .withName(TABLE_NAME_PERSON_LOCAL_FS)
@@ -164,9 +170,9 @@ public class TestUtils
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withBackendDetails(new FilesystemTableBackendDetails()
-            .withPath("persons")
-            .withRecordFormat("json")
-            .withCardinality("many")
+            .withBasePath("persons")
+            .withRecordFormat(RecordFormat.JSON)
+            .withCardinality(Cardinality.MANY)
          );
    }
 
@@ -203,8 +209,8 @@ public class TestUtils
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withBackendDetails(new S3TableBackendDetails()
-            .withRecordFormat("csv")
-            .withCardinality("many")
+            .withRecordFormat(RecordFormat.CSV)
+            .withCardinality(Cardinality.MANY)
          );
    }
 

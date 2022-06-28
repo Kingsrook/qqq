@@ -52,7 +52,7 @@ class S3BackendMetaDataTest
       System.out.println(JsonUtils.prettyPrint(json));
       System.out.println(json);
       String expectToContain = """
-         {"s3":{"bucketName":"localstack-test-bucket","basePath":"test-files","backendType":"s3","name":"s3"}""";
+         {"s3":{"bucketName":"localstack-test-bucket","basePath":"test-files","secretKey":null,"accessKey":null,"backendType":"s3","name":"s3","region":null}""";
       assertTrue(json.contains(expectToContain));
    }
 
@@ -71,7 +71,7 @@ class S3BackendMetaDataTest
 
       QInstance deserialized = qInstanceAdapter.jsonToQInstanceIncludingBackends(json);
       assertThat(deserialized).usingRecursiveComparison()
-         .ignoringFields("hasBeenValidated")
+         .ignoringFields("hasBeenValidated") // note, this field is @JsonIgnore
          .isEqualTo(qInstance);
    }
 }

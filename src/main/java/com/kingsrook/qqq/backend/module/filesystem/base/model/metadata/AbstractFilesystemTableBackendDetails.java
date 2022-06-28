@@ -30,42 +30,78 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
  *******************************************************************************/
 public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
 {
-   private String path;
-   private String recordFormat; // todo - enum?  but hard w/ serialization?
-   private String cardinality; // todo - enum?
+   private String       basePath;
+   private String       glob;
+   private RecordFormat recordFormat;
+   private Cardinality  cardinality;
 
 
 
    /*******************************************************************************
-    ** Getter for path
+    ** Getter for basePath
     **
     *******************************************************************************/
-   public String getPath()
+   public String getBasePath()
    {
-      return path;
+      return basePath;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for path
+    ** Setter for basePath
     **
     *******************************************************************************/
-   public void setPath(String path)
+   public void setBasePath(String basePath)
    {
-      this.path = path;
+      this.basePath = basePath;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for path
+    ** Fluent Setter for basePath
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
-   public <T extends AbstractFilesystemTableBackendDetails> T withPath(String path)
+   public <T extends AbstractFilesystemTableBackendDetails> T withBasePath(String basePath)
    {
-      this.path = path;
+      this.basePath = basePath;
+      return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for glob
+    **
+    *******************************************************************************/
+   public String getGlob()
+   {
+      return glob;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for glob
+    **
+    *******************************************************************************/
+   public void setGlob(String glob)
+   {
+      this.glob = glob;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for glob
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public <T extends AbstractFilesystemTableBackendDetails> T withGlob(String glob)
+   {
+      this.glob = glob;
       return (T) this;
    }
 
@@ -75,7 +111,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
     ** Getter for recordFormat
     **
     *******************************************************************************/
-   public String getRecordFormat()
+   public RecordFormat getRecordFormat()
    {
       return recordFormat;
    }
@@ -86,7 +122,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
     ** Setter for recordFormat
     **
     *******************************************************************************/
-   public void setRecordFormat(String recordFormat)
+   public void setRecordFormat(RecordFormat recordFormat)
    {
       this.recordFormat = recordFormat;
    }
@@ -98,7 +134,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
-   public <T extends AbstractFilesystemTableBackendDetails> T withRecordFormat(String recordFormat)
+   public <T extends AbstractFilesystemTableBackendDetails> T withRecordFormat(RecordFormat recordFormat)
    {
       this.recordFormat = recordFormat;
       return ((T) this);
@@ -110,7 +146,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
     ** Getter for cardinality
     **
     *******************************************************************************/
-   public String getCardinality()
+   public Cardinality getCardinality()
    {
       return cardinality;
    }
@@ -121,7 +157,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
     ** Setter for cardinality
     **
     *******************************************************************************/
-   public void setCardinality(String cardinality)
+   public void setCardinality(Cardinality cardinality)
    {
       this.cardinality = cardinality;
    }
@@ -133,7 +169,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
-   public <T extends AbstractFilesystemTableBackendDetails> T withCardinality(String cardinality)
+   public <T extends AbstractFilesystemTableBackendDetails> T withCardinality(Cardinality cardinality)
    {
       this.cardinality = cardinality;
       return ((T) this);

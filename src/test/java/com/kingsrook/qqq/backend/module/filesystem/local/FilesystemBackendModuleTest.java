@@ -78,7 +78,7 @@ public class FilesystemBackendModuleTest
       List<File> filesBeforeDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
 
       FilesystemBackendModule filesystemBackendModule = new FilesystemBackendModule();
-      filesystemBackendModule.deleteFile(qInstance, table, filesBeforeDelete.get(0).getAbsolutePath());
+      filesystemBackendModule.getActionBase().deleteFile(qInstance, table, filesBeforeDelete.get(0).getAbsolutePath());
 
       List<File> filesAfterDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
       Assertions.assertEquals(filesBeforeDelete.size() - 1, filesAfterDelete.size(),
@@ -98,12 +98,13 @@ public class FilesystemBackendModuleTest
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // first list the files - then try to delete a fake path, then re-list, and assert that we have the same count //
-      // note, we'd like to detect the non-delete, but there's no such info back from aws it appears?                //
+      // note, our contract is that as long as the file doesn't exist after calling delete (e.g., if it wasn't there //
+      // to begin with, then we're okay, and don't expect an exception                                               //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<File> filesBeforeDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
 
       FilesystemBackendModule filesystemBackendModule = new FilesystemBackendModule();
-      filesystemBackendModule.deleteFile(qInstance, table, PATH_THAT_WONT_EXIST);
+      filesystemBackendModule.getActionBase().deleteFile(qInstance, table, PATH_THAT_WONT_EXIST);
 
       List<File> filesAfterDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
       Assertions.assertEquals(filesBeforeDelete.size(), filesAfterDelete.size(),
@@ -133,7 +134,7 @@ public class FilesystemBackendModuleTest
       String                  originalFilePath        = filesBeforeMove.get(0).getAbsolutePath();
       String                  movedFilePath           = originalFilePath.replace(basePath, subPath);
 
-      filesystemBackendModule.moveFile(qInstance, table, originalFilePath, movedFilePath);
+      filesystemBackendModule.getActionBase().moveFile(qInstance, table, originalFilePath, movedFilePath);
 
       List<File> filesAfterMove = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
       Assertions.assertEquals(filesBeforeMove.size() - 1, filesAfterMove.size(), "Should be one fewer file in the listing after moving one.");
@@ -141,7 +142,7 @@ public class FilesystemBackendModuleTest
       //////////////////////////////////////////////////////////////////////////
       // move the file back and assert that the count goes back to the before //
       //////////////////////////////////////////////////////////////////////////
-      filesystemBackendModule.moveFile(qInstance, table, movedFilePath, originalFilePath);
+      filesystemBackendModule.getActionBase().moveFile(qInstance, table, movedFilePath, originalFilePath);
 
       List<File> filesAfterMoveBack = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
       Assertions.assertEquals(filesBeforeMove.size(), filesAfterMoveBack.size(), "Should be original number of files after moving back");
@@ -166,7 +167,7 @@ public class FilesystemBackendModuleTest
       Assertions.assertThrows(FilesystemException.class, () ->
       {
          FilesystemBackendModule filesystemBackendModule = new FilesystemBackendModule();
-         filesystemBackendModule.moveFile(qInstance, table, PATH_THAT_WONT_EXIST, movedFilePath);
+         filesystemBackendModule.getActionBase().moveFile(qInstance, table, PATH_THAT_WONT_EXIST, movedFilePath);
       });
 
    }

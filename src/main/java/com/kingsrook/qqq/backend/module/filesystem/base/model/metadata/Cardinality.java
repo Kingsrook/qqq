@@ -19,21 +19,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.base;
-
-
-import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+package com.kingsrook.qqq.backend.module.filesystem.base.model.metadata;
 
 
 /*******************************************************************************
- ** Interface to add additional functionality commonly among the various filesystem
- ** module implementations.
+ ** Mode for filesystem backends:  are all records in a single file, or are there
+ ** many files?
  *******************************************************************************/
-public interface FilesystemBackendModuleInterface<FILE>
+public enum Cardinality
 {
-   /*******************************************************************************
-    ** For filesystem backends, get the module-specific action base-class, that helps
-    ** with functions like listing and deleting files.
-    *******************************************************************************/
-   AbstractBaseFilesystemAction<FILE> getActionBase();
+   ONE,
+   MANY
 }

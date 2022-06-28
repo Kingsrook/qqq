@@ -22,7 +22,12 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.utils;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import com.amazonaws.regions.Regions;
@@ -30,8 +35,10 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
+import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,25 +54,57 @@ public class S3Utils
 {
    private static final Logger LOG = LogManager.getLogger(S3Utils.class);
 
-   private AmazonS3 s3;
+   private AmazonS3 amazonS3;
 
 
 
    /*******************************************************************************
-    ** List the objects in an S3 bucket at a given path
+    ** List the objects in an S3 bucket matching a glob, per:
+    ** https://docs.oracle.com/javase/7/docs/api/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)
     *******************************************************************************/
-   public List<S3ObjectSummary> listObjectsInBucketAtPath(String bucketName, String fullPath, boolean includeSubfolders)
+   public List<S3ObjectSummary> listObjectsInBucketMatchingGlob(String bucketName, String path, String glob)
    {
       //////////////////////////////////////////////////////////////////////////////////////////////////
       // s3 list requests find nothing if the path starts with a /, so strip away any leading slashes //
       // also strip away trailing /'s, for consistent known paths.                                    //
       // also normalize any duplicated /'s to a single /.                                             //
       //////////////////////////////////////////////////////////////////////////////////////////////////
-      fullPath = fullPath.replaceFirst("^/+", "").replaceFirst("/+$", "").replaceAll("//+", "/");
+      path = path.replaceFirst("^/+", "").replaceFirst("/+$", "").replaceAll("//+", "/");
+      String prefix = path;
+
+      // todo - maybe this is some error - that the user put a * in the path instead of the glob?
+      if(prefix.indexOf('*') > -1)
+      {
+         prefix = prefix.substring(0, prefix.indexOf('*'));
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // mmm, we're assuming here we always want more than 1 file - so there must be some * in the glob.                //
+      // That's a bad assumption, as it doesn't consider other wildcards like ? and [-] - but - put that aside for now. //
+      // Anyway, add a trailing /* to globs with no wildcards (or just a '*' if it's a request for the root (""))       //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(glob == null)
+      {
+         glob = "";
+      }
+      if(!glob.contains("*"))
+      {
+         if(glob.equals(""))
+         {
+            glob += "*";
+         }
+         else
+         {
+            glob += "/*";
+         }
+      }
+
+      String pathMatcherArg = AbstractFilesystemAction.stripDuplicatedSlashes("glob:/" + path + "/" + glob);
+      PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher(pathMatcherArg);
 
       ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request()
          .withBucketName(bucketName)
-         .withPrefix(fullPath);
+         .withPrefix(prefix);
 
       ListObjectsV2Result   listObjectsV2Result = null;
       List<S3ObjectSummary> rs                  = new ArrayList<>();
@@ -76,7 +115,8 @@ public class S3Utils
          {
             listObjectsV2Request.setContinuationToken(listObjectsV2Result.getNextContinuationToken());
          }
-         listObjectsV2Result = getS3().listObjectsV2(listObjectsV2Request);
+         LOG.info("Listing bucket=" + bucketName + ", path=" + path);
+         listObjectsV2Result = getAmazonS3().listObjectsV2(listObjectsV2Request);
 
          //////////////////////////////////
          // put files in the result list //
@@ -85,26 +125,29 @@ public class S3Utils
          {
             String key = objectSummary.getKey();
 
-            //////////////////
-            // skip folders //
-            //////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // it looks like keys in s3 can have duplicated /'s - so normalize those, to create a "sane" result //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            key = key.replaceAll("//+", "/");
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // always skip folders                                                        //
+            // this seemed to fire when it was first written, but not in our unit tests - //
+            // is this a difference with real s3 vs. localstack possibly?                 //
+            ////////////////////////////////////////////////////////////////////////////////
             if(key.endsWith("/"))
             {
                LOG.debug("Skipping file [{}] because it is a folder", key);
                continue;
             }
 
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // if we're not supposed to include subfolders, check the path on this file, and only include it if it matches the request //
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(!includeSubfolders)
+            ///////////////////////////////////////////
+            // skip files that do not match the glob //
+            ///////////////////////////////////////////
+            if(!pathMatcher.matches(Path.of(URI.create("file:///" + key))))
             {
-               String prefix = key.substring(0, key.lastIndexOf("/"));
-               if(!prefix.equals(fullPath))
-               {
-                  LOG.debug("Skipping file [{}] in a sub-folder [{}] != [{}]", key, prefix, fullPath);
-                  continue;
-               }
+               LOG.debug("Skipping file [{}] that does not match glob [{}]", key, glob);
+               continue;
             }
 
             rs.add(objectSummary);
@@ -122,7 +165,17 @@ public class S3Utils
     *******************************************************************************/
    public InputStream getObjectAsInputStream(S3ObjectSummary s3ObjectSummary)
    {
-      return getS3().getObject(s3ObjectSummary.getBucketName(), s3ObjectSummary.getKey()).getObjectContent();
+      return getAmazonS3().getObject(s3ObjectSummary.getBucketName(), s3ObjectSummary.getKey()).getObjectContent();
+   }
+
+
+
+   /*******************************************************************************
+    ** Write a file
+    *******************************************************************************/
+   public void writeFile(String bucket, String key, byte[] contents)
+   {
+      getAmazonS3().putObject(bucket, key, new ByteArrayInputStream(contents), new ObjectMetadata());
    }
 
 
@@ -137,7 +190,7 @@ public class S3Utils
       //////////////////////////////////////////////////////////////////////////////////////////////
       try
       {
-         getS3().deleteObject(bucketName, key);
+         getAmazonS3().deleteObject(bucketName, key);
       }
       catch(Exception e)
       {
@@ -157,8 +210,8 @@ public class S3Utils
       //////////////////////////////////////////////////////////////////////////////////////////////
       try
       {
-         getS3().copyObject(bucketName, source, bucketName, destination);
-         getS3().deleteObject(bucketName, source);
+         getAmazonS3().copyObject(bucketName, source, bucketName, destination);
+         getAmazonS3().deleteObject(bucketName, source);
       }
       catch(Exception e)
       {
@@ -171,9 +224,9 @@ public class S3Utils
    /*******************************************************************************
     ** Setter for AmazonS3 client object.
     *******************************************************************************/
-   public void setAmazonS3(AmazonS3 s3)
+   public void setAmazonS3(AmazonS3 amazonS3)
    {
-      this.s3 = s3;
+      this.amazonS3 = amazonS3;
    }
 
 
@@ -181,14 +234,14 @@ public class S3Utils
    /*******************************************************************************
     ** Getter for AmazonS3 client object.
     *******************************************************************************/
-   public AmazonS3 getS3()
+   public AmazonS3 getAmazonS3()
    {
-      if(s3 == null)
+      if(amazonS3 == null)
       {
-         s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
+         // TODO - get this (and other props?) from backend meta data
+         amazonS3 = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
       }
 
-      return s3;
+      return amazonS3;
    }
-
 }

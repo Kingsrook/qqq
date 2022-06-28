@@ -23,20 +23,19 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
-import com.kingsrook.qqq.backend.core.callbacks.NoopCallback;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
-import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import org.apache.commons.io.FileUtils;
@@ -56,17 +55,11 @@ public class BasicETLCleanupSourceFilesFunctionTest
     **
     *******************************************************************************/
    @Test
-   public void testDelete() throws Exception
+   public void testDelete1Record1File() throws Exception
    {
       QInstance qInstance = TestUtils.defineInstance();
       String    filePath  = getRandomFilePathPersonTable(qInstance);
-
-      RunFunctionResult runFunctionResult = runFunction(qInstance, filePath, Map.of(
-         BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, "delete",
-         BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, "/tmp/trash"));
-
-      assertNull(runFunctionResult.getError());
-      assertFalse(new File(filePath).exists(), "File should have been deleted.");
+      testDelete(qInstance, List.of(filePath));
    }
 
 
@@ -75,21 +68,11 @@ public class BasicETLCleanupSourceFilesFunctionTest
     **
     *******************************************************************************/
    @Test
-   public void testMove() throws Exception
+   public void testDelete2Records1File() throws Exception
    {
       QInstance qInstance = TestUtils.defineInstance();
       String    filePath  = getRandomFilePathPersonTable(qInstance);
-
-      String trashDir = File.separator + "tmp" + File.separator + "trash";
-      RunFunctionResult runFunctionResult = runFunction(qInstance, filePath, Map.of(
-         BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, "move",
-         BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, trashDir));
-
-      assertNull(runFunctionResult.getError());
-      assertFalse(new File(filePath).exists(), "File should have been moved.");
-
-      String movedPath = trashDir + File.separator + (new File(filePath).getName());
-      assertTrue(new File(movedPath).exists(), "File should have been moved.");
+      testDelete(qInstance, List.of(filePath, filePath));
    }
 
 
@@ -97,25 +80,127 @@ public class BasicETLCleanupSourceFilesFunctionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private RunFunctionResult runFunction(QInstance qInstance, String filePath, Map<String, String> values) throws Exception
+   @Test
+   public void testDelete2Record2File() throws Exception
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      String    filePath1 = getRandomFilePathPersonTable(qInstance);
+      String    filePath2 = getRandomFilePathPersonTable(qInstance);
+      testDelete(qInstance, List.of(filePath1, filePath2));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testMove1Record1File() throws Exception
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      String    filePath  = getRandomFilePathPersonTable(qInstance);
+      testMove(qInstance, List.of(filePath));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testMove2Records1File() throws Exception
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      String    filePath  = getRandomFilePathPersonTable(qInstance);
+      testMove(qInstance, List.of(filePath, filePath));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testMove2Record2File() throws Exception
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      String    filePath1 = getRandomFilePathPersonTable(qInstance);
+      String    filePath2 = getRandomFilePathPersonTable(qInstance);
+      testMove(qInstance, List.of(filePath1, filePath2));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void testDelete(QInstance qInstance, List<String> filePaths) throws Exception
+   {
+      RunFunctionResult runFunctionResult = runFunction(qInstance, filePaths, Map.of(
+         BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesFunction.VALUE_DELETE,
+         // todo - even though this field isn't needed, since we gave a value of "delete"
+         //  the RunFunctionAction considers any missing input to be an error...
+         BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, ""));
+
+      assertNull(runFunctionResult.getError());
+      for(String filePath : filePaths)
+      {
+         assertFalse(new File(filePath).exists(), "File should have been deleted.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void testMove(QInstance qInstance, List<String> filePaths) throws Exception
+   {
+      String trashDir = File.separator + "tmp" + File.separator + "trash";
+      RunFunctionResult runFunctionResult = runFunction(qInstance, filePaths, Map.of(
+         BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesFunction.VALUE_MOVE,
+         BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, trashDir));
+
+      assertNull(runFunctionResult.getError());
+
+      for(String filePath : filePaths)
+      {
+         assertFalse(new File(filePath).exists(), "File should have been moved.");
+
+         String movedPath = trashDir + File.separator + (new File(filePath).getName());
+         assertTrue(new File(movedPath).exists(), "File should have been moved.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private RunFunctionResult runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
    {
       QFunctionMetaData qFunctionMetaData = new BasicETLCleanupSourceFilesFunction().defineFunctionMetaData();
       QProcessMetaData  qProcessMetaData  = new QProcessMetaData().withName("testScaffold").addFunction(qFunctionMetaData);
       qInstance.addProcess(qProcessMetaData);
 
-      File file = new File(filePath);
-      FileUtils.writeStringToFile(file, "content");
+      HashSet<String> filePathsSet = new HashSet<>(filePaths);
+      for(String filePath : filePathsSet)
+      {
+         File file = new File(filePath);
+         FileUtils.writeStringToFile(file, "content");
+      }
 
-      List<QRecord> records = List.of(new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, filePath));
+      // List<QRecord> records = filePaths.stream()
+      //    .map(filePath -> new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, filePath)).toList();
 
       RunFunctionRequest runFunctionRequest = new RunFunctionRequest(qInstance);
       runFunctionRequest.setFunctionName(qFunctionMetaData.getName());
       runFunctionRequest.setProcessName(qProcessMetaData.getName());
-      runFunctionRequest.setCallback(new NoopCallback());
-      runFunctionRequest.setRecords(records);
+      // runFunctionRequest.setRecords(records);
       runFunctionRequest.setSession(TestUtils.getMockSession());
       runFunctionRequest.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
       runFunctionRequest.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
+      runFunctionRequest.addValue(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
 
       for(Map.Entry<String, String> entry : values.entrySet())
       {
@@ -135,7 +220,7 @@ public class BasicETLCleanupSourceFilesFunctionTest
    {
       FilesystemBackendMetaData     backend        = (FilesystemBackendMetaData) qInstance.getBackend(TestUtils.BACKEND_NAME_LOCAL_FS);
       FilesystemTableBackendDetails backendDetails = (FilesystemTableBackendDetails) qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS).getBackendDetails();
-      String                        tablePath      = backend.getBasePath() + File.separator + backendDetails.getPath();
+      String                        tablePath      = backend.getBasePath() + File.separator + backendDetails.getBasePath();
       String                        filePath       = tablePath + File.separator + UUID.randomUUID();
       return filePath;
    }

@@ -27,27 +27,42 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
  ** Base class for all Filesystem actions across all modules.
+ **
+ ** @param FILE The class that represents a file in the sub-module.  e.g.,
+ *               a java.io.File, or an S3Object.
  *******************************************************************************/
 public abstract class AbstractBaseFilesystemAction<FILE>
 {
+   private static final Logger LOG = LogManager.getLogger(AbstractBaseFilesystemAction.class);
+
+
 
    /*******************************************************************************
     ** List the files for a table - to be implemented in module-specific subclasses.
@@ -60,27 +75,75 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    public abstract InputStream readFile(FILE file) throws IOException;
 
    /*******************************************************************************
-    ** Add backend details to records about the file that they are in.
+    ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
-   protected abstract void addBackendDetailsToRecords(List<QRecord> recordsInFile, FILE file);
+   public abstract void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException;
+
+   /*******************************************************************************
+    ** Get a string that represents the full path to a file.
+    *******************************************************************************/
+   protected abstract String getFullPathForFile(FILE file);
+
+   /*******************************************************************************
+    ** In contrast with the DeleteAction, which deletes RECORDS - this is a
+    ** filesystem-(or s3, sftp, etc)-specific extension to delete an entire FILE
+    ** e.g., for post-ETL.
+    **
+    ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
+    *******************************************************************************/
+   public abstract void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException;
+
+   /*******************************************************************************
+    ** Move a file from a source path, to a destination path.
+    **
+    ** @throws FilesystemException if the move is known to have failed
+    *******************************************************************************/
+   public abstract void moveFile(QInstance instance, QTableMetaData table, String source, String destination) throws FilesystemException;
+
+   /*******************************************************************************
+    ** e.g., with a base path of /foo/
+    ** and a table path of /bar/
+    ** and a file at /foo/bar/baz.txt
+    ** give us just the baz.txt part.
+    *******************************************************************************/
+   public abstract String stripBackendAndTableBasePathsFromFileName(FILE file, QBackendMetaData sourceBackend, QTableMetaData sourceTable);
+
 
 
    /*******************************************************************************
-    ** Append together the backend's base path (if present), with a table's path (again, if present).
+    ** Append together the backend's base path (if present), with a table's base
+    ** path (again, if present).
     *******************************************************************************/
-   protected String getFullPath(QTableMetaData table, QBackendMetaData backendBase)
+   public String getFullBasePath(QTableMetaData table, QBackendMetaData backendBase)
    {
       AbstractFilesystemBackendMetaData metaData = getBackendMetaData(AbstractFilesystemBackendMetaData.class, backendBase);
       String                            fullPath = StringUtils.hasContent(metaData.getBasePath()) ? metaData.getBasePath() : "";
 
       AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
-      if(StringUtils.hasContent(tableDetails.getPath()))
+      if(StringUtils.hasContent(tableDetails.getBasePath()))
       {
-         fullPath += File.separatorChar + tableDetails.getPath();
+         fullPath += File.separatorChar + tableDetails.getBasePath();
       }
 
       fullPath += File.separatorChar;
+      fullPath = stripDuplicatedSlashes(fullPath);
+
       return fullPath;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String stripDuplicatedSlashes(String path)
+   {
+      if(path == null)
+      {
+         return (null);
+      }
+
+      return (path.replaceAll("//+", "/"));
    }
 
 
@@ -119,6 +182,8 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public QueryResult executeQuery(QueryRequest queryRequest) throws QException
    {
+      preAction(queryRequest);
+
       try
       {
          QueryResult   rs      = new QueryResult();
@@ -131,20 +196,25 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
          for(FILE file : files)
          {
+            LOG.info("Processing file: " + getFullPathForFile(file));
             switch(tableDetails.getRecordFormat())
             {
-               case "csv":
+               case CSV:
                {
-                  String        fileContents  = IOUtils.toString(readFile(file));
+                  String fileContents = IOUtils.toString(readFile(file));
+                  fileContents = customizeFileContentsAfterReading(table, fileContents);
+
                   List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
                   records.addAll(recordsInFile);
                   break;
                }
-               case "json":
+               case JSON:
                {
-                  String        fileContents  = IOUtils.toString(readFile(file));
+                  String fileContents = IOUtils.toString(readFile(file));
+                  fileContents = customizeFileContentsAfterReading(table, fileContents);
+
                   List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
@@ -162,8 +232,64 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       }
       catch(Exception e)
       {
-         e.printStackTrace();
+         LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Add backend details to records about the file that they are in.
+    *******************************************************************************/
+   protected void addBackendDetailsToRecords(List<QRecord> recordsInFile, FILE file)
+   {
+      recordsInFile.forEach(record ->
+      {
+         record.withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, getFullPathForFile(file));
+      });
+   }
+
+
+
+   /*******************************************************************************
+    ** Method that subclasses can override to add pre-action things (e.g., setting up
+    ** s3 client).
+    *******************************************************************************/
+   protected void preAction(AbstractQTableRequest tableRequest)
+   {
+      /////////////////////////////////////////////////////////////////////
+      // noop in base class - subclasses can add functionality if needed //
+      /////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String customizeFileContentsAfterReading(QTableMetaData table, String fileContents) throws QException
+   {
+      Optional<QCodeReference> optionalCustomizer = table.getCustomizer("postFileRead");
+      if(optionalCustomizer.isEmpty())
+      {
+         return (fileContents);
+      }
+      QCodeReference customizer = optionalCustomizer.get();
+
+      try
+      {
+         Class<?> customizerClass = Class.forName(customizer.getName());
+
+         @SuppressWarnings("unchecked")
+         Function<String, String> function = (Function<String, String>) customizerClass.getConstructor().newInstance();
+
+         return function.apply(fileContents);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error customizing file contents", e));
+      }
+   }
+
 }

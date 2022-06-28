@@ -25,14 +25,22 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -40,7 +48,43 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
  *******************************************************************************/
 public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSummary>
 {
+   private static final Logger LOG = LogManager.getLogger(AbstractS3Action.class);
+
    private S3Utils s3Utils;
+
+
+
+   /*******************************************************************************
+    ** Setup the s3 utils object to be used for this action.
+    *******************************************************************************/
+   @Override
+   protected void preAction(AbstractQTableRequest tableRequest)
+   {
+      super.preAction(tableRequest);
+
+      if(s3Utils != null)
+      {
+         LOG.debug("s3Utils object is already set - not re-setting it.");
+         return;
+      }
+
+      S3BackendMetaData     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, tableRequest.getBackend());
+      AmazonS3ClientBuilder clientBuilder     = AmazonS3ClientBuilder.standard();
+
+      if(StringUtils.hasContent(s3BackendMetaData.getAccessKey()) && StringUtils.hasContent(s3BackendMetaData.getSecretKey()))
+      {
+         BasicAWSCredentials credentials = new BasicAWSCredentials(s3BackendMetaData.getAccessKey(), s3BackendMetaData.getSecretKey());
+         clientBuilder.setCredentials(new AWSStaticCredentialsProvider(credentials));
+      }
+
+      if(StringUtils.hasContent(s3BackendMetaData.getRegion()))
+      {
+         clientBuilder.setRegion(s3BackendMetaData.getRegion());
+      }
+
+      s3Utils = new S3Utils();
+      s3Utils.setAmazonS3(clientBuilder.build());
+   }
 
 
 
@@ -75,17 +119,17 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    @Override
    public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase)
    {
-      S3BackendMetaData s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendBase);
+      S3BackendMetaData                     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendBase);
+      AbstractFilesystemTableBackendDetails tableDetails      = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
 
-      String fullPath   = getFullPath(table, backendBase);
+      String fullPath   = getFullBasePath(table, backendBase);
       String bucketName = s3BackendMetaData.getBucketName();
+      String glob       = tableDetails.getGlob();
 
       ////////////////////////////////////////////////////////////////////
-      // todo - read metadata to decide if we should include subfolders //
       // todo - look at metadata to configure the s3 client here?       //
       ////////////////////////////////////////////////////////////////////
-      boolean includeSubfolders = false;
-      return getS3Utils().listObjectsInBucketAtPath(bucketName, fullPath, includeSubfolders);
+      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob);
    }
 
 
@@ -102,15 +146,77 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
 
 
    /*******************************************************************************
-    ** Add backend details to records about the file that they are in.
+    ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
    @Override
-   protected void addBackendDetailsToRecords(List<QRecord> recordsInFile, S3ObjectSummary s3ObjectSummary)
+   public void writeFile(QBackendMetaData backendMetaData, String path, byte[] contents) throws IOException
    {
-      recordsInFile.forEach(record ->
-      {
-         record.withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, s3ObjectSummary.getKey());
-      });
+      path = stripDuplicatedSlashes(path);
+      String bucketName = ((S3BackendMetaData) backendMetaData).getBucketName();
+      getS3Utils().writeFile(bucketName, path, contents);
+   }
+
+
+   /*******************************************************************************
+    ** Get a string that represents the full path to a file.
+    *******************************************************************************/
+   @Override
+   protected String getFullPathForFile(S3ObjectSummary s3ObjectSummary)
+   {
+      return (s3ObjectSummary.getKey());
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., with a base path of /foo/
+    ** and a table path of /bar/
+    ** and a file at /foo/bar/baz.txt
+    ** give us just the baz.txt part.
+    *******************************************************************************/
+   @Override
+   public String stripBackendAndTableBasePathsFromFileName(S3ObjectSummary file, QBackendMetaData backend, QTableMetaData table)
+   {
+      String tablePath    = getFullBasePath(table, backend);
+      String strippedPath = file.getKey().replaceFirst(".*" + tablePath, "");
+      return (strippedPath);
+   }
+
+
+
+   /*******************************************************************************
+    ** In contrast with the DeleteAction, which deletes RECORDS - this is a
+    ** filesystem-(or s3, sftp, etc)-specific extension to delete an entire FILE
+    ** e.g., for post-ETL.
+    **
+    ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
+    *******************************************************************************/
+   @Override
+   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   {
+      QBackendMetaData backend    = instance.getBackend(table.getBackendName());
+      String           bucketName = ((S3BackendMetaData) backend).getBucketName();
+
+      getS3Utils().deleteObject(bucketName, fileReference);
+   }
+
+
+
+   /*******************************************************************************
+    ** In contrast with the DeleteAction, which deletes RECORDS - this is a
+    ** filesystem-(or s3, sftp, etc)-specific extension to delete an entire FILE
+    ** e.g., for post-ETL.
+    **
+    ** @param destination assumed to be a file path - not a directory
+    ** @throws FilesystemException if the move is known to have failed
+    *******************************************************************************/
+   @Override
+   public void moveFile(QInstance instance, QTableMetaData table, String source, String destination) throws FilesystemException
+   {
+      QBackendMetaData backend    = instance.getBackend(table.getBackendName());
+      String           bucketName = ((S3BackendMetaData) backend).getBucketName();
+
+      getS3Utils().moveObject(bucketName, source, destination);
    }
 
 }

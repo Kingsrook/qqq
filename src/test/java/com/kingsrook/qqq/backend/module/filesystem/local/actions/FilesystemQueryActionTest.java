@@ -28,9 +28,7 @@ import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 
@@ -39,28 +37,6 @@ import org.junit.jupiter.api.Test;
  *******************************************************************************/
 public class FilesystemQueryActionTest extends FilesystemActionTest
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @BeforeEach
-   public void beforeEach() throws Exception
-   {
-      super.primeFilesystem();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @AfterEach
-   public void afterEach() throws Exception
-   {
-      super.cleanFilesystem();
-   }
-
-
 
    /*******************************************************************************
     **
@@ -85,7 +61,7 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    {
       QueryRequest queryRequest = new QueryRequest();
       queryRequest.setInstance(TestUtils.defineInstance());
-      queryRequest.setTableName(TestUtils.defineLocalFilesystemCSVPersonTable().getName());
+      queryRequest.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       return queryRequest;
    }
 

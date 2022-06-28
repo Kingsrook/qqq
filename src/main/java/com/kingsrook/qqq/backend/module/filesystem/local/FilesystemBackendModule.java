@@ -24,16 +24,15 @@ package com.kingsrook.qqq.backend.module.filesystem.local;
 
 import java.io.File;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
-import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
+import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemDeleteAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemInsertAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
@@ -50,6 +49,19 @@ import org.apache.logging.log4j.Logger;
 public class FilesystemBackendModule implements QBackendModuleInterface, FilesystemBackendModuleInterface
 {
    private static final Logger LOG = LogManager.getLogger(FilesystemBackendModule.class);
+
+
+
+   /*******************************************************************************
+    ** For filesystem backends, get the module-specific action base-class, that helps
+    ** with functions like listing and deleting files.
+    *******************************************************************************/
+   @Override
+   public AbstractBaseFilesystemAction<File> getActionBase()
+   {
+      return (new AbstractFilesystemAction());
+   }
+
 
 
    /*******************************************************************************
@@ -125,72 +137,6 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
    public DeleteInterface getDeleteInterface()
    {
       return (new FilesystemDeleteAction());
-   }
-
-
-
-   /*******************************************************************************
-    ** In contrast with the DeleteAction, which deletes RECORDS - this is a
-    ** filesystem-(or s3, sftp, etc)-specific extension to delete an entire FILE
-    ** e.g., for post-ETL.
-    **
-    ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
-    *******************************************************************************/
-   @Override
-   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
-   {
-      File file = new File(fileReference);
-      if(!file.exists())
-      {
-         //////////////////////////////////////////////////////////////////////////////////////////////
-         // if the file doesn't exist, just exit with noop.  don't throw an error - that should only //
-         // happen if the "contract" of the method is broken, and the file still exists              //
-         //////////////////////////////////////////////////////////////////////////////////////////////
-         LOG.debug("Not deleting file [{}], because it does not exist.", file);
-         return;
-      }
-
-      if(!file.delete())
-      {
-         throw (new FilesystemException("Failed to delete file: " + fileReference));
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Move a file from a source path, to a destination path.
-    **
-    ** @throws FilesystemException if the delete is known to have failed
-    *******************************************************************************/
-   @Override
-   public void moveFile(QInstance instance, QTableMetaData table, String source, String destination) throws FilesystemException
-   {
-      File sourceFile        = new File(source);
-      File destinationFile   = new File(destination);
-      File destinationParent = destinationFile.getParentFile();
-
-      if(!sourceFile.exists())
-      {
-         throw (new FilesystemException("Cannot move file " + source + ", as it does not exist."));
-      }
-
-      //////////////////////////////////////////////////////////////////////////////////////
-      // if the destination folder doesn't exist, try to make it - and fail if that fails //
-      //////////////////////////////////////////////////////////////////////////////////////
-      if(!destinationParent.exists())
-      {
-         LOG.debug("Making destination directory {} for move", destinationParent.getAbsolutePath());
-         if(!destinationParent.mkdirs())
-         {
-            throw (new FilesystemException("Failed to make destination directory " + destinationParent.getAbsolutePath() + " to move " + source + " into."));
-         }
-      }
-
-      if(!sourceFile.renameTo(destinationFile))
-      {
-         throw (new FilesystemException("Failed to move (rename) file " + source + " to " + destination));
-      }
    }
 
 }
