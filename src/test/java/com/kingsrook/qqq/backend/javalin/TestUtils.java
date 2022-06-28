@@ -25,13 +25,23 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QOutputView;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListView;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.IOUtils;
@@ -52,9 +62,9 @@ public class TestUtils
    @SuppressWarnings("unchecked")
    public static void primeTestDatabase() throws Exception
    {
-      ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(TestUtils.defineBackend()));
-      InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
+      ConnectionManager connectionManager          = new ConnectionManager();
+      Connection        connection                 = connectionManager.getConnection(TestUtils.defineBackend());
+      InputStream       primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
       assertNotNull(primeTestDatabaseSqlStream);
       List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
       lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
@@ -74,7 +84,7 @@ public class TestUtils
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(defineBackend()));
+      Connection        connection        = connectionManager.getConnection(defineBackend());
       QueryManager.executeStatement(connection, sql, resultSetProcessor);
    }
 
@@ -90,6 +100,7 @@ public class TestUtils
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addProcess(defineProcessGreetPeople());
       return (qInstance);
    }
 
@@ -112,16 +123,16 @@ public class TestUtils
     ** Define the h2 rdbms backend
     **
     *******************************************************************************/
-   public static QBackendMetaData defineBackend()
+   public static RDBMSBackendMetaData defineBackend()
    {
-      return new QBackendMetaData()
-         .withName("default")
-         .withType("rdbms")
-         .withValue("vendor", "h2")
-         .withValue("hostName", "mem")
-         .withValue("databaseName", "test_database")
-         .withValue("username", "sa")
-         .withValue("password", "");
+      RDBMSBackendMetaData rdbmsBackendMetaData = new RDBMSBackendMetaData()
+         .withVendor("h2")
+         .withHostName("mem")
+         .withDatabaseName("test_database")
+         .withUsername("sa")
+         .withPassword("");
+      rdbmsBackendMetaData.setName("default");
+      return (rdbmsBackendMetaData);
    }
 
 
@@ -144,6 +155,40 @@ public class TestUtils
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the 'greet people' process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGreetPeople()
+   {
+      return new QProcessMetaData()
+         .withName("greet")
+         .withTableName("person")
+         .addFunction(new QFunctionMetaData()
+            .withName("prepare")
+            .withCode(new QCodeReference()
+               .withName(MockFunctionBody.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withFieldList(List.of(
+                  new QFieldMetaData("greetingPrefix", QFieldType.STRING),
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+               )))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+               )
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
+            .withOutputView(new QOutputView()
+               .withMessageField("outputMessage")
+               .withRecordListView(new QRecordListView().withFieldNames(List.of("id", "firstName", "lastName", "fullGreeting"))))
+         );
    }
 
 }

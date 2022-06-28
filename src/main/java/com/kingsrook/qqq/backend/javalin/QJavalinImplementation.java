@@ -33,9 +33,11 @@ import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
@@ -47,17 +49,21 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -84,6 +90,7 @@ import static io.javalin.apibuilder.ApiBuilder.put;
 public class QJavalinImplementation
 {
    private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
+
    private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
 
    private static QInstance qInstance;
@@ -154,6 +161,7 @@ public class QJavalinImplementation
             path("/:table", () ->
             {
                get("", QJavalinImplementation::tableMetaData);
+               // todo - process meta data - just under tables?  or top-level too?  maybe move tables to be under /tables/?
             });
          });
          path("/data", () ->
@@ -172,6 +180,14 @@ public class QJavalinImplementation
                });
             });
          });
+         path("/processes", () ->
+         {
+            path("/:process", () ->
+            {
+               get("/init", QJavalinImplementation::processInit);
+               get("/step", QJavalinImplementation::processStep);
+            });
+         });
       });
    }
 
@@ -183,7 +199,7 @@ public class QJavalinImplementation
    private static void setupSession(Context context, AbstractQRequest request) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
 
       // todo - does this need some per-provider logic actually?  mmm...
       Map<String, String> authenticationContext = new HashMap<>();
@@ -203,7 +219,7 @@ public class QJavalinImplementation
    {
       try
       {
-         String table = context.pathParam("table");
+         String             table       = context.pathParam("table");
          List<Serializable> primaryKeys = new ArrayList<>();
          primaryKeys.add(context.pathParam("primaryKey"));
 
@@ -232,9 +248,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String table = context.pathParam("table");
+         String        table      = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord record = new QRecord();
+         QRecord       record     = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -276,9 +292,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String table = context.pathParam("table");
+         String        table      = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord record = new QRecord();
+         QRecord       record     = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -422,7 +438,6 @@ public class QJavalinImplementation
       else
       {
          LOG.warn("Exception in javalin request", e);
-         e.printStackTrace();
          context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
             .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
       }
@@ -462,4 +477,68 @@ public class QJavalinImplementation
 
       return (null);
    }
+
+
+
+   /*******************************************************************************
+    ** Init a process (named in path param :process)
+    **
+    *******************************************************************************/
+   private static void processInit(Context context) throws QException
+   {
+      RunProcessRequest runProcessRequest = new RunProcessRequest(qInstance);
+      setupSession(context, runProcessRequest);
+      runProcessRequest.setProcessName(context.pathParam("process"));
+      runProcessRequest.setCallback(new QJavalinProcessCallback());
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // take values from query-string params, and put them into the run process request //
+      // todo - better from POST body, or with a "field-" type of prefix??               //
+      /////////////////////////////////////////////////////////////////////////////////////
+      for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
+      {
+         String       fieldName = queryParam.getKey();
+         List<String> values    = queryParam.getValue();
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            runProcessRequest.addValue(fieldName, values.get(0));
+         }
+      }
+
+      try
+      {
+         ///////////////////////////////////////////////////////
+         // run the process                                   //
+         // todo - async?  some "job id" to return to caller? //
+         ///////////////////////////////////////////////////////
+         LOG.info("Running process [" + runProcessRequest.getProcessName() + "]");
+         RunProcessResult runProcessResult = new RunProcessAction().execute(runProcessRequest);
+         LOG.info("Process result error? " + runProcessResult.getError());
+         for(QFieldMetaData outputField : qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
+         {
+            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
+         }
+
+         Map<String, Object> resultForCaller = new HashMap<>();
+         resultForCaller.put("error", runProcessResult.getError());
+         resultForCaller.put("values", runProcessResult.getValues());
+         context.result(JsonUtils.toJson(resultForCaller));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Run a step in a process (named in path param :process)
+    **
+    *******************************************************************************/
+   private static void processStep(Context context)
+   {
+
+   }
+
 }
