@@ -39,6 +39,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -47,6 +49,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class RunFunctionAction
 {
+   private static final Logger LOG = LogManager.getLogger(RunFunctionAction.class);
 
    /*******************************************************************************
     **
@@ -100,8 +103,15 @@ public class RunFunctionAction
          Serializable value = runFunctionRequest.getValue(field.getName());
          if(value == null)
          {
-            // todo - check if required?
-            fieldsToGet.add(field);
+            if(field.getDefaultValue() != null)
+            {
+               runFunctionRequest.addValue(field.getName(), field.getDefaultValue());
+            }
+            else
+            {
+               // todo - check if required?
+               fieldsToGet.add(field);
+            }
          }
       }
 
@@ -183,7 +193,7 @@ public class RunFunctionAction
       {
          runFunctionResult = new RunFunctionResult();
          runFunctionResult.setError("Error running function code: " + e.getMessage());
-         e.printStackTrace();
+         LOG.info("Error running function code", e);
       }
 
       return (runFunctionResult);

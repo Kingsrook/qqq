@@ -19,41 +19,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions;
+package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- ** Action to insert one or more records.
- **
+ ** Unit test for QSecretReader
  *******************************************************************************/
-public class InsertAction
+class QSecretReaderTest
 {
-   private static final Logger LOG = LogManager.getLogger(InsertAction.class);
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertResult execute(InsertRequest insertRequest) throws QException
+   @Test
+   void testReadSecret()
    {
-      ActionHelper.validateSession(insertRequest);
+      QSecretReader secretReader = new QSecretReader();
+      String        key          = "CUSTOM_PROPERTY";
+      String        value        = "ABCD-9876";
+      secretReader.setCustomEnvironment(Map.of(key, value));
 
-      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(insertRequest.getBackend());
-      // todo pre-customization - just get to modify the request?
-      InsertResult insertResult = qModule.getInsertInterface().execute(insertRequest);
-      // todo post-customization - can do whatever w/ the result if you want
-      return insertResult;
+      assertNull(secretReader.readSecret(null));
+      assertEquals("foo", secretReader.readSecret("foo"));
+      assertNull(secretReader.readSecret("${env.NOT-" + key + "}"));
+      assertEquals(value, secretReader.readSecret("${env." + key + "}"));
+      assertEquals("${env.NOT-" + key, secretReader.readSecret("${env.NOT-" + key));
    }
 
 }

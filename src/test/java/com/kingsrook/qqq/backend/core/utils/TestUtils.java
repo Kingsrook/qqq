@@ -68,6 +68,7 @@ public class TestUtils
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(definePersonFileTable());
+      qInstance.addTable(defineTableIdAndNameOnly());
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessAddToPeoplesAge());
@@ -149,6 +150,22 @@ public class TestUtils
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withFields(TestUtils.defineTablePerson().getFields()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define simple table with just an id and name
+    *******************************************************************************/
+   public static QTableMetaData defineTableIdAndNameOnly()
+   {
+      return new QTableMetaData()
+         .withName("idAndNameOnly")
+         .withLabel("Id and Name Only")
+         .withBackendName(DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
    }
 
 

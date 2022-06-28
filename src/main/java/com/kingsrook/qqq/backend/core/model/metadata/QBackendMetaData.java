@@ -146,4 +146,16 @@ public class QBackendMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Called by the QInstanceEnricher - to do backend-type-specific enrichments.
+    ** Original use case is:  reading secrets into fields (e.g., passwords).
+    *******************************************************************************/
+   public void enrich()
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
 }

@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.adapters;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -134,10 +136,43 @@ class JsonToQFieldMappingAdapterTest
     **
     *******************************************************************************/
    @Test
+   public void test_deserializeSerializedQKeyBasedFieldMapping()
+   {
+      QIndexBasedFieldMapping original = new QIndexBasedFieldMapping()
+         .withMapping("foo", 0)
+         .withMapping("bar", 1);
+      String json = JsonUtils.toJson(original);
+      AbstractQFieldMapping<?> deserialized = new JsonToQFieldMappingAdapter().buildMappingFromJson(json);
+      Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(original);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_deserializeSerializedQIndexBasedFieldMapping()
+   {
+      QKeyBasedFieldMapping original = new QKeyBasedFieldMapping()
+         .withMapping("foo", "Fu")
+         .withMapping("bar", "Bahr");
+      String json = JsonUtils.toJson(original);
+      AbstractQFieldMapping<?> deserialized = new JsonToQFieldMappingAdapter().buildMappingFromJson(json);
+      Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(original);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void test_buildMappingFromJson_emptyMapping()
    {
       testExpectedToThrow("{}");
    }
+
 
 
    /*******************************************************************************
@@ -159,7 +194,7 @@ class JsonToQFieldMappingAdapterTest
       try
       {
          JsonToQFieldMappingAdapter jsonToQFieldMappingAdapter = new JsonToQFieldMappingAdapter();
-         AbstractQFieldMapping<?> mapping = jsonToQFieldMappingAdapter.buildMappingFromJson(json);
+         AbstractQFieldMapping<?>   mapping                    = jsonToQFieldMappingAdapter.buildMappingFromJson(json);
          System.out.println(mapping);
       }
       catch(IllegalArgumentException iae)

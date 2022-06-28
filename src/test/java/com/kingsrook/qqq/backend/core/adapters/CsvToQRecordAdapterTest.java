@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFi
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -230,4 +231,54 @@ class CsvToQRecordAdapterTest
       assertEquals("1981-01-01", qRecord2.getValue("birthDate"));
    }
 
+
+
+   /*******************************************************************************
+    ** In this test - we've got CSV data with duplicated header names.
+    ** In our mapping, we're seeing the suffixes of " 2" and " 3" addd to those
+    ** header names on the RHS.
+    *******************************************************************************/
+   @Test
+   public void test_duplicatedColumnHeaders()
+   {
+      QKeyBasedFieldMapping mapping = new QKeyBasedFieldMapping()
+         .withMapping("id", "id")
+         .withMapping("createDate", "date")
+         .withMapping("modifyDate", "date 2")
+         .withMapping("firstName", "name")
+         .withMapping("lastName", "name 2")
+         .withMapping("birthDate", "date 3")
+         .withMapping("email", "email");
+
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv("""
+         id,date,date,name,name,date,email
+         1,2022-06-26,2022-06-26,John,Doe,1980-01-01,john@kingsrook.com
+         """, TestUtils.defineTablePerson(), mapping);
+      assertNotNull(qRecords);
+      assertEquals(1, qRecords.size());
+      QRecord qRecord1 = qRecords.get(0);
+      assertEquals("John", qRecord1.getValue("firstName"));
+      assertEquals("Doe", qRecord1.getValue("lastName"));
+      assertEquals("1980-01-01", qRecord1.getValue("birthDate"));
+      assertEquals("2022-06-26", qRecord1.getValue("createDate"));
+      assertEquals("2022-06-26", qRecord1.getValue("modifyDate"));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testMakeHeadersUnique()
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      Assertions.assertEquals(List.of("A", "B", "C"), csvToQRecordAdapter.makeHeadersUnique(List.of("A", "B", "C")));
+      Assertions.assertEquals(List.of("A", "B", "C", "C 2", "C 3"), csvToQRecordAdapter.makeHeadersUnique(List.of("A", "B", "C", "C", "C")));
+      Assertions.assertEquals(List.of("C", "A", "C 2", "B", "C 3"), csvToQRecordAdapter.makeHeadersUnique(List.of("C", "A", "C", "B", "C")));
+      Assertions.assertEquals(List.of("A", "B", "C", "C 2", "C 3"), csvToQRecordAdapter.makeHeadersUnique(List.of("A", "B", "C", "C 2", "C")));
+      Assertions.assertEquals(List.of("A", "B", "C", "C 2", "C 3"), csvToQRecordAdapter.makeHeadersUnique(List.of("A", "B", "C", "C 2", "C 3")));
+      // todo - this is what the method header comment means when it says we don't handle all cases well...
+      //  Assertions.assertEquals(List.of("A", "B", "C", "C 2", "C 3"), csvToQRecordAdapter.makeHeadersUnique(List.of("A", "B", "C 2", "C", "C 3")));
+   }
 }

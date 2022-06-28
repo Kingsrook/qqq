@@ -71,7 +71,6 @@ public class MockQueryAction implements QueryInterface
       }
       catch(Exception e)
       {
-         e.printStackTrace();
          throw new QException("Error executing query", e);
       }
    }

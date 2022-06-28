@@ -23,8 +23,11 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 /*******************************************************************************
@@ -50,6 +53,8 @@ public class QTableMetaData implements Serializable
    private Map<String, QFieldMetaData> fields;
 
    private QTableBackendDetails backendDetails;
+
+   private Map<String, QCodeReference> customizers;
 
 
 
@@ -244,12 +249,33 @@ public class QTableMetaData implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
+   public QTableMetaData withFields(List<QFieldMetaData> fields)
+   {
+      this.fields = new LinkedHashMap<>();
+      for(QFieldMetaData field : fields)
+      {
+         this.addField(field);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void addField(QFieldMetaData field)
    {
       if(this.fields == null)
       {
          this.fields = new LinkedHashMap<>();
       }
+
+      if(this.fields.containsKey(field.getName()))
+      {
+         throw (new IllegalArgumentException("Attempt to add a second field with name [" + field.getName() + "] to table [" + name + "]."));
+      }
+
       this.fields.put(field.getName(), field);
    }
 
@@ -291,6 +317,7 @@ public class QTableMetaData implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Fluent Setter for backendDetails
     **
@@ -298,6 +325,74 @@ public class QTableMetaData implements Serializable
    public QTableMetaData withBackendDetails(QTableBackendDetails backendDetails)
    {
       this.backendDetails = backendDetails;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Optional<QCodeReference> getCustomizer(String customizerName)
+   {
+      if(customizers == null)
+      {
+         return (Optional.empty());
+      }
+
+      QCodeReference function = customizers.get(customizerName);
+      if(function == null)
+      {
+         throw (new IllegalArgumentException("Customizer  [" + customizerName + "] was not found in table [" + name + "]."));
+      }
+
+      return (Optional.of(function));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Map<String, QCodeReference> getCustomizers()
+   {
+      return customizers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customizers
+    **
+    *******************************************************************************/
+   public void setCustomizers(Map<String, QCodeReference> customizers)
+   {
+      this.customizers = customizers;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizer(String role, QCodeReference customizer)
+   {
+      if(this.customizers == null)
+      {
+         this.customizers = new HashMap<>();
+      }
+      // todo - check for dupes?
+      this.customizers.put(role, customizer);
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizers(Map<String, QCodeReference> customizers)
+   {
+      this.customizers = customizers;
       return (this);
    }
 

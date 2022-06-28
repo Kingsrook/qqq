@@ -29,6 +29,8 @@ import java.io.Serializable;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -36,6 +38,8 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TempFileStateProvider implements StateProviderInterface
 {
+   private static final Logger LOG = LogManager.getLogger(TempFileStateProvider.class);
+
    private static TempFileStateProvider instance;
 
 
@@ -76,8 +80,8 @@ public class TempFileStateProvider implements StateProviderInterface
       }
       catch(IOException e)
       {
-         // todo better
-         e.printStackTrace();
+         LOG.error("Error putting state into file", e);
+         throw (new RuntimeException("Error storing state", e));
       }
    }
 
@@ -98,9 +102,10 @@ public class TempFileStateProvider implements StateProviderInterface
       {
          return (Optional.empty());
       }
-      catch(IOException ie)
+      catch(IOException e)
       {
-         throw new RuntimeException("Error loading state from file", ie);
+         LOG.error("Error getting state from file", e);
+         throw (new RuntimeException("Error retreiving state", e));
       }
    }
 

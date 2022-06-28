@@ -42,7 +42,7 @@ public class QBackendModuleDispatcher
 {
    private static final Logger LOG = LogManager.getLogger(QBackendModuleDispatcher.class);
 
-   private Map<String, String> backendTypeToModuleClassNameMap;
+   private static Map<String, String> backendTypeToModuleClassNameMap;
 
 
 
@@ -51,6 +51,21 @@ public class QBackendModuleDispatcher
     *******************************************************************************/
    public QBackendModuleDispatcher()
    {
+      initBackendTypeToModuleClassNameMap();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void initBackendTypeToModuleClassNameMap()
+   {
+      if(backendTypeToModuleClassNameMap != null)
+      {
+         return;
+      }
+
       backendTypeToModuleClassNameMap = new HashMap<>();
 
       String[] moduleClassNames = new String[]
@@ -76,6 +91,22 @@ public class QBackendModuleDispatcher
             LOG.debug("Backend module [{}] could not be loaded: {}", moduleClassName, e.getMessage());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void registerBackendModule(QBackendModuleInterface moduleInstance)
+   {
+      initBackendTypeToModuleClassNameMap();
+      String backendType = moduleInstance.getBackendType();
+      if(backendTypeToModuleClassNameMap.containsKey(backendType))
+      {
+         LOG.info("Overwriting backend type [" + backendType + "] with [" + moduleInstance.getClass() + "]");
+      }
+      backendTypeToModuleClassNameMap.put(backendType, moduleInstance.getClass().getName());
    }
 
 

@@ -39,8 +39,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 public class BasicETLProcess
 {
    public static final String PROCESS_NAME            = "etl.basic";
+   public static final String FUNCTION_NAME_EXTRACT   = "extract";
+   public static final String FUNCTION_NAME_TRANSFORM = "transform";
+   public static final String FUNCTION_NAME_LOAD      = "load";
    public static final String FIELD_SOURCE_TABLE      = "sourceTable";
    public static final String FIELD_DESTINATION_TABLE = "destinationTable";
+   public static final String FIELD_MAPPING_JSON      = "mappingJSON";
    public static final String FIELD_RECORD_COUNT      = "recordCount";
 
 
@@ -51,7 +55,7 @@ public class BasicETLProcess
    public QProcessMetaData defineProcessMetaData()
    {
       QFunctionMetaData extractFunction = new QFunctionMetaData()
-         .withName("extract")
+         .withName(FUNCTION_NAME_EXTRACT)
          .withCode(new QCodeReference()
             .withName(BasicETLExtractFunction.class.getName())
             .withCodeType(QCodeType.JAVA)
@@ -59,8 +63,18 @@ public class BasicETLProcess
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING)));
 
+      QFunctionMetaData transformFunction = new QFunctionMetaData()
+         .withName(FUNCTION_NAME_TRANSFORM)
+         .withCode(new QCodeReference()
+            .withName(BasicETLTransformFunction.class.getName())
+            .withCodeType(QCodeType.JAVA)
+            .withCodeUsage(QCodeUsage.FUNCTION))
+         .withInputData(new QFunctionInputMetaData()
+            .addField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))
+            .addField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)));
+
       QFunctionMetaData loadFunction = new QFunctionMetaData()
-         .withName("load")
+         .withName(FUNCTION_NAME_LOAD)
          .withCode(new QCodeReference()
             .withName(BasicETLLoadFunction.class.getName())
             .withCodeType(QCodeType.JAVA)
@@ -73,6 +87,7 @@ public class BasicETLProcess
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
          .addFunction(extractFunction)
+         .addFunction(transformFunction)
          .addFunction(loadFunction);
    }
 }

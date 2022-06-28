@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
@@ -33,7 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
  *******************************************************************************/
 public class QFunctionInputMetaData
 {
-   private QRecordListMetaData recordListMetaData;
+   private QRecordListMetaData  recordListMetaData;
    private List<QFieldMetaData> fieldList = new ArrayList<>();
 
 
@@ -68,6 +70,33 @@ public class QFunctionInputMetaData
    {
       this.recordListMetaData = recordListMetaData;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter a field with the given name
+    **
+    *******************************************************************************/
+   public Optional<QFieldMetaData> getField(String name)
+   {
+      return (fieldList.stream().filter(field -> name.equals(field.getName())).findFirst());
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter a field with the given name - throwing if it wasn't found
+    **
+    *******************************************************************************/
+   public QFieldMetaData getFieldThrowing(String name) throws QException
+   {
+      Optional<QFieldMetaData> field = fieldList.stream().filter(f -> name.equals(f.getName())).findFirst();
+      if(field.isEmpty())
+      {
+         throw (new QException("Could not find field [" + name + "] in function input meta data"));
+      }
+      return (field.get());
    }
 
 

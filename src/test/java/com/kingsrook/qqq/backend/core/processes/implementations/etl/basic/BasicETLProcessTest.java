@@ -26,6 +26,8 @@ import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,7 +42,7 @@ class BasicETLProcessTest
 {
 
    /*******************************************************************************
-    **
+    ** Simplest happy path
     *******************************************************************************/
    @Test
    public void test() throws QException
@@ -50,6 +52,7 @@ class BasicETLProcessTest
       request.setProcessName(BasicETLProcess.PROCESS_NAME);
       request.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.defineTablePerson().getName());
       request.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.definePersonFileTable().getName());
+      request.addValue(BasicETLProcess.FIELD_MAPPING_JSON, "");
 
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);
@@ -57,5 +60,31 @@ class BasicETLProcessTest
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
    }
 
+
+
+   /*******************************************************************************
+    ** Basic example of doing a mapping transformation
+    *******************************************************************************/
+   @Test
+   public void testMappingTransformation() throws QException
+   {
+      RunProcessRequest request = new RunProcessRequest(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(BasicETLProcess.PROCESS_NAME);
+      request.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.definePersonFileTable().getName());
+      request.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.defineTableIdAndNameOnly().getName());
+
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // define our mapping from destination-table field names to source-table field names //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      QKeyBasedFieldMapping mapping = new QKeyBasedFieldMapping().withMapping("name", "firstName");
+      // request.addValue(BasicETLProcess.FIELD_MAPPING_JSON, JsonUtils.toJson(mapping.getMapping()));
+      request.addValue(BasicETLProcess.FIELD_MAPPING_JSON, JsonUtils.toJson(mapping));
+
+      RunProcessResult result = new RunProcessAction().execute(request);
+      assertNotNull(result);
+      assertNull(result.getError());
+      assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+   }
 
 }
