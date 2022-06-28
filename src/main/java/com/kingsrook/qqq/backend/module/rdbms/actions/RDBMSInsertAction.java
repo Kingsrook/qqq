@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
       try
       {
-         InsertResult rs = new InsertResult();
+         InsertResult   rs    = new InsertResult();
          QTableMetaData table = insertRequest.getTable();
 
          List<QFieldMetaData> insertableFields = table.getFields().values().stream()
@@ -69,9 +70,9 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             .map(x -> "?")
             .collect(Collectors.joining(", "));
 
-         String tableName = getTableName(table);
-         StringBuilder sql = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
-         List<Object> params = new ArrayList<>();
+         String        tableName = getTableName(table);
+         StringBuilder sql       = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
+         List<Object>  params    = new ArrayList<>();
 
          int recordIndex = 0;
          for(QRecord record : insertRequest.getRecords())
@@ -83,7 +84,10 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             sql.append("(").append(questionMarks).append(")");
             for(QFieldMetaData field : insertableFields)
             {
-               params.add(record.getValue(field.getName()));
+               Serializable value = record.getValue(field.getName());
+               value = scrubValue(field, value);
+
+               params.add(value);
             }
          }
 
@@ -95,14 +99,14 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
          // todo - non-serial-id style tables
          // todo - other generated values, e.g., createDate...  maybe need to re-select?
-         Connection connection = getConnection(insertRequest);
-         List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
+         Connection    connection    = getConnection(insertRequest);
+         List<Integer> idList        = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
          List<QRecord> outputRecords = new ArrayList<>();
          rs.setRecords(outputRecords);
          int index = 0;
          for(QRecord record : insertRequest.getRecords())
          {
-            Integer id = idList.get(index++);
+            Integer id           = idList.get(index++);
             QRecord outputRecord = new QRecord(record);
             outputRecord.setValue(table.getPrimaryKeyField(), id);
             outputRecords.add(outputRecord);

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +86,9 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
                List<Object> params = new ArrayList<>();
                for(QFieldMetaData field : updateableFields)
                {
-                  params.add(record.getValue(field.getName()));
+                  Serializable value = record.getValue(field.getName());
+                  value = scrubValue(field, value);
+                  params.add(value);
                }
                params.add(record.getValue(table.getPrimaryKeyField()));
 

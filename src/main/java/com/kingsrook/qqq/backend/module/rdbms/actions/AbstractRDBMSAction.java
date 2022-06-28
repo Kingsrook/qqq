@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
@@ -81,5 +83,25 @@ public abstract class AbstractRDBMSAction
    {
       ConnectionManager connectionManager = new ConnectionManager();
       return connectionManager.getConnection((RDBMSBackendMetaData) qTableRequest.getBackend());
+   }
+
+
+
+   /*******************************************************************************
+    ** Handle obvious problems with values - like empty string for integer should be null.
+    **
+    *******************************************************************************/
+   protected Serializable scrubValue(QFieldMetaData field, Serializable value)
+   {
+      if("".equals(value))
+      {
+         QFieldType type = field.getType();
+         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME))
+         {
+            value = null;
+         }
+      }
+
+      return (value);
    }
 }

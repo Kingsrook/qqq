@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QSecretReader;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 
 
@@ -252,4 +253,20 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       this.password = password;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Called by the QInstanceEnricher - to do backend-type-specific enrichments.
+    ** Original use case is:  reading secrets into fields (e.g., passwords).
+    *******************************************************************************/
+   @Override
+   public void enrich()
+   {
+      super.enrich();
+      QSecretReader secretReader = new QSecretReader();
+      username = secretReader.readSecret(username);
+      password = secretReader.readSecret(password);
+   }
+
 }

@@ -45,6 +45,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,6 +54,7 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
  *******************************************************************************/
 public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterface
 {
+   private static final Logger LOG = LogManager.getLogger(RDBMSQueryAction.class);
 
    /*******************************************************************************
     **
@@ -127,7 +130,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       }
       catch(Exception e)
       {
-         e.printStackTrace();
+         LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
    }
