@@ -29,7 +29,6 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
@@ -58,9 +57,9 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** Setup the s3 utils object to be used for this action.
     *******************************************************************************/
    @Override
-   protected void preAction(AbstractQTableRequest tableRequest)
+   public void preAction(QBackendMetaData backendMetaData)
    {
-      super.preAction(tableRequest);
+      super.preAction(backendMetaData);
 
       if(s3Utils != null)
       {
@@ -68,7 +67,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
          return;
       }
 
-      S3BackendMetaData     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, tableRequest.getBackend());
+      S3BackendMetaData     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendMetaData);
       AmazonS3ClientBuilder clientBuilder     = AmazonS3ClientBuilder.standard();
 
       if(StringUtils.hasContent(s3BackendMetaData.getAccessKey()) && StringUtils.hasContent(s3BackendMetaData.getSecretKey()))
@@ -151,10 +150,25 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    @Override
    public void writeFile(QBackendMetaData backendMetaData, String path, byte[] contents) throws IOException
    {
-      path = stripDuplicatedSlashes(path);
+      path = stripLeadingSlash(stripDuplicatedSlashes(path));
       String bucketName = ((S3BackendMetaData) backendMetaData).getBucketName();
       getS3Utils().writeFile(bucketName, path, contents);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String stripLeadingSlash(String path)
+   {
+      if(path == null)
+      {
+         return (null);
+      }
+      return (path.replaceFirst("^/+", ""));
+   }
+
 
 
    /*******************************************************************************

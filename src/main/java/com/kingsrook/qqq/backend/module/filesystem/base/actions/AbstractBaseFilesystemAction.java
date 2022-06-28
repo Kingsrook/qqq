@@ -32,7 +32,6 @@ import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -182,7 +181,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public QueryResult executeQuery(QueryRequest queryRequest) throws QException
    {
-      preAction(queryRequest);
+      preAction(queryRequest.getBackend());
 
       try
       {
@@ -256,7 +255,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     ** Method that subclasses can override to add pre-action things (e.g., setting up
     ** s3 client).
     *******************************************************************************/
-   protected void preAction(AbstractQTableRequest tableRequest)
+   public void preAction(QBackendMetaData backendMetaData)
    {
       /////////////////////////////////////////////////////////////////////
       // noop in base class - subclasses can add functionality if needed //

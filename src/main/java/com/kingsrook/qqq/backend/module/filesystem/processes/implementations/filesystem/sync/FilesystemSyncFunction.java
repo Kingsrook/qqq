@@ -65,16 +65,22 @@ public class FilesystemSyncFunction implements FunctionBody
       QTableMetaData archiveTable    = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
       QTableMetaData processingTable = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
 
-      QBackendMetaData                 sourceBackend = runFunctionRequest.getInstance().getBackendForTable(sourceTable.getName());
-      FilesystemBackendModuleInterface sourceModule  = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
-      Map<String, Object>              sourceFiles   = getFileNames(sourceModule.getActionBase(), sourceTable, sourceBackend);
+      QBackendMetaData                 sourceBackend    = runFunctionRequest.getInstance().getBackendForTable(sourceTable.getName());
+      FilesystemBackendModuleInterface sourceModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
+      AbstractBaseFilesystemAction     sourceActionBase = sourceModule.getActionBase();
+      sourceActionBase.preAction(sourceBackend);
+      Map<String, Object> sourceFiles = getFileNames(sourceActionBase, sourceTable, sourceBackend);
 
-      QBackendMetaData                 archiveBackend = runFunctionRequest.getInstance().getBackendForTable(archiveTable.getName());
-      FilesystemBackendModuleInterface archiveModule  = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
-      Set<String>                      archiveFiles   = getFileNames(archiveModule.getActionBase(), archiveTable, archiveBackend).keySet();
+      QBackendMetaData                 archiveBackend    = runFunctionRequest.getInstance().getBackendForTable(archiveTable.getName());
+      FilesystemBackendModuleInterface archiveModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
+      AbstractBaseFilesystemAction     archiveActionBase = archiveModule.getActionBase();
+      archiveActionBase.preAction(archiveBackend);
+      Set<String> archiveFiles = getFileNames(archiveActionBase, archiveTable, archiveBackend).keySet();
 
-      QBackendMetaData                 processingBackend = runFunctionRequest.getInstance().getBackendForTable(processingTable.getName());
-      FilesystemBackendModuleInterface processingModule  = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
+      QBackendMetaData                 processingBackend    = runFunctionRequest.getInstance().getBackendForTable(processingTable.getName());
+      FilesystemBackendModuleInterface processingModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
+      AbstractBaseFilesystemAction     processingActionBase = processingModule.getActionBase();
+      processingActionBase.preAction(processingBackend);
 
       for(Map.Entry<String, Object> sourceEntry : sourceFiles.entrySet())
       {
@@ -84,14 +90,14 @@ public class FilesystemSyncFunction implements FunctionBody
             if(!archiveFiles.contains(sourceFileName))
             {
                LOG.info("Syncing file [" + sourceFileName + "] to [" + archiveTable + "] and [" + processingTable + "]");
-               InputStream inputStream = sourceModule.getActionBase().readFile(sourceEntry.getValue());
+               InputStream inputStream = sourceActionBase.readFile(sourceEntry.getValue());
                byte[]      bytes       = inputStream.readAllBytes();
 
-               String archivePath = archiveModule.getActionBase().getFullBasePath(archiveTable, archiveBackend);
-               archiveModule.getActionBase().writeFile(archiveBackend, archivePath + File.separator + sourceFileName, bytes);
+               String archivePath = archiveActionBase.getFullBasePath(archiveTable, archiveBackend);
+               archiveActionBase.writeFile(archiveBackend, archivePath + File.separator + sourceFileName, bytes);
 
-               String processingPath = processingModule.getActionBase().getFullBasePath(processingTable, processingBackend);
-               processingModule.getActionBase().writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
+               String processingPath = processingActionBase.getFullBasePath(processingTable, processingBackend);
+               processingActionBase.writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
             }
          }
          catch(Exception e)
