@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
@@ -100,6 +101,14 @@ public abstract class AbstractRDBMSAction
          {
             value = null;
          }
+      }
+
+      //////////////////////////////////////////////////////
+      // todo - let this come from something in the field //
+      //////////////////////////////////////////////////////
+      if(value == null && (field.getName().equals("createDate") || field.getName().equals("modifyDate")))
+      {
+         value = OffsetDateTime.now();
       }
 
       return (value);

@@ -74,6 +74,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
             rowsFound++;
             assertEquals(6, rs.getInt("id"));
             assertEquals("James", rs.getString("first_name"));
+            assertNotNull(rs.getString("create_date"));
          }
          assertEquals(1, rowsFound);
       }));
