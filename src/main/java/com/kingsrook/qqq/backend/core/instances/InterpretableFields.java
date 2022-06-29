@@ -36,5 +36,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface InterpretableFields
 {
+   /*******************************************************************************
+    ** list of field names in the class that are interpretable.
+    *******************************************************************************/
    String[] fieldNames() default {};
 }
