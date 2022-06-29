@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -32,6 +33,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -39,13 +42,22 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class BasicETLLoadFunction implements FunctionBody
 {
+   private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
    {
       //////////////////////////////////////////////////////
       // exit early with no-op if no records made it here //
       //////////////////////////////////////////////////////
-      if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
+      List<QRecord> inputRecords = runFunctionRequest.getRecords();
+      LOG.info("Received [" + inputRecords.size() + "] records to load");
+      if(CollectionUtils.nullSafeIsEmpty(inputRecords))
       {
          runFunctionResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, 0);
          return;
@@ -55,7 +67,7 @@ public class BasicETLLoadFunction implements FunctionBody
       // put the destination table name in all records being inserted //
       //////////////////////////////////////////////////////////////////
       String table = runFunctionRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
-      for(QRecord record : runFunctionRequest.getRecords())
+      for(QRecord record : inputRecords)
       {
          record.setTableName(table);
       }
@@ -63,16 +75,26 @@ public class BasicETLLoadFunction implements FunctionBody
       //////////////////////////////////////////
       // run an insert request on the records //
       //////////////////////////////////////////
-      InsertRequest insertRequest = new InsertRequest(runFunctionRequest.getInstance());
-      insertRequest.setSession(runFunctionRequest.getSession());
-      insertRequest.setTableName(table);
-      insertRequest.setRecords(runFunctionRequest.getRecords());
+      int           recordsInserted = 0;
+      List<QRecord> outputRecords   = new ArrayList<>();
+      int           pageSize        = 1000; // todo - make this a field?
 
-      InsertAction insertAction = new InsertAction();
-      InsertResult insertResult = insertAction.execute(insertRequest);
+      for(List<QRecord> page : CollectionUtils.getPages(inputRecords, pageSize))
+      {
+         LOG.info("Inserting a page of [" + page.size() + "] records. Progress:  " + recordsInserted + " loaded out of " + inputRecords.size() + " total");
+         InsertRequest insertRequest = new InsertRequest(runFunctionRequest.getInstance());
+         insertRequest.setSession(runFunctionRequest.getSession());
+         insertRequest.setTableName(table);
+         insertRequest.setRecords(page);
 
-      runFunctionResult.setRecords(insertResult.getRecords());
-      runFunctionResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, insertResult.getRecords().size());
+         InsertAction insertAction = new InsertAction();
+         InsertResult insertResult = insertAction.execute(insertRequest);
+         outputRecords.addAll(insertResult.getRecords());
+
+         recordsInserted += insertResult.getRecords().size();
+      }
+      runFunctionResult.setRecords(outputRecords);
+      runFunctionResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
    }
 
 }

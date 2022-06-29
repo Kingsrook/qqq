@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
@@ -33,9 +34,12 @@ import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFiel
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -43,6 +47,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class BasicETLTransformFunction implements FunctionBody
 {
+   private static final Logger LOG = LogManager.getLogger(BasicETLTransformFunction.class);
+
    @Override
    public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
    {
@@ -72,7 +78,45 @@ public class BasicETLTransformFunction implements FunctionBody
       String         tableName     = runFunctionRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
       QTableMetaData table         = runFunctionRequest.getInstance().getTable(tableName);
       List<QRecord>  mappedRecords = applyMapping(runFunctionRequest.getRecords(), table, keyBasedFieldMapping);
+
+      removeNonNumericValuesFromMappedRecords(table, mappedRecords);
+
       runFunctionResult.setRecords(mappedRecords);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void removeNonNumericValuesFromMappedRecords(QTableMetaData table, List<QRecord> records)
+   {
+      for(QRecord record : records)
+      {
+         for(QFieldMetaData field : table.getFields().values())
+         {
+            Object value = record.getValue(field.getName());
+            if(value != null && StringUtils.hasContent(String.valueOf(value)))
+            {
+               try
+               {
+                  if(field.getType().equals(QFieldType.INTEGER))
+                  {
+                     Integer.parseInt(String.valueOf(value));
+                  }
+                  else if(field.getType().equals(QFieldType.DECIMAL))
+                  {
+                     new BigDecimal(String.valueOf(value));
+                  }
+               }
+               catch(NumberFormatException nfe)
+               {
+                  LOG.info("Removing non-numeric value [" + value + "] from field [" + field.getName() + "]");
+                  record.setValue(field.getName(), null);
+               }
+            }
+         }
+      }
    }
 
 

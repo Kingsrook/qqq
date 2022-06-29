@@ -19,37 +19,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.instances;
 
 
-import java.util.Map;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 
 /*******************************************************************************
- ** Unit test for QSecretReader
+ ** Class-level annotation to declare what fields should run through the variable
+ ** interpreter - e.g., to be replaced with env-var values at run-time.
  *******************************************************************************/
-class QSecretReaderTest
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface InterpretableFields
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testReadSecret()
-   {
-      QSecretReader secretReader = new QSecretReader();
-      String        key          = "CUSTOM_PROPERTY";
-      String        value        = "ABCD-9876";
-      secretReader.setCustomEnvironment(Map.of(key, value));
-
-      assertNull(secretReader.readSecret(null));
-      assertEquals("foo", secretReader.readSecret("foo"));
-      assertNull(secretReader.readSecret("${env.NOT-" + key + "}"));
-      assertEquals(value, secretReader.readSecret("${env." + key + "}"));
-      assertEquals("${env.NOT-" + key, secretReader.readSecret("${env.NOT-" + key));
-   }
-
+   String[] fieldNames() default {};
 }
