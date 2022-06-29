@@ -175,7 +175,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** Get a string that represents the full path to a file.
     *******************************************************************************/
    @Override
-   protected String getFullPathForFile(S3ObjectSummary s3ObjectSummary)
+   public String getFullPathForFile(S3ObjectSummary s3ObjectSummary)
    {
       return (s3ObjectSummary.getKey());
    }
@@ -189,10 +189,10 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** give us just the baz.txt part.
     *******************************************************************************/
    @Override
-   public String stripBackendAndTableBasePathsFromFileName(S3ObjectSummary file, QBackendMetaData backend, QTableMetaData table)
+   public String stripBackendAndTableBasePathsFromFileName(String filePath, QBackendMetaData backend, QTableMetaData table)
    {
       String tablePath    = getFullBasePath(table, backend);
-      String strippedPath = file.getKey().replaceFirst(".*" + tablePath, "");
+      String strippedPath = filePath.replaceFirst("^/*" + stripLeadingSlash(tablePath), "");
       return (strippedPath);
    }
 
@@ -229,6 +229,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    {
       QBackendMetaData backend    = instance.getBackend(table.getBackendName());
       String           bucketName = ((S3BackendMetaData) backend).getBucketName();
+      destination = stripLeadingSlash(stripDuplicatedSlashes(destination));
 
       getS3Utils().moveObject(bucketName, source, destination);
    }

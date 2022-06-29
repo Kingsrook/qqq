@@ -41,6 +41,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
  ** - if any files exist in the source, but not in the archive, then:
  **   - copy the file to both the archive and the processing table.
  **
+ ** The maxFilesToArchive field can be used to only sync up to that many files
+ ** (an help an initial sync, if you want to do it in smaller batches)
+ **
  ** The idea being, that the source is read-only, and we want to move files out of
  ** processing after they've been processed - and the archive is what we can have
  ** in-between the two.
@@ -49,9 +52,10 @@ public class FilesystemSyncProcess
 {
    public static final String PROCESS_NAME = "filesystem.sync";
 
-   public static final String FIELD_SOURCE_TABLE     = "sourceTable";
-   public static final String FIELD_ARCHIVE_TABLE    = "archiveTable";
-   public static final String FIELD_PROCESSING_TABLE = "processingTable";
+   public static final String FIELD_SOURCE_TABLE         = "sourceTable";
+   public static final String FIELD_ARCHIVE_TABLE        = "archiveTable";
+   public static final String FIELD_PROCESSING_TABLE     = "processingTable";
+   public static final String FIELD_MAX_FILES_TO_ARCHIVE = "maxFilesToArchive";
 
 
 
@@ -69,6 +73,7 @@ public class FilesystemSyncProcess
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING))
             .addField(new QFieldMetaData(FIELD_ARCHIVE_TABLE, QFieldType.STRING))
+            .addField(new QFieldMetaData(FIELD_MAX_FILES_TO_ARCHIVE, QFieldType.INTEGER).withDefaultValue(Integer.MAX_VALUE))
             .addField(new QFieldMetaData(FIELD_PROCESSING_TABLE, QFieldType.STRING)));
 
       return new QProcessMetaData()

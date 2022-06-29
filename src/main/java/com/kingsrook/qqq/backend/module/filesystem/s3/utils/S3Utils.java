@@ -175,7 +175,9 @@ public class S3Utils
     *******************************************************************************/
    public void writeFile(String bucket, String key, byte[] contents)
    {
-      getAmazonS3().putObject(bucket, key, new ByteArrayInputStream(contents), new ObjectMetadata());
+      ObjectMetadata objectMetadata = new ObjectMetadata();
+      objectMetadata.setContentLength(contents.length);
+      getAmazonS3().putObject(bucket, key, new ByteArrayInputStream(contents), objectMetadata);
    }
 
 

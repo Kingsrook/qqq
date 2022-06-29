@@ -95,7 +95,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** Get a string that represents the full path to a file.
     *******************************************************************************/
    @Override
-   protected String getFullPathForFile(File file)
+   public String getFullPathForFile(File file)
    {
       return (file.getAbsolutePath());
    }
@@ -176,10 +176,10 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** give us just the baz.txt part.
     *******************************************************************************/
    @Override
-   public String stripBackendAndTableBasePathsFromFileName(File file, QBackendMetaData backend, QTableMetaData table)
+   public String stripBackendAndTableBasePathsFromFileName(String filePath, QBackendMetaData backend, QTableMetaData table)
    {
       String tablePath    = getFullBasePath(table, backend);
-      String strippedPath = file.getAbsolutePath().replaceFirst(".*" + tablePath, "");
+      String strippedPath = filePath.replaceFirst(".*" + tablePath, "");
       return (strippedPath);
    }
 

@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QSecretReader;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 
@@ -193,14 +193,15 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
    /*******************************************************************************
     ** Called by the QInstanceEnricher - to do backend-type-specific enrichments.
     ** Original use case is:  reading secrets into fields (e.g., passwords).
+    ** TODO - migrate to use @InterpretableFields (and complete that impl on core side)
     *******************************************************************************/
    @Override
    public void enrich()
    {
       super.enrich();
-      QSecretReader secretReader = new QSecretReader();
-      accessKey = secretReader.readSecret(accessKey);
-      secretKey = secretReader.readSecret(secretKey);
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      accessKey = interpreter.interpret(accessKey);
+      secretKey = interpreter.interpret(secretKey);
    }
 
 }

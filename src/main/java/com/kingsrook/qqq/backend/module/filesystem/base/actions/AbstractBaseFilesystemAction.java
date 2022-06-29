@@ -81,7 +81,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    /*******************************************************************************
     ** Get a string that represents the full path to a file.
     *******************************************************************************/
-   protected abstract String getFullPathForFile(FILE file);
+   public abstract String getFullPathForFile(FILE file);
 
    /*******************************************************************************
     ** In contrast with the DeleteAction, which deletes RECORDS - this is a
@@ -105,7 +105,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     ** and a file at /foo/bar/baz.txt
     ** give us just the baz.txt part.
     *******************************************************************************/
-   public abstract String stripBackendAndTableBasePathsFromFileName(FILE file, QBackendMetaData sourceBackend, QTableMetaData sourceTable);
+   public abstract String stripBackendAndTableBasePathsFromFileName(String filePath, QBackendMetaData sourceBackend, QTableMetaData sourceTable);
 
 
 

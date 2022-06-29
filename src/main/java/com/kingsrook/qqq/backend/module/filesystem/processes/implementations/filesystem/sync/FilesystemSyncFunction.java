@@ -82,6 +82,8 @@ public class FilesystemSyncFunction implements FunctionBody
       AbstractBaseFilesystemAction     processingActionBase = processingModule.getActionBase();
       processingActionBase.preAction(processingBackend);
 
+      Integer maxFilesToSync = runFunctionRequest.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
+      int syncedFileCount = 0;
       for(Map.Entry<String, Object> sourceEntry : sourceFiles.entrySet())
       {
          try
@@ -98,6 +100,13 @@ public class FilesystemSyncFunction implements FunctionBody
 
                String processingPath = processingActionBase.getFullBasePath(processingTable, processingBackend);
                processingActionBase.writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
+               syncedFileCount++;
+
+               if(maxFilesToSync != null && syncedFileCount >= maxFilesToSync)
+               {
+                  LOG.info("Breaking after syncing " + syncedFileCount + " files");
+                  break;
+               }
             }
          }
          catch(Exception e)
@@ -119,7 +128,7 @@ public class FilesystemSyncFunction implements FunctionBody
 
       for(Object file : files)
       {
-         String fileName = actionBase.stripBackendAndTableBasePathsFromFileName(file, backend, table);
+         String fileName = actionBase.stripBackendAndTableBasePathsFromFileName(actionBase.getFullPathForFile(file), backend, table);
          rs.put(fileName, file);
       }
 

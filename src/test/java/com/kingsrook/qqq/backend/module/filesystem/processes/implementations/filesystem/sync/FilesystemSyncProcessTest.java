@@ -52,6 +52,8 @@ class FilesystemSyncProcessTest
    @Test
    public void test() throws Exception
    {
+      TestUtils.cleanInstanceFiles();
+
       QTableMetaData    sourceTable     = defineTable("source");
       QTableMetaData    archiveTable    = defineTable("archive");
       QTableMetaData    processingTable = defineTable("processing");
@@ -61,6 +63,7 @@ class FilesystemSyncProcessTest
       function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
       function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
       function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
+      // function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE).setDefaultValue(1);
 
       QInstance qInstance = TestUtils.defineInstance();
       qInstance.addTable(sourceTable);
@@ -74,6 +77,7 @@ class FilesystemSyncProcessTest
       String basePath = ((FilesystemBackendMetaData) qInstance.getBackend(TestUtils.BACKEND_NAME_LOCAL_FS)).getBasePath();
       writeTestFile(basePath, sourceTable, "1.txt", "x");
       writeTestFile(basePath, sourceTable, "2.txt", "x");
+      // writeTestFile(basePath, sourceTable, "3.txt", "x");
       writeTestFile(basePath, archiveTable, "2.txt", "x");
 
       //////////////////////
