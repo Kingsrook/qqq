@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QSecretReader;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 
 
@@ -264,9 +264,9 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    public void enrich()
    {
       super.enrich();
-      QSecretReader secretReader = new QSecretReader();
-      username = secretReader.readSecret(username);
-      password = secretReader.readSecret(password);
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      username = interpreter.interpret(username);
+      password = interpreter.interpret(password);
    }
 
 }
