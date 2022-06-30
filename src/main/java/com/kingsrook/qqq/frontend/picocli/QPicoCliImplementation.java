@@ -257,7 +257,7 @@ public class QPicoCliImplementation
          {
             case "processes":
             {
-               return runTableProcess(subCommandLine, null, subParseResult);
+               return runProcessCommand(subCommandLine, subParseResult);
             }
             default:
             {
@@ -308,7 +308,7 @@ public class QPicoCliImplementation
             case "process":
             {
                CommandLine subCommandLine = commandLine.getSubcommands().get(subCommandName);
-               return runTableProcess(subCommandLine, tableName, subParseResult);
+               return runProcessCommand(subCommandLine, subParseResult);
             }
             default:
             {
@@ -328,29 +328,35 @@ public class QPicoCliImplementation
 
 
    /*******************************************************************************
-    **
+    ** Handle a command up to the point where 'process' was given
     *******************************************************************************/
-   private int runTableProcess(CommandLine commandLine, String tableName, ParseResult subParseResult)
+   private int runProcessCommand(CommandLine commandLine, ParseResult subParseResult)
    {
       if(!subParseResult.hasSubcommand())
       {
+         ////////////////////////////////////////////////////////////////
+         // process name must be a sub-command, so, error if not given //
+         ////////////////////////////////////////////////////////////////
          commandLine.usage(commandLine.getOut());
          return commandLine.getCommandSpec().exitCodeOnUsageHelp();
       }
       else
       {
+         ///////////////////////////////////////////
+         // move on to running the actual process //
+         ///////////////////////////////////////////
          String      subCommandName = subParseResult.subcommand().commandSpec().name();
          CommandLine subCommandLine = commandLine.getSubcommands().get(subCommandName);
-         return runTableProcessLevelCommand(subCommandLine, tableName, subParseResult.subcommand());
+         return runActualProcess(subCommandLine, subParseResult.subcommand());
       }
    }
 
 
 
    /*******************************************************************************
-    **
+    ** actually run a process (the process name should be at the start of the sub-command line)
     *******************************************************************************/
-   private int runTableProcessLevelCommand(CommandLine subCommandLine, String tableName, ParseResult processParseResult)
+   private int runActualProcess(CommandLine subCommandLine, ParseResult processParseResult)
    {
       String            processName = processParseResult.commandSpec().name();
       QProcessMetaData  process     = qInstance.getProcess(processName);
@@ -386,7 +392,7 @@ public class QPicoCliImplementation
       catch(Exception e)
       {
          e.printStackTrace();
-         subCommandLine.getOut().println("Caught Exception running process: " + e); // todo better!
+         subCommandLine.getOut().println("Caught Exception running process.  See stack trace above for details.");
          return 1;
       }
 

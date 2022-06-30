@@ -25,6 +25,7 @@ package com.kingsrook.qqq.frontend.picocli;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
@@ -168,7 +169,7 @@ public class TestUtils
          .addFunction(new QFunctionMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName("com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody")
+               .withName(MockFunctionBody.class.getName())
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()

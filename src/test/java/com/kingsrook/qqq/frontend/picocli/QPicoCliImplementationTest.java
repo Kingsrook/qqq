@@ -146,7 +146,7 @@ class QPicoCliImplementationTest
       JSONObject processes    = metaData.getJSONObject("processes");
       JSONObject greetProcess = processes.getJSONObject("greet");
       assertEquals("greet", greetProcess.getString("name"));
-      // todo - need label assertEquals("Person", greetProcess.getString("label"));
+      assertEquals("Greet", greetProcess.getString("label"));
       assertEquals("person", greetProcess.getString("tableName"));
    }
 
