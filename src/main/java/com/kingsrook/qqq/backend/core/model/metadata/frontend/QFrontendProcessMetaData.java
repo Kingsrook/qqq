@@ -53,7 +53,7 @@ public class QFrontendProcessMetaData
    public QFrontendProcessMetaData(QProcessMetaData processMetaData)
    {
       this.name = processMetaData.getName();
-      // todo? this.label = processMetaData.getLabel();
+      this.label = processMetaData.getLabel();
       this.tableName = processMetaData.getTableName();
    }
 
