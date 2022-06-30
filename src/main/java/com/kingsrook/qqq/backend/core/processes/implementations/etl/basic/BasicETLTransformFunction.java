@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +50,11 @@ public class BasicETLTransformFunction implements FunctionBody
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLTransformFunction.class);
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
    {
@@ -79,6 +85,9 @@ public class BasicETLTransformFunction implements FunctionBody
       QTableMetaData table         = runFunctionRequest.getInstance().getTable(tableName);
       List<QRecord>  mappedRecords = applyMapping(runFunctionRequest.getRecords(), table, keyBasedFieldMapping);
 
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - should this be conditional, e.g., driven by a field, or an opt-in customization function? //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
       removeNonNumericValuesFromMappedRecords(table, mappedRecords);
 
       runFunctionResult.setRecords(mappedRecords);
@@ -87,35 +96,77 @@ public class BasicETLTransformFunction implements FunctionBody
 
 
    /*******************************************************************************
-    **
+    ** Note:  package-private for direct unit-testability
     *******************************************************************************/
-   private void removeNonNumericValuesFromMappedRecords(QTableMetaData table, List<QRecord> records)
+   void removeNonNumericValuesFromMappedRecords(QTableMetaData table, List<QRecord> records)
    {
       for(QRecord record : records)
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            Object value = record.getValue(field.getName());
+            Serializable value = record.getValue(field.getName());
             if(value != null && StringUtils.hasContent(String.valueOf(value)))
             {
-               try
-               {
-                  if(field.getType().equals(QFieldType.INTEGER))
-                  {
-                     Integer.parseInt(String.valueOf(value));
-                  }
-                  else if(field.getType().equals(QFieldType.DECIMAL))
-                  {
-                     new BigDecimal(String.valueOf(value));
-                  }
-               }
-               catch(NumberFormatException nfe)
-               {
-                  LOG.info("Removing non-numeric value [" + value + "] from field [" + field.getName() + "]");
-                  record.setValue(field.getName(), null);
-               }
+               record.setValue(field.getName(), tryToParseNumber(field.getType(), value));
             }
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Serializable tryToParseNumber(QFieldType fieldType, Serializable value)
+   {
+      if(value == null)
+      {
+         //////////////////////////////
+         // null input = null output //
+         //////////////////////////////
+         return (null);
+      }
+
+      ////////////////////////////////////////////////////
+      // get a string version of the value to work with //
+      ////////////////////////////////////////////////////
+      String stringValue = String.valueOf(value);
+      try
+      {
+         ////////////////////////////////////////////////////////////////////////////////
+         // based on field type, try to parse - noting bad formatted values will throw //
+         ////////////////////////////////////////////////////////////////////////////////
+         if(fieldType.equals(QFieldType.INTEGER))
+         {
+            Integer.parseInt(stringValue);
+         }
+         else if(fieldType.equals(QFieldType.DECIMAL))
+         {
+            new BigDecimal(stringValue);
+         }
+
+         //////////////////////////////////////////////////////////////////////////////////
+         // if we got through the parsing without throwing, then we can return the value //
+         //////////////////////////////////////////////////////////////////////////////////
+         return (value);
+      }
+      catch(NumberFormatException nfe)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // upon number format exception, look for commas - if found, strip them out and try again (recursive call) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(stringValue.contains(","))
+         {
+            stringValue = stringValue.replaceAll(",", "");
+            return (tryToParseNumber(fieldType, stringValue));
+         }
+
+         /////////////////////////////////////////////////////////////////////////////////
+         // else, if no comma, then we want a null value here, rather than a non-number //
+         /////////////////////////////////////////////////////////////////////////////////
+         LOG.debug("Nulling out value " + value + " that will not work in a " + fieldType + " field");
+         return (null);
       }
    }
 
