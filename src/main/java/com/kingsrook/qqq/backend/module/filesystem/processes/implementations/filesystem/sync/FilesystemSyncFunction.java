@@ -1,0 +1,138 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.sync;
+
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
+import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
+/*******************************************************************************
+ ** Function body for collecting the file names that were discovered in the
+ ** Extract step.  These will be lost during the transform, so we capture them here,
+ ** so that our Clean function can move or delete them.
+ **
+ *******************************************************************************/
+public class FilesystemSyncFunction implements FunctionBody
+{
+   private static final Logger LOG = LogManager.getLogger(FilesystemSyncFunction.class);
+
+   public static final String FUNCTION_NAME = "sync";
+
+
+
+   /*******************************************************************************
+    ** Execute the function - using the request as input, and the result as output.
+    *******************************************************************************/
+   @Override
+   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   {
+      QTableMetaData sourceTable     = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_SOURCE_TABLE));
+      QTableMetaData archiveTable    = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
+      QTableMetaData processingTable = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
+
+      QBackendMetaData                 sourceBackend    = runFunctionRequest.getInstance().getBackendForTable(sourceTable.getName());
+      FilesystemBackendModuleInterface sourceModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
+      AbstractBaseFilesystemAction     sourceActionBase = sourceModule.getActionBase();
+      sourceActionBase.preAction(sourceBackend);
+      Map<String, Object> sourceFiles = getFileNames(sourceActionBase, sourceTable, sourceBackend);
+
+      QBackendMetaData                 archiveBackend    = runFunctionRequest.getInstance().getBackendForTable(archiveTable.getName());
+      FilesystemBackendModuleInterface archiveModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
+      AbstractBaseFilesystemAction     archiveActionBase = archiveModule.getActionBase();
+      archiveActionBase.preAction(archiveBackend);
+      Set<String> archiveFiles = getFileNames(archiveActionBase, archiveTable, archiveBackend).keySet();
+
+      QBackendMetaData                 processingBackend    = runFunctionRequest.getInstance().getBackendForTable(processingTable.getName());
+      FilesystemBackendModuleInterface processingModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
+      AbstractBaseFilesystemAction     processingActionBase = processingModule.getActionBase();
+      processingActionBase.preAction(processingBackend);
+
+      Integer maxFilesToSync = runFunctionRequest.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
+      int syncedFileCount = 0;
+      for(Map.Entry<String, Object> sourceEntry : sourceFiles.entrySet())
+      {
+         try
+         {
+            String sourceFileName = sourceEntry.getKey();
+            if(!archiveFiles.contains(sourceFileName))
+            {
+               LOG.info("Syncing file [" + sourceFileName + "] to [" + archiveTable + "] and [" + processingTable + "]");
+               InputStream inputStream = sourceActionBase.readFile(sourceEntry.getValue());
+               byte[]      bytes       = inputStream.readAllBytes();
+
+               String archivePath = archiveActionBase.getFullBasePath(archiveTable, archiveBackend);
+               archiveActionBase.writeFile(archiveBackend, archivePath + File.separator + sourceFileName, bytes);
+
+               String processingPath = processingActionBase.getFullBasePath(processingTable, processingBackend);
+               processingActionBase.writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
+               syncedFileCount++;
+
+               if(maxFilesToSync != null && syncedFileCount >= maxFilesToSync)
+               {
+                  LOG.info("Breaking after syncing " + syncedFileCount + " files");
+                  break;
+               }
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.error("Error processing file: " + sourceEntry, e);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Map<String, Object> getFileNames(AbstractBaseFilesystemAction actionBase, QTableMetaData table, QBackendMetaData backend)
+   {
+      List<Object>        files = actionBase.listFiles(table, backend);
+      Map<String, Object> rs    = new LinkedHashMap<>();
+
+      for(Object file : files)
+      {
+         String fileName = actionBase.stripBackendAndTableBasePathsFromFileName(actionBase.getFullPathForFile(file), backend, table);
+         rs.put(fileName, file);
+      }
+
+      return (rs);
+   }
+
+}
