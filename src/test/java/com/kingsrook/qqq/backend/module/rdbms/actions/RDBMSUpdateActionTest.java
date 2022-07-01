@@ -26,12 +26,11 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -69,7 +68,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
       assertEquals(1, updateResult.getRecords().size(), "Should return 1 row");
       assertEquals(2, updateResult.getRecords().get(0).getValue("id"), "Should have id=2 in the row");
-      assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
+      // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
       runTestSql("SELECT * FROM person WHERE last_name = 'Kirk'", (rs -> {
          int rowsFound = 0;
          while(rs.next())
@@ -114,7 +113,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       assertEquals(2, updateResult.getRecords().size(), "Should return 2 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
       assertEquals(3, updateResult.getRecords().get(1).getValue("id"), "Should have expected ids in the row");
-      assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
+      // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
       runTestSql("SELECT * FROM person WHERE last_name = 'From Bewitched'", (rs -> {
          int rowsFound = 0;
          while(rs.next())
@@ -148,8 +147,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    private UpdateRequest initUpdateRequest()
    {
       UpdateRequest updateRequest = new UpdateRequest();
-      updateRequest.setInstance(defineInstance());
-      updateRequest.setTableName(defineTablePerson().getName());
+      updateRequest.setInstance(TestUtils.defineInstance());
+      updateRequest.setTableName(TestUtils.defineTablePerson().getName());
       return updateRequest;
    }
 

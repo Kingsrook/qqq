@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -413,8 +414,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    private QueryRequest initQueryRequest()
    {
       QueryRequest queryRequest = new QueryRequest();
-      queryRequest.setInstance(defineInstance());
-      queryRequest.setTableName(defineTablePerson().getName());
+      queryRequest.setInstance(TestUtils.defineInstance());
+      queryRequest.setTableName(TestUtils.defineTablePerson().getName());
       return queryRequest;
    }
 

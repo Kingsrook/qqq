@@ -44,9 +44,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
  *******************************************************************************/
 public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterface
 {
+   private static final Logger LOG = LogManager.getLogger(RDBMSQueryAction.class);
 
    /*******************************************************************************
     **
@@ -63,7 +64,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       try
       {
          QTableMetaData table = queryRequest.getTable();
-         String tableName = table.getName();
+         String tableName = getTableName(table);
 
          List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
          String columns = fieldList.stream()
@@ -97,13 +98,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
-         ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(queryRequest.getBackend()));
-
          QueryResult rs = new QueryResult();
          List<QRecord> records = new ArrayList<>();
          rs.setRecords(records);
 
+         Connection connection = getConnection(queryRequest);
          QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
          {
             ResultSetMetaData metaData = resultSet.getMetaData();
@@ -131,7 +130,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       }
       catch(Exception e)
       {
-         e.printStackTrace();
+         LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
    }

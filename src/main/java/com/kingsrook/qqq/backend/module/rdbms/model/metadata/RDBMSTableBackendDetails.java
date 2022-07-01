@@ -19,87 +19,63 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms;
+package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 
 
 /*******************************************************************************
- ** RDBMSBackendMetaData
- *
+ ** Extension of QTableBackendDetails, with details specific to an RDBMS table.
  *******************************************************************************/
-public class RDBMSBackendMetaData extends QBackendMetaData
+public class RDBMSTableBackendDetails extends QTableBackendDetails
 {
+   private String tableName;
+
+
 
    /*******************************************************************************
-    **
+    ** Default Constructor.
     *******************************************************************************/
-   public RDBMSBackendMetaData(QBackendMetaData source)
+   public RDBMSTableBackendDetails()
    {
       super();
-      setName(source.getName());
-      setValues(source.getValues());
+      setBackendType(RDBMSBackendModule.class);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for tableName
     **
     *******************************************************************************/
-   public String getVendor()
+   public String getTableName()
    {
-      return getValue("vendor");
+      return tableName;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for tableName
     **
     *******************************************************************************/
-   public String getHostName()
+   public void setTableName(String tableName)
    {
-      return getValue("hostName");
+      this.tableName = tableName;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent Setter for tableName
     **
     *******************************************************************************/
-   public String getPort()
+   public RDBMSTableBackendDetails withTableName(String tableName)
    {
-      return getValue("port");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String getDatabaseName()
-   {
-      return getValue("databaseName");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String getUsername()
-   {
-      return getValue("username");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String getPassword()
-   {
-      return getValue("password");
+      this.tableName = tableName;
+      return (this);
    }
 
 }

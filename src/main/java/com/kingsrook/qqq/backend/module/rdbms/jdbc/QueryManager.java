@@ -652,6 +652,12 @@ public class QueryManager
          statement.setTimestamp(index, timestamp);
          return (1);
       }
+      else if(value instanceof OffsetDateTime)
+      {
+         Timestamp timestamp = new Timestamp(((OffsetDateTime) value).toEpochSecond() * MS_PER_SEC);
+         statement.setTimestamp(index, timestamp);
+         return (1);
+      }
       else if(value instanceof LocalDateTime)
       {
          Timestamp timestamp = new Timestamp(((LocalDateTime) value).toEpochSecond(ZoneOffset.UTC) * MS_PER_SEC);
