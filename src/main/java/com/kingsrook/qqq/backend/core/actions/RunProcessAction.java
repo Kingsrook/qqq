@@ -32,8 +32,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
-import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
 import com.kingsrook.qqq.backend.core.state.UUIDStateKey;
 
 
@@ -114,8 +114,10 @@ public class RunProcessAction
    private StateProviderInterface getStateProvider()
    {
       // TODO - read this from somewhere in meta data eh?
-      // return InMemoryStateProvider.getInstance();
-      return TempFileStateProvider.getInstance();
+      return InMemoryStateProvider.getInstance();
+
+      // TODO - by using JSON serialization internally, this makes stupidly large payloads and crashes things.
+      // return TempFileStateProvider.getInstance();
    }
 
 
