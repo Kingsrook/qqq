@@ -51,7 +51,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.0.0-SNAPSHOT</version>
+         <version>0.0.0-20220629.151616-15</version>
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->
@@ -87,6 +87,12 @@
          <groupId>org.junit.jupiter</groupId>
          <artifactId>junit-jupiter-engine</artifactId>
          <version>5.8.1</version>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.assertj</groupId>
+         <artifactId>assertj-core</artifactId>
+         <version>3.23.1</version>
          <scope>test</scope>
       </dependency>
    </dependencies>

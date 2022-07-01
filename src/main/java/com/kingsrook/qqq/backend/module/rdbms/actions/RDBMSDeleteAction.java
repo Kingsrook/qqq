@@ -31,11 +31,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
@@ -55,7 +52,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          DeleteResult rs = new DeleteResult();
          QTableMetaData table = deleteRequest.getTable();
 
-         String tableName = table.getName();
+         String tableName = getTableName(table);
          String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
          String sql = "DELETE FROM "
             + tableName
@@ -68,18 +65,16 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
          // todo sql customization - can edit sql and/or param list
 
-         ConnectionManager connectionManager = new ConnectionManager();
-         Connection connection = connectionManager.getConnection(new RDBMSBackendMetaData(deleteRequest.getBackend()));
-
+         Connection connection = getConnection(deleteRequest);
          QueryManager.executeUpdateForRowCount(connection, sql, params);
-         List<QRecordWithStatus> recordsWithStatus = new ArrayList<>();
-         rs.setRecords(recordsWithStatus);
+         List<QRecord> outputRecords = new ArrayList<>();
+         rs.setRecords(outputRecords);
          for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
          {
             QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
             // todo uh, identify any errors?
-            QRecordWithStatus recordWithStatus = new QRecordWithStatus(qRecord);
-            recordsWithStatus.add(recordWithStatus);
+            QRecord outputRecord = new QRecord(qRecord);
+            outputRecords.add(outputRecord);
          }
 
          return rs;

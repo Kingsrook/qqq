@@ -25,7 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
