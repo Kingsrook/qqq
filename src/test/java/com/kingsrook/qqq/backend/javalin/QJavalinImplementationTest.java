@@ -285,4 +285,43 @@ class QJavalinImplementationTest
          assertEquals(4, rowsFound);
       }));
    }
+
+
+
+   /*******************************************************************************
+    ** test running a process
+    **
+    *******************************************************************************/
+   @Test
+   public void test_processGreetInit() throws Exception
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/init")
+         .header("Content-Type", "application/json")
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertEquals("null X null", jsonObject.getJSONObject("values").getString("outputMessage"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a process with field values on the query string
+    **
+    *******************************************************************************/
+   @Test
+   public void test_processGreetInitWithQueryValues() throws Exception
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/init?greetingPrefix=Hey&greetingSuffix=Jude")
+         .header("Content-Type", "application/json")
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertEquals("Hey X Jude", jsonObject.getJSONObject("values").getString("outputMessage"));
+   }
+
 }
