@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.metadata;
 
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 
 
@@ -33,7 +34,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMeta
  *******************************************************************************/
 public class MetaDataResult extends AbstractQResult
 {
-   Map<String, QFrontendTableMetaData> tables;
+   Map<String, QFrontendTableMetaData>   tables;
+   Map<String, QFrontendProcessMetaData> processes;
 
 
 
@@ -55,5 +57,27 @@ public class MetaDataResult extends AbstractQResult
    public void setTables(Map<String, QFrontendTableMetaData> tables)
    {
       this.tables = tables;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processes
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendProcessMetaData> getProcesses()
+   {
+      return processes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processes
+    **
+    *******************************************************************************/
+   public void setProcesses(Map<String, QFrontendProcessMetaData> processes)
+   {
+      this.processes = processes;
    }
 }

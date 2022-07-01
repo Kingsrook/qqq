@@ -27,6 +27,8 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -38,7 +40,9 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface
  *******************************************************************************/
 public class QBackendModuleDispatcher
 {
-   private Map<String, String> backendTypeToModuleClassNameMap;
+   private static final Logger LOG = LogManager.getLogger(QBackendModuleDispatcher.class);
+
+   private static Map<String, String> backendTypeToModuleClassNameMap;
 
 
 
@@ -47,10 +51,7 @@ public class QBackendModuleDispatcher
     *******************************************************************************/
    public QBackendModuleDispatcher()
    {
-      backendTypeToModuleClassNameMap = new HashMap<>();
-      backendTypeToModuleClassNameMap.put("mock", "com.kingsrook.qqq.backend.core.modules.mock.MockBackendModule");
-      backendTypeToModuleClassNameMap.put("rdbms", "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule");
-      // todo - let user define custom type -> classes
+      initBackendTypeToModuleClassNameMap();
    }
 
 
@@ -58,14 +59,79 @@ public class QBackendModuleDispatcher
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBackendModuleInterface getQModule(QBackendMetaData backend) throws QModuleDispatchException
+   private static void initBackendTypeToModuleClassNameMap()
+   {
+      if(backendTypeToModuleClassNameMap != null)
+      {
+         return;
+      }
+
+      backendTypeToModuleClassNameMap = new HashMap<>();
+
+      String[] moduleClassNames = new String[]
+         {
+            // todo - let modules somehow "export" their types here?
+            //  e.g., backend-core shouldn't need to "know" about the modules.
+            "com.kingsrook.qqq.backend.core.modules.mock.MockBackendModule",
+            "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule",
+            "com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule",
+            "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule"
+         };
+
+      for(String moduleClassName : moduleClassNames)
+      {
+         try
+         {
+            Class<?>                moduleClass = Class.forName(moduleClassName);
+            QBackendModuleInterface module      = (QBackendModuleInterface) moduleClass.getConstructor().newInstance();
+            backendTypeToModuleClassNameMap.put(module.getBackendType(), moduleClassName);
+         }
+         catch(Exception e)
+         {
+            LOG.debug("Backend module [{}] could not be loaded: {}", moduleClassName, e.getMessage());
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void registerBackendModule(QBackendModuleInterface moduleInstance)
+   {
+      initBackendTypeToModuleClassNameMap();
+      String backendType = moduleInstance.getBackendType();
+      if(backendTypeToModuleClassNameMap.containsKey(backendType))
+      {
+         LOG.info("Overwriting backend type [" + backendType + "] with [" + moduleInstance.getClass() + "]");
+      }
+      backendTypeToModuleClassNameMap.put(backendType, moduleInstance.getClass().getName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QBackendModuleInterface getQBackendModule(QBackendMetaData backend) throws QModuleDispatchException
+   {
+      return (getQBackendModule(backend.getBackendType()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QBackendModuleInterface getQBackendModule(String backendType) throws QModuleDispatchException
    {
       try
       {
-         String className = backendTypeToModuleClassNameMap.get(backend.getType());
-         if (className == null)
+         String className = backendTypeToModuleClassNameMap.get(backendType);
+         if(className == null)
          {
-            throw (new QModuleDispatchException("Unrecognized backend type [" + backend.getType() + "] in dispatcher."));
+            throw (new QModuleDispatchException("Unrecognized backend type [" + backendType + "] in dispatcher."));
          }
 
          Class<?> moduleClass = Class.forName(className);
@@ -77,7 +143,7 @@ public class QBackendModuleDispatcher
       }
       catch(Exception e)
       {
-         throw (new QModuleDispatchException("Error getting backend module of type: " + backend.getType(), e));
+         throw (new QModuleDispatchException("Error getting backend module of type: " + backendType, e));
       }
    }
 }

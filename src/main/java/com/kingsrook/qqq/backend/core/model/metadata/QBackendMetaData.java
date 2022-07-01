@@ -22,9 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kingsrook.qqq.backend.core.model.metadata.serialization.QBackendMetaDataDeserializer;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
@@ -32,55 +32,22 @@ import com.fasterxml.jackson.annotation.JsonFilter;
  ** NoSQL table, etc) within a qqq instance
  **
  *******************************************************************************/
+@JsonDeserialize(using = QBackendMetaDataDeserializer.class)
 public class QBackendMetaData
 {
    private String name;
-   private String type;
+   private String backendType;
 
-   @JsonFilter("secretsFilter")
-   private Map<String, String> values;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String getValue(String key)
-   {
-      if(values == null)
-      {
-         return null;
-      }
-      return values.get(key);
-   }
+   // todo - at some point, we may want to apply this to secret properties on subclasses?
+   // @JsonFilter("secretsFilter")
 
 
 
    /*******************************************************************************
-    **
+    ** Default Constructor.
     *******************************************************************************/
-   public void setValue(String key, String value)
+   public QBackendMetaData()
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QBackendMetaData withValue(String key, String value)
-   {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
-      return (this);
    }
 
 
@@ -106,76 +73,89 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter, returning generically, to help sub-class fluent flows
     *******************************************************************************/
-   public QBackendMetaData withName(String name)
+   @SuppressWarnings("unchecked")
+   public <T extends QBackendMetaData> T withName(String name)
    {
       this.name = name;
+      return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendType
+    **
+    *******************************************************************************/
+   public String getBackendType()
+   {
+      return backendType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendType
+    **
+    *******************************************************************************/
+   public void setBackendType(String backendType)
+   {
+      this.backendType = backendType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendType
+    **
+    *******************************************************************************/
+   public void setBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)
+   {
+      try
+      {
+         QBackendModuleInterface qBackendModuleInterface = backendModuleClass.getConstructor().newInstance();
+         this.backendType = qBackendModuleInterface.getBackendType();
+      }
+      catch(Exception e)
+      {
+         throw new IllegalArgumentException("Error dynamically getting backend type (name) from class [" + backendModuleClass.getName() + "], e)");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter, returning generically, to help sub-class fluent flows
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public <T extends QBackendMetaData> T withBackendType(String backendType)
+   {
+      this.backendType = backendType;
+      return (T) this;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QBackendMetaData withBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)
+   {
+      setBackendType(backendModuleClass);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
+    ** Called by the QInstanceEnricher - to do backend-type-specific enrichments.
+    ** Original use case is:  reading secrets into fields (e.g., passwords).
     *******************************************************************************/
-   public String getType()
+   public void enrich()
    {
-      return type;
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    **
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QBackendMetaData withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Map<String, String> getValues()
-   {
-      return values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setValues(Map<String, String> values)
-   {
-      this.values = values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QBackendMetaData withVales(Map<String, String> values)
-   {
-      this.values = values;
-      return (this);
-   }
-
 }

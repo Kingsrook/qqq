@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.io.IOException;
+import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,8 +59,8 @@ public class JsonUtils
    {
       try
       {
-         ObjectMapper mapper = newObjectMapper();
-         String jsonResult = mapper.writeValueAsString(object);
+         ObjectMapper mapper     = newObjectMapper();
+         String       jsonResult = mapper.writeValueAsString(object);
          return (jsonResult);
       }
       catch(JsonProcessingException e)
@@ -81,9 +82,9 @@ public class JsonUtils
    {
       try
       {
-         ObjectMapper mapper = newObjectMapper();
+         ObjectMapper mapper       = newObjectMapper();
          ObjectWriter objectWriter = mapper.writerWithDefaultPrettyPrinter();
-         String jsonResult = objectWriter.writeValueAsString(object);
+         String       jsonResult   = objectWriter.writeValueAsString(object);
          return (jsonResult);
       }
       catch(JsonProcessingException e)
@@ -92,6 +93,30 @@ public class JsonUtils
          throw new IllegalArgumentException("Error in JSON Serialization", e);
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Serialize any object into a "pretty" / formatted JSON String.
+    **
+    *******************************************************************************/
+   public static String prettyPrint(String json)
+   {
+      try
+      {
+         ObjectMapper mapper       = newObjectMapper();
+         Object       object       = mapper.reader().readValue(json, Map.class);
+         ObjectWriter objectWriter = mapper.writerWithDefaultPrettyPrinter();
+         String       jsonResult   = objectWriter.writeValueAsString(object);
+         return (jsonResult);
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error pretty printing JSON string", e);
+         throw new IllegalArgumentException("Error in pretty printing JSON", e);
+      }
+   }
+
 
 
    /*******************************************************************************
@@ -103,8 +128,7 @@ public class JsonUtils
    public static <T> T toObject(String json, Class<T> targetClass) throws IOException
    {
       ObjectMapper objectMapper = newObjectMapper();
-      T t = objectMapper.reader().readValue(json, targetClass);
-      return t;
+      return objectMapper.reader().readValue(json, targetClass);
    }
 
 
@@ -118,8 +142,7 @@ public class JsonUtils
    public static <T> T toObject(String json, TypeReference<T> typeReference) throws IOException
    {
       ObjectMapper objectMapper = newObjectMapper();
-      T t = objectMapper.readValue(json, typeReference);
-      return t;
+      return objectMapper.readValue(json, typeReference);
    }
 
 
@@ -192,4 +215,5 @@ public class JsonUtils
    {
       return (json != null && json.matches("(?s)\\s*\\[.*"));
    }
+
 }

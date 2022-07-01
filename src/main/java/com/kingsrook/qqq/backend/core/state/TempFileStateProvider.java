@@ -23,17 +23,23 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Singleton class that provides a (non-persistent!!) in-memory state provider.
+ ** State provider that uses files in the /tmp/ directory.
  *******************************************************************************/
 public class TempFileStateProvider implements StateProviderInterface
 {
+   private static final Logger LOG = LogManager.getLogger(TempFileStateProvider.class);
+
    private static TempFileStateProvider instance;
 
 
@@ -62,7 +68,7 @@ public class TempFileStateProvider implements StateProviderInterface
 
 
    /*******************************************************************************
-    **
+    ** Put a block of data, under a key, into the state store.
     *******************************************************************************/
    @Override
    public <T extends Serializable> void put(AbstractStateKey key, T data)
@@ -74,31 +80,32 @@ public class TempFileStateProvider implements StateProviderInterface
       }
       catch(IOException e)
       {
-         // todo better
-         e.printStackTrace();
+         LOG.error("Error putting state into file", e);
+         throw (new RuntimeException("Error storing state", e));
       }
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Get a block of data, under a key, from the state store.
     *******************************************************************************/
    @Override
-   public <T extends Serializable> T get(Class<? extends T> type, AbstractStateKey key)
+   public <T extends Serializable> Optional<T> get(Class<? extends T> type, AbstractStateKey key)
    {
       try
       {
          String json = FileUtils.readFileToString(new File("/tmp/" + key.toString()));
-         return JsonUtils.toObject(json, type);
+         return (Optional.of(JsonUtils.toObject(json, type)));
       }
-      catch(ClassCastException cce)
+      catch(FileNotFoundException fnfe)
       {
-         throw new RuntimeException("Stored state value could not be cast to desired type", cce);
+         return (Optional.empty());
       }
-      catch(IOException ie)
+      catch(IOException e)
       {
-         throw new RuntimeException("Error loading state from file", ie);
+         LOG.error("Error getting state from file", e);
+         throw (new RuntimeException("Error retreiving state", e));
       }
    }
 

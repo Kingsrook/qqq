@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+   <Properties>
+      <Property name="LOG_PATTERN">%highlight{%d{ISO8601} | %-6r | %-5p | %markerSimpleName | %c{1} | %t{1} | %m%n}{FATAL=red, ERROR=red, WARN=blue, INFO=green, METRICS=magenta, DEBUG=cyan, TRACE=white}</Property>
+   </Properties>
+   <CustomLevels>
+      <CustomLevel name="METRICS" intLevel="450"/>
+   </CustomLevels>
+   <Appenders>
+      <File name="FullLogFile" fileName="log/full_log.log">
+         <LevelRangeFilter minLevel="ERROR" maxLevel="all" onMatch="ACCEPT" onMismatch="DENY"/>
+         <PatternLayout pattern="${LOG_PATTERN}"/>
+      </File>
+      <Console name="STDOUT" target="SYSTEM_OUT">
+         <LevelRangeFilter minLevel="ERROR" maxLevel="METRICS" onMatch="ACCEPT" onMismatch="DENY"/>
+         <PatternLayout pattern="${LOG_PATTERN}"/>
+      </Console>
+   </Appenders>
+   <Loggers>
+      <Logger name="org.apache.log4j.xml" additivity="false">
+      </Logger>
+      <Root level="all">
+         <AppenderRef ref="STDOUT"/>
+         <!-- Uncomment only if you need the full_log.
+         <AppenderRef ref="FullLogFile" />
+         -->
+      </Root>
+   </Loggers>
+</Configuration>

@@ -28,7 +28,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
@@ -52,8 +54,15 @@ public class MetaDataAction
       {
          tables.put(entry.getKey(), new QFrontendTableMetaData(entry.getValue(), false));
       }
-
       metaDataResult.setTables(tables);
+
+      Map<String, QFrontendProcessMetaData> processes = new LinkedHashMap<>();
+      for(Map.Entry<String, QProcessMetaData> entry : metaDataRequest.getInstance().getProcesses().entrySet())
+      {
+         processes.put(entry.getKey(), new QFrontendProcessMetaData(entry.getValue()));
+      }
+      metaDataResult.setProcesses(processes);
+
       // todo post-customization - can do whatever w/ the result if you want
 
       return metaDataResult;

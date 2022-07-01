@@ -19,62 +19,85 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.data;
+package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
-import java.util.List;
+import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
- ** Wrapper on a QRecord, to add status information after an action took place.
- ** e.g., any errors that occurred.
- **
- ** TODO - expand?
- **
+ * Version of QProcessMetaData that's meant for transmitting to a frontend.
+ * e.g., it excludes backend-only details.
+ *
  *******************************************************************************/
-public class QRecordWithStatus extends QRecord
+@JsonInclude(Include.NON_NULL)
+public class QFrontendProcessMetaData
 {
-   private List<Exception> errors;
+   private String name;
+   private String label;
+   private String tableName;
+   private Map<String, QFrontendFieldMetaData> fields;
+
+   //////////////////////////////////////////////////////////////////////////////////
+   // do not add setters.  take values from the source-object in the constructor!! //
+   //////////////////////////////////////////////////////////////////////////////////
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QRecordWithStatus()
+   public QFrontendProcessMetaData(QProcessMetaData processMetaData)
    {
+      this.name = processMetaData.getName();
+      this.label = processMetaData.getLabel();
+      this.tableName = processMetaData.getTableName();
    }
 
 
 
    /*******************************************************************************
+    ** Getter for name
     **
     *******************************************************************************/
-   public QRecordWithStatus(QRecord record)
+   public String getName()
    {
-      super.setTableName(record.getTableName());
-      super.setValues(record.getValues());
+      return name;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for errors
+    ** Getter for label
     **
     *******************************************************************************/
-   public List<Exception> getErrors()
+   public String getLabel()
    {
-      return errors;
+      return label;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for errors
+    ** Getter for primaryKeyField
     **
     *******************************************************************************/
-   public void setErrors(List<Exception> errors)
+   public String getTableName()
    {
-      this.errors = errors;
+      return tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fields
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendFieldMetaData> getFields()
+   {
+      return fields;
    }
 }

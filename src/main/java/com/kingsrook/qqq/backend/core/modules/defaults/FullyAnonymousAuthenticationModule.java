@@ -27,18 +27,14 @@ import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- **
+ ** An authentication module with no actual backing system - all users are treated
+ ** as anonymous, and all sessions are always valid.
  *******************************************************************************/
 public class FullyAnonymousAuthenticationModule implements QAuthenticationModuleInterface
 {
-   private static final Logger logger = LogManager.getLogger(FullyAnonymousAuthenticationModule.class);
-
-
 
    /*******************************************************************************
     **
@@ -51,7 +47,7 @@ public class FullyAnonymousAuthenticationModule implements QAuthenticationModule
       qUser.setFullName("Anonymous");
 
       QSession qSession = new QSession();
-      if (context.get("sessionId") != null)
+      if(context != null && context.get("sessionId") != null)
       {
          qSession.setIdReference(context.get("sessionId"));
       }
@@ -72,6 +68,10 @@ public class FullyAnonymousAuthenticationModule implements QAuthenticationModule
    @Override
    public boolean isSessionValid(QSession session)
    {
+      if(session == null)
+      {
+         return (false);
+      }
       return (true);
    }
 }

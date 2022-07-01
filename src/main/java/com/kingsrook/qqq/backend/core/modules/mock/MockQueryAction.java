@@ -71,7 +71,6 @@ public class MockQueryAction implements QueryInterface
       }
       catch(Exception e)
       {
-         e.printStackTrace();
          throw new QException("Error executing query", e);
       }
    }
@@ -82,6 +81,7 @@ public class MockQueryAction implements QueryInterface
     ** Get a mock value to use, based on its type.
     **
     *******************************************************************************/
+   @SuppressWarnings("checkstyle:MagicNumber")
    private Serializable getValue(QTableMetaData table, String field)
    {
       // @formatter:off // IJ can't do new-style switch correctly yet...

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
 /*******************************************************************************
@@ -32,8 +33,9 @@ import java.util.List;
  *******************************************************************************/
 public class QProcessMetaData
 {
-   private String name;
-   private String tableName;
+   private String                  name;
+   private String                  label;
+   private String                  tableName;
    private List<QFunctionMetaData> functionList;
 
 
@@ -69,6 +71,42 @@ public class QProcessMetaData
       this.name = name;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public QProcessMetaData withLabel(String label)
+   {
+      this.label = label;
+      return (this);
+   }
+
+
 
    /*******************************************************************************
     ** Getter for tableName
@@ -168,5 +206,41 @@ public class QProcessMetaData
       }
 
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the input fields used by all the functions in this process.
+    *******************************************************************************/
+   public List<QFieldMetaData> getInputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+      if(functionList != null)
+      {
+         for(QFunctionMetaData function : functionList)
+         {
+            rs.addAll(function.getInputFields());
+         }
+      }
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the output fields used by all the functions in this process.
+    *******************************************************************************/
+   public List<QFieldMetaData> getOutputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+      if(functionList != null)
+      {
+         for(QFunctionMetaData function : functionList)
+         {
+            rs.addAll(function.getOutputFields());
+         }
+      }
+      return (rs);
    }
 }

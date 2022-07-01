@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.mock;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
@@ -38,6 +39,28 @@ import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
  *******************************************************************************/
 public class MockBackendModule implements QBackendModuleInterface
 {
+   /*******************************************************************************
+    ** Method where a backend module must be able to provide its type (name).
+    *******************************************************************************/
+   @Override
+   public String getBackendType()
+   {
+      return ("mock");
+   }
+
+
+
+   /*******************************************************************************
+    ** Method to identify the class used for backend meta data for this module.
+    *******************************************************************************/
+   @Override
+   public Class<? extends QBackendMetaData> getBackendMetaDataClass()
+   {
+      return (QBackendMetaData.class);
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -59,6 +82,7 @@ public class MockBackendModule implements QBackendModuleInterface
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -67,6 +91,7 @@ public class MockBackendModule implements QBackendModuleInterface
    {
       return (new MockUpdateAction());
    }
+
 
 
    /*******************************************************************************

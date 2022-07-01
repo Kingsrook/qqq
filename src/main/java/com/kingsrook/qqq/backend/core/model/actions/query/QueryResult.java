@@ -33,8 +33,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class QueryResult extends AbstractQResult
 {
-   List<QRecord> records;
-
+   private List<QRecord> records;
 
 
    /*******************************************************************************

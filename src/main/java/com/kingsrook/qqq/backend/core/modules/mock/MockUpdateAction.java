@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.modules.mock;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
 
 
@@ -45,10 +44,7 @@ public class MockUpdateAction implements UpdateInterface
       {
          UpdateResult rs = new UpdateResult();
 
-         rs.setRecords(updateRequest.getRecords().stream().map(qRecord ->
-         {
-            return new QRecordWithStatus(qRecord);
-         }).toList());
+         rs.setRecords(updateRequest.getRecords());
 
          return rs;
       }

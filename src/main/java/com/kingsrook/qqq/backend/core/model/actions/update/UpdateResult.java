@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.update;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
@@ -33,14 +33,14 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordWithStatus;
  *******************************************************************************/
 public class UpdateResult extends AbstractQResult
 {
-   List<QRecordWithStatus> records;
+   List<QRecord> records;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecordWithStatus> getRecords()
+   public List<QRecord> getRecords()
    {
       return records;
    }
@@ -50,7 +50,7 @@ public class UpdateResult extends AbstractQResult
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void setRecords(List<QRecordWithStatus> records)
+   public void setRecords(List<QRecord> records)
    {
       this.records = records;
    }

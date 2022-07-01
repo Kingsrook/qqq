@@ -47,9 +47,9 @@ public class QInstance
 
    private QAuthenticationMetaData authentication = null;
 
-   private Map<String, QTableMetaData> tables = new HashMap<>();
+   private Map<String, QTableMetaData>          tables               = new HashMap<>();
    private Map<String, QPossibleValueSource<?>> possibleValueSources = new HashMap<>();
-   private Map<String, QProcessMetaData> processes = new HashMap<>();
+   private Map<String, QProcessMetaData>        processes            = new HashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -59,7 +59,7 @@ public class QInstance
 
 
    /*******************************************************************************
-    **
+    ** Get the backend for a given table name
     *******************************************************************************/
    public QBackendMetaData getBackendForTable(String tableName)
    {
@@ -69,31 +69,30 @@ public class QInstance
          throw (new IllegalArgumentException("No table with name [" + tableName + "] found in this instance."));
       }
 
-      QBackendMetaData backend = backends.get(table.getBackendName());
-
       //////////////////////////////////////////////////////////////////////////////////////////////
       // validation should already let us know that this is valid, so no need to check/throw here //
       //////////////////////////////////////////////////////////////////////////////////////////////
-
-      return (backend);
+      return (backends.get(table.getBackendName()));
    }
 
 
+
    /*******************************************************************************
-    **
+    ** Get the list of processes associated with a given table name
     *******************************************************************************/
    public List<QProcessMetaData> getProcessesForTable(String tableName)
    {
       List<QProcessMetaData> rs = new ArrayList<>();
       for(QProcessMetaData process : processes.values())
       {
-         if (tableName.equals(process.getTableName()))
+         if(tableName.equals(process.getTableName()))
          {
             rs.add(process);
          }
       }
       return (rs);
    }
+
 
 
    /*******************************************************************************
@@ -112,7 +111,7 @@ public class QInstance
     *******************************************************************************/
    public void addBackend(QBackendMetaData backend)
    {
-      this.backends.put(backend.getName(), backend);
+      addBackend(backend.getName(), backend);
    }
 
 
@@ -122,6 +121,10 @@ public class QInstance
     *******************************************************************************/
    public void addBackend(String name, QBackendMetaData backend)
    {
+      if(this.backends.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second backend with name: " + name));
+      }
       this.backends.put(name, backend);
    }
 
@@ -142,7 +145,7 @@ public class QInstance
     *******************************************************************************/
    public void addTable(QTableMetaData table)
    {
-      this.tables.put(table.getName(), table);
+      addTable(table.getName(), table);
    }
 
 
@@ -152,6 +155,10 @@ public class QInstance
     *******************************************************************************/
    public void addTable(String name, QTableMetaData table)
    {
+      if(this.tables.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second table with name: " + name));
+      }
       this.tables.put(name, table);
    }
 
@@ -172,7 +179,7 @@ public class QInstance
     *******************************************************************************/
    public void addPossibleValueSource(QPossibleValueSource<?> possibleValueSource)
    {
-      this.possibleValueSources.put(possibleValueSource.getName(), possibleValueSource);
+      this.addPossibleValueSource(possibleValueSource.getName(), possibleValueSource);
    }
 
 
@@ -182,6 +189,10 @@ public class QInstance
     *******************************************************************************/
    public void addPossibleValueSource(String name, QPossibleValueSource possibleValueSource)
    {
+      if(this.possibleValueSources.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second possibleValueSource with name: " + name));
+      }
       this.possibleValueSources.put(name, possibleValueSource);
    }
 
@@ -218,7 +229,21 @@ public class QInstance
     *******************************************************************************/
    public void addProcess(QProcessMetaData process)
    {
-      this.processes.put(process.getName(), process);
+      this.addProcess(process.getName(), process);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addProcess(String name, QProcessMetaData process)
+   {
+      if(this.processes.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second process with name: " + name));
+      }
+      this.processes.put(name, process);
    }
 
 
