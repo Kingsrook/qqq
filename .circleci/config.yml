@@ -1,3 +1,6 @@
+## Deviations from qqq-java library standard circleci config:
+## - To test AWS S3, uses localstsack executor, orb, and startup step
+## - This docker image doesn't have java-17, so we install (and cache) jvm-17
 version: 2.1
 
 executors:
@@ -8,8 +11,18 @@ executors:
 
 orbs:
   slack: circleci/slack@4.10.1
+  localstack: localstack/platform@1.0
 
 commands:
+  install_java17:
+    steps:
+      - run:
+          name: Install Java 17
+          command: |
+            sudo add-apt-repository -y ppa:openjdk-r/ppa
+            sudo apt install -y openjdk-17-jdk
+            sudo rm /etc/alternatives/java
+            sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
   run_maven:
     parameters:
       maven_subcommand:
@@ -39,16 +52,20 @@ commands:
 
 jobs:
   mvn_test:
-    executor: java17
+    executor: localstack/default
     steps:
+      - localstack/startup
+      - install_java17
       - run_maven:
           maven_subcommand: test
       - slack/notify:
           event: fail
 
   mvn_deploy:
-    executor: java17
+    executor: localstack/default
     steps:
+      - localstack/startup
+      - install_java17
       - run_maven:
           maven_subcommand: deploy
       - slack/notify:
