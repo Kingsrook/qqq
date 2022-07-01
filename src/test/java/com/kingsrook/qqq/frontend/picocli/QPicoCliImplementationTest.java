@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.frontend.picocli;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,7 +39,6 @@ import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,8 +52,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  *******************************************************************************/
 class QPicoCliImplementationTest
 {
-   private static final boolean VERBOSE = true;
-   private static final String CLI_NAME = "cli-unit-test";
+   private static final boolean VERBOSE  = true;
+   private static final String  CLI_NAME = "cli-unit-test";
 
 
 
@@ -115,7 +116,7 @@ class QPicoCliImplementationTest
    @Test
    public void test_badOption()
    {
-      String badOption = "--asdf";
+      String     badOption  = "--asdf";
       TestOutput testOutput = testCli(badOption);
       assertTestErrorContains(testOutput, "Unknown option: '" + badOption + "'");
       assertTestErrorContains(testOutput, "Usage: " + CLI_NAME);
@@ -131,14 +132,22 @@ class QPicoCliImplementationTest
    public void test_metaData()
    {
       TestOutput testOutput = testCli("--meta-data");
-      JSONObject metaData = JsonUtils.toJSONObject(testOutput.getOutput());
+      JSONObject metaData   = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(metaData);
-      assertEquals(1, metaData.keySet().size(), "Number of top-level keys");
+      assertEquals(2, metaData.keySet().size(), "Number of top-level keys");
+
       assertTrue(metaData.has("tables"));
-      JSONObject tables = metaData.getJSONObject("tables");
+      JSONObject tables      = metaData.getJSONObject("tables");
       JSONObject personTable = tables.getJSONObject("person");
       assertEquals("person", personTable.getString("name"));
       assertEquals("Person", personTable.getString("label"));
+
+      assertTrue(metaData.has("processes"));
+      JSONObject processes    = metaData.getJSONObject("processes");
+      JSONObject greetProcess = processes.getJSONObject("greet");
+      assertEquals("greet", greetProcess.getString("name"));
+      assertEquals("Greet", greetProcess.getString("label"));
+      assertEquals("person", greetProcess.getString("tableName"));
    }
 
 
@@ -173,7 +182,7 @@ class QPicoCliImplementationTest
    @Test
    public void test_tableUnknownCommand()
    {
-      String badCommand = "qwuijibo";
+      String     badCommand = "qwuijibo";
       TestOutput testOutput = testCli("person", badCommand);
       assertTestErrorContains(testOutput, "Unmatched argument at index 1: '" + badCommand + "'");
       assertTestErrorContains(testOutput, "Usage: " + CLI_NAME + " person \\[COMMAND\\]");
@@ -189,7 +198,7 @@ class QPicoCliImplementationTest
    public void test_tableMetaData()
    {
       TestOutput testOutput = testCli("person", "meta-data");
-      JSONObject metaData = JsonUtils.toJSONObject(testOutput.getOutput());
+      JSONObject metaData   = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(metaData);
       assertEquals(1, metaData.keySet().size(), "Number of top-level keys");
       JSONObject table = metaData.getJSONObject("table");
@@ -212,7 +221,7 @@ class QPicoCliImplementationTest
    @Test
    public void test_tableQuery()
    {
-      TestOutput testOutput = testCli("person", "query", "--skip=1", "--limit=2", "--criteria", "id NOT_EQUALS 3");
+      TestOutput testOutput  = testCli("person", "query", "--skip=1", "--limit=2", "--criteria", "id NOT_EQUALS 3");
       JSONObject queryResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(queryResult);
       JSONArray records = queryResult.getJSONArray("records");
@@ -246,7 +255,8 @@ class QPicoCliImplementationTest
    {
       TestOutput testOutput = testCli("person", "insert",
          "--field-firstName=Lucy",
-         "--field-lastName=Lu");
+         "--field-lastName=Lu",
+         "--field-email=lucy@kingsrook.com");
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       assertEquals(1, insertResult.getJSONArray("records").length());
@@ -263,20 +273,21 @@ class QPicoCliImplementationTest
    public void test_tableInsertJsonObjectArgumentWithMapping()
    {
       String mapping = """
-         --mapping={"firstName":"first","lastName":"ln"}
+         --mapping={"firstName":"first","lastName":"ln","email":"email"}
          """;
 
       String jsonBody = """
-         --jsonBody={"first":"Chester","ln":"Cheese"}
+         --jsonBody={"first":"Chester","ln":"Cheese","email":"chester@kingsrook.com"}
          """;
 
-      TestOutput testOutput = testCli("person", "insert", mapping, jsonBody);
+      TestOutput testOutput   = testCli("person", "insert", mapping, jsonBody);
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       assertEquals(1, insertResult.getJSONArray("records").length());
       assertEquals(6, insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
       assertEquals("Chester", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Cheese", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("lastName"));
+      assertEquals("chester@kingsrook.com", insertResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getString("email"));
    }
 
 
@@ -289,18 +300,21 @@ class QPicoCliImplementationTest
    public void test_tableInsertJsonArrayFileWithMapping() throws IOException
    {
       String mapping = """
-         --mapping={"firstName":"first","lastName":"ln"}
+         --mapping={"firstName":"first","lastName":"ln","email":"email"}
          """;
 
       String jsonContents = """
-         [{"first":"Charlie","ln":"Bear"},{"first":"Coco","ln":"Bean"}]
+         [
+            {"first":"Charlie","ln":"Bear","email":"charlie-bear@kingsrook.com"},
+            {"first":"Coco","ln":"Bean","email":"coco-bean@kingsrook.com"}
+         ]
          """;
 
       File file = new File("/tmp/" + UUID.randomUUID() + ".json");
       file.deleteOnExit();
       FileUtils.writeStringToFile(file, jsonContents);
 
-      TestOutput testOutput = testCli("person", "insert", mapping, "--jsonFile=" + file.getAbsolutePath());
+      TestOutput testOutput   = testCli("person", "insert", mapping, "--jsonFile=" + file.getAbsolutePath());
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       JSONArray records = insertResult.getJSONArray("records");
@@ -309,8 +323,10 @@ class QPicoCliImplementationTest
       assertEquals(7, insertResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
       assertEquals("Charlie", records.getJSONObject(0).getJSONObject("values").getString("firstName"));
       assertEquals("Bear", records.getJSONObject(0).getJSONObject("values").getString("lastName"));
+      assertEquals("charlie-bear@kingsrook.com", records.getJSONObject(0).getJSONObject("values").getString("email"));
       assertEquals("Coco", records.getJSONObject(1).getJSONObject("values").getString("firstName"));
       assertEquals("Bean", records.getJSONObject(1).getJSONObject("values").getString("lastName"));
+      assertEquals("coco-bean@kingsrook.com", records.getJSONObject(1).getJSONObject("values").getString("email"));
    }
 
 
@@ -323,12 +339,12 @@ class QPicoCliImplementationTest
    public void test_tableInsertCsvFileWithIndexMapping() throws IOException
    {
       String mapping = """
-         --mapping={"firstName":1,"lastName":3}
+         --mapping={"firstName":1,"lastName":3,"email":5}
          """;
 
       String csvContents = """
-         "Louis","P","Willikers",1024,
-         "Nestle","G","Crunch",1701,
+         "Louis","P","Willikers",1024,"louis@kingsrook.com",
+         "Nestle","G","Crunch",1701,"nestle@kingsrook.com",
                   
          """;
 
@@ -336,7 +352,7 @@ class QPicoCliImplementationTest
       file.deleteOnExit();
       FileUtils.writeStringToFile(file, csvContents);
 
-      TestOutput testOutput = testCli("person", "insert", mapping, "--csvFile=" + file.getAbsolutePath());
+      TestOutput testOutput   = testCli("person", "insert", mapping, "--csvFile=" + file.getAbsolutePath());
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(insertResult);
       JSONArray records = insertResult.getJSONArray("records");
@@ -408,7 +424,7 @@ class QPicoCliImplementationTest
    @Test
    public void test_tableDelete() throws Exception
    {
-      TestOutput testOutput = testCli("person", "delete", "--primaryKey", "2,4");
+      TestOutput testOutput   = testCli("person", "delete", "--primaryKey", "2,4");
       JSONObject deleteResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(deleteResult);
       JSONArray records = deleteResult.getJSONArray("records");
@@ -452,8 +468,8 @@ class QPicoCliImplementationTest
    @Test
    public void test_tableProcessUnknownName() throws Exception
    {
-      String badProcessName = "not-a-process";
-      TestOutput testOutput = testCli("person", "process", badProcessName);
+      String     badProcessName = "not-a-process";
+      TestOutput testOutput     = testCli("person", "process", badProcessName);
       assertTestErrorContains(testOutput, "Unmatched argument at index 2: '" + badProcessName + "'");
       assertTestErrorContains(testOutput, "Usage: " + CLI_NAME + " person process \\[COMMAND\\]");
    }
@@ -465,12 +481,25 @@ class QPicoCliImplementationTest
     **
     *******************************************************************************/
    @Test
-   @Disabled // not yet done.
-   public void test_tableProcessGreet() throws Exception
+   public void test_tableProcessGreetUsingCallbackForFields() throws Exception
    {
+      setStandardInputLines("Hi", "How are you?");
       TestOutput testOutput = testCli("person", "process", "greet");
+      assertTestOutputContains(testOutput, "Please supply a value for the field.*Greeting Prefix");
+      assertTestOutputContains(testOutput, "Hi X How are you?");
+   }
 
-      fail("Assertion not written...");
+
+   /*******************************************************************************
+    ** test running a process on a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableProcessGreetUsingOptionsForFields() throws Exception
+   {
+      TestOutput testOutput = testCli("person", "process", "greet", "--field-greetingPrefix=Hello", "--field-greetingSuffix=There");
+      assertTestOutputDoesNotContain(testOutput, "Please supply a value for the field");
+      assertTestOutputContains(testOutput, "Hello X There");
    }
 
 
@@ -536,7 +565,7 @@ class QPicoCliImplementationTest
       QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
 
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-      ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
+      ByteArrayOutputStream errorStream  = new ByteArrayOutputStream();
 
       if(VERBOSE)
       {
@@ -546,7 +575,7 @@ class QPicoCliImplementationTest
       qPicoCliImplementation.runCli(CLI_NAME, args, new PrintStream(outputStream, true), new PrintStream(errorStream, true));
 
       String output = outputStream.toString(StandardCharsets.UTF_8);
-      String error = errorStream.toString(StandardCharsets.UTF_8);
+      String error  = errorStream.toString(StandardCharsets.UTF_8);
 
       if(VERBOSE)
       {
@@ -563,11 +592,31 @@ class QPicoCliImplementationTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   private void setStandardInputLines(String... lines)
+   {
+      StringBuilder stringBuilder = new StringBuilder();
+      for(String line : lines)
+      {
+         stringBuilder.append(line);
+         if(!line.endsWith("\n"))
+         {
+            stringBuilder.append("\n");
+         }
+      }
+      ByteArrayInputStream stdin = new ByteArrayInputStream(stringBuilder.toString().getBytes(Charset.defaultCharset()));
+      System.setIn(stdin);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static class TestOutput
    {
-      private String output;
+      private String   output;
       private String[] outputLines;
-      private String error;
+      private String   error;
       private String[] errorLines;
 
 
