@@ -29,6 +29,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
@@ -507,21 +511,41 @@ public class QJavalinImplementation
 
       try
       {
-         ///////////////////////////////////////////////////////
-         // run the process                                   //
-         // todo - async?  some "job id" to return to caller? //
-         ///////////////////////////////////////////////////////
-         LOG.info("Running process [" + runProcessRequest.getProcessName() + "]");
-         RunProcessResult runProcessResult = new RunProcessAction().execute(runProcessRequest);
-         LOG.info("Process result error? " + runProcessResult.getError());
-         for(QFieldMetaData outputField : qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
+         ////////////////////////////////////////////////
+         // run the process                            //
+         // todo -  some "job id" to return to caller? //
+         ////////////////////////////////////////////////
+         CompletableFuture<RunProcessResult> future = CompletableFuture.supplyAsync(() ->
          {
-            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
-         }
+            try
+            {
+               LOG.info("Running process [" + runProcessRequest.getProcessName() + "]");
+               RunProcessResult runProcessResult = new RunProcessAction().execute(runProcessRequest);
+               LOG.info("Process result error? " + runProcessResult.getError());
+               for(QFieldMetaData outputField : qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
+               {
+                  LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
+               }
+               return (runProcessResult);
+            }
+            catch(Exception e)
+            {
+               LOG.error("Error running future for process", e);
+               throw (new CompletionException(e));
+            }
+         });
 
          Map<String, Object> resultForCaller = new HashMap<>();
-         resultForCaller.put("error", runProcessResult.getError());
-         resultForCaller.put("values", runProcessResult.getValues());
+         try
+         {
+            RunProcessResult runProcessResult = future.get(3, TimeUnit.SECONDS);
+            resultForCaller.put("error", runProcessResult.getError());
+            resultForCaller.put("values", runProcessResult.getValues());
+         }
+         catch(TimeoutException te)
+         {
+            resultForCaller.put("jobId", "Job is running asynchronously... job id available in a later version.");
+         }
          context.result(JsonUtils.toJson(resultForCaller));
       }
       catch(Exception e)
