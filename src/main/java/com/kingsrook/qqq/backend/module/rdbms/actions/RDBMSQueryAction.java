@@ -56,6 +56,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 {
    private static final Logger LOG = LogManager.getLogger(RDBMSQueryAction.class);
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -63,8 +65,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    {
       try
       {
-         QTableMetaData table = queryRequest.getTable();
-         String tableName = getTableName(table);
+         QTableMetaData table     = queryRequest.getTable();
+         String         tableName = getTableName(table);
 
          List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
          String columns = fieldList.stream()
@@ -73,7 +75,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          String sql = "SELECT " + columns + " FROM " + tableName;
 
-         QQueryFilter filter = queryRequest.getFilter();
+         QQueryFilter       filter = queryRequest.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
          {
@@ -98,33 +100,35 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
-         QueryResult rs = new QueryResult();
+         QueryResult   rs      = new QueryResult();
          List<QRecord> records = new ArrayList<>();
          rs.setRecords(records);
 
-         Connection connection = getConnection(queryRequest);
-         QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+         try(Connection connection = getConnection(queryRequest))
          {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            while(resultSet.next())
+            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
-               // todo - should refactor this for view etc to use too.
-               // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
-               QRecord record = new QRecord();
-               records.add(record);
-               record.setTableName(table.getName());
-               LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
-               record.setValues(values);
-
-               for(int i = 1; i <= metaData.getColumnCount(); i++)
+               ResultSetMetaData metaData = resultSet.getMetaData();
+               while(resultSet.next())
                {
-                  QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
-                  Serializable value = getValue(qFieldMetaData, resultSet, i);
-                  values.put(qFieldMetaData.getName(), value);
-               }
-            }
+                  // todo - should refactor this for view etc to use too.
+                  // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
+                  QRecord record = new QRecord();
+                  records.add(record);
+                  record.setTableName(table.getName());
+                  LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
+                  record.setValues(values);
 
-         }), params);
+                  for(int i = 1; i <= metaData.getColumnCount(); i++)
+                  {
+                     QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
+                     Serializable   value          = getValue(qFieldMetaData, resultSet, i);
+                     values.put(qFieldMetaData.getName(), value);
+                  }
+               }
+
+            }), params);
+         }
 
          return rs;
       }
@@ -185,11 +189,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
       {
-         QFieldMetaData field = table.getField(criterion.getFieldName());
-         List<Serializable> values = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
-         String column = getColumnName(field);
-         String clause = column;
-         Integer expectedNoOfParams = null;
+         QFieldMetaData     field              = table.getField(criterion.getFieldName());
+         List<Serializable> values             = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
+         String             column             = getColumnName(field);
+         String             clause             = column;
+         Integer            expectedNoOfParams = null;
          switch(criterion.getOperator())
          {
             case EQUALS:
@@ -366,8 +370,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
       for(QFilterOrderBy orderBy : orderBys)
       {
-         QFieldMetaData field = table.getField(orderBy.getFieldName());
-         String column = getColumnName(field);
+         QFieldMetaData field  = table.getField(orderBy.getFieldName());
+         String         column = getColumnName(field);
          clauses.add(column + " " + (orderBy.getIsAscending() ? "ASC" : "DESC"));
       }
       return (String.join(", ", clauses));

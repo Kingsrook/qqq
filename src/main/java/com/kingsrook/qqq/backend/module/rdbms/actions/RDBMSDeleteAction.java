@@ -65,16 +65,18 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
          // todo sql customization - can edit sql and/or param list
 
-         Connection connection = getConnection(deleteRequest);
-         QueryManager.executeUpdateForRowCount(connection, sql, params);
-         List<QRecord> outputRecords = new ArrayList<>();
-         rs.setRecords(outputRecords);
-         for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
+         try(Connection connection = getConnection(deleteRequest))
          {
-            QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
-            // todo uh, identify any errors?
-            QRecord outputRecord = new QRecord(qRecord);
-            outputRecords.add(outputRecord);
+            QueryManager.executeUpdateForRowCount(connection, sql, params);
+            List<QRecord> outputRecords = new ArrayList<>();
+            rs.setRecords(outputRecords);
+            for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
+            {
+               QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
+               // todo uh, identify any errors?
+               QRecord outputRecord = new QRecord(qRecord);
+               outputRecords.add(outputRecord);
+            }
          }
 
          return rs;

@@ -58,47 +58,49 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 
          // todo - sql batch for performance
          // todo - if setting a bunch of records to have the same value, a single update where id IN?
-         Connection connection  = getConnection(updateRequest);
-         int        recordIndex = 0;
-         for(QRecord record : updateRequest.getRecords())
+         try(Connection connection = getConnection(updateRequest))
          {
-            List<QFieldMetaData> updateableFields = table.getFields().values().stream()
-               .filter(field -> !field.getName().equals("id")) // todo - intent here is to avoid non-updateable fields.
-               .filter(field -> record.getValues().containsKey(field.getName()))
-               .toList();
-
-            String columns = updateableFields.stream()
-               .map(f -> this.getColumnName(f) + " = ?")
-               .collect(Collectors.joining(", "));
-
-            String tableName = getTableName(table);
-            StringBuilder sql = new StringBuilder("UPDATE ").append(tableName)
-               .append(" SET ").append(columns)
-               .append(" WHERE ").append(getColumnName(table.getField(table.getPrimaryKeyField()))).append(" = ?");
-
-            // todo sql customization - can edit sql and/or param list
-
-            QRecord outputRecord = new QRecord(record);
-            outputRecords.add(outputRecord);
-
-            try
+            int recordIndex = 0;
+            for(QRecord record : updateRequest.getRecords())
             {
-               List<Object> params = new ArrayList<>();
-               for(QFieldMetaData field : updateableFields)
+               List<QFieldMetaData> updateableFields = table.getFields().values().stream()
+                  .filter(field -> !field.getName().equals("id")) // todo - intent here is to avoid non-updateable fields.
+                  .filter(field -> record.getValues().containsKey(field.getName()))
+                  .toList();
+
+               String columns = updateableFields.stream()
+                  .map(f -> this.getColumnName(f) + " = ?")
+                  .collect(Collectors.joining(", "));
+
+               String tableName = getTableName(table);
+               StringBuilder sql = new StringBuilder("UPDATE ").append(tableName)
+                  .append(" SET ").append(columns)
+                  .append(" WHERE ").append(getColumnName(table.getField(table.getPrimaryKeyField()))).append(" = ?");
+
+               // todo sql customization - can edit sql and/or param list
+
+               QRecord outputRecord = new QRecord(record);
+               outputRecords.add(outputRecord);
+
+               try
                {
-                  Serializable value = record.getValue(field.getName());
-                  value = scrubValue(field, value);
-                  params.add(value);
-               }
-               params.add(record.getValue(table.getPrimaryKeyField()));
+                  List<Object> params = new ArrayList<>();
+                  for(QFieldMetaData field : updateableFields)
+                  {
+                     Serializable value = record.getValue(field.getName());
+                     value = scrubValue(field, value);
+                     params.add(value);
+                  }
+                  params.add(record.getValue(table.getPrimaryKeyField()));
 
-               QueryManager.executeUpdate(connection, sql.toString(), params);
-               // todo - auto-updated values, e.g., modifyDate...  maybe need to re-select?
-            }
-            catch(Exception e)
-            {
-               // todo - how to communicate errors??? outputRecord.setErrors(new ArrayList<>(List.of(e)));
-               throw new QException("Error executing update: " + e.getMessage(), e);
+                  QueryManager.executeUpdate(connection, sql.toString(), params);
+                  // todo - auto-updated values, e.g., modifyDate...  maybe need to re-select?
+               }
+               catch(Exception e)
+               {
+                  // todo - how to communicate errors??? outputRecord.setErrors(new ArrayList<>(List.of(e)));
+                  throw new QException("Error executing update: " + e.getMessage(), e);
+               }
             }
          }
 
