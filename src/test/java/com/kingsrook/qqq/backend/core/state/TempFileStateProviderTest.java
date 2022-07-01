@@ -19,35 +19,71 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.etl;
+package com.kingsrook.qqq.backend.core.state;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import java.util.UUID;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- **
+ ** Unit test for TempFileStateProvider
  *******************************************************************************/
-public interface QDataSource
-
+public class TempFileStateProviderTest
 {
-   /*******************************************************************************
-    ** listAvailableBatches
-    **
-    *******************************************************************************/
-   List<String> listAvailableBatches();
 
    /*******************************************************************************
-    ** getBatch
     **
     *******************************************************************************/
-   QDataBatch getBatch(String identity, QTableMetaData destination) throws QException;
+   @Test
+   public void testStateNotFound()
+   {
+      TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
+      UUIDStateKey          key           = new UUIDStateKey();
+
+      Assertions.assertTrue(stateProvider.get(QRecord.class, key).isEmpty(), "Key not found in state should return empty");
+   }
+
 
    /*******************************************************************************
-    ** discardBatch
     **
     *******************************************************************************/
-   void discardBatch(QDataBatch batch);
+   @Test
+   public void testSimpleStateFound()
+   {
+      TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
+      UUIDStateKey          key           = new UUIDStateKey();
+
+      String uuid = UUID.randomUUID().toString();
+      QRecord qRecord = new QRecord().withValue("uuid", uuid);
+      stateProvider.put(key, qRecord);
+
+      QRecord qRecordFromState = stateProvider.get(QRecord.class, key).get();
+      Assertions.assertEquals(uuid, qRecordFromState.getValueString("uuid"), "Should read value from state persistence");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testWrongTypeOnGet()
+   {
+      TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
+      UUIDStateKey          key           = new UUIDStateKey();
+
+      String uuid = UUID.randomUUID().toString();
+      QRecord qRecord = new QRecord().withValue("uuid", uuid);
+      stateProvider.put(key, qRecord);
+
+      Assertions.assertThrows(Exception.class, () ->
+      {
+         stateProvider.get(QTableMetaData.class, key);
+      });
+   }
+
 }

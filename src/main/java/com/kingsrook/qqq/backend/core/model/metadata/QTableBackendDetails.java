@@ -19,86 +19,84 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.etl;
+package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kingsrook.qqq.backend.core.model.metadata.serialization.QTableBackendDetailsDeserializer;
+import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 
 
 /*******************************************************************************
- **
+ ** Base class where backends can specify additional per-table meta-data.
  *******************************************************************************/
-public class QDataBatch
+@JsonDeserialize(using = QTableBackendDetailsDeserializer.class)
+public abstract class QTableBackendDetails
 {
-   private String identity; // e.g., a full path to a file
-   private List<QRecord> records;
+   private String backendType;
 
 
 
    /*******************************************************************************
-    ** Getter for identity
+    ** Getter for backendType
     **
     *******************************************************************************/
-   public String getIdentity()
+   public String getBackendType()
    {
-      return identity;
+      return backendType;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for identity
+    ** Setter for backendType
     **
     *******************************************************************************/
-   public void setIdentity(String identity)
+   public void setBackendType(String backendType)
    {
-      this.identity = identity;
+      this.backendType = backendType;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for identity
+    ** Setter for backendType
     **
     *******************************************************************************/
-   public QDataBatch withIdentity(String identity)
+   public void setBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)
    {
-      this.identity = identity;
+      try
+      {
+         QBackendModuleInterface qBackendModuleInterface = backendModuleClass.getConstructor().newInstance();
+         this.backendType = qBackendModuleInterface.getBackendType();
+      }
+      catch(Exception e)
+      {
+         throw new IllegalArgumentException("Error dynamically getting backend type (name) from class [" + backendModuleClass.getName() + "], e)");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for backendType
+    **
+    *******************************************************************************/
+   public QTableBackendDetails withBackendType(String backendType)
+   {
+      this.backendType = backendType;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for records
+    ** Fluent Setter for backendType
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public QTableBackendDetails withBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)
    {
-      return records;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for records
-    **
-    *******************************************************************************/
-   public void setRecords(List<QRecord> records)
-   {
-      this.records = records;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for records
-    **
-    *******************************************************************************/
-   public QDataBatch withRecords(List<QRecord> records)
-   {
-      this.records = records;
+      setBackendType(backendModuleClass);
       return (this);
    }
 

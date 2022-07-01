@@ -55,6 +55,7 @@ public class JsonToQFieldMappingAdapter
       try
       {
          JSONObject jsonObject = JsonUtils.toJSONObject(json);
+         jsonObject = promoteInnerMappingIfAppropriate(jsonObject);
 
          //////////////////////////////////////////////////////////////////////////////////////////////
          // look at the keys in the mapping - if they're strings, then we're doing key-based mapping //
@@ -97,6 +98,29 @@ public class JsonToQFieldMappingAdapter
       {
          throw (new IllegalArgumentException("Malformed JSON value: " + je.getMessage(), je));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** So - this class was first written assuming that the JSON it would take would
+    ** just be a mapping - e.g., {a:b, c:d} or {a:0, b:1}.
+    **
+    ** But - it turns out, callers may expect that they can create an instance of
+    ** AbstractQFieldMapping, then serialize it, then de-serialize it, and that seems sane.
+    **
+    ** So - this method tries to determine if the JSON Object we took in looks like
+    ** a serialized from of a AbstractQFieldMapping - and if so, then it "promotes"
+    ** the "mapping" object from within that outer json object, since the rest of
+    ** this class knows how to (and expects to) handle that object.
+    *******************************************************************************/
+   private JSONObject promoteInnerMappingIfAppropriate(JSONObject jsonObject)
+   {
+      if(jsonObject.has("mapping") && jsonObject.has("sourceType") && jsonObject.keySet().size() == 2)
+      {
+         return (jsonObject.getJSONObject("mapping"));
+      }
+      return (jsonObject);
    }
 
 

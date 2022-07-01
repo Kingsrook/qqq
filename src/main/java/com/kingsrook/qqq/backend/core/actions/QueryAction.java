@@ -43,7 +43,7 @@ public class QueryAction
       ActionHelper.validateSession(queryRequest);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQModule(queryRequest.getBackend());
+      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(queryRequest.getBackend());
       // todo pre-customization - just get to modify the request?
       QueryResult queryResult = qModule.getQueryInterface().execute(queryRequest);
       // todo post-customization - can do whatever w/ the result if you want

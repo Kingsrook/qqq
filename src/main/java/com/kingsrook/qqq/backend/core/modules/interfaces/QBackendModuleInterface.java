@@ -22,15 +22,37 @@
 package com.kingsrook.qqq.backend.core.modules.interfaces;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
+
+
 /*******************************************************************************
  ** Interface that a QBackendModule must implement.
  **
- ** Note, methods all have a default version, which throws a 'not implemented'
+ ** Note, some methods all have a default version, which throws a 'not implemented'
  ** exception.
  **
  *******************************************************************************/
 public interface QBackendModuleInterface
 {
+   /*******************************************************************************
+    ** Method where a backend module must be able to provide its type (name).
+    *******************************************************************************/
+   String getBackendType();
+
+   /*******************************************************************************
+    ** Method to identify the class used for backend meta data for this module.
+    *******************************************************************************/
+   Class<? extends QBackendMetaData> getBackendMetaDataClass();
+
+   /*******************************************************************************
+    ** Method to identify the class used for table-backend details for this module.
+    *******************************************************************************/
+   default Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
+   {
+      return QTableBackendDetails.class;
+   }
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -74,4 +96,5 @@ public interface QBackendModuleInterface
    {
       throw new IllegalStateException(actionName + " is not implemented in this module: " + this.getClass().getSimpleName());
    }
+
 }

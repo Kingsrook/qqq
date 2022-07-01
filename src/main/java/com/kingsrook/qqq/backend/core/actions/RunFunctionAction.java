@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
@@ -37,8 +38,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -47,6 +49,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class RunFunctionAction
 {
+   private static final Logger LOG = LogManager.getLogger(RunFunctionAction.class);
 
    /*******************************************************************************
     **
@@ -55,9 +58,6 @@ public class RunFunctionAction
    {
       ActionHelper.validateSession(runFunctionRequest);
 
-      ///////////////////////////////////////////////////////
-      // todo - shouldn't meta-data validation catch this? //
-      ///////////////////////////////////////////////////////
       QProcessMetaData process = runFunctionRequest.getInstance().getProcess(runFunctionRequest.getProcessName());
       if(process == null)
       {
@@ -89,9 +89,13 @@ public class RunFunctionAction
     ** via the callback
     **
     *******************************************************************************/
-   private void ensureInputFieldsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function)
+   private void ensureInputFieldsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function) throws QException
    {
       QFunctionInputMetaData inputMetaData = function.getInputMetaData();
+      if(inputMetaData == null)
+      {
+         return;
+      }
 
       List<QFieldMetaData> fieldsToGet = new ArrayList<>();
       for(QFieldMetaData field : inputMetaData.getFieldList())
@@ -99,14 +103,27 @@ public class RunFunctionAction
          Serializable value = runFunctionRequest.getValue(field.getName());
          if(value == null)
          {
-            // todo - check if required?
-            fieldsToGet.add(field);
+            if(field.getDefaultValue() != null)
+            {
+               runFunctionRequest.addValue(field.getName(), field.getDefaultValue());
+            }
+            else
+            {
+               // todo - check if required?
+               fieldsToGet.add(field);
+            }
          }
       }
 
       if(!fieldsToGet.isEmpty())
       {
-         Map<String, Serializable> fieldValues = runFunctionRequest.getCallback().getFieldValues(fieldsToGet);
+         QProcessCallback callback = runFunctionRequest.getCallback();
+         if(callback == null)
+         {
+            throw (new QException("Function is missing values for fields, but no callback was present to request fields from a user"));
+         }
+
+         Map<String, Serializable> fieldValues = callback.getFieldValues(fieldsToGet);
          for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
          {
             runFunctionRequest.addValue(entry.getKey(), entry.getValue());
@@ -124,8 +141,7 @@ public class RunFunctionAction
    private void ensureRecordsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function) throws QException
    {
       QFunctionInputMetaData inputMetaData = function.getInputMetaData();
-      QRecordListMetaData recordListMetaData = inputMetaData.getRecordListMetaData();
-      if(recordListMetaData != null)
+      if(inputMetaData != null && inputMetaData.getRecordListMetaData() != null)
       {
          if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
          {
@@ -136,7 +152,14 @@ public class RunFunctionAction
             // todo - handle this being async (e.g., http)
             // seems like it just needs to throw, breaking this flow, and to send a response to the frontend, directing it to prompt the user for the needed data
             // then this function can re-run, hopefully with the needed data.
-            queryRequest.setFilter(runFunctionRequest.getCallback().getQueryFilter());
+
+            QProcessCallback callback = runFunctionRequest.getCallback();
+            if(callback == null)
+            {
+               throw (new QException("Function is missing input records, but no callback was present to get a query filter from a user"));
+            }
+
+            queryRequest.setFilter(callback.getQueryFilter());
 
             QueryResult queryResult = new QueryAction().execute(queryRequest);
             runFunctionRequest.setRecords(queryResult.getRecords());
@@ -157,8 +180,8 @@ public class RunFunctionAction
       {
          runFunctionResult.seedFromRequest(runFunctionRequest);
 
-         Class<?> codeClass = Class.forName(code.getName());
-         Object codeObject = codeClass.getConstructor().newInstance();
+         Class<?> codeClass  = Class.forName(code.getName());
+         Object   codeObject = codeClass.getConstructor().newInstance();
          if(!(codeObject instanceof FunctionBody functionBodyCodeObject))
          {
             throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of FunctionBody"));
@@ -170,7 +193,7 @@ public class RunFunctionAction
       {
          runFunctionResult = new RunFunctionResult();
          runFunctionResult.setError("Error running function code: " + e.getMessage());
-         e.printStackTrace();
+         LOG.info("Error running function code", e);
       }
 
       return (runFunctionResult);

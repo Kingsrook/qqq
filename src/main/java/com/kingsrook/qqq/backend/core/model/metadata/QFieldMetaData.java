@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** Meta-data to represent a single field in a table.
  **
@@ -33,6 +36,7 @@ public class QFieldMetaData
    private String backendName;
    private QFieldType type;
 
+   private Serializable defaultValue;
    private String possibleValueSourceName;
 
 
@@ -215,5 +219,38 @@ public class QFieldMetaData
       this.possibleValueSourceName = possibleValueSourceName;
       return (this);
    }
+
+   /*******************************************************************************
+    ** Getter for defaultValue
+    **
+    *******************************************************************************/
+   public Serializable getDefaultValue()
+   {
+      return defaultValue;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultValue
+    **
+    *******************************************************************************/
+   public void setDefaultValue(Serializable defaultValue)
+   {
+      this.defaultValue = defaultValue;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData withDefaultValue(Serializable defaultValue)
+   {
+      this.defaultValue = defaultValue;
+      return (this);
+   }
+
+
 
 }

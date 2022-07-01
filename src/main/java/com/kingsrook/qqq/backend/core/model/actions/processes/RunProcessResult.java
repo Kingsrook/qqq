@@ -36,7 +36,21 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 public class RunProcessResult extends AbstractQResult
 {
    private ProcessState processState;
-   private String error;
+   private String       error;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "RunProcessResult{error='" + error
+         + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
+         + ",values=" + (processState == null ? null : processState.getValues())
+         + "}";
+   }
 
 
 

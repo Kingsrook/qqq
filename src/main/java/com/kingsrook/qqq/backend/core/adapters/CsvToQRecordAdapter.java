@@ -73,6 +73,8 @@ public class CsvToQRecordAdapter
                   .withTrim());
 
             List<String> headers = csvParser.getHeaderNames();
+            headers = makeHeadersUnique(headers);
+
             List<CSVRecord> csvRecords = csvParser.getRecords();
             for(CSVRecord csvRecord : csvRecords)
             {
@@ -80,9 +82,9 @@ public class CsvToQRecordAdapter
                // put values from the CSV record into a map of header -> value //
                //////////////////////////////////////////////////////////////////
                Map<String, String> csvValues = new HashMap<>();
-               for(String header : headers)
+               for(int i=0; i<headers.size(); i++)
                {
-                  csvValues.put(header, csvRecord.get(header));
+                  csvValues.put(headers.get(i), csvRecord.get(i));
                }
 
                //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +115,7 @@ public class CsvToQRecordAdapter
                // put values from the CSV record into a map of index -> value //
                /////////////////////////////////////////////////////////////////
                Map<Integer, String> csvValues = new HashMap<>();
-               int index = 1;
+               int                  index     = 1;
                for(String value : csvRecord)
                {
                   csvValues.put(index++, value);
@@ -141,6 +143,43 @@ public class CsvToQRecordAdapter
          throw (new IllegalArgumentException("Error parsing CSV: " + e.getMessage(), e));
       }
 
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of headers, if any duplicates are found, add a numeric suffix
+    ** to the duplicates.
+    **
+    ** So this header row:  A,B,C,C,C
+    ** Would become:  A,B,C,C 2,C 3
+    **
+    ** See unit test for more scenarios - some of which we do not handle well yet,
+    ** such as "C 2, C, C 3"
+    *******************************************************************************/
+   protected List<String> makeHeadersUnique(List<String> headers)
+   {
+      Map<String, Integer> countsByHeader = new HashMap<>();
+      List<String>         rs             = new ArrayList<>();
+
+      for(String header : headers)
+      {
+         String headerToUse = header;
+         String headerWithoutSuffix = header.replaceFirst(" \\d+$", "");
+
+         if(countsByHeader.containsKey(headerWithoutSuffix))
+         {
+            int suffix = countsByHeader.get(headerWithoutSuffix) + 1;
+            countsByHeader.put(headerWithoutSuffix, suffix);
+            headerToUse = headerWithoutSuffix + " " + suffix;
+         }
+         else
+         {
+            countsByHeader.put(headerWithoutSuffix, 1);
+         }
+         rs.add(headerToUse);
+      }
       return (rs);
    }
 

@@ -22,17 +22,23 @@
 package com.kingsrook.qqq.backend.core.interfaces;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
 
 
 /*******************************************************************************
- ** TODO - document!
+ ** Simple interface that a "custom" function (as in, a component of a Process)
+ ** must implement.
  *******************************************************************************/
 public interface FunctionBody
 {
    /*******************************************************************************
-    ** TODO - document!
+    ** Execute the function - using the request as input, and the result as output.
+    **
+    ** TODO - think about - why take the Result object as a param, instead of return it?
+    **  Is this way easier for inter-language operability maybe?
+    *   Also - there's way too much "process-specific gunk" in the Request object - can we simplify it?
     *******************************************************************************/
-   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult);
+   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException;
 }

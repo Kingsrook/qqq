@@ -23,10 +23,22 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.io.Serializable;
+import java.util.Optional;
 
 
 /*******************************************************************************
+ ** QQQ state provider interface.  Provides standard interface for various
+ ** implementations of how to store & retrieve user/process state data, like
+ ** sessions, or process data.  Not like permanent record data - that is done in
+ ** Backend modules.
  **
+ ** Different implementations may be:  in-memory (non-persistent!!), or on-disk
+ ** (with the tradeoffs that has), in-database, in-cache-system, etc.
+ **
+ ** Things which probably haven't been thought about here include:
+ ** - multi-layering.  e.g., always have an in-memory layer on top of a more
+ **   persistent backend, but then how to avoid staleness in-memory?
+ *  - cleanup.  when do we ever purge things to avoid running out of memory/storage?
  *******************************************************************************/
 public interface StateProviderInterface
 {
@@ -39,5 +51,5 @@ public interface StateProviderInterface
    /*******************************************************************************
     ** Get a block of data, under a key, from the state store.
     *******************************************************************************/
-   <T extends Serializable> T get(Class<? extends T> type, AbstractStateKey key);
+   <T extends Serializable> Optional<T> get(Class<? extends T> type, AbstractStateKey key);
 }

@@ -20,14 +20,18 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <modelVersion>4.0.0</modelVersion>
 
    <groupId>com.kingsrook.qqq</groupId>
    <artifactId>qqq-backend-core</artifactId>
-   <version>0.0-SNAPSHOT</version>
+   <version>0.0.0</version>
+
+   <scm>
+     <connection>scm:git:git@github.com:Kingsrook/qqq-backend-core.git</connection>
+     <developerConnection>scm:git:git@github.com:Kingsrook/qqq-backend-core.git</developerConnection>
+     <tag>HEAD</tag>
+   </scm>
 
    <properties>
       <!-- props specifically to this module -->
@@ -50,7 +54,7 @@
       <dependency>
          <groupId>com.fasterxml.jackson.core</groupId>
          <artifactId>jackson-databind</artifactId>
-         <version>2.13.0</version>
+         <version>2.13.2.1</version>
       </dependency>
       <dependency>
          <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -67,6 +71,12 @@
          <artifactId>commons-csv</artifactId>
          <version>1.8</version>
       </dependency>
+      <dependency>
+         <groupId>org.assertj</groupId>
+         <artifactId>assertj-core</artifactId>
+         <version>3.23.1</version>
+         <scope>test</scope>
+      </dependency>
 
       <!-- Common deps for all qqq modules -->
       <dependency>
@@ -77,12 +87,12 @@
       <dependency>
          <groupId>org.apache.logging.log4j</groupId>
          <artifactId>log4j-api</artifactId>
-         <version>2.15.0</version>
+         <version>2.17.1</version>
       </dependency>
       <dependency>
          <groupId>org.apache.logging.log4j</groupId>
          <artifactId>log4j-core</artifactId>
-         <version>2.15.0</version>
+         <version>2.17.1</version>
       </dependency>
       <dependency>
          <groupId>org.junit.jupiter</groupId>
@@ -144,12 +154,67 @@
                </execution>
             </executions>
          </plugin>
+         <plugin>
+            <groupId>com.amashchenko.maven.plugin</groupId>
+            <artifactId>gitflow-maven-plugin</artifactId>
+            <version>1.18.0</version>
+            <configuration>
+               <gitFlowConfig>
+                  <productionBranch>main</productionBranch>
+                  <developmentBranch>dev</developmentBranch>
+                  <versionTagPrefix>version-</versionTagPrefix>
+               </gitFlowConfig>
+               <skipFeatureVersion>true</skipFeatureVersion> <!-- Keep feature names out of versions -->
+               <postReleaseGoals>install</postReleaseGoals>  <!-- Let CI run deploys -->
+               <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
+               <versionDigitToIncrement>1</versionDigitToIncrement> <!-- In general, we update the minor -->
+            </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.8</version>
+            <executions>
+               <execution>
+                  <id>jacoco-check</id>
+                  <goals>
+                     <goal>check</goal>
+                  </goals>
+                  <configuration>
+                     <rules>
+                        <rule>
+                           <!-- <element>PACKAGE</element> -->
+                           <element>BUNDLE</element>
+                           <limits>
+                              <limit>
+                                 <!-- <counter>LINE</counter> -->
+                                 <counter>INSTRUCTION</counter>
+                                 <value>COVEREDRATIO</value>
+                                 <minimum>0.80</minimum>
+                              </limit>
+                           </limits>
+                        </rule>
+                     </rules>
+                  </configuration>
+               </execution>
+               <execution>
+                  <id>report</id>
+                  <phase>prepare-package</phase>
+                  <goals>
+                     <goal>report</goal>
+                  </goals>
+                  <configuration>
+                     <outputDirectory>${project.build.directory}/jacoco</outputDirectory>
+                  </configuration>
+               </execution>
+            </executions>
+         </plugin>
       </plugins>
    </build>
 
    <repositories>
       <repository>
-         <id>github</id>
+         <id>github-qqq-maven-registry</id>
          <name>GitHub QQQ Maven Registry</name>
          <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
       </repository>

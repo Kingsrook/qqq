@@ -43,7 +43,7 @@ public class DeleteAction
       ActionHelper.validateSession(deleteRequest);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQModule(deleteRequest.getBackend());
+      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(deleteRequest.getBackend());
       // todo pre-customization - just get to modify the request?
       DeleteResult deleteResult = qModule.getDeleteInterface().execute(deleteRequest);
       // todo post-customization - can do whatever w/ the result if you want

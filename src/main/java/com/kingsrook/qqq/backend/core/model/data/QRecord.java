@@ -29,20 +29,53 @@ import java.util.Map;
 
 
 /*******************************************************************************
- * Data Record within qqq.  e.g., a single row from a database.
- *
- * Actual values (e.g., as stored in the backend system) are in the `values`
- * map.  Keys in this map are fieldNames from the QTableMetaData.
- *
- * "Display values" (e.g., labels for possible values, or formatted numbers
- * (e.g., quantities with commas)) are in the displayValues map.
+ ** Data Record within qqq.  e.g., a single row from a database.
+ **
+ ** Actual values (e.g., as stored in the backend system) are in the `values`
+ ** map.  Keys in this map are fieldNames from the QTableMetaData.
+ **
+ ** "Display values" (e.g., labels for possible values, or formatted numbers
+ ** (e.g., quantities with commas)) are in the displayValues map.
+ **
+ ** backendDetails are additional data about a record, that aren't strictly
+ ** values, but are more like meta-data - e.g., for a file-backend, what file the
+ ** record came from.
+ **
+ ** Errors are meant to hold information about things that went wrong when
+ ** processing a record - e.g., in a list of records that may be the output of an
+ ** action, like a bulk load.  TODO - redo as some status object?
  *******************************************************************************/
 public class QRecord implements Serializable
 {
-   private String tableName;
-   //x private Serializable primaryKey;
-   private Map<String, Serializable> values = new LinkedHashMap<>();
-   private Map<String, String> displayValues = new LinkedHashMap<>();
+   private String                    tableName;
+   private Map<String, Serializable> values         = new LinkedHashMap<>();
+   private Map<String, String>       displayValues  = new LinkedHashMap<>();
+   private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
+   // todo private List<String>              errors         = new ArrayList<>();
+
+
+
+   /*******************************************************************************
+    ** Default constructor.
+    *******************************************************************************/
+   public QRecord()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Copy constructor.
+    ** TODO ... should this do deep copies?
+    *******************************************************************************/
+   public QRecord(QRecord record)
+   {
+      this.tableName = record.tableName;
+      this.values = record.values;
+      this.displayValues = record.displayValues;
+      this.backendDetails = record.backendDetails;
+      // todo! this.errors = record.errors;
+   }
 
 
 
@@ -119,34 +152,6 @@ public class QRecord implements Serializable
       this.tableName = tableName;
       return (this);
    }
-
-   //x /*******************************************************************************
-   //x  ** Getter for primaryKey
-   //x  **
-   //x  *******************************************************************************/
-   //x public Serializable getPrimaryKey()
-   //x {
-   //x    return primaryKey;
-   //x }
-
-   //x /*******************************************************************************
-   //x  ** Setter for primaryKey
-   //x  **
-   //x  *******************************************************************************/
-   //x public void setPrimaryKey(Serializable primaryKey)
-   //x {
-   //x    this.primaryKey = primaryKey;
-   //x }
-
-   //x /*******************************************************************************
-   //x  ** Setter for primaryKey
-   //x  **
-   //x  *******************************************************************************/
-   //x public QRecord withPrimaryKey(Serializable primaryKey)
-   //x {
-   //x    this.primaryKey = primaryKey;
-   //x    return (this);
-   //x }
 
 
 
@@ -245,6 +250,72 @@ public class QRecord implements Serializable
    public LocalDate getValueDate(String fieldName)
    {
       return ((LocalDate) values.get(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendDetails
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getBackendDetails()
+   {
+      return backendDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendDetails
+    **
+    *******************************************************************************/
+   public void setBackendDetails(Map<String, Serializable> backendDetails)
+   {
+      this.backendDetails = backendDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Add one backendDetail to this record
+    **
+    *******************************************************************************/
+   public void addBackendDetail(String key, Serializable value)
+   {
+      this.backendDetails.put(key, value);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluently Add one backendDetail to this record
+    **
+    *******************************************************************************/
+   public QRecord withBackendDetail(String key, Serializable value)
+   {
+      addBackendDetail(key, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get one backendDetail from this record
+    **
+    *******************************************************************************/
+   public Serializable getBackendDetail(String key)
+   {
+      return this.backendDetails.get(key);
+   }
+
+
+   /*******************************************************************************
+    ** Get one backendDetail from this record as a String
+    **
+    *******************************************************************************/
+   public String getBackendDetailString(String key)
+   {
+      return (String) this.backendDetails.get(key);
    }
 
 }

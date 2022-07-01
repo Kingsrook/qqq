@@ -38,9 +38,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData
  *******************************************************************************/
 public class RunFunctionRequest extends AbstractQRequest
 {
-   private ProcessState processState;
-   private String processName;
-   private String functionName;
+   private ProcessState     processState;
+   private String           processName;
+   private String           functionName;
    private QProcessCallback callback;
 
 
@@ -74,6 +74,16 @@ public class RunFunctionRequest extends AbstractQRequest
    public void seedFromProcessState(ProcessState processState)
    {
       this.processState = processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void seedFromRunProcessRequest(RunProcessRequest runProcessRequest)
+   {
+      this.processState = runProcessRequest.getProcessState();
    }
 
 

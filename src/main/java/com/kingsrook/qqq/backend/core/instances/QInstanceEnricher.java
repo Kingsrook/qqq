@@ -23,15 +23,18 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.util.Locale;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
  ** As part of helping a QInstance be created and/or validated, apply some default
- ** transfomations to it, such as populating missing labels based on names.
+ ** transformations to it, such as populating missing labels based on names.
  **
  *******************************************************************************/
 public class QInstanceEnricher
@@ -41,10 +44,30 @@ public class QInstanceEnricher
     *******************************************************************************/
    public void enrich(QInstance qInstance)
    {
-      if (qInstance.getTables() != null)
+      if(qInstance.getTables() != null)
       {
          qInstance.getTables().values().forEach(this::enrich);
       }
+
+      if(qInstance.getProcesses() != null)
+      {
+         qInstance.getProcesses().values().forEach(this::enrich);
+      }
+
+      if(qInstance.getBackends() != null)
+      {
+         qInstance.getBackends().values().forEach(this::enrich);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QBackendMetaData qBackendMetaData)
+   {
+      qBackendMetaData.enrich();
    }
 
 
@@ -59,10 +82,44 @@ public class QInstanceEnricher
          table.setLabel(nameToLabel(table.getName()));
       }
 
-      if (table.getFields() != null)
+      if(table.getFields() != null)
       {
          table.getFields().values().forEach(this::enrich);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QProcessMetaData process)
+   {
+      if(!StringUtils.hasContent(process.getLabel()))
+      {
+         process.setLabel(nameToLabel(process.getName()));
+      }
+
+      if(process.getFunctionList() != null)
+      {
+         process.getFunctionList().forEach(this::enrich);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QFunctionMetaData function)
+   {
+      if(!StringUtils.hasContent(function.getLabel()))
+      {
+         function.setLabel(nameToLabel(function.getName()));
+      }
+
+      function.getInputFields().forEach(this::enrich);
+      function.getOutputFields().forEach(this::enrich);
    }
 
 

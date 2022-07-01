@@ -27,6 +27,8 @@ import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -35,6 +37,8 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
  *******************************************************************************/
 public abstract class AbstractQRequest
 {
+   private static final Logger LOG = LogManager.getLogger(AbstractQRequest.class);
+
    protected QInstance instance;
    protected QSession session;
 
@@ -68,7 +72,7 @@ public abstract class AbstractQRequest
          }
          catch(QInstanceValidationException e)
          {
-            System.err.println(e.getMessage());
+            LOG.warn(e);
             throw (new IllegalArgumentException("QInstance failed validation" + e.getMessage()));
          }
       }

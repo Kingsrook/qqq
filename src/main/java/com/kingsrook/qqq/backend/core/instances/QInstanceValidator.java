@@ -67,7 +67,6 @@ public class QInstanceValidator
       }
       catch(Exception e)
       {
-         e.printStackTrace();
          throw (new QInstanceValidationException("Error enriching qInstance prior to validation.", e));
       }
 
@@ -134,7 +133,6 @@ public class QInstanceValidator
       }
       catch(Exception e)
       {
-         e.printStackTrace();
          throw (new QInstanceValidationException("Error performing qInstance validation.", e));
       }
 

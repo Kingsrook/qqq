@@ -43,6 +43,20 @@ public class RunFunctionResult extends AbstractQResult
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "RunFunctionResult{error='" + error
+         + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
+         + ",values=" + (processState == null ? null : processState.getValues())
+         + "}";
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public RunFunctionResult()
    {
       this.processState = new ProcessState();

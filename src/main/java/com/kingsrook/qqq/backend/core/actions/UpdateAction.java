@@ -43,7 +43,7 @@ public class UpdateAction
       ActionHelper.validateSession(updateRequest);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQModule(updateRequest.getBackend());
+      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(updateRequest.getBackend());
       // todo pre-customization - just get to modify the request?
       UpdateResult updateResult = qModule.getUpdateInterface().execute(updateRequest);
       // todo post-customization - can do whatever w/ the result if you want

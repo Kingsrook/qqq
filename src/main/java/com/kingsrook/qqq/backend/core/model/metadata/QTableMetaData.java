@@ -22,21 +22,48 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 /*******************************************************************************
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData
+public class QTableMetaData implements Serializable
 {
    private String name;
    private String label;
+
+   // TODO:  resolve confusion over:
+   //    Is this name of what backend the table is stored in (yes)
+   //    Or the "name" of the table WITHIN the backend (no)
+   //       although that's how "backendName" is used in QFieldMetaData.
+   //    Idea:
+   //       rename "backendName" here to "backend"
+   //       add "nameInBackend" (or similar) for the table name in the backend
+   //       OR - add a whole "backendDetails" object, with different details per backend-type
    private String backendName;
    private String primaryKeyField;
+
    private Map<String, QFieldMetaData> fields;
+
+   private QTableBackendDetails backendDetails;
+
+   private Map<String, QCodeReference> customizers;
+
+
+
+   /*******************************************************************************
+    ** Default constructor.
+    *******************************************************************************/
+   public QTableMetaData()
+   {
+   }
 
 
 
@@ -222,12 +249,33 @@ public class QTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
+   public QTableMetaData withFields(List<QFieldMetaData> fields)
+   {
+      this.fields = new LinkedHashMap<>();
+      for(QFieldMetaData field : fields)
+      {
+         this.addField(field);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void addField(QFieldMetaData field)
    {
       if(this.fields == null)
       {
          this.fields = new LinkedHashMap<>();
       }
+
+      if(this.fields.containsKey(field.getName()))
+      {
+         throw (new IllegalArgumentException("Attempt to add a second field with name [" + field.getName() + "] to table [" + name + "]."));
+      }
+
       this.fields.put(field.getName(), field);
    }
 
@@ -243,6 +291,108 @@ public class QTableMetaData
          this.fields = new LinkedHashMap<>();
       }
       this.fields.put(field.getName(), field);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendDetails
+    **
+    *******************************************************************************/
+   public QTableBackendDetails getBackendDetails()
+   {
+      return backendDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendDetails
+    **
+    *******************************************************************************/
+   public void setBackendDetails(QTableBackendDetails backendDetails)
+   {
+      this.backendDetails = backendDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for backendDetails
+    **
+    *******************************************************************************/
+   public QTableMetaData withBackendDetails(QTableBackendDetails backendDetails)
+   {
+      this.backendDetails = backendDetails;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Optional<QCodeReference> getCustomizer(String customizerName)
+   {
+      if(customizers == null)
+      {
+         return (Optional.empty());
+      }
+
+      QCodeReference function = customizers.get(customizerName);
+      if(function == null)
+      {
+         throw (new IllegalArgumentException("Customizer  [" + customizerName + "] was not found in table [" + name + "]."));
+      }
+
+      return (Optional.of(function));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Map<String, QCodeReference> getCustomizers()
+   {
+      return customizers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customizers
+    **
+    *******************************************************************************/
+   public void setCustomizers(Map<String, QCodeReference> customizers)
+   {
+      this.customizers = customizers;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizer(String role, QCodeReference customizer)
+   {
+      if(this.customizers == null)
+      {
+         this.customizers = new HashMap<>();
+      }
+      // todo - check for dupes?
+      this.customizers.put(role, customizer);
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizers(Map<String, QCodeReference> customizers)
+   {
+      this.customizers = customizers;
       return (this);
    }
 

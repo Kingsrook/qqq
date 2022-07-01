@@ -19,32 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.etl;
+package com.kingsrook.qqq.backend.core.instances;
 
 
-import com.kingsrook.qqq.backend.core.model.etl.QDataSource;
-import com.kingsrook.qqq.backend.core.model.etl.QFileSystemDataSource;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
-import org.junit.jupiter.api.Test;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 
 /*******************************************************************************
- **
+ ** Class-level annotation to declare what fields should run through the variable
+ ** interpreter - e.g., to be replaced with env-var values at run-time.
  *******************************************************************************/
-class RunETLTest
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface InterpretableFields
 {
-   //TODO disucss with DK
-   //   @Test
-   //   public void testRun() throws Exception
-   //   {
-   //      RunETL runETL = new RunETL();
-   //
-   //      QDataSource dataSource = new QFileSystemDataSource()
-   //         .withPath("/tmp/etl-source")
-   //         .withGlob("*.csv");
-   //
-   //      QInstance qInstance = TestUtils.defineInstance();
-   //      runETL.run(qInstance, TestUtils.getMockSession(), dataSource, qInstance.getTable("person"));
-   //   }
+   /*******************************************************************************
+    ** list of field names in the class that are interpretable.
+    *******************************************************************************/
+   String[] fieldNames() default {};
 }

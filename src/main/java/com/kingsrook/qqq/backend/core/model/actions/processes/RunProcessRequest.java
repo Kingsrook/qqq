@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
@@ -40,9 +39,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 public class RunProcessRequest extends AbstractQRequest
 {
    private String processName;
-   private List<QRecord> records;
-   private Map<String, Serializable> values;
    private QProcessCallback callback;
+   private ProcessState processState;
 
 
 
@@ -51,6 +49,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public RunProcessRequest()
    {
+      processState = new ProcessState();
    }
 
 
@@ -61,6 +60,7 @@ public class RunProcessRequest extends AbstractQRequest
    public RunProcessRequest(QInstance instance)
    {
       super(instance);
+      processState = new ProcessState();
    }
 
 
@@ -115,7 +115,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public List<QRecord> getRecords()
    {
-      return records;
+      return processState.getRecords();
    }
 
 
@@ -126,7 +126,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public void setRecords(List<QRecord> records)
    {
-      this.records = records;
+      this.processState.setRecords(records);
    }
 
 
@@ -137,7 +137,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public RunProcessRequest withRecords(List<QRecord> records)
    {
-      this.records = records;
+      setRecords(records);
       return (this);
    }
 
@@ -149,7 +149,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public Map<String, Serializable> getValues()
    {
-      return values;
+      return this.processState.getValues();
    }
 
 
@@ -160,7 +160,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public void setValues(Map<String, Serializable> values)
    {
-      this.values = values;
+      this.processState.setValues(values);
    }
 
 
@@ -171,7 +171,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public RunProcessRequest withValues(Map<String, Serializable> values)
    {
-      this.values = values;
+      this.processState.setValues(values);
       return (this);
    }
 
@@ -183,11 +183,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public RunProcessRequest addValue(String fieldName, Serializable value)
    {
-      if(this.values == null)
-      {
-         this.values = new HashMap<>();
-      }
-      this.values.put(fieldName, value);
+      this.processState.getValues().put(fieldName, value);
       return (this);
    }
 
@@ -233,11 +229,7 @@ public class RunProcessRequest extends AbstractQRequest
     *******************************************************************************/
    public Serializable getValue(String fieldName)
    {
-      if(values == null)
-      {
-         return (null);
-      }
-      return (values.get(fieldName));
+      return (this.processState.getValues().get(fieldName));
    }
 
 
@@ -260,6 +252,17 @@ public class RunProcessRequest extends AbstractQRequest
    public Integer getValueInteger(String fieldName)
    {
       return ((Integer) getValue(fieldName));
+   }
+
+
+   /*******************************************************************************
+    ** Accessor for processState - protected, because we generally want to access
+    ** its members through wrapper methods, we think
+    **
+    *******************************************************************************/
+   protected ProcessState getProcessState()
+   {
+      return processState;
    }
 
 }

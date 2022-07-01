@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import java.util.List;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
@@ -31,8 +32,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
-import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
 import com.kingsrook.qqq.backend.core.state.UUIDStateKey;
 
 
@@ -50,9 +51,6 @@ public class RunProcessAction
    {
       ActionHelper.validateSession(runProcessRequest);
 
-      ///////////////////////////////////////////////////////
-      // todo - shouldn't meta-data validation catch this? //
-      ///////////////////////////////////////////////////////
       QProcessMetaData process = runProcessRequest.getInstance().getProcess(runProcessRequest.getProcessName());
       if(process == null)
       {
@@ -61,7 +59,7 @@ public class RunProcessAction
 
       RunProcessResult runProcessResult = new RunProcessResult();
 
-      UUIDStateKey stateKey = new UUIDStateKey();
+      UUIDStateKey      stateKey           = new UUIDStateKey();
       RunFunctionResult lastFunctionResult = null;
 
       // todo - custom routing?
@@ -70,8 +68,18 @@ public class RunProcessAction
       {
          RunFunctionRequest runFunctionRequest = new RunFunctionRequest(runProcessRequest.getInstance());
 
-         if(lastFunctionResult != null)
+         if(lastFunctionResult == null)
          {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            // for the first request, load state from the run process request to prime the run function request. //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            primeFunction(runProcessRequest, runFunctionRequest);
+         }
+         else
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // for functions after the first one, load from state management to prime the request //
+            ////////////////////////////////////////////////////////////////////////////////////////
             loadState(stateKey, runFunctionRequest);
          }
 
@@ -106,8 +114,10 @@ public class RunProcessAction
    private StateProviderInterface getStateProvider()
    {
       // TODO - read this from somewhere in meta data eh?
-      // return InMemoryStateProvider.getInstance();
-      return TempFileStateProvider.getInstance();
+      return InMemoryStateProvider.getInstance();
+
+      // TODO - by using JSON serialization internally, this makes stupidly large payloads and crashes things.
+      // return TempFileStateProvider.getInstance();
    }
 
 
@@ -124,13 +134,25 @@ public class RunProcessAction
 
 
    /*******************************************************************************
+    ** Copy data (the state) down from the run-process request, down into the run-
+    ** function request.
+    *******************************************************************************/
+   private void primeFunction(RunProcessRequest runProcessRequest, RunFunctionRequest runFunctionRequest)
+   {
+      runFunctionRequest.seedFromRunProcessRequest(runProcessRequest);
+   }
+
+
+
+   /*******************************************************************************
     ** Load the process state into a function request from the state provider
     **
     *******************************************************************************/
-   private void loadState(UUIDStateKey stateKey, RunFunctionRequest runFunctionRequest)
+   private void loadState(UUIDStateKey stateKey, RunFunctionRequest runFunctionRequest) throws QException
    {
-      ProcessState processState = getStateProvider().get(ProcessState.class, stateKey);
-      runFunctionRequest.seedFromProcessState(processState);
+      Optional<ProcessState> processState = getStateProvider().get(ProcessState.class, stateKey);
+      runFunctionRequest.seedFromProcessState(processState
+         .orElseThrow(() -> new QException("Could not find process state in state provider.")));
    }
 
 }
