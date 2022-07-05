@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
@@ -114,8 +113,8 @@ class SampleMetaDataProviderTest
       QueryResult queryResult = new QueryAction().execute(queryRequest);
 
       request.setRecords(queryResult.getRecords());
-      request.addValue(MockBackendStep.FIELD_GREETING_PREFIX, "Hello");
-      request.addValue(MockBackendStep.FIELD_GREETING_SUFFIX, "there");
+      request.addValue("greetingPrefix", "Hello");
+      request.addValue("greetingSuffix", "there");
 
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);

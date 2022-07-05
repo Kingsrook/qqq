@@ -24,7 +24,7 @@ package com.kingsrook.sampleapp;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
@@ -34,8 +34,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
@@ -195,10 +195,10 @@ public class SampleMetaDataProvider
          .withName(PROCESS_NAME_GREET)
          .withLabel("Greet People")
          .withTableName("person")
-         .addStep(new QBackendStepMetaData()
+         .addFunction(new QFunctionMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName(MockBackendStep.class.getName())
+               .withName(MockFunctionBody.class.getName())
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
