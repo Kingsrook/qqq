@@ -19,45 +19,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.sampleapp;
+package com.kingsrook.sampleapp.customizers;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import java.util.function.Function;
 
 
 /*******************************************************************************
+ ** The fedex invoice files - they're CSV, but they have a handful of values
+ ** that we can't read, because they have an extra quote (") character within
+ ** a field.
  **
+ ** It always looks like:  {"u
+ ** This function fixes it by stripping the " out of the middle, to just be: {u
  *******************************************************************************/
-public class SampleCli
+public class FedExInvoiceCSVSyntaxFixer implements Function<String, String>
 {
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void main(String[] args)
+   @Override
+   public String apply(String s)
    {
-      new SampleCli().run(args);
+      return (s.replaceAll("\\{\"u", "{u"));
    }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void run(String[] args)
-   {
-      try
-      {
-         QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
-         QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-         int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-         System.exit(exitCode);
-      }
-      catch(Exception e)
-      {
-         e.printStackTrace();
-         System.exit(-1);
-      }
-   }
-
 }

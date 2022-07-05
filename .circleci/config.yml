@@ -1,3 +1,5 @@
+## Deviations from qqq-java library standard circleci config:
+## - In this project, we just always run a test, never a deploy (at this time).
 version: 2.1
 
 executors:
@@ -59,20 +61,4 @@ workflows:
     jobs:
       - mvn_test:
           context: [ qqq-maven-registry-credentials, kingsrook-slack ]
-## just doing mvn test for all branches in this repo at this time
-##         filters:
-##           branches:
-##             ignore: /dev/
-##           tags:
-##             ignore: /version-.*/
-##
-## deploy:
-##   jobs:
-##     - mvn_deploy:
-##         context: [ qqq-maven-registry-credentials, kingsrook-slack ]
-##         filters:
-##           branches:
-##             only: /dev/
-##           tags:
-##             only: /version-.*/
-##
+

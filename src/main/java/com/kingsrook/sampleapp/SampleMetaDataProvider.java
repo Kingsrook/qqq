@@ -22,12 +22,28 @@
 package com.kingsrook.sampleapp;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
+import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -35,20 +51,27 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   private static final String BACKEND_NAME = "default";
+   public static final String MYSQL_BACKEND_NAME      = "mysql";
+   public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
+   public static final String PROCESS_NAME_GREET      = "greet";
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QInstance defineInstance()
+   public static QInstance defineInstance() throws QException
    {
       QInstance qInstance = new QInstance();
+
       qInstance.setAuthentication(SampleMetaDataProvider.defineAuthentication());
-      qInstance.addBackend(SampleMetaDataProvider.defineBackend());
+      qInstance.addBackend(SampleMetaDataProvider.defineMysqlBackend());
+      qInstance.addBackend(SampleMetaDataProvider.defineFilesystemBackend());
       qInstance.addTable(SampleMetaDataProvider.defineTableCarrier());
       qInstance.addTable(SampleMetaDataProvider.defineTablePerson());
+      qInstance.addTable(SampleMetaDataProvider.defineTableCityFile());
+      qInstance.addProcess(SampleMetaDataProvider.defineProcessGreetPeople());
+
       return (qInstance);
    }
 
@@ -69,18 +92,28 @@ public class SampleMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QBackendMetaData defineBackend()
+   public static QBackendMetaData defineMysqlBackend()
    {
-      QBackendMetaData backend = new QBackendMetaData();
-      backend.setName(BACKEND_NAME);
-      backend.setType("rdbms");
-      backend.setValue("vendor", "mysql");
-      backend.setValue("hostName", "127.0.0.1");
-      backend.setValue("port", "3306");
-      backend.setValue("databaseName", "opspath");
-      backend.setValue("username", "root");
-      backend.setValue("password", "8BNWyoav8s79oi}Lqk"); // todo - load securely
-      return (backend);
+      return new RDBMSBackendMetaData()
+         .withVendor("mysql")
+         .withHostName("127.0.0.1")
+         .withPort(3306)
+         .withDatabaseName("sample_project")
+         .withUsername("root")
+         .withPassword("8BNWyoav8s79oi}Lqk") // todo - load securely
+         .withName(MYSQL_BACKEND_NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static FilesystemBackendMetaData defineFilesystemBackend()
+   {
+      return new FilesystemBackendMetaData()
+         .withBasePath("/tmp/sample-filesystem")
+         .withName(FILESYSTEM_BACKEND_NAME);
    }
 
 
@@ -92,7 +125,7 @@ public class SampleMetaDataProvider
    {
       QTableMetaData table = new QTableMetaData();
       table.setName("carrier");
-      table.setBackendName(BACKEND_NAME);
+      table.setBackendName(MYSQL_BACKEND_NAME);
       table.setPrimaryKeyField("id");
 
       table.addField(new QFieldMetaData("id", QFieldType.INTEGER));
@@ -118,7 +151,7 @@ public class SampleMetaDataProvider
       return new QTableMetaData()
          .withName("person")
          .withLabel("Person")
-         .withBackendName(BACKEND_NAME)
+         .withBackendName(MYSQL_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
@@ -128,4 +161,59 @@ public class SampleMetaDataProvider
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineTableCityFile()
+   {
+      return new QTableMetaData()
+         .withName("city")
+         .withLabel("Cities")
+         .withBackendName(FILESYSTEM_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withField(new QFieldMetaData("state", QFieldType.STRING)) // todo - state PVS.
+         .withBackendDetails(new FilesystemTableBackendDetails()
+            .withBasePath("cities")
+            .withCardinality(Cardinality.MANY)
+            .withRecordFormat(RecordFormat.CSV)
+         );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the 'greet people' process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGreetPeople()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_GREET)
+         .withLabel("Greet People")
+         .withTableName("person")
+         .addStep(new QBackendStepMetaData()
+            .withName("prepare")
+            .withCode(new QCodeReference()
+               .withName(MockBackendStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withFieldList(List.of(
+                  new QFieldMetaData("greetingPrefix", QFieldType.STRING),
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+               )))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+               )
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
+         );
+   }
+
 }

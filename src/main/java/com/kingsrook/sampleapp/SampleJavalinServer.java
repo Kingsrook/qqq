@@ -57,17 +57,24 @@ public class SampleJavalinServer
     *******************************************************************************/
    public void startJavalinServer()
    {
-      qInstance = SampleMetaDataProvider.defineInstance();
-
-      QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
-      Javalin service = Javalin.create(config ->
+      try
       {
-         // todo - not all!!
-         config.enableCorsForAllOrigins();
-      }).start(PORT);
-      service.routes(qJavalinImplementation.getRoutes());
-      service.after(ctx ->
-         ctx.res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
+         qInstance = SampleMetaDataProvider.defineInstance();
+
+         QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
+         Javalin service = Javalin.create(config ->
+         {
+            // todo - not all!!
+            config.enableCorsForAllOrigins();
+         }).start(PORT);
+         service.routes(qJavalinImplementation.getRoutes());
+         service.after(ctx ->
+            ctx.res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
+      }
+      catch(Exception e)
+      {
+         LOG.error("Failed to start javalin server.  See stack trace for details.", e);
+      }
    }
 
 }
