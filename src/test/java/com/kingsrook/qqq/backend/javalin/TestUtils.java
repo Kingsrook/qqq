@@ -25,7 +25,7 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
@@ -34,16 +34,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QOutputView;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListView;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import org.apache.commons.io.IOUtils;
 import static junit.framework.Assert.assertNotNull;
 
@@ -54,6 +53,9 @@ import static junit.framework.Assert.assertNotNull;
  *******************************************************************************/
 public class TestUtils
 {
+   public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
+
+
 
    /*******************************************************************************
     ** Prime a test database (e.g., h2, in-memory)
@@ -101,6 +103,7 @@ public class TestUtils
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
       qInstance.addProcess(defineProcessGreetPeople());
+      qInstance.addProcess(defineProcessGreetPeopleInteractive());
       return (qInstance);
    }
 
@@ -167,10 +170,10 @@ public class TestUtils
       return new QProcessMetaData()
          .withName("greet")
          .withTableName("person")
-         .addFunction(new QFunctionMetaData()
+         .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName(MockFunctionBody.class.getName())
+               .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
@@ -185,9 +188,49 @@ public class TestUtils
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
-            .withOutputView(new QOutputView()
-               .withMessageField("outputMessage")
-               .withRecordListView(new QRecordListView().withFieldNames(List.of("id", "firstName", "lastName", "fullGreeting"))))
+         );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define an interactive version of the 'greet people' process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGreetPeopleInteractive()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
+         .withTableName("person")
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("setup")
+            .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
+            .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
+         )
+
+         .addStep(new QBackendStepMetaData()
+            .withName("doWork")
+            .withCode(new QCodeReference()
+               .withName(MockBackendStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withFieldList(List.of(
+                  new QFieldMetaData("greetingPrefix", QFieldType.STRING),
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+               )))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+               )
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
+         )
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("results")
+            .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
    }
 

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
@@ -43,6 +44,7 @@ import com.kingsrook.qqq.backend.core.actions.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
@@ -51,10 +53,14 @@ import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
@@ -162,10 +168,13 @@ public class QJavalinImplementation
          path("/metaData", () ->
          {
             get("/", QJavalinImplementation::metaData);
-            path("/:table", () ->
+            path("/table/:table", () ->
             {
                get("", QJavalinImplementation::tableMetaData);
-               // todo - process meta data - just under tables?  or top-level too?  maybe move tables to be under /tables/?
+            });
+            path("/process/:process", () ->
+            {
+               get("", QJavalinImplementation::processMetaData);
             });
          });
          path("/data", () ->
@@ -334,7 +343,43 @@ public class QJavalinImplementation
     ********************************************************************************/
    private static void dataGet(Context context)
    {
-      context.result("{\"todo\":\"not-done\",\"getResult\":{}}");
+      try
+      {
+         String         tableName    = context.pathParam("table");
+         QTableMetaData table        = qInstance.getTable(tableName);
+         String         primaryKey   = context.pathParam("primaryKey");
+         QueryRequest   queryRequest = new QueryRequest(qInstance);
+
+         setupSession(context, queryRequest);
+         queryRequest.setTableName(tableName);
+
+         ///////////////////////////////////////////////////////
+         // setup a filter for the primaryKey = the path-pram //
+         ///////////////////////////////////////////////////////
+         queryRequest.setFilter(new QQueryFilter()
+            .withCriteria(new QFilterCriteria()
+               .withFieldName(table.getPrimaryKeyField())
+               .withOperator(QCriteriaOperator.EQUALS)
+               .withValues(List.of(primaryKey))));
+
+         QueryAction queryAction = new QueryAction();
+         QueryResult queryResult = queryAction.execute(queryRequest);
+
+         ///////////////////////////////////////////////////////
+         // throw a not found error if the record isn't found //
+         ///////////////////////////////////////////////////////
+         if(queryResult.getRecords().isEmpty())
+         {
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
+               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+         }
+
+         context.result(JsonUtils.toJson(queryResult.getRecords().get(0)));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
    }
 
 
@@ -430,14 +475,45 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void processMetaData(Context context)
+   {
+      try
+      {
+         ProcessMetaDataRequest processMetaDataRequest = new ProcessMetaDataRequest(qInstance);
+         setupSession(context, processMetaDataRequest);
+         processMetaDataRequest.setProcessName(context.pathParam("process"));
+         ProcessMetaDataAction processMetaDataAction = new ProcessMetaDataAction();
+         ProcessMetaDataResult processMetaDataResult = processMetaDataAction.execute(processMetaDataRequest);
+
+         context.result(JsonUtils.toJson(processMetaDataResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void handleException(Context context, Exception e)
    {
       QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
       if(userFacingException != null)
       {
-         LOG.info("User-facing exception", e);
-         context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-            .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+         if(userFacingException instanceof QNotFoundException)
+         {
+            context.status(HttpStatus.NOT_FOUND_404)
+               .result("{\"error\":\"" + e.getMessage() + "\"}");
+         }
+         else
+         {
+            LOG.info("User-facing exception", e);
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
+               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+         }
       }
       else
       {
