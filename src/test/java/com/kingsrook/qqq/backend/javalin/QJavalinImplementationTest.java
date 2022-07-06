@@ -37,7 +37,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -117,23 +116,15 @@ class QJavalinImplementationTest
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals(1, jsonObject.keySet().size(), "Number of top-level keys");
-
       JSONObject table = jsonObject.getJSONObject("table");
       assertEquals(4, table.keySet().size(), "Number of mid-level keys");
       assertEquals("person", table.getString("name"));
       assertEquals("Person", table.getString("label"));
       assertEquals("id", table.getString("primaryKeyField"));
-
       JSONObject fields = table.getJSONObject("fields");
-      JSONObject idField = fields.getJSONObject("id");
-      assertEquals("id", idField.getString("name"));
-      assertEquals("INTEGER", idField.getString("type"));
-
-      JSONObject firstNameField = fields.getJSONObject("firstName");
-      assertTrue(firstNameField.getBoolean("isRequired"), "First name is required");
-
-      JSONObject birthDateField = fields.getJSONObject("birthDate");
-      assertFalse(birthDateField.getBoolean("isRequired"), "Birth date is not required");
+      JSONObject field0 = fields.getJSONObject("id");
+      assertEquals("id", field0.getString("name"));
+      assertEquals("INTEGER", field0.getString("type"));
    }
 
 
