@@ -24,7 +24,7 @@ package com.kingsrook.sampleapp;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
@@ -34,8 +34,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
@@ -51,9 +52,10 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaDat
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static final String MYSQL_BACKEND_NAME      = "mysql";
-   public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
-   public static final String PROCESS_NAME_GREET      = "greet";
+   public static final String MYSQL_BACKEND_NAME             = "mysql";
+   public static final String FILESYSTEM_BACKEND_NAME        = "filesystem";
+   public static final String PROCESS_NAME_GREET             = "greet";
+   public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
 
 
 
@@ -64,13 +66,14 @@ public class SampleMetaDataProvider
    {
       QInstance qInstance = new QInstance();
 
-      qInstance.setAuthentication(SampleMetaDataProvider.defineAuthentication());
-      qInstance.addBackend(SampleMetaDataProvider.defineMysqlBackend());
-      qInstance.addBackend(SampleMetaDataProvider.defineFilesystemBackend());
-      qInstance.addTable(SampleMetaDataProvider.defineTableCarrier());
-      qInstance.addTable(SampleMetaDataProvider.defineTablePerson());
-      qInstance.addTable(SampleMetaDataProvider.defineTableCityFile());
-      qInstance.addProcess(SampleMetaDataProvider.defineProcessGreetPeople());
+      qInstance.setAuthentication(defineAuthentication());
+      qInstance.addBackend(defineMysqlBackend());
+      qInstance.addBackend(defineFilesystemBackend());
+      qInstance.addTable(defineTableCarrier());
+      qInstance.addTable(defineTablePerson());
+      qInstance.addTable(defineTableCityFile());
+      qInstance.addProcess(defineProcessGreetPeople());
+      qInstance.addProcess(defineProcessGreetPeopleInteractive());
 
       return (qInstance);
    }
@@ -195,10 +198,10 @@ public class SampleMetaDataProvider
          .withName(PROCESS_NAME_GREET)
          .withLabel("Greet People")
          .withTableName("person")
-         .addFunction(new QFunctionMetaData()
+         .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName(MockFunctionBody.class.getName())
+               .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
@@ -216,4 +219,46 @@ public class SampleMetaDataProvider
          );
    }
 
+
+
+   /*******************************************************************************
+    ** Define an interactive version of the 'greet people' process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGreetPeopleInteractive()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_GREET_INTERACTIVE)
+         .withTableName("person")
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("setup")
+            .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
+            .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
+         )
+
+         .addStep(new QBackendStepMetaData()
+            .withName("doWork")
+            .withCode(new QCodeReference()
+               .withName(MockBackendStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withFieldList(List.of(
+                  new QFieldMetaData("greetingPrefix", QFieldType.STRING),
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+               )))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+               )
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
+         )
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("results")
+            .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
+         );
+   }
 }
