@@ -34,8 +34,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResu
  *******************************************************************************/
 public class MockBackendStep implements BackendStep
 {
-   public final static String FIELD_GREETING_PREFIX = "greetingPrefix";
-   public final static String FIELD_GREETING_SUFFIX = "greetingSuffix";
+   public static final String FIELD_GREETING_PREFIX = "greetingPrefix";
+   public static final String FIELD_GREETING_SUFFIX = "greetingSuffix";
 
    @Override
    public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult)
