@@ -27,11 +27,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.actions.RunBackendStepAction;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -136,13 +136,13 @@ public class BasicETLCleanupSourceFilesFunctionTest
     *******************************************************************************/
    private void testDelete(QInstance qInstance, List<String> filePaths) throws Exception
    {
-      RunFunctionResult runFunctionResult = runFunction(qInstance, filePaths, Map.of(
+      RunBackendStepResult runBackendStepResult = runFunction(qInstance, filePaths, Map.of(
          BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesFunction.VALUE_DELETE,
          // todo - even though this field isn't needed, since we gave a value of "delete"
          //  the RunFunctionAction considers any missing input to be an error...
          BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, ""));
 
-      assertNull(runFunctionResult.getError());
+      assertNull(runBackendStepResult.getError());
       for(String filePath : filePaths)
       {
          assertFalse(new File(filePath).exists(), "File should have been deleted.");
@@ -157,11 +157,11 @@ public class BasicETLCleanupSourceFilesFunctionTest
    private void testMove(QInstance qInstance, List<String> filePaths) throws Exception
    {
       String trashDir = File.separator + "tmp" + File.separator + "trash";
-      RunFunctionResult runFunctionResult = runFunction(qInstance, filePaths, Map.of(
+      RunBackendStepResult runBackendStepResult = runFunction(qInstance, filePaths, Map.of(
          BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesFunction.VALUE_MOVE,
          BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, trashDir));
 
-      assertNull(runFunctionResult.getError());
+      assertNull(runBackendStepResult.getError());
 
       for(String filePath : filePaths)
       {
@@ -177,10 +177,10 @@ public class BasicETLCleanupSourceFilesFunctionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private RunFunctionResult runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
+   private RunBackendStepResult runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
    {
-      QFunctionMetaData qFunctionMetaData = new BasicETLCleanupSourceFilesFunction().defineFunctionMetaData();
-      QProcessMetaData  qProcessMetaData  = new QProcessMetaData().withName("testScaffold").addFunction(qFunctionMetaData);
+      QBackendStepMetaData backendStepMetaData = new BasicETLCleanupSourceFilesFunction().defineStepMetaData();
+      QProcessMetaData     qProcessMetaData  = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
 
       HashSet<String> filePathsSet = new HashSet<>(filePaths);
@@ -193,22 +193,22 @@ public class BasicETLCleanupSourceFilesFunctionTest
       // List<QRecord> records = filePaths.stream()
       //    .map(filePath -> new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, filePath)).toList();
 
-      RunFunctionRequest runFunctionRequest = new RunFunctionRequest(qInstance);
-      runFunctionRequest.setFunctionName(qFunctionMetaData.getName());
-      runFunctionRequest.setProcessName(qProcessMetaData.getName());
+      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
+      runBackendStepRequest.setStepName(backendStepMetaData.getName());
+      runBackendStepRequest.setProcessName(qProcessMetaData.getName());
       // runFunctionRequest.setRecords(records);
-      runFunctionRequest.setSession(TestUtils.getMockSession());
-      runFunctionRequest.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
-      runFunctionRequest.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
-      runFunctionRequest.addValue(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
+      runBackendStepRequest.setSession(TestUtils.getMockSession());
+      runBackendStepRequest.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      runBackendStepRequest.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
+      runBackendStepRequest.addValue(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
 
       for(Map.Entry<String, String> entry : values.entrySet())
       {
-         runFunctionRequest.addValue(entry.getKey(), entry.getValue());
+         runBackendStepRequest.addValue(entry.getKey(), entry.getValue());
       }
 
-      RunFunctionAction runFunctionAction = new RunFunctionAction();
-      return (runFunctionAction.execute(runFunctionRequest));
+      RunBackendStepAction runFunctionAction = new RunBackendStepAction();
+      return (runFunctionAction.execute(runBackendStepRequest));
    }
 
 

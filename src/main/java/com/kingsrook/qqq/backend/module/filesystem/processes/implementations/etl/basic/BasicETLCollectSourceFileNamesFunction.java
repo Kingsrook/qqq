@@ -25,15 +25,15 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
@@ -46,7 +46,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendD
  **
  ** TODO - need unit test!!
  *******************************************************************************/
-public class BasicETLCollectSourceFileNamesFunction implements FunctionBody
+public class BasicETLCollectSourceFileNamesFunction implements BackendStep
 {
    public static final String FUNCTION_NAME           = "collectSourceFileNames";
    public static final String FIELD_SOURCE_FILE_PATHS = "sourceFilePaths";
@@ -57,12 +57,12 @@ public class BasicETLCollectSourceFileNamesFunction implements FunctionBody
     ** Execute the function - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
-      Set<String> sourceFiles = runFunctionRequest.getRecords().stream()
+      Set<String> sourceFiles = runBackendStepRequest.getRecords().stream()
          .map(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH))
          .collect(Collectors.toSet());
-      runFunctionResult.addValue(FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", sourceFiles));
+      runBackendStepResult.addValue(FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", sourceFiles));
    }
 
 
@@ -70,9 +70,9 @@ public class BasicETLCollectSourceFileNamesFunction implements FunctionBody
    /*******************************************************************************
     ** define the metaData that describes this function
     *******************************************************************************/
-   public QFunctionMetaData defineFunctionMetaData()
+   public QBackendStepMetaData defineStepMetaData()
    {
-      return (new QFunctionMetaData()
+      return (new QBackendStepMetaData()
          .withName(FUNCTION_NAME)
          .withCode(new QCodeReference()
             .withName(this.getClass().getName())

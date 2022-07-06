@@ -51,7 +51,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.0.0</version>
+         <version>0.1.0-20220706.184937-2</version>
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->

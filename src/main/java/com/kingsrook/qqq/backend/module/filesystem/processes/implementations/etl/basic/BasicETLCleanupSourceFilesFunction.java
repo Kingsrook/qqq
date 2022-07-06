@@ -24,9 +24,9 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 import java.io.File;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
@@ -34,8 +34,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  ** Function body for performing the Cleanup step of a basic ETL process - e.g.,
  ** after the loading, delete or move the processed file(s).
  *******************************************************************************/
-public class BasicETLCleanupSourceFilesFunction implements FunctionBody
+public class BasicETLCleanupSourceFilesFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLCleanupSourceFilesFunction.class);
 
@@ -67,11 +67,11 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
     ** Execute the function - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
-      String                  sourceTableName = runFunctionRequest.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
-      QTableMetaData          table           = runFunctionRequest.getInstance().getTable(sourceTableName);
-      QBackendMetaData        backend         = runFunctionRequest.getInstance().getBackendForTable(sourceTableName);
+      String                  sourceTableName = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
+      QTableMetaData          table           = runBackendStepRequest.getInstance().getTable(sourceTableName);
+      QBackendMetaData        backend         = runBackendStepRequest.getInstance().getBackendForTable(sourceTableName);
       QBackendModuleInterface module          = new QBackendModuleDispatcher().getQBackendModule(backend);
 
       if(!(module instanceof FilesystemBackendModuleInterface filesystemModule))
@@ -81,7 +81,7 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
       AbstractBaseFilesystemAction actionBase = filesystemModule.getActionBase();
       actionBase.preAction(backend);
 
-      String sourceFilePaths = runFunctionRequest.getValueString(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS);
+      String sourceFilePaths = runBackendStepRequest.getValueString(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS);
       if(!StringUtils.hasContent(sourceFilePaths))
       {
          LOG.info("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS + "]");
@@ -91,21 +91,21 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
       String[] sourceFiles = sourceFilePaths.split(",");
       for(String sourceFile : sourceFiles)
       {
-         String moveOrDelete = runFunctionRequest.getValueString(FIELD_MOVE_OR_DELETE);
+         String moveOrDelete = runBackendStepRequest.getValueString(FIELD_MOVE_OR_DELETE);
          if(VALUE_DELETE.equals(moveOrDelete))
          {
-            actionBase.deleteFile(runFunctionRequest.getInstance(), table, sourceFile);
+            actionBase.deleteFile(runBackendStepRequest.getInstance(), table, sourceFile);
          }
          else if(VALUE_MOVE.equals(moveOrDelete))
          {
-            String destinationForMoves = runFunctionRequest.getValueString(FIELD_DESTINATION_FOR_MOVES);
+            String destinationForMoves = runBackendStepRequest.getValueString(FIELD_DESTINATION_FOR_MOVES);
             if(!StringUtils.hasContent(destinationForMoves))
             {
                throw (new QException("Field [" + FIELD_DESTINATION_FOR_MOVES + "] is missing a value."));
             }
             String filePathWithoutBase = actionBase.stripBackendAndTableBasePathsFromFileName(sourceFile, backend, table);
             String destinationPath     = destinationForMoves + File.separator + filePathWithoutBase;
-            actionBase.moveFile(runFunctionRequest.getInstance(), table, sourceFile, destinationPath);
+            actionBase.moveFile(runBackendStepRequest.getInstance(), table, sourceFile, destinationPath);
          }
          else
          {
@@ -120,9 +120,9 @@ public class BasicETLCleanupSourceFilesFunction implements FunctionBody
    /*******************************************************************************
     ** define the metaData that describes this function
     *******************************************************************************/
-   public QFunctionMetaData defineFunctionMetaData()
+   public QBackendStepMetaData defineStepMetaData()
    {
-      return (new QFunctionMetaData()
+      return (new QBackendStepMetaData()
          .withName(FUNCTION_NAME)
          .withCode(new QCodeReference()
             .withName(this.getClass().getName())

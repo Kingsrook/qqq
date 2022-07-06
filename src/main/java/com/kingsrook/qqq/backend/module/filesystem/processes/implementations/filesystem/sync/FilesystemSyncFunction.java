@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  ** so that our Clean function can move or delete them.
  **
  *******************************************************************************/
-public class FilesystemSyncFunction implements FunctionBody
+public class FilesystemSyncFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(FilesystemSyncFunction.class);
 
@@ -59,30 +59,30 @@ public class FilesystemSyncFunction implements FunctionBody
     ** Execute the function - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
-      QTableMetaData sourceTable     = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_SOURCE_TABLE));
-      QTableMetaData archiveTable    = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
-      QTableMetaData processingTable = runFunctionRequest.getInstance().getTable(runFunctionRequest.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
+      QTableMetaData sourceTable     = runBackendStepRequest.getInstance().getTable(runBackendStepRequest.getValueString(FilesystemSyncProcess.FIELD_SOURCE_TABLE));
+      QTableMetaData archiveTable    = runBackendStepRequest.getInstance().getTable(runBackendStepRequest.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
+      QTableMetaData processingTable = runBackendStepRequest.getInstance().getTable(runBackendStepRequest.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
 
-      QBackendMetaData                 sourceBackend    = runFunctionRequest.getInstance().getBackendForTable(sourceTable.getName());
+      QBackendMetaData                 sourceBackend    = runBackendStepRequest.getInstance().getBackendForTable(sourceTable.getName());
       FilesystemBackendModuleInterface sourceModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
       AbstractBaseFilesystemAction     sourceActionBase = sourceModule.getActionBase();
       sourceActionBase.preAction(sourceBackend);
       Map<String, Object> sourceFiles = getFileNames(sourceActionBase, sourceTable, sourceBackend);
 
-      QBackendMetaData                 archiveBackend    = runFunctionRequest.getInstance().getBackendForTable(archiveTable.getName());
+      QBackendMetaData                 archiveBackend    = runBackendStepRequest.getInstance().getBackendForTable(archiveTable.getName());
       FilesystemBackendModuleInterface archiveModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
       AbstractBaseFilesystemAction     archiveActionBase = archiveModule.getActionBase();
       archiveActionBase.preAction(archiveBackend);
       Set<String> archiveFiles = getFileNames(archiveActionBase, archiveTable, archiveBackend).keySet();
 
-      QBackendMetaData                 processingBackend    = runFunctionRequest.getInstance().getBackendForTable(processingTable.getName());
+      QBackendMetaData                 processingBackend    = runBackendStepRequest.getInstance().getBackendForTable(processingTable.getName());
       FilesystemBackendModuleInterface processingModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
       AbstractBaseFilesystemAction     processingActionBase = processingModule.getActionBase();
       processingActionBase.preAction(processingBackend);
 
-      Integer maxFilesToSync = runFunctionRequest.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
+      Integer maxFilesToSync = runBackendStepRequest.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
       int syncedFileCount = 0;
       for(Map.Entry<String, Object> sourceEntry : sourceFiles.entrySet())
       {
