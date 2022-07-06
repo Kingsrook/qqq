@@ -34,8 +34,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
@@ -51,9 +51,9 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaDat
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static final String MYSQL_BACKEND_NAME      = "mysql";
+   public static final String MYSQL_BACKEND_NAME = "mysql";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
-   public static final String PROCESS_NAME_GREET      = "greet";
+   public static final String PROCESS_NAME_GREET = "greet";
 
 
 
@@ -98,9 +98,9 @@ public class SampleMetaDataProvider
          .withVendor("mysql")
          .withHostName("127.0.0.1")
          .withPort(3306)
-         .withDatabaseName("sample_project")
+         .withDatabaseName("qqq")
          .withUsername("root")
-         .withPassword("8BNWyoav8s79oi}Lqk") // todo - load securely
+         .withPassword("")
          .withName(MYSQL_BACKEND_NAME);
    }
 
