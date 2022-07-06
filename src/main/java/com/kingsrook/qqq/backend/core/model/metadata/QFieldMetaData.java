@@ -35,6 +35,7 @@ public class QFieldMetaData
    private String label;
    private String backendName;
    private QFieldType type;
+   private boolean isRequired;
 
    private Serializable defaultValue;
    private String possibleValueSourceName;
@@ -220,6 +221,8 @@ public class QFieldMetaData
       return (this);
    }
 
+
+
    /*******************************************************************************
     ** Getter for defaultValue
     **
@@ -252,5 +255,36 @@ public class QFieldMetaData
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for isRequired
+    **
+    *******************************************************************************/
+   public boolean getIsRequired()
+   {
+      return isRequired;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isRequired
+    **
+    *******************************************************************************/
+   public void setIsRequired(boolean isRequired)
+   {
+      this.isRequired = isRequired;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData withIsRequired(boolean isRequired)
+   {
+      this.isRequired = isRequired;
+      return (this);
+   }
 
 }
