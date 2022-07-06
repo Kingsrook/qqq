@@ -19,32 +19,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage;
+package com.kingsrook.qqq.backend.core.interfaces.mock;
 
 
 import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Mock implementation of a FunctionBody.
  **
+ ** Basically just passes data from the request to the response.
  *******************************************************************************/
-public class AddAge implements BackendStep
+public class MockBackendStep implements BackendStep
 {
+   public final static String FIELD_GREETING_PREFIX = "greetingPrefix";
+   public final static String FIELD_GREETING_SUFFIX = "greetingSuffix";
+
    @Override
    public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult)
    {
-      int totalYearsAdded = 0;
-      Integer yearsToAdd = runBackendStepRequest.getValueInteger("yearsToAdd");
-      for(QRecord record : runBackendStepRequest.getRecords())
-      {
-         Integer age = record.getValueInteger("age");
-         age += yearsToAdd;
-         totalYearsAdded += yearsToAdd;
-         record.setValue("age", age);
-      }
-      runBackendStepResult.addValue("totalYearsAdded", totalYearsAdded);
+      runBackendStepResult.getRecords().forEach(r -> r.setValue("mockValue", "Ha ha!"));
+
+      runBackendStepResult.setValues(runBackendStepRequest.getValues());
+      runBackendStepResult.addValue("mockValue", "You so silly");
+
+      /////////////////////////////////
+      // mock the "greet" process... //
+      /////////////////////////////////
+      runBackendStepResult.addValue("outputMessage", runBackendStepRequest.getValueString(FIELD_GREETING_PREFIX) + " X " + runBackendStepRequest.getValueString(FIELD_GREETING_SUFFIX));
    }
 }

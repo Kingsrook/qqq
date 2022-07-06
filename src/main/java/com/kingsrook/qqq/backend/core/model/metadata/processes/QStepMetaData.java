@@ -19,135 +19,112 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.instances;
+package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
-import java.util.Locale;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import java.util.ArrayList;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** As part of helping a QInstance be created and/or validated, apply some default
- ** transformations to it, such as populating missing labels based on names.
+ ** Meta-Data to define a step in a process in a QQQ instance.
  **
  *******************************************************************************/
-public class QInstanceEnricher
+public class QStepMetaData
 {
+   private String name;
+   private String label;
+
+
+
    /*******************************************************************************
+    ** Getter for name
     **
     *******************************************************************************/
-   public void enrich(QInstance qInstance)
+   public String getName()
    {
-      if(qInstance.getTables() != null)
-      {
-         qInstance.getTables().values().forEach(this::enrich);
-      }
-
-      if(qInstance.getProcesses() != null)
-      {
-         qInstance.getProcesses().values().forEach(this::enrich);
-      }
-
-      if(qInstance.getBackends() != null)
-      {
-         qInstance.getBackends().values().forEach(this::enrich);
-      }
+      return name;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for name
     **
     *******************************************************************************/
-   private void enrich(QBackendMetaData qBackendMetaData)
+   public void setName(String name)
    {
-      qBackendMetaData.enrich();
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for name
     **
     *******************************************************************************/
-   private void enrich(QTableMetaData table)
+   public QStepMetaData withName(String name)
    {
-      if(!StringUtils.hasContent(table.getLabel()))
-      {
-         table.setLabel(nameToLabel(table.getName()));
-      }
-
-      if(table.getFields() != null)
-      {
-         table.getFields().values().forEach(this::enrich);
-      }
+      this.name = name;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for label
     **
     *******************************************************************************/
-   private void enrich(QProcessMetaData process)
+   public String getLabel()
    {
-      if(!StringUtils.hasContent(process.getLabel()))
-      {
-         process.setLabel(nameToLabel(process.getName()));
-      }
-
-      if(process.getStepList() != null)
-      {
-         process.getStepList().forEach(this::enrich);
-      }
+      return label;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for label
     **
     *******************************************************************************/
-   private void enrich(QStepMetaData function)
+   public void setLabel(String label)
    {
-      if(!StringUtils.hasContent(function.getLabel()))
-      {
-         function.setLabel(nameToLabel(function.getName()));
-      }
-
-      function.getInputFields().forEach(this::enrich);
-      function.getOutputFields().forEach(this::enrich);
+      this.label = label;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for label
     **
     *******************************************************************************/
-   private void enrich(QFieldMetaData field)
+   public QStepMetaData withLabel(String label)
    {
-      if(!StringUtils.hasContent(field.getLabel()))
-      {
-         field.setLabel(nameToLabel(field.getName()));
-      }
+      this.label = label;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Get a list of all of the input fields used by this function
     *******************************************************************************/
-   private String nameToLabel(String name)
+   @JsonIgnore
+   public List<QFieldMetaData> getInputFields()
    {
-      if(name == null)
-      {
-         return (null);
-      }
+      return (new ArrayList<>());
+   }
 
-      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z])", " $1"));
+
+
+   /*******************************************************************************
+    ** Get a list of all of the output fields used by this function
+    *******************************************************************************/
+   @JsonIgnore
+   public List<QFieldMetaData> getOutputFields()
+   {
+      return (new ArrayList<>());
    }
 
 }

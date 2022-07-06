@@ -22,49 +22,39 @@
 package com.kingsrook.qqq.backend.core.actions;
 
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataResult;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
- ** Action to fetch top-level meta-data in a qqq instance.
+ ** Action to fetch meta-data for a process.
  **
  *******************************************************************************/
-public class MetaDataAction
+public class ProcessMetaDataAction
 {
    /*******************************************************************************
     **
     *******************************************************************************/
-   public MetaDataResult execute(MetaDataRequest metaDataRequest) throws QException
+   public ProcessMetaDataResult execute(ProcessMetaDataRequest processMetaDataRequest) throws QException
    {
-      ActionHelper.validateSession(metaDataRequest);
+      ActionHelper.validateSession(processMetaDataRequest);
 
       // todo pre-customization - just get to modify the request?
-      MetaDataResult metaDataResult = new MetaDataResult();
+      ProcessMetaDataResult processMetaDataResult = new ProcessMetaDataResult();
 
-      Map<String, QFrontendTableMetaData> tables = new LinkedHashMap<>();
-      for(Map.Entry<String, QTableMetaData> entry : metaDataRequest.getInstance().getTables().entrySet())
+      QProcessMetaData process = processMetaDataRequest.getInstance().getProcess(processMetaDataRequest.getProcessName());
+      if(process == null)
       {
-         tables.put(entry.getKey(), new QFrontendTableMetaData(entry.getValue(), false));
+         throw (new QNotFoundException("Process [" + processMetaDataRequest.getProcessName() + "] was not found."));
       }
-      metaDataResult.setTables(tables);
-
-      Map<String, QFrontendProcessMetaData> processes = new LinkedHashMap<>();
-      for(Map.Entry<String, QProcessMetaData> entry : metaDataRequest.getInstance().getProcesses().entrySet())
-      {
-         processes.put(entry.getKey(), new QFrontendProcessMetaData(entry.getValue(), false));
-      }
-      metaDataResult.setProcesses(processes);
+      processMetaDataResult.setProcess(new QFrontendProcessMetaData(process, true));
 
       // todo post-customization - can do whatever w/ the result if you want
 
-      return metaDataResult;
+      return processMetaDataResult;
    }
 }

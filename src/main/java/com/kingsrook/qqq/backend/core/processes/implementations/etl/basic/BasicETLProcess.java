@@ -27,10 +27,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 
 
 /*******************************************************************************
@@ -54,7 +55,7 @@ public class BasicETLProcess
     *******************************************************************************/
    public QProcessMetaData defineProcessMetaData()
    {
-      QFunctionMetaData extractFunction = new QFunctionMetaData()
+      QStepMetaData extractFunction = new QBackendStepMetaData()
          .withName(FUNCTION_NAME_EXTRACT)
          .withCode(new QCodeReference()
             .withName(BasicETLExtractFunction.class.getName())
@@ -63,7 +64,7 @@ public class BasicETLProcess
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING)));
 
-      QFunctionMetaData transformFunction = new QFunctionMetaData()
+      QStepMetaData transformFunction = new QBackendStepMetaData()
          .withName(FUNCTION_NAME_TRANSFORM)
          .withCode(new QCodeReference()
             .withName(BasicETLTransformFunction.class.getName())
@@ -73,7 +74,7 @@ public class BasicETLProcess
             .addField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))
             .addField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)));
 
-      QFunctionMetaData loadFunction = new QFunctionMetaData()
+      QStepMetaData loadFunction = new QBackendStepMetaData()
          .withName(FUNCTION_NAME_LOAD)
          .withCode(new QCodeReference()
             .withName(BasicETLLoadFunction.class.getName())
@@ -86,8 +87,8 @@ public class BasicETLProcess
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
-         .addFunction(extractFunction)
-         .addFunction(transformFunction)
-         .addFunction(loadFunction);
+         .addStep(extractFunction)
+         .addStep(transformFunction)
+         .addStep(loadFunction);
    }
 }

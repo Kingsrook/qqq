@@ -19,32 +19,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage;
-
-
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
+ ** User-facing exception for when something wasn't found (e.g., a named table or
+ ** record-by-id).
  **
  *******************************************************************************/
-public class AddAge implements BackendStep
+public class QNotFoundException extends QUserFacingException
 {
-   @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult)
+
+
+   /*******************************************************************************
+    ** Constructor of message
+    **
+    *******************************************************************************/
+   public QNotFoundException(String message)
    {
-      int totalYearsAdded = 0;
-      Integer yearsToAdd = runBackendStepRequest.getValueInteger("yearsToAdd");
-      for(QRecord record : runBackendStepRequest.getRecords())
-      {
-         Integer age = record.getValueInteger("age");
-         age += yearsToAdd;
-         totalYearsAdded += yearsToAdd;
-         record.setValue("age", age);
-      }
-      runBackendStepResult.addValue("totalYearsAdded", totalYearsAdded);
+      super(message);
    }
+
+
+
+   /*******************************************************************************
+    ** Constructor of message & cause
+    **
+    *******************************************************************************/
+   public QNotFoundException(String message, Throwable cause)
+   {
+      super(message, cause);
+   }
+
 }

@@ -19,260 +19,307 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.processes;
+package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 
 
 /*******************************************************************************
- ** Meta-Data to define a function in a QQQ instance.
+ ** Request data container for the RunBackendStep action
  **
  *******************************************************************************/
-public class QFunctionMetaData
+public class RunBackendStepRequest extends AbstractQRequest
 {
-   private String                  name;
-   private String                  label;
-   private QFunctionInputMetaData  inputMetaData;
-   private QFunctionOutputMetaData outputMetaData;
-   private QCodeReference          code;
-   private QOutputView             outputView;
+   private ProcessState     processState;
+   private String           processName;
+   private String           stepName;
+   private QProcessCallback callback;
 
 
 
    /*******************************************************************************
-    ** Getter for name
     **
     *******************************************************************************/
-   public String getName()
+   public RunBackendStepRequest()
    {
-      return name;
+      processState = new ProcessState();
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
     **
     *******************************************************************************/
-   public void setName(String name)
+   public RunBackendStepRequest(QInstance instance)
    {
-      this.name = name;
+      super(instance);
+      processState = new ProcessState();
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** e.g., for steps after the first step in a process, seed the data in a run
+    ** function request from a process state.
     **
     *******************************************************************************/
-   public QFunctionMetaData withName(String name)
+   public void seedFromProcessState(ProcessState processState)
    {
-      this.name = name;
+      this.processState = processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void seedFromRunProcessRequest(RunProcessRequest runProcessRequest)
+   {
+      this.processState = runProcessRequest.getProcessState();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QStepMetaData getStepMetaData()
+   {
+      return (instance.getProcessStep(getProcessName(), getStepName()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processName
+    **
+    *******************************************************************************/
+   public String getProcessName()
+   {
+      return processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processName
+    **
+    *******************************************************************************/
+   public void setProcessName(String processName)
+   {
+      this.processName = processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processName
+    **
+    *******************************************************************************/
+   public RunBackendStepRequest withProcessName(String processName)
+   {
+      this.processName = processName;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Getter for functionName
     **
     *******************************************************************************/
-   public String getLabel()
+   public String getStepName()
    {
-      return label;
+      return stepName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Setter for functionName
     **
     *******************************************************************************/
-   public void setLabel(String label)
+   public void setStepName(String stepName)
    {
-      this.label = label;
+      this.stepName = stepName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Setter for functionName
     **
     *******************************************************************************/
-   public QFunctionMetaData withLabel(String label)
+   public RunBackendStepRequest withFunctionName(String functionName)
    {
-      this.label = label;
+      this.stepName = functionName;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for inputData
+    ** Getter for records
     **
     *******************************************************************************/
-   public QFunctionInputMetaData getInputMetaData()
+   public List<QRecord> getRecords()
    {
-      return inputMetaData;
+      return processState.getRecords();
    }
 
 
 
    /*******************************************************************************
-    ** Setter for inputData
+    ** Setter for records
     **
     *******************************************************************************/
-   public void setInputMetaData(QFunctionInputMetaData inputMetaData)
+   public void setRecords(List<QRecord> records)
    {
-      this.inputMetaData = inputMetaData;
+      this.processState.setRecords(records);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for inputData
+    ** Setter for records
     **
     *******************************************************************************/
-   public QFunctionMetaData withInputData(QFunctionInputMetaData inputData)
+   public RunBackendStepRequest withRecords(List<QRecord> records)
    {
-      this.inputMetaData = inputData;
+      this.processState.setRecords(records);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for outputData
+    ** Getter for values
     **
     *******************************************************************************/
-   public QFunctionOutputMetaData getOutputMetaData()
+   public Map<String, Serializable> getValues()
    {
-      return outputMetaData;
+      return processState.getValues();
    }
 
 
 
    /*******************************************************************************
-    ** Setter for outputData
+    ** Setter for values
     **
     *******************************************************************************/
-   public void setOutputMetaData(QFunctionOutputMetaData outputMetaData)
+   public void setValues(Map<String, Serializable> values)
    {
-      this.outputMetaData = outputMetaData;
+      this.processState.setValues(values);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for outputData
+    ** Setter for values
     **
     *******************************************************************************/
-   public QFunctionMetaData withOutputMetaData(QFunctionOutputMetaData outputMetaData)
+   public RunBackendStepRequest withValues(Map<String, Serializable> values)
    {
-      this.outputMetaData = outputMetaData;
+      this.processState.setValues(values);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for code
+    ** Setter for values
     **
     *******************************************************************************/
-   public QCodeReference getCode()
+   public RunBackendStepRequest addValue(String fieldName, Serializable value)
    {
-      return code;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for code
-    **
-    *******************************************************************************/
-   public void setCode(QCodeReference code)
-   {
-      this.code = code;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for code
-    **
-    *******************************************************************************/
-   public QFunctionMetaData withCode(QCodeReference code)
-   {
-      this.code = code;
+      this.processState.getValues().put(fieldName, value);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for outputView
+    ** Getter for callback
     **
     *******************************************************************************/
-   public QOutputView getOutputView()
+   public QProcessCallback getCallback()
    {
-      return outputView;
+      return callback;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for outputView
+    ** Setter for callback
     **
     *******************************************************************************/
-   public void setOutputView(QOutputView outputView)
+   public void setCallback(QProcessCallback callback)
    {
-      this.outputView = outputView;
+      this.callback = callback;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for outputView
+    ** Setter for callback
     **
     *******************************************************************************/
-   public QFunctionMetaData withOutputView(QOutputView outputView)
+   public RunBackendStepRequest withCallback(QProcessCallback callback)
    {
-      this.outputView = outputView;
+      this.callback = callback;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Get a list of all of the input fields used by this function
+    ** Getter for a single field's value
+    **
     *******************************************************************************/
-   public List<QFieldMetaData> getInputFields()
+   public Serializable getValue(String fieldName)
    {
-      List<QFieldMetaData> rs = new ArrayList<>();
-      if(inputMetaData != null && inputMetaData.getFieldList() != null)
-      {
-         rs.addAll(inputMetaData.getFieldList());
-      }
-      return (rs);
+      return (processState.getValues().get(fieldName));
    }
 
 
 
    /*******************************************************************************
-    ** Get a list of all of the output fields used by this function
+    ** Getter for a single field's value
+    **
     *******************************************************************************/
-   public List<QFieldMetaData> getOutputFields()
+   public String getValueString(String fieldName)
    {
-      List<QFieldMetaData> rs = new ArrayList<>();
-      if(outputMetaData != null && outputMetaData.getFieldList() != null)
-      {
-         rs.addAll(outputMetaData.getFieldList());
-      }
-      return (rs);
+      return ((String) getValue(fieldName));
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Integer getValueInteger(String fieldName)
+   {
+      return ((Integer) getValue(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Accessor for processState - protected, because we generally want to access
+    ** its members through wrapper methods, we think
+    **
+    *******************************************************************************/
+   protected ProcessState getProcessState()
+   {
+      return processState;
+   }
 }

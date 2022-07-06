@@ -19,32 +19,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.interfaces.mock;
+package com.kingsrook.qqq.backend.core.interfaces;
 
 
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 
 
 /*******************************************************************************
- ** Mock implementation of a FunctionBody.
+ ** Simple interface that Backend Steps (e.g., code within processes) must implement
  **
- ** Basically just passes data from the request to the response.
  *******************************************************************************/
-public class MockFunctionBody implements FunctionBody
+public interface BackendStep
 {
-   @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult)
-   {
-      runFunctionResult.getRecords().forEach(r -> r.setValue("mockValue", "Ha ha!"));
-
-      runFunctionResult.setValues(runFunctionRequest.getValues());
-      runFunctionResult.addValue("mockValue", "You so silly");
-
-      /////////////////////////////////
-      // mock the "greet" process... //
-      /////////////////////////////////
-      runFunctionResult.addValue("outputMessage", runFunctionRequest.getValueString("greetingPrefix") + " X " + runFunctionRequest.getValueString("greetingSuffix"));
-   }
+   /*******************************************************************************
+    ** Execute the backend step - using the request as input, and the result as output.
+    **
+    ** TODO - think about - why take the Result object as a param, instead of return it?
+    **  Is this way easier for inter-language operability maybe?
+    *   Also - there's way too much "process-specific gunk" in the Request object - can we simplify it?
+    *******************************************************************************/
+   void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException;
 }

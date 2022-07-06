@@ -28,15 +28,16 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -44,54 +45,61 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Action handler for running q-functions.
+ ** Action handler for running backend steps as part of processes.
  *
  *******************************************************************************/
-public class RunFunctionAction
+public class RunBackendStepAction
 {
-   private static final Logger LOG = LogManager.getLogger(RunFunctionAction.class);
+   private static final Logger LOG = LogManager.getLogger(RunBackendStepAction.class);
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunFunctionResult execute(RunFunctionRequest runFunctionRequest) throws QException
+   public RunBackendStepResult execute(RunBackendStepRequest runBackendStepRequest) throws QException
    {
-      ActionHelper.validateSession(runFunctionRequest);
+      ActionHelper.validateSession(runBackendStepRequest);
 
-      QProcessMetaData process = runFunctionRequest.getInstance().getProcess(runFunctionRequest.getProcessName());
+      QProcessMetaData process = runBackendStepRequest.getInstance().getProcess(runBackendStepRequest.getProcessName());
       if(process == null)
       {
-         throw new QException("Process [" + runFunctionRequest.getProcessName() + "] is not defined in this instance.");
+         throw new QException("Process [" + runBackendStepRequest.getProcessName() + "] is not defined in this instance.");
       }
 
-      QFunctionMetaData function = process.getFunction(runFunctionRequest.getFunctionName());
-      if(function == null)
+      QStepMetaData stepMetaData = process.getStep(runBackendStepRequest.getStepName());
+      if(stepMetaData == null)
       {
-         throw new QException("Function [" + runFunctionRequest.getFunctionName() + "] is not defined in the process [" + process.getName() + "]");
+         throw new QException("Step [" + runBackendStepRequest.getStepName() + "] is not defined in the process [" + process.getName() + "]");
+      }
+
+      if(!(stepMetaData instanceof QBackendStepMetaData backendStepMetaData))
+      {
+         throw new QException("Step [" + runBackendStepRequest.getStepName() + "] is not a backend step.");
       }
 
       //////////////////////////////////////////////////////////////////////////////////////
       // ensure input data is set as needed - use callback object to get anything missing //
       //////////////////////////////////////////////////////////////////////////////////////
-      ensureRecordsAreInRequest(runFunctionRequest, function);
-      ensureInputFieldsAreInRequest(runFunctionRequest, function);
+      ensureRecordsAreInRequest(runBackendStepRequest, backendStepMetaData);
+      ensureInputFieldsAreInRequest(runBackendStepRequest, backendStepMetaData);
 
       ////////////////////////////////////////////////////////////////////
       // load and run the user-defined code that actually does the work //
       ////////////////////////////////////////////////////////////////////
-      return (runFunctionBodyCode(function.getCode(), runFunctionRequest));
+      return (runStepCode(backendStepMetaData.getCode(), runBackendStepRequest));
    }
 
 
 
    /*******************************************************************************
-    ** check if this function needs any input fields - and if so, if we need to get one
+    ** check if this step needs any input fields - and if so, if we need to get one
     ** via the callback
     **
     *******************************************************************************/
-   private void ensureInputFieldsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function) throws QException
+   private void ensureInputFieldsAreInRequest(RunBackendStepRequest runBackendStepRequest, QBackendStepMetaData step) throws QException
    {
-      QFunctionInputMetaData inputMetaData = function.getInputMetaData();
+      QFunctionInputMetaData inputMetaData = step.getInputMetaData();
       if(inputMetaData == null)
       {
          return;
@@ -100,12 +108,12 @@ public class RunFunctionAction
       List<QFieldMetaData> fieldsToGet = new ArrayList<>();
       for(QFieldMetaData field : inputMetaData.getFieldList())
       {
-         Serializable value = runFunctionRequest.getValue(field.getName());
+         Serializable value = runBackendStepRequest.getValue(field.getName());
          if(value == null)
          {
             if(field.getDefaultValue() != null)
             {
-               runFunctionRequest.addValue(field.getName(), field.getDefaultValue());
+               runBackendStepRequest.addValue(field.getName(), field.getDefaultValue());
             }
             else
             {
@@ -117,7 +125,7 @@ public class RunFunctionAction
 
       if(!fieldsToGet.isEmpty())
       {
-         QProcessCallback callback = runFunctionRequest.getCallback();
+         QProcessCallback callback = runBackendStepRequest.getCallback();
          if(callback == null)
          {
             throw (new QException("Function is missing values for fields, but no callback was present to request fields from a user"));
@@ -126,7 +134,7 @@ public class RunFunctionAction
          Map<String, Serializable> fieldValues = callback.getFieldValues(fieldsToGet);
          for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
          {
-            runFunctionRequest.addValue(entry.getKey(), entry.getValue());
+            runBackendStepRequest.addValue(entry.getKey(), entry.getValue());
             // todo - check to make sure got values back?
          }
       }
@@ -135,25 +143,25 @@ public class RunFunctionAction
 
 
    /*******************************************************************************
-    ** check if this function uses a record list - and if so, if we need to get one
+    ** check if this step uses a record list - and if so, if we need to get one
     ** via the callback
     *******************************************************************************/
-   private void ensureRecordsAreInRequest(RunFunctionRequest runFunctionRequest, QFunctionMetaData function) throws QException
+   private void ensureRecordsAreInRequest(RunBackendStepRequest runBackendStepRequest, QBackendStepMetaData step) throws QException
    {
-      QFunctionInputMetaData inputMetaData = function.getInputMetaData();
+      QFunctionInputMetaData inputMetaData = step.getInputMetaData();
       if(inputMetaData != null && inputMetaData.getRecordListMetaData() != null)
       {
-         if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
+         if(CollectionUtils.nullSafeIsEmpty(runBackendStepRequest.getRecords()))
          {
-            QueryRequest queryRequest = new QueryRequest(runFunctionRequest.getInstance());
-            queryRequest.setSession(runFunctionRequest.getSession());
+            QueryRequest queryRequest = new QueryRequest(runBackendStepRequest.getInstance());
+            queryRequest.setSession(runBackendStepRequest.getSession());
             queryRequest.setTableName(inputMetaData.getRecordListMetaData().getTableName());
 
             // todo - handle this being async (e.g., http)
             // seems like it just needs to throw, breaking this flow, and to send a response to the frontend, directing it to prompt the user for the needed data
-            // then this function can re-run, hopefully with the needed data.
+            // then this step can re-run, hopefully with the needed data.
 
-            QProcessCallback callback = runFunctionRequest.getCallback();
+            QProcessCallback callback = runBackendStepRequest.getCallback();
             if(callback == null)
             {
                throw (new QException("Function is missing input records, but no callback was present to get a query filter from a user"));
@@ -162,7 +170,7 @@ public class RunFunctionAction
             queryRequest.setFilter(callback.getQueryFilter());
 
             QueryResult queryResult = new QueryAction().execute(queryRequest);
-            runFunctionRequest.setRecords(queryResult.getRecords());
+            runBackendStepRequest.setRecords(queryResult.getRecords());
             // todo - handle 0 results found?
          }
       }
@@ -173,29 +181,29 @@ public class RunFunctionAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private RunFunctionResult runFunctionBodyCode(QCodeReference code, RunFunctionRequest runFunctionRequest)
+   private RunBackendStepResult runStepCode(QCodeReference code, RunBackendStepRequest runBackendStepRequest)
    {
-      RunFunctionResult runFunctionResult = new RunFunctionResult();
+      RunBackendStepResult runBackendStepResult = new RunBackendStepResult();
       try
       {
-         runFunctionResult.seedFromRequest(runFunctionRequest);
+         runBackendStepResult.seedFromRequest(runBackendStepRequest);
 
          Class<?> codeClass  = Class.forName(code.getName());
          Object   codeObject = codeClass.getConstructor().newInstance();
-         if(!(codeObject instanceof FunctionBody functionBodyCodeObject))
+         if(!(codeObject instanceof BackendStep backendStepCodeObject))
          {
             throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of FunctionBody"));
          }
 
-         functionBodyCodeObject.run(runFunctionRequest, runFunctionResult);
+         backendStepCodeObject.run(runBackendStepRequest, runBackendStepResult);
       }
       catch(Exception e)
       {
-         runFunctionResult = new RunFunctionResult();
-         runFunctionResult.setError("Error running function code: " + e.getMessage());
-         LOG.info("Error running function code", e);
+         runBackendStepResult = new RunBackendStepResult();
+         runBackendStepResult.setError("Error running backend step code: " + e.getMessage());
+         LOG.info("Error running backend step code", e);
       }
 
-      return (runFunctionResult);
+      return (runBackendStepResult);
    }
 }

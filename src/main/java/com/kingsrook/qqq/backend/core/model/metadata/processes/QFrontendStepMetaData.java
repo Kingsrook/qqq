@@ -19,116 +19,97 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.frontend;
+package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
 /*******************************************************************************
- * Version of QProcessMetaData that's meant for transmitting to a frontend.
- * e.g., it excludes backend-only details.
- *
+ ** Meta-Data to define a front-end step in a process in a QQQ instance (e.g.,
+ ** a screen presented to a user).
+ **
  *******************************************************************************/
-@JsonInclude(Include.NON_NULL)
-public class QFrontendProcessMetaData
+public class QFrontendStepMetaData extends QStepMetaData
 {
-   private String name;
-   private String label;
-   private String tableName;
-
-   private List<QFrontendStepMetaData> frontendSteps;
-
-   //////////////////////////////////////////////////////////////////////////////////
-   // do not add setters.  take values from the source-object in the constructor!! //
-   //////////////////////////////////////////////////////////////////////////////////
+   private List<QFieldMetaData> formFields;
 
 
 
    /*******************************************************************************
+    ** Getter for formFields
     **
     *******************************************************************************/
-   public QFrontendProcessMetaData(QProcessMetaData processMetaData, boolean includeSteps)
+   public List<QFieldMetaData> getFormFields()
    {
-      this.name = processMetaData.getName();
-      this.label = processMetaData.getLabel();
-      this.tableName = processMetaData.getTableName();
+      return formFields;
+   }
 
-      if(includeSteps)
+
+
+   /*******************************************************************************
+    ** Setter for formFields
+    **
+    *******************************************************************************/
+   public void setFormFields(List<QFieldMetaData> formFields)
+   {
+      this.formFields = formFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter to add a single form field
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withFormField(QFieldMetaData formField)
+   {
+      if(this.formFields == null)
       {
-         if(CollectionUtils.nullSafeHasContents(processMetaData.getStepList()))
-         {
-            this.frontendSteps = processMetaData.getStepList().stream()
-               .filter(QFrontendStepMetaData.class::isInstance)
-               .map(QFrontendStepMetaData.class::cast)
-               .collect(Collectors.toList());
-         }
-         else
-         {
-            frontendSteps = new ArrayList<>();
-         }
+         this.formFields = new ArrayList<>();
       }
+      this.formFields.add(formField);
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for name
+    ** fluent setter for formFields
     **
     *******************************************************************************/
-   public String getName()
+   public QFrontendStepMetaData withFormFields(List<QFieldMetaData> formFields)
    {
-      return name;
+      this.formFields = formFields;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** fluent setter for name
     **
     *******************************************************************************/
-   public String getLabel()
+   @Override
+   public QFrontendStepMetaData withName(String name)
    {
-      return label;
+      setName(name);
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for primaryKeyField
+    ** fluent setter for label
     **
     *******************************************************************************/
-   public String getTableName()
+   @Override
+   public QFrontendStepMetaData withLabel(String label)
    {
-      return tableName;
+      setLabel(label);
+      return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for frontendSteps
-    **
-    *******************************************************************************/
-   public List<QFrontendStepMetaData> getFrontendSteps()
-   {
-      return frontendSteps;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for frontendSteps
-    **
-    *******************************************************************************/
-   public void setFrontendSteps(List<QFrontendStepMetaData> frontendSteps)
-   {
-      this.frontendSteps = frontendSteps;
-   }
 }

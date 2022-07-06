@@ -29,7 +29,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
@@ -211,7 +211,7 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFunctionMetaData getFunction(String processName, String functionName)
+   public QStepMetaData getProcessStep(String processName, String functionName)
    {
       QProcessMetaData qProcessMetaData = this.processes.get(processName);
       if(qProcessMetaData == null)
@@ -219,7 +219,7 @@ public class QInstance
          return (null);
       }
 
-      return (qProcessMetaData.getFunction(functionName));
+      return (qProcessMetaData.getStep(functionName));
    }
 
 

@@ -26,12 +26,12 @@ import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.UUIDStateKey;
@@ -59,35 +59,35 @@ public class RunProcessAction
 
       RunProcessResult runProcessResult = new RunProcessResult();
 
-      UUIDStateKey      stateKey           = new UUIDStateKey();
-      RunFunctionResult lastFunctionResult = null;
+      UUIDStateKey         stateKey           = new UUIDStateKey();
+      RunBackendStepResult lastFunctionResult = null;
 
       // todo - custom routing?
-      List<QFunctionMetaData> functionList = process.getFunctionList();
-      for(QFunctionMetaData function : functionList)
+      List<QStepMetaData> functionList = process.getStepList();
+      for(QStepMetaData function : functionList)
       {
-         RunFunctionRequest runFunctionRequest = new RunFunctionRequest(runProcessRequest.getInstance());
+         RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(runProcessRequest.getInstance());
 
          if(lastFunctionResult == null)
          {
             ///////////////////////////////////////////////////////////////////////////////////////////////////////
             // for the first request, load state from the run process request to prime the run function request. //
             ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            primeFunction(runProcessRequest, runFunctionRequest);
+            primeFunction(runProcessRequest, runBackendStepRequest);
          }
          else
          {
             ////////////////////////////////////////////////////////////////////////////////////////
             // for functions after the first one, load from state management to prime the request //
             ////////////////////////////////////////////////////////////////////////////////////////
-            loadState(stateKey, runFunctionRequest);
+            loadState(stateKey, runBackendStepRequest);
          }
 
-         runFunctionRequest.setProcessName(process.getName());
-         runFunctionRequest.setFunctionName(function.getName());
-         runFunctionRequest.setSession(runProcessRequest.getSession());
-         runFunctionRequest.setCallback(runProcessRequest.getCallback());
-         lastFunctionResult = new RunFunctionAction().execute(runFunctionRequest);
+         runBackendStepRequest.setProcessName(process.getName());
+         runBackendStepRequest.setStepName(function.getName());
+         runBackendStepRequest.setSession(runProcessRequest.getSession());
+         runBackendStepRequest.setCallback(runProcessRequest.getCallback());
+         lastFunctionResult = new RunBackendStepAction().execute(runBackendStepRequest);
          if(lastFunctionResult.getError() != null)
          {
             runProcessResult.setError(lastFunctionResult.getError());
@@ -116,7 +116,7 @@ public class RunProcessAction
       // TODO - read this from somewhere in meta data eh?
       return InMemoryStateProvider.getInstance();
 
-      // TODO - by using JSON serialization internally, this makes stupidly large payloads and crashes things.
+      // todo - by using JSON serialization internally, this makes stupidly large payloads and crashes things.
       // return TempFileStateProvider.getInstance();
    }
 
@@ -126,9 +126,9 @@ public class RunProcessAction
     ** Store the process state from a function result to the state provider
     **
     *******************************************************************************/
-   private void storeState(UUIDStateKey stateKey, RunFunctionResult runFunctionResult)
+   private void storeState(UUIDStateKey stateKey, RunBackendStepResult runBackendStepResult)
    {
-      getStateProvider().put(stateKey, runFunctionResult.getProcessState());
+      getStateProvider().put(stateKey, runBackendStepResult.getProcessState());
    }
 
 
@@ -137,9 +137,9 @@ public class RunProcessAction
     ** Copy data (the state) down from the run-process request, down into the run-
     ** function request.
     *******************************************************************************/
-   private void primeFunction(RunProcessRequest runProcessRequest, RunFunctionRequest runFunctionRequest)
+   private void primeFunction(RunProcessRequest runProcessRequest, RunBackendStepRequest runBackendStepRequest)
    {
-      runFunctionRequest.seedFromRunProcessRequest(runProcessRequest);
+      runBackendStepRequest.seedFromRunProcessRequest(runProcessRequest);
    }
 
 
@@ -148,10 +148,10 @@ public class RunProcessAction
     ** Load the process state into a function request from the state provider
     **
     *******************************************************************************/
-   private void loadState(UUIDStateKey stateKey, RunFunctionRequest runFunctionRequest) throws QException
+   private void loadState(UUIDStateKey stateKey, RunBackendStepRequest runBackendStepRequest) throws QException
    {
       Optional<ProcessState> processState = getStateProvider().get(ProcessState.class, stateKey);
-      runFunctionRequest.seedFromProcessState(processState
+      runBackendStepRequest.seedFromProcessState(processState
          .orElseThrow(() -> new QException("Could not find process state in state provider.")));
    }
 

@@ -19,160 +19,174 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.processes;
+package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
-import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
 /*******************************************************************************
- ** Result data container for the RunProcess action
+ ** Meta-Data to define a backend-step in a process in a QQQ instance.  e.g.,
+ ** code that runs on a server/backend, to do something to some data.
  **
  *******************************************************************************/
-public class RunProcessResult extends AbstractQResult
+public class QBackendStepMetaData extends QStepMetaData
 {
-   private ProcessState processState;
-   private String       error;
+   private QFunctionInputMetaData  inputMetaData;
+   private QFunctionOutputMetaData outputMetaData;
+   private QCodeReference          code;
 
 
 
    /*******************************************************************************
+    ** Setter for label
     **
     *******************************************************************************/
    @Override
-   public String toString()
+   public QBackendStepMetaData withName(String name)
    {
-      return "RunProcessResult{error='" + error
-         + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
-         + ",values=" + (processState == null ? null : processState.getValues())
-         + "}";
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public RunProcessResult()
-   {
-      processState = new ProcessState();
-   }
-
-
-
-   /*******************************************************************************
-    ** e.g., populate the process state (records, values) in this result object from
-    ** the final function result
-    **
-    *******************************************************************************/
-   public void seedFromLastFunctionResult(RunBackendStepResult runBackendStepResult)
-   {
-      this.processState = runBackendStepResult.getProcessState();
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for records
-    **
-    *******************************************************************************/
-   public List<QRecord> getRecords()
-   {
-      return processState.getRecords();
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for records
-    **
-    *******************************************************************************/
-   public void setRecords(List<QRecord> records)
-   {
-      this.processState.setRecords(records);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for records
-    **
-    *******************************************************************************/
-   public RunProcessResult withRecords(List<QRecord> records)
-   {
-      this.processState.setRecords(records);
+      setName(name);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for values
+    ** Getter for inputData
     **
     *******************************************************************************/
-   public Map<String, Serializable> getValues()
+   public QFunctionInputMetaData getInputMetaData()
    {
-      return processState.getValues();
+      return inputMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
+    ** Setter for inputData
     **
     *******************************************************************************/
-   public void setValues(Map<String, Serializable> values)
+   public void setInputMetaData(QFunctionInputMetaData inputMetaData)
    {
-      this.processState.setValues(values);
+      this.inputMetaData = inputMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
+    ** Setter for inputData
     **
     *******************************************************************************/
-   public RunProcessResult withValues(Map<String, Serializable> values)
+   public QBackendStepMetaData withInputData(QFunctionInputMetaData inputData)
    {
-      this.processState.setValues(values);
+      this.inputMetaData = inputData;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
+    ** Getter for outputData
     **
     *******************************************************************************/
-   public RunProcessResult addValue(String fieldName, Serializable value)
+   public QFunctionOutputMetaData getOutputMetaData()
    {
-      this.processState.getValues().put(fieldName, value);
+      return outputMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for outputData
+    **
+    *******************************************************************************/
+   public void setOutputMetaData(QFunctionOutputMetaData outputMetaData)
+   {
+      this.outputMetaData = outputMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for outputData
+    **
+    *******************************************************************************/
+   public QBackendStepMetaData withOutputMetaData(QFunctionOutputMetaData outputMetaData)
+   {
+      this.outputMetaData = outputMetaData;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for error
+    ** Getter for code
     **
     *******************************************************************************/
-   public String getError()
+   public QCodeReference getCode()
    {
-      return error;
+      return code;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for error
+    ** Setter for code
     **
     *******************************************************************************/
-   public void setError(String error)
+   public void setCode(QCodeReference code)
    {
-      this.error = error;
+      this.code = code;
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for code
+    **
+    *******************************************************************************/
+   public QBackendStepMetaData withCode(QCodeReference code)
+   {
+      this.code = code;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the input fields used by this function
+    *******************************************************************************/
+   @JsonIgnore
+   @Override
+   public List<QFieldMetaData> getInputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+      if(inputMetaData != null && inputMetaData.getFieldList() != null)
+      {
+         rs.addAll(inputMetaData.getFieldList());
+      }
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the output fields used by this function
+    *******************************************************************************/
+   @JsonIgnore
+   @Override
+   public List<QFieldMetaData> getOutputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+      if(outputMetaData != null && outputMetaData.getFieldList() != null)
+      {
+         rs.addAll(outputMetaData.getFieldList());
+      }
+      return (rs);
+   }
+
 }

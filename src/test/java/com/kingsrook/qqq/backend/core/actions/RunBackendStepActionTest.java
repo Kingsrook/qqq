@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunFunctionTest
+public class RunBackendStepActionTest
 {
 
    /*******************************************************************************
@@ -53,13 +53,13 @@ public class RunFunctionTest
    @Test
    public void test() throws QException
    {
-      TestCallback callback = new TestCallback();
-      RunFunctionRequest request = new RunFunctionRequest(TestUtils.defineInstance());
+      TestCallback          callback = new TestCallback();
+      RunBackendStepRequest request  = new RunBackendStepRequest(TestUtils.defineInstance());
       request.setSession(TestUtils.getMockSession());
       request.setProcessName("greet");
-      request.setFunctionName("prepare");
+      request.setStepName("prepare");
       request.setCallback(callback);
-      RunFunctionResult result = new RunFunctionAction().execute(request);
+      RunBackendStepResult result = new RunBackendStepAction().execute(request);
       assertNotNull(result);
       assertNull(result.getError());
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("mockValue")), "records should have a mock value");

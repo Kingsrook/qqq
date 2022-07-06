@@ -19,26 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.interfaces;
+package com.kingsrook.qqq.backend.core.model.actions.metadata.process;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 
 
 /*******************************************************************************
- ** Simple interface that a "custom" function (as in, a component of a Process)
- ** must implement.
+ * Result for a process-metaData action
+ *
  *******************************************************************************/
-public interface FunctionBody
+public class ProcessMetaDataResult extends AbstractQResult
 {
+   QFrontendProcessMetaData process;
+
+
+
    /*******************************************************************************
-    ** Execute the function - using the request as input, and the result as output.
+    ** Getter for process
     **
-    ** TODO - think about - why take the Result object as a param, instead of return it?
-    **  Is this way easier for inter-language operability maybe?
-    *   Also - there's way too much "process-specific gunk" in the Request object - can we simplify it?
     *******************************************************************************/
-   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException;
+   public QFrontendProcessMetaData getProcess()
+   {
+      return process;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for process
+    **
+    *******************************************************************************/
+   public void setProcess(QFrontendProcessMetaData process)
+   {
+      this.process = process;
+   }
 }
