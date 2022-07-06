@@ -24,7 +24,7 @@ package com.kingsrook.sampleapp;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
@@ -35,7 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
@@ -156,8 +156,8 @@ public class SampleMetaDataProvider
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
-         .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"))
-         .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
+         .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name").withIsRequired(true))
+         .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name").withIsRequired(true))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING));
    }
@@ -195,10 +195,10 @@ public class SampleMetaDataProvider
          .withName(PROCESS_NAME_GREET)
          .withLabel("Greet People")
          .withTableName("person")
-         .addFunction(new QFunctionMetaData()
+         .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName(MockFunctionBody.class.getName())
+               .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
