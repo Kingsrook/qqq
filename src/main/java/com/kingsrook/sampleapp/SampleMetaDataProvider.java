@@ -133,13 +133,16 @@ public class SampleMetaDataProvider
 
       table.addField(new QFieldMetaData("id", QFieldType.INTEGER));
 
-      table.addField(new QFieldMetaData("name", QFieldType.STRING));
+      table.addField(new QFieldMetaData("name", QFieldType.STRING)
+         .withIsRequired(true));
 
       table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo enum
          .withLabel("Company")
+         .withIsRequired(true)
          .withBackendName("comp_code"));
 
-      table.addField(new QFieldMetaData("service_level", QFieldType.STRING)); // todo enum
+      table.addField(new QFieldMetaData("service_level", QFieldType.STRING)
+         .withIsRequired(true)); // todo enum
 
       return (table);
    }
