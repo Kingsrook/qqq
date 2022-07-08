@@ -215,6 +215,28 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test running a count on a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableCount()
+   {
+      TestOutput testOutput  = testCli("person", "count", "--criteria", "id NOT_EQUALS 3");
+      JSONObject countResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(countResult);
+      int count = countResult.getInt("count");
+      assertEquals(4, count);
+
+      testOutput  = testCli("person", "count", "--criteria", "id EQUALS 3");
+      countResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(countResult);
+      count = countResult.getInt("count");
+      assertEquals(1, count);
+   }
+
+
+
+   /*******************************************************************************
     ** test running a query on a table
     **
     *******************************************************************************/

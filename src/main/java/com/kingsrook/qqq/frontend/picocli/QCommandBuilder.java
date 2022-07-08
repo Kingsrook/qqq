@@ -90,6 +90,7 @@ public class QCommandBuilder
          // add table-specific sub-commands for the table //
          ///////////////////////////////////////////////////
          tableCommand.addSubcommand("meta-data", defineMetaDataCommand(table));
+         tableCommand.addSubcommand("count", defineQueryCommand(table));
          tableCommand.addSubcommand("query", defineQueryCommand(table));
          tableCommand.addSubcommand("insert", defineInsertCommand(table));
          tableCommand.addSubcommand("update", defineUpdateCommand(table));
