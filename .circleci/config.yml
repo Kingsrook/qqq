@@ -42,7 +42,7 @@ jobs:
     executor: java17
     steps:
       - run_maven:
-          maven_subcommand: test
+          maven_subcommand: verify
       - slack/notify:
           event: fail
 

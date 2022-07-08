@@ -29,10 +29,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
@@ -41,11 +40,16 @@ import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.UpdateAction;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
+import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
@@ -57,6 +61,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMeta
 import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
@@ -73,10 +78,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.state.StateType;
+import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
@@ -105,7 +113,9 @@ public class QJavalinImplementation
 
    private static QInstance qInstance;
 
-   private static int PORT = 8001;
+   private static int DEFAULT_PORT = 8001;
+
+   private static int ASYNC_STEP_TIMEOUT_MILLIS = 3_000;
 
 
 
@@ -118,7 +128,7 @@ public class QJavalinImplementation
       // todo - parse args to look up metaData and prime instance
       // qInstance.addBackend(QMetaDataProvider.getQBackend());
 
-      new QJavalinImplementation(qInstance).startJavalinServer(PORT);
+      new QJavalinImplementation(qInstance).startJavalinServer(DEFAULT_PORT);
    }
 
 
@@ -161,6 +171,26 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void setDefaultPort(int port)
+   {
+      QJavalinImplementation.DEFAULT_PORT = port;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void setAsyncStepTimeoutMillis(int asyncStepTimeoutMillis)
+   {
+      QJavalinImplementation.ASYNC_STEP_TIMEOUT_MILLIS = asyncStepTimeoutMillis;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public EndpointGroup getRoutes()
    {
       return (() ->
@@ -172,7 +202,7 @@ public class QJavalinImplementation
             {
                get("", QJavalinImplementation::tableMetaData);
             });
-            path("/process/:process", () ->
+            path("/process/:processName", () ->
             {
                get("", QJavalinImplementation::processMetaData);
             });
@@ -195,10 +225,16 @@ public class QJavalinImplementation
          });
          path("/processes", () ->
          {
-            path("/:process", () ->
+            path("/:processName", () ->
             {
                get("/init", QJavalinImplementation::processInit);
-               get("/step", QJavalinImplementation::processStep);
+               post("/init", QJavalinImplementation::processInit);
+
+               path("/:processUUID", () ->
+               {
+                  post("/step/:step", QJavalinImplementation::processStep);
+                  get("/status/:jobUUID", QJavalinImplementation::processStatus);
+               });
             });
          });
       });
@@ -481,7 +517,7 @@ public class QJavalinImplementation
       {
          ProcessMetaDataRequest processMetaDataRequest = new ProcessMetaDataRequest(qInstance);
          setupSession(context, processMetaDataRequest);
-         processMetaDataRequest.setProcessName(context.pathParam("process"));
+         processMetaDataRequest.setProcessName(context.pathParam("processName"));
          ProcessMetaDataAction processMetaDataAction = new ProcessMetaDataAction();
          ProcessMetaDataResult processMetaDataResult = processMetaDataAction.execute(processMetaDataRequest);
 
@@ -506,7 +542,7 @@ public class QJavalinImplementation
          if(userFacingException instanceof QNotFoundException)
          {
             context.status(HttpStatus.NOT_FOUND_404)
-               .result("{\"error\":\"" + e.getMessage() + "\"}");
+               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
          }
          else
          {
@@ -527,15 +563,15 @@ public class QJavalinImplementation
 
    /*******************************************************************************
     ** Returns Integer if context has a valid int query parameter by the given name,
-    *  Returns null if no param (or empty value).
-    *  Throws NumberFormatException for malformed numbers.
+    **  Returns null if no param (or empty value).
+    **  Throws QValueException for malformed numbers.
     *******************************************************************************/
-   private static Integer integerQueryParam(Context context, String name) throws NumberFormatException
+   private static Integer integerQueryParam(Context context, String name) throws QValueException
    {
       String value = context.queryParam(name);
       if(StringUtils.hasContent(value))
       {
-         return (Integer.parseInt(value));
+         return (ValueUtils.getValueAsInteger(value));
       }
 
       return (null);
@@ -547,7 +583,7 @@ public class QJavalinImplementation
     ** Returns String if context has a valid query parameter by the given name,
     *  Returns null if no param (or empty value).
     *******************************************************************************/
-   private static String stringQueryParam(Context context, String name) throws NumberFormatException
+   private static String stringQueryParam(Context context, String name)
    {
       String value = context.queryParam(name);
       if(StringUtils.hasContent(value))
@@ -566,15 +602,138 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void processInit(Context context) throws QException
    {
+      doProcessInitOrStep(context, null, null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep) throws QModuleDispatchException
+   {
+      if(processUUID == null)
+      {
+         processUUID = UUID.randomUUID().toString();
+      }
+
       RunProcessRequest runProcessRequest = new RunProcessRequest(qInstance);
       setupSession(context, runProcessRequest);
-      runProcessRequest.setProcessName(context.pathParam("process"));
+      runProcessRequest.setProcessName(context.pathParam("processName"));
       runProcessRequest.setCallback(new QJavalinProcessCallback());
+      runProcessRequest.setBackendOnly(true);
+      runProcessRequest.setProcessUUID(processUUID);
+      runProcessRequest.setStartAfterStep(startAfterStep);
+      populateRunProcessRequestWithValuesFromContext(context, runProcessRequest);
 
-      /////////////////////////////////////////////////////////////////////////////////////
-      // take values from query-string params, and put them into the run process request //
-      // todo - better from POST body, or with a "field-" type of prefix??               //
-      /////////////////////////////////////////////////////////////////////////////////////
+      LOG.info(startAfterStep == null ? "Initiating process [" + runProcessRequest.getProcessName() + "] [" + processUUID + "]"
+         : "Resuming process [" + runProcessRequest.getProcessName() + "] [" + processUUID + "] after step [" + startAfterStep + "]");
+
+      Map<String, Object> resultForCaller = new HashMap<>();
+      resultForCaller.put("processUUID", processUUID);
+
+      try
+      {
+         ////////////////////////////////////////
+         // run the process as an async action //
+         ////////////////////////////////////////
+         Integer timeout = getTimeoutMillis(context);
+         RunProcessResult runProcessResult = new AsyncJobManager().startJob(timeout, TimeUnit.MILLISECONDS, (callback) ->
+         {
+            runProcessRequest.setAsyncJobCallback(callback);
+            return (new RunProcessAction().execute(runProcessRequest));
+         });
+
+         LOG.info("Process result error? " + runProcessResult.getException());
+         for(QFieldMetaData outputField : qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
+         {
+            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
+         }
+         serializeRunProcessResultForCaller(resultForCaller, runProcessResult);
+      }
+      catch(JobGoingAsyncException jgae)
+      {
+         resultForCaller.put("jobUUID", jgae.getJobUUID());
+      }
+      catch(Exception e)
+      {
+         //////////////////////////////////////////////////////////////////////////////
+         // our other actions in here would do: handleException(context, e);         //
+         // which would return a 500 to the client.                                  //
+         // but - other process-step actions, they always return a 200, just with an //
+         // optional error message - so - keep all of the processes consistent.      //
+         //////////////////////////////////////////////////////////////////////////////
+         serializeRunProcessExceptionForCaller(resultForCaller, e);
+      }
+
+      context.result(JsonUtils.toJson(resultForCaller));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Integer getTimeoutMillis(Context context)
+   {
+      Integer timeout = integerQueryParam(context, "_qStepTimeoutMillis");
+      if(timeout == null)
+      {
+         timeout = ASYNC_STEP_TIMEOUT_MILLIS;
+      }
+      return timeout;
+   }
+
+
+
+   /*******************************************************************************
+    ** Whether a step finished synchronously or asynchronously, return its data
+    ** to the caller the same way.
+    *******************************************************************************/
+   private static void serializeRunProcessResultForCaller(Map<String, Object> resultForCaller, RunProcessResult runProcessResult)
+   {
+      if(runProcessResult.getException().isPresent())
+      {
+         ////////////////////////////////////////////////////////////////
+         // per code coverage, this path may never actually get hit... //
+         ////////////////////////////////////////////////////////////////
+         serializeRunProcessExceptionForCaller(resultForCaller, runProcessResult.getException().get());
+      }
+      resultForCaller.put("values", runProcessResult.getValues());
+      runProcessResult.getProcessState().getNextStepName().ifPresent(lastStep -> resultForCaller.put("nextStep", lastStep));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void serializeRunProcessExceptionForCaller(Map<String, Object> resultForCaller, Exception exception)
+   {
+      QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(exception, QUserFacingException.class);
+
+      if(userFacingException != null)
+      {
+         LOG.info("User-facing exception in process", userFacingException);
+         resultForCaller.put("error", userFacingException.getMessage()); // todo - put this somewhere else (make error an object w/ user-facing and/or other error?)
+      }
+      else
+      {
+         Throwable rootException = ExceptionUtils.getRootException(exception);
+         LOG.warn("Uncaught Exception in process", exception);
+         resultForCaller.put("error", "Original error message: " + rootException.getMessage());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** take values from query-string params, and put them into the run process request
+    ** todo - better from POST body, or with a "field-" type of prefix??
+    **
+    *******************************************************************************/
+   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessRequest runProcessRequest)
+   {
       for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
       {
          String       fieldName = queryParam.getKey();
@@ -584,61 +743,74 @@ public class QJavalinImplementation
             runProcessRequest.addValue(fieldName, values.get(0));
          }
       }
-
-      try
-      {
-         ////////////////////////////////////////////////
-         // run the process                            //
-         // todo -  some "job id" to return to caller? //
-         ////////////////////////////////////////////////
-         CompletableFuture<RunProcessResult> future = CompletableFuture.supplyAsync(() ->
-         {
-            try
-            {
-               LOG.info("Running process [" + runProcessRequest.getProcessName() + "]");
-               RunProcessResult runProcessResult = new RunProcessAction().execute(runProcessRequest);
-               LOG.info("Process result error? " + runProcessResult.getError());
-               for(QFieldMetaData outputField : qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
-               {
-                  LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
-               }
-               return (runProcessResult);
-            }
-            catch(Exception e)
-            {
-               LOG.error("Error running future for process", e);
-               throw (new CompletionException(e));
-            }
-         });
-
-         Map<String, Object> resultForCaller = new HashMap<>();
-         try
-         {
-            RunProcessResult runProcessResult = future.get(3, TimeUnit.SECONDS);
-            resultForCaller.put("error", runProcessResult.getError());
-            resultForCaller.put("values", runProcessResult.getValues());
-         }
-         catch(TimeoutException te)
-         {
-            resultForCaller.put("jobId", "Job is running asynchronously... job id available in a later version.");
-         }
-         context.result(JsonUtils.toJson(resultForCaller));
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
    }
 
 
 
    /*******************************************************************************
-    ** Run a step in a process (named in path param :process)
+    ** Run a step in a process (named in path param :processName)
     **
     *******************************************************************************/
-   private static void processStep(Context context)
+   private static void processStep(Context context) throws QModuleDispatchException
    {
-
+      String processUUID = context.pathParam("processUUID");
+      String lastStep    = context.pathParam("step");
+      doProcessInitOrStep(context, processUUID, lastStep);
    }
 
+
+
+   /*******************************************************************************
+    ** Get status for a currently running process (step)
+    *******************************************************************************/
+   private static void processStatus(Context context)
+   {
+      String processUUID = context.pathParam("processUUID");
+      String jobUUID     = context.pathParam("jobUUID");
+
+      LOG.info("Request for status of job " + jobUUID);
+      Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
+      if(optionalJobStatus.isEmpty())
+      {
+         handleException(context, new RuntimeException("Could not find status of process step job"));
+      }
+      else
+      {
+         Map<String, Object> resultForCaller = new HashMap<>();
+         AsyncJobStatus      jobStatus       = optionalJobStatus.get();
+
+         resultForCaller.put("jobStatus", jobStatus);
+         LOG.info("Job status is " + jobStatus.getState() + " for " + jobUUID);
+
+         if(jobStatus.getState().equals(AsyncJobState.COMPLETE))
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // if the job is complete, get the process result from state provider, and return it //
+            // this output should look like it did if the job finished synchronously!!           //
+            ///////////////////////////////////////////////////////////////////////////////////////
+            Optional<ProcessState> processState = RunProcessAction.getStateProvider().get(ProcessState.class, new UUIDAndTypeStateKey(UUID.fromString(processUUID), StateType.PROCESS_STATUS));
+            if(processState.isPresent())
+            {
+               RunProcessResult runProcessResult = new RunProcessResult(processState.get());
+               serializeRunProcessResultForCaller(resultForCaller, runProcessResult);
+            }
+            else
+            {
+               handleException(context, new RuntimeException("Could not find process results"));
+            }
+         }
+         else if(jobStatus.getState().equals(AsyncJobState.ERROR))
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the job had an error (e.g., a process step threw), "nicely" serialize its exception for the caller //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(jobStatus.getCaughtException() != null)
+            {
+               serializeRunProcessExceptionForCaller(resultForCaller, jobStatus.getCaughtException());
+            }
+         }
+
+         context.result(JsonUtils.toJson(resultForCaller));
+      }
+   }
 }
