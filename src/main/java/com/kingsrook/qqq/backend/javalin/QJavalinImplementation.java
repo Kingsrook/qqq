@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.actions.CountAction;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
@@ -51,6 +52,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
+import com.kingsrook.qqq.backend.core.model.actions.count.CountRequest;
+import com.kingsrook.qqq.backend.core.model.actions.count.CountResult;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
@@ -213,6 +216,9 @@ public class QJavalinImplementation
             {
                get("/", QJavalinImplementation::dataQuery);
                post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
+               path("/count", () -> {
+                  get("", QJavalinImplementation::dataCount);
+               });
                // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
                path("/:primaryKey", () ->
                {
@@ -418,6 +424,44 @@ public class QJavalinImplementation
       }
    }
 
+
+
+   /*******************************************************************************
+    *
+    * Filter parameter is a serialized QQueryFilter object, that is to say:
+    * <pre>
+    *   filter=
+    *    {"criteria":[
+    *       {"fieldName":"id","operator":"EQUALS","values":[1]},
+    *       {"fieldName":"name","operator":"IN","values":["Darin","James"]}
+    *     ]
+    *    }
+    * </pre>
+    *******************************************************************************/
+   static void dataCount(Context context)
+   {
+      try
+      {
+         CountRequest countRequest = new CountRequest(qInstance);
+         setupSession(context, countRequest);
+         countRequest.setTableName(context.pathParam("table"));
+
+         String filter = stringQueryParam(context, "filter");
+         if(filter != null)
+         {
+            countRequest.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
+
+         CountAction countAction = new CountAction();
+         CountResult countResult = countAction.execute(countRequest);
+
+         context.result(JsonUtils.toJson(countResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
 
 
    /*******************************************************************************

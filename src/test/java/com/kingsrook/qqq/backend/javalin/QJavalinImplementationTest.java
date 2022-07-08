@@ -252,6 +252,24 @@ class QJavalinImplementationTest
 
 
    /*******************************************************************************
+    ** test a table count
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataCount()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/count").asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("count"));
+      int count = jsonObject.getInt("count");
+      assertEquals(5, count);
+   }
+
+
+
+   /*******************************************************************************
     ** test a table query
     **
     *******************************************************************************/
