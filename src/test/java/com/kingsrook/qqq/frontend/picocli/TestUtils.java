@@ -169,7 +169,7 @@ public class TestUtils
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
                .withFieldList(List.of(

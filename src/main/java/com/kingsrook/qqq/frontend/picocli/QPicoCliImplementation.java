@@ -384,9 +384,10 @@ public class QPicoCliImplementation
             subCommandLine.getOut().format("   %s: %s\n", outputField.getLabel(), result.getValues().get(outputField.getName()));
          }
 
-         if(result.getError() != null)
+         if(result.getException().isPresent())
          {
-            subCommandLine.getOut().println("Process Error message: " + result.getError());
+            // todo - user-facing, similar to javalin
+            subCommandLine.getOut().println("Process Error message: " + result.getException().get().getMessage());
          }
       }
       catch(Exception e)
