@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 public class RunBackendStepResult extends AbstractQResult
 {
    private ProcessState processState;
-   private Exception    exception;
+   private Exception    exception; // todo - make optional
 
 
 
@@ -46,7 +46,7 @@ public class RunBackendStepResult extends AbstractQResult
    @Override
    public String toString()
    {
-      return "RunBackendStepResult{exception?='" + exception.getMessage()
+      return "RunBackendStepResult{exception?='" + (exception == null ? "null" : exception.getMessage())
          + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
          + ",values=" + (processState == null ? null : processState.getValues())
          + "}";
