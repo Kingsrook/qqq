@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
@@ -86,30 +87,53 @@ public class RunProcessAction
       List<QStepMetaData> stepList = getAvailableStepList(process, runProcessRequest);
       try
       {
+         STEP_LOOP:
          for(QStepMetaData step : stepList)
          {
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            // if the caller requested to only run backend steps, then break if this isn't a backend step //
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            if(runProcessRequest.getBackendOnly())
+            if(step instanceof QFrontendStepMetaData)
             {
-               if(!(step instanceof QBackendStepMetaData))
+               ////////////////////////////////////////////////////////////////
+               // Handle what to do with frontend steps, per request setting //
+               ////////////////////////////////////////////////////////////////
+               switch(runProcessRequest.getFrontendStepBehavior())
                {
-                  LOG.info("Breaking process [" + process.getName() + "] at first non-backend step (as requested by caller): " + step.getName());
-                  processState.setNextStepName(step.getName());
-                  break;
+                  case BREAK ->
+                  {
+                     LOG.info("Breaking process [" + process.getName() + "] at frontend step (as requested by caller): " + step.getName());
+                     processState.setNextStepName(step.getName());
+                     break STEP_LOOP;
+                  }
+                  case SKIP ->
+                  {
+                     LOG.info("Skipping frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
+                     processState.setNextStepName(step.getName());
+
+                     //////////////////////////////////////////////////////////////////////
+                     // much less error prone in case this code changes in the future... //
+                     //////////////////////////////////////////////////////////////////////
+                     // noinspection UnnecessaryContinue
+                     continue;
+                  }
+                  case FAIL ->
+                  {
+                     LOG.info("Throwing error for frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
+                     throw (new QException("Failing process at step " + step.getName() + " (as requested, to fail on frontend steps)"));
+                  }
+                  default -> throw new IllegalStateException("Unexpected value: " + runProcessRequest.getFrontendStepBehavior());
                }
             }
-
-            /////////////////////////////////////
-            // run the step, based on its type //
-            /////////////////////////////////////
-            if(step instanceof QBackendStepMetaData backendStepMetaData)
+            else if(step instanceof QBackendStepMetaData backendStepMetaData)
             {
+               ///////////////////////
+               // Run backend steps //
+               ///////////////////////
                runBackendStep(runProcessRequest, process, runProcessResult, stateKey, backendStepMetaData, processState);
             }
             else
             {
+               //////////////////////////////////////////////////
+               // in case we have a different step type, throw //
+               //////////////////////////////////////////////////
                throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
             }
          }

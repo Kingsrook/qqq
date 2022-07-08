@@ -35,6 +35,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 public class QFrontendStepMetaData extends QStepMetaData
 {
    private List<QFieldMetaData> formFields;
+   private List<QFieldMetaData> viewFields;
+   private List<QFieldMetaData> recordListFields;
 
 
 
@@ -83,6 +85,106 @@ public class QFrontendStepMetaData extends QStepMetaData
    public QFrontendStepMetaData withFormFields(List<QFieldMetaData> formFields)
    {
       this.formFields = formFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for viewFields
+    **
+    *******************************************************************************/
+   public List<QFieldMetaData> getViewFields()
+   {
+      return viewFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for viewFields
+    **
+    *******************************************************************************/
+   public void setViewFields(List<QFieldMetaData> viewFields)
+   {
+      this.viewFields = viewFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter to add a single view field
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withViewField(QFieldMetaData viewField)
+   {
+      if(this.viewFields == null)
+      {
+         this.viewFields = new ArrayList<>();
+      }
+      this.viewFields.add(viewField);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter for viewFields
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withViewFields(List<QFieldMetaData> viewFields)
+   {
+      this.viewFields = viewFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordListFields
+    **
+    *******************************************************************************/
+   public List<QFieldMetaData> getRecordListFields()
+   {
+      return recordListFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordListFields
+    **
+    *******************************************************************************/
+   public void setRecordListFields(List<QFieldMetaData> recordListFields)
+   {
+      this.recordListFields = recordListFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter to add a single recordList field
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withRecordListField(QFieldMetaData recordListField)
+   {
+      if(this.recordListFields == null)
+      {
+         this.recordListFields = new ArrayList<>();
+      }
+      this.recordListFields.add(recordListField);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter for recordListFields
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withRecordListFields(List<QFieldMetaData> recordListFields)
+   {
+      this.recordListFields = recordListFields;
       return (this);
    }
 

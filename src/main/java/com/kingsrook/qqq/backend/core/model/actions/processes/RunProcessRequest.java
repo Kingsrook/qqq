@@ -39,13 +39,25 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
  *******************************************************************************/
 public class RunProcessRequest extends AbstractQRequest
 {
-   private String           processName;
-   private QProcessCallback callback;
-   private ProcessState     processState;
-   private boolean          backendOnly = false;
-   private String           startAfterStep;
-   private String           processUUID;
-   private AsyncJobCallback asyncJobCallback;
+   private String               processName;
+   private QProcessCallback     callback;
+   private ProcessState         processState;
+   private FrontendStepBehavior frontendStepBehavior = FrontendStepBehavior.BREAK;
+   private String               startAfterStep;
+   private String               processUUID;
+   private AsyncJobCallback     asyncJobCallback;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public enum FrontendStepBehavior
+   {
+      BREAK,
+      SKIP,
+      FAIL
+   }
 
 
 
@@ -285,21 +297,23 @@ public class RunProcessRequest extends AbstractQRequest
 
 
    /*******************************************************************************
+    ** Getter for frontendStepBehavior
     **
     *******************************************************************************/
-   public void setBackendOnly(boolean backendOnly)
+   public FrontendStepBehavior getFrontendStepBehavior()
    {
-      this.backendOnly = backendOnly;
+      return frontendStepBehavior;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for frontendStepBehavior
     **
     *******************************************************************************/
-   public boolean getBackendOnly()
+   public void setFrontendStepBehavior(FrontendStepBehavior frontendStepBehavior)
    {
-      return backendOnly;
+      this.frontendStepBehavior = frontendStepBehavior;
    }
 
 

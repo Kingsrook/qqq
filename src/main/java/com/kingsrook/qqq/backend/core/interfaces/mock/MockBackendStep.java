@@ -26,6 +26,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -35,16 +37,26 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResu
  *******************************************************************************/
 public class MockBackendStep implements BackendStep
 {
+   private static final Logger LOG = LogManager.getLogger(MockBackendStep.class);
+
    public static final String FIELD_GREETING_PREFIX = "greetingPrefix";
    public static final String FIELD_GREETING_SUFFIX = "greetingSuffix";
+   public static final String FIELD_MOCK_VALUE      = "mockValue";
+   public static final String MOCK_VALUE            = "You so silly";
+
+
 
    @Override
    public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
-      runBackendStepResult.getRecords().forEach(r -> r.setValue("mockValue", "Ha ha!"));
+      runBackendStepResult.getRecords().forEach(r ->
+      {
+         r.setValue(FIELD_MOCK_VALUE, "Ha ha!");
+         LOG.info("We are mocking {}: {}", r.getValueString("firstName"), r.getValue(FIELD_MOCK_VALUE));
+      });
 
       runBackendStepResult.setValues(runBackendStepRequest.getValues());
-      runBackendStepResult.addValue("mockValue", "You so silly");
+      runBackendStepResult.addValue(FIELD_MOCK_VALUE, MOCK_VALUE);
 
       /////////////////////////////////
       // mock the "greet" process... //

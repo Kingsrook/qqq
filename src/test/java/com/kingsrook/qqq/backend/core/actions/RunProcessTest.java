@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
@@ -37,10 +38,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -75,7 +78,7 @@ public class RunProcessTest
     **
     *******************************************************************************/
    @Test
-   public void testBackendOnly() throws QException
+   public void testBreakOnFrontendSteps() throws QException
    {
       TestCallback      callback    = new TestCallback();
       QInstance         instance    = TestUtils.defineInstance();
@@ -84,7 +87,7 @@ public class RunProcessTest
 
       request.setSession(TestUtils.getMockSession());
       request.setProcessName(processName);
-      request.setBackendOnly(true);
+      request.setFrontendStepBehavior(RunProcessRequest.FrontendStepBehavior.BREAK);
       request.setCallback(callback);
       RunProcessResult result0 = new RunProcessAction().execute(request);
 
@@ -110,6 +113,58 @@ public class RunProcessTest
       assertTrue(breakingAtStep1.isPresent());
       assertInstanceOf(QFrontendStepMetaData.class, instance.getProcessStep(processName, breakingAtStep1.get()));
       assertNotEquals(breakingAtStep0.get(), breakingAtStep1.get());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testSkipFrontendSteps() throws QException
+   {
+      TestCallback      callback    = new TestCallback();
+      QInstance         instance    = TestUtils.defineInstance();
+      RunProcessRequest request     = new RunProcessRequest(instance);
+      String            processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
+
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(processName);
+      request.setFrontendStepBehavior(RunProcessRequest.FrontendStepBehavior.SKIP);
+      request.setCallback(callback);
+
+      RunProcessResult runProcessResult = new RunProcessAction().execute(request);
+      assertTrue(runProcessResult.getException().isEmpty());
+      assertEquals(MockBackendStep.MOCK_VALUE, runProcessResult.getValues().get(MockBackendStep.FIELD_MOCK_VALUE));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testFailOnFrontendSteps()
+   {
+      TestCallback      callback    = new TestCallback();
+      QInstance         instance    = TestUtils.defineInstance();
+      RunProcessRequest request     = new RunProcessRequest(instance);
+      String            processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
+
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(processName);
+      request.setFrontendStepBehavior(RunProcessRequest.FrontendStepBehavior.FAIL);
+      request.setCallback(callback);
+
+      try
+      {
+         new RunProcessAction().execute(request);
+         fail("This should have thrown...");
+      }
+      catch(Exception e)
+      {
+         assertTrue(e.getMessage().contains("fail on frontend steps"));
+      }
    }
 
 

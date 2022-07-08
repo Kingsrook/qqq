@@ -122,9 +122,20 @@ public class QInstanceEnricher
       step.getInputFields().forEach(this::enrich);
       step.getOutputFields().forEach(this::enrich);
 
-      if (step instanceof QFrontendStepMetaData)
+      if (step instanceof QFrontendStepMetaData frontendStepMetaData)
       {
-         ((QFrontendStepMetaData)step).getFormFields().forEach(this::enrich);
+         if(frontendStepMetaData.getFormFields() != null)
+         {
+            frontendStepMetaData.getFormFields().forEach(this::enrich);
+         }
+         if(frontendStepMetaData.getViewFields() != null)
+         {
+            frontendStepMetaData.getViewFields().forEach(this::enrich);
+         }
+         if(frontendStepMetaData.getRecordListFields() != null)
+         {
+            frontendStepMetaData.getRecordListFields().forEach(this::enrich);
+         }
       }
    }
 
