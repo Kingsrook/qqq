@@ -58,8 +58,7 @@ public class TestUtils
          .withVendor("h2")
          .withHostName("mem")
          .withDatabaseName("test_database")
-         .withUsername("sa")
-         .withPassword("");
+         .withUsername("sa");
       rdbmsBackendMetaData.setName("default");
       return (rdbmsBackendMetaData);
    }
