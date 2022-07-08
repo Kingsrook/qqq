@@ -216,7 +216,8 @@ public class QJavalinImplementation
             {
                get("/", QJavalinImplementation::dataQuery);
                post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
-               path("/count", () -> {
+               path("/count", () ->
+               {
                   get("", QJavalinImplementation::dataCount);
                });
                // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
