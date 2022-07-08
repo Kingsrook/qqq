@@ -497,9 +497,9 @@ class QPicoCliImplementationTest
    @Test
    public void test_tableProcessGreetUsingOptionsForFields() throws Exception
    {
-      TestOutput testOutput = testCli("person", "process", "greet", "--field-greetingPrefix=Hello", "--field-greetingSuffix=There");
+      TestOutput testOutput = testCli("person", "process", "greet", "--field-greetingPrefix=Hello", "--field-greetingSuffix=World");
       assertTestOutputDoesNotContain(testOutput, "Please supply a value for the field");
-      assertTestOutputContains(testOutput, "Hello X There");
+      assertTestOutputContains(testOutput, "Hello X World");
    }
 
 
