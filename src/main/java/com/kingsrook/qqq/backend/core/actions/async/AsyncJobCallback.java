@@ -19,51 +19,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.actions.async;
 
 
-import java.util.Objects;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.state.StateType;
+import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 
 
 /*******************************************************************************
+ ** Argument passed to an AsyncJob when it runs, which can be used to communicate
+ ** data back out of the job.
  **
+ ** TODO - future - allow cancellation to be indicated here?
  *******************************************************************************/
-public class UUIDStateKey extends AbstractStateKey
+public class AsyncJobCallback
 {
-   private final UUID uuid;
+   private UUID           jobUUID;
+   private AsyncJobStatus asyncJobStatus;
 
 
 
    /*******************************************************************************
-    ** Default constructor - assigns a random UUID.
     **
     *******************************************************************************/
-   public UUIDStateKey()
+   public AsyncJobCallback(UUID jobUUID, AsyncJobStatus asyncJobStatus)
    {
-      uuid = UUID.randomUUID();
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that lets you supply a UUID.
-    **
-    *******************************************************************************/
-   public UUIDStateKey(UUID uuid)
-   {
-      this.uuid = uuid;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for uuid
-    **
-    *******************************************************************************/
-   public UUID getUuid()
-   {
-      return uuid;
+      this.jobUUID = jobUUID;
+      this.asyncJobStatus = asyncJobStatus;
    }
 
 
@@ -71,21 +54,10 @@ public class UUIDStateKey extends AbstractStateKey
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public boolean equals(Object o)
+   public void updateStatus(String message)
    {
-      if(this == o)
-      {
-         return true;
-      }
-
-      if(o == null || getClass() != o.getClass())
-      {
-         return false;
-      }
-
-      UUIDStateKey that = (UUIDStateKey) o;
-      return Objects.equals(uuid, that.uuid);
+      this.asyncJobStatus.setMessage(message);
+      storeUpdatedStatus();
    }
 
 
@@ -93,10 +65,11 @@ public class UUIDStateKey extends AbstractStateKey
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public int hashCode()
+   public void updateStatus(int current, int total)
    {
-      return Objects.hash(uuid);
+      this.asyncJobStatus.setCurrent(current);
+      this.asyncJobStatus.setTotal(total);
+      storeUpdatedStatus();
    }
 
 
@@ -104,9 +77,22 @@ public class UUIDStateKey extends AbstractStateKey
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public String toString()
+   public void updateStatus(String message, int current, int total)
    {
-      return uuid.toString();
+      this.asyncJobStatus.setMessage(message);
+      this.asyncJobStatus.setCurrent(current);
+      this.asyncJobStatus.setTotal(total);
+      storeUpdatedStatus();
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void storeUpdatedStatus()
+   {
+      AsyncJobManager.getStateProvider().put(new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS), asyncJobStatus);
+   }
+
 }

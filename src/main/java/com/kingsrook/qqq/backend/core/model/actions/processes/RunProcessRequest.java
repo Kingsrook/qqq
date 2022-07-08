@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -38,9 +39,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
  *******************************************************************************/
 public class RunProcessRequest extends AbstractQRequest
 {
-   private String processName;
+   private String           processName;
    private QProcessCallback callback;
-   private ProcessState processState;
+   private ProcessState     processState;
+   private boolean          backendOnly = false;
+   private String           startAfterStep;
+   private String           processUUID;
+   private AsyncJobCallback asyncJobCallback;
 
 
 
@@ -61,6 +66,18 @@ public class RunProcessRequest extends AbstractQRequest
    {
       super(instance);
       processState = new ProcessState();
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., for steps after the first step in a process, seed the data in a run
+    ** function request from a process state.
+    **
+    *******************************************************************************/
+   public void seedFromProcessState(ProcessState processState)
+   {
+      this.processState = processState;
    }
 
 
@@ -255,14 +272,93 @@ public class RunProcessRequest extends AbstractQRequest
    }
 
 
+
    /*******************************************************************************
-    ** Accessor for processState - protected, because we generally want to access
-    ** its members through wrapper methods, we think
+    ** Accessor for processState
     **
     *******************************************************************************/
-   protected ProcessState getProcessState()
+   public ProcessState getProcessState()
    {
       return processState;
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setBackendOnly(boolean backendOnly)
+   {
+      this.backendOnly = backendOnly;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean getBackendOnly()
+   {
+      return backendOnly;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setStartAfterStep(String startAfterStep)
+   {
+      this.startAfterStep = startAfterStep;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getStartAfterStep()
+   {
+      return startAfterStep;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setProcessUUID(String processUUID)
+   {
+      this.processUUID = processUUID;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getProcessUUID()
+   {
+      return processUUID;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setAsyncJobCallback(AsyncJobCallback asyncJobCallback)
+   {
+      this.asyncJobCallback = asyncJobCallback;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AsyncJobCallback getAsyncJobCallback()
+   {
+      return asyncJobCallback;
+   }
 }

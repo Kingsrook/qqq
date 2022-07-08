@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
+import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
@@ -44,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.mock.MockAuthenticationModule;
+import com.kingsrook.qqq.backend.core.modules.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 
 
@@ -118,7 +121,7 @@ public class TestUtils
    {
       return new QBackendMetaData()
          .withName(DEFAULT_BACKEND_NAME)
-         .withBackendType("mock");
+         .withBackendType(MockBackendModule.class);
    }
 
 
@@ -189,7 +192,7 @@ public class TestUtils
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
                .withFieldList(List.of(
@@ -227,7 +230,7 @@ public class TestUtils
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
                .withFieldList(List.of(
@@ -266,9 +269,9 @@ public class TestUtils
          .addStep(new QBackendStepMetaData()
             .withName("getAgeStatistics")
             .withCode(new QCodeReference()
-               .withName("com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics")
+               .withName(GetAgeStatistics.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION))
+               .withCodeUsage(QCodeUsage.BACKEND_STEP))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName("person")))
             .withOutputMetaData(new QFunctionOutputMetaData()
@@ -281,9 +284,9 @@ public class TestUtils
          .addStep(new QBackendStepMetaData()
             .withName("addAge")
             .withCode(new QCodeReference()
-               .withName("com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge")
+               .withName(AddAge.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION))
+               .withCodeUsage(QCodeUsage.BACKEND_STEP))
             .withInputData(new QFunctionInputMetaData()
                .withFieldList(List.of(new QFieldMetaData("yearsToAdd", QFieldType.INTEGER))))
             .withOutputMetaData(new QFunctionOutputMetaData()

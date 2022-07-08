@@ -37,7 +37,6 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -61,7 +60,6 @@ public class RunBackendStepActionTest
       request.setCallback(callback);
       RunBackendStepResult result = new RunBackendStepAction().execute(request);
       assertNotNull(result);
-      assertNull(result.getError());
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("mockValue")), "records should have a mock value");
       assertTrue(result.getValues().containsKey("mockValue"), "result object should have a mock value");
       assertEquals("ABC", result.getValues().get("greetingPrefix"), "result object should have value from our callback");

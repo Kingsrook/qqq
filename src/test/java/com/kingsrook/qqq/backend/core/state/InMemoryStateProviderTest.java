@@ -42,7 +42,7 @@ public class InMemoryStateProviderTest
    public void testStateNotFound()
    {
       InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
-      UUIDStateKey          key           = new UUIDStateKey();
+      UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
       Assertions.assertTrue(stateProvider.get(QRecord.class, key).isEmpty(), "Key not found in state should return empty");
    }
@@ -55,7 +55,7 @@ public class InMemoryStateProviderTest
    public void testSimpleStateFound()
    {
       InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
-      UUIDStateKey          key           = new UUIDStateKey();
+      UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
       String uuid = UUID.randomUUID().toString();
       QRecord qRecord = new QRecord().withValue("uuid", uuid);
@@ -74,7 +74,7 @@ public class InMemoryStateProviderTest
    public void testWrongTypeOnGet()
    {
       InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
-      UUIDStateKey          key           = new UUIDStateKey();
+      UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
       String uuid = UUID.randomUUID().toString();
       QRecord qRecord = new QRecord().withValue("uuid", uuid);

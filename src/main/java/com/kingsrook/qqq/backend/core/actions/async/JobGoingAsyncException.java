@@ -19,15 +19,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.actions.async;
 
 
 /*******************************************************************************
- ** Possible usages for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeUsage
+public class JobGoingAsyncException extends Exception
 {
-   BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER // a function to customize part of a QQQ table's behavior
+   private String jobUUID;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public JobGoingAsyncException(String jobUUID)
+   {
+      this.jobUUID = jobUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for jobUUID
+    **
+    *******************************************************************************/
+   public String getJobUUID()
+   {
+      return jobUUID;
+   }
+
 }

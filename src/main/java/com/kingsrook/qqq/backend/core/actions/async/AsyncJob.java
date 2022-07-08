@@ -19,15 +19,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.actions.async;
 
 
 /*******************************************************************************
- ** Possible usages for Q-Code entities
- **
+ ** Interface to be implemented (as lambdas), for working with AsyncJobManager.
  *******************************************************************************/
-public enum QCodeUsage
+@FunctionalInterface
+public interface AsyncJob<T>
 {
-   BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER // a function to customize part of a QQQ table's behavior
+   /*******************************************************************************
+    ** Run the job, taking a callback object (where you can communicate your status
+    ** back), returning a result when you're done..
+    *******************************************************************************/
+   T run(AsyncJobCallback callback) throws Exception;
 }

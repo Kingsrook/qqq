@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 public class RunBackendStepResult extends AbstractQResult
 {
    private ProcessState processState;
-   private String error;
+   private Exception    exception;
 
 
 
@@ -46,7 +46,7 @@ public class RunBackendStepResult extends AbstractQResult
    @Override
    public String toString()
    {
-      return "RunBackendStepResult{error='" + error
+      return "RunBackendStepResult{exception?='" + exception.getMessage()
          + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
          + ",values=" + (processState == null ? null : processState.getValues())
          + "}";
@@ -156,33 +156,31 @@ public class RunBackendStepResult extends AbstractQResult
 
 
    /*******************************************************************************
-    ** Getter for error
-    **
-    *******************************************************************************/
-   public String getError()
-   {
-      return error;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for error
-    **
-    *******************************************************************************/
-   public void setError(String error)
-   {
-      this.error = error;
-   }
-
-
-
-   /*******************************************************************************
     ** Accessor for processState
     **
     *******************************************************************************/
    public ProcessState getProcessState()
    {
       return processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setException(Exception exception)
+   {
+      this.exception = exception;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Exception getException()
+   {
+      return exception;
    }
 }

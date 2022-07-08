@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.interfaces.mock;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
@@ -38,7 +39,7 @@ public class MockBackendStep implements BackendStep
    public static final String FIELD_GREETING_SUFFIX = "greetingSuffix";
 
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult)
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
       runBackendStepResult.getRecords().forEach(r -> r.setValue("mockValue", "Ha ha!"));
 
@@ -49,5 +50,10 @@ public class MockBackendStep implements BackendStep
       // mock the "greet" process... //
       /////////////////////////////////
       runBackendStepResult.addValue("outputMessage", runBackendStepRequest.getValueString(FIELD_GREETING_PREFIX) + " X " + runBackendStepRequest.getValueString(FIELD_GREETING_SUFFIX));
+
+      if("there".equalsIgnoreCase(runBackendStepRequest.getValueString(FIELD_GREETING_SUFFIX)))
+      {
+         throw (new QException("You said Hello There, didn't you..."));
+      }
    }
 }

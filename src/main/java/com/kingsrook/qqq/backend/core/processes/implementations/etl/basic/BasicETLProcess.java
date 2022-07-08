@@ -60,7 +60,7 @@ public class BasicETLProcess
          .withCode(new QCodeReference()
             .withName(BasicETLExtractFunction.class.getName())
             .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.FUNCTION))
+            .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING)));
 
@@ -69,7 +69,7 @@ public class BasicETLProcess
          .withCode(new QCodeReference()
             .withName(BasicETLTransformFunction.class.getName())
             .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.FUNCTION))
+            .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))
             .addField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)));
@@ -79,7 +79,7 @@ public class BasicETLProcess
          .withCode(new QCodeReference()
             .withName(BasicETLLoadFunction.class.getName())
             .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.FUNCTION))
+            .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)))
          .withOutputMetaData(new QFunctionOutputMetaData()

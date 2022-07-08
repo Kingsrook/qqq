@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -67,23 +68,12 @@ public class RunBackendStepRequest extends AbstractQRequest
 
 
    /*******************************************************************************
-    ** e.g., for steps after the first step in a process, seed the data in a run
-    ** function request from a process state.
     **
     *******************************************************************************/
-   public void seedFromProcessState(ProcessState processState)
+   public RunBackendStepRequest(QInstance instance, ProcessState processState)
    {
+      super(instance);
       this.processState = processState;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void seedFromRunProcessRequest(RunProcessRequest runProcessRequest)
-   {
-      this.processState = runProcessRequest.getProcessState();
    }
 
 
@@ -308,7 +298,7 @@ public class RunBackendStepRequest extends AbstractQRequest
     *******************************************************************************/
    public Integer getValueInteger(String fieldName)
    {
-      return ((Integer) getValue(fieldName));
+      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
    }
 
 

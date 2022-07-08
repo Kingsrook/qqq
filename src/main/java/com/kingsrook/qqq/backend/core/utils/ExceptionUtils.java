@@ -22,6 +22,10 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.HashSet;
+import java.util.Set;
+
+
 /*******************************************************************************
  ** Utility class for working with exceptions.
  **
@@ -31,12 +35,12 @@ public class ExceptionUtils
 
    /*******************************************************************************
     ** Find a specific exception class in an exception's caused-by chain.  Returns
-    ** null if not found.  Be aware, checks for class.equals -- not instanceof.
+    ** null if not found.  Be aware, uses class.isInstaance (so sub-classes get found).
     **
     *******************************************************************************/
    public static <T extends Throwable> T findClassInRootChain(Throwable e, Class<T> targetClass)
    {
-      if (e == null)
+      if(e == null)
       {
          return (null);
       }
@@ -54,4 +58,34 @@ public class ExceptionUtils
       return findClassInRootChain(e.getCause(), targetClass);
    }
 
+
+
+   /*******************************************************************************
+    ** Get the root exception in a caused-by-chain.
+    **
+    *******************************************************************************/
+   public static Throwable getRootException(Exception exception)
+   {
+      if(exception == null)
+      {
+         return (null);
+      }
+
+      Throwable      root = exception;
+      Set<Throwable> seen = new HashSet<>();
+      while(root.getCause() != null)
+      {
+         if(seen.contains(root))
+         {
+            //////////////////////////
+            // avoid infinite loops //
+            //////////////////////////
+            break;
+         }
+         seen.add(root);
+         root = root.getCause();
+      }
+
+      return (root);
+   }
 }

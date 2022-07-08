@@ -19,15 +19,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- ** Possible usages for Q-Code entities
+ ** Exception for when there's a problem with a value (like a string that you need
+ ** to be an integer, but it isn't).
  **
  *******************************************************************************/
-public enum QCodeUsage
+public class QValueException extends RuntimeException
 {
-   BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER // a function to customize part of a QQQ table's behavior
+
+
+   /*******************************************************************************
+    ** Constructor of message
+    **
+    *******************************************************************************/
+   public QValueException(String message)
+   {
+      super(message);
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor of message & cause
+    **
+    *******************************************************************************/
+   public QValueException(String message, Throwable cause)
+   {
+      super(message, cause);
+   }
+
 }

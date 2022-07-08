@@ -200,7 +200,7 @@ public class RunBackendStepAction
       catch(Exception e)
       {
          runBackendStepResult = new RunBackendStepResult();
-         runBackendStepResult.setError("Error running backend step code: " + e.getMessage());
+         runBackendStepResult.setException(e);
          LOG.info("Error running backend step code", e);
       }
 

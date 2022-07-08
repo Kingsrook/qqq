@@ -19,102 +19,131 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.processes;
+package com.kingsrook.qqq.backend.core.actions.async;
 
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- **
+ ** Object to track current status of an async job - e.g., its state, and some
+ ** messages from the backend like "x of y"
  *******************************************************************************/
-public class ProcessState implements Serializable
+public class AsyncJobStatus implements Serializable
 {
-   private List<QRecord>             records      = new ArrayList<>();
-   private Map<String, Serializable> values       = new HashMap<>();
-   private Optional<String>          nextStepName = Optional.empty();
+   private AsyncJobState state;
+   private String        message;
+   private Integer       current;
+   private Integer       total;
+   private Exception     caughtException;
 
 
 
    /*******************************************************************************
-    ** Getter for records
+    ** Getter for state
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public AsyncJobState getState()
    {
-      return records;
+      return state;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for records
+    ** Setter for state
     **
     *******************************************************************************/
-   public void setRecords(List<QRecord> records)
+   public void setState(AsyncJobState state)
    {
-      this.records = records;
+      this.state = state;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for values
+    ** Getter for message
     **
     *******************************************************************************/
-   public Map<String, Serializable> getValues()
+   public String getMessage()
    {
-      return values;
+      return message;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
+    ** Setter for message
     **
     *******************************************************************************/
-   public void setValues(Map<String, Serializable> values)
+   public void setMessage(String message)
    {
-      this.values = values;
+      this.message = message;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for nextStepName
+    ** Getter for current
     **
     *******************************************************************************/
-   public Optional<String> getNextStepName()
+   public Integer getCurrent()
    {
-      return nextStepName;
+      return current;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for nextStepName
+    ** Setter for current
     **
     *******************************************************************************/
-   public void setNextStepName(String nextStepName)
+   public void setCurrent(Integer current)
    {
-      this.nextStepName = Optional.of(nextStepName);
+      this.current = current;
    }
 
 
 
    /*******************************************************************************
-    ** clear out the value of nextStepName (set the Optional to empty)
+    ** Getter for total
     **
     *******************************************************************************/
-   public void clearNextStepName()
+   public Integer getTotal()
    {
-      this.nextStepName = Optional.empty();
+      return total;
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for total
+    **
+    *******************************************************************************/
+   public void setTotal(Integer total)
+   {
+      this.total = total;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for caughtException
+    **
+    *******************************************************************************/
+   public Exception getCaughtException()
+   {
+      return caughtException;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for caughtException
+    **
+    *******************************************************************************/
+   public void setCaughtException(Exception caughtException)
+   {
+      this.caughtException = caughtException;
+   }
 }

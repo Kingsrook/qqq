@@ -19,85 +19,105 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.processes;
+package com.kingsrook.qqq.backend.core.state;
+
+
+import java.util.Objects;
+import java.util.UUID;
 
 
 /*******************************************************************************
- ** Meta-Data to define the Output View for a QQQ Function
  **
  *******************************************************************************/
-public class QOutputView
+public class UUIDAndTypeStateKey extends AbstractStateKey
 {
-   private String messageField;
-   private QRecordListView recordListView;
+   private final UUID      uuid;
+   private final StateType stateType;
 
 
 
    /*******************************************************************************
-    ** Getter for message
+    ** Default constructor - assigns a random UUID.
     **
     *******************************************************************************/
-   public String getMessageField()
+   public UUIDAndTypeStateKey(StateType stateType)
    {
-      return messageField;
+      this(UUID.randomUUID(), stateType);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for message
+    ** Constructor where user can supply the UUID.
     **
     *******************************************************************************/
-   public void setMessage(String message)
+   public UUIDAndTypeStateKey(UUID uuid, StateType stateType)
    {
-      this.messageField = message;
+      this.uuid = uuid;
+      this.stateType = stateType;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for message
+    ** Getter for uuid
     **
     *******************************************************************************/
-   public QOutputView withMessageField(String messageField)
+   public UUID getUuid()
    {
-      this.messageField = messageField;
-      return(this);
+      return uuid;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for recordListView
+    ** Getter for stateType
     **
     *******************************************************************************/
-   public QRecordListView getRecordListView()
+   public StateType getStateType()
    {
-      return recordListView;
+      return stateType;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordListView
     **
     *******************************************************************************/
-   public void setRecordListView(QRecordListView recordListView)
+   @Override
+   public boolean equals(Object o)
    {
-      this.recordListView = recordListView;
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      UUIDAndTypeStateKey that = (UUIDAndTypeStateKey) o;
+      return Objects.equals(uuid, that.uuid) && stateType == that.stateType;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordListView
     **
     *******************************************************************************/
-   public QOutputView withRecordListView(QRecordListView recordListView)
+   @Override
+   public int hashCode()
    {
-      this.recordListView = recordListView;
-      return(this);
+      return Objects.hash(uuid, stateType);
    }
 
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "{uuid=" + uuid + ", stateType=" + stateType + '}';
+   }
 }

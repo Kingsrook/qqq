@@ -19,15 +19,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.state;
 
 
 /*******************************************************************************
- ** Possible usages for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeUsage
+public enum StateType
 {
-   BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER // a function to customize part of a QQQ table's behavior
+   PROCESS_STATUS,
+   ASYNC_JOB_STATUS
 }
