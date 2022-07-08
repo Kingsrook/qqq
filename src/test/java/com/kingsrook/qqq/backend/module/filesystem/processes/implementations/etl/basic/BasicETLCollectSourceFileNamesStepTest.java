@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for BasicETLCollectSourceFileNamesFunction
  *******************************************************************************/
-class BasicETLCollectSourceFileNamesFunctionTest
+class BasicETLCollectSourceFileNamesStepTest
 {
 
    /*******************************************************************************
@@ -94,7 +94,7 @@ class BasicETLCollectSourceFileNamesFunctionTest
    private String runTest(String... fileNames) throws Exception
    {
       QInstance            qInstance           = TestUtils.defineInstance();
-      QBackendStepMetaData backendStepMetaData = new BasicETLCollectSourceFileNamesFunction().defineStepMetaData();
+      QBackendStepMetaData backendStepMetaData = new BasicETLCollectSourceFileNamesStep().defineStepMetaData();
       QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
 
@@ -110,6 +110,6 @@ class BasicETLCollectSourceFileNamesFunctionTest
       RunBackendStepAction runBackendStepAction = new RunBackendStepAction();
       RunBackendStepResult result               = runBackendStepAction.execute(runBackendStepRequest);
 
-      return ((String) result.getValues().get(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS));
+      return ((String) result.getValues().get(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS));
    }
 }

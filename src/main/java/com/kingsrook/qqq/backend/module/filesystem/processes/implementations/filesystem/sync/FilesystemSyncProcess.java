@@ -64,12 +64,12 @@ public class FilesystemSyncProcess
     *******************************************************************************/
    public QProcessMetaData defineProcessMetaData()
    {
-      QBackendStepMetaData syncFunction = new QBackendStepMetaData()
-         .withName(FilesystemSyncFunction.FUNCTION_NAME)
+      QBackendStepMetaData syncStep = new QBackendStepMetaData()
+         .withName(FilesystemSyncStep.STEP_NAME)
          .withCode(new QCodeReference()
-            .withName(FilesystemSyncFunction.class.getName())
+            .withName(FilesystemSyncStep.class.getName())
             .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.FUNCTION))
+            .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING))
             .addField(new QFieldMetaData(FIELD_ARCHIVE_TABLE, QFieldType.STRING))
@@ -78,6 +78,6 @@ public class FilesystemSyncProcess
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
-         .addStep(syncFunction);
+         .addStep(syncStep);
    }
 }

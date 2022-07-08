@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for BasicETLCleanupSourceFilesFunction
  *******************************************************************************/
-public class BasicETLCleanupSourceFilesFunctionTest
+public class BasicETLCleanupSourceFilesStepTest
 {
 
    /*******************************************************************************
@@ -137,12 +137,12 @@ public class BasicETLCleanupSourceFilesFunctionTest
    private void testDelete(QInstance qInstance, List<String> filePaths) throws Exception
    {
       RunBackendStepResult runBackendStepResult = runFunction(qInstance, filePaths, Map.of(
-         BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesFunction.VALUE_DELETE,
+         BasicETLCleanupSourceFilesStep.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesStep.VALUE_DELETE,
          // todo - even though this field isn't needed, since we gave a value of "delete"
          //  the RunFunctionAction considers any missing input to be an error...
-         BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, ""));
+         BasicETLCleanupSourceFilesStep.FIELD_DESTINATION_FOR_MOVES, ""));
 
-      assertNull(runBackendStepResult.getError());
+      assertNull(runBackendStepResult.getException());
       for(String filePath : filePaths)
       {
          assertFalse(new File(filePath).exists(), "File should have been deleted.");
@@ -158,10 +158,10 @@ public class BasicETLCleanupSourceFilesFunctionTest
    {
       String trashDir = File.separator + "tmp" + File.separator + "trash";
       RunBackendStepResult runBackendStepResult = runFunction(qInstance, filePaths, Map.of(
-         BasicETLCleanupSourceFilesFunction.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesFunction.VALUE_MOVE,
-         BasicETLCleanupSourceFilesFunction.FIELD_DESTINATION_FOR_MOVES, trashDir));
+         BasicETLCleanupSourceFilesStep.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesStep.VALUE_MOVE,
+         BasicETLCleanupSourceFilesStep.FIELD_DESTINATION_FOR_MOVES, trashDir));
 
-      assertNull(runBackendStepResult.getError());
+      assertNull(runBackendStepResult.getException());
 
       for(String filePath : filePaths)
       {
@@ -179,7 +179,7 @@ public class BasicETLCleanupSourceFilesFunctionTest
     *******************************************************************************/
    private RunBackendStepResult runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
    {
-      QBackendStepMetaData backendStepMetaData = new BasicETLCleanupSourceFilesFunction().defineStepMetaData();
+      QBackendStepMetaData backendStepMetaData = new BasicETLCleanupSourceFilesStep().defineStepMetaData();
       QProcessMetaData     qProcessMetaData  = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
 
@@ -200,7 +200,7 @@ public class BasicETLCleanupSourceFilesFunctionTest
       runBackendStepRequest.setSession(TestUtils.getMockSession());
       runBackendStepRequest.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
       runBackendStepRequest.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
-      runBackendStepRequest.addValue(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
+      runBackendStepRequest.addValue(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
 
       for(Map.Entry<String, String> entry : values.entrySet())
       {

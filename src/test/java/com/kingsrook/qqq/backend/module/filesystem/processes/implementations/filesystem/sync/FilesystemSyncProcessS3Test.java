@@ -81,7 +81,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       QTableMetaData processingTable = defineTable(qInstance, "processing", processingBackend, "processing", "**/*.csv");
 
       QProcessMetaData     process = new FilesystemSyncProcess().defineProcessMetaData();
-      QBackendStepMetaData step    = process.getBackendStep(FilesystemSyncFunction.FUNCTION_NAME);
+      QBackendStepMetaData step    = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
       qInstance.addProcess(process);
 
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
@@ -109,7 +109,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
       RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
-      System.out.println(runBackendStepResult);
+      // System.out.println(runBackendStepResult);
 
       printTableListing(sourceBackend, sourceTable);
       printTableListing(archiveBackend, archiveTable);
@@ -144,7 +144,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       QTableMetaData processingTable = defineTable(qInstance, "processing", localBackend, "processing", "**/*.csv");
 
       QProcessMetaData     process  = new FilesystemSyncProcess().defineProcessMetaData();
-      QBackendStepMetaData step = process.getBackendStep(FilesystemSyncFunction.FUNCTION_NAME);
+      QBackendStepMetaData step = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
       qInstance.addProcess(process);
 
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
@@ -172,7 +172,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
       RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
-      System.out.println(runBackendStepResult);
+      // System.out.println(runBackendStepResult);
 
       printTableListing(vendorBackend, sourceTable);
       printTableListing(localBackend, archiveTable);

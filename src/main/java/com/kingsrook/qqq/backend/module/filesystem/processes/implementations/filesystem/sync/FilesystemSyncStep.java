@@ -42,21 +42,21 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Function body for collecting the file names that were discovered in the
- ** Extract step.  These will be lost during the transform, so we capture them here,
- ** so that our Clean function can move or delete them.
+ ** BackendStep to sync two filesystem tables (copying the new files to a 3rd
+ ** location as well...)
  **
  *******************************************************************************/
-public class FilesystemSyncFunction implements BackendStep
+@SuppressWarnings("unchecked")
+public class FilesystemSyncStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(FilesystemSyncFunction.class);
+   private static final Logger LOG = LogManager.getLogger(FilesystemSyncStep.class);
 
-   public static final String FUNCTION_NAME = "sync";
+   public static final String STEP_NAME = "sync";
 
 
 
    /*******************************************************************************
-    ** Execute the function - using the request as input, and the result as output.
+    ** Execute the step - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
    public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException

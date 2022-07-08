@@ -47,24 +47,24 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Function body for performing the Cleanup step of a basic ETL process - e.g.,
+ ** BackendStep for performing the Cleanup step of a basic ETL process - e.g.,
  ** after the loading, delete or move the processed file(s).
  *******************************************************************************/
-public class BasicETLCleanupSourceFilesFunction implements BackendStep
+public class BasicETLCleanupSourceFilesStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(BasicETLCleanupSourceFilesFunction.class);
+   private static final Logger LOG = LogManager.getLogger(BasicETLCleanupSourceFilesStep.class);
 
    public static final String FIELD_MOVE_OR_DELETE        = "moveOrDelete";
    public static final String FIELD_DESTINATION_FOR_MOVES = "destinationForMoves";
 
    public static final String VALUE_MOVE    = "move";
-   public static final String VALUE_DELETE  = "delete";
-   public static final String FUNCTION_NAME = "cleanupSourceFiles";
+   public static final String VALUE_DELETE = "delete";
+   public static final String STEP_NAME    = "cleanupSourceFiles";
 
 
 
    /*******************************************************************************
-    ** Execute the function - using the request as input, and the result as output.
+    ** Execute the step - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
    public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
@@ -76,15 +76,15 @@ public class BasicETLCleanupSourceFilesFunction implements BackendStep
 
       if(!(module instanceof FilesystemBackendModuleInterface filesystemModule))
       {
-         throw (new QException("Backend " + table.getBackendName() + " for table " + sourceTableName + " does not support this function."));
+         throw (new QException("Backend " + table.getBackendName() + " for table " + sourceTableName + " does not support this action."));
       }
       AbstractBaseFilesystemAction actionBase = filesystemModule.getActionBase();
       actionBase.preAction(backend);
 
-      String sourceFilePaths = runBackendStepRequest.getValueString(BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS);
+      String sourceFilePaths = runBackendStepRequest.getValueString(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS);
       if(!StringUtils.hasContent(sourceFilePaths))
       {
-         LOG.info("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesFunction.FIELD_SOURCE_FILE_PATHS + "]");
+         LOG.info("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS + "]");
          return;
       }
 
@@ -118,16 +118,16 @@ public class BasicETLCleanupSourceFilesFunction implements BackendStep
 
 
    /*******************************************************************************
-    ** define the metaData that describes this function
+    ** define the metaData that describes this step
     *******************************************************************************/
    public QBackendStepMetaData defineStepMetaData()
    {
       return (new QBackendStepMetaData()
-         .withName(FUNCTION_NAME)
+         .withName(STEP_NAME)
          .withCode(new QCodeReference()
             .withName(this.getClass().getName())
             .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.FUNCTION))
+            .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData("moveOrDelete", QFieldType.STRING))
             .addField(new QFieldMetaData("destinationForMoves", QFieldType.STRING))));

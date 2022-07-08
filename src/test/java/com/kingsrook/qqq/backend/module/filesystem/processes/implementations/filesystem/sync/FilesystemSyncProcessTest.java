@@ -58,7 +58,7 @@ class FilesystemSyncProcessTest
       QTableMetaData       archiveTable    = defineTable("archive");
       QTableMetaData       processingTable = defineTable("processing");
       QProcessMetaData     process         = new FilesystemSyncProcess().defineProcessMetaData();
-      QBackendStepMetaData step            = (QBackendStepMetaData) process.getStep(FilesystemSyncFunction.FUNCTION_NAME);
+      QBackendStepMetaData step            = (QBackendStepMetaData) process.getStep(FilesystemSyncStep.STEP_NAME);
 
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
@@ -90,7 +90,7 @@ class FilesystemSyncProcessTest
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
       RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
-      System.out.println(runBackendStepResult);
+      // System.out.println(runBackendStepResult);
    }
 
 
