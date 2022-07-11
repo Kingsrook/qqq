@@ -147,7 +147,7 @@ public class QJavalinImplementation
    void startJavalinServer(int port)
    {
       // todo port from arg
-      // todo base path from arg?
+      // todo base path from arg? - and then potentially multiple instances too (chosen based on the root path??)
       service = Javalin.create().start(port);
       service.routes(getRoutes());
    }
@@ -198,10 +198,8 @@ public class QJavalinImplementation
             {
                get("/", QJavalinImplementation::dataQuery);
                post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
-               path("/count", () ->
-               {
-                  get("", QJavalinImplementation::dataCount);
-               });
+               get("/count", QJavalinImplementation::dataCount);
+
                // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
                path("/:primaryKey", () ->
                {

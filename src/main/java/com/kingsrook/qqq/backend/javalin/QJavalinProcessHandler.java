@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
@@ -68,7 +70,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 
 
 /*******************************************************************************
- **
+ ** methods for handling qqq processes in javalin.
  *******************************************************************************/
 public class QJavalinProcessHandler
 {
@@ -96,6 +98,7 @@ public class QJavalinProcessHandler
                {
                   post("/step/:step", QJavalinProcessHandler::processStep);
                   get("/status/:jobUUID", QJavalinProcessHandler::processStatus);
+                  get("/records", QJavalinProcessHandler::processRecords);
                });
             });
          });
@@ -378,6 +381,43 @@ public class QJavalinProcessHandler
          }
 
          context.result(JsonUtils.toJson(resultForCaller));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processRecords(Context context)
+   {
+      try
+      {
+         String  processUUID = context.pathParam("processUUID");
+         Integer skip        = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "skip"), 0);
+         Integer limit       = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "limit"), 20);
+
+         Optional<ProcessState> optionalProcessState = RunProcessAction.getStateProvider().get(ProcessState.class, new UUIDAndTypeStateKey(UUID.fromString(processUUID), StateType.PROCESS_STATUS));
+         if(optionalProcessState.isEmpty())
+         {
+            throw (new Exception("Could not find process results."));
+         }
+         ProcessState processState = optionalProcessState.get();
+
+         List<QRecord> records = processState.getRecords();
+         if(CollectionUtils.nullSafeIsEmpty(records))
+         {
+            throw (new Exception("No records were found for the process."));
+         }
+
+         Map<String, Object> resultForCaller = new HashMap<>();
+         List<QRecord> recordPage = CollectionUtils.safelyGetPage(records, skip, limit);
+         resultForCaller.put("records", recordPage);
+         context.result(JsonUtils.toJson(resultForCaller));
+      }
+      catch(Exception e)
+      {
+         QJavalinImplementation.handleException(context, e);
       }
    }
 

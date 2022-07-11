@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class QJavalinProcessHandlerTest extends QJavalinTestBase
 {
-   private static final int MORE_THAN_TIMEOUT = 500;
+   private static final int MORE_THAN_TIMEOUT = 1000;
    private static final int LESS_THAN_TIMEOUT = 50;
 
 
@@ -79,7 +80,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
       assertTrue(jsonObject.has("error"));
-      assertTrue(jsonObject.getString("error").contains("missing input records"));
+      assertTrue(jsonObject.getString("error").contains("Missing input records"));
    }
 
 
@@ -395,4 +396,32 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
 
       return (jsonObject);
    }
+
+
+
+   /*******************************************************************************
+    ** test getting records back from a process
+    **
+    *******************************************************************************/
+   @Test
+   public void test_processRecords()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/init?recordsParam=recordIds&recordIds=2,3&greetingPrefix=Hey&greetingSuffix=Jude").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      String processUUID = jsonObject.getString("processUUID");
+
+      response = Unirest.get(BASE_URL + "/processes/greet/" + processUUID + "/records").asString();
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(2, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      JSONObject values  = record0.getJSONObject("values");
+      assertTrue(values.has("id"));
+      assertTrue(values.has("firstName"));
+   }
+
 }
