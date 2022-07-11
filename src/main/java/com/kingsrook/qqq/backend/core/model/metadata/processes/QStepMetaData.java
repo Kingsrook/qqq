@@ -25,17 +25,21 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.serialization.QStepMetaDataDeserializer;
 
 
 /*******************************************************************************
  ** Meta-Data to define a step in a process in a QQQ instance.
  **
  *******************************************************************************/
+@JsonDeserialize(using = QStepMetaDataDeserializer.class)
 public class QStepMetaData
 {
    private String name;
    private String label;
+   private String stepType;
 
 
 
@@ -127,4 +131,25 @@ public class QStepMetaData
       return (new ArrayList<>());
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for stepType
+    **
+    *******************************************************************************/
+   public String getStepType()
+   {
+      return stepType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for stepType
+    **
+    *******************************************************************************/
+   public void setStepType(String stepType)
+   {
+      this.stepType = stepType;
+   }
 }

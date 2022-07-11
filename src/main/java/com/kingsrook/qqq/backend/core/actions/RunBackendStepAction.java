@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
@@ -128,14 +129,18 @@ public class RunBackendStepAction
          QProcessCallback callback = runBackendStepRequest.getCallback();
          if(callback == null)
          {
-            throw (new QException("Function is missing values for fields, but no callback was present to request fields from a user"));
+            throw (new QUserFacingException("Missing values for one or more fields",
+               new QException("Function is missing values for fields, but no callback was present to request fields from a user")));
          }
 
          Map<String, Serializable> fieldValues = callback.getFieldValues(fieldsToGet);
-         for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
+         if(fieldValues != null)
          {
-            runBackendStepRequest.addValue(entry.getKey(), entry.getValue());
-            // todo - check to make sure got values back?
+            for(Map.Entry<String, Serializable> entry : fieldValues.entrySet())
+            {
+               runBackendStepRequest.addValue(entry.getKey(), entry.getValue());
+               // todo - check to make sure got values back?
+            }
          }
       }
    }
@@ -164,7 +169,8 @@ public class RunBackendStepAction
             QProcessCallback callback = runBackendStepRequest.getCallback();
             if(callback == null)
             {
-               throw (new QException("Function is missing input records, but no callback was present to get a query filter from a user"));
+               throw (new QUserFacingException("Missing input records.",
+                  new QException("Function is missing input records, but no callback was present to request fields from a user")));
             }
 
             queryRequest.setFilter(callback.getQueryFilter());

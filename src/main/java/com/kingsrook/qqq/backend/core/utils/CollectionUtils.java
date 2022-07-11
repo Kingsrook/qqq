@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -332,4 +333,77 @@ public class CollectionUtils
       return (rs.toString());
    }
 
+
+
+   /*******************************************************************************
+    ** Get a sub-list, safely - i.e., w/o worrying if your indexes are too big.
+    *******************************************************************************/
+   public static <T> List<T> safelyGetPage(List<T> list, Integer skip, Integer limit)
+   {
+      //////////////////////////////////////////////////////////
+      // throw if the user requested a negative skip or limit //
+      //////////////////////////////////////////////////////////
+      if(skip != null && skip < 0)
+      {
+         throw (new IllegalArgumentException("Skip may not be negative (was " + skip + ")"));
+      }
+      if(limit != null && limit < 0)
+      {
+         throw (new IllegalArgumentException("Limit may not be negative (was " + limit + ")"));
+      }
+
+      ///////////////////////////////////
+      // null input list = null output //
+      ///////////////////////////////////
+      if(list == null)
+      {
+         return (null);
+      }
+
+      int startAt;
+      if(skip == null)
+      {
+         ///////////////////////////////////////////
+         // treat null skip is the same as 0 skip //
+         ///////////////////////////////////////////
+         startAt = 0;
+      }
+      else if(skip > list.size())
+      {
+         ////////////////////////////////////////
+         // if skip is too large, return empty //
+         ////////////////////////////////////////
+         return (new ArrayList<>());
+      }
+      else
+      {
+         startAt = skip;
+      }
+
+      int endAt;
+      if(limit == null)
+      {
+         ////////////////////////////////////////////////////////
+         // treat null limit as request for all after the skip //
+         ////////////////////////////////////////////////////////
+         endAt = list.size();
+      }
+      else if(limit == 0)
+      {
+         /////////////////////////////////////////////
+         // treat limit of zero as request for none //
+         /////////////////////////////////////////////
+         return (new ArrayList<>());
+      }
+      else
+      {
+         endAt = startAt + limit;
+         if (endAt > list.size())
+         {
+            endAt = list.size();
+         }
+      }
+
+      return list.subList(startAt, endAt);
+   }
 }

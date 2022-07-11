@@ -160,7 +160,7 @@ class CollectionUtilsTest
    @Test
    void test_addAllToMap()
    {
-      Map<String, Integer> to = new HashMap<>();
+      Map<String, Integer> to   = new HashMap<>();
       Map<String, Integer> from = new HashMap<>();
 
       assertThrows(NullPointerException.class, () -> CollectionUtils.addAllToMap(null, null));
@@ -361,6 +361,8 @@ class CollectionUtilsTest
       return s -> s.substring(0, 1);
    }
 
+
+
    /*******************************************************************************
     ** helper method to get second char of string (unsafely)
     *******************************************************************************/
@@ -409,5 +411,87 @@ class CollectionUtilsTest
       assertEquals("", CollectionUtils.getQuestionMarks(Collections.emptyList()));
       assertEquals("?", CollectionUtils.getQuestionMarks(List.of(1)));
       assertEquals("?,?,?", CollectionUtils.getQuestionMarks(List.of(1, 2, 3)));
+   }
+
+
+
+   @Test
+   void test_safelyGetPage()
+   {
+      List<Integer> empty = Collections.emptyList();
+      List<Integer> list = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+      /////////////////////
+      // null list input //
+      /////////////////////
+      assertNull(CollectionUtils.safelyGetPage(null, null, null));
+      assertNull(CollectionUtils.safelyGetPage(null, 1, 1));
+      assertNull(CollectionUtils.safelyGetPage(null, null, 1));
+      assertNull(CollectionUtils.safelyGetPage(null, 1, null));
+
+      //////////////////////
+      // empty list input //
+      //////////////////////
+      assertEquals(empty, CollectionUtils.safelyGetPage(empty, null, null));
+      assertEquals(empty, CollectionUtils.safelyGetPage(empty, 1, 1));
+      assertEquals(empty, CollectionUtils.safelyGetPage(empty, null, 1));
+      assertEquals(empty, CollectionUtils.safelyGetPage(empty, 1, null));
+
+      ////////////////////////////////////////
+      // cases that give back the full list //
+      ////////////////////////////////////////
+      assertEquals(list, CollectionUtils.safelyGetPage(list, null, null));
+      assertEquals(list, CollectionUtils.safelyGetPage(list, 0, null));
+
+      ///////////////////
+      // empty outputs //
+      ///////////////////
+      assertEquals(empty, CollectionUtils.safelyGetPage(list, 0, 0));
+      assertEquals(empty, CollectionUtils.safelyGetPage(list, 10, 1));
+      assertEquals(empty, CollectionUtils.safelyGetPage(list, 20, 10));
+
+      ///////////////////////
+      // illegal arguments //
+      ///////////////////////
+      assertThrows(IllegalArgumentException.class, () -> CollectionUtils.safelyGetPage(list, -1, 1));
+      assertThrows(IllegalArgumentException.class, () -> CollectionUtils.safelyGetPage(list, 1, -1));
+      assertThrows(IllegalArgumentException.class, () -> CollectionUtils.safelyGetPage(list, -1, -1));
+      assertThrows(IllegalArgumentException.class, () -> CollectionUtils.safelyGetPage(null, -1, -1));
+
+      /////////////////////////////
+      // normal kinds of outputs //
+      /////////////////////////////
+      assertEquals(List.of(1), CollectionUtils.safelyGetPage(list, null, 1));
+      assertEquals(List.of(1), CollectionUtils.safelyGetPage(list, 0, 1));
+      assertEquals(List.of(2), CollectionUtils.safelyGetPage(list, 1, 1));
+      assertEquals(List.of(2, 3), CollectionUtils.safelyGetPage(list, 1, 2));
+      assertEquals(List.of(2, 3, 4), CollectionUtils.safelyGetPage(list, 1, 3));
+      assertEquals(List.of(9), CollectionUtils.safelyGetPage(list, 8, 1));
+      assertEquals(List.of(9, 10), CollectionUtils.safelyGetPage(list, 8, 2));
+      assertEquals(List.of(9, 10), CollectionUtils.safelyGetPage(list, 8, 10));
+      assertEquals(List.of(10), CollectionUtils.safelyGetPage(list, 9, 1));
+      assertEquals(List.of(10), CollectionUtils.safelyGetPage(list, 9, 2));
+      assertEquals(List.of(10), CollectionUtils.safelyGetPage(list, 9, 10));
+
+      /////////////////////////////////////////////////////////
+      // make sure scrolling through pages works as expected //
+      /////////////////////////////////////////////////////////
+      int skip = 0;
+      int limit = 3;
+      int pageCount = 0;
+      List<Integer> accumulator = new ArrayList<>();
+      while (true)
+      {
+         List<Integer> nextPage = CollectionUtils.safelyGetPage(list, skip, limit);
+         if (nextPage.isEmpty())
+         {
+            break;
+         }
+         accumulator.addAll(nextPage);
+         skip += limit;
+         pageCount++;
+      }
+      assertEquals(4, pageCount);
+      assertEquals(list, accumulator);
    }
 }
