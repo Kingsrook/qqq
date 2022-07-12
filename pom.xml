@@ -53,7 +53,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.1.0-20220711.141150-7</version>
+         <version>0.1.0-20220712.140206-8</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>

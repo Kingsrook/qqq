@@ -53,8 +53,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.state.StateType;
-import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -145,29 +143,27 @@ public class QJavalinProcessHandler
          runProcessRequest.setStartAfterStep(startAfterStep);
          populateRunProcessRequestWithValuesFromContext(context, runProcessRequest);
 
-         try
+         ////////////////////////////////////////
+         // run the process as an async action //
+         ////////////////////////////////////////
+         Integer timeout = getTimeoutMillis(context);
+         RunProcessResult runProcessResult = new AsyncJobManager().startJob(timeout, TimeUnit.MILLISECONDS, (callback) ->
          {
-            ////////////////////////////////////////
-            // run the process as an async action //
-            ////////////////////////////////////////
-            Integer timeout = getTimeoutMillis(context);
-            RunProcessResult runProcessResult = new AsyncJobManager().startJob(timeout, TimeUnit.MILLISECONDS, (callback) ->
-            {
-               runProcessRequest.setAsyncJobCallback(callback);
-               return (new RunProcessAction().execute(runProcessRequest));
-            });
+            runProcessRequest.setAsyncJobCallback(callback);
+            return (new RunProcessAction().execute(runProcessRequest));
+         });
 
-            LOG.info("Process result error? " + runProcessResult.getException());
-            for(QFieldMetaData outputField : QJavalinImplementation.qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
-            {
-               LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
-            }
-            serializeRunProcessResultForCaller(resultForCaller, runProcessResult);
-         }
-         catch(JobGoingAsyncException jgae)
+         LOG.info("Process result error? " + runProcessResult.getException());
+         for(QFieldMetaData outputField : QJavalinImplementation.qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
          {
-            resultForCaller.put("jobUUID", jgae.getJobUUID());
+            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
          }
+
+         serializeRunProcessResultForCaller(resultForCaller, runProcessResult);
+      }
+      catch(JobGoingAsyncException jgae)
+      {
+         resultForCaller.put("jobUUID", jgae.getJobUUID());
       }
       catch(Exception e)
       {
@@ -199,7 +195,7 @@ public class QJavalinProcessHandler
          serializeRunProcessExceptionForCaller(resultForCaller, runProcessResult.getException().get());
       }
       resultForCaller.put("values", runProcessResult.getValues());
-      runProcessResult.getProcessState().getNextStepName().ifPresent(lastStep -> resultForCaller.put("nextStep", lastStep));
+      runProcessResult.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
    }
 
 
@@ -297,13 +293,13 @@ public class QJavalinProcessHandler
          {
             case "recordIds":
                @SuppressWarnings("ConstantConditions")
-               Serializable[] idStrings = context.queryParam(recordsParam).split(",");
+               Serializable[] idStrings = paramValue.split(",");
                return (new QQueryFilter().withCriteria(new QFilterCriteria()
                   .withFieldName(primaryKeyField)
                   .withOperator(QCriteriaOperator.IN)
                   .withValues(Arrays.stream(idStrings).toList())));
             case "filterJSON":
-               return (JsonUtils.toObject(context.queryParam(recordsParam), QQueryFilter.class));
+               return (JsonUtils.toObject(paramValue, QQueryFilter.class));
             case "filterId":
                // return (JsonUtils.toObject(context.queryParam(recordsParam), QQueryFilter.class));
                throw (new NotImplementedException("Saved filters are not yet implemented."));
@@ -335,19 +331,20 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processStatus(Context context)
    {
+      Map<String, Object> resultForCaller = new HashMap<>();
+
       String processUUID = context.pathParam("processUUID");
       String jobUUID     = context.pathParam("jobUUID");
 
-      LOG.info("Request for status of job " + jobUUID);
+      LOG.info("Request for status of process " + processUUID + ", job " + jobUUID);
       Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
       if(optionalJobStatus.isEmpty())
       {
-         QJavalinImplementation.handleException(context, new RuntimeException("Could not find status of process step job"));
+         serializeRunProcessExceptionForCaller(resultForCaller, new RuntimeException("Could not find status of process step job"));
       }
       else
       {
-         Map<String, Object> resultForCaller = new HashMap<>();
-         AsyncJobStatus      jobStatus       = optionalJobStatus.get();
+         AsyncJobStatus jobStatus = optionalJobStatus.get();
 
          resultForCaller.put("jobStatus", jobStatus);
          LOG.info("Job status is " + jobStatus.getState() + " for " + jobUUID);
@@ -358,7 +355,7 @@ public class QJavalinProcessHandler
             // if the job is complete, get the process result from state provider, and return it //
             // this output should look like it did if the job finished synchronously!!           //
             ///////////////////////////////////////////////////////////////////////////////////////
-            Optional<ProcessState> processState = RunProcessAction.getStateProvider().get(ProcessState.class, new UUIDAndTypeStateKey(UUID.fromString(processUUID), StateType.PROCESS_STATUS));
+            Optional<ProcessState> processState = RunProcessAction.getState(processUUID);
             if(processState.isPresent())
             {
                RunProcessResult runProcessResult = new RunProcessResult(processState.get());
@@ -366,7 +363,7 @@ public class QJavalinProcessHandler
             }
             else
             {
-               QJavalinImplementation.handleException(context, new RuntimeException("Could not find process results"));
+               serializeRunProcessExceptionForCaller(resultForCaller, new RuntimeException("Could not find results for process " + processUUID));
             }
          }
          else if(jobStatus.getState().equals(AsyncJobState.ERROR))
@@ -379,9 +376,9 @@ public class QJavalinProcessHandler
                serializeRunProcessExceptionForCaller(resultForCaller, jobStatus.getCaughtException());
             }
          }
-
-         context.result(JsonUtils.toJson(resultForCaller));
       }
+
+      context.result(JsonUtils.toJson(resultForCaller));
    }
 
 
@@ -397,7 +394,9 @@ public class QJavalinProcessHandler
          Integer skip        = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "skip"), 0);
          Integer limit       = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "limit"), 20);
 
-         Optional<ProcessState> optionalProcessState = RunProcessAction.getStateProvider().get(ProcessState.class, new UUIDAndTypeStateKey(UUID.fromString(processUUID), StateType.PROCESS_STATUS));
+         // todo - potential optimization - if a future state provider could take advantage of it,
+         //  we might pass the skip & limit in to a method that fetch just those 'n' rows from state, rather than the whole thing?
+         Optional<ProcessState> optionalProcessState = RunProcessAction.getState(processUUID);
          if(optionalProcessState.isEmpty())
          {
             throw (new Exception("Could not find process results."));
@@ -411,7 +410,7 @@ public class QJavalinProcessHandler
          }
 
          Map<String, Object> resultForCaller = new HashMap<>();
-         List<QRecord> recordPage = CollectionUtils.safelyGetPage(records, skip, limit);
+         List<QRecord>       recordPage      = CollectionUtils.safelyGetPage(records, skip, limit);
          resultForCaller.put("records", recordPage);
          context.result(JsonUtils.toJson(resultForCaller));
       }

@@ -98,11 +98,12 @@ public class QJavalinImplementation
 
    private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
 
-   protected static QInstance qInstance;
+   static QInstance qInstance;
 
    private static int DEFAULT_PORT = 8001;
 
    private static Javalin service;
+
 
 
    /*******************************************************************************
@@ -151,6 +152,7 @@ public class QJavalinImplementation
       service = Javalin.create().start(port);
       service.routes(getRoutes());
    }
+
 
 
    /*******************************************************************************
@@ -362,6 +364,9 @@ public class QJavalinImplementation
 
          setupSession(context, queryRequest);
          queryRequest.setTableName(tableName);
+
+         // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
+         //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
 
          ///////////////////////////////////////////////////////
          // setup a filter for the primaryKey = the path-pram //

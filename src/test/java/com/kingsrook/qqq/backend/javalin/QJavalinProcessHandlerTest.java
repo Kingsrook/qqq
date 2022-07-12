@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class QJavalinProcessHandlerTest extends QJavalinTestBase
 {
-   private static final int MORE_THAN_TIMEOUT = 1000;
+   private static final int MORE_THAN_TIMEOUT = 500;
    private static final int LESS_THAN_TIMEOUT = 50;
 
 
@@ -96,8 +96,9 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
+      String processUUID = jsonObject.getString("processUUID");
 
-      // todo - once we know how to get records from a process, add that call
+      getProcessRecords(processUUID, 2);
    }
 
 
@@ -120,8 +121,45 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
+      String processUUID = jsonObject.getString("processUUID");
 
-      // todo - once we know how to get records from a process, add that call
+      getProcessRecords(processUUID, 3);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private JSONObject getProcessRecords(String processUUID, int expectedNoOfRecords)
+   {
+      return (getProcessRecords(processUUID, expectedNoOfRecords, 0, 20));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private JSONObject getProcessRecords(String processUUID, int expectedNoOfRecords, int skip, int limit)
+   {
+      HttpResponse<String> response;
+      JSONObject           jsonObject;
+      response = Unirest.get(BASE_URL + "/processes/greet/" + processUUID + "/records?skip=" + skip + "&limit=" + limit).asString();
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+
+      if(expectedNoOfRecords == 0)
+      {
+         assertFalse(jsonObject.has("records"));
+      }
+      else
+      {
+         assertTrue(jsonObject.has("records"));
+         JSONArray records = jsonObject.getJSONArray("records");
+         assertEquals(expectedNoOfRecords, records.length());
+      }
+      return (jsonObject);
    }
 
 
@@ -133,7 +171,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    @Test
    public void test_processGreetInitWithQueryValues()
    {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/init?recordsParam=recordIds&recordIds=2,3&greetingPrefix=Hey&greetingSuffix=Jude").asString();
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/processes/greet/init?recordsParam=recordIds&recordIds=2,3&greetingPrefix=Hey&greetingSuffix=Jude").asString();
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
@@ -321,7 +359,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
 
 
    /*******************************************************************************
-    ** every time a process step (sync or async) has gone async, expect what the
+    ** every time a process step (or init) has gone async, expect what the
     ** response should look like
     *******************************************************************************/
    private JSONObject assertProcessStepWentAsyncResponse(HttpResponse<String> response)
@@ -412,16 +450,30 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       assertNotNull(jsonObject);
       String processUUID = jsonObject.getString("processUUID");
 
-      response = Unirest.get(BASE_URL + "/processes/greet/" + processUUID + "/records").asString();
-      jsonObject = JsonUtils.toJSONObject(response.getBody());
-      assertNotNull(jsonObject);
-      assertTrue(jsonObject.has("records"));
-      JSONArray records = jsonObject.getJSONArray("records");
-      assertEquals(2, records.length());
+      jsonObject = getProcessRecords(processUUID, 2);
+      JSONArray  records = jsonObject.getJSONArray("records");
       JSONObject record0 = records.getJSONObject(0);
       JSONObject values  = record0.getJSONObject("values");
       assertTrue(values.has("id"));
       assertTrue(values.has("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test getting records back from a process with skip & Limit
+    **
+    *******************************************************************************/
+   @Test
+   public void test_processRecordsSkipAndLimit()
+   {
+      HttpResponse<String> response    = Unirest.get(BASE_URL + "/processes/greet/init?recordsParam=recordIds&recordIds=1,2,3,4,5").asString();
+      JSONObject           jsonObject  = JsonUtils.toJSONObject(response.getBody());
+      String               processUUID = jsonObject.getString("processUUID");
+
+      getProcessRecords(processUUID, 5);
+      getProcessRecords(processUUID, 1, 4, 5);
+      getProcessRecords(processUUID, 0, 5, 5);
    }
 
 }

@@ -47,7 +47,7 @@ public class QJavalinTestBase
    public static void beforeAll()
    {
       qJavalinImplementation = new QJavalinImplementation(TestUtils.defineInstance());
-      QJavalinProcessHandler.setAsyncStepTimeoutMillis(500);
+      QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
       qJavalinImplementation.startJavalinServer(PORT);
    }
 
