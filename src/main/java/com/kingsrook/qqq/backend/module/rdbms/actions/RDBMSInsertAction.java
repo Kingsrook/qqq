@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,6 +37,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -43,22 +46,38 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
  *******************************************************************************/
 public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInterface
 {
+   private static final Logger LOG = LogManager.getLogger(RDBMSInsertAction.class);
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
    public InsertResult execute(InsertRequest insertRequest) throws QException
    {
+      InsertResult rs = new InsertResult();
+
       if(CollectionUtils.nullSafeIsEmpty(insertRequest.getRecords()))
       {
-         throw (new QException("Request to insert 0 records."));
+         LOG.info("Insert request called with 0 records.  Returning with no-op");
+         rs.setRecords(new ArrayList<>());
+         return (rs);
+      }
+
+      QTableMetaData table = insertRequest.getTable();
+      Instant        now   = Instant.now();
+
+      for(QRecord record : insertRequest.getRecords())
+      {
+         ///////////////////////////////////////////
+         // todo .. better (not hard-coded names) //
+         ///////////////////////////////////////////
+         setValueIfTableHasField(record, table, "createDate", now);
+         setValueIfTableHasField(record, table, "modifyDate", now);
       }
 
       try
       {
-         InsertResult   rs    = new InsertResult();
-         QTableMetaData table = insertRequest.getTable();
-
          List<QFieldMetaData> insertableFields = table.getFields().values().stream()
             .filter(field -> !field.getName().equals("id")) // todo - intent here is to avoid non-insertable fields.
             .toList();
@@ -74,43 +93,40 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          StringBuilder sql       = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
          List<Object>  params    = new ArrayList<>();
 
-         int recordIndex = 0;
-         for(QRecord record : insertRequest.getRecords())
-         {
-            if(recordIndex++ > 0)
-            {
-               sql.append(",");
-            }
-            sql.append("(").append(questionMarks).append(")");
-            for(QFieldMetaData field : insertableFields)
-            {
-               Serializable value = record.getValue(field.getName());
-               value = scrubValue(field, value, true);
-
-               params.add(value);
-            }
-         }
-
-         // todo sql customization - can edit sql and/or param list
-
-         // QueryResult rs = new QueryResult();
-         // List<QRecord> records = new ArrayList<>();
-         // rs.setRecords(records);
-
-         // todo - non-serial-id style tables
-         // todo - other generated values, e.g., createDate...  maybe need to re-select?
          try(Connection connection = getConnection(insertRequest))
          {
-            List<Integer> idList        = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
-            List<QRecord> outputRecords = new ArrayList<>();
-            rs.setRecords(outputRecords);
-            int index = 0;
-            for(QRecord record : insertRequest.getRecords())
+            for(List<QRecord> page : CollectionUtils.getPages(insertRequest.getRecords(), QueryManager.PAGE_SIZE))
             {
-               Integer id           = idList.get(index++);
-               QRecord outputRecord = new QRecord(record);
-               outputRecord.setValue(table.getPrimaryKeyField(), id);
-               outputRecords.add(outputRecord);
+               int recordIndex = 0;
+               for(QRecord record : page)
+               {
+                  if(recordIndex++ > 0)
+                  {
+                     sql.append(",");
+                  }
+                  sql.append("(").append(questionMarks).append(")");
+                  for(QFieldMetaData field : insertableFields)
+                  {
+                     Serializable value = record.getValue(field.getName());
+                     value = scrubValue(field, value, true);
+                     params.add(value);
+                  }
+               }
+
+               // todo sql customization - can edit sql and/or param list
+               // todo - non-serial-id style tables
+               // todo - other generated values, e.g., createDate...  maybe need to re-select?
+               List<Integer> idList        = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
+               List<QRecord> outputRecords = new ArrayList<>();
+               rs.setRecords(outputRecords);
+               int index = 0;
+               for(QRecord record : insertRequest.getRecords())
+               {
+                  Integer id           = idList.get(index++);
+                  QRecord outputRecord = new QRecord(record);
+                  outputRecord.setValue(table.getPrimaryKeyField(), id);
+                  outputRecords.add(outputRecord);
+               }
             }
          }
 

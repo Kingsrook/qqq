@@ -25,16 +25,18 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -51,6 +53,20 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
+
+      QueryManager.setCollectStatistics(true);
+      QueryManager.resetStatistics();
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   public void afterEach() throws Exception
+   {
+      QueryManager.resetStatistics();
+      QueryManager.setCollectStatistics(false);
    }
 
 
@@ -59,14 +75,12 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
-   public void testUpdateNullList()
+   public void testUpdateNullList() throws QException
    {
       UpdateRequest updateRequest = initUpdateRequest();
       updateRequest.setRecords(null);
-      assertThrows(QException.class, () ->
-      {
-         new RDBMSUpdateAction().execute(updateRequest);
-      });
+      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      assertEquals(0, updateResult.getRecords().size());
    }
 
 
@@ -75,14 +89,13 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
-   public void testUpdateEmptyList()
+   public void testUpdateEmptyList() throws QException
    {
       UpdateRequest updateRequest = initUpdateRequest();
       updateRequest.setRecords(Collections.emptyList());
-      assertThrows(QException.class, () ->
-      {
-         new RDBMSUpdateAction().execute(updateRequest);
-      });
+      new RDBMSUpdateAction().execute(updateRequest);
+      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      assertEquals(0, updateResult.getRecords().size());
    }
 
 
@@ -101,7 +114,11 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("email", "jamestk@starfleet.net")
          .withValue("birthDate", "2210-05-20");
       updateRequest.setRecords(List.of(record));
+
       UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      Map<String, Integer> statistics = QueryManager.getStatistics();
+      assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
+
       assertEquals(1, updateResult.getRecords().size(), "Should return 1 row");
       assertEquals(2, updateResult.getRecords().get(0).getValue("id"), "Should have id=2 in the row");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
@@ -150,7 +167,14 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("birthDate", null);
 
       updateRequest.setRecords(List.of(record1, record2, record3));
+
       UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+
+      // this test runs one batch and one regular query
+      Map<String, Integer> statistics = QueryManager.getStatistics();
+      assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
+      assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
+
       assertEquals(3, updateResult.getRecords().size(), "Should return 3 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
       assertEquals(3, updateResult.getRecords().get(1).getValue("id"), "Should have expected ids in the row");
@@ -214,7 +238,11 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("birthDate", null);
 
       updateRequest.setRecords(List.of(record1, record2));
+
       UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      Map<String, Integer> statistics = QueryManager.getStatistics();
+      assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
+
       assertEquals(2, updateResult.getRecords().size(), "Should return 2 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
       assertEquals(3, updateResult.getRecords().get(1).getValue("id"), "Should have expected ids in the row");
@@ -257,11 +285,17 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       List<QRecord> records       = new ArrayList<>();
       for(int i = 1; i <= 5; i++)
       {
-         records.add(new QRecord().withTableName("person").withValue("id", i).withValue("birthDate", "1999-09-09"));
+         records.add(new QRecord().withTableName("person")
+            .withValue("id", i)
+            .withValue("birthDate", "1999-09-09"));
       }
 
       updateRequest.setRecords(records);
+
       UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      Map<String, Integer> statistics = QueryManager.getStatistics();
+      assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
+
       assertEquals(5, updateResult.getRecords().size(), "Should return 5 rows");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
       runTestSql("SELECT * FROM person WHERE id <= 5", (rs -> {

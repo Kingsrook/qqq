@@ -25,13 +25,13 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
@@ -108,18 +108,22 @@ public abstract class AbstractRDBMSAction
          }
       }
 
-      //////////////////////////////////////////////////////
-      // todo - let this come from something in the field //
-      //////////////////////////////////////////////////////
-      if(value == null)
-      {
-         if((isInsert && field.getName().equals("createDate")) || field.getName().equals("modifyDate"))
-         {
-            value = OffsetDateTime.now();
-         }
-      }
-
       return (value);
+   }
+
+
+
+   /*******************************************************************************
+    ** If the table has a field with the given name, then set the given value in the
+    ** given record.
+    *******************************************************************************/
+   protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
+   {
+      QFieldMetaData field = table.getField(fieldName);
+      if(field != null)
+      {
+         record.setValue(fieldName, value);
+      }
    }
 
 
@@ -132,11 +136,11 @@ public abstract class AbstractRDBMSAction
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
       {
-         QFieldMetaData field = table.getField(criterion.getFieldName());
-         List<Serializable> values = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
-         String column = getColumnName(field);
-         String clause = column;
-         Integer expectedNoOfParams = null;
+         QFieldMetaData     field              = table.getField(criterion.getFieldName());
+         List<Serializable> values             = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
+         String             column             = getColumnName(field);
+         String             clause             = column;
+         Integer            expectedNoOfParams = null;
          switch(criterion.getOperator())
          {
             case EQUALS:
@@ -278,6 +282,8 @@ public abstract class AbstractRDBMSAction
 
       return (String.join(" AND ", clauses));
    }
+
+
 
    /*******************************************************************************
     **

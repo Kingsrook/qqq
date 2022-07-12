@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.util.Collections;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -46,6 +48,34 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testInsertNullList() throws QException
+   {
+      InsertRequest insertRequest = initInsertRequest();
+      insertRequest.setRecords(null);
+      InsertResult insertResult = new RDBMSInsertAction().execute(insertRequest);
+      assertEquals(0, insertResult.getRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testInsertEmptyList() throws QException
+   {
+      InsertRequest insertRequest = initInsertRequest();
+      insertRequest.setRecords(Collections.emptyList());
+      InsertResult insertResult = new RDBMSInsertAction().execute(insertRequest);
+      assertEquals(0, insertResult.getRecords().size());
    }
 
 

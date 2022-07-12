@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +42,8 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -53,19 +56,26 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
  *******************************************************************************/
 public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInterface
 {
+   private static final Logger LOG = LogManager.getLogger(RDBMSUpdateAction.class);
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
    public UpdateResult execute(UpdateRequest updateRequest) throws QException
    {
+      UpdateResult rs = new UpdateResult();
+
       if(CollectionUtils.nullSafeIsEmpty(updateRequest.getRecords()))
       {
-         throw (new QException("Request to update 0 records."));
+         LOG.info("Update request called with 0 records.  Returning with no-op");
+         rs.setRecords(new ArrayList<>());
+         return (rs);
       }
 
-      UpdateResult   rs    = new UpdateResult();
       QTableMetaData table = updateRequest.getTable();
+      Instant        now   = Instant.now();
 
       List<QRecord> outputRecords = new ArrayList<>();
       rs.setRecords(outputRecords);
@@ -78,6 +88,11 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       ListingHash<List<String>, QRecord> recordsByFieldBeingUpdated = new ListingHash<>();
       for(QRecord record : updateRequest.getRecords())
       {
+         ////////////////////////////////////////////
+         // todo .. better (not a hard-coded name) //
+         ////////////////////////////////////////////
+         setValueIfTableHasField(record, table, "modifyDate", now);
+
          List<String> updatableFields = table.getFields().values().stream()
             .map(QFieldMetaData::getName)
             // todo - intent here is to avoid non-updateable fields - but this
@@ -159,8 +174,6 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       // let query manager do the batch updates - note that it will internally page //
       ////////////////////////////////////////////////////////////////////////////////
       QueryManager.executeBatchUpdate(connection, sql, values);
-
-      // todo - auto-updated values, e.g., modifyDate...  maybe need to re-select?
    }
 
 
@@ -187,34 +200,37 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
     *******************************************************************************/
    private void updateRecordsWithMatchingValuesAndFields(Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
    {
-      String sql = writeUpdateSQLPrefix(table, fieldsBeingUpdated) + " IN (" + StringUtils.join(",", Collections.nCopies(recordList.size(), "?")) + ")";
-
-      // todo sql customization? - let each table have custom sql and/or param list
-
-      ////////////////////////////////////////////////////////////////
-      // values in the update clause can come from the first record //
-      ////////////////////////////////////////////////////////////////
-      QRecord      record0 = recordList.get(0);
-      List<Object> params  = new ArrayList<>();
-      for(String fieldName : fieldsBeingUpdated)
+      for(List<QRecord> page : CollectionUtils.getPages(recordList, QueryManager.PAGE_SIZE))
       {
-         Serializable value = record0.getValue(fieldName);
-         value = scrubValue(table.getField(fieldName), value, false);
-         params.add(value);
-      }
+         String sql = writeUpdateSQLPrefix(table, fieldsBeingUpdated) + " IN (" + StringUtils.join(",", Collections.nCopies(page.size(), "?")) + ")";
 
-      //////////////////////////////////////////////////////////////////////
-      // values in the where clause (in list) are the id from each record //
-      //////////////////////////////////////////////////////////////////////
-      for(QRecord record : recordList)
-      {
-         params.add(record.getValue(table.getPrimaryKeyField()));
-      }
+         // todo sql customization? - let each table have custom sql and/or param list
 
-      ////////////////////////////////////////////////////////////////////////////////
-      // let query manager do the batch updates - note that it will internally page //
-      ////////////////////////////////////////////////////////////////////////////////
-      QueryManager.executeUpdate(connection, sql, params);
+         ////////////////////////////////////////////////////////////////
+         // values in the update clause can come from the first record //
+         ////////////////////////////////////////////////////////////////
+         QRecord      record0 = page.get(0);
+         List<Object> params  = new ArrayList<>();
+         for(String fieldName : fieldsBeingUpdated)
+         {
+            Serializable value = record0.getValue(fieldName);
+            value = scrubValue(table.getField(fieldName), value, false);
+            params.add(value);
+         }
+
+         //////////////////////////////////////////////////////////////////////
+         // values in the where clause (in list) are the id from each record //
+         //////////////////////////////////////////////////////////////////////
+         for(QRecord record : page)
+         {
+            params.add(record.getValue(table.getPrimaryKeyField()));
+         }
+
+         /////////////////////////////////////
+         // let query manager do the update //
+         /////////////////////////////////////
+         QueryManager.executeUpdate(connection, sql, params);
+      }
    }
 
 

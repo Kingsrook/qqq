@@ -42,6 +42,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -53,9 +55,16 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class QueryManager
 {
-   private static final int PAGE_SIZE        = 2000;
+   public static final  int PAGE_SIZE        = 2000;
    private static final int MS_PER_SEC       = 1000;
    private static final int NINETEEN_HUNDRED = 1900;
+
+   private static boolean collectStatistics = false;
+
+   private static final Map<String, Integer> statistics = Collections.synchronizedMap(new HashMap<>());
+
+   public static final String STAT_QUERIES_RAN = "queriesRan";
+   public static final String STAT_BATCHES_RAN = "batchesRan";
 
 
 
@@ -85,6 +94,7 @@ public class QueryManager
       {
          statement = prepareStatementAndBindParams(connection, sql, params);
          statement.execute();
+         incrementStatistic(STAT_QUERIES_RAN);
          resultSet = statement.getResultSet();
 
          procesor.processResultSet(resultSet);
@@ -345,6 +355,7 @@ public class QueryManager
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.executeUpdate();
+      incrementStatistic(STAT_QUERIES_RAN);
       return (statement);
    }
 
@@ -357,6 +368,7 @@ public class QueryManager
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.executeUpdate();
+      incrementStatistic(STAT_QUERIES_RAN);
       return (statement);
    }
 
@@ -402,6 +414,7 @@ public class QueryManager
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
          statement.executeUpdate();
+         incrementStatistic(STAT_QUERIES_RAN);
          return (statement.getUpdateCount());
       }
    }
@@ -462,6 +475,7 @@ public class QueryManager
          bindParams(params.toArray(), statement);
          statement.executeUpdate();
          ResultSet generatedKeys = statement.getGeneratedKeys();
+         incrementStatistic(STAT_QUERIES_RAN);
          while(generatedKeys.next())
          {
             rs.add(getInteger(generatedKeys, 1));
@@ -552,6 +566,7 @@ public class QueryManager
             updatePS.addBatch();
          }
          updatePS.executeBatch();
+         incrementStatistic(STAT_BATCHES_RAN);
       }
    }
 
@@ -731,8 +746,6 @@ public class QueryManager
       }
    }
 
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -742,8 +755,6 @@ public class QueryManager
       return (new TypeValuePair<>(c, v));
    }
    */
-
-
 
    /*******************************************************************************
     **
@@ -1560,5 +1571,53 @@ public class QueryManager
    //    }
 
    // }
+
+
+
+   /*******************************************************************************
+    ** Setter for collectStatistics
+    **
+    *******************************************************************************/
+   public static void setCollectStatistics(boolean collectStatistics)
+   {
+      QueryManager.collectStatistics = collectStatistics;
+   }
+
+
+
+   /*******************************************************************************
+    ** Increment a statistic
+    **
+    *******************************************************************************/
+   public static void incrementStatistic(String statName)
+   {
+      if(collectStatistics)
+      {
+         statistics.putIfAbsent(statName, 0);
+         statistics.put(statName, statistics.get(statName) + 1);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** clear the map of statistics
+    **
+    *******************************************************************************/
+   public static void resetStatistics()
+   {
+      statistics.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for statistics
+    **
+    *******************************************************************************/
+   public static Map<String, Integer> getStatistics()
+   {
+      return statistics;
+   }
 
 }
