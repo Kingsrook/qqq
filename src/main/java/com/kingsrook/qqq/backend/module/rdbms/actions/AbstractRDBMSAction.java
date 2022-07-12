@@ -97,7 +97,7 @@ public abstract class AbstractRDBMSAction
     ** Handle obvious problems with values - like empty string for integer should be null.
     **
     *******************************************************************************/
-   protected Serializable scrubValue(QFieldMetaData field, Serializable value)
+   protected Serializable scrubValue(QFieldMetaData field, Serializable value, boolean isInsert)
    {
       if("".equals(value))
       {
@@ -111,9 +111,12 @@ public abstract class AbstractRDBMSAction
       //////////////////////////////////////////////////////
       // todo - let this come from something in the field //
       //////////////////////////////////////////////////////
-      if(value == null && (field.getName().equals("createDate") || field.getName().equals("modifyDate")))
+      if(value == null)
       {
-         value = OffsetDateTime.now();
+         if((isInsert && field.getName().equals("createDate")) || field.getName().equals("modifyDate"))
+         {
+            value = OffsetDateTime.now();
+         }
       }
 
       return (value);

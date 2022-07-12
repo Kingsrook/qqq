@@ -24,8 +24,11 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
@@ -34,11 +37,19 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
 /*******************************************************************************
- **
+ ** Only the fields which exist in the record's values map will be updated.
+ ** Note the difference between a field being in the value map, with a null value,
+ ** vs. not being in the map.  If the field (its key) is in the value map, with a
+ ** null value, then the field will be updated to NULL.  But if it's not in the
+ ** map, then it'll be ignored.  This would be to do a PATCH type operation, vs a
+ ** PUT.  See https://rapidapi.com/blog/put-vs-patch/
  *******************************************************************************/
 public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInterface
 {
@@ -48,66 +59,194 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
     *******************************************************************************/
    public UpdateResult execute(UpdateRequest updateRequest) throws QException
    {
-      try
+      if(CollectionUtils.nullSafeIsEmpty(updateRequest.getRecords()))
       {
-         UpdateResult   rs    = new UpdateResult();
-         QTableMetaData table = updateRequest.getTable();
+         throw (new QException("Request to update 0 records."));
+      }
 
-         List<QRecord> outputRecords = new ArrayList<>();
-         rs.setRecords(outputRecords);
+      UpdateResult   rs    = new UpdateResult();
+      QTableMetaData table = updateRequest.getTable();
 
-         // todo - sql batch for performance
-         // todo - if setting a bunch of records to have the same value, a single update where id IN?
-         Connection connection  = getConnection(updateRequest);
-         int        recordIndex = 0;
-         for(QRecord record : updateRequest.getRecords())
+      List<QRecord> outputRecords = new ArrayList<>();
+      rs.setRecords(outputRecords);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // we want to do batch updates.  But, since we only update the columns columns that        //
+      // are present in each record, it means we may have different update SQL for each          //
+      // record.  So, we will first "hash" up the records by their list of fields being updated. //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ListingHash<List<String>, QRecord> recordsByFieldBeingUpdated = new ListingHash<>();
+      for(QRecord record : updateRequest.getRecords())
+      {
+         List<String> updatableFields = table.getFields().values().stream()
+            .map(QFieldMetaData::getName)
+            // todo - intent here is to avoid non-updateable fields - but this
+            //  should be like based on field.isUpdatable once that attribute exists
+            .filter(name -> !name.equals("id"))
+            .filter(name -> record.getValues().containsKey(name))
+            .toList();
+         recordsByFieldBeingUpdated.add(updatableFields, record);
+
+         //////////////////////////////////////////////////////////////////////////////
+         // go ahead and put the record into the output list at this point in time,  //
+         // so that the output list's order matches the input list order             //
+         // note that if we want to capture updated values (like modify dates), then //
+         // we may want a map of primary key to output record, for easy updating.    //
+         //////////////////////////////////////////////////////////////////////////////
+         QRecord outputRecord = new QRecord(record);
+         outputRecords.add(outputRecord);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - further optimization:  if setting a bunch of records to have the same value, a single update where id IN ? //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+      try(Connection connection = getConnection(updateRequest))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // process each distinct list of fields being updated (e.g., each different SQL statement) //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         for(List<String> fieldsBeingUpdated : recordsByFieldBeingUpdated.keySet())
          {
-            List<QFieldMetaData> updateableFields = table.getFields().values().stream()
-               .filter(field -> !field.getName().equals("id")) // todo - intent here is to avoid non-updateable fields.
-               .filter(field -> record.getValues().containsKey(field.getName()))
-               .toList();
-
-            String columns = updateableFields.stream()
-               .map(f -> this.getColumnName(f) + " = ?")
-               .collect(Collectors.joining(", "));
-
-            String tableName = getTableName(table);
-            StringBuilder sql = new StringBuilder("UPDATE ").append(tableName)
-               .append(" SET ").append(columns)
-               .append(" WHERE ").append(getColumnName(table.getField(table.getPrimaryKeyField()))).append(" = ?");
-
-            // todo sql customization - can edit sql and/or param list
-
-            QRecord outputRecord = new QRecord(record);
-            outputRecords.add(outputRecord);
-
-            try
-            {
-               List<Object> params = new ArrayList<>();
-               for(QFieldMetaData field : updateableFields)
-               {
-                  Serializable value = record.getValue(field.getName());
-                  value = scrubValue(field, value);
-                  params.add(value);
-               }
-               params.add(record.getValue(table.getPrimaryKeyField()));
-
-               QueryManager.executeUpdate(connection, sql.toString(), params);
-               // todo - auto-updated values, e.g., modifyDate...  maybe need to re-select?
-            }
-            catch(Exception e)
-            {
-               // todo - how to communicate errors??? outputRecord.setErrors(new ArrayList<>(List.of(e)));
-               throw new QException("Error executing update: " + e.getMessage(), e);
-            }
+            updateRecordsWithMatchingListOfFields(connection, table, recordsByFieldBeingUpdated.get(fieldsBeingUpdated), fieldsBeingUpdated);
          }
 
          return rs;
       }
       catch(Exception e)
       {
+         // todo - how to communicate errors??? outputRecord.setErrors(new ArrayList<>(List.of(e)));
          throw new QException("Error executing update: " + e.getMessage(), e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void updateRecordsWithMatchingListOfFields(Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
+   {
+      ////////////////////////////////////////////////////////////////////////////////
+      // check for an optimization - if all of the records have the same values for //
+      // all fields being updated, just do 1 update, with an IN list on the ids.    //
+      ////////////////////////////////////////////////////////////////////////////////
+      if(areAllValuesBeingUpdatedTheSame(recordList, fieldsBeingUpdated))
+      {
+         updateRecordsWithMatchingValuesAndFields(connection, table, recordList, fieldsBeingUpdated);
+         return;
+      }
+
+      String sql = writeUpdateSQLPrefix(table, fieldsBeingUpdated) + " = ?";
+
+      // todo sql customization? - let each table have custom sql and/or param list
+
+      ////////////////////////////////////////////////////////
+      // build the list of list of values, from the records //
+      ////////////////////////////////////////////////////////
+      List<List<Serializable>> values = new ArrayList<>();
+      for(QRecord record : recordList)
+      {
+         List<Serializable> rowValues = new ArrayList<>();
+         values.add(rowValues);
+
+         for(String fieldName : fieldsBeingUpdated)
+         {
+            Serializable value = record.getValue(fieldName);
+            value = scrubValue(table.getField(fieldName), value, false);
+            rowValues.add(value);
+         }
+         rowValues.add(record.getValue(table.getPrimaryKeyField()));
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // let query manager do the batch updates - note that it will internally page //
+      ////////////////////////////////////////////////////////////////////////////////
+      QueryManager.executeBatchUpdate(connection, sql, values);
+
+      // todo - auto-updated values, e.g., modifyDate...  maybe need to re-select?
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String writeUpdateSQLPrefix(QTableMetaData table, List<String> fieldsBeingUpdated)
+   {
+      String columns = fieldsBeingUpdated.stream()
+         .map(f -> this.getColumnName(table.getField(f)) + " = ?")
+         .collect(Collectors.joining(", "));
+
+      String tableName = getTableName(table);
+      return ("UPDATE " + tableName
+         + " SET " + columns
+         + " WHERE " + getColumnName(table.getField(table.getPrimaryKeyField())) + " ");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void updateRecordsWithMatchingValuesAndFields(Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
+   {
+      String sql = writeUpdateSQLPrefix(table, fieldsBeingUpdated) + " IN (" + StringUtils.join(",", Collections.nCopies(recordList.size(), "?")) + ")";
+
+      // todo sql customization? - let each table have custom sql and/or param list
+
+      ////////////////////////////////////////////////////////////////
+      // values in the update clause can come from the first record //
+      ////////////////////////////////////////////////////////////////
+      QRecord      record0 = recordList.get(0);
+      List<Object> params  = new ArrayList<>();
+      for(String fieldName : fieldsBeingUpdated)
+      {
+         Serializable value = record0.getValue(fieldName);
+         value = scrubValue(table.getField(fieldName), value, false);
+         params.add(value);
+      }
+
+      //////////////////////////////////////////////////////////////////////
+      // values in the where clause (in list) are the id from each record //
+      //////////////////////////////////////////////////////////////////////
+      for(QRecord record : recordList)
+      {
+         params.add(record.getValue(table.getPrimaryKeyField()));
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // let query manager do the batch updates - note that it will internally page //
+      ////////////////////////////////////////////////////////////////////////////////
+      QueryManager.executeUpdate(connection, sql, params);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean areAllValuesBeingUpdatedTheSame(List<QRecord> recordList, List<String> fieldsBeingUpdated)
+   {
+      if(recordList.size() == 1)
+      {
+         return (true);
+      }
+
+      QRecord record0 = recordList.get(0);
+      for(int i = 1; i < recordList.size(); i++)
+      {
+         QRecord record = recordList.get(i);
+         for(String fieldName : fieldsBeingUpdated)
+         {
+            if(!Objects.equals(record0.getValue(fieldName), record.getValue(fieldName)))
+            {
+               return (false);
+            }
+         }
+      }
+
+      return (true);
    }
 
 }
