@@ -212,7 +212,7 @@ public class QProcessMetaData
 
 
    /*******************************************************************************
-    ** Wrapper to getStep, that internally casts t0 BackendStepMetaData
+    ** Wrapper to getStep, that internally casts to BackendStepMetaData
     *******************************************************************************/
    public QBackendStepMetaData getBackendStep(String name)
    {

@@ -90,7 +90,7 @@ public class AsyncJobCallback
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void storeUpdatedStatus()
+   protected void storeUpdatedStatus()
    {
       AsyncJobManager.getStateProvider().put(new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS), asyncJobStatus);
    }

@@ -56,6 +56,7 @@ class BasicETLProcessTest
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+      assertTrue(result.getException().isEmpty());
    }
 
 
@@ -82,6 +83,7 @@ class BasicETLProcessTest
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+      assertTrue(result.getException().isEmpty());
    }
 
 }

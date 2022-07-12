@@ -25,6 +25,9 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -43,6 +46,7 @@ public class RunBackendStepRequest extends AbstractQRequest
    private String           processName;
    private String           stepName;
    private QProcessCallback callback;
+   private AsyncJobCallback asyncJobCallback;
 
 
 
@@ -311,5 +315,32 @@ public class RunBackendStepRequest extends AbstractQRequest
    protected ProcessState getProcessState()
    {
       return processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setAsyncJobCallback(AsyncJobCallback asyncJobCallback)
+   {
+      this.asyncJobCallback = asyncJobCallback;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AsyncJobCallback getAsyncJobCallback()
+   {
+      if (asyncJobCallback == null)
+      {
+         /////////////////////////////////////////////////////////////////////////
+         // avoid NPE in case we didn't have one of these!  create a new one... //
+         /////////////////////////////////////////////////////////////////////////
+         asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus());
+      }
+      return (asyncJobCallback);
    }
 }

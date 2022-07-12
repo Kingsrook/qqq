@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,6 +34,51 @@ import static org.junit.jupiter.api.Assertions.*;
  *******************************************************************************/
 class ValueUtilsTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsString() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsString(null));
+      assertEquals("", ValueUtils.getValueAsString(""));
+      assertEquals("  ", ValueUtils.getValueAsString("  "));
+      assertEquals("A", ValueUtils.getValueAsString("A"));
+      assertEquals("1", ValueUtils.getValueAsString("1"));
+      assertEquals("1", ValueUtils.getValueAsString(1));
+      assertEquals("1", ValueUtils.getValueAsString(1));
+      assertEquals("1.10", ValueUtils.getValueAsString(new BigDecimal("1.10")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsBoolean() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsBoolean(null));
+      assertTrue(ValueUtils.getValueAsBoolean("true"));
+      assertTrue(ValueUtils.getValueAsBoolean("True"));
+      assertTrue(ValueUtils.getValueAsBoolean("TRUE"));
+      assertFalse(ValueUtils.getValueAsBoolean("false"));
+      assertFalse(ValueUtils.getValueAsBoolean("yes"));
+      assertFalse(ValueUtils.getValueAsBoolean("t"));
+      assertFalse(ValueUtils.getValueAsBoolean(new Object()));
+      assertFalse(ValueUtils.getValueAsBoolean(1));
+      assertTrue(ValueUtils.getValueAsBoolean(new Object()
+      {
+         @Override
+         public String toString()
+         {
+            return ("true");
+         }
+      }));
+   }
+
+
 
    /*******************************************************************************
     **
@@ -61,6 +107,37 @@ class ValueUtilsTest
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger(1_000_000_000_000L));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger(1.1F));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger(1.1D));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsBigDecimal() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsBigDecimal(null));
+      assertNull(ValueUtils.getValueAsBigDecimal(""));
+      assertNull(ValueUtils.getValueAsBigDecimal(" "));
+      assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal(1));
+      assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal("1"));
+      assertEquals(new BigDecimal("1000"), ValueUtils.getValueAsBigDecimal("1,000"));
+      assertEquals(new BigDecimal("1000000"), ValueUtils.getValueAsBigDecimal("1,000,000"));
+      assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal(new BigDecimal(1)));
+      assertEquals(new BigDecimal("1.00"), ValueUtils.getValueAsBigDecimal(new BigDecimal("1.00")));
+      assertEquals(new BigDecimal("-1.00"), ValueUtils.getValueAsBigDecimal("-1.00"));
+      assertEquals(new BigDecimal("1000.00"), ValueUtils.getValueAsBigDecimal("1,000.00"));
+      assertEquals(new BigDecimal("1000"), ValueUtils.getValueAsBigDecimal(1000L));
+      assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal(1.0F));
+      assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal(1.0D));
+      assertEquals(new BigDecimal("1000000000000"), ValueUtils.getValueAsBigDecimal(1_000_000_000_000L));
+      assertEquals(0, new BigDecimal("1.1").compareTo(ValueUtils.getValueAsBigDecimal(1.1F).round(MathContext.DECIMAL32)));
+      assertEquals(0, new BigDecimal("1.1").compareTo(ValueUtils.getValueAsBigDecimal(1.1D).round(MathContext.DECIMAL64)));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsBigDecimal("a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsBigDecimal("a,b"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsBigDecimal(new Object()));
    }
 
 }

@@ -106,7 +106,6 @@ public class RunProcessAction
                   case SKIP ->
                   {
                      LOG.info("Skipping frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
-                     processState.setNextStepName(step.getName());
 
                      //////////////////////////////////////////////////////////////////////
                      // much less error prone in case this code changes in the future... //
@@ -166,9 +165,10 @@ public class RunProcessAction
 
 
    /*******************************************************************************
-    **
+    ** When we start running a process (or resuming it), get data in the RunProcessRequest
+    ** either from the state provider (if they're found, for a resume).
     *******************************************************************************/
-   private ProcessState primeProcessState(RunProcessRequest runProcessRequest, UUIDAndTypeStateKey stateKey) throws QException
+   ProcessState primeProcessState(RunProcessRequest runProcessRequest, UUIDAndTypeStateKey stateKey) throws QException
    {
       Optional<ProcessState> optionalProcessState = loadState(stateKey);
       if(optionalProcessState.isEmpty())
@@ -222,7 +222,7 @@ public class RunProcessAction
 
 
    /*******************************************************************************
-    ** return true if 'ok', false if error (and time to break loop)
+    ** Run a single backend step.
     *******************************************************************************/
    private void runBackendStep(RunProcessRequest runProcessRequest, QProcessMetaData process, RunProcessResult runProcessResult, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, ProcessState processState) throws Exception
    {
@@ -231,6 +231,7 @@ public class RunProcessAction
       runBackendStepRequest.setStepName(backendStep.getName());
       runBackendStepRequest.setSession(runProcessRequest.getSession());
       runBackendStepRequest.setCallback(runProcessRequest.getCallback());
+      runBackendStepRequest.setAsyncJobCallback(runProcessRequest.getAsyncJobCallback());
       RunBackendStepResult lastFunctionResult = new RunBackendStepAction().execute(runBackendStepRequest);
       storeState(stateKey, lastFunctionResult.getProcessState());
 
@@ -292,6 +293,16 @@ public class RunProcessAction
 
       // todo - by using JSON serialization internally, this makes stupidly large payloads and crashes things.
       // return TempFileStateProvider.getInstance();
+   }
+
+
+
+   /*******************************************************************************
+    ** public method to get a process state just by UUID.
+    *******************************************************************************/
+   public static Optional<ProcessState> getState(String processUUID)
+   {
+      return (getStateProvider().get(ProcessState.class, new UUIDAndTypeStateKey(UUID.fromString(processUUID), StateType.PROCESS_STATUS)));
    }
 
 

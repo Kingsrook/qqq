@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataResult;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -67,7 +67,7 @@ class ProcessMetaDataActionTest
    @Test
    public void test_notFound()
    {
-      assertThrows(QUserFacingException.class, () -> {
+      assertThrows(QNotFoundException.class, () -> {
          ProcessMetaDataRequest request = new ProcessMetaDataRequest(TestUtils.defineInstance());
          request.setSession(TestUtils.getMockSession());
          request.setProcessName("willNotBeFound");

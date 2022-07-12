@@ -170,7 +170,7 @@ public class QBackendStepMetaData extends QStepMetaData
    /*******************************************************************************
     ** Get a list of all of the input fields used by this function
     *******************************************************************************/
-   @JsonIgnore
+   @JsonIgnore // because this is a computed property - we don't want it in our json.
    @Override
    public List<QFieldMetaData> getInputFields()
    {
@@ -187,7 +187,7 @@ public class QBackendStepMetaData extends QStepMetaData
    /*******************************************************************************
     ** Get a list of all of the output fields used by this function
     *******************************************************************************/
-   @JsonIgnore
+   @JsonIgnore // because this is a computed property - we don't want it in our json.
    @Override
    public List<QFieldMetaData> getOutputFields()
    {

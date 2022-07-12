@@ -35,7 +35,7 @@ public class ExceptionUtils
 
    /*******************************************************************************
     ** Find a specific exception class in an exception's caused-by chain.  Returns
-    ** null if not found.  Be aware, uses class.isInstaance (so sub-classes get found).
+    ** null if not found.  Be aware, uses class.isInstance (so sub-classes get found).
     **
     *******************************************************************************/
    public static <T extends Throwable> T findClassInRootChain(Throwable e, Class<T> targetClass)

@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.core.actions.async;
 
 
 /*******************************************************************************
+ ** Exception thrown by AsyncJobManager, not to indicate an error, per se, but
+ ** rather to indicate that a job has taken too long, as is now "going async".
  **
+ ** So, this exception contains the jobUUID.
  *******************************************************************************/
 public class JobGoingAsyncException extends Exception
 {

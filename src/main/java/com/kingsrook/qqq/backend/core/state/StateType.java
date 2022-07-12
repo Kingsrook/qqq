@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 /*******************************************************************************
+ ** Possible types of states to be stored.
  **
+ ** Idea: could these have the corresponding Classes that they support?
+ **  ala PROCESS_STATUS(ProcessStatus.class) ?
  *******************************************************************************/
 public enum StateType
 {

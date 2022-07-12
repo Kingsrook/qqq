@@ -40,6 +40,23 @@ public class AsyncJobStatus implements Serializable
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "AsyncJobStatus{"
+         + "state=" + state
+         + ", message='" + message + '\''
+         + ", current=" + current
+         + ", total=" + total
+         + ", caughtException=" + caughtException
+         + '}';
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for state
     **
     *******************************************************************************/

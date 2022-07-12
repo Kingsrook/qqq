@@ -23,9 +23,11 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -227,7 +229,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public String getValueString(String fieldName)
    {
-      return ((String) values.get(fieldName));
+      return (ValueUtils.getValueAsString(values.get(fieldName)));
    }
 
 
@@ -238,7 +240,28 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public Integer getValueInteger(String fieldName)
    {
-      return ((Integer) values.get(fieldName));
+      return (ValueUtils.getValueAsInteger(values.get(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public BigDecimal getValueBigDecimal(String fieldName)
+   {
+      return (ValueUtils.getValueAsBigDecimal(values.get(fieldName)));
+   }
+
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Boolean getValueBoolean(String fieldName)
+   {
+      return (ValueUtils.getValueAsBoolean(values.get(fieldName)));
    }
 
 
@@ -249,6 +272,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public LocalDate getValueDate(String fieldName)
    {
+      // todo - rewrite using ValueUtils...
       return ((LocalDate) values.get(fieldName));
    }
 
@@ -307,6 +331,7 @@ public class QRecord implements Serializable
    {
       return this.backendDetails.get(key);
    }
+
 
 
    /*******************************************************************************

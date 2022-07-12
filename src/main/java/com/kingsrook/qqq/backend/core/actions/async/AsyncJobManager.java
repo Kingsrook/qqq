@@ -113,7 +113,7 @@ public class AsyncJobManager
     ** Load an instance of the appropriate state provider
     **
     *******************************************************************************/
-   protected static StateProviderInterface getStateProvider()
+   static StateProviderInterface getStateProvider()
    {
       // TODO - read this from somewhere in meta data eh?
       return InMemoryStateProvider.getInstance();

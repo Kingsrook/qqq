@@ -33,9 +33,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.serialization.QStepMetaData
 /*******************************************************************************
  ** Meta-Data to define a step in a process in a QQQ instance.
  **
+ ** Specifically, this is a base-class for QFrontendStepMetaData and QBackendStepMetaData.
+ **
  *******************************************************************************/
 @JsonDeserialize(using = QStepMetaDataDeserializer.class)
-public class QStepMetaData
+public abstract class QStepMetaData
 {
    private String name;
    private String label;

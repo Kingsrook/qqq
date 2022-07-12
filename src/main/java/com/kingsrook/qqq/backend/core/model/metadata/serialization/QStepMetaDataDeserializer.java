@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 
 
@@ -47,7 +48,7 @@ public class QStepMetaDataDeserializer extends JsonDeserializer<QStepMetaData>
       Class<? extends QStepMetaData> targetClass = switch(stepType)
          {
             case "backend" -> QBackendStepMetaData.class;
-            case "frontend" -> QBackendStepMetaData.class;
+            case "frontend" -> QFrontendStepMetaData.class;
             default -> throw new IllegalArgumentException("Unsupported StepType " + stepType + " for deserialization");
          };
       return (DeserializerUtils.reflectivelyDeserialize(targetClass, treeNode));

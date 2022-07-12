@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -65,7 +66,7 @@ class AsyncJobManagerTest
       assertThrows(JobGoingAsyncException.class, () ->
       {
          AsyncJobManager asyncJobManager = new AsyncJobManager();
-         Integer answer = asyncJobManager.startJob(1, TimeUnit.MICROSECONDS, (callback) ->
+         asyncJobManager.startJob(1, TimeUnit.MICROSECONDS, (callback) ->
          {
             Thread.sleep(1_000);
             return (ANSWER);
@@ -108,6 +109,7 @@ class AsyncJobManagerTest
             Thread.sleep(50);
             throw (new IllegalArgumentException(message));
          });
+         fail("We should catch a JobGoingAsyncException");
       }
       catch(JobGoingAsyncException jgae)
       {
@@ -140,6 +142,7 @@ class AsyncJobManagerTest
             callback.updateStatus(postMessage, 1, 1);
             return (ANSWER);
          });
+         fail("We should catch a JobGoingAsyncException");
       }
       catch(JobGoingAsyncException jgae)
       {
@@ -152,6 +155,7 @@ class AsyncJobManagerTest
          assertEquals(1, jobStatus.get().getTotal());
 
          Thread.sleep(200);
+         jobStatus = asyncJobManager.getJobStatus(jgae.getJobUUID());
          assertEquals(AsyncJobState.COMPLETE, jobStatus.get().getState());
          assertEquals(postMessage, jobStatus.get().getMessage());
          assertEquals(1, jobStatus.get().getCurrent());

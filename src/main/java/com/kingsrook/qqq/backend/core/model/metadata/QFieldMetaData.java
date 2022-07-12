@@ -35,7 +35,7 @@ public class QFieldMetaData
    private String label;
    private String backendName;
    private QFieldType type;
-   private boolean isRequired;
+   private boolean isRequired = false;
 
    private Serializable defaultValue;
    private String possibleValueSourceName;
