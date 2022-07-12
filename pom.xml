@@ -67,6 +67,7 @@
          <scope>test</scope>
       </dependency>
 
+
       <!-- Common deps for all qqq modules -->
       <dependency>
          <groupId>org.apache.maven.plugins</groupId>

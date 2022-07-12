@@ -99,17 +99,19 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
          // todo - non-serial-id style tables
          // todo - other generated values, e.g., createDate...  maybe need to re-select?
-         Connection    connection    = getConnection(insertRequest);
-         List<Integer> idList        = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
-         List<QRecord> outputRecords = new ArrayList<>();
-         rs.setRecords(outputRecords);
-         int index = 0;
-         for(QRecord record : insertRequest.getRecords())
+         try(Connection connection = getConnection(insertRequest))
          {
-            Integer id           = idList.get(index++);
-            QRecord outputRecord = new QRecord(record);
-            outputRecord.setValue(table.getPrimaryKeyField(), id);
-            outputRecords.add(outputRecord);
+            List<Integer> idList        = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
+            List<QRecord> outputRecords = new ArrayList<>();
+            rs.setRecords(outputRecords);
+            int index = 0;
+            for(QRecord record : insertRequest.getRecords())
+            {
+               Integer id           = idList.get(index++);
+               QRecord outputRecord = new QRecord(record);
+               outputRecord.setValue(table.getPrimaryKeyField(), id);
+               outputRecords.add(outputRecord);
+            }
          }
 
          return rs;

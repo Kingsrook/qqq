@@ -104,29 +104,31 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          List<QRecord> records = new ArrayList<>();
          rs.setRecords(records);
 
-         Connection connection = getConnection(queryRequest);
-         QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+         try(Connection connection = getConnection(queryRequest))
          {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            while(resultSet.next())
+            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
-               // todo - should refactor this for view etc to use too.
-               // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
-               QRecord record = new QRecord();
-               records.add(record);
-               record.setTableName(table.getName());
-               LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
-               record.setValues(values);
-
-               for(int i = 1; i <= metaData.getColumnCount(); i++)
+               ResultSetMetaData metaData = resultSet.getMetaData();
+               while(resultSet.next())
                {
-                  QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
-                  Serializable value = getValue(qFieldMetaData, resultSet, i);
-                  values.put(qFieldMetaData.getName(), value);
-               }
-            }
+                  // todo - should refactor this for view etc to use too.
+                  // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
+                  QRecord record = new QRecord();
+                  records.add(record);
+                  record.setTableName(table.getName());
+                  LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
+                  record.setValues(values);
 
-         }), params);
+                  for(int i = 1; i <= metaData.getColumnCount(); i++)
+                  {
+                     QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
+                     Serializable   value          = getValue(qFieldMetaData, resultSet, i);
+                     values.put(qFieldMetaData.getName(), value);
+                  }
+               }
+
+            }), params);
+         }
 
          return rs;
       }
