@@ -56,12 +56,12 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
    {
       try
       {
-         QTableMetaData table = countRequest.getTable();
-         String tableName = getTableName(table);
+         QTableMetaData table     = countRequest.getTable();
+         String         tableName = getTableName(table);
 
          String sql = "SELECT count(*) as record_count FROM " + tableName;
 
-         QQueryFilter filter = countRequest.getFilter();
+         QQueryFilter       filter = countRequest.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
          {
@@ -72,16 +72,18 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
 
          CountResult rs = new CountResult();
 
-         Connection connection = getConnection(countRequest);
-         QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+         try(Connection connection = getConnection(countRequest))
          {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            if(resultSet.next())
+            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
-               rs.setCount(resultSet.getInt("record_count"));
-            }
+               ResultSetMetaData metaData = resultSet.getMetaData();
+               if(resultSet.next())
+               {
+                  rs.setCount(resultSet.getInt("record_count"));
+               }
 
-         }), params);
+            }), params);
+         }
 
          return rs;
       }
