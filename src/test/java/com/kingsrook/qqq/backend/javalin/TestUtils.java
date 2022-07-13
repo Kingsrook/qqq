@@ -260,6 +260,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SIMPLE_SLEEP)
+         .withIsHidden(true)
          .addStep(SleeperStep.getMetaData());
    }
 

@@ -35,6 +35,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,11 +68,15 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertTrue(jsonObject.has("tables"));
       JSONObject tables = jsonObject.getJSONObject("tables");
       assertEquals(1, tables.length());
-      JSONObject table0 = tables.getJSONObject("person");
-      assertTrue(table0.has("name"));
-      assertEquals("person", table0.getString("name"));
-      assertTrue(table0.has("label"));
-      assertEquals("Person", table0.getString("label"));
+      JSONObject personTable = tables.getJSONObject("person");
+      assertTrue(personTable.has("name"));
+      assertEquals("person", personTable.getString("name"));
+      assertTrue(personTable.has("label"));
+      assertEquals("Person", personTable.getString("label"));
+      assertFalse(personTable.getBoolean("isHidden"));
+
+      JSONObject processes = jsonObject.getJSONObject("processes");
+      assertTrue(processes.getJSONObject("simpleSleep").getBoolean("isHidden"));
    }
 
 
@@ -89,7 +94,6 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals(1, jsonObject.keySet().size(), "Number of top-level keys");
       JSONObject table = jsonObject.getJSONObject("table");
-      assertEquals(4, table.keySet().size(), "Number of mid-level keys");
       assertEquals("person", table.getString("name"));
       assertEquals("Person", table.getString("label"));
       assertEquals("id", table.getString("primaryKeyField"));
@@ -132,7 +136,6 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals(1, jsonObject.keySet().size(), "Number of top-level keys");
       JSONObject process = jsonObject.getJSONObject("process");
-      assertEquals(4, process.keySet().size(), "Number of mid-level keys");
       assertEquals("greetInteractive", process.getString("name"));
       assertEquals("Greet Interactive", process.getString("label"));
       assertEquals("person", process.getString("tableName"));
