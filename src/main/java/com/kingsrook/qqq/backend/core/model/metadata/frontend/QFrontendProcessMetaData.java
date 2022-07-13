@@ -40,9 +40,10 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendProcessMetaData
 {
-   private String name;
-   private String label;
-   private String tableName;
+   private String  name;
+   private String  label;
+   private String  tableName;
+   private boolean isHidden;
 
    private List<QFrontendStepMetaData> frontendSteps;
 
@@ -60,6 +61,7 @@ public class QFrontendProcessMetaData
       this.name = processMetaData.getName();
       this.label = processMetaData.getLabel();
       this.tableName = processMetaData.getTableName();
+      this.isHidden = processMetaData.getIsHidden();
 
       if(includeSteps)
       {
@@ -131,4 +133,27 @@ public class QFrontendProcessMetaData
    {
       this.frontendSteps = frontendSteps;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
 }

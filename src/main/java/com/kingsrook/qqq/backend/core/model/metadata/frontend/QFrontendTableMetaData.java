@@ -38,9 +38,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendTableMetaData
 {
-   private String name;
-   private String label;
-   private String primaryKeyField;
+   private String  name;
+   private String  label;
+   private boolean isHidden;
+   private String  primaryKeyField;
+
    private Map<String, QFrontendFieldMetaData> fields;
 
    //////////////////////////////////////////////////////////////////////////////////
@@ -56,6 +58,7 @@ public class QFrontendTableMetaData
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
+      this.isHidden = tableMetaData.getIsHidden();
 
       if(includeFields)
       {
@@ -110,5 +113,27 @@ public class QFrontendTableMetaData
    public Map<String, QFrontendFieldMetaData> getFields()
    {
       return fields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
    }
 }

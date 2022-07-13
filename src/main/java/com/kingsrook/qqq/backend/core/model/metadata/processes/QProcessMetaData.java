@@ -34,9 +34,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
  *******************************************************************************/
 public class QProcessMetaData
 {
-   private String              name;
-   private String              label;
-   private String              tableName;
+   private String  name;
+   private String  label;
+   private String  tableName;
+   private boolean isHidden = false;
+
    private List<QStepMetaData> stepList;
 
 
@@ -255,6 +257,40 @@ public class QProcessMetaData
          }
       }
       return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return (isHidden);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for isHidden
+    **
+    *******************************************************************************/
+   public QProcessMetaData withIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+      return (this);
    }
 
 }
