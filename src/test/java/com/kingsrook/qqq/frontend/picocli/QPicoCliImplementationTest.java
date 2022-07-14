@@ -202,7 +202,6 @@ class QPicoCliImplementationTest
       assertNotNull(metaData);
       assertEquals(1, metaData.keySet().size(), "Number of top-level keys");
       JSONObject table = metaData.getJSONObject("table");
-      assertEquals(4, table.keySet().size(), "Number of mid-level keys");
       assertEquals("person", table.getString("name"));
       assertEquals("Person", table.getString("label"));
       assertEquals("id", table.getString("primaryKeyField"));
@@ -210,6 +209,28 @@ class QPicoCliImplementationTest
       JSONObject field0 = fields.getJSONObject("id");
       assertEquals("id", field0.getString("name"));
       assertEquals("INTEGER", field0.getString("type"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a count on a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableCount()
+   {
+      TestOutput testOutput  = testCli("person", "count", "--criteria", "id NOT_EQUALS 3");
+      JSONObject countResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(countResult);
+      int count = countResult.getInt("count");
+      assertEquals(4, count);
+
+      testOutput  = testCli("person", "count", "--criteria", "id EQUALS 3");
+      countResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(countResult);
+      count = countResult.getInt("count");
+      assertEquals(1, count);
    }
 
 
@@ -497,9 +518,9 @@ class QPicoCliImplementationTest
    @Test
    public void test_tableProcessGreetUsingOptionsForFields() throws Exception
    {
-      TestOutput testOutput = testCli("person", "process", "greet", "--field-greetingPrefix=Hello", "--field-greetingSuffix=There");
+      TestOutput testOutput = testCli("person", "process", "greet", "--field-greetingPrefix=Hello", "--field-greetingSuffix=World");
       assertTestOutputDoesNotContain(testOutput, "Please supply a value for the field");
-      assertTestOutputContains(testOutput, "Hello X There");
+      assertTestOutputContains(testOutput, "Hello X World");
    }
 
 

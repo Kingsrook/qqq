@@ -25,7 +25,7 @@ package com.kingsrook.qqq.frontend.picocli;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody;
+import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
@@ -34,16 +34,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QOutputView;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListView;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import org.apache.commons.io.IOUtils;
 import static junit.framework.Assert.assertNotNull;
 
@@ -166,12 +164,12 @@ public class TestUtils
       return new QProcessMetaData()
          .withName("greet")
          .withTableName("person")
-         .addFunction(new QFunctionMetaData()
+         .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
-               .withName(MockFunctionBody.class.getName())
+               .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
                .withFieldList(List.of(
@@ -184,9 +182,6 @@ public class TestUtils
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
-            .withOutputView(new QOutputView()
-               .withMessageField("outputMessage")
-               .withRecordListView(new QRecordListView().withFieldNames(List.of("id", "firstName", "lastName", "fullGreeting"))))
          );
    }
 
