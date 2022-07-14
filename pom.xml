@@ -25,7 +25,7 @@
 
    <groupId>com.kingsrook.qqq</groupId>
    <artifactId>qqq-backend-module-rdbms</artifactId>
-   <version>0.0.0</version>
+   <version>0.1.0</version>
 
    <scm>
      <connection>scm:git:git@github.com:Kingsrook/qqq-backend-module-rdbms.git</connection>
@@ -51,7 +51,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.0.0</version>
+         <version>0.1.0</version>
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->
@@ -66,6 +66,7 @@
          <version>2.1.210</version>
          <scope>test</scope>
       </dependency>
+
 
       <!-- Common deps for all qqq modules -->
       <dependency>
