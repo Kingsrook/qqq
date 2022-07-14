@@ -27,7 +27,7 @@
 
    <groupId>com.kingsrook.qqq</groupId>
    <artifactId>qqq-sample-project</artifactId>
-   <version>0.1.0-SNAPSHOT</version>
+   <version>0.2.0-SNAPSHOT</version>
 
    <properties>
       <!-- props specifically to this module -->
@@ -47,31 +47,31 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.1.0-SNAPSHOT</version>
+         <version>0.2.0-SNAPSHOT</version>
          <scope>compile</scope>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>0.1.0-SNAPSHOT</version>
+         <version>0.2.0-SNAPSHOT</version>
          <scope>compile</scope>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-filesystem</artifactId>
-         <version>0.1.0-SNAPSHOT</version>
+         <version>0.2.0-SNAPSHOT</version>
          <scope>compile</scope>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-middleware-javalin</artifactId>
-         <version>0.1.0-SNAPSHOT</version>
+         <version>0.2.0-SNAPSHOT</version>
          <scope>compile</scope>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-middleware-picocli</artifactId>
-         <version>0.1.0-SNAPSHOT</version>
+         <version>0.2.0-SNAPSHOT</version>
          <scope>compile</scope>
       </dependency>
 

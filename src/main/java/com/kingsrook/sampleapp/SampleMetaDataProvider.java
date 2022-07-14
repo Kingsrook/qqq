@@ -24,7 +24,11 @@ package com.kingsrook.sampleapp;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
 import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
@@ -35,10 +39,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.LoadInitialRecordsStep;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
@@ -51,9 +57,20 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaDat
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static final String MYSQL_BACKEND_NAME = "mysql";
+   public static final String MYSQL_BACKEND_NAME      = "mysql";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
-   public static final String PROCESS_NAME_GREET = "greet";
+
+   public static final String PROCESS_NAME_GREET             = "greet";
+   public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
+   public static final String PROCESS_NAME_SIMPLE_SLEEP      = "simpleSleep";
+   public static final String PROCESS_NAME_SIMPLE_THROW      = "simpleThrow";
+   public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
+
+   public static final String STEP_NAME_SLEEPER = "sleeper";
+   public static final String STEP_NAME_THROWER = "thrower";
+
+   public static final String SCREEN_0 = "screen0";
+   public static final String SCREEN_1 = "screen1";
 
 
 
@@ -64,13 +81,17 @@ public class SampleMetaDataProvider
    {
       QInstance qInstance = new QInstance();
 
-      qInstance.setAuthentication(SampleMetaDataProvider.defineAuthentication());
-      qInstance.addBackend(SampleMetaDataProvider.defineMysqlBackend());
-      qInstance.addBackend(SampleMetaDataProvider.defineFilesystemBackend());
-      qInstance.addTable(SampleMetaDataProvider.defineTableCarrier());
-      qInstance.addTable(SampleMetaDataProvider.defineTablePerson());
-      qInstance.addTable(SampleMetaDataProvider.defineTableCityFile());
-      qInstance.addProcess(SampleMetaDataProvider.defineProcessGreetPeople());
+      qInstance.setAuthentication(defineAuthentication());
+      qInstance.addBackend(defineMysqlBackend());
+      qInstance.addBackend(defineFilesystemBackend());
+      qInstance.addTable(defineTableCarrier());
+      qInstance.addTable(defineTablePerson());
+      qInstance.addTable(defineTableCityFile());
+      qInstance.addProcess(defineProcessGreetPeople());
+      qInstance.addProcess(defineProcessGreetPeopleInteractive());
+      qInstance.addProcess(defineProcessSimpleSleep());
+      qInstance.addProcess(defineProcessScreenThenSleep());
+      qInstance.addProcess(defineProcessSimpleThrow());
 
       return (qInstance);
    }
@@ -172,6 +193,7 @@ public class SampleMetaDataProvider
       return new QTableMetaData()
          .withName("city")
          .withLabel("Cities")
+         .withIsHidden(true)
          .withBackendName(FILESYSTEM_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -195,12 +217,13 @@ public class SampleMetaDataProvider
          .withName(PROCESS_NAME_GREET)
          .withLabel("Greet People")
          .withTableName("person")
+         .withIsHidden(true)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.FUNCTION)) // todo - needed, or implied in this context?
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
                .withFieldList(List.of(
@@ -214,6 +237,224 @@ public class SampleMetaDataProvider
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define an interactive version of the 'greet people' process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGreetPeopleInteractive()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_GREET_INTERACTIVE)
+         .withTableName("person")
+
+         .addStep(LoadInitialRecordsStep.defineMetaData("person"))
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("setup")
+            .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
+            .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
+         )
+
+         .addStep(new QBackendStepMetaData()
+            .withName("doWork")
+            .withCode(new QCodeReference()
+               .withName(MockBackendStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withFieldList(List.of(
+                  new QFieldMetaData("greetingPrefix", QFieldType.STRING),
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+               )))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName("person")
+                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+               )
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
+         )
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("results")
+            .withViewField(new QFieldMetaData("noOfPeopleGreeted", QFieldType.INTEGER))
+            .withViewField(new QFieldMetaData("outputMessage", QFieldType.STRING))
+            .withRecordListField(new QFieldMetaData("id", QFieldType.INTEGER))
+            .withRecordListField(new QFieldMetaData("firstName", QFieldType.STRING))
+            // .withRecordListField(new QFieldMetaData(MockBackendStep.FIELD_MOCK_VALUE, QFieldType.STRING))
+            .withRecordListField(new QFieldMetaData("greetingMessage", QFieldType.STRING))
+         );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a process with just one step that sleeps
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessSimpleSleep()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_SIMPLE_SLEEP)
+         .withIsHidden(true)
+         .addStep(SleeperStep.getMetaData());
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a process with a screen, then a sleep step
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessScreenThenSleep()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_SLEEP_INTERACTIVE)
+         .addStep(new QFrontendStepMetaData()
+            .withName(SCREEN_0)
+            .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)))
+         .addStep(SleeperStep.getMetaData())
+         .addStep(new QFrontendStepMetaData()
+            .withName(SCREEN_1)
+            .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a process with just one step that sleeps and then throws
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessSimpleThrow()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_SIMPLE_THROW)
+         .addStep(ThrowerStep.getMetaData());
+   }
+
+
+
+   /*******************************************************************************
+    ** Testing backend step - just sleeps however long you ask it to (or, throws if
+    ** you don't provide a number of seconds to sleep).
+    *******************************************************************************/
+   public static class SleeperStep implements BackendStep
+   {
+      public static final String FIELD_SLEEP_MILLIS = "sleepMillis";
+
+
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       ******************************************************************************/
+      @Override
+      public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+      {
+         try
+         {
+            Thread.sleep(runBackendStepRequest.getValueInteger(FIELD_SLEEP_MILLIS));
+         }
+         catch(InterruptedException e)
+         {
+            throw (new QException("Interrupted while sleeping..."));
+         }
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public static QBackendStepMetaData getMetaData()
+      {
+         return (new QBackendStepMetaData()
+            .withName(STEP_NAME_SLEEPER)
+            .withCode(new QCodeReference()
+               .withName(SleeperStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withInputData(new QFunctionInputMetaData()
+               .addField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Testing backend step - just throws an exception after however long you ask it to sleep.
+    *******************************************************************************/
+   public static class ThrowerStep implements BackendStep
+   {
+      public static final String FIELD_SLEEP_MILLIS = "sleepMillis";
+
+
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       ******************************************************************************/
+      @Override
+      public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+      {
+         int sleepMillis;
+         try
+         {
+            sleepMillis = runBackendStepRequest.getValueInteger(FIELD_SLEEP_MILLIS);
+         }
+         catch(QValueException qve)
+         {
+            sleepMillis = 50;
+         }
+
+         try
+         {
+            Thread.sleep(sleepMillis);
+         }
+         catch(InterruptedException e)
+         {
+            throw (new QException("Interrupted while sleeping..."));
+         }
+
+         throw (new QException("I always throw."));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public static QBackendStepMetaData getMetaData()
+      {
+         return (new QBackendStepMetaData()
+            .withName(STEP_NAME_THROWER)
+            .withCode(new QCodeReference()
+               .withName(ThrowerStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withInputData(new QFunctionInputMetaData()
+               .addField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+      }
+   }
+
+
+
+   public static class NoopBackendStep implements BackendStep
+   {
+      public NoopBackendStep()
+      {
+
+      }
+
+
+
+      @Override
+      public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+      {
+         //////////
+         // noop //
+         //////////
+      }
    }
 
 }

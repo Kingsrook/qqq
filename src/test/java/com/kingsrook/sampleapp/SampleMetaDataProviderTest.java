@@ -40,7 +40,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -118,7 +117,6 @@ class SampleMetaDataProviderTest
 
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);
-      assertNull(result.getError());
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
    }
 
