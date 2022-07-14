@@ -27,9 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import com.kingsrook.qqq.backend.core.actions.RunBackendStepAction;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -136,13 +136,13 @@ public class BasicETLCleanupSourceFilesStepTest
     *******************************************************************************/
    private void testDelete(QInstance qInstance, List<String> filePaths) throws Exception
    {
-      RunBackendStepResult runBackendStepResult = runFunction(qInstance, filePaths, Map.of(
+      RunBackendStepOutput runBackendStepOutput = runFunction(qInstance, filePaths, Map.of(
          BasicETLCleanupSourceFilesStep.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesStep.VALUE_DELETE,
          // todo - even though this field isn't needed, since we gave a value of "delete"
          //  the RunFunctionAction considers any missing input to be an error...
          BasicETLCleanupSourceFilesStep.FIELD_DESTINATION_FOR_MOVES, ""));
 
-      assertNull(runBackendStepResult.getException());
+      assertNull(runBackendStepOutput.getException());
       for(String filePath : filePaths)
       {
          assertFalse(new File(filePath).exists(), "File should have been deleted.");
@@ -157,11 +157,11 @@ public class BasicETLCleanupSourceFilesStepTest
    private void testMove(QInstance qInstance, List<String> filePaths) throws Exception
    {
       String trashDir = File.separator + "tmp" + File.separator + "trash";
-      RunBackendStepResult runBackendStepResult = runFunction(qInstance, filePaths, Map.of(
+      RunBackendStepOutput runBackendStepOutput = runFunction(qInstance, filePaths, Map.of(
          BasicETLCleanupSourceFilesStep.FIELD_MOVE_OR_DELETE, BasicETLCleanupSourceFilesStep.VALUE_MOVE,
          BasicETLCleanupSourceFilesStep.FIELD_DESTINATION_FOR_MOVES, trashDir));
 
-      assertNull(runBackendStepResult.getException());
+      assertNull(runBackendStepOutput.getException());
 
       for(String filePath : filePaths)
       {
@@ -177,7 +177,7 @@ public class BasicETLCleanupSourceFilesStepTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private RunBackendStepResult runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
+   private RunBackendStepOutput runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
    {
       QBackendStepMetaData backendStepMetaData = new BasicETLCleanupSourceFilesStep().defineStepMetaData();
       QProcessMetaData     qProcessMetaData  = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
@@ -193,22 +193,22 @@ public class BasicETLCleanupSourceFilesStepTest
       // List<QRecord> records = filePaths.stream()
       //    .map(filePath -> new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, filePath)).toList();
 
-      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
-      runBackendStepRequest.setStepName(backendStepMetaData.getName());
-      runBackendStepRequest.setProcessName(qProcessMetaData.getName());
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      runBackendStepInput.setStepName(backendStepMetaData.getName());
+      runBackendStepInput.setProcessName(qProcessMetaData.getName());
       // runFunctionRequest.setRecords(records);
-      runBackendStepRequest.setSession(TestUtils.getMockSession());
-      runBackendStepRequest.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
-      runBackendStepRequest.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
-      runBackendStepRequest.addValue(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
+      runBackendStepInput.setSession(TestUtils.getMockSession());
+      runBackendStepInput.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      runBackendStepInput.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
+      runBackendStepInput.addValue(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
 
       for(Map.Entry<String, String> entry : values.entrySet())
       {
-         runBackendStepRequest.addValue(entry.getKey(), entry.getValue());
+         runBackendStepInput.addValue(entry.getKey(), entry.getValue());
       }
 
       RunBackendStepAction runFunctionAction = new RunBackendStepAction();
-      return (runFunctionAction.execute(runBackendStepRequest));
+      return (runFunctionAction.execute(runBackendStepInput));
    }
 
 

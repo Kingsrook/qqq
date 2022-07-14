@@ -24,15 +24,15 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -57,12 +57,12 @@ public class BasicETLCollectSourceFileNamesStep implements BackendStep
     ** Execute the step - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      Set<String> sourceFiles = runBackendStepRequest.getRecords().stream()
+      Set<String> sourceFiles = runBackendStepInput.getRecords().stream()
          .map(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH))
          .collect(Collectors.toSet());
-      runBackendStepResult.addValue(FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", sourceFiles));
+      runBackendStepOutput.addValue(FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", sourceFiles));
    }
 
 

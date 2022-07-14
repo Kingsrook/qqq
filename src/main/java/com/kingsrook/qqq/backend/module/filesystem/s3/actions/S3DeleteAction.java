@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -38,7 +38,7 @@ public class S3DeleteAction implements DeleteInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   public DeleteResult execute(DeleteRequest deleteRequest) throws QException
+   public DeleteOutput execute(DeleteInput deleteInput) throws QException
    {
       throw new NotImplementedException("S3 delete not implemented");
       /*

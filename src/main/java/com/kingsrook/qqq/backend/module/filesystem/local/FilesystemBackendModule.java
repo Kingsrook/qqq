@@ -23,13 +23,13 @@ package com.kingsrook.qqq.backend.module.filesystem.local;
 
 
 import java.io.File;
+import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;

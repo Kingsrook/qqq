@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -38,7 +38,7 @@ public class FilesystemInsertAction implements InsertInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertResult execute(InsertRequest insertRequest) throws QException
+   public InsertOutput execute(InsertInput insertInput) throws QException
    {
       throw new NotImplementedException("Filesystem insert not implemented");
       /*

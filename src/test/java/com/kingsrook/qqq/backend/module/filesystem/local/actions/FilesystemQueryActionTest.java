@@ -24,13 +24,13 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
@@ -50,12 +50,12 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    @Test
    public void testQuery1() throws QException
    {
-      QueryRequest queryRequest = new QueryRequest();
-      queryRequest.setInstance(TestUtils.defineInstance());
-      queryRequest.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
-      QueryResult queryResult = new FilesystemQueryAction().execute(queryRequest);
-      Assertions.assertEquals(3, queryResult.getRecords().size(), "Unfiltered query should find all rows");
-      Assertions.assertTrue(queryResult.getRecords().stream()
+      QueryInput queryInput = new QueryInput();
+      queryInput.setInstance(TestUtils.defineInstance());
+      queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
+      QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
+      Assertions.assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
+      Assertions.assertTrue(queryOutput.getRecords().stream()
             .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains(TestUtils.BASE_PATH)),
          "All records should have a full-path in their backend details, matching the test folder name");
    }
@@ -68,8 +68,8 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    @Test
    public void testQueryWithFileCustomizer() throws QException
    {
-      QueryRequest queryRequest = new QueryRequest();
-      QInstance    instance     = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput();
+      QInstance  instance   = TestUtils.defineInstance();
 
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
       table.withCustomizer(FilesystemBackendModuleInterface.CUSTOMIZER_FILE_POST_FILE_READ, new QCodeReference()
@@ -77,12 +77,12 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
          .withCodeType(QCodeType.JAVA)
          .withCodeUsage(QCodeUsage.CUSTOMIZER));
 
-      queryRequest.setInstance(instance);
-      queryRequest.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
-      QueryResult queryResult = new FilesystemQueryAction().execute(queryRequest);
-      Assertions.assertEquals(3, queryResult.getRecords().size(), "Unfiltered query should find all rows");
+      queryInput.setInstance(instance);
+      queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
+      QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
+      Assertions.assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
       Assertions.assertTrue(
-         queryResult.getRecords().stream().allMatch(record -> record.getValueString("email").matches(".*KINGSROOK.COM")),
+         queryOutput.getRecords().stream().allMatch(record -> record.getValueString("email").matches(".*KINGSROOK.COM")),
          "All records should have their email addresses up-shifted.");
    }
 
