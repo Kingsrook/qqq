@@ -22,45 +22,57 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 
 /*******************************************************************************
- **
+ ** base class for javalin implementation tests.
  *******************************************************************************/
-public class QJavalinProcessCallback implements QProcessCallback
+public class QJavalinTestBase
 {
-   private static final Logger LOG = LogManager.getLogger(QJavalinProcessCallback.class);
+   private static final   int    PORT     = 6262;
+   protected static final String BASE_URL = "http://localhost:" + PORT;
+
+   private static QJavalinImplementation qJavalinImplementation;
 
 
 
    /*******************************************************************************
+    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
-   @Override
-   public QQueryFilter getQueryFilter()
+   @BeforeAll
+   public static void beforeAll()
    {
-      LOG.warn("Getting a query filter in javalin is NOT yet implemented");
-      return (new QQueryFilter());
+      qJavalinImplementation = new QJavalinImplementation(TestUtils.defineInstance());
+      QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
+      qJavalinImplementation.startJavalinServer(PORT);
    }
 
 
 
    /*******************************************************************************
+    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
-   @Override
-   public Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields)
+   @AfterAll
+   public static void afterAll()
    {
-      LOG.warn("Getting field values in javalin is NOT yet implemented");
-      return (new HashMap<>());
+      qJavalinImplementation.stopJavalinServer();
    }
+
+
+
+   /*******************************************************************************
+    ** Fully rebuild the test-database before each test runs, for completely known state.
+    **
+    *******************************************************************************/
+   @BeforeEach
+   public void beforeEach() throws Exception
+   {
+      TestUtils.primeTestDatabase();
+   }
+
 }
