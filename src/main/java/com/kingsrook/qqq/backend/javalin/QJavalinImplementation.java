@@ -29,48 +29,49 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import com.kingsrook.qqq.backend.core.actions.CountAction;
 import com.kingsrook.qqq.backend.core.actions.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
-import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
+import com.kingsrook.qqq.backend.core.model.actions.count.CountRequest;
+import com.kingsrook.qqq.backend.core.model.actions.count.CountResult;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
 import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataRequest;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataResult;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
 import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
@@ -97,9 +98,11 @@ public class QJavalinImplementation
 
    private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
 
-   private static QInstance qInstance;
+   static QInstance qInstance;
 
-   private static int PORT = 8001;
+   private static int DEFAULT_PORT = 8001;
+
+   private static Javalin service;
 
 
 
@@ -112,7 +115,7 @@ public class QJavalinImplementation
       // todo - parse args to look up metaData and prime instance
       // qInstance.addBackend(QMetaDataProvider.getQBackend());
 
-      new QJavalinImplementation(qInstance).startJavalinServer(PORT);
+      new QJavalinImplementation(qInstance).startJavalinServer(DEFAULT_PORT);
    }
 
 
@@ -145,9 +148,29 @@ public class QJavalinImplementation
    void startJavalinServer(int port)
    {
       // todo port from arg
-      // todo base path from arg?
-      Javalin service = Javalin.create().start(port);
+      // todo base path from arg? - and then potentially multiple instances too (chosen based on the root path??)
+      service = Javalin.create().start(port);
       service.routes(getRoutes());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void stopJavalinServer()
+   {
+      service.stop();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void setDefaultPort(int port)
+   {
+      QJavalinImplementation.DEFAULT_PORT = port;
    }
 
 
@@ -162,10 +185,13 @@ public class QJavalinImplementation
          path("/metaData", () ->
          {
             get("/", QJavalinImplementation::metaData);
-            path("/:table", () ->
+            path("/table/:table", () ->
             {
                get("", QJavalinImplementation::tableMetaData);
-               // todo - process meta data - just under tables?  or top-level too?  maybe move tables to be under /tables/?
+            });
+            path("/process/:processName", () ->
+            {
+               get("", QJavalinImplementation::processMetaData);
             });
          });
          path("/data", () ->
@@ -174,6 +200,8 @@ public class QJavalinImplementation
             {
                get("/", QJavalinImplementation::dataQuery);
                post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
+               get("/count", QJavalinImplementation::dataCount);
+
                // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
                path("/:primaryKey", () ->
                {
@@ -184,14 +212,7 @@ public class QJavalinImplementation
                });
             });
          });
-         path("/processes", () ->
-         {
-            path("/:process", () ->
-            {
-               get("/init", QJavalinImplementation::processInit);
-               get("/step", QJavalinImplementation::processStep);
-            });
-         });
+         path("", QJavalinProcessHandler.getRoutes());
       });
    }
 
@@ -200,7 +221,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void setupSession(Context context, AbstractQRequest request) throws QModuleDispatchException
+   static void setupSession(Context context, AbstractQRequest request) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
@@ -334,7 +355,85 @@ public class QJavalinImplementation
     ********************************************************************************/
    private static void dataGet(Context context)
    {
-      context.result("{\"todo\":\"not-done\",\"getResult\":{}}");
+      try
+      {
+         String         tableName    = context.pathParam("table");
+         QTableMetaData table        = qInstance.getTable(tableName);
+         String         primaryKey   = context.pathParam("primaryKey");
+         QueryRequest   queryRequest = new QueryRequest(qInstance);
+
+         setupSession(context, queryRequest);
+         queryRequest.setTableName(tableName);
+
+         // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
+         //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
+
+         ///////////////////////////////////////////////////////
+         // setup a filter for the primaryKey = the path-pram //
+         ///////////////////////////////////////////////////////
+         queryRequest.setFilter(new QQueryFilter()
+            .withCriteria(new QFilterCriteria()
+               .withFieldName(table.getPrimaryKeyField())
+               .withOperator(QCriteriaOperator.EQUALS)
+               .withValues(List.of(primaryKey))));
+
+         QueryAction queryAction = new QueryAction();
+         QueryResult queryResult = queryAction.execute(queryRequest);
+
+         ///////////////////////////////////////////////////////
+         // throw a not found error if the record isn't found //
+         ///////////////////////////////////////////////////////
+         if(queryResult.getRecords().isEmpty())
+         {
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
+               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+         }
+
+         context.result(JsonUtils.toJson(queryResult.getRecords().get(0)));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    *
+    * Filter parameter is a serialized QQueryFilter object, that is to say:
+    * <pre>
+    *   filter=
+    *    {"criteria":[
+    *       {"fieldName":"id","operator":"EQUALS","values":[1]},
+    *       {"fieldName":"name","operator":"IN","values":["Darin","James"]}
+    *     ]
+    *    }
+    * </pre>
+    *******************************************************************************/
+   static void dataCount(Context context)
+   {
+      try
+      {
+         CountRequest countRequest = new CountRequest(qInstance);
+         setupSession(context, countRequest);
+         countRequest.setTableName(context.pathParam("table"));
+
+         String filter = stringQueryParam(context, "filter");
+         if(filter != null)
+         {
+            countRequest.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
+
+         CountAction countAction = new CountAction();
+         CountResult countResult = countAction.execute(countRequest);
+
+         context.result(JsonUtils.toJson(countResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
    }
 
 
@@ -430,14 +529,45 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void handleException(Context context, Exception e)
+   private static void processMetaData(Context context)
+   {
+      try
+      {
+         ProcessMetaDataRequest processMetaDataRequest = new ProcessMetaDataRequest(qInstance);
+         setupSession(context, processMetaDataRequest);
+         processMetaDataRequest.setProcessName(context.pathParam("processName"));
+         ProcessMetaDataAction processMetaDataAction = new ProcessMetaDataAction();
+         ProcessMetaDataResult processMetaDataResult = processMetaDataAction.execute(processMetaDataRequest);
+
+         context.result(JsonUtils.toJson(processMetaDataResult));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void handleException(Context context, Exception e)
    {
       QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
       if(userFacingException != null)
       {
-         LOG.info("User-facing exception", e);
-         context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-            .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+         if(userFacingException instanceof QNotFoundException)
+         {
+            context.status(HttpStatus.NOT_FOUND_404)
+               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+         }
+         else
+         {
+            LOG.info("User-facing exception", e);
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
+               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+         }
       }
       else
       {
@@ -451,15 +581,15 @@ public class QJavalinImplementation
 
    /*******************************************************************************
     ** Returns Integer if context has a valid int query parameter by the given name,
-    *  Returns null if no param (or empty value).
-    *  Throws NumberFormatException for malformed numbers.
+    **  Returns null if no param (or empty value).
+    **  Throws QValueException for malformed numbers.
     *******************************************************************************/
-   private static Integer integerQueryParam(Context context, String name) throws NumberFormatException
+   public static Integer integerQueryParam(Context context, String name) throws QValueException
    {
       String value = context.queryParam(name);
       if(StringUtils.hasContent(value))
       {
-         return (Integer.parseInt(value));
+         return (ValueUtils.getValueAsInteger(value));
       }
 
       return (null);
@@ -471,7 +601,7 @@ public class QJavalinImplementation
     ** Returns String if context has a valid query parameter by the given name,
     *  Returns null if no param (or empty value).
     *******************************************************************************/
-   private static String stringQueryParam(Context context, String name) throws NumberFormatException
+   private static String stringQueryParam(Context context, String name)
    {
       String value = context.queryParam(name);
       if(StringUtils.hasContent(value))
@@ -480,89 +610,6 @@ public class QJavalinImplementation
       }
 
       return (null);
-   }
-
-
-
-   /*******************************************************************************
-    ** Init a process (named in path param :process)
-    **
-    *******************************************************************************/
-   private static void processInit(Context context) throws QException
-   {
-      RunProcessRequest runProcessRequest = new RunProcessRequest(qInstance);
-      setupSession(context, runProcessRequest);
-      runProcessRequest.setProcessName(context.pathParam("process"));
-      runProcessRequest.setCallback(new QJavalinProcessCallback());
-
-      /////////////////////////////////////////////////////////////////////////////////////
-      // take values from query-string params, and put them into the run process request //
-      // todo - better from POST body, or with a "field-" type of prefix??               //
-      /////////////////////////////////////////////////////////////////////////////////////
-      for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
-      {
-         String       fieldName = queryParam.getKey();
-         List<String> values    = queryParam.getValue();
-         if(CollectionUtils.nullSafeHasContents(values))
-         {
-            runProcessRequest.addValue(fieldName, values.get(0));
-         }
-      }
-
-      try
-      {
-         ////////////////////////////////////////////////
-         // run the process                            //
-         // todo -  some "job id" to return to caller? //
-         ////////////////////////////////////////////////
-         CompletableFuture<RunProcessResult> future = CompletableFuture.supplyAsync(() ->
-         {
-            try
-            {
-               LOG.info("Running process [" + runProcessRequest.getProcessName() + "]");
-               RunProcessResult runProcessResult = new RunProcessAction().execute(runProcessRequest);
-               LOG.info("Process result error? " + runProcessResult.getError());
-               for(QFieldMetaData outputField : qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
-               {
-                  LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
-               }
-               return (runProcessResult);
-            }
-            catch(Exception e)
-            {
-               LOG.error("Error running future for process", e);
-               throw (new CompletionException(e));
-            }
-         });
-
-         Map<String, Object> resultForCaller = new HashMap<>();
-         try
-         {
-            RunProcessResult runProcessResult = future.get(3, TimeUnit.SECONDS);
-            resultForCaller.put("error", runProcessResult.getError());
-            resultForCaller.put("values", runProcessResult.getValues());
-         }
-         catch(TimeoutException te)
-         {
-            resultForCaller.put("jobId", "Job is running asynchronously... job id available in a later version.");
-         }
-         context.result(JsonUtils.toJson(resultForCaller));
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Run a step in a process (named in path param :process)
-    **
-    *******************************************************************************/
-   private static void processStep(Context context)
-   {
-
    }
 
 }
