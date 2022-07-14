@@ -202,7 +202,6 @@ class QPicoCliImplementationTest
       assertNotNull(metaData);
       assertEquals(1, metaData.keySet().size(), "Number of top-level keys");
       JSONObject table = metaData.getJSONObject("table");
-      assertEquals(4, table.keySet().size(), "Number of mid-level keys");
       assertEquals("person", table.getString("name"));
       assertEquals("Person", table.getString("label"));
       assertEquals("id", table.getString("primaryKeyField"));
