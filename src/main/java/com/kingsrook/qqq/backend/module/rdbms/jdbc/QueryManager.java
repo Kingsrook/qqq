@@ -22,13 +22,12 @@
 package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 
+import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -43,13 +42,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
@@ -57,9 +55,16 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class QueryManager
 {
-   private static final int PAGE_SIZE = 2000;
-   private static final int MS_PER_SEC = 1000;
+   public static final  int PAGE_SIZE        = 2000;
+   private static final int MS_PER_SEC       = 1000;
    private static final int NINETEEN_HUNDRED = 1900;
+
+   private static boolean collectStatistics = false;
+
+   private static final Map<String, Integer> statistics = Collections.synchronizedMap(new HashMap<>());
+
+   public static final String STAT_QUERIES_RAN = "queriesRan";
+   public static final String STAT_BATCHES_RAN = "batchesRan";
 
 
 
@@ -83,12 +88,13 @@ public class QueryManager
    public static void executeStatement(Connection connection, String sql, ResultSetProcessor procesor, Object... params) throws SQLException
    {
       PreparedStatement statement = null;
-      ResultSet resultSet = null;
+      ResultSet         resultSet = null;
 
       try
       {
          statement = prepareStatementAndBindParams(connection, sql, params);
          statement.execute();
+         incrementStatistic(STAT_QUERIES_RAN);
          resultSet = statement.getResultSet();
 
          procesor.processResultSet(resultSet);
@@ -114,6 +120,8 @@ public class QueryManager
     *******************************************************************************/
    public static void executeStatementForeachResult(Connection connection, String sql, ResultSetProcessor processor, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       PreparedStatement statement = null;
       ResultSet resultSet = null;
 
@@ -145,6 +153,7 @@ public class QueryManager
             resultSet.close();
          }
       }
+      */
    }
 
 
@@ -155,6 +164,8 @@ public class QueryManager
    @SuppressWarnings("unchecked")
    public static <T> T executeStatementForSingleValue(Connection connection, Class<T> returnClass, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.execute();
       ResultSet resultSet = statement.getResultSet();
@@ -203,6 +214,7 @@ public class QueryManager
       {
          return (null);
       }
+      */
    }
 
 
@@ -212,6 +224,8 @@ public class QueryManager
     *******************************************************************************/
    public static Map<String, Object> executeStatementForSingleRow(Connection connection, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.execute();
       ResultSet resultSet = statement.getResultSet();
@@ -231,6 +245,7 @@ public class QueryManager
       {
          return (null);
       }
+      */
    }
 
 
@@ -240,6 +255,8 @@ public class QueryManager
     *******************************************************************************/
    public static SimpleEntity executeStatementForSimpleEntity(Connection connection, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.execute();
       ResultSet resultSet = statement.getResultSet();
@@ -251,6 +268,7 @@ public class QueryManager
       {
          return (null);
       }
+      */
    }
 
 
@@ -260,6 +278,8 @@ public class QueryManager
     *******************************************************************************/
    public static List<Map<String, Object>> executeStatementForRows(Connection connection, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       List<Map<String, Object>> rs = new ArrayList<>();
 
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
@@ -278,6 +298,7 @@ public class QueryManager
       }
 
       return (rs);
+      */
    }
 
 
@@ -287,6 +308,8 @@ public class QueryManager
     *******************************************************************************/
    public static List<SimpleEntity> executeStatementForSimpleEntityList(Connection connection, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       List<SimpleEntity> rs = new ArrayList<>();
 
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
@@ -300,6 +323,7 @@ public class QueryManager
       }
 
       return (rs);
+      */
    }
 
 
@@ -309,6 +333,8 @@ public class QueryManager
     *******************************************************************************/
    public static SimpleEntity buildSimpleEntity(ResultSet resultSet) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       SimpleEntity row = new SimpleEntity();
 
       ResultSetMetaData metaData = resultSet.getMetaData();
@@ -317,6 +343,7 @@ public class QueryManager
          row.put(metaData.getColumnName(i), getObject(resultSet, i));
       }
       return row;
+      */
    }
 
 
@@ -328,6 +355,7 @@ public class QueryManager
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.executeUpdate();
+      incrementStatistic(STAT_QUERIES_RAN);
       return (statement);
    }
 
@@ -340,6 +368,7 @@ public class QueryManager
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.executeUpdate();
+      incrementStatistic(STAT_QUERIES_RAN);
       return (statement);
    }
 
@@ -350,10 +379,13 @@ public class QueryManager
     *******************************************************************************/
    public static void executeUpdateVoid(Connection connection, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
          statement.executeUpdate();
       }
+      */
    }
 
 
@@ -363,10 +395,13 @@ public class QueryManager
     *******************************************************************************/
    public static void executeUpdateVoid(Connection connection, String sql, List<Object> params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
          statement.executeUpdate();
       }
+      */
    }
 
 
@@ -379,6 +414,7 @@ public class QueryManager
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
          statement.executeUpdate();
+         incrementStatistic(STAT_QUERIES_RAN);
          return (statement.getUpdateCount());
       }
    }
@@ -390,11 +426,14 @@ public class QueryManager
     *******************************************************************************/
    public static Integer executeUpdateForRowCount(Connection connection, String sql, List<Object> params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
          statement.executeUpdate();
          return (statement.getUpdateCount());
       }
+      */
    }
 
 
@@ -404,6 +443,8 @@ public class QueryManager
     *******************************************************************************/
    public static Integer executeInsertForGeneratedId(Connection connection, String sql, Object... params) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
       {
          bindParams(params, statement);
@@ -418,12 +459,13 @@ public class QueryManager
             return (null);
          }
       }
+      */
    }
 
 
 
    /*******************************************************************************
-    ** todo - needs unit test
+    ** todo - needs (specific) unit test
     *******************************************************************************/
    public static List<Integer> executeInsertForGeneratedIds(Connection connection, String sql, List<Object> params) throws SQLException
    {
@@ -433,6 +475,7 @@ public class QueryManager
          bindParams(params.toArray(), statement);
          statement.executeUpdate();
          ResultSet generatedKeys = statement.getGeneratedKeys();
+         incrementStatistic(STAT_QUERIES_RAN);
          while(generatedKeys.next())
          {
             rs.add(getInteger(generatedKeys, 1));
@@ -448,6 +491,8 @@ public class QueryManager
     *******************************************************************************/
    public static void executeInsertForList(Connection connection, List<SimpleEntity> entityList) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       List<List<SimpleEntity>> pages = CollectionUtils.getPages(entityList, PAGE_SIZE);
       for(List<SimpleEntity> page : pages)
       {
@@ -474,6 +519,7 @@ public class QueryManager
          page.clear();
       }
       pages.clear();
+      */
    }
 
 
@@ -483,6 +529,8 @@ public class QueryManager
     *******************************************************************************/
    public static Integer executeInsert(Connection connection, SimpleEntity entity) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       ArrayList<String> columns = new ArrayList<>(entity.keySet());
       String sql = "INSERT INTO " + entity.getTableName() + "(" + StringUtils.join(",", columns) + ") VALUES (" + columns.stream().map(s -> "?").collect(Collectors.joining(",")) + ")";
 
@@ -493,6 +541,33 @@ public class QueryManager
       }
 
       return (executeInsertForGeneratedId(connection, sql, params));
+      */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void executeBatchUpdate(Connection connection, String updateSQL, List<List<Serializable>> values) throws SQLException
+   {
+      for(List<List<Serializable>> page : CollectionUtils.getPages(values, PAGE_SIZE))
+      {
+         PreparedStatement updatePS = connection.prepareStatement(updateSQL);
+         for(List<Serializable> row : page)
+         {
+            Object[] params = new Object[row.size()];
+            for(int i = 0; i < row.size(); i++)
+            {
+               params[i] = row.get(i);
+            }
+
+            bindParams(updatePS, params);
+            updatePS.addBatch();
+         }
+         updatePS.executeBatch();
+         incrementStatistic(STAT_BATCHES_RAN);
+      }
    }
 
 
@@ -570,12 +645,13 @@ public class QueryManager
    @SuppressWarnings("unchecked")
    public static int bindParamObject(PreparedStatement statement, int index, Object value) throws SQLException
    {
-      if(value instanceof TypeValuePair)
+      /* if(value instanceof TypeValuePair)
       {
          bindParamTypeValuePair(statement, index, (TypeValuePair<Object>) value);
          return (1);
       }
-      else if(value instanceof Integer)
+      else*/
+      if(value instanceof Integer)
       {
          bindParam(statement, index, (Integer) value);
          return (1);
@@ -627,8 +703,8 @@ public class QueryManager
       }
       else if(value instanceof Collection)
       {
-         Collection<?> collection = (Collection<?>) value;
-         int paramsBound = 0;
+         Collection<?> collection  = (Collection<?>) value;
+         int           paramsBound = 0;
          for(Object o : collection)
          {
             paramsBound += bindParamObject(statement, (index + paramsBound), o);
@@ -670,24 +746,23 @@ public class QueryManager
       }
    }
 
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
+   /*
    public static <T> TypeValuePair<T> param(Class<T> c, T v)
    {
       return (new TypeValuePair<>(c, v));
    }
-
-
+   */
 
    /*******************************************************************************
     **
     *******************************************************************************/
+   /*
    private static void bindParamTypeValuePair(PreparedStatement statement, int index, TypeValuePair<Object> value) throws SQLException
    {
-      Object v = value.getValue();
+      Object        v = value.getValue();
       Class<Object> t = value.getType();
 
       if(t.equals(Integer.class))
@@ -731,6 +806,7 @@ public class QueryManager
          throw (new SQLException("Unexpected value type [" + t.getSimpleName() + "] in bindParamTypeValuePair."));
       }
    }
+   */
 
 
 
@@ -848,7 +924,7 @@ public class QueryManager
       else
       {
          LocalDateTime localDateTime = value.atTime(0, 0);
-         Timestamp timestamp = new Timestamp(localDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * MS_PER_SEC); // TimeStamp expects millis, not seconds, after epoch
+         Timestamp     timestamp     = new Timestamp(localDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * MS_PER_SEC); // TimeStamp expects millis, not seconds, after epoch
          statement.setTimestamp(index, timestamp);
       }
    }
@@ -1044,12 +1120,15 @@ public class QueryManager
     *******************************************************************************/
    public static BigDecimal getBigDecimal(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       BigDecimal value = resultSet.getBigDecimal(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1074,12 +1153,15 @@ public class QueryManager
     *******************************************************************************/
    public static Date getDate(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Date value = resultSet.getDate(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1104,6 +1186,8 @@ public class QueryManager
     *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1112,6 +1196,7 @@ public class QueryManager
       Calendar rs = Calendar.getInstance();
       rs.setTimeInMillis(value.getTime());
       return (rs);
+      */
    }
 
 
@@ -1121,6 +1206,8 @@ public class QueryManager
     *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, int column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1129,6 +1216,7 @@ public class QueryManager
       Calendar rs = Calendar.getInstance();
       rs.setTimeInMillis(value.getTime());
       return (rs);
+      */
    }
 
 
@@ -1139,6 +1227,8 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static LocalDate getLocalDate(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1147,6 +1237,7 @@ public class QueryManager
 
       LocalDate date = LocalDate.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate());
       return (date);
+      */
    }
 
 
@@ -1157,6 +1248,8 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static LocalDateTime getLocalDateTime(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1165,6 +1258,7 @@ public class QueryManager
 
       LocalDateTime dateTime = LocalDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0);
       return (dateTime);
+      */
    }
 
 
@@ -1193,6 +1287,8 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static OffsetDateTime getOffsetDateTime(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1201,6 +1297,7 @@ public class QueryManager
 
       OffsetDateTime dateTime = OffsetDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0, OffsetDateTime.now().getOffset());
       return (dateTime);
+      */
    }
 
 
@@ -1210,12 +1307,15 @@ public class QueryManager
     *******************************************************************************/
    public static Boolean getBoolean(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Boolean value = resultSet.getBoolean(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1225,12 +1325,15 @@ public class QueryManager
     *******************************************************************************/
    public static Boolean getBoolean(ResultSet resultSet, int column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Boolean value = resultSet.getBoolean(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1240,12 +1343,15 @@ public class QueryManager
     *******************************************************************************/
    public static Long getLong(ResultSet resultSet, int column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       long value = resultSet.getLong(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1255,12 +1361,15 @@ public class QueryManager
     *******************************************************************************/
    public static Long getLong(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       long value = resultSet.getLong(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1270,12 +1379,15 @@ public class QueryManager
     *******************************************************************************/
    public static Timestamp getTimestamp(ResultSet resultSet, int column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1285,12 +1397,15 @@ public class QueryManager
     *******************************************************************************/
    public static Timestamp getTimestamp(ResultSet resultSet, String column) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
+      */
    }
 
 
@@ -1304,7 +1419,10 @@ public class QueryManager
     *******************************************************************************/
    public static Integer findIdForDaysAgo(Connection connection, String tableName, String dateFieldName, int goalDaysAgo) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       return (findIdForTimeUnitAgo(connection, tableName, dateFieldName, goalDaysAgo, ChronoUnit.DAYS));
+      */
    }
 
 
@@ -1314,8 +1432,11 @@ public class QueryManager
     *******************************************************************************/
    public static Integer findIdForTimestamp(Connection connection, String tableName, String dateFieldName, LocalDateTime timestamp) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       long between = ChronoUnit.SECONDS.between(timestamp, LocalDateTime.now());
       return (findIdForTimeUnitAgo(connection, tableName, dateFieldName, (int) between, ChronoUnit.SECONDS));
+      */
    }
 
 
@@ -1325,6 +1446,8 @@ public class QueryManager
     *******************************************************************************/
    public static Integer findIdForTimeUnitAgo(Connection connection, String tableName, String dateFieldName, int goalUnitsAgo, ChronoUnit unit) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Integer maxId = executeStatementForSingleValue(connection, Integer.class, "SELECT MAX(id) FROM " + tableName);
       Integer minId = executeStatementForSingleValue(connection, Integer.class, "SELECT MIN(id) FROM " + tableName);
 
@@ -1340,6 +1463,7 @@ public class QueryManager
       // Logger.logDebug("For [" + tableName + "], using min id [" + idForGoal + "], which is from [" + foundUnitsAgo + "] Units[" + unit + "] ago.");
 
       return (idForGoal);
+      */
    }
 
 
@@ -1349,6 +1473,8 @@ public class QueryManager
     *******************************************************************************/
    private static Integer findIdForTimeUnitAgo(Connection connection, String tableName, String dateFieldName, int goalUnitsAgo, Integer minId, Integer maxId, ChronoUnit unit) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       Integer midId = minId + ((maxId - minId) / 2);
       if(midId.equals(minId) || midId.equals(maxId))
       {
@@ -1368,6 +1494,7 @@ public class QueryManager
       {
          return (findIdForTimeUnitAgo(connection, tableName, dateFieldName, goalUnitsAgo, minId, midId, unit));
       }
+      */
    }
 
 
@@ -1377,6 +1504,8 @@ public class QueryManager
     *******************************************************************************/
    private static long getTimeUnitAgo(Connection connection, String tableName, String dateFieldName, Integer id, ChronoUnit unit) throws SQLException
    {
+      throw (new NotImplementedException());
+      /*
       LocalDateTime now = LocalDateTime.now();
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1395,61 +1524,100 @@ public class QueryManager
          // System.out.println("Unit[" + unit + "]'s ago:  " + diff);
          return diff;
       }
+      */
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   // public static class TypeValuePair<T>
+   // {
+   //    private Class<T> type;
+   //    private T value;
+
+   //    /*******************************************************************************
+   //     **
+   //     *******************************************************************************/
+   //    @SuppressWarnings("unchecked")
+   //    public TypeValuePair(T value)
+   //    {
+   //       this.value = value;
+   //       this.type = (Class<T>) value.getClass();
+   //    }
+
+   //    /*******************************************************************************
+   //     **
+   //     *******************************************************************************/
+   //    public TypeValuePair(Class<T> type, T value)
+   //    {
+   //       this.type = type;
+   //       this.value = value;
+   //    }
+
+   //    /*******************************************************************************
+   //     **
+   //     *******************************************************************************/
+   //    public T getValue()
+   //    {
+   //       return (value);
+   //    }
+
+   //    /*******************************************************************************
+   //     **
+   //     *******************************************************************************/
+   //    public Class<T> getType()
+   //    {
+   //       return (type);
+   //    }
+
+   // }
+
+
+
+   /*******************************************************************************
+    ** Setter for collectStatistics
+    **
+    *******************************************************************************/
+   public static void setCollectStatistics(boolean collectStatistics)
+   {
+      QueryManager.collectStatistics = collectStatistics;
    }
 
 
 
    /*******************************************************************************
+    ** Increment a statistic
     **
     *******************************************************************************/
-   public static class TypeValuePair<T>
+   public static void incrementStatistic(String statName)
    {
-      private Class<T> type;
-      private T value;
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @SuppressWarnings("unchecked")
-      public TypeValuePair(T value)
+      if(collectStatistics)
       {
-         this.value = value;
-         this.type = (Class<T>) value.getClass();
+         statistics.putIfAbsent(statName, 0);
+         statistics.put(statName, statistics.get(statName) + 1);
       }
+   }
 
 
 
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public TypeValuePair(Class<T> type, T value)
-      {
-         this.type = type;
-         this.value = value;
-      }
+   /*******************************************************************************
+    ** clear the map of statistics
+    **
+    *******************************************************************************/
+   public static void resetStatistics()
+   {
+      statistics.clear();
+   }
 
 
 
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public T getValue()
-      {
-         return (value);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public Class<T> getType()
-      {
-         return (type);
-      }
-
+   /*******************************************************************************
+    ** Getter for statistics
+    **
+    *******************************************************************************/
+   public static Map<String, Integer> getStatistics()
+   {
+      return statistics;
    }
 
 }

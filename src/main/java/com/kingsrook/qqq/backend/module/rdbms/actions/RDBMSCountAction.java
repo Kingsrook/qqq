@@ -24,66 +24,73 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.actions.count.CountRequest;
+import com.kingsrook.qqq.backend.core.model.actions.count.CountResult;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.modules.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInterface
+public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterface
 {
+   private static final Logger LOG = LogManager.getLogger(RDBMSCountAction.class);
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public DeleteResult execute(DeleteRequest deleteRequest) throws QException
+   public CountResult execute(CountRequest countRequest) throws QException
    {
       try
       {
-         DeleteResult rs = new DeleteResult();
-         QTableMetaData table = deleteRequest.getTable();
+         QTableMetaData table     = countRequest.getTable();
+         String         tableName = getTableName(table);
 
-         String tableName = getTableName(table);
-         String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
-         String sql = "DELETE FROM "
-            + tableName
-            + " WHERE "
-            + primaryKeyName
-            + " IN ("
-            + deleteRequest.getPrimaryKeys().stream().map(x -> "?").collect(Collectors.joining(","))
-            + ")";
-         List<Serializable> params = deleteRequest.getPrimaryKeys();
+         String sql = "SELECT count(*) as record_count FROM " + tableName;
+
+         QQueryFilter       filter = countRequest.getFilter();
+         List<Serializable> params = new ArrayList<>();
+         if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
+         {
+            sql += " WHERE " + makeWhereClause(table, filter.getCriteria(), params);
+         }
 
          // todo sql customization - can edit sql and/or param list
 
-         try(Connection connection = getConnection(deleteRequest))
+         CountResult rs = new CountResult();
+
+         try(Connection connection = getConnection(countRequest))
          {
-            QueryManager.executeUpdateForRowCount(connection, sql, params);
-            List<QRecord> outputRecords = new ArrayList<>();
-            rs.setRecords(outputRecords);
-            for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
+            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
-               QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
-               // todo uh, identify any errors?
-               QRecord outputRecord = new QRecord(qRecord);
-               outputRecords.add(outputRecord);
-            }
+               ResultSetMetaData metaData = resultSet.getMetaData();
+               if(resultSet.next())
+               {
+                  rs.setCount(resultSet.getInt("record_count"));
+               }
+
+            }), params);
          }
 
          return rs;
       }
       catch(Exception e)
       {
-         throw new QException("Error executing delete: " + e.getMessage(), e);
+         LOG.warn("Error executing count", e);
+         throw new QException("Error executing count", e);
       }
    }
 

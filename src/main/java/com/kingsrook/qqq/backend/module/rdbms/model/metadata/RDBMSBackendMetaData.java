@@ -53,6 +53,18 @@ public class RDBMSBackendMetaData extends QBackendMetaData
 
 
    /*******************************************************************************
+    ** Fluent setter, override to help fluent flows
+    *******************************************************************************/
+   @Override
+   public RDBMSBackendMetaData withName(String name)
+   {
+      setName(name);
+      return this;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for vendor
     **
     *******************************************************************************/

@@ -49,7 +49,7 @@ class RDBMSBackendMetaDataTest
       System.out.println(JsonUtils.prettyPrint(json));
       System.out.println(json);
       String expectToContain = """
-         "backends":{"default":{"hostName":"mem","password":"","databaseName":"test_database\"""";
+         "backends":{"default":{"hostName":"mem","databaseName":"test_database\"""";
       assertTrue(json.contains(expectToContain));
    }
 
