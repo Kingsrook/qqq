@@ -22,11 +22,17 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -44,8 +50,10 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    @Test
    public void testQuery1() throws QException
    {
-      QueryRequest queryRequest = initQueryRequest();
-      QueryResult  queryResult  = new FilesystemQueryAction().execute(queryRequest);
+      QueryRequest queryRequest = new QueryRequest();
+      queryRequest.setInstance(TestUtils.defineInstance());
+      queryRequest.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
+      QueryResult queryResult = new FilesystemQueryAction().execute(queryRequest);
       Assertions.assertEquals(3, queryResult.getRecords().size(), "Unfiltered query should find all rows");
       Assertions.assertTrue(queryResult.getRecords().stream()
             .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains(TestUtils.BASE_PATH)),
@@ -57,12 +65,36 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QueryRequest initQueryRequest() throws QInstanceValidationException
+   @Test
+   public void testQueryWithFileCustomizer() throws QException
    {
       QueryRequest queryRequest = new QueryRequest();
-      queryRequest.setInstance(TestUtils.defineInstance());
+      QInstance    instance     = TestUtils.defineInstance();
+
+      QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      table.withCustomizer(FilesystemBackendModuleInterface.CUSTOMIZER_FILE_POST_FILE_READ, new QCodeReference()
+         .withName(ValueUpshifter.class.getName())
+         .withCodeType(QCodeType.JAVA)
+         .withCodeUsage(QCodeUsage.CUSTOMIZER));
+
+      queryRequest.setInstance(instance);
       queryRequest.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
-      return queryRequest;
+      QueryResult queryResult = new FilesystemQueryAction().execute(queryRequest);
+      Assertions.assertEquals(3, queryResult.getRecords().size(), "Unfiltered query should find all rows");
+      Assertions.assertTrue(
+         queryResult.getRecords().stream().allMatch(record -> record.getValueString("email").matches(".*KINGSROOK.COM")),
+         "All records should have their email addresses up-shifted.");
+   }
+
+
+
+   public static class ValueUpshifter implements Function<String, String>
+   {
+      @Override
+      public String apply(String s)
+      {
+         return (s.replaceAll("kingsrook.com", "KINGSROOK.COM"));
+      }
    }
 
 }

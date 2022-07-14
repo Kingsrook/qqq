@@ -24,14 +24,14 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 
 import java.io.File;
 import java.io.IOException;
-import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.actions.RunBackendStepAction;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
@@ -54,16 +54,16 @@ class FilesystemSyncProcessTest
    {
       TestUtils.cleanInstanceFiles();
 
-      QTableMetaData    sourceTable     = defineTable("source");
-      QTableMetaData    archiveTable    = defineTable("archive");
-      QTableMetaData    processingTable = defineTable("processing");
-      QProcessMetaData  process         = new FilesystemSyncProcess().defineProcessMetaData();
-      QFunctionMetaData function        = process.getFunction(FilesystemSyncFunction.FUNCTION_NAME);
+      QTableMetaData       sourceTable     = defineTable("source");
+      QTableMetaData       archiveTable    = defineTable("archive");
+      QTableMetaData       processingTable = defineTable("processing");
+      QProcessMetaData     process         = new FilesystemSyncProcess().defineProcessMetaData();
+      QBackendStepMetaData step            = (QBackendStepMetaData) process.getStep(FilesystemSyncStep.STEP_NAME);
 
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
-      // function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE).setDefaultValue(1);
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
+      // step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE).setDefaultValue(1);
 
       QInstance qInstance = TestUtils.defineInstance();
       qInstance.addTable(sourceTable);
@@ -81,16 +81,16 @@ class FilesystemSyncProcessTest
       writeTestFile(basePath, archiveTable, "2.txt", "x");
 
       //////////////////////
-      // run the function //
+      // run the step //
       //////////////////////
-      RunFunctionRequest runFunctionRequest = new RunFunctionRequest(qInstance);
-      runFunctionRequest.setFunctionName(function.getName());
-      runFunctionRequest.setProcessName(process.getName());
-      runFunctionRequest.setSession(TestUtils.getMockSession());
+      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
+      runBackendStepRequest.setStepName(step.getName());
+      runBackendStepRequest.setProcessName(process.getName());
+      runBackendStepRequest.setSession(TestUtils.getMockSession());
 
-      RunFunctionAction runFunctionAction = new RunFunctionAction();
-      RunFunctionResult runFunctionResult = runFunctionAction.execute(runFunctionRequest);
-      System.out.println(runFunctionResult);
+      RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
+      RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
+      // System.out.println(runBackendStepResult);
    }
 
 

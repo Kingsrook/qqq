@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.util.List;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -67,6 +68,17 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
          return;
       }
 
+      s3Utils = new S3Utils();
+      s3Utils.setAmazonS3(buildAmazonS3ClientFromBackendMetaData(backendMetaData));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected AmazonS3 buildAmazonS3ClientFromBackendMetaData(QBackendMetaData backendMetaData)
+   {
       S3BackendMetaData     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendMetaData);
       AmazonS3ClientBuilder clientBuilder     = AmazonS3ClientBuilder.standard();
 
@@ -81,8 +93,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
          clientBuilder.setRegion(s3BackendMetaData.getRegion());
       }
 
-      s3Utils = new S3Utils();
-      s3Utils.setAmazonS3(clientBuilder.build());
+      return (clientBuilder.build());
    }
 
 
