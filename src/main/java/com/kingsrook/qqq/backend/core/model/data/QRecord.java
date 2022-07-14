@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -255,7 +256,6 @@ public class QRecord implements Serializable
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -343,4 +343,13 @@ public class QRecord implements Serializable
       return (String) this.backendDetails.get(key);
    }
 
+
+
+   /*******************************************************************************
+    ** Convert this record to an QRecordEntity
+    *******************************************************************************/
+   public <T extends QRecordEntity> T toEntity(Class<T> c) throws QException
+   {
+      return (QRecordEntity.fromQRecord(c, this));
+   }
 }

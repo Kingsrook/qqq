@@ -23,6 +23,10 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
+import com.github.hervian.reflection.Fun;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
@@ -31,14 +35,14 @@ import java.io.Serializable;
  *******************************************************************************/
 public class QFieldMetaData
 {
-   private String name;
-   private String label;
-   private String backendName;
+   private String     name;
+   private String     label;
+   private String     backendName;
    private QFieldType type;
-   private boolean isRequired = false;
+   private boolean    isRequired = false;
 
    private Serializable defaultValue;
-   private String possibleValueSourceName;
+   private String       possibleValueSourceName;
 
 
 
@@ -58,6 +62,30 @@ public class QFieldMetaData
    {
       this.name = name;
       this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Initialize a fieldMetaData from a reference to a getter on an entity.
+    ** e.g., new QFieldMetaData(Order::getOrderNo).
+    *******************************************************************************/
+   public <T> QFieldMetaData(Fun.With1ParamAndVoid<T> getterRef) throws QException
+   {
+      try
+      {
+         Method getter = Fun.toMethod(getterRef);
+         this.name = QRecordEntity.getFieldNameFromGetter(getter);
+         this.type = QFieldType.fromClass(getter.getReturnType());
+      }
+      catch(QException qe)
+      {
+         throw (qe);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error constructing field from getterRef: " + getterRef, e));
+      }
    }
 
 

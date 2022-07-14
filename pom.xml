@@ -79,6 +79,11 @@
          <version>3.23.1</version>
          <scope>test</scope>
       </dependency>
+      <dependency>
+         <groupId>com.github.hervian</groupId>
+         <artifactId>safety-mirror</artifactId>
+         <version>4.0.1</version>
+      </dependency>
 
       <!-- Common deps for all qqq modules -->
       <dependency>
