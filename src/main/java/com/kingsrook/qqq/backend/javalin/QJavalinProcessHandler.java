@@ -33,26 +33,26 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
-import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
-import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -135,31 +135,31 @@ public class QJavalinProcessHandler
          LOG.info(startAfterStep == null ? "Initiating process [" + processName + "] [" + processUUID + "]"
             : "Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
 
-         RunProcessRequest runProcessRequest = new RunProcessRequest(QJavalinImplementation.qInstance);
-         QJavalinImplementation.setupSession(context, runProcessRequest);
-         runProcessRequest.setProcessName(processName);
-         runProcessRequest.setFrontendStepBehavior(RunProcessRequest.FrontendStepBehavior.BREAK);
-         runProcessRequest.setProcessUUID(processUUID);
-         runProcessRequest.setStartAfterStep(startAfterStep);
-         populateRunProcessRequestWithValuesFromContext(context, runProcessRequest);
+         RunProcessInput runProcessInput = new RunProcessInput(QJavalinImplementation.qInstance);
+         QJavalinImplementation.setupSession(context, runProcessInput);
+         runProcessInput.setProcessName(processName);
+         runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
+         runProcessInput.setProcessUUID(processUUID);
+         runProcessInput.setStartAfterStep(startAfterStep);
+         populateRunProcessRequestWithValuesFromContext(context, runProcessInput);
 
          ////////////////////////////////////////
          // run the process as an async action //
          ////////////////////////////////////////
          Integer timeout = getTimeoutMillis(context);
-         RunProcessResult runProcessResult = new AsyncJobManager().startJob(timeout, TimeUnit.MILLISECONDS, (callback) ->
+         RunProcessOutput runProcessOutput = new AsyncJobManager().startJob(timeout, TimeUnit.MILLISECONDS, (callback) ->
          {
-            runProcessRequest.setAsyncJobCallback(callback);
-            return (new RunProcessAction().execute(runProcessRequest));
+            runProcessInput.setAsyncJobCallback(callback);
+            return (new RunProcessAction().execute(runProcessInput));
          });
 
-         LOG.info("Process result error? " + runProcessResult.getException());
-         for(QFieldMetaData outputField : QJavalinImplementation.qInstance.getProcess(runProcessRequest.getProcessName()).getOutputFields())
+         LOG.info("Process result error? " + runProcessOutput.getException());
+         for(QFieldMetaData outputField : QJavalinImplementation.qInstance.getProcess(runProcessInput.getProcessName()).getOutputFields())
          {
-            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessResult.getValues().get(outputField.getName()));
+            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessOutput.getValues().get(outputField.getName()));
          }
 
-         serializeRunProcessResultForCaller(resultForCaller, runProcessResult);
+         serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);
       }
       catch(JobGoingAsyncException jgae)
       {
@@ -185,17 +185,17 @@ public class QJavalinProcessHandler
     ** Whether a step finished synchronously or asynchronously, return its data
     ** to the caller the same way.
     *******************************************************************************/
-   private static void serializeRunProcessResultForCaller(Map<String, Object> resultForCaller, RunProcessResult runProcessResult)
+   private static void serializeRunProcessResultForCaller(Map<String, Object> resultForCaller, RunProcessOutput runProcessOutput)
    {
-      if(runProcessResult.getException().isPresent())
+      if(runProcessOutput.getException().isPresent())
       {
          ////////////////////////////////////////////////////////////////
          // per code coverage, this path may never actually get hit... //
          ////////////////////////////////////////////////////////////////
-         serializeRunProcessExceptionForCaller(resultForCaller, runProcessResult.getException().get());
+         serializeRunProcessExceptionForCaller(resultForCaller, runProcessOutput.getException().get());
       }
-      resultForCaller.put("values", runProcessResult.getValues());
-      runProcessResult.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
+      resultForCaller.put("values", runProcessOutput.getValues());
+      runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
    }
 
 
@@ -227,7 +227,7 @@ public class QJavalinProcessHandler
     ** todo - better from POST body, or with a "field-" type of prefix??
     **
     *******************************************************************************/
-   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessRequest runProcessRequest) throws IOException
+   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessInput runProcessInput) throws IOException
    {
       for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
       {
@@ -235,14 +235,14 @@ public class QJavalinProcessHandler
          List<String> values    = queryParam.getValue();
          if(CollectionUtils.nullSafeHasContents(values))
          {
-            runProcessRequest.addValue(fieldName, values.get(0));
+            runProcessInput.addValue(fieldName, values.get(0));
          }
       }
 
-      QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(context, runProcessRequest);
+      QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(context, runProcessInput);
       if(initialRecordsFilter != null)
       {
-         runProcessRequest.setCallback(new QProcessCallback()
+         runProcessInput.setCallback(new QProcessCallback()
          {
             @Override
             public QQueryFilter getQueryFilter()
@@ -266,10 +266,10 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QQueryFilter buildProcessInitRecordsFilter(Context context, RunProcessRequest runProcessRequest) throws IOException
+   private static QQueryFilter buildProcessInitRecordsFilter(Context context, RunProcessInput runProcessInput) throws IOException
    {
-      QInstance        instance = runProcessRequest.getInstance();
-      QProcessMetaData process  = instance.getProcess(runProcessRequest.getProcessName());
+      QInstance        instance = runProcessInput.getInstance();
+      QProcessMetaData process  = instance.getProcess(runProcessInput.getProcessName());
       QTableMetaData   table    = instance.getTable(process.getTableName());
 
       if(table == null)
@@ -358,8 +358,8 @@ public class QJavalinProcessHandler
             Optional<ProcessState> processState = RunProcessAction.getState(processUUID);
             if(processState.isPresent())
             {
-               RunProcessResult runProcessResult = new RunProcessResult(processState.get());
-               serializeRunProcessResultForCaller(resultForCaller, runProcessResult);
+               RunProcessOutput runProcessOutput = new RunProcessOutput(processState.get());
+               serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);
             }
             else
             {
