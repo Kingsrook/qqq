@@ -27,12 +27,12 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
@@ -45,12 +45,12 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
    /*******************************************************************************
     **
     *******************************************************************************/
-   public DeleteResult execute(DeleteRequest deleteRequest) throws QException
+   public DeleteOutput execute(DeleteInput deleteInput) throws QException
    {
       try
       {
-         DeleteResult rs = new DeleteResult();
-         QTableMetaData table = deleteRequest.getTable();
+         DeleteOutput   rs    = new DeleteOutput();
+         QTableMetaData table = deleteInput.getTable();
 
          String tableName = getTableName(table);
          String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
@@ -59,20 +59,20 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
             + " WHERE "
             + primaryKeyName
             + " IN ("
-            + deleteRequest.getPrimaryKeys().stream().map(x -> "?").collect(Collectors.joining(","))
+            + deleteInput.getPrimaryKeys().stream().map(x -> "?").collect(Collectors.joining(","))
             + ")";
-         List<Serializable> params = deleteRequest.getPrimaryKeys();
+         List<Serializable> params = deleteInput.getPrimaryKeys();
 
          // todo sql customization - can edit sql and/or param list
 
-         try(Connection connection = getConnection(deleteRequest))
+         try(Connection connection = getConnection(deleteInput))
          {
             QueryManager.executeUpdateForRowCount(connection, sql, params);
             List<QRecord> outputRecords = new ArrayList<>();
             rs.setRecords(outputRecords);
-            for(Serializable primaryKey : deleteRequest.getPrimaryKeys())
+            for(Serializable primaryKey : deleteInput.getPrimaryKeys())
             {
-               QRecord qRecord = new QRecord().withTableName(deleteRequest.getTableName()).withValue("id", primaryKey);
+               QRecord qRecord = new QRecord().withTableName(deleteInput.getTableName()).withValue("id", primaryKey);
                // todo uh, identify any errors?
                QRecord outputRecord = new QRecord(qRecord);
                outputRecords.add(outputRecord);

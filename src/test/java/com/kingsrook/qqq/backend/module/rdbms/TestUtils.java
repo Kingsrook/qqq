@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 

@@ -23,8 +23,8 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,9 +56,9 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    @Test
    public void testDeleteAll() throws Exception
    {
-      DeleteRequest deleteRequest = initDeleteRequest();
-      deleteRequest.setPrimaryKeys(List.of(1, 2, 3, 4, 5));
-      DeleteResult deleteResult = new RDBMSDeleteAction().execute(deleteRequest);
+      DeleteInput deleteInput = initDeleteRequest();
+      deleteInput.setPrimaryKeys(List.of(1, 2, 3, 4, 5));
+      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
       assertEquals(5, deleteResult.getRecords().size(), "Unfiltered delete should return all rows");
       // todo - add errors to QRecord? assertTrue(deleteResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
       runTestSql("SELECT id FROM person", (rs -> assertFalse(rs.next())));
@@ -72,9 +72,9 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    @Test
    public void testDeleteOne() throws Exception
    {
-      DeleteRequest deleteRequest = initDeleteRequest();
-      deleteRequest.setPrimaryKeys(List.of(1));
-      DeleteResult deleteResult = new RDBMSDeleteAction().execute(deleteRequest);
+      DeleteInput deleteInput = initDeleteRequest();
+      deleteInput.setPrimaryKeys(List.of(1));
+      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
       assertEquals(1, deleteResult.getRecords().size(), "Should delete one row");
       // todo - add errors to QRecord? assertTrue(deleteResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
       runTestSql("SELECT id FROM person WHERE id = 1", (rs -> assertFalse(rs.next())));
@@ -88,9 +88,9 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    @Test
    public void testDeleteSome() throws Exception
    {
-      DeleteRequest deleteRequest = initDeleteRequest();
-      deleteRequest.setPrimaryKeys(List.of(1, 3, 5));
-      DeleteResult deleteResult = new RDBMSDeleteAction().execute(deleteRequest);
+      DeleteInput deleteInput = initDeleteRequest();
+      deleteInput.setPrimaryKeys(List.of(1, 3, 5));
+      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
       assertEquals(3, deleteResult.getRecords().size(), "Should delete one row");
       // todo - add errors to QRecord? assertTrue(deleteResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
       runTestSql("SELECT id FROM person", (rs -> {
@@ -110,12 +110,12 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private DeleteRequest initDeleteRequest()
+   private DeleteInput initDeleteRequest()
    {
-      DeleteRequest deleteRequest = new DeleteRequest();
-      deleteRequest.setInstance(TestUtils.defineInstance());
-      deleteRequest.setTableName(TestUtils.defineTablePerson().getName());
-      return deleteRequest;
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setInstance(TestUtils.defineInstance());
+      deleteInput.setTableName(TestUtils.defineTablePerson().getName());
+      return deleteInput;
    }
 
 }

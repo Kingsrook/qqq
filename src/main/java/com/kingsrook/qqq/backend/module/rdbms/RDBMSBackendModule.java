@@ -22,14 +22,14 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.modules.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;

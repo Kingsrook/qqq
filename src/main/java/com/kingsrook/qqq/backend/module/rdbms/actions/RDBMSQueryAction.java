@@ -30,19 +30,16 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterOrderBy;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.logging.log4j.LogManager;
@@ -61,11 +58,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryResult execute(QueryRequest queryRequest) throws QException
+   public QueryOutput execute(QueryInput queryInput) throws QException
    {
       try
       {
-         QTableMetaData table = queryRequest.getTable();
+         QTableMetaData table = queryInput.getTable();
          String tableName = getTableName(table);
 
          List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
@@ -75,7 +72,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          String sql = "SELECT " + columns + " FROM " + tableName;
 
-         QQueryFilter filter = queryRequest.getFilter();
+         QQueryFilter filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
          {
@@ -87,24 +84,24 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys());
          }
 
-         if(queryRequest.getLimit() != null)
+         if(queryInput.getLimit() != null)
          {
-            sql += " LIMIT " + queryRequest.getLimit();
+            sql += " LIMIT " + queryInput.getLimit();
 
-            if(queryRequest.getSkip() != null)
+            if(queryInput.getSkip() != null)
             {
                // todo - other sql grammars?
-               sql += " OFFSET " + queryRequest.getSkip();
+               sql += " OFFSET " + queryInput.getSkip();
             }
          }
 
          // todo sql customization - can edit sql and/or param list
 
-         QueryResult rs = new QueryResult();
+         QueryOutput   rs      = new QueryOutput();
          List<QRecord> records = new ArrayList<>();
          rs.setRecords(records);
 
-         try(Connection connection = getConnection(queryRequest))
+         try(Connection connection = getConnection(queryInput))
          {
             QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {

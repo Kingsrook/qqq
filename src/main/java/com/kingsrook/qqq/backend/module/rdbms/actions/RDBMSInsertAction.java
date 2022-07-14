@@ -28,13 +28,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.logging.log4j.LogManager;
@@ -53,21 +53,21 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertResult execute(InsertRequest insertRequest) throws QException
+   public InsertOutput execute(InsertInput insertInput) throws QException
    {
-      InsertResult rs = new InsertResult();
+      InsertOutput rs = new InsertOutput();
 
-      if(CollectionUtils.nullSafeIsEmpty(insertRequest.getRecords()))
+      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
          LOG.info("Insert request called with 0 records.  Returning with no-op");
          rs.setRecords(new ArrayList<>());
          return (rs);
       }
 
-      QTableMetaData table = insertRequest.getTable();
+      QTableMetaData table = insertInput.getTable();
       Instant        now   = Instant.now();
 
-      for(QRecord record : insertRequest.getRecords())
+      for(QRecord record : insertInput.getRecords())
       {
          ///////////////////////////////////////////
          // todo .. better (not hard-coded names) //
@@ -93,9 +93,9 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          StringBuilder sql       = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
          List<Object>  params    = new ArrayList<>();
 
-         try(Connection connection = getConnection(insertRequest))
+         try(Connection connection = getConnection(insertInput))
          {
-            for(List<QRecord> page : CollectionUtils.getPages(insertRequest.getRecords(), QueryManager.PAGE_SIZE))
+            for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
             {
                int recordIndex = 0;
                for(QRecord record : page)
@@ -120,7 +120,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                List<QRecord> outputRecords = new ArrayList<>();
                rs.setRecords(outputRecords);
                int index = 0;
-               for(QRecord record : insertRequest.getRecords())
+               for(QRecord record : insertInput.getRecords())
                {
                   Integer id           = idList.get(index++);
                   QRecord outputRecord = new QRecord(record);

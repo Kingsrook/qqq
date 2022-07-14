@@ -27,8 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -77,9 +77,9 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @Test
    public void testUpdateNullList() throws QException
    {
-      UpdateRequest updateRequest = initUpdateRequest();
-      updateRequest.setRecords(null);
-      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      UpdateInput updateInput = initUpdateRequest();
+      updateInput.setRecords(null);
+      UpdateOutput updateResult = new RDBMSUpdateAction().execute(updateInput);
       assertEquals(0, updateResult.getRecords().size());
    }
 
@@ -91,10 +91,10 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @Test
    public void testUpdateEmptyList() throws QException
    {
-      UpdateRequest updateRequest = initUpdateRequest();
-      updateRequest.setRecords(Collections.emptyList());
-      new RDBMSUpdateAction().execute(updateRequest);
-      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      UpdateInput updateInput = initUpdateRequest();
+      updateInput.setRecords(Collections.emptyList());
+      new RDBMSUpdateAction().execute(updateInput);
+      UpdateOutput updateResult = new RDBMSUpdateAction().execute(updateInput);
       assertEquals(0, updateResult.getRecords().size());
    }
 
@@ -106,17 +106,17 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @Test
    public void testUpdateOne() throws Exception
    {
-      UpdateRequest updateRequest = initUpdateRequest();
+      UpdateInput updateInput = initUpdateRequest();
       QRecord record = new QRecord().withTableName("person")
          .withValue("id", 2)
          .withValue("firstName", "James")
          .withValue("lastName", "Kirk")
          .withValue("email", "jamestk@starfleet.net")
          .withValue("birthDate", "2210-05-20");
-      updateRequest.setRecords(List.of(record));
+      updateInput.setRecords(List.of(record));
 
-      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
-      Map<String, Integer> statistics = QueryManager.getStatistics();
+      UpdateOutput         updateResult = new RDBMSUpdateAction().execute(updateInput);
+      Map<String, Integer> statistics   = QueryManager.getStatistics();
       assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
 
       assertEquals(1, updateResult.getRecords().size(), "Should return 1 row");
@@ -149,7 +149,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @Test
    public void testUpdateManyWithDifferentColumnsAndValues() throws Exception
    {
-      UpdateRequest updateRequest = initUpdateRequest();
+      UpdateInput updateInput = initUpdateRequest();
       QRecord record1 = new QRecord().withTableName("person")
          .withValue("id", 1)
          .withValue("firstName", "Darren")
@@ -166,9 +166,9 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("firstName", "Richard")
          .withValue("birthDate", null);
 
-      updateRequest.setRecords(List.of(record1, record2, record3));
+      updateInput.setRecords(List.of(record1, record2, record3));
 
-      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
+      UpdateOutput updateResult = new RDBMSUpdateAction().execute(updateInput);
 
       // this test runs one batch and one regular query
       Map<String, Integer> statistics = QueryManager.getStatistics();
@@ -224,7 +224,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @Test
    public void testUpdateManyWithSameColumnsDifferentValues() throws Exception
    {
-      UpdateRequest updateRequest = initUpdateRequest();
+      UpdateInput updateInput = initUpdateRequest();
       QRecord record1 = new QRecord().withTableName("person")
          .withValue("id", 1)
          .withValue("firstName", "Darren")
@@ -237,10 +237,10 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("lastName", "Tim's Uncle")
          .withValue("birthDate", null);
 
-      updateRequest.setRecords(List.of(record1, record2));
+      updateInput.setRecords(List.of(record1, record2));
 
-      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
-      Map<String, Integer> statistics = QueryManager.getStatistics();
+      UpdateOutput         updateResult = new RDBMSUpdateAction().execute(updateInput);
+      Map<String, Integer> statistics   = QueryManager.getStatistics();
       assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
 
       assertEquals(2, updateResult.getRecords().size(), "Should return 2 rows");
@@ -281,8 +281,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @Test
    public void testUpdateManyWithSameColumnsSameValues() throws Exception
    {
-      UpdateRequest updateRequest = initUpdateRequest();
-      List<QRecord> records       = new ArrayList<>();
+      UpdateInput   updateInput = initUpdateRequest();
+      List<QRecord> records     = new ArrayList<>();
       for(int i = 1; i <= 5; i++)
       {
          records.add(new QRecord().withTableName("person")
@@ -290,10 +290,10 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
             .withValue("birthDate", "1999-09-09"));
       }
 
-      updateRequest.setRecords(records);
+      updateInput.setRecords(records);
 
-      UpdateResult updateResult = new RDBMSUpdateAction().execute(updateRequest);
-      Map<String, Integer> statistics = QueryManager.getStatistics();
+      UpdateOutput         updateResult = new RDBMSUpdateAction().execute(updateInput);
+      Map<String, Integer> statistics   = QueryManager.getStatistics();
       assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
 
       assertEquals(5, updateResult.getRecords().size(), "Should return 5 rows");
@@ -314,12 +314,12 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private UpdateRequest initUpdateRequest()
+   private UpdateInput initUpdateRequest()
    {
-      UpdateRequest updateRequest = new UpdateRequest();
-      updateRequest.setInstance(TestUtils.defineInstance());
-      updateRequest.setTableName(TestUtils.defineTablePerson().getName());
-      return updateRequest;
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setInstance(TestUtils.defineInstance());
+      updateInput.setTableName(TestUtils.defineTablePerson().getName());
+      return updateInput;
    }
 
 }

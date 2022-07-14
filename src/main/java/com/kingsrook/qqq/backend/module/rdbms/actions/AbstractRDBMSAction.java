@@ -29,12 +29,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
@@ -85,7 +85,7 @@ public abstract class AbstractRDBMSAction
    /*******************************************************************************
     ** Get a database connection, per the backend in the request.
     *******************************************************************************/
-   protected Connection getConnection(AbstractQTableRequest qTableRequest) throws SQLException
+   protected Connection getConnection(AbstractTableActionInput qTableRequest) throws SQLException
    {
       ConnectionManager connectionManager = new ConnectionManager();
       return connectionManager.getConnection((RDBMSBackendMetaData) qTableRequest.getBackend());

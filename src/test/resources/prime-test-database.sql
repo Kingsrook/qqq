@@ -22,7 +22,7 @@
 DROP TABLE IF EXISTS person;
 CREATE TABLE person
 (
-   id INT AUTO_INCREMENT,
+   id INT AUTO_INCREMENT primary key ,
    create_date TIMESTAMP DEFAULT now(),
    modify_date TIMESTAMP DEFAULT now(),
 

@@ -31,13 +31,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -63,18 +63,18 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    /*******************************************************************************
     **
     *******************************************************************************/
-   public UpdateResult execute(UpdateRequest updateRequest) throws QException
+   public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
-      UpdateResult rs = new UpdateResult();
+      UpdateOutput rs = new UpdateOutput();
 
-      if(CollectionUtils.nullSafeIsEmpty(updateRequest.getRecords()))
+      if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
       {
          LOG.info("Update request called with 0 records.  Returning with no-op");
          rs.setRecords(new ArrayList<>());
          return (rs);
       }
 
-      QTableMetaData table = updateRequest.getTable();
+      QTableMetaData table = updateInput.getTable();
       Instant        now   = Instant.now();
 
       List<QRecord> outputRecords = new ArrayList<>();
@@ -86,7 +86,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       // record.  So, we will first "hash" up the records by their list of fields being updated. //
       /////////////////////////////////////////////////////////////////////////////////////////////
       ListingHash<List<String>, QRecord> recordsByFieldBeingUpdated = new ListingHash<>();
-      for(QRecord record : updateRequest.getRecords())
+      for(QRecord record : updateInput.getRecords())
       {
          ////////////////////////////////////////////
          // todo .. better (not a hard-coded name) //
@@ -112,7 +112,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          outputRecords.add(outputRecord);
       }
 
-      try(Connection connection = getConnection(updateRequest))
+      try(Connection connection = getConnection(updateInput))
       {
          /////////////////////////////////////////////////////////////////////////////////////////////
          // process each distinct list of fields being updated (e.g., each different SQL statement) //
