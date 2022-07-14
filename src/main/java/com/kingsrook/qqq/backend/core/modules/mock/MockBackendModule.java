@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.modules.mock;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.modules.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
@@ -57,6 +58,17 @@ public class MockBackendModule implements QBackendModuleInterface
    public Class<? extends QBackendMetaData> getBackendMetaDataClass()
    {
       return (QBackendMetaData.class);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public CountInterface getCountInterface()
+   {
+      return new MockCountAction();
    }
 
 

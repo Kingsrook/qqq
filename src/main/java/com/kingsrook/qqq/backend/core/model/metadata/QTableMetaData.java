@@ -47,8 +47,9 @@ public class QTableMetaData implements Serializable
    //       rename "backendName" here to "backend"
    //       add "nameInBackend" (or similar) for the table name in the backend
    //       OR - add a whole "backendDetails" object, with different details per backend-type
-   private String backendName;
-   private String primaryKeyField;
+   private String  backendName;
+   private String  primaryKeyField;
+   private boolean isHidden = false;
 
    private Map<String, QFieldMetaData> fields;
 
@@ -209,6 +210,40 @@ public class QTableMetaData implements Serializable
    public QTableMetaData withPrimaryKeyField(String primaryKeyField)
    {
       this.primaryKeyField = primaryKeyField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return (isHidden);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for isHidden
+    **
+    *******************************************************************************/
+   public QTableMetaData withIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
       return (this);
    }
 
@@ -385,6 +420,7 @@ public class QTableMetaData implements Serializable
       this.customizers.put(role, customizer);
       return (this);
    }
+
 
 
    /*******************************************************************************

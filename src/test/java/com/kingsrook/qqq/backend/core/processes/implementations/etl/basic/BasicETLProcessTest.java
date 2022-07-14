@@ -31,7 +31,6 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -56,8 +55,8 @@ class BasicETLProcessTest
 
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);
-      assertNull(result.getError());
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+      assertTrue(result.getException().isEmpty());
    }
 
 
@@ -83,8 +82,8 @@ class BasicETLProcessTest
 
       RunProcessResult result = new RunProcessAction().execute(request);
       assertNotNull(result);
-      assertNull(result.getError());
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+      assertTrue(result.getException().isEmpty());
    }
 
 }

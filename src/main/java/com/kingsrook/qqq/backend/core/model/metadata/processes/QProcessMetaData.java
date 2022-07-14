@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
@@ -33,10 +34,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
  *******************************************************************************/
 public class QProcessMetaData
 {
-   private String                  name;
-   private String                  label;
-   private String                  tableName;
-   private List<QFunctionMetaData> functionList;
+   private String  name;
+   private String  label;
+   private String  tableName;
+   private boolean isHidden = false;
+
+   private List<QStepMetaData> stepList;
 
 
 
@@ -143,51 +146,51 @@ public class QProcessMetaData
 
 
    /*******************************************************************************
-    ** Getter for functionList
+    ** Getter for stepList
     **
     *******************************************************************************/
-   public List<QFunctionMetaData> getFunctionList()
+   public List<QStepMetaData> getStepList()
    {
-      return functionList;
+      return stepList;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for functionList
+    ** Setter for stepList
     **
     *******************************************************************************/
-   public QProcessMetaData withFunctionList(List<QFunctionMetaData> functionList)
+   public QProcessMetaData withStepList(List<QStepMetaData> stepList)
    {
-      this.functionList = functionList;
+      this.stepList = stepList;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for functionList
+    ** Setter for stepList
     **
     *******************************************************************************/
-   public QProcessMetaData addFunction(QFunctionMetaData function)
+   public QProcessMetaData addStep(QStepMetaData step)
    {
-      if(this.functionList == null)
+      if(this.stepList == null)
       {
-         this.functionList = new ArrayList<>();
+         this.stepList = new ArrayList<>();
       }
-      this.functionList.add(function);
+      this.stepList.add(step);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for functionList
+    ** Setter for stepList
     **
     *******************************************************************************/
-   public void setFunctionList(List<QFunctionMetaData> functionList)
+   public void setStepList(List<QStepMetaData> stepList)
    {
-      this.functionList = functionList;
+      this.stepList = stepList;
    }
 
 
@@ -195,13 +198,13 @@ public class QProcessMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFunctionMetaData getFunction(String functionName)
+   public QStepMetaData getStep(String stepName)
    {
-      for(QFunctionMetaData function : functionList)
+      for(QStepMetaData step : stepList)
       {
-         if(function.getName().equals(functionName))
+         if(step.getName().equals(stepName))
          {
-            return (function);
+            return (step);
          }
       }
 
@@ -211,16 +214,27 @@ public class QProcessMetaData
 
 
    /*******************************************************************************
-    ** Get a list of all of the input fields used by all the functions in this process.
+    ** Wrapper to getStep, that internally casts to BackendStepMetaData
     *******************************************************************************/
+   public QBackendStepMetaData getBackendStep(String name)
+   {
+      return (QBackendStepMetaData) getStep(name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the input fields used by all the steps in this process.
+    *******************************************************************************/
+   @JsonIgnore
    public List<QFieldMetaData> getInputFields()
    {
       List<QFieldMetaData> rs = new ArrayList<>();
-      if(functionList != null)
+      if(stepList != null)
       {
-         for(QFunctionMetaData function : functionList)
+         for(QStepMetaData step : stepList)
          {
-            rs.addAll(function.getInputFields());
+            rs.addAll(step.getInputFields());
          }
       }
       return (rs);
@@ -229,18 +243,54 @@ public class QProcessMetaData
 
 
    /*******************************************************************************
-    ** Get a list of all of the output fields used by all the functions in this process.
+    ** Get a list of all of the output fields used by all the steps in this process.
     *******************************************************************************/
+   @JsonIgnore
    public List<QFieldMetaData> getOutputFields()
    {
       List<QFieldMetaData> rs = new ArrayList<>();
-      if(functionList != null)
+      if(stepList != null)
       {
-         for(QFunctionMetaData function : functionList)
+         for(QStepMetaData step : stepList)
          {
-            rs.addAll(function.getOutputFields());
+            rs.addAll(step.getOutputFields());
          }
       }
       return (rs);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return (isHidden);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for isHidden
+    **
+    *******************************************************************************/
+   public QProcessMetaData withIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+      return (this);
+   }
+
 }

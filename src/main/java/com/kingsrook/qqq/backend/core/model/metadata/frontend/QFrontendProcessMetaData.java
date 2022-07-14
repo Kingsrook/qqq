@@ -22,10 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -36,10 +40,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendProcessMetaData
 {
-   private String name;
-   private String label;
-   private String tableName;
-   private Map<String, QFrontendFieldMetaData> fields;
+   private String  name;
+   private String  label;
+   private String  tableName;
+   private boolean isHidden;
+
+   private List<QFrontendStepMetaData> frontendSteps;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -50,11 +56,27 @@ public class QFrontendProcessMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendProcessMetaData(QProcessMetaData processMetaData)
+   public QFrontendProcessMetaData(QProcessMetaData processMetaData, boolean includeSteps)
    {
       this.name = processMetaData.getName();
       this.label = processMetaData.getLabel();
       this.tableName = processMetaData.getTableName();
+      this.isHidden = processMetaData.getIsHidden();
+
+      if(includeSteps)
+      {
+         if(CollectionUtils.nullSafeHasContents(processMetaData.getStepList()))
+         {
+            this.frontendSteps = processMetaData.getStepList().stream()
+               .filter(QFrontendStepMetaData.class::isInstance)
+               .map(QFrontendStepMetaData.class::cast)
+               .collect(Collectors.toList());
+         }
+         else
+         {
+            frontendSteps = new ArrayList<>();
+         }
+      }
    }
 
 
@@ -93,11 +115,45 @@ public class QFrontendProcessMetaData
 
 
    /*******************************************************************************
-    ** Getter for fields
+    ** Getter for frontendSteps
     **
     *******************************************************************************/
-   public Map<String, QFrontendFieldMetaData> getFields()
+   public List<QFrontendStepMetaData> getFrontendSteps()
    {
-      return fields;
+      return frontendSteps;
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for frontendSteps
+    **
+    *******************************************************************************/
+   public void setFrontendSteps(List<QFrontendStepMetaData> frontendSteps)
+   {
+      this.frontendSteps = frontendSteps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
 }

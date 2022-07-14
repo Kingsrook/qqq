@@ -30,13 +30,13 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- ** Result data container for the RunFunction action
+ ** Result data container for the RunBackendStep action
  **
  *******************************************************************************/
-public class RunFunctionResult extends AbstractQResult
+public class RunBackendStepResult extends AbstractQResult
 {
    private ProcessState processState;
-   private String error;
+   private Exception    exception; // todo - make optional
 
 
 
@@ -46,7 +46,7 @@ public class RunFunctionResult extends AbstractQResult
    @Override
    public String toString()
    {
-      return "RunFunctionResult{error='" + error
+      return "RunBackendStepResult{exception?='" + (exception == null ? "null" : exception.getMessage())
          + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
          + ",values=" + (processState == null ? null : processState.getValues())
          + "}";
@@ -57,7 +57,7 @@ public class RunFunctionResult extends AbstractQResult
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunFunctionResult()
+   public RunBackendStepResult()
    {
       this.processState = new ProcessState();
    }
@@ -68,9 +68,9 @@ public class RunFunctionResult extends AbstractQResult
     ** e.g., populate the process state (records, values) in this result object.
     **
     *******************************************************************************/
-   public void seedFromRequest(RunFunctionRequest runFunctionRequest)
+   public void seedFromRequest(RunBackendStepRequest runBackendStepRequest)
    {
-      this.processState = runFunctionRequest.getProcessState();
+      this.processState = runBackendStepRequest.getProcessState();
    }
 
 
@@ -101,7 +101,7 @@ public class RunFunctionResult extends AbstractQResult
     ** Setter for records
     **
     *******************************************************************************/
-   public RunFunctionResult withRecords(List<QRecord> records)
+   public RunBackendStepResult withRecords(List<QRecord> records)
    {
       this.processState.setRecords(records);
       return (this);
@@ -135,7 +135,7 @@ public class RunFunctionResult extends AbstractQResult
     ** Setter for values
     **
     *******************************************************************************/
-   public RunFunctionResult withValues(Map<String, Serializable> values)
+   public RunBackendStepResult withValues(Map<String, Serializable> values)
    {
       this.processState.setValues(values);
       return (this);
@@ -147,32 +147,10 @@ public class RunFunctionResult extends AbstractQResult
     ** Setter for values
     **
     *******************************************************************************/
-   public RunFunctionResult addValue(String fieldName, Serializable value)
+   public RunBackendStepResult addValue(String fieldName, Serializable value)
    {
       this.processState.getValues().put(fieldName, value);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for error
-    **
-    *******************************************************************************/
-   public String getError()
-   {
-      return error;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for error
-    **
-    *******************************************************************************/
-   public void setError(String error)
-   {
-      this.error = error;
    }
 
 
@@ -184,5 +162,25 @@ public class RunFunctionResult extends AbstractQResult
    public ProcessState getProcessState()
    {
       return processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setException(Exception exception)
+   {
+      this.exception = exception;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Exception getException()
+   {
+      return exception;
    }
 }

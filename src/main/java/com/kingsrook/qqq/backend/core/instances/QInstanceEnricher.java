@@ -27,8 +27,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -100,9 +101,9 @@ public class QInstanceEnricher
          process.setLabel(nameToLabel(process.getName()));
       }
 
-      if(process.getFunctionList() != null)
+      if(process.getStepList() != null)
       {
-         process.getFunctionList().forEach(this::enrich);
+         process.getStepList().forEach(this::enrich);
       }
    }
 
@@ -111,15 +112,31 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QFunctionMetaData function)
+   private void enrich(QStepMetaData step)
    {
-      if(!StringUtils.hasContent(function.getLabel()))
+      if(!StringUtils.hasContent(step.getLabel()))
       {
-         function.setLabel(nameToLabel(function.getName()));
+         step.setLabel(nameToLabel(step.getName()));
       }
 
-      function.getInputFields().forEach(this::enrich);
-      function.getOutputFields().forEach(this::enrich);
+      step.getInputFields().forEach(this::enrich);
+      step.getOutputFields().forEach(this::enrich);
+
+      if (step instanceof QFrontendStepMetaData frontendStepMetaData)
+      {
+         if(frontendStepMetaData.getFormFields() != null)
+         {
+            frontendStepMetaData.getFormFields().forEach(this::enrich);
+         }
+         if(frontendStepMetaData.getViewFields() != null)
+         {
+            frontendStepMetaData.getViewFields().forEach(this::enrich);
+         }
+         if(frontendStepMetaData.getRecordListFields() != null)
+         {
+            frontendStepMetaData.getRecordListFields().forEach(this::enrich);
+         }
+      }
    }
 
 

@@ -42,7 +42,7 @@ public class TempFileStateProviderTest
    public void testStateNotFound()
    {
       TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
-      UUIDStateKey          key           = new UUIDStateKey();
+      UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
       Assertions.assertTrue(stateProvider.get(QRecord.class, key).isEmpty(), "Key not found in state should return empty");
    }
@@ -55,7 +55,7 @@ public class TempFileStateProviderTest
    public void testSimpleStateFound()
    {
       TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
-      UUIDStateKey          key           = new UUIDStateKey();
+      UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
       String uuid = UUID.randomUUID().toString();
       QRecord qRecord = new QRecord().withValue("uuid", uuid);
@@ -74,7 +74,7 @@ public class TempFileStateProviderTest
    public void testWrongTypeOnGet()
    {
       TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
-      UUIDStateKey          key           = new UUIDStateKey();
+      UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
       String uuid = UUID.randomUUID().toString();
       QRecord qRecord = new QRecord().withValue("uuid", uuid);

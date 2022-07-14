@@ -39,6 +39,7 @@ public class QFrontendFieldMetaData
    private String name;
    private String label;
    private QFieldType type;
+   private boolean isRequired;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -54,6 +55,7 @@ public class QFrontendFieldMetaData
       this.name = fieldMetaData.getName();
       this.label = fieldMetaData.getLabel();
       this.type = fieldMetaData.getType();
+      this.isRequired = fieldMetaData.getIsRequired();
    }
 
 
@@ -87,5 +89,16 @@ public class QFrontendFieldMetaData
    public QFieldType getType()
    {
       return type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isRequired
+    **
+    *******************************************************************************/
+   public boolean getIsRequired()
+   {
+      return isRequired;
    }
 }

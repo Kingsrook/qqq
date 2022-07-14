@@ -25,30 +25,35 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
- ** Request data container for the RunFunction action
+ ** Request data container for the RunBackendStep action
  **
  *******************************************************************************/
-public class RunFunctionRequest extends AbstractQRequest
+public class RunBackendStepRequest extends AbstractQRequest
 {
    private ProcessState     processState;
    private String           processName;
-   private String           functionName;
+   private String           stepName;
    private QProcessCallback callback;
+   private AsyncJobCallback asyncJobCallback;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunFunctionRequest()
+   public RunBackendStepRequest()
    {
       processState = new ProcessState();
    }
@@ -58,7 +63,7 @@ public class RunFunctionRequest extends AbstractQRequest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunFunctionRequest(QInstance instance)
+   public RunBackendStepRequest(QInstance instance)
    {
       super(instance);
       processState = new ProcessState();
@@ -67,12 +72,11 @@ public class RunFunctionRequest extends AbstractQRequest
 
 
    /*******************************************************************************
-    ** e.g., for steps after the first step in a process, seed the data in a run
-    ** function request from a process state.
     **
     *******************************************************************************/
-   public void seedFromProcessState(ProcessState processState)
+   public RunBackendStepRequest(QInstance instance, ProcessState processState)
    {
+      super(instance);
       this.processState = processState;
    }
 
@@ -81,19 +85,9 @@ public class RunFunctionRequest extends AbstractQRequest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void seedFromRunProcessRequest(RunProcessRequest runProcessRequest)
+   public QStepMetaData getStepMetaData()
    {
-      this.processState = runProcessRequest.getProcessState();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFunctionMetaData getFunctionMetaData()
-   {
-      return (instance.getFunction(getProcessName(), getFunctionName()));
+      return (instance.getProcessStep(getProcessName(), getStepName()));
    }
 
 
@@ -124,7 +118,7 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for processName
     **
     *******************************************************************************/
-   public RunFunctionRequest withProcessName(String processName)
+   public RunBackendStepRequest withProcessName(String processName)
    {
       this.processName = processName;
       return (this);
@@ -136,9 +130,9 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Getter for functionName
     **
     *******************************************************************************/
-   public String getFunctionName()
+   public String getStepName()
    {
-      return functionName;
+      return stepName;
    }
 
 
@@ -147,9 +141,9 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for functionName
     **
     *******************************************************************************/
-   public void setFunctionName(String functionName)
+   public void setStepName(String stepName)
    {
-      this.functionName = functionName;
+      this.stepName = stepName;
    }
 
 
@@ -158,9 +152,9 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for functionName
     **
     *******************************************************************************/
-   public RunFunctionRequest withFunctionName(String functionName)
+   public RunBackendStepRequest withFunctionName(String functionName)
    {
-      this.functionName = functionName;
+      this.stepName = functionName;
       return (this);
    }
 
@@ -192,7 +186,7 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for records
     **
     *******************************************************************************/
-   public RunFunctionRequest withRecords(List<QRecord> records)
+   public RunBackendStepRequest withRecords(List<QRecord> records)
    {
       this.processState.setRecords(records);
       return (this);
@@ -226,7 +220,7 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for values
     **
     *******************************************************************************/
-   public RunFunctionRequest withValues(Map<String, Serializable> values)
+   public RunBackendStepRequest withValues(Map<String, Serializable> values)
    {
       this.processState.setValues(values);
       return (this);
@@ -238,7 +232,7 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for values
     **
     *******************************************************************************/
-   public RunFunctionRequest addValue(String fieldName, Serializable value)
+   public RunBackendStepRequest addValue(String fieldName, Serializable value)
    {
       this.processState.getValues().put(fieldName, value);
       return (this);
@@ -272,7 +266,7 @@ public class RunFunctionRequest extends AbstractQRequest
     ** Setter for callback
     **
     *******************************************************************************/
-   public RunFunctionRequest withCallback(QProcessCallback callback)
+   public RunBackendStepRequest withCallback(QProcessCallback callback)
    {
       this.callback = callback;
       return (this);
@@ -308,7 +302,7 @@ public class RunFunctionRequest extends AbstractQRequest
     *******************************************************************************/
    public Integer getValueInteger(String fieldName)
    {
-      return ((Integer) getValue(fieldName));
+      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
    }
 
 
@@ -321,5 +315,32 @@ public class RunFunctionRequest extends AbstractQRequest
    protected ProcessState getProcessState()
    {
       return processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setAsyncJobCallback(AsyncJobCallback asyncJobCallback)
+   {
+      this.asyncJobCallback = asyncJobCallback;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AsyncJobCallback getAsyncJobCallback()
+   {
+      if (asyncJobCallback == null)
+      {
+         /////////////////////////////////////////////////////////////////////////
+         // avoid NPE in case we didn't have one of these!  create a new one... //
+         /////////////////////////////////////////////////////////////////////////
+         asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus());
+      }
+      return (asyncJobCallback);
    }
 }

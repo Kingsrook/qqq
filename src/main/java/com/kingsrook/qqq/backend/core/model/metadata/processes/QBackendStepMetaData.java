@@ -24,66 +24,30 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 
 
 /*******************************************************************************
- ** Meta-Data to define a function in a QQQ instance.
+ ** Meta-Data to define a backend-step in a process in a QQQ instance.  e.g.,
+ ** code that runs on a server/backend, to do something to some data.
  **
  *******************************************************************************/
-public class QFunctionMetaData
+public class QBackendStepMetaData extends QStepMetaData
 {
-   private String                  name;
-   private String                  label;
    private QFunctionInputMetaData  inputMetaData;
    private QFunctionOutputMetaData outputMetaData;
    private QCodeReference          code;
-   private QOutputView             outputView;
 
 
 
    /*******************************************************************************
-    ** Getter for name
     **
     *******************************************************************************/
-   public String getName()
+   public QBackendStepMetaData()
    {
-      return name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    **
-    *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    **
-    *******************************************************************************/
-   public QFunctionMetaData withName(String name)
-   {
-      this.name = name;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for label
-    **
-    *******************************************************************************/
-   public String getLabel()
-   {
-      return label;
+      setStepType("backend");
    }
 
 
@@ -92,20 +56,10 @@ public class QFunctionMetaData
     ** Setter for label
     **
     *******************************************************************************/
-   public void setLabel(String label)
+   @Override
+   public QBackendStepMetaData withName(String name)
    {
-      this.label = label;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for label
-    **
-    *******************************************************************************/
-   public QFunctionMetaData withLabel(String label)
-   {
-      this.label = label;
+      setName(name);
       return (this);
    }
 
@@ -137,7 +91,7 @@ public class QFunctionMetaData
     ** Setter for inputData
     **
     *******************************************************************************/
-   public QFunctionMetaData withInputData(QFunctionInputMetaData inputData)
+   public QBackendStepMetaData withInputData(QFunctionInputMetaData inputData)
    {
       this.inputMetaData = inputData;
       return (this);
@@ -171,7 +125,7 @@ public class QFunctionMetaData
     ** Setter for outputData
     **
     *******************************************************************************/
-   public QFunctionMetaData withOutputMetaData(QFunctionOutputMetaData outputMetaData)
+   public QBackendStepMetaData withOutputMetaData(QFunctionOutputMetaData outputMetaData)
    {
       this.outputMetaData = outputMetaData;
       return (this);
@@ -205,7 +159,7 @@ public class QFunctionMetaData
     ** Setter for code
     **
     *******************************************************************************/
-   public QFunctionMetaData withCode(QCodeReference code)
+   public QBackendStepMetaData withCode(QCodeReference code)
    {
       this.code = code;
       return (this);
@@ -214,42 +168,10 @@ public class QFunctionMetaData
 
 
    /*******************************************************************************
-    ** Getter for outputView
-    **
-    *******************************************************************************/
-   public QOutputView getOutputView()
-   {
-      return outputView;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for outputView
-    **
-    *******************************************************************************/
-   public void setOutputView(QOutputView outputView)
-   {
-      this.outputView = outputView;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for outputView
-    **
-    *******************************************************************************/
-   public QFunctionMetaData withOutputView(QOutputView outputView)
-   {
-      this.outputView = outputView;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Get a list of all of the input fields used by this function
     *******************************************************************************/
+   @JsonIgnore // because this is a computed property - we don't want it in our json.
+   @Override
    public List<QFieldMetaData> getInputFields()
    {
       List<QFieldMetaData> rs = new ArrayList<>();
@@ -265,6 +187,8 @@ public class QFunctionMetaData
    /*******************************************************************************
     ** Get a list of all of the output fields used by this function
     *******************************************************************************/
+   @JsonIgnore // because this is a computed property - we don't want it in our json.
+   @Override
    public List<QFieldMetaData> getOutputFields()
    {
       List<QFieldMetaData> rs = new ArrayList<>();

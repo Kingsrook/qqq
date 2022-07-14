@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractQResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
@@ -33,24 +34,11 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  ** Result data container for the RunProcess action
  **
  *******************************************************************************/
-public class RunProcessResult extends AbstractQResult
+public class RunProcessResult extends AbstractQResult implements Serializable
 {
-   private ProcessState processState;
-   private String       error;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String toString()
-   {
-      return "RunProcessResult{error='" + error
-         + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
-         + ",values=" + (processState == null ? null : processState.getValues())
-         + "}";
-   }
+   private ProcessState        processState;
+   private String              processUUID;
+   private Optional<Exception> exception = Optional.empty();
 
 
 
@@ -65,13 +53,26 @@ public class RunProcessResult extends AbstractQResult
 
 
    /*******************************************************************************
-    ** e.g., populate the process state (records, values) in this result object from
-    ** the final function result
     **
     *******************************************************************************/
-   public void seedFromLastFunctionResult(RunFunctionResult runFunctionResult)
+   public RunProcessResult(ProcessState processState)
    {
-      this.processState = runFunctionResult.getProcessState();
+      this.processState = processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "RunProcessResult{uuid='" + processUUID
+         + ",exception?='" + (exception.isPresent() ? exception.get().getMessage() : "null")
+         + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
+         + ",values=" + (processState == null ? null : processState.getValues())
+         + "}";
    }
 
 
@@ -157,22 +158,64 @@ public class RunProcessResult extends AbstractQResult
 
 
    /*******************************************************************************
-    ** Getter for error
+    ** Getter for processUUID
     **
     *******************************************************************************/
-   public String getError()
+   public String getProcessUUID()
    {
-      return error;
+      return processUUID;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for error
+    ** Setter for processUUID
     **
     *******************************************************************************/
-   public void setError(String error)
+   public void setProcessUUID(String processUUID)
    {
-      this.error = error;
+      this.processUUID = processUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processState
+    **
+    *******************************************************************************/
+   public ProcessState getProcessState()
+   {
+      return processState;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processState
+    **
+    *******************************************************************************/
+   public void setProcessState(ProcessState processState)
+   {
+      this.processState = processState;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setException(Exception exception)
+   {
+      this.exception = Optional.of(exception);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Optional<Exception> getException()
+   {
+      return exception;
    }
 }

@@ -84,7 +84,7 @@
     "greet": {
       "name": "greet",
       "tableName": "person",
-      "functionList": [
+      "stepList": [
         {
           "name": "prepare",
           "label": null,
