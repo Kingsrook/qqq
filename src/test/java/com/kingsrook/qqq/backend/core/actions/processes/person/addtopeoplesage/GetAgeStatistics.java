@@ -24,9 +24,9 @@ package com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage;
 
 import java.time.LocalDate;
 import java.time.Period;
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -36,12 +36,12 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 public class GetAgeStatistics implements BackendStep
 {
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult)
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput)
    {
       Integer min = null;
       Integer max = null;
       LocalDate now = LocalDate.now();
-      for(QRecord record : runBackendStepRequest.getRecords())
+      for(QRecord record : runBackendStepInput.getRecords())
       {
          LocalDate birthDate = record.getValueDate("birthDate");
          Period until = birthDate.until(now);
@@ -52,7 +52,7 @@ public class GetAgeStatistics implements BackendStep
          max = (max == null || age > max) ? age : max;
       }
 
-      runBackendStepResult.addValue("minAge", min);
-      runBackendStepResult.addValue("maxAge", max);
+      runBackendStepOutput.addValue("minAge", min);
+      runBackendStepOutput.addValue("maxAge", max);
    }
 }

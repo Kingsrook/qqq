@@ -22,9 +22,9 @@
 package com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage;
 
 
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -34,17 +34,17 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 public class AddAge implements BackendStep
 {
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult)
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput)
    {
       int totalYearsAdded = 0;
-      Integer yearsToAdd = runBackendStepRequest.getValueInteger("yearsToAdd");
-      for(QRecord record : runBackendStepRequest.getRecords())
+      Integer yearsToAdd = runBackendStepInput.getValueInteger("yearsToAdd");
+      for(QRecord record : runBackendStepInput.getRecords())
       {
          Integer age = record.getValueInteger("age");
          age += yearsToAdd;
          totalYearsAdded += yearsToAdd;
          record.setValue("age", age);
       }
-      runBackendStepResult.addValue("totalYearsAdded", totalYearsAdded);
+      runBackendStepOutput.addValue("totalYearsAdded", totalYearsAdded);
    }
 }

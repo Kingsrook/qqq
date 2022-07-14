@@ -26,17 +26,17 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -56,17 +56,17 @@ public class BasicETLTransformFunction implements BackendStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       ////////////////////////////////////////////////////////////////////////////////////////////
       // exit early with no-op if no records made it here, or if we don't have a mapping to use //
       ////////////////////////////////////////////////////////////////////////////////////////////
-      if(CollectionUtils.nullSafeIsEmpty(runBackendStepRequest.getRecords()))
+      if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
          return;
       }
 
-      String mappingJSON = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_MAPPING_JSON);
+      String mappingJSON = runBackendStepInput.getValueString(BasicETLProcess.FIELD_MAPPING_JSON);
       if(!StringUtils.hasContent(mappingJSON))
       {
          return;
@@ -81,16 +81,16 @@ public class BasicETLTransformFunction implements BackendStep
          throw (new QException("Mapping was not a Key-based mapping type.  Was a : " + mapping.getClass().getName()));
       }
 
-      String         tableName     = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
-      QTableMetaData table         = runBackendStepRequest.getInstance().getTable(tableName);
-      List<QRecord>  mappedRecords = applyMapping(runBackendStepRequest.getRecords(), table, keyBasedFieldMapping);
+      String         tableName     = runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
+      QTableMetaData table         = runBackendStepInput.getInstance().getTable(tableName);
+      List<QRecord>  mappedRecords = applyMapping(runBackendStepInput.getRecords(), table, keyBasedFieldMapping);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       // todo - should this be conditional, e.g., driven by a field, or an opt-in customization function? //
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       removeNonNumericValuesFromMappedRecords(table, mappedRecords);
 
-      runBackendStepResult.setRecords(mappedRecords);
+      runBackendStepOutput.setRecords(mappedRecords);
    }
 
 

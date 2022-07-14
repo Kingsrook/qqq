@@ -22,13 +22,13 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
-import com.kingsrook.qqq.backend.core.actions.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 
 
 /*******************************************************************************
@@ -37,11 +37,11 @@ import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 public class BasicETLExtractFunction implements BackendStep
 {
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QueryRequest queryRequest = new QueryRequest(runBackendStepRequest.getInstance());
-      queryRequest.setSession(runBackendStepRequest.getSession());
-      queryRequest.setTableName(runBackendStepRequest.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE));
+      QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
+      queryInput.setSession(runBackendStepInput.getSession());
+      queryInput.setTableName(runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE));
 
       // queryRequest.setSkip(integerQueryParam(context, "skip"));
       // queryRequest.setLimit(integerQueryParam(context, "limit"));
@@ -53,8 +53,8 @@ public class BasicETLExtractFunction implements BackendStep
       // }
 
       QueryAction queryAction = new QueryAction();
-      QueryResult queryResult = queryAction.execute(queryRequest);
+      QueryOutput queryOutput = queryAction.execute(queryInput);
 
-      runBackendStepResult.setRecords(queryResult.getRecords());
+      runBackendStepOutput.setRecords(queryOutput.getRecords());
    }
 }

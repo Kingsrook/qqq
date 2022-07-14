@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.state;
 
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

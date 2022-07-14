@@ -24,13 +24,13 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -50,23 +50,23 @@ public class BasicETLLoadFunction implements BackendStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       //////////////////////////////////////////////////////
       // exit early with no-op if no records made it here //
       //////////////////////////////////////////////////////
-      List<QRecord> inputRecords = runBackendStepRequest.getRecords();
+      List<QRecord> inputRecords = runBackendStepInput.getRecords();
       LOG.info("Received [" + inputRecords.size() + "] records to load");
       if(CollectionUtils.nullSafeIsEmpty(inputRecords))
       {
-         runBackendStepResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, 0);
+         runBackendStepOutput.addValue(BasicETLProcess.FIELD_RECORD_COUNT, 0);
          return;
       }
 
       //////////////////////////////////////////////////////////////////
       // put the destination table name in all records being inserted //
       //////////////////////////////////////////////////////////////////
-      String table = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
+      String table = runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
       for(QRecord record : inputRecords)
       {
          record.setTableName(table);
@@ -82,19 +82,19 @@ public class BasicETLLoadFunction implements BackendStep
       for(List<QRecord> page : CollectionUtils.getPages(inputRecords, pageSize))
       {
          LOG.info("Inserting a page of [" + page.size() + "] records. Progress:  " + recordsInserted + " loaded out of " + inputRecords.size() + " total");
-         InsertRequest insertRequest = new InsertRequest(runBackendStepRequest.getInstance());
-         insertRequest.setSession(runBackendStepRequest.getSession());
-         insertRequest.setTableName(table);
-         insertRequest.setRecords(page);
+         InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
+         insertInput.setSession(runBackendStepInput.getSession());
+         insertInput.setTableName(table);
+         insertInput.setRecords(page);
 
          InsertAction insertAction = new InsertAction();
-         InsertResult insertResult = insertAction.execute(insertRequest);
-         outputRecords.addAll(insertResult.getRecords());
+         InsertOutput insertOutput = insertAction.execute(insertInput);
+         outputRecords.addAll(insertOutput.getRecords());
 
-         recordsInserted += insertResult.getRecords().size();
+         recordsInserted += insertOutput.getRecords().size();
       }
-      runBackendStepResult.setRecords(outputRecords);
-      runBackendStepResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
+      runBackendStepOutput.setRecords(outputRecords);
+      runBackendStepOutput.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
    }
 
 }

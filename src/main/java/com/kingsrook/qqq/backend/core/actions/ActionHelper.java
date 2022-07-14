@@ -23,9 +23,9 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
-import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 
 
 /*******************************************************************************
@@ -37,7 +37,7 @@ public class ActionHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void validateSession(AbstractQRequest request) throws QException
+   public static void validateSession(AbstractActionInput request) throws QException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());

@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
 /*******************************************************************************
