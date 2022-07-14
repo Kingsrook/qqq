@@ -28,9 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -46,7 +46,7 @@ import org.apache.logging.log4j.Logger;
 /*******************************************************************************
  ** Function body for performing the Extract step of a basic ETL process.
  *******************************************************************************/
-public class BasicETLTransformFunction implements FunctionBody
+public class BasicETLTransformFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLTransformFunction.class);
 
@@ -56,17 +56,17 @@ public class BasicETLTransformFunction implements FunctionBody
     **
     *******************************************************************************/
    @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
       ////////////////////////////////////////////////////////////////////////////////////////////
       // exit early with no-op if no records made it here, or if we don't have a mapping to use //
       ////////////////////////////////////////////////////////////////////////////////////////////
-      if(CollectionUtils.nullSafeIsEmpty(runFunctionRequest.getRecords()))
+      if(CollectionUtils.nullSafeIsEmpty(runBackendStepRequest.getRecords()))
       {
          return;
       }
 
-      String mappingJSON = runFunctionRequest.getValueString(BasicETLProcess.FIELD_MAPPING_JSON);
+      String mappingJSON = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_MAPPING_JSON);
       if(!StringUtils.hasContent(mappingJSON))
       {
          return;
@@ -81,16 +81,16 @@ public class BasicETLTransformFunction implements FunctionBody
          throw (new QException("Mapping was not a Key-based mapping type.  Was a : " + mapping.getClass().getName()));
       }
 
-      String         tableName     = runFunctionRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
-      QTableMetaData table         = runFunctionRequest.getInstance().getTable(tableName);
-      List<QRecord>  mappedRecords = applyMapping(runFunctionRequest.getRecords(), table, keyBasedFieldMapping);
+      String         tableName     = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
+      QTableMetaData table         = runBackendStepRequest.getInstance().getTable(tableName);
+      List<QRecord>  mappedRecords = applyMapping(runBackendStepRequest.getRecords(), table, keyBasedFieldMapping);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       // todo - should this be conditional, e.g., driven by a field, or an opt-in customization function? //
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       removeNonNumericValuesFromMappedRecords(table, mappedRecords);
 
-      runFunctionResult.setRecords(mappedRecords);
+      runBackendStepResult.setRecords(mappedRecords);
    }
 
 

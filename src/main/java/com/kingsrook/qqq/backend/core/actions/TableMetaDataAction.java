@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
@@ -49,7 +49,7 @@ public class TableMetaDataAction
       QTableMetaData table = tableMetaDataRequest.getInstance().getTable(tableMetaDataRequest.getTableName());
       if(table == null)
       {
-         throw (new QUserFacingException("Table [" + tableMetaDataRequest.getTableName() + "] was not found."));
+         throw (new QNotFoundException("Table [" + tableMetaDataRequest.getTableName() + "] was not found."));
       }
       tableMetaDataResult.setTable(new QFrontendTableMetaData(table, true));
 

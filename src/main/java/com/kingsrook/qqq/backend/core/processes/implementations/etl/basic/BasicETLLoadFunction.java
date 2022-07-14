@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
 import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 /*******************************************************************************
  ** Function body for performing the Load step of a basic ETL process.
  *******************************************************************************/
-public class BasicETLLoadFunction implements FunctionBody
+public class BasicETLLoadFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
 
@@ -50,23 +50,23 @@ public class BasicETLLoadFunction implements FunctionBody
     **
     *******************************************************************************/
    @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
       //////////////////////////////////////////////////////
       // exit early with no-op if no records made it here //
       //////////////////////////////////////////////////////
-      List<QRecord> inputRecords = runFunctionRequest.getRecords();
+      List<QRecord> inputRecords = runBackendStepRequest.getRecords();
       LOG.info("Received [" + inputRecords.size() + "] records to load");
       if(CollectionUtils.nullSafeIsEmpty(inputRecords))
       {
-         runFunctionResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, 0);
+         runBackendStepResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, 0);
          return;
       }
 
       //////////////////////////////////////////////////////////////////
       // put the destination table name in all records being inserted //
       //////////////////////////////////////////////////////////////////
-      String table = runFunctionRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
+      String table = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
       for(QRecord record : inputRecords)
       {
          record.setTableName(table);
@@ -82,8 +82,8 @@ public class BasicETLLoadFunction implements FunctionBody
       for(List<QRecord> page : CollectionUtils.getPages(inputRecords, pageSize))
       {
          LOG.info("Inserting a page of [" + page.size() + "] records. Progress:  " + recordsInserted + " loaded out of " + inputRecords.size() + " total");
-         InsertRequest insertRequest = new InsertRequest(runFunctionRequest.getInstance());
-         insertRequest.setSession(runFunctionRequest.getSession());
+         InsertRequest insertRequest = new InsertRequest(runBackendStepRequest.getInstance());
+         insertRequest.setSession(runBackendStepRequest.getSession());
          insertRequest.setTableName(table);
          insertRequest.setRecords(page);
 
@@ -93,8 +93,8 @@ public class BasicETLLoadFunction implements FunctionBody
 
          recordsInserted += insertResult.getRecords().size();
       }
-      runFunctionResult.setRecords(outputRecords);
-      runFunctionResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
+      runBackendStepResult.setRecords(outputRecords);
+      runBackendStepResult.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
    }
 
 }

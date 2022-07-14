@@ -24,9 +24,9 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 import com.kingsrook.qqq.backend.core.actions.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
 import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 
@@ -34,14 +34,15 @@ import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
 /*******************************************************************************
  ** Function body for performing the Extract step of a basic ETL process.
  *******************************************************************************/
-public class BasicETLExtractFunction implements FunctionBody
+public class BasicETLExtractFunction implements BackendStep
 {
    @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException
+   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
    {
-      QueryRequest queryRequest = new QueryRequest(runFunctionRequest.getInstance());
-      queryRequest.setSession(runFunctionRequest.getSession());
-      queryRequest.setTableName(runFunctionRequest.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE));
+      QueryRequest queryRequest = new QueryRequest(runBackendStepRequest.getInstance());
+      queryRequest.setSession(runBackendStepRequest.getSession());
+      queryRequest.setTableName(runBackendStepRequest.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE));
+
       // queryRequest.setSkip(integerQueryParam(context, "skip"));
       // queryRequest.setLimit(integerQueryParam(context, "limit"));
 
@@ -54,6 +55,6 @@ public class BasicETLExtractFunction implements FunctionBody
       QueryAction queryAction = new QueryAction();
       QueryResult queryResult = queryAction.execute(queryRequest);
 
-      runFunctionResult.setRecords(queryResult.getRecords());
+      runBackendStepResult.setRecords(queryResult.getRecords());
    }
 }

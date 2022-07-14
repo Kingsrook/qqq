@@ -59,7 +59,7 @@ public class MetaDataAction
       Map<String, QFrontendProcessMetaData> processes = new LinkedHashMap<>();
       for(Map.Entry<String, QProcessMetaData> entry : metaDataRequest.getInstance().getProcesses().entrySet())
       {
-         processes.put(entry.getKey(), new QFrontendProcessMetaData(entry.getValue()));
+         processes.put(entry.getKey(), new QFrontendProcessMetaData(entry.getValue(), false));
       }
       metaDataResult.setProcesses(processes);
 

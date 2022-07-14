@@ -56,6 +56,15 @@ public interface QBackendModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   default CountInterface getCountInterface()
+   {
+      throwNotImplemented("Count");
+      return null;
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    default QueryInterface getQueryInterface()
    {
       throwNotImplemented("Query");

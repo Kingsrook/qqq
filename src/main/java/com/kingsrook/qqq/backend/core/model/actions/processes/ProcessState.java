@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -35,8 +36,9 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class ProcessState implements Serializable
 {
-   private List<QRecord> records = new ArrayList<>();
-   private Map<String, Serializable> values = new HashMap<>();
+   private List<QRecord>             records      = new ArrayList<>();
+   private Map<String, Serializable> values       = new HashMap<>();
+   private Optional<String>          nextStepName = Optional.empty();
 
 
 
@@ -81,4 +83,38 @@ public class ProcessState implements Serializable
    {
       this.values = values;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for nextStepName
+    **
+    *******************************************************************************/
+   public Optional<String> getNextStepName()
+   {
+      return nextStepName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for nextStepName
+    **
+    *******************************************************************************/
+   public void setNextStepName(String nextStepName)
+   {
+      this.nextStepName = Optional.of(nextStepName);
+   }
+
+
+
+   /*******************************************************************************
+    ** clear out the value of nextStepName (set the Optional to empty)
+    **
+    *******************************************************************************/
+   public void clearNextStepName()
+   {
+      this.nextStepName = Optional.empty();
+   }
+
 }

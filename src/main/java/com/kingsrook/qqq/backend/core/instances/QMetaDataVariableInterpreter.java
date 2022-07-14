@@ -120,23 +120,26 @@ public class QMetaDataVariableInterpreter
          return (null);
       }
 
-      if(value.startsWith("${env.") && value.endsWith("}"))
+      String envPrefix = "${env.";
+      if(value.startsWith(envPrefix) && value.endsWith("}"))
       {
-         String envVarName = value.substring(6).replaceFirst("}$", "");
+         String envVarName = value.substring(envPrefix.length()).replaceFirst("}$", "");
          String envValue   = getEnvironment().get(envVarName);
          return (envValue);
       }
 
-      if(value.startsWith("${prop.") && value.endsWith("}"))
+      String propPrefix = "${prop.";
+      if(value.startsWith(propPrefix) && value.endsWith("}"))
       {
-         String propertyName  = value.substring(7).replaceFirst("}$", "");
+         String propertyName  = value.substring(propPrefix.length()).replaceFirst("}$", "");
          String propertyValue = System.getProperty(propertyName);
          return (propertyValue);
       }
 
-      if(value.startsWith("${literal.") && value.endsWith("}"))
+      String literalPrefix = "${literal.";
+      if(value.startsWith(literalPrefix) && value.endsWith("}"))
       {
-         String literalValue = value.substring(10).replaceFirst("}$", "");
+         String literalValue = value.substring(literalPrefix.length()).replaceFirst("}$", "");
          return (literalValue);
       }
 

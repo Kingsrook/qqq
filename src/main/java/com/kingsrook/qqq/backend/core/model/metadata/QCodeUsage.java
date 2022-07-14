@@ -28,6 +28,6 @@ package com.kingsrook.qqq.backend.core.model.metadata;
  *******************************************************************************/
 public enum QCodeUsage
 {
-   FUNCTION, // a step in a process
+   BACKEND_STEP, // a backend-step in a process
    CUSTOMIZER // a function to customize part of a QQQ table's behavior
 }

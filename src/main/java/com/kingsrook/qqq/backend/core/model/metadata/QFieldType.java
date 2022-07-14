@@ -22,6 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.math.BigDecimal;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+
+
 /*******************************************************************************
  ** Possible data types for Q-fields.
  **
@@ -36,5 +40,28 @@ public enum QFieldType
    DATE_TIME,
    TEXT,
    HTML,
-   PASSWORD
+   PASSWORD;
+
+
+
+   /*******************************************************************************
+    ** Get a field type enum constant for a java class.
+    *******************************************************************************/
+   public static QFieldType fromClass(Class<?> c) throws QException
+   {
+      if(c.equals(String.class))
+      {
+         return (STRING);
+      }
+      if(c.equals(Integer.class) || c.equals(int.class))
+      {
+         return (INTEGER);
+      }
+      if(c.equals(BigDecimal.class))
+      {
+         return (DECIMAL);
+      }
+
+      throw (new QException("Unrecognized class [" + c + "]"));
+   }
 }

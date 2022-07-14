@@ -62,7 +62,7 @@ class JsonUtilsTest
       QRecord qRecord = getQRecord();
       String  json    = JsonUtils.toJson(qRecord);
       assertEquals("""
-         {"tableName":"foo","values":{"foo":"Foo","bar":3.14159},"displayValues":{},"backendDetails":{}}""", json);
+         {"tableName":"foo","values":{"foo":"Foo","bar":3.14159}}""", json);
    }
 
 

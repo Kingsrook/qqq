@@ -19,26 +19,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.interfaces;
-
-
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+package com.kingsrook.qqq.backend.core.state;
 
 
 /*******************************************************************************
- ** Simple interface that a "custom" function (as in, a component of a Process)
- ** must implement.
+ ** Possible types of states to be stored.
+ **
+ ** Idea: could these have the corresponding Classes that they support?
+ **  ala PROCESS_STATUS(ProcessStatus.class) ?
  *******************************************************************************/
-public interface FunctionBody
+public enum StateType
 {
-   /*******************************************************************************
-    ** Execute the function - using the request as input, and the result as output.
-    **
-    ** TODO - think about - why take the Result object as a param, instead of return it?
-    **  Is this way easier for inter-language operability maybe?
-    *   Also - there's way too much "process-specific gunk" in the Request object - can we simplify it?
-    *******************************************************************************/
-   void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult) throws QException;
+   PROCESS_STATUS,
+   ASYNC_JOB_STATUS
 }

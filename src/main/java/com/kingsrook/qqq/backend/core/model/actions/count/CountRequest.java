@@ -19,85 +19,63 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.processes;
+package com.kingsrook.qqq.backend.core.model.actions.count;
+
+
+import com.kingsrook.qqq.backend.core.model.actions.AbstractQTableRequest;
+import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Meta-Data to define the Output View for a QQQ Function
+ ** Request data for the Count action
  **
  *******************************************************************************/
-public class QOutputView
+public class CountRequest extends AbstractQTableRequest
 {
-   private String messageField;
-   private QRecordListView recordListView;
+   private QQueryFilter filter;
 
 
 
    /*******************************************************************************
-    ** Getter for message
     **
     *******************************************************************************/
-   public String getMessageField()
+   public CountRequest()
    {
-      return messageField;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for message
     **
     *******************************************************************************/
-   public void setMessage(String message)
+   public CountRequest(QInstance instance)
    {
-      this.messageField = message;
+      super(instance);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for message
+    ** Getter for filter
     **
     *******************************************************************************/
-   public QOutputView withMessageField(String messageField)
+   public QQueryFilter getFilter()
    {
-      this.messageField = messageField;
-      return(this);
+      return filter;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for recordListView
+    ** Setter for filter
     **
     *******************************************************************************/
-   public QRecordListView getRecordListView()
+   public void setFilter(QQueryFilter filter)
    {
-      return recordListView;
+      this.filter = filter;
    }
 
-
-
-   /*******************************************************************************
-    ** Setter for recordListView
-    **
-    *******************************************************************************/
-   public void setRecordListView(QRecordListView recordListView)
-   {
-      this.recordListView = recordListView;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for recordListView
-    **
-    *******************************************************************************/
-   public QOutputView withRecordListView(QRecordListView recordListView)
-   {
-      this.recordListView = recordListView;
-      return(this);
-   }
 
 
 }

@@ -19,32 +19,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.interfaces.mock;
-
-
-import com.kingsrook.qqq.backend.core.interfaces.FunctionBody;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+package com.kingsrook.qqq.backend.core.actions.async;
 
 
 /*******************************************************************************
- ** Mock implementation of a FunctionBody.
- **
- ** Basically just passes data from the request to the response.
+ ** Interface to be implemented (as lambdas), for working with AsyncJobManager.
  *******************************************************************************/
-public class MockFunctionBody implements FunctionBody
+@FunctionalInterface
+public interface AsyncJob<T>
 {
-   @Override
-   public void run(RunFunctionRequest runFunctionRequest, RunFunctionResult runFunctionResult)
-   {
-      runFunctionResult.getRecords().forEach(r -> r.setValue("mockValue", "Ha ha!"));
-
-      runFunctionResult.setValues(runFunctionRequest.getValues());
-      runFunctionResult.addValue("mockValue", "You so silly");
-
-      /////////////////////////////////
-      // mock the "greet" process... //
-      /////////////////////////////////
-      runFunctionResult.addValue("outputMessage", runFunctionRequest.getValueString("greetingPrefix") + " X " + runFunctionRequest.getValueString("greetingSuffix"));
-   }
+   /*******************************************************************************
+    ** Run the job, taking a callback object (where you can communicate your status
+    ** back), returning a result when you're done..
+    *******************************************************************************/
+   T run(AsyncJobCallback callback) throws Exception;
 }
