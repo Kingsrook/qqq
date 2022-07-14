@@ -25,16 +25,16 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 import java.util.List;
 import java.util.stream.Collectors;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.kingsrook.qqq.backend.core.actions.RunFunctionAction;
+import com.kingsrook.qqq.backend.core.actions.RunBackendStepAction;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunFunctionResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
@@ -80,13 +80,13 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       QTableMetaData archiveTable    = defineTable(qInstance, "archive", archiveBackend, "archive", "*/l3/*.csv");
       QTableMetaData processingTable = defineTable(qInstance, "processing", processingBackend, "processing", "**/*.csv");
 
-      QProcessMetaData  process  = new FilesystemSyncProcess().defineProcessMetaData();
-      QFunctionMetaData function = process.getFunction(FilesystemSyncFunction.FUNCTION_NAME);
+      QProcessMetaData     process = new FilesystemSyncProcess().defineProcessMetaData();
+      QBackendStepMetaData step    = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
       qInstance.addProcess(process);
 
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
 
       ///////////////////////////
       // write some test files //
@@ -99,17 +99,17 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       printTableListing(archiveBackend, archiveTable);
       printTableListing(processingBackend, processingTable);
 
-      //////////////////////
-      // run the function //
-      //////////////////////
-      RunFunctionRequest runFunctionRequest = new RunFunctionRequest(qInstance);
-      runFunctionRequest.setFunctionName(function.getName());
-      runFunctionRequest.setProcessName(process.getName());
-      runFunctionRequest.setSession(TestUtils.getMockSession());
+      //////////////////
+      // run the step //
+      //////////////////
+      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
+      runBackendStepRequest.setStepName(step.getName());
+      runBackendStepRequest.setProcessName(process.getName());
+      runBackendStepRequest.setSession(TestUtils.getMockSession());
 
-      RunFunctionAction runFunctionAction = new RunFunctionAction();
-      RunFunctionResult runFunctionResult = runFunctionAction.execute(runFunctionRequest);
-      System.out.println(runFunctionResult);
+      RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
+      RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
+      // System.out.println(runBackendStepResult);
 
       printTableListing(sourceBackend, sourceTable);
       printTableListing(archiveBackend, archiveTable);
@@ -143,13 +143,13 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       QTableMetaData archiveTable    = defineTable(qInstance, "archive", localBackend, "archive", "*/l3/*.csv");
       QTableMetaData processingTable = defineTable(qInstance, "processing", localBackend, "processing", "**/*.csv");
 
-      QProcessMetaData  process  = new FilesystemSyncProcess().defineProcessMetaData();
-      QFunctionMetaData function = process.getFunction(FilesystemSyncFunction.FUNCTION_NAME);
+      QProcessMetaData     process  = new FilesystemSyncProcess().defineProcessMetaData();
+      QBackendStepMetaData step = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
       qInstance.addProcess(process);
 
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
-      function.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
+      step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_PROCESSING_TABLE).setDefaultValue(processingTable.getName());
 
       ///////////////////////////
       // write some test files //
@@ -162,17 +162,17 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       printTableListing(localBackend, archiveTable);
       printTableListing(localBackend, processingTable);
 
-      //////////////////////
-      // run the function //
-      //////////////////////
-      RunFunctionRequest runFunctionRequest = new RunFunctionRequest(qInstance);
-      runFunctionRequest.setFunctionName(function.getName());
-      runFunctionRequest.setProcessName(process.getName());
-      runFunctionRequest.setSession(TestUtils.getMockSession());
+      //////////////////
+      // run the step //
+      //////////////////
+      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
+      runBackendStepRequest.setStepName(step.getName());
+      runBackendStepRequest.setProcessName(process.getName());
+      runBackendStepRequest.setSession(TestUtils.getMockSession());
 
-      RunFunctionAction runFunctionAction = new RunFunctionAction();
-      RunFunctionResult runFunctionResult = runFunctionAction.execute(runFunctionRequest);
-      System.out.println(runFunctionResult);
+      RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
+      RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
+      // System.out.println(runBackendStepResult);
 
       printTableListing(vendorBackend, sourceTable);
       printTableListing(localBackend, archiveTable);

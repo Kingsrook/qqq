@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
@@ -269,7 +270,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    private String customizeFileContentsAfterReading(QTableMetaData table, String fileContents) throws QException
    {
-      Optional<QCodeReference> optionalCustomizer = table.getCustomizer("postFileRead");
+      Optional<QCodeReference> optionalCustomizer = table.getCustomizer(FilesystemBackendModuleInterface.CUSTOMIZER_FILE_POST_FILE_READ);
       if(optionalCustomizer.isEmpty())
       {
          return (fileContents);
