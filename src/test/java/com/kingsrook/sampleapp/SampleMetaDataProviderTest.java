@@ -25,14 +25,14 @@ package com.kingsrook.sampleapp;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
-import com.kingsrook.qqq.backend.core.actions.QueryAction;
-import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -60,13 +60,13 @@ class SampleMetaDataProviderTest
 
       try
       {
-         QueryRequest queryRequest = new QueryRequest();
-         queryRequest.setInstance(SampleMetaDataProvider.defineInstance());
-         queryRequest.setTableName(fileTable.getName());
+         QueryInput queryInput = new QueryInput();
+         queryInput.setInstance(SampleMetaDataProvider.defineInstance());
+         queryInput.setTableName(fileTable.getName());
 
-         QueryResult queryResult = new FilesystemQueryAction().execute(queryRequest);
-         System.out.println(queryResult);
-         Assertions.assertEquals(3, queryResult.getRecords().size(), "Should load all records from the file");
+         QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
+         System.out.println(queryOutput);
+         Assertions.assertEquals(3, queryOutput.getRecords().size(), "Should load all records from the file");
       }
       finally
       {
@@ -101,21 +101,21 @@ class SampleMetaDataProviderTest
    public void testGreetProcess() throws Exception
    {
       QInstance         qInstance   = SampleMetaDataProvider.defineInstance();
-      QTableMetaData    personTable = SampleMetaDataProvider.defineTablePerson();
-      RunProcessRequest request     = new RunProcessRequest(qInstance);
+      QTableMetaData  personTable = SampleMetaDataProvider.defineTablePerson();
+      RunProcessInput request     = new RunProcessInput(qInstance);
       request.setSession(new QSession());
       request.setProcessName(SampleMetaDataProvider.PROCESS_NAME_GREET);
 
-      QueryRequest queryRequest = new QueryRequest(qInstance);
-      queryRequest.setTableName(personTable.getName());
-      queryRequest.setSession(new QSession());
-      QueryResult queryResult = new QueryAction().execute(queryRequest);
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(personTable.getName());
+      queryInput.setSession(new QSession());
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
-      request.setRecords(queryResult.getRecords());
+      request.setRecords(queryOutput.getRecords());
       request.addValue("greetingPrefix", "Hello");
       request.addValue("greetingSuffix", "there");
 
-      RunProcessResult result = new RunProcessAction().execute(request);
+      RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
    }
