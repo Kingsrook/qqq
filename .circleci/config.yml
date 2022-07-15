@@ -24,6 +24,8 @@ commands:
           name: Run Maven
           command: |
             mvn -s .circleci/mvn-settings.xml << parameters.maven_subcommand >>
+      - store_artifacts:
+          path: target/site/jacoco/index.html
       - run:
           name: Save test results
           command: |

@@ -640,7 +640,7 @@ public class QueryManager
 
 
    /*******************************************************************************
-    *
+    * index is 1-based!!
     *******************************************************************************/
    @SuppressWarnings("unchecked")
    public static int bindParamObject(PreparedStatement statement, int index, Object value) throws SQLException
@@ -1120,15 +1120,12 @@ public class QueryManager
     *******************************************************************************/
    public static BigDecimal getBigDecimal(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       BigDecimal value = resultSet.getBigDecimal(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1153,15 +1150,12 @@ public class QueryManager
     *******************************************************************************/
    public static Date getDate(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Date value = resultSet.getDate(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1186,8 +1180,6 @@ public class QueryManager
     *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1196,7 +1188,6 @@ public class QueryManager
       Calendar rs = Calendar.getInstance();
       rs.setTimeInMillis(value.getTime());
       return (rs);
-      */
    }
 
 
@@ -1206,8 +1197,6 @@ public class QueryManager
     *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1216,7 +1205,6 @@ public class QueryManager
       Calendar rs = Calendar.getInstance();
       rs.setTimeInMillis(value.getTime());
       return (rs);
-      */
    }
 
 
@@ -1227,8 +1215,6 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static LocalDate getLocalDate(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1237,7 +1223,24 @@ public class QueryManager
 
       LocalDate date = LocalDate.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate());
       return (date);
-      */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   public static LocalDate getLocalDate(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      LocalDate date = LocalDate.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate());
+      return (date);
    }
 
 
@@ -1248,8 +1251,6 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static LocalDateTime getLocalDateTime(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1258,7 +1259,6 @@ public class QueryManager
 
       LocalDateTime dateTime = LocalDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0);
       return (dateTime);
-      */
    }
 
 
@@ -1287,8 +1287,6 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static OffsetDateTime getOffsetDateTime(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1297,7 +1295,24 @@ public class QueryManager
 
       OffsetDateTime dateTime = OffsetDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0, OffsetDateTime.now().getOffset());
       return (dateTime);
-      */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   public static OffsetDateTime getOffsetDateTime(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      OffsetDateTime dateTime = OffsetDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0, OffsetDateTime.now().getOffset());
+      return (dateTime);
    }
 
 
@@ -1307,15 +1322,12 @@ public class QueryManager
     *******************************************************************************/
    public static Boolean getBoolean(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Boolean value = resultSet.getBoolean(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1325,15 +1337,12 @@ public class QueryManager
     *******************************************************************************/
    public static Boolean getBoolean(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Boolean value = resultSet.getBoolean(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1343,15 +1352,12 @@ public class QueryManager
     *******************************************************************************/
    public static Long getLong(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       long value = resultSet.getLong(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1361,15 +1367,12 @@ public class QueryManager
     *******************************************************************************/
    public static Long getLong(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       long value = resultSet.getLong(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1379,15 +1382,12 @@ public class QueryManager
     *******************************************************************************/
    public static Timestamp getTimestamp(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1397,15 +1397,12 @@ public class QueryManager
     *******************************************************************************/
    public static Timestamp getTimestamp(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
