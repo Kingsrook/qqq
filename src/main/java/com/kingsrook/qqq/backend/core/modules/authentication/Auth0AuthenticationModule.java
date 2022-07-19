@@ -312,9 +312,13 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       public boolean equals(Object o)
       {
          if(this == o)
+         {
             return true;
+         }
          if(o == null || getClass() != o.getClass())
+         {
             return false;
+         }
          Auth0StateKey that = (Auth0StateKey) o;
          return key.equals(that.key);
       }
