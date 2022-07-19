@@ -95,6 +95,7 @@ public class CsvReportStreamer implements ReportStreamerInterface
             outputStream.write(('"' + column.getLabel() + '"').getBytes(StandardCharsets.UTF_8));
          }
          outputStream.write('\n');
+         outputStream.flush();
       }
       catch(Exception e)
       {

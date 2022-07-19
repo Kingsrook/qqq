@@ -101,6 +101,8 @@ public class ExcelReportStreamer implements ReportStreamerInterface
             worksheet.value(0, col, column.getLabel());
             col++;
          }
+
+         worksheet.flush();
       }
       catch(Exception e)
       {

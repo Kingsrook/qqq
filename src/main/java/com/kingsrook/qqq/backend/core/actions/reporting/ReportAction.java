@@ -67,6 +67,7 @@ public class ReportAction
    private static final Logger LOG = LogManager.getLogger(ReportAction.class);
 
    private boolean preExecuteRan = false;
+   private Integer countFromPreExecute = null;
 
 
 
@@ -176,17 +177,27 @@ public class ReportAction
       {
          int recordsConsumed = reportStreamer.takeRecordsFromPipe(recordPipe);
          recordCount += recordsConsumed;
+
+         if(countFromPreExecute != null)
+         {
+            LOG.info(String.format("Processed %,d of %,d records so far"), recordCount, countFromPreExecute);
+         }
+         else
+         {
+            LOG.info(String.format("Processed %,d records so far", recordCount));
+         }
+
          if(recordsConsumed == 0)
          {
-            //////////////////////////////////////////////////////////////////////////////////
-            // do we need to sleep to let the producer work?                                //
-            // todo - smarter sleep?  like an exponential back-off?  and eventually a fail? //
-            //////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////
+            // do we need to sleep to let the producer work?                          //
+            // todo - smarter sleep?  like get notified vs. sleep? eventually a fail? //
+            ////////////////////////////////////////////////////////////////////////////
             LOG.info("Read 0 records from pipe, sleeping to give producer a chance to work");
             SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
             while(recordPipe.countAvailableRecords() == 0)
             {
-               nextSleepMillis *= 2;
+               nextSleepMillis = Math.min(nextSleepMillis * 2, 1000);
                LOG.info("Still no records in the pipe, so sleeping more [" + nextSleepMillis + "]ms");
                SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
             }
@@ -251,11 +262,11 @@ public class ReportAction
             countInput.setTableName(reportInput.getTableName());
             countInput.setFilter(reportInput.getQueryFilter());
             CountOutput countOutput = countInterface.execute(countInput);
-            Integer     count       = countOutput.getCount();
-            if(count > reportFormat.getMaxRows())
+            countFromPreExecute = countOutput.getCount();
+            if(countFromPreExecute > reportFormat.getMaxRows())
             {
                throw (new QUserFacingException("The requested report would include more rows ("
-                  + String.format("%,d", count) + ") than the maximum allowed ("
+                  + String.format("%,d", countFromPreExecute) + ") than the maximum allowed ("
                   + String.format("%,d", reportFormat.getMaxRows()) + ") for the selected file format (" + reportFormat + ")."));
             }
          }
