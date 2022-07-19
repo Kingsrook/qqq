@@ -62,8 +62,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    {
       try
       {
-         QTableMetaData table = queryInput.getTable();
-         String tableName = getTableName(table);
+         QTableMetaData table     = queryInput.getTable();
+         String         tableName = getTableName(table);
 
          List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
          String columns = fieldList.stream()
@@ -72,7 +72,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          String sql = "SELECT " + columns + " FROM " + tableName;
 
-         QQueryFilter filter = queryInput.getFilter();
+         QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
          {
@@ -97,9 +97,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
-         QueryOutput   rs      = new QueryOutput();
-         List<QRecord> records = new ArrayList<>();
-         rs.setRecords(records);
+         QueryOutput queryOutput = new QueryOutput(queryInput);
 
          try(Connection connection = getConnection(queryInput))
          {
@@ -111,7 +109,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                   // todo - should refactor this for view etc to use too.
                   // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
                   QRecord record = new QRecord();
-                  records.add(record);
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
                   record.setValues(values);
@@ -122,12 +119,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                      Serializable   value          = getValue(qFieldMetaData, resultSet, i);
                      values.put(qFieldMetaData.getName(), value);
                   }
+
+                  queryOutput.addRecord(record);
                }
 
             }), params);
          }
 
-         return rs;
+         return queryOutput;
       }
       catch(Exception e)
       {
@@ -187,8 +186,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
       for(QFilterOrderBy orderBy : orderBys)
       {
-         QFieldMetaData field = table.getField(orderBy.getFieldName());
-         String column = getColumnName(field);
+         QFieldMetaData field  = table.getField(orderBy.getFieldName());
+         String         column = getColumnName(field);
          clauses.add(column + " " + (orderBy.getIsAscending() ? "ASC" : "DESC"));
       }
       return (String.join(", ", clauses));
