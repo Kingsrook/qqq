@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -66,6 +67,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
@@ -97,6 +99,7 @@ public class QJavalinImplementation
    private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
 
    private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
+   private static final String SESSION_ID_COOKIE_NAME = "sessionId";
 
    static QInstance qInstance;
 
@@ -224,15 +227,27 @@ public class QJavalinImplementation
    static void setupSession(Context context, AbstractActionInput request) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
+      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
 
-      // todo - does this need some per-provider logic actually?  mmm...
-      Map<String, String> authenticationContext = new HashMap<>();
-      authenticationContext.put("sessionId", context.cookie("sessionId"));
-      QSession session = authenticationModule.createSession(authenticationContext);
-      request.setSession(session);
+      try
+      {
+         Map<String, String> authenticationContext = new HashMap<>();
+         authenticationContext.put(SESSION_ID_COOKIE_NAME, context.cookie(SESSION_ID_COOKIE_NAME));
+         QSession session = authenticationModule.createSession(qInstance, authenticationContext);
+         request.setSession(session);
 
-      context.cookie("sessionId", session.getIdReference(), SESSION_COOKIE_AGE);
+         context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+      }
+      catch(QAuthenticationException qae)
+      {
+         ////////////////////////////////////////////////////////////////////////////////
+         // if exception caught, clear out the cookie so the frontend will reauthorize //
+         ////////////////////////////////////////////////////////////////////////////////
+         if(authenticationModule instanceof Auth0AuthenticationModule)
+         {
+            context.removeCookie(SESSION_ID_COOKIE_NAME);
+         }
+      }
    }
 
 
@@ -244,7 +259,7 @@ public class QJavalinImplementation
    {
       try
       {
-         String             table       = context.pathParam("table");
+         String table = context.pathParam("table");
          List<Serializable> primaryKeys = new ArrayList<>();
          primaryKeys.add(context.pathParam("primaryKey"));
 
@@ -273,9 +288,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String table = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord       record     = new QRecord();
+         QRecord record = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -317,9 +332,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String table = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord       record     = new QRecord();
+         QRecord record = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -357,9 +372,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String         tableName    = context.pathParam("table");
-         QTableMetaData table        = qInstance.getTable(tableName);
-         String     primaryKey = context.pathParam("primaryKey");
+         String tableName = context.pathParam("table");
+         QTableMetaData table = qInstance.getTable(tableName);
+         String primaryKey = context.pathParam("primaryKey");
          QueryInput queryInput = new QueryInput(qInstance);
 
          setupSession(context, queryInput);
@@ -561,20 +576,32 @@ public class QJavalinImplementation
          {
             context.status(HttpStatus.NOT_FOUND_404)
                .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            return;
          }
          else
          {
             LOG.info("User-facing exception", e);
             context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
                .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            return;
          }
       }
       else
       {
-         LOG.warn("Exception in javalin request", e);
-         context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-            .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
+         if(e instanceof QAuthenticationException)
+         {
+            context.status(HttpStatus.UNAUTHORIZED_401)
+               .result("{\"error\":\"" + e.getMessage() + "\"}");
+            return;
+         }
       }
+
+      ////////////////////////////////
+      // default exception handling //
+      ////////////////////////////////
+      LOG.warn("Exception in javalin request", e);
+      context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
+         .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
    }
 
 
