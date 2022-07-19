@@ -87,15 +87,15 @@ public class QJavalinProcessHandler
       {
          path("/processes", () ->
          {
-            path("/:processName", () ->
+            path("/{processName}", () ->
             {
                get("/init", QJavalinProcessHandler::processInit);
                post("/init", QJavalinProcessHandler::processInit);
 
-               path("/:processUUID", () ->
+               path("/{processUUID}", () ->
                {
-                  post("/step/:step", QJavalinProcessHandler::processStep);
-                  get("/status/:jobUUID", QJavalinProcessHandler::processStatus);
+                  post("/step/{step}", QJavalinProcessHandler::processStep);
+                  get("/status/{jobUUID}", QJavalinProcessHandler::processStatus);
                   get("/records", QJavalinProcessHandler::processRecords);
                });
             });

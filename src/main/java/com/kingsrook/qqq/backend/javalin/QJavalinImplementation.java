@@ -24,14 +24,21 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.reporting.ReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -49,6 +56,8 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -182,36 +191,46 @@ public class QJavalinImplementation
    {
       return (() ->
       {
+         /////////////////////
+         // metadata routes //
+         /////////////////////
          path("/metaData", () ->
          {
             get("/", QJavalinImplementation::metaData);
-            path("/table/:table", () ->
+            path("/table/{table}", () ->
             {
                get("", QJavalinImplementation::tableMetaData);
             });
-            path("/process/:processName", () ->
+            path("/process/{processName}", () ->
             {
                get("", QJavalinImplementation::processMetaData);
             });
          });
-         path("/data", () ->
-         {
-            path("/:table", () ->
-            {
-               get("/", QJavalinImplementation::dataQuery);
-               post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
-               get("/count", QJavalinImplementation::dataCount);
 
-               // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
-               path("/:primaryKey", () ->
-               {
-                  get("", QJavalinImplementation::dataGet);
-                  patch("", QJavalinImplementation::dataUpdate);
-                  put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
-                  delete("", QJavalinImplementation::dataDelete);
-               });
+         /////////////////////////
+         // table (data) routes //
+         /////////////////////////
+         path("/data/{table}", () ->
+         {
+            get("/", QJavalinImplementation::dataQuery);
+            post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
+            get("/count", QJavalinImplementation::dataCount);
+            get("/export", QJavalinImplementation::dataExportWithoutFilename);
+            get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
+
+            // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
+            path("/{primaryKey}", () ->
+            {
+               get("", QJavalinImplementation::dataGet);
+               patch("", QJavalinImplementation::dataUpdate);
+               put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
+               delete("", QJavalinImplementation::dataDelete);
             });
          });
+
+         ////////////////////
+         // process routes //
+         ////////////////////
          path("", QJavalinProcessHandler.getRoutes());
       });
    }
@@ -221,16 +240,16 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void setupSession(Context context, AbstractActionInput request) throws QModuleDispatchException
+   static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
 
       // todo - does this need some per-provider logic actually?  mmm...
       Map<String, String> authenticationContext = new HashMap<>();
       authenticationContext.put("sessionId", context.cookie("sessionId"));
       QSession session = authenticationModule.createSession(authenticationContext);
-      request.setSession(session);
+      input.setSession(session);
 
       context.cookie("sessionId", session.getIdReference(), SESSION_COOKIE_AGE);
    }
@@ -357,10 +376,10 @@ public class QJavalinImplementation
    {
       try
       {
-         String         tableName    = context.pathParam("table");
-         QTableMetaData table        = qInstance.getTable(tableName);
-         String     primaryKey = context.pathParam("primaryKey");
-         QueryInput queryInput = new QueryInput(qInstance);
+         String         tableName  = context.pathParam("table");
+         QTableMetaData table      = qInstance.getTable(tableName);
+         String         primaryKey = context.pathParam("primaryKey");
+         QueryInput     queryInput = new QueryInput(qInstance);
 
          setupSession(context, queryInput);
          queryInput.setTableName(tableName);
@@ -552,28 +571,178 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void dataExportWithFilename(Context context)
+   {
+      String filename = context.pathParam("filename");
+      dataExport(context, Optional.of(filename));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void dataExportWithoutFilename(Context context)
+   {
+      dataExport(context, Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void dataExport(Context context, Optional<String> optionalFilename)
+   {
+      try
+      {
+         //////////////////////////////////////////
+         // read params from the request context //
+         //////////////////////////////////////////
+         String  tableName = context.pathParam("table");
+         String  format    = context.queryParam("format");
+         String  filter    = context.queryParam("filter");
+         Integer limit     = integerQueryParam(context, "limit");
+
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // if a format query param wasn't given, then try to get file extension from file name //
+         /////////////////////////////////////////////////////////////////////////////////////////
+         if(!StringUtils.hasContent(format) && optionalFilename.isPresent() && StringUtils.hasContent(optionalFilename.get()))
+         {
+            String filename = optionalFilename.get();
+            if(filename.contains("."))
+            {
+               format = filename.substring(filename.lastIndexOf(".") + 1);
+            }
+         }
+
+         ReportFormat reportFormat;
+         try
+         {
+            reportFormat = ReportFormat.fromString(format);
+         }
+         catch(QUserFacingException e)
+         {
+            handleException(HttpStatus.Code.BAD_REQUEST, context, e);
+            return;
+         }
+
+         String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
+
+         /////////////////////////////////////////////
+         // set up the report action's input object //
+         /////////////////////////////////////////////
+         ReportInput reportInput = new ReportInput(qInstance);
+         setupSession(context, reportInput);
+         reportInput.setTableName(tableName);
+         reportInput.setReportFormat(reportFormat);
+         reportInput.setFilename(filename);
+         reportInput.setLimit(limit);
+
+         String fields = stringQueryParam(context, "fields");
+         if(StringUtils.hasContent(fields))
+         {
+            reportInput.setFieldNames(List.of(fields.split(",")));
+         }
+
+         if(filter != null)
+         {
+            reportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up the I/O pipe streams.                                                                      //
+         // Critically, we must NOT open the outputStream in a try-with-resources.  The thread that writes to //
+         // the stream must close it when it's done writing.                                                  //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         PipedOutputStream pipedOutputStream = new PipedOutputStream();
+         PipedInputStream  pipedInputStream  = new PipedInputStream();
+         pipedOutputStream.connect(pipedInputStream);
+         reportInput.setReportOutputStream(pipedOutputStream);
+
+         ReportAction reportAction = new ReportAction();
+         reportAction.preExecute(reportInput);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // start the async job.                                                                            //
+         // Critically, this must happen before the pipedInputStream is passed to the javalin result method //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         new AsyncJobManager().startJob("Javalin>ReportAction", (o) ->
+         {
+            try
+            {
+               reportAction.execute(reportInput);
+               return (true);
+            }
+            catch(Exception e)
+            {
+               pipedOutputStream.write(("Error generating report: " + e.getMessage()).getBytes());
+               pipedOutputStream.close();
+               return (false);
+            }
+         });
+
+         ////////////////////////////////////////////
+         // set the response content type & stream //
+         ////////////////////////////////////////////
+         context.contentType(reportFormat.getMimeType());
+         context.header("Content-Disposition", "filename=" + filename);
+         context.result(pipedInputStream);
+
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // we'd like to check to see if the job failed, and if so, to give the user an error...   //
+         // but if we "block" here, then piped streams seem to never flush, so we deadlock things. //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // AsyncJobStatus asyncJobStatus = asyncJobManager.waitForJob(jobUUID);
+         // if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
+         // {
+         //    System.out.println("Well, here we are...");
+         //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
+         // }
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static void handleException(Context context, Exception e)
+   {
+      handleException(null, context, e);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void handleException(HttpStatus.Code statusCode, Context context, Exception e)
    {
       QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
       if(userFacingException != null)
       {
          if(userFacingException instanceof QNotFoundException)
          {
-            context.status(HttpStatus.NOT_FOUND_404)
-               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND).getCode();
+            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
          }
          else
          {
             LOG.info("User-facing exception", e);
-            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
+            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
          }
       }
       else
       {
          LOG.warn("Exception in javalin request", e);
-         context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-            .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
+         int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
+         context.status(code).result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
       }
    }
 
