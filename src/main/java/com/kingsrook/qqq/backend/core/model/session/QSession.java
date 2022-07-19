@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.session;
 
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ import java.util.Map;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QSession
+public class QSession implements Serializable
 {
    private String idReference;
    private QUser user;

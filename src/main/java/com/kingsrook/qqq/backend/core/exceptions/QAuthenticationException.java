@@ -19,64 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
-
-
-import java.util.Map;
-import java.util.UUID;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.model.session.QUser;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- **
+ * Exception thrown while doing module-dispatch
+ *
  *******************************************************************************/
-public class MockAuthenticationModule implements QAuthenticationModuleInterface
+public class QAuthenticationException extends QException
 {
-   private static final Logger logger = LogManager.getLogger(MockAuthenticationModule.class);
-   private static final int USER_ID_MODULO = 10_000;
-
 
    /*******************************************************************************
+    ** Constructor of message
     **
     *******************************************************************************/
-   @Override
-   public QSession createSession(QInstance qInstance, Map<String, String> context)
+   public QAuthenticationException(String message)
    {
-      QUser qUser = new QUser();
-      qUser.setIdReference("User:" + (System.currentTimeMillis() % USER_ID_MODULO));
-      qUser.setFullName("John Smith");
-
-      QSession qSession = new QSession();
-      qSession.setIdReference("Session:" + UUID.randomUUID());
-      qSession.setUser(qUser);
-
-      return (qSession);
+      super(message);
    }
 
 
 
    /*******************************************************************************
+    ** Constructor of message & cause
     **
     *******************************************************************************/
-   @Override
-   public boolean isSessionValid(QSession session)
+   public QAuthenticationException(String message, Throwable cause)
    {
-      if(session == null)
-      {
-         logger.info("Session is null, which is not valid.");
-         return (false);
-      }
-
-      if(session.getValue("isInvalid") != null)
-      {
-         logger.info("Session contains the valid 'isInvalid', which is not valid.");
-         return (false);
-      }
-
-      return (true);
+      super(message, cause);
    }
 }
