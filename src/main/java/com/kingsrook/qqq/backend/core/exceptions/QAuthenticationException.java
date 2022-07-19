@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- * Exception thrown while doing module-dispatch
+ * Exception thrown doing authentication
  *
  *******************************************************************************/
 public class QAuthenticationException extends QException

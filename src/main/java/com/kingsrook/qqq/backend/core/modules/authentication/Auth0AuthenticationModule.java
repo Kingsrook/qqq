@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -60,7 +61,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 
    private static final int ID_TOKEN_VALIDATION_INTERVAL_SECONDS = 300;
 
-   public static final String AUTH0_ID_TOKEN_KEY = "qqq.idToken";
+   public static final String AUTH0_ID_TOKEN_KEY = "sessionId";
 
    public static final String TOKEN_NOT_PROVIDED_ERROR = "Id Token was not provided";
    public static final String COULD_NOT_DECODE_ERROR = "Unable to decode id token";
@@ -82,9 +83,6 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       String idToken = context.get(AUTH0_ID_TOKEN_KEY);
       if(idToken == null)
       {
-         ////////////////////////////////
-         // could not decode the token //
-         ////////////////////////////////
          logger.warn(TOKEN_NOT_PROVIDED_ERROR);
          throw (new QAuthenticationException(TOKEN_NOT_PROVIDED_ERROR));
       }
@@ -166,9 +164,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 
       StateProviderInterface spi = getStateProvider();
       Auth0StateKey key = new Auth0StateKey(session.getIdReference());
-      if(spi.get(Instant.class, key).isPresent())
+      Optional<Instant> lastTimeCheckedOptional = spi.get(Instant.class, key);
+      if(lastTimeCheckedOptional.isPresent())
       {
-         Instant lastTimeChecked = spi.get(Instant.class, key).get();
+         Instant lastTimeChecked = lastTimeCheckedOptional.get();
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////
          // returns negative int if less than compared duration, 0 if equal, positive int if greater than //
@@ -250,8 +249,15 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       JSONObject payload = new JSONObject(payloadString);
 
       QUser qUser = new QUser();
-      qUser.setIdReference(payload.getString("email"));
       qUser.setFullName(payload.getString("name"));
+      if(payload.has("email"))
+      {
+         qUser.setIdReference(payload.getString("email"));
+      }
+      else
+      {
+         qUser.setIdReference(payload.getString("nickname"));
+      }
 
       QSession qSession = new QSession();
       qSession.setIdReference(idToken);

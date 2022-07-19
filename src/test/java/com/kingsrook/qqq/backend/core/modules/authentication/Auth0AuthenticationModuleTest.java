@@ -37,7 +37,8 @@ import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0Authent
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -73,8 +74,8 @@ public class Auth0AuthenticationModuleTest
       Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
       auth0AuthenticationModule.setNow(now);
       QSession session = auth0AuthenticationModule.createSession(getQInstance(), context);
-      assertTrue(session.getUser().getIdReference().equals("tim.chamberlain@kingsrook.com"));
-      assertTrue(session.getUser().getFullName().equals("Tim Chamberlain"));
+      assertEquals("tim.chamberlain@kingsrook.com", session.getUser().getIdReference(), "Id should be Tim's email.");
+      assertEquals("Tim Chamberlain", session.getUser().getFullName(), "Full name should be Tim's full name (well without the middle name).");
    }
 
 
@@ -93,14 +94,12 @@ public class Auth0AuthenticationModuleTest
       {
          Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
          auth0AuthenticationModule.createSession(getQInstance(), context);
+         fail("Should never get here");
       }
       catch(QAuthenticationException qae)
       {
-         assertTrue(qae.getMessage().contains(INVALID_TOKEN_ERROR));
-         return;
+         assertThat(qae.getMessage()).contains(INVALID_TOKEN_ERROR);
       }
-
-      fail("Should never get here");
    }
 
 
@@ -119,14 +118,12 @@ public class Auth0AuthenticationModuleTest
       {
          Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
          auth0AuthenticationModule.createSession(getQInstance(), context);
+         fail("Should never get here");
       }
       catch(QAuthenticationException qae)
       {
-         assertTrue(qae.getMessage().contains(COULD_NOT_DECODE_ERROR));
-         return;
+         assertThat(qae.getMessage()).contains(COULD_NOT_DECODE_ERROR);
       }
-
-      fail("Should never get here");
    }
 
 
@@ -145,14 +142,12 @@ public class Auth0AuthenticationModuleTest
       {
          Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
          auth0AuthenticationModule.createSession(getQInstance(), context);
+         fail("Should never get here");
       }
       catch(QAuthenticationException qae)
       {
-         assertTrue(qae.getMessage().contains(EXPIRED_TOKEN_ERROR));
-         return;
+         assertThat(qae.getMessage()).contains(EXPIRED_TOKEN_ERROR);
       }
-
-      fail("Should never get here");
    }
 
 
@@ -168,14 +163,12 @@ public class Auth0AuthenticationModuleTest
       {
          Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
          auth0AuthenticationModule.createSession(getQInstance(), new HashMap<>());
+         fail("Should never get here");
       }
       catch(QAuthenticationException qae)
       {
-         assertTrue(qae.getMessage().contains(TOKEN_NOT_PROVIDED_ERROR));
-         return;
+         assertThat(qae.getMessage()).contains(TOKEN_NOT_PROVIDED_ERROR);
       }
-
-      fail("Should never get here");
    }
 
 
@@ -194,14 +187,12 @@ public class Auth0AuthenticationModuleTest
       {
          Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
          auth0AuthenticationModule.createSession(getQInstance(), context);
+         fail("Should never get here");
       }
       catch(QAuthenticationException qae)
       {
-         assertTrue(qae.getMessage().contains(TOKEN_NOT_PROVIDED_ERROR));
-         return;
+         assertThat(qae.getMessage()).contains(TOKEN_NOT_PROVIDED_ERROR);
       }
-
-      fail("Should never get here");
    }
 
 
