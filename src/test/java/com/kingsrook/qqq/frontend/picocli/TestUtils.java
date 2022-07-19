@@ -25,8 +25,9 @@ package com.kingsrook.qqq.frontend.picocli;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
@@ -112,7 +113,7 @@ public class TestUtils
    {
       return new QAuthenticationMetaData()
          .withName("mock")
-         .withType("mock");
+         .withType(QAuthenticationType.MOCK);
    }
 
 

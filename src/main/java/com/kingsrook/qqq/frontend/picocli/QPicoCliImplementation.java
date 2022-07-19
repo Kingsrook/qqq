@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
@@ -44,6 +45,7 @@ import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
@@ -72,10 +74,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.commons.io.FileUtils;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.utils.Log;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
@@ -229,15 +236,65 @@ public class QPicoCliImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void setupSession(String[] args) throws QModuleDispatchException
+   private static Optional<Dotenv> loadDotEnv()
+   {
+      Optional<Dotenv> dotenvOptional = Optional.empty();
+      try
+      {
+         dotenvOptional = Optional.of(Dotenv.configure().load());
+      }
+      catch(Exception e)
+      {
+         Log.info("No session information found in environment");
+      }
+
+      return(dotenvOptional);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setupSession(String[] args) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
 
-      // todo - does this need some per-provider logic actually?  mmm...
-      Map<String, String> authenticationContext = new HashMap<>();
-      authenticationContext.put("sessionId", System.getenv("sessionId"));
-      session = authenticationModule.createSession(authenticationContext);
+      try
+      {
+         ////////////////////////////////////
+         // look for .env environment file //
+         ////////////////////////////////////
+         String sessionId = null;
+         Optional<Dotenv> dotenv = loadDotEnv();
+         if(dotenv.isPresent())
+         {
+            sessionId = dotenv.get().get("SESSION_ID");
+         }
+
+         Map<String, String> authenticationContext = new HashMap<>();
+         if(sessionId == null && authenticationModule instanceof Auth0AuthenticationModule)
+         {
+            LineReader lr = LineReaderBuilder.builder().build();
+            String tokenId = lr.readLine("Create a .env file with the contents of the Auth0 JWT Id Token in the variable 'SESSION_ID': \nPress enter once complete...");
+            dotenv = loadDotEnv();
+            if(dotenv.isPresent())
+            {
+               sessionId = dotenv.get().get("SESSION_ID");
+            }
+         }
+
+         authenticationContext.put("sessionId", sessionId);
+
+         // todo - does this need some per-provider logic actually?  mmm...
+         session = authenticationModule.createSession(qInstance, authenticationContext);
+      }
+      catch(QAuthenticationException qae)
+      {
+         throw (qae);
+      }
+
    }
 
 
@@ -367,7 +424,7 @@ public class QPicoCliImplementation
    {
       String processName = processParseResult.commandSpec().name();
       QProcessMetaData process = qInstance.getProcess(processName);
-      RunProcessInput  request = new RunProcessInput(qInstance);
+      RunProcessInput request = new RunProcessInput(qInstance);
 
       request.setSession(session);
       request.setProcessName(processName);
