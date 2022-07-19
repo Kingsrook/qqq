@@ -90,11 +90,13 @@ public class QCommandBuilder
          // add table-specific sub-commands for the table //
          ///////////////////////////////////////////////////
          tableCommand.addSubcommand("meta-data", defineMetaDataCommand(table));
-         tableCommand.addSubcommand("count", defineQueryCommand(table));
+         tableCommand.addSubcommand("count", defineCountCommand(table));
+         tableCommand.addSubcommand("get", defineGetCommand(table));
          tableCommand.addSubcommand("query", defineQueryCommand(table));
          tableCommand.addSubcommand("insert", defineInsertCommand(table));
          tableCommand.addSubcommand("update", defineUpdateCommand(table));
          tableCommand.addSubcommand("delete", defineDeleteCommand(table));
+         tableCommand.addSubcommand("export", defineExportCommand(table));
 
          List<QProcessMetaData> processes = qInstance.getProcessesForTable(tableName);
          if(CollectionUtils.nullSafeHasContents(processes))
@@ -154,6 +156,71 @@ public class QCommandBuilder
       // todo - add the fields as explicit params?
 
       return queryCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private CommandLine.Model.CommandSpec defineExportCommand(QTableMetaData table)
+   {
+      CommandLine.Model.CommandSpec exportCommand = CommandLine.Model.CommandSpec.create();
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-f", "--filename")
+         .type(String.class)
+         .description("File name (including path) to write to.  File extension will be used to determine the report format.  Supported formats are:  csv, xlsx.")
+         .required(true)
+         .build());
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-e", "--fieldNames")
+         .type(String.class)
+         .description("Comma-separated list of field names (e.g., from table meta-data) to include in the export.  If not given, then all fields in the table are included.")
+         .build());
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-l", "--limit")
+         .type(int.class)
+         .description("Optional limit on the max number of records to include in the export.")
+         .build());
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-c", "--criteria")
+         .type(String[].class)
+         .description("Query filter criteria for the export.  May be given multiple times.  Use format:  $fieldName $operator $value.  e.g., id EQUALS 42")
+         .build());
+
+      // todo - add the fields as explicit params?
+
+      return exportCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private CommandLine.Model.CommandSpec defineGetCommand(QTableMetaData table)
+   {
+      CommandLine.Model.CommandSpec getCommand = CommandLine.Model.CommandSpec.create();
+      getCommand.addPositional(CommandLine.Model.PositionalParamSpec.builder()
+         .index("0")
+         // .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
+         .description("Primary key value from the table")
+         .build());
+
+      return getCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private CommandLine.Model.CommandSpec defineCountCommand(QTableMetaData table)
+   {
+      CommandLine.Model.CommandSpec countCommand = CommandLine.Model.CommandSpec.create();
+      countCommand.addOption(CommandLine.Model.OptionSpec.builder("-c", "--criteria")
+         .type(String[].class)
+         .build());
+
+      // todo - add the fields as explicit params?
+
+      return countCommand;
    }
 
 
