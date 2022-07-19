@@ -19,39 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+
+
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- **
+ ** Interface used within QueryOutput, to handle diffrent ways we may store records
+ ** (e.g., in a list (that holds them all), or a pipe, that streams them to a consumer thread))
  *******************************************************************************/
-public abstract class AbstractStateKey
+interface QueryOutputStorageInterface
 {
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   public abstract String getUniqueIdentifier();
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
+    ** add a records to this output
     *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+   void addRecord(QRecord record);
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
+    ** add a list of records to this output
     *******************************************************************************/
-   @Override
-   public abstract int hashCode();
+   void addRecords(List<QRecord> records);
 
    /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
+    ** Get all stored records
     *******************************************************************************/
-   @Override
-   public abstract String toString();
-
+   List<QRecord> getRecords();
 }

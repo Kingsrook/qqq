@@ -76,7 +76,7 @@ public class TempFileStateProvider implements StateProviderInterface
       try
       {
          String json = JsonUtils.toJson(data);
-         FileUtils.writeStringToFile(new File("/tmp/" + key.toString()), json);
+         FileUtils.writeStringToFile(getFile(key), json);
       }
       catch(IOException e)
       {
@@ -95,7 +95,7 @@ public class TempFileStateProvider implements StateProviderInterface
    {
       try
       {
-         String json = FileUtils.readFileToString(new File("/tmp/" + key.toString()));
+         String json = FileUtils.readFileToString(getFile(key));
          return (Optional.of(JsonUtils.toObject(json, type)));
       }
       catch(FileNotFoundException fnfe)
@@ -107,6 +107,16 @@ public class TempFileStateProvider implements StateProviderInterface
          LOG.error("Error getting state from file", e);
          throw (new RuntimeException("Error retreiving state", e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the file referenced by a key
+    *******************************************************************************/
+   private File getFile(AbstractStateKey key)
+   {
+      return new File("/tmp/" + key.getUniqueIdentifier());
    }
 
 }

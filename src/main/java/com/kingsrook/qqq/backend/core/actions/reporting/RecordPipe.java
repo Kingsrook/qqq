@@ -19,39 +19,74 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.actions.reporting;
+
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- **
+ ** Object to connect a producer of records with a consumer.
+ ** Best for those to be on different threads, to avoid deadlock.
  *******************************************************************************/
-public abstract class AbstractStateKey
+public class RecordPipe
 {
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   public abstract String getUniqueIdentifier();
+   private Queue<QRecord> queue = new ArrayDeque<>();
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
+    ** Add a record to the pipe
     *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+   public void addRecord(QRecord record)
+   {
+      queue.add(record);
+   }
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
+    ** Add a list of records to the pipe
     *******************************************************************************/
-   @Override
-   public abstract int hashCode();
+   public void addRecords(List<QRecord> records)
+   {
+      queue.addAll(records);
+   }
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
+    **
     *******************************************************************************/
-   @Override
-   public abstract String toString();
+   public List<QRecord> consumeAvailableRecords()
+   {
+      List<QRecord> rs = new ArrayList<>();
+
+      while(true)
+      {
+         QRecord record = queue.poll();
+         if(record == null)
+         {
+            break;
+         }
+         rs.add(record);
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public int countAvailableRecords()
+   {
+      return (queue.size());
+   }
 
 }

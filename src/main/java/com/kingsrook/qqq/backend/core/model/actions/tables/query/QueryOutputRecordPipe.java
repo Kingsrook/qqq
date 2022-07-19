@@ -19,76 +19,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- **
+ ** Query output that uses a RecordPipe
  *******************************************************************************/
-public class UUIDAndTypeStateKey extends AbstractStateKey
+class QueryOutputRecordPipe implements QueryOutputStorageInterface
 {
-   private final UUID      uuid;
-   private final StateType stateType;
+   private static final Logger LOG = LogManager.getLogger(QueryOutputRecordPipe.class);
+
+   private RecordPipe recordPipe;
 
 
 
    /*******************************************************************************
-    ** Default constructor - assigns a random UUID.
     **
     *******************************************************************************/
-   public UUIDAndTypeStateKey(StateType stateType)
+   public QueryOutputRecordPipe(RecordPipe recordPipe)
    {
-      this(UUID.randomUUID(), stateType);
+      this.recordPipe = recordPipe;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor where user can supply the UUID.
-    **
-    *******************************************************************************/
-   public UUIDAndTypeStateKey(UUID uuid, StateType stateType)
-   {
-      this.uuid = uuid;
-      this.stateType = stateType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for uuid
-    **
-    *******************************************************************************/
-   public UUID getUuid()
-   {
-      return uuid;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for stateType
-    **
-    *******************************************************************************/
-   public StateType getStateType()
-   {
-      return stateType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
+    ** add a record to this output
     *******************************************************************************/
    @Override
-   public String getUniqueIdentifier()
+   public void addRecord(QRecord record)
    {
-      return (uuid.toString());
+      recordPipe.addRecord(record);
+      blockIfPipeIsTooFull();
    }
 
 
@@ -96,40 +67,41 @@ public class UUIDAndTypeStateKey extends AbstractStateKey
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public boolean equals(Object o)
+   private void blockIfPipeIsTooFull()
    {
-      if(this == o)
+      if(recordPipe.countAvailableRecords() >= 100_000)
       {
-         return true;
+         LOG.info("Record pipe is kinda full.  Blocking for a bit");
+         do
+         {
+            SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
+         }
+         while(recordPipe.countAvailableRecords() >= 10_000);
+         LOG.info("Done blocking.");
       }
-      if(o == null || getClass() != o.getClass())
-      {
-         return false;
-      }
-      UUIDAndTypeStateKey that = (UUIDAndTypeStateKey) o;
-      return Objects.equals(uuid, that.uuid) && stateType == that.stateType;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** add a list of records to this output
     *******************************************************************************/
    @Override
-   public int hashCode()
+   public void addRecords(List<QRecord> records)
    {
-      return Objects.hash(uuid, stateType);
+      recordPipe.addRecords(records);
+      blockIfPipeIsTooFull();
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Get all stored records
     *******************************************************************************/
    @Override
-   public String toString()
+   public List<QRecord> getRecords()
    {
-      return "{uuid=" + uuid + ", stateType=" + stateType + '}';
+      throw (new IllegalStateException("getRecords may not be called on a piped query output"));
    }
+
 }

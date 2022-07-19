@@ -19,39 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- **
+ * Exception thrown while generating reports
+ *
  *******************************************************************************/
-public abstract class AbstractStateKey
+public class QReportingException extends QException
 {
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   public abstract String getUniqueIdentifier();
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
+    ** Constructor of message
+    **
     *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+   public QReportingException(String message)
+   {
+      super(message);
+   }
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
+    ** Constructor of message & cause
+    **
     *******************************************************************************/
-   @Override
-   public abstract int hashCode();
-
-   /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
-    *******************************************************************************/
-   @Override
-   public abstract String toString();
-
+   public QReportingException(String message, Throwable cause)
+   {
+      super(message, cause);
+   }
 }

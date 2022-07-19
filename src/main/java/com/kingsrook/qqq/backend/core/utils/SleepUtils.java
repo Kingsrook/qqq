@@ -19,39 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.utils;
+
+
+import java.util.concurrent.TimeUnit;
 
 
 /*******************************************************************************
- **
+ ** Utility methods to help with sleeping!
  *******************************************************************************/
-public abstract class AbstractStateKey
+public class SleepUtils
 {
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   public abstract String getUniqueIdentifier();
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
+    ** Sleep for as close as we can to the specified amount of time (ignoring
+    ** InterruptedException - continuing to sleep more).
     *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+   public static void sleep(long duration, TimeUnit timeUnit)
+   {
+      long millis = timeUnit.toMillis(duration);
+      long start  = System.currentTimeMillis();
+      long end    = start + millis;
 
-   /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
-    *******************************************************************************/
-   @Override
-   public abstract int hashCode();
-
-   /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
-    *******************************************************************************/
-   @Override
-   public abstract String toString();
+      while(System.currentTimeMillis() < end)
+      {
+         try
+         {
+            long millisToSleep = end - System.currentTimeMillis();
+            Thread.sleep(millisToSleep);
+         }
+         catch(InterruptedException e)
+         {
+            // sleep more.
+         }
+      }
+   }
 
 }

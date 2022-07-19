@@ -19,63 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.adapters;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
- ** Output for a query action
- **
+ ** Class to convert QRecords to CSV Strings.
  *******************************************************************************/
-public class QueryOutput extends AbstractActionOutput implements Serializable
+public class QRecordToCsvAdapter
 {
-   private QueryOutputStorageInterface storage;
-
-
 
    /*******************************************************************************
-    ** Construct a new query output, based on a query input (which will drive some
-    ** of how our output is structured... e.g., if we pipe the output)
+    **
     *******************************************************************************/
-   public QueryOutput(QueryInput queryInput)
+   public String recordToCsv(QTableMetaData table, QRecord record)
    {
-      if(queryInput.getRecordPipe() != null)
-      {
-         storage = new QueryOutputRecordPipe(queryInput.getRecordPipe());
-      }
-      else
-      {
-         storage = new QueryOutputList();
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Add a record to this output.  Note - we often don't care, in such a method,
-    ** whether the record is "completed" or not (e.g., all of its values have been
-    ** populated) - but - note in here - that this records MAY be going into a pipe
-    ** that could be read asynchronously, at any time, by another thread - SO - only
-    ** completely populated records should be passed into this method.
-    *******************************************************************************/
-   public void addRecord(QRecord record)
-   {
-      storage.addRecord(record);
-   }
-
-
-
-   /*******************************************************************************
-    ** add a list of records to this output
-    *******************************************************************************/
-   public void addRecords(List<QRecord> records)
-   {
-      storage.addRecords(records);
+      return (recordToCsv(table, record, new ArrayList<>(table.getFields().values())));
    }
 
 
@@ -83,9 +51,37 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public String recordToCsv(QTableMetaData table, QRecord record, List<QFieldMetaData> fields)
    {
-      return storage.getRecords();
+      StringBuilder rs      = new StringBuilder();
+      int           fieldNo = 0;
+
+      for(QFieldMetaData field : fields)
+      {
+         if(fieldNo++ > 0)
+         {
+            rs.append(',');
+         }
+         rs.append('"');
+         Serializable value         = record.getValue(field.getName());
+         String       valueAsString = ValueUtils.getValueAsString(value);
+         if(StringUtils.hasContent(valueAsString))
+         {
+            rs.append(sanitize(valueAsString));
+         }
+         rs.append('"');
+      }
+      rs.append('\n');
+      return (rs.toString());
    }
 
+
+
+   /*******************************************************************************
+    ** todo - kinda weak... can we find this in a CSV lib??
+    *******************************************************************************/
+   private String sanitize(String value)
+   {
+      return (value.replaceAll("\"", "\"\"").replaceAll("\n", " "));
+   }
 }

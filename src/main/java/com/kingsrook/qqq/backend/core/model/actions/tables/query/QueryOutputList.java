@@ -19,39 +19,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+
+
+import java.util.ArrayList;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- **
+ ** Kinda the standard way that a QueryOutput would store its records - in a
+ ** simple list.
  *******************************************************************************/
-public abstract class AbstractStateKey
+class QueryOutputList implements QueryOutputStorageInterface
 {
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   public abstract String getUniqueIdentifier();
+   private List<QRecord> records = new ArrayList<>();
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
+    **
     *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+   public QueryOutputList()
+   {
+   }
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
+    ** add a record to this output
     *******************************************************************************/
    @Override
-   public abstract int hashCode();
+   public void addRecord(QRecord record)
+   {
+      records.add(record);
+   }
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
+    ** add a list of records to this output
     *******************************************************************************/
    @Override
-   public abstract String toString();
+   public void addRecords(List<QRecord> records)
+   {
+      this.records.addAll(records);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get all stored records
+    *******************************************************************************/
+   @Override
+   public List<QRecord> getRecords()
+   {
+      return (records);
+   }
 
 }

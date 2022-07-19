@@ -19,32 +19,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
-import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import java.io.OutputStream;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
- ** Input data for the Query action
- **
+ ** Input for a Report action
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput
+public class ReportInput extends AbstractTableActionInput
 {
-   private QQueryFilter filter;
-   private Integer skip;
-   private Integer limit;
+   private QQueryFilter queryFilter;
+   private Integer      limit;
+   private List<String> fieldNames;
 
-   private RecordPipe recordPipe;
+   private String       filename;
+   private ReportFormat reportFormat;
+   private OutputStream reportOutputStream;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryInput()
+   public ReportInput()
    {
    }
 
@@ -53,7 +57,7 @@ public class QueryInput extends AbstractTableActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryInput(QInstance instance)
+   public ReportInput(QInstance instance)
    {
       super(instance);
    }
@@ -61,45 +65,34 @@ public class QueryInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for filter
     **
     *******************************************************************************/
-   public QQueryFilter getFilter()
+   public ReportInput(QInstance instance, QSession session)
    {
-      return filter;
+      super(instance);
+      setSession(session);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filter
+    ** Getter for queryFilter
     **
     *******************************************************************************/
-   public void setFilter(QQueryFilter filter)
+   public QQueryFilter getQueryFilter()
    {
-      this.filter = filter;
+      return queryFilter;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for skip
+    ** Setter for queryFilter
     **
     *******************************************************************************/
-   public Integer getSkip()
+   public void setQueryFilter(QQueryFilter queryFilter)
    {
-      return skip;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for skip
-    **
-    *******************************************************************************/
-   public void setSkip(Integer skip)
-   {
-      this.skip = skip;
+      this.queryFilter = queryFilter;
    }
 
 
@@ -127,23 +120,88 @@ public class QueryInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for recordPipe
+    ** Getter for fieldNames
     **
     *******************************************************************************/
-   public RecordPipe getRecordPipe()
+   public List<String> getFieldNames()
    {
-      return recordPipe;
+      return fieldNames;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordPipe
+    ** Setter for fieldNames
     **
     *******************************************************************************/
-   public void setRecordPipe(RecordPipe recordPipe)
+   public void setFieldNames(List<String> fieldNames)
    {
-      this.recordPipe = recordPipe;
+      this.fieldNames = fieldNames;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for filename
+    **
+    *******************************************************************************/
+   public String getFilename()
+   {
+      return filename;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for filename
+    **
+    *******************************************************************************/
+   public void setFilename(String filename)
+   {
+      this.filename = filename;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for reportFormat
+    **
+    *******************************************************************************/
+   public ReportFormat getReportFormat()
+   {
+      return reportFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reportFormat
+    **
+    *******************************************************************************/
+   public void setReportFormat(ReportFormat reportFormat)
+   {
+      this.reportFormat = reportFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for reportOutputStream
+    **
+    *******************************************************************************/
+   public OutputStream getReportOutputStream()
+   {
+      return reportOutputStream;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reportOutputStream
+    **
+    *******************************************************************************/
+   public void setReportOutputStream(OutputStream reportOutputStream)
+   {
+      this.reportOutputStream = reportOutputStream;
+   }
 }

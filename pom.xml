@@ -79,10 +79,17 @@
          <version>3.23.1</version>
          <scope>test</scope>
       </dependency>
+      <!-- generates Method objects from method references, used initially by QFieldMetaData to make fields from getter method refs  -->
       <dependency>
          <groupId>com.github.hervian</groupId>
          <artifactId>safety-mirror</artifactId>
          <version>4.0.1</version>
+      </dependency>
+      <!-- excel library -->
+      <dependency>
+         <groupId>org.dhatim</groupId>
+         <artifactId>fastexcel</artifactId>
+         <version>0.12.15</version>
       </dependency>
 
       <!-- Common deps for all qqq modules -->

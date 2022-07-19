@@ -19,39 +19,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.model.actions.reporting;
+
+
+import java.io.Serializable;
 
 
 /*******************************************************************************
- **
+ ** Output for a Report action
  *******************************************************************************/
-public abstract class AbstractStateKey
+public class ReportOutput implements Serializable
 {
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   public abstract String getUniqueIdentifier();
+   public long recordCount;
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
+    ** Getter for recordCount
+    **
     *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+   public long getRecordCount()
+   {
+      return recordCount;
+   }
+
+
 
    /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
+    ** Setter for recordCount
+    **
     *******************************************************************************/
-   @Override
-   public abstract int hashCode();
-
-   /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
-    *******************************************************************************/
-   @Override
-   public abstract String toString();
-
+   public void setRecordCount(long recordCount)
+   {
+      this.recordCount = recordCount;
+   }
 }

@@ -19,39 +19,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.actions.reporting;
+
+
+import java.util.ArrayList;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- **
+ ** Interface for various report formats to implement.
  *******************************************************************************/
-public abstract class AbstractStateKey
+public interface ReportStreamerInterface
 {
    /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
+    ** Called once, before any rows are available.  Meant to write a header, for example.
     *******************************************************************************/
-   public abstract String getUniqueIdentifier();
+   void start(ReportInput reportInput) throws QReportingException;
 
    /*******************************************************************************
-    ** Require all state keys to implement the equals method
-    *
-    *******************************************************************************/
-   @Override
-   public abstract boolean equals(Object that);
+    ** Called as records flow into the pipe.
+    ******************************************************************************/
+   int takeRecordsFromPipe(RecordPipe recordPipe) throws QReportingException;
 
    /*******************************************************************************
-    ** Require all state keys to implement the hashCode method
-    *
+    ** Called once, after all rows are available.  Meant to write a footer, or close resources, for example.
     *******************************************************************************/
-   @Override
-   public abstract int hashCode();
+   void finish() throws QReportingException;
 
    /*******************************************************************************
-    ** Require all state keys to implement the toString method
-    *
+    ** (Ideally, protected) method used within report streamer implementations, to
+    ** map field names from reportInput into list of fieldMetaData.
     *******************************************************************************/
-   @Override
-   public abstract String toString();
+   default List<QFieldMetaData> setupFieldList(QTableMetaData table, ReportInput reportInput)
+   {
+      if(reportInput.getFieldNames() != null)
+      {
+         return (reportInput.getFieldNames().stream().map(table::getField).toList());
+      }
+      else
+      {
+         return (new ArrayList<>(table.getFields().values()));
+      }
+   }
 
 }

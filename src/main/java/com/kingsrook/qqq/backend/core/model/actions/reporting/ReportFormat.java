@@ -19,76 +19,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.state;
+package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.Locale;
+import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.actions.reporting.CsvReportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExcelReportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.ReportStreamerInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.dhatim.fastexcel.Worksheet;
 
 
 /*******************************************************************************
- **
+ ** QQQ Report/export file formats
  *******************************************************************************/
-public class UUIDAndTypeStateKey extends AbstractStateKey
+public enum ReportFormat
 {
-   private final UUID      uuid;
-   private final StateType stateType;
+   XLSX(Worksheet.MAX_ROWS, ExcelReportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+   CSV(null, CsvReportStreamer::new, "text/csv");
+
+
+   private final Integer maxRows;
+   private final String  mimeType;
+
+   private final Supplier<? extends ReportStreamerInterface> streamerConstructor;
 
 
 
    /*******************************************************************************
-    ** Default constructor - assigns a random UUID.
     **
     *******************************************************************************/
-   public UUIDAndTypeStateKey(StateType stateType)
+   ReportFormat(Integer maxRows, Supplier<? extends ReportStreamerInterface> streamerConstructor, String mimeType)
    {
-      this(UUID.randomUUID(), stateType);
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor where user can supply the UUID.
-    **
-    *******************************************************************************/
-   public UUIDAndTypeStateKey(UUID uuid, StateType stateType)
-   {
-      this.uuid = uuid;
-      this.stateType = stateType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for uuid
-    **
-    *******************************************************************************/
-   public UUID getUuid()
-   {
-      return uuid;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for stateType
-    **
-    *******************************************************************************/
-   public StateType getStateType()
-   {
-      return stateType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Make the key give a unique string to identify itself.
-    *
-    *******************************************************************************/
-   @Override
-   public String getUniqueIdentifier()
-   {
-      return (uuid.toString());
+      this.maxRows = maxRows;
+      this.mimeType = mimeType;
+      this.streamerConstructor = streamerConstructor;
    }
 
 
@@ -96,19 +63,43 @@ public class UUIDAndTypeStateKey extends AbstractStateKey
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public boolean equals(Object o)
+   public static ReportFormat fromString(String format) throws QUserFacingException
    {
-      if(this == o)
+      if(!StringUtils.hasContent(format))
       {
-         return true;
+         throw (new QUserFacingException("Report format was not specified."));
       }
-      if(o == null || getClass() != o.getClass())
+
+      try
       {
-         return false;
+         return (ReportFormat.valueOf(format.toUpperCase(Locale.ROOT)));
       }
-      UUIDAndTypeStateKey that = (UUIDAndTypeStateKey) o;
-      return Objects.equals(uuid, that.uuid) && stateType == that.stateType;
+      catch(IllegalArgumentException iae)
+      {
+         throw (new QUserFacingException("Unsupported report format: " + format + "."));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxRows
+    **
+    *******************************************************************************/
+   public Integer getMaxRows()
+   {
+      return maxRows;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for mimeType
+    **
+    *******************************************************************************/
+   public String getMimeType()
+   {
+      return mimeType;
    }
 
 
@@ -116,20 +107,8 @@ public class UUIDAndTypeStateKey extends AbstractStateKey
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public int hashCode()
+   public ReportStreamerInterface newReportStreamer()
    {
-      return Objects.hash(uuid, stateType);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String toString()
-   {
-      return "{uuid=" + uuid + ", stateType=" + stateType + '}';
+      return (streamerConstructor.get());
    }
 }
