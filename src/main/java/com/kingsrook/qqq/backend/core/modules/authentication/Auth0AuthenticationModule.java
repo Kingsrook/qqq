@@ -113,7 +113,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          ///////////////////////////////////////////////////////////////////
          StateProviderInterface spi = getStateProvider();
          Auth0StateKey key = new Auth0StateKey(qSession.getIdReference());
-         spi.put(key, getNow());
+         spi.put(key, Instant.now());
 
          return (qSession);
       }
@@ -174,36 +174,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // - so this is basically saying, if the time between the last time we checked the token and     //
          // right now is more than ID_TOKEN_VALIDATION_INTERVAL_SECTIONS, then session needs revalidated  //
          ///////////////////////////////////////////////////////////////////////////////////////////////////
-         return (Duration.between(lastTimeChecked, getNow()).compareTo(Duration.ofSeconds(ID_TOKEN_VALIDATION_INTERVAL_SECONDS)) < 0);
+         return (Duration.between(lastTimeChecked, Instant.now()).compareTo(Duration.ofSeconds(ID_TOKEN_VALIDATION_INTERVAL_SECONDS)) < 0);
       }
 
       return (false);
-   }
-
-
-
-   /*******************************************************************************
-    ** public method so that 'now' can be used for testing purposes
-    ** - defaults to real 'now'
-    *******************************************************************************/
-   public Instant getNow()
-   {
-      if(now == null)
-      {
-         now = Instant.now();
-      }
-
-      return (now);
-   }
-
-
-
-   /*******************************************************************************
-    ** public method so that 'now' can be set for testing purposes
-    *******************************************************************************/
-   public void setNow(Instant now)
-   {
-      this.now = now;
    }
 
 
@@ -283,7 +257,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static class Auth0StateKey extends AbstractStateKey
+   public static class Auth0StateKey extends AbstractStateKey
    {
       private final String key;
 

@@ -30,6 +30,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
+import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.AUTH0_ID_TOKEN_KEY;
@@ -61,21 +63,28 @@ public class Auth0AuthenticationModuleTest
     **
     *******************************************************************************/
    @Test
-   public void testValidToken() throws QAuthenticationException
+   public void testLastTimeChecked() throws QAuthenticationException
    {
-      Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ID_TOKEN_KEY, VALID_TOKEN);
-
       //////////////////////////////////////////////////////////
       // Tuesday, July 19, 2022 12:40:27.299 PM GMT-05:00 DST //
       //////////////////////////////////////////////////////////
-      Instant now = Instant.ofEpochMilli(1658252427299L);
+      Instant now = Instant.now();
+
+      /////////////////////////////////////////////////////////
+      // put the 'now' from the past into the state provider //
+      /////////////////////////////////////////////////////////
+      StateProviderInterface spi = InMemoryStateProvider.getInstance();
+      Auth0AuthenticationModule.Auth0StateKey key = new Auth0AuthenticationModule.Auth0StateKey(VALID_TOKEN);
+      spi.put(key, now);
+
+      //////////////////////
+      // build up session //
+      //////////////////////
+      QSession session = new QSession();
+      session.setIdReference(VALID_TOKEN);
 
       Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
-      auth0AuthenticationModule.setNow(now);
-      QSession session = auth0AuthenticationModule.createSession(getQInstance(), context);
-      assertEquals("tim.chamberlain@kingsrook.com", session.getUser().getIdReference(), "Id should be Tim's email.");
-      assertEquals("Tim Chamberlain", session.getUser().getFullName(), "Full name should be Tim's full name (well without the middle name).");
+      assertEquals(true, auth0AuthenticationModule.isSessionValid(session), "Session should return as still valid.");
    }
 
 
