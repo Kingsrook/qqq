@@ -113,7 +113,7 @@ class SampleMetaDataProviderTest
 
       request.setRecords(queryOutput.getRecords());
       request.addValue("greetingPrefix", "Hello");
-      request.addValue("greetingSuffix", "there");
+      request.addValue("greetingSuffix", "sir");
 
       RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
