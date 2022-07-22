@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
+import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -53,12 +54,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.state.StateType;
+import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
+import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
+import io.javalin.http.UploadedFile;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -216,7 +221,7 @@ public class QJavalinProcessHandler
       {
          Throwable rootException = ExceptionUtils.getRootException(exception);
          LOG.warn("Uncaught Exception in process", exception);
-         resultForCaller.put("error", "Original error message: " + rootException.getMessage());
+         resultForCaller.put("error", "Error message: " + rootException.getMessage());
       }
    }
 
@@ -224,11 +229,14 @@ public class QJavalinProcessHandler
 
    /*******************************************************************************
     ** take values from query-string params, and put them into the run process request
-    ** todo - better from POST body, or with a "field-" type of prefix??
+    ** todo - make query params have a "field-" type of prefix??
     **
     *******************************************************************************/
    private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessInput runProcessInput) throws IOException
    {
+      //////////////////////////
+      // process query string //
+      //////////////////////////
       for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
       {
          String       fieldName = queryParam.getKey();
@@ -239,6 +247,37 @@ public class QJavalinProcessHandler
          }
       }
 
+      ////////////////////////////
+      // process form/post body //
+      ////////////////////////////
+      for(Map.Entry<String, List<String>> formParam : context.formParamMap().entrySet())
+      {
+         String       fieldName = formParam.getKey();
+         List<String> values    = formParam.getValue();
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            runProcessInput.addValue(fieldName, values.get(0));
+         }
+      }
+
+      ////////////////////////////
+      // process uploaded files //
+      ////////////////////////////
+      for(UploadedFile uploadedFile : context.uploadedFiles())
+      {
+         QUploadedFile qUploadedFile = new QUploadedFile();
+         qUploadedFile.setBytes(uploadedFile.getContent().readAllBytes());
+         qUploadedFile.setFilename(uploadedFile.getFilename());
+
+         UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
+         TempFileStateProvider.getInstance().put(key, qUploadedFile);
+         LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
+         runProcessInput.addValue("uploadedFileKey", key);
+      }
+
+      /////////////////////////////////////////////////////////////
+      // deal with params that specify an initial-records filter //
+      /////////////////////////////////////////////////////////////
       QQueryFilter initialRecordsFilter = buildProcessInitRecordsFilter(context, runProcessInput);
       if(initialRecordsFilter != null)
       {
@@ -331,10 +370,11 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processStatus(Context context)
    {
-      Map<String, Object> resultForCaller = new HashMap<>();
-
       String processUUID = context.pathParam("processUUID");
       String jobUUID     = context.pathParam("jobUUID");
+
+      Map<String, Object> resultForCaller = new HashMap<>();
+      resultForCaller.put("processUUID", processUUID);
 
       LOG.info("Request for status of process " + processUUID + ", job " + jobUUID);
       Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
@@ -412,6 +452,7 @@ public class QJavalinProcessHandler
          Map<String, Object> resultForCaller = new HashMap<>();
          List<QRecord>       recordPage      = CollectionUtils.safelyGetPage(records, skip, limit);
          resultForCaller.put("records", recordPage);
+         resultForCaller.put("totalRecords", records.size());
          context.result(JsonUtils.toJson(resultForCaller));
       }
       catch(Exception e)
