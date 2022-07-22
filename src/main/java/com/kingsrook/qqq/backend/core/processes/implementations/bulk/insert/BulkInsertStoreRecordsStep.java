@@ -19,50 +19,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.mock;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- ** Mocked up version of insert action.
- **
+ ** Backend step to store the records from a bulk insert file
  *******************************************************************************/
-public class MockInsertAction implements InsertInterface
+public class BulkInsertStoreRecordsStep implements BackendStep
 {
-
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertOutput execute(InsertInput insertInput) throws QException
+   @Override
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      try
-      {
-         InsertOutput rs = new InsertOutput();
+      List<QRecord> qRecords = BulkInsertUtils.getQRecordsFromFile(runBackendStepInput);
 
-         rs.setRecords(insertInput.getRecords());
+      InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
+      insertInput.setSession(runBackendStepInput.getSession());
+      insertInput.setTableName(runBackendStepInput.getTableName());
+      insertInput.setRecords(qRecords);
 
-         String primaryKeyField = insertInput.getTable().getPrimaryKeyField();
-         int i = 1;
-         for(QRecord record : rs.getRecords())
-         {
-            if(record.getValue(primaryKeyField) == null)
-            {
-               record.setValue(primaryKeyField, i++);
-            }
-         }
+      InsertAction insertAction = new InsertAction();
+      InsertOutput insertOutput = insertAction.execute(insertInput);
 
-         return rs;
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error executing insert: " + e.getMessage(), e);
-      }
+      runBackendStepOutput.setRecords(insertOutput.getRecords());
    }
-
 }

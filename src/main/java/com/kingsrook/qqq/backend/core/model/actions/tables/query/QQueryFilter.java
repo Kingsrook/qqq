@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,7 @@ import java.util.List;
  * Full "filter" for a query - a list of criteria and order-bys
  *
  *******************************************************************************/
-public class QQueryFilter
+public class QQueryFilter implements Serializable
 {
    private List<QFilterCriteria> criteria = new ArrayList<>();
    private List<QFilterOrderBy> orderBys = new ArrayList<>();

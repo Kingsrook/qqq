@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -183,4 +184,38 @@ public class RunBackendStepOutput extends AbstractActionOutput
    {
       return exception;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Serializable getValue(String fieldName)
+   {
+      return (processState.getValues().get(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public String getValueString(String fieldName)
+   {
+      return ((String) getValue(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Integer getValueInteger(String fieldName)
+   {
+      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
+   }
+
 }

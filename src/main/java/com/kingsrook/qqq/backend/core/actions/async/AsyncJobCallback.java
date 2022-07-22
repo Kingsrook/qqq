@@ -52,7 +52,7 @@ public class AsyncJobCallback
 
 
    /*******************************************************************************
-    **
+    ** Update the message
     *******************************************************************************/
    public void updateStatus(String message)
    {
@@ -63,7 +63,20 @@ public class AsyncJobCallback
 
 
    /*******************************************************************************
-    **
+    ** Update all 3 status fields
+    *******************************************************************************/
+   public void updateStatus(String message, int current, int total)
+   {
+      this.asyncJobStatus.setMessage(message);
+      this.asyncJobStatus.setCurrent(current);
+      this.asyncJobStatus.setTotal(total);
+      storeUpdatedStatus();
+   }
+
+
+
+   /*******************************************************************************
+    ** Update the current and total fields (e.g., 1 of 2, 2 of 2, 3 of 2)
     *******************************************************************************/
    public void updateStatus(int current, int total)
    {
@@ -75,13 +88,12 @@ public class AsyncJobCallback
 
 
    /*******************************************************************************
-    **
+    ** Remove the values from the current & total fields
     *******************************************************************************/
-   public void updateStatus(String message, int current, int total)
+   public void clearCurrentAndTotal()
    {
-      this.asyncJobStatus.setMessage(message);
-      this.asyncJobStatus.setCurrent(current);
-      this.asyncJobStatus.setTotal(total);
+      this.asyncJobStatus.setCurrent(null);
+      this.asyncJobStatus.setTotal(null);
       storeUpdatedStatus();
    }
 

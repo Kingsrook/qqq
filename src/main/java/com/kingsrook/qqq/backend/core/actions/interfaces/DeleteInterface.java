@@ -37,4 +37,17 @@ public interface DeleteInterface
     **
     *******************************************************************************/
    DeleteOutput execute(DeleteInput deleteInput) throws QException;
+
+   /*******************************************************************************
+    ** Specify whether this particular module's delete action natively supports
+    ** receiving a queryFilter as input (e.g., SQL does).  If the module doesn't
+    ** support a query filter, then the qqq framework (DeleteAction) will, if it
+    ** receives a queryFilter in its input, it will execute the query, and pass
+    ** the list of primary keys down into the module's delete implementation.
+    *******************************************************************************/
+   default boolean supportsQueryFilterInput()
+   {
+      return (false);
+   }
+
 }

@@ -30,7 +30,7 @@ import java.util.List;
  * A single criteria Component of a Query
  *
  *******************************************************************************/
-public class QFilterCriteria
+public class QFilterCriteria implements Serializable
 {
    private String fieldName;
    private QCriteriaOperator operator;

@@ -36,6 +36,14 @@ public class UpdateInput extends AbstractTableActionInput
 {
    private List<QRecord> records;
 
+   ////////////////////////////////////////////////////////////////////////////////////////////
+   // allow a caller to specify that they KNOW this optimization (e.g., in SQL) can be made. //
+   // If you set this to true, but it isn't, then you may not get an accurate update.        //
+   // If you set this to false, but it isn't, then you may not get the best performance.     //
+   // Just leave it null if you don't know what you're dong.                                 //
+   ////////////////////////////////////////////////////////////////////////////////////////////
+   private Boolean areAllValuesBeingUpdatedTheSame = null;
+
 
 
    /*******************************************************************************
@@ -76,4 +84,27 @@ public class UpdateInput extends AbstractTableActionInput
    {
       this.records = records;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for areAllValuesBeingUpdatedTheSame
+    **
+    *******************************************************************************/
+   public Boolean getAreAllValuesBeingUpdatedTheSame()
+   {
+      return areAllValuesBeingUpdatedTheSame;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for areAllValuesBeingUpdatedTheSame
+    **
+    *******************************************************************************/
+   public void setAreAllValuesBeingUpdatedTheSame(Boolean areAllValuesBeingUpdatedTheSame)
+   {
+      this.areAllValuesBeingUpdatedTheSame = areAllValuesBeingUpdatedTheSame;
+   }
+
 }

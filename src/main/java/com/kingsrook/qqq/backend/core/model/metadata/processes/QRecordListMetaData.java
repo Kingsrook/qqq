@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
  *******************************************************************************/
 public class QRecordListMetaData
 {
-   private String tableName;
+   private String                      tableName;
    private Map<String, QFieldMetaData> fields;
 
 
@@ -116,7 +116,7 @@ public class QRecordListMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QRecordListMetaData addField(QFieldMetaData field)
+   public QRecordListMetaData withField(QFieldMetaData field)
    {
       if(this.fields == null)
       {
@@ -124,6 +124,17 @@ public class QRecordListMetaData
       }
       this.fields.put(field.getName(), field);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Deprecated
+   public QRecordListMetaData addField(QFieldMetaData field)
+   {
+      return (withField(field));
    }
 
 }

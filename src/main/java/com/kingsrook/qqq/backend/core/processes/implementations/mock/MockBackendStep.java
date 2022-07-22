@@ -49,19 +49,21 @@ public class MockBackendStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      runBackendStepOutput.getRecords().forEach(r ->
-      {
-         r.setValue(FIELD_MOCK_VALUE, "Ha ha!");
-         LOG.info("We are mocking {}: {}", r.getValueString("firstName"), r.getValue(FIELD_MOCK_VALUE));
-      });
-
-      runBackendStepOutput.setValues(runBackendStepInput.getValues());
-      runBackendStepOutput.addValue(FIELD_MOCK_VALUE, MOCK_VALUE);
-
       /////////////////////////////////
       // mock the "greet" process... //
       /////////////////////////////////
       runBackendStepOutput.addValue("outputMessage", runBackendStepInput.getValueString(FIELD_GREETING_PREFIX) + " X " + runBackendStepInput.getValueString(FIELD_GREETING_SUFFIX));
+
+      runBackendStepInput.getRecords().forEach(r ->
+      {
+         LOG.info("We are mocking {}: {}", r.getValueString("firstName"), r.getValue(FIELD_MOCK_VALUE));
+         r.setValue(FIELD_MOCK_VALUE, "Ha ha!");
+         r.setValue("greetingMessage", runBackendStepInput.getValueString(FIELD_GREETING_PREFIX) + " " + r.getValueString("firstName") + " " + runBackendStepInput.getValueString(FIELD_GREETING_SUFFIX));
+      });
+
+      runBackendStepOutput.setValues(runBackendStepInput.getValues());
+      runBackendStepOutput.addValue(FIELD_MOCK_VALUE, MOCK_VALUE);
+      runBackendStepOutput.addValue("noOfPeopleGreeted", runBackendStepInput.getRecords().size());
 
       if("there".equalsIgnoreCase(runBackendStepInput.getValueString(FIELD_GREETING_SUFFIX)))
       {

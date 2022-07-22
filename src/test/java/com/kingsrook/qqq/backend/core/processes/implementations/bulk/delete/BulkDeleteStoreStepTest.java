@@ -19,66 +19,53 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.tables;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete;
 
 
-import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
- ** Unit test for DeleteAction
- **
+ ** Unit test for BulkDeleteStoreStep
  *******************************************************************************/
-class DeleteActionTest
+class BulkDeleteStoreStepTest
 {
 
    /*******************************************************************************
-    ** At the core level, there isn't much that can be asserted, as it uses the
-    ** mock implementation - just confirming that all of the "wiring" works.
     **
     *******************************************************************************/
    @Test
-   public void test() throws QException
+   void testWithoutFilter() throws QException
    {
-      DeleteInput request = new DeleteInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
-      request.setTableName("person");
-      request.setPrimaryKeys(List.of(1, 2));
-      DeleteOutput result = new DeleteAction().execute(request);
-      assertNotNull(result);
-      assertEquals(2, result.getDeletedRecordCount());
-      assertTrue(CollectionUtils.nullSafeIsEmpty(result.getRecordsWithErrors()));
-   }
+      RunBackendStepInput stepInput = new RunBackendStepInput(TestUtils.defineInstance());
+      stepInput.setSession(TestUtils.getMockSession());
+      stepInput.setTableName(TestUtils.defineTablePerson().getName());
+      stepInput.setRecords(TestUtils.queryTable(TestUtils.defineTablePerson().getName()));
 
+      RunBackendStepOutput stepOutput = new RunBackendStepOutput();
+      new BulkDeleteStoreStep().run(stepInput, stepOutput);
+   }
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
-   void testErrorIfBothPrimaryKeysAndFilter()
+   void testWithFilter() throws QException
    {
-      DeleteInput request = new DeleteInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
-      request.setTableName("person");
-      request.setPrimaryKeys(List.of(1, 2));
-      request.setQueryFilter(new QQueryFilter());
+      RunBackendStepInput stepInput = new RunBackendStepInput(TestUtils.defineInstance());
+      stepInput.setSession(TestUtils.getMockSession());
+      stepInput.setTableName(TestUtils.defineTablePerson().getName());
+      stepInput.addValue("queryFilterJSON", JsonUtils.toJson(new QQueryFilter()));
 
-      assertThrows(QException.class, () ->
-      {
-         new DeleteAction().execute(request);
-      });
+      RunBackendStepOutput stepOutput = new RunBackendStepOutput();
+      new BulkDeleteStoreStep().run(stepInput, stepOutput);
    }
 
 }
