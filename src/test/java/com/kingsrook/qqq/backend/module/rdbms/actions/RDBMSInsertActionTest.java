@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,17 +98,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
       assertEquals(1, insertOutput.getRecords().size(), "Should return 1 row");
       assertNotNull(insertOutput.getRecords().get(0).getValue("id"), "Should have an id in the row");
       // todo - add errors to QRecord? assertTrue(insertResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
-      runTestSql("SELECT * FROM person WHERE last_name = 'Kirk'", (rs -> {
-         int rowsFound = 0;
-         while(rs.next())
-         {
-            rowsFound++;
-            assertEquals(6, rs.getInt("id"));
-            assertEquals("James", rs.getString("first_name"));
-            assertNotNull(rs.getString("create_date"));
-         }
-         assertEquals(1, rowsFound);
-      }));
+      assertAnInsertedPersonRecord("James", "Kirk", 6);
    }
 
 
@@ -118,6 +109,8 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    @Test
    public void testInsertMany() throws Exception
    {
+      QueryManager.setPageSize(2);
+
       InsertInput insertInput = initInsertRequest();
       QRecord record1 = new QRecord().withTableName("person")
          .withValue("firstName", "Jean-Luc")
@@ -129,29 +122,35 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
          .withValue("lastName", "Riker")
          .withValue("email", "notthomas@starfleet.net")
          .withValue("birthDate", "2320-05-20");
-      insertInput.setRecords(List.of(record1, record2));
+      QRecord record3 = new QRecord().withTableName("person")
+         .withValue("firstName", "Beverly")
+         .withValue("lastName", "Crusher")
+         .withValue("email", "doctor@starfleet.net")
+         .withValue("birthDate", "2320-06-26");
+      insertInput.setRecords(List.of(record1, record2, record3));
       InsertOutput insertOutput = new RDBMSInsertAction().execute(insertInput);
-      assertEquals(2, insertOutput.getRecords().size(), "Should return 1 row");
+      assertEquals(3, insertOutput.getRecords().size(), "Should return right # of rows");
       assertEquals(6, insertOutput.getRecords().get(0).getValue("id"), "Should have next id in the row");
       assertEquals(7, insertOutput.getRecords().get(1).getValue("id"), "Should have next id in the row");
-      // todo - add errors to QRecord? assertTrue(insertResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
-      runTestSql("SELECT * FROM person WHERE last_name = 'Picard'", (rs -> {
+      assertEquals(8, insertOutput.getRecords().get(2).getValue("id"), "Should have next id in the row");
+      assertAnInsertedPersonRecord("Jean-Luc", "Picard", 6);
+      assertAnInsertedPersonRecord("William", "Riker", 7);
+      assertAnInsertedPersonRecord("Beverly", "Crusher", 8);
+   }
+
+
+
+   private void assertAnInsertedPersonRecord(String firstName, String lastName, Integer id) throws Exception
+   {
+      runTestSql("SELECT * FROM person WHERE last_name = '" + lastName + "'", (rs -> {
          int rowsFound = 0;
          while(rs.next())
          {
             rowsFound++;
-            assertEquals(6, rs.getInt("id"));
-            assertEquals("Jean-Luc", rs.getString("first_name"));
-         }
-         assertEquals(1, rowsFound);
-      }));
-      runTestSql("SELECT * FROM person WHERE last_name = 'Riker'", (rs -> {
-         int rowsFound = 0;
-         while(rs.next())
-         {
-            rowsFound++;
-            assertEquals(7, rs.getInt("id"));
-            assertEquals("William", rs.getString("first_name"));
+            assertEquals(id, rs.getInt("id"));
+            assertEquals(firstName, rs.getString("first_name"));
+            assertNotNull(rs.getString("create_date"));
+            assertNotNull(rs.getString("modify_date"));
          }
          assertEquals(1, rowsFound);
       }));

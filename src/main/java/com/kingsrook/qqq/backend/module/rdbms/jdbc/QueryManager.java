@@ -55,7 +55,9 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class QueryManager
 {
-   public static final  int PAGE_SIZE        = 2000;
+   public static final int DEFAULT_PAGE_SIZE = 2000;
+   public static       int PAGE_SIZE         = DEFAULT_PAGE_SIZE;
+
    private static final int MS_PER_SEC       = 1000;
    private static final int NINETEEN_HUNDRED = 1900;
 
@@ -93,8 +95,8 @@ public class QueryManager
       try
       {
          statement = prepareStatementAndBindParams(connection, sql, params);
-         statement.execute();
          incrementStatistic(STAT_QUERIES_RAN);
+         statement.execute();
          resultSet = statement.getResultSet();
 
          procesor.processResultSet(resultSet);
@@ -354,8 +356,8 @@ public class QueryManager
    public static PreparedStatement executeUpdate(Connection connection, String sql, Object... params) throws SQLException
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
-      statement.executeUpdate();
       incrementStatistic(STAT_QUERIES_RAN);
+      statement.executeUpdate();
       return (statement);
    }
 
@@ -367,8 +369,8 @@ public class QueryManager
    public static PreparedStatement executeUpdate(Connection connection, String sql, List<Object> params) throws SQLException
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
-      statement.executeUpdate();
       incrementStatistic(STAT_QUERIES_RAN);
+      statement.executeUpdate();
       return (statement);
    }
 
@@ -413,8 +415,8 @@ public class QueryManager
    {
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
-         statement.executeUpdate();
          incrementStatistic(STAT_QUERIES_RAN);
+         statement.executeUpdate();
          return (statement.getUpdateCount());
       }
    }
@@ -473,9 +475,9 @@ public class QueryManager
       try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
       {
          bindParams(params.toArray(), statement);
+         incrementStatistic(STAT_QUERIES_RAN);
          statement.executeUpdate();
          ResultSet generatedKeys = statement.getGeneratedKeys();
-         incrementStatistic(STAT_QUERIES_RAN);
          while(generatedKeys.next())
          {
             rs.add(getInteger(generatedKeys, 1));
@@ -565,8 +567,8 @@ public class QueryManager
             bindParams(updatePS, params);
             updatePS.addBatch();
          }
-         updatePS.executeBatch();
          incrementStatistic(STAT_BATCHES_RAN);
+         updatePS.executeBatch();
       }
    }
 
@@ -1615,6 +1617,27 @@ public class QueryManager
    public static Map<String, Integer> getStatistics()
    {
       return statistics;
+   }
+
+
+
+   /*******************************************************************************
+    ** Note - this changes a static field that impacts all usages.  Really, it's meant
+    ** to only be called in unit tests (at least as of the time of this writing).
+    *******************************************************************************/
+   public static void setPageSize(int pageSize)
+   {
+      PAGE_SIZE = pageSize;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void resetPageSize()
+   {
+      PAGE_SIZE = DEFAULT_PAGE_SIZE;
    }
 
 }
