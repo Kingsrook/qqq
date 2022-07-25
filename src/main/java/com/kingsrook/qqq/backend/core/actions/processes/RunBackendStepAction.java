@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -107,6 +108,7 @@ public class RunBackendStepAction
       }
 
       List<QFieldMetaData> fieldsToGet = new ArrayList<>();
+      List<QFieldMetaData> requiredFieldsMissing = new ArrayList<>();
       for(QFieldMetaData field : inputMetaData.getFieldList())
       {
          Serializable value = runBackendStepInput.getValue(field.getName());
@@ -118,8 +120,11 @@ public class RunBackendStepAction
             }
             else
             {
-               // todo - check if required?
                fieldsToGet.add(field);
+               if(field.getIsRequired())
+               {
+                  requiredFieldsMissing.add(field);
+               }
             }
          }
       }
@@ -129,6 +134,18 @@ public class RunBackendStepAction
          QProcessCallback callback = runBackendStepInput.getCallback();
          if(callback == null)
          {
+            if(requiredFieldsMissing.isEmpty())
+            {
+               ///////////////////////////////////////////////////////////////
+               // if no required fields are missing, just return gracefully //
+               ///////////////////////////////////////////////////////////////
+               return;
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            // but if any required fields ARE missing, then that's an error. //
+            ///////////////////////////////////////////////////////////////////
+            LOG.info("Missing value for required fields: " + requiredFieldsMissing.stream().map(QFieldMetaData::getName).collect(Collectors.joining(", ")));
             throw (new QUserFacingException("Missing values for one or more fields",
                new QException("Function is missing values for fields, but no callback was present to request fields from a user")));
          }

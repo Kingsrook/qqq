@@ -55,6 +55,7 @@ public class LoadInitialRecordsStep implements BackendStep
       // but, while we're here, go ahead and put the query filter in the payload as a value, in case //
       // someone else wants it (see BulkDelete)                                                      //
       /////////////////////////////////////////////////////////////////////////////////////////////////
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Loading records");
       QQueryFilter queryFilter = runBackendStepInput.getCallback().getQueryFilter();
       runBackendStepOutput.addValue("queryFilterJSON", JsonUtils.toJson(queryFilter));
    }
