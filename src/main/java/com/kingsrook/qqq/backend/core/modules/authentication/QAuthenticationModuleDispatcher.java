@@ -25,8 +25,8 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 
 
 /*******************************************************************************
@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
  *******************************************************************************/
 public class QAuthenticationModuleDispatcher
 {
-   private Map<String, String> authenticationTypeToModuleClassNameMap;
+   private final Map<String, String> authenticationTypeToModuleClassNameMap;
 
 
 
@@ -48,9 +48,9 @@ public class QAuthenticationModuleDispatcher
    public QAuthenticationModuleDispatcher()
    {
       authenticationTypeToModuleClassNameMap = new HashMap<>();
-      authenticationTypeToModuleClassNameMap.put("mock", "com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule");
-      authenticationTypeToModuleClassNameMap.put("fullyAnonymous", "com.kingsrook.qqq.backend.core.modules.authentication.FullyAnonymousAuthenticationModule");
-      authenticationTypeToModuleClassNameMap.put("TODO:google", "com.kingsrook.qqq.authentication.module.google.GoogleAuthenticationModule");
+      authenticationTypeToModuleClassNameMap.put(QAuthenticationType.MOCK.getName(), "com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule");
+      authenticationTypeToModuleClassNameMap.put(QAuthenticationType.FULLY_ANONYMOUS.getName(), "com.kingsrook.qqq.backend.core.modules.authentication.FullyAnonymousAuthenticationModule");
+      authenticationTypeToModuleClassNameMap.put(QAuthenticationType.AUTH_0.getName(), "com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule");
       // todo - let user define custom type -> classes
    }
 
@@ -66,7 +66,7 @@ public class QAuthenticationModuleDispatcher
          throw (new QModuleDispatchException("No authentication meta data defined."));
       }
 
-      return getQModule(authenticationMetaData.getType());
+      return getQModule(authenticationMetaData.getType().getName());
    }
 
 

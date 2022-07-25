@@ -19,64 +19,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
-
-
-import java.util.Map;
-import java.util.UUID;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.model.session.QUser;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 /*******************************************************************************
+ ** Enum to define the possible authentication types
  **
  *******************************************************************************/
-public class MockAuthenticationModule implements QAuthenticationModuleInterface
+@SuppressWarnings("rawtypes")
+public enum QAuthenticationType
 {
-   private static final Logger logger = LogManager.getLogger(MockAuthenticationModule.class);
-   private static final int USER_ID_MODULO = 10_000;
+   AUTH_0("auth0"),
+   FULLY_ANONYMOUS("fullyAnonymous"),
+   MOCK("mock");
+
+   private final String name;
+
 
 
    /*******************************************************************************
-    **
+    ** enum constructor
     *******************************************************************************/
-   @Override
-   public QSession createSession(QInstance qInstance, Map<String, String> context)
+   QAuthenticationType(String name)
    {
-      QUser qUser = new QUser();
-      qUser.setIdReference("User:" + (System.currentTimeMillis() % USER_ID_MODULO));
-      qUser.setFullName("John Smith");
-
-      QSession qSession = new QSession();
-      qSession.setIdReference("Session:" + UUID.randomUUID());
-      qSession.setUser(qUser);
-
-      return (qSession);
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for name
     **
     *******************************************************************************/
-   @Override
-   public boolean isSessionValid(QSession session)
+   public String getName()
    {
-      if(session == null)
-      {
-         logger.info("Session is null, which is not valid.");
-         return (false);
-      }
-
-      if(session.getValue("isInvalid") != null)
-      {
-         logger.info("Session contains the valid 'isInvalid', which is not valid.");
-         return (false);
-      }
-
-      return (true);
+      return this.name;
    }
+
 }

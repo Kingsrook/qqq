@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
@@ -35,7 +37,7 @@ public interface QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   QSession createSession(Map<String, String> context);
+   QSession createSession(QInstance qInstance, Map<String, String> context) throws QAuthenticationException;
 
 
    /*******************************************************************************

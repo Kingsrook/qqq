@@ -19,12 +19,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.modules.authentication.metadata;
 
 
 import java.util.HashMap;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 
 
 /*******************************************************************************
@@ -35,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 public class QAuthenticationMetaData
 {
    private String name;
-   private String type;
+   private QAuthenticationType type;
 
    @JsonFilter("secretsFilter")
    private Map<String, String> values;
@@ -120,7 +121,7 @@ public class QAuthenticationMetaData
     ** Getter for type
     **
     *******************************************************************************/
-   public String getType()
+   public QAuthenticationType getType()
    {
       return type;
    }
@@ -131,7 +132,7 @@ public class QAuthenticationMetaData
     ** Setter for type
     **
     *******************************************************************************/
-   public void setType(String type)
+   public void setType(QAuthenticationType type)
    {
       this.type = type;
    }
@@ -141,7 +142,7 @@ public class QAuthenticationMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withType(String type)
+   public QAuthenticationMetaData withType(QAuthenticationType type)
    {
       this.type = type;
       return (this);

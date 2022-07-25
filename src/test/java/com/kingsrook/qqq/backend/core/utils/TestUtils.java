@@ -31,8 +31,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -114,7 +115,7 @@ public class TestUtils
    {
       return new QAuthenticationMetaData()
          .withName("mock")
-         .withType("mock");
+         .withType(QAuthenticationType.MOCK);
    }
 
 
@@ -309,7 +310,7 @@ public class TestUtils
    public static QSession getMockSession()
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
-      return (mockAuthenticationModule.createSession(null));
+      return (mockAuthenticationModule.createSession(null, null));
    }
 
 

@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.FullyAnonymousAuthenticationModule;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,12 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FullyAnonymousAuthenticationModuleTest
 {
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Test
    public void test()
    {
       FullyAnonymousAuthenticationModule fullyAnonymousAuthenticationModule = new FullyAnonymousAuthenticationModule();
 
-      QSession session = fullyAnonymousAuthenticationModule.createSession(null);
+      QSession session = fullyAnonymousAuthenticationModule.createSession(null, null);
 
       assertNotNull(session, "Session should not be null");
       assertNotNull(session.getIdReference(), "Session id ref should not be null");

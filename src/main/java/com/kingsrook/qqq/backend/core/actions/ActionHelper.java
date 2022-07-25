@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
@@ -43,7 +44,7 @@ public class ActionHelper
       QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
       if(!authenticationModule.isSessionValid(request.getSession()))
       {
-         throw new QException("Invalid session in request");
+         throw new QAuthenticationException("Invalid session in request");
       }
    }
 
