@@ -40,7 +40,8 @@ public enum QFieldType
    DATE_TIME,
    TEXT,
    HTML,
-   PASSWORD;
+   PASSWORD,
+   BLOB;
 
 
 

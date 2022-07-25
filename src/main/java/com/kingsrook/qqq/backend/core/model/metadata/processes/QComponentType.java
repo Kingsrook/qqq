@@ -27,7 +27,6 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
  *******************************************************************************/
 public enum QComponentType
 {
-   FILE_UPLOAD,
    HELP_TEXT,
    BULK_EDIT_FORM;
    ///////////////////////////////////////////////////////////////////////////

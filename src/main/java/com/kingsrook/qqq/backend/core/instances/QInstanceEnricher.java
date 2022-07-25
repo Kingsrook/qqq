@@ -237,17 +237,16 @@ public class QInstanceEnricher
          .toList();
 
       String fieldsForHelpText = editableFields.stream()
-         .map(QFieldMetaData::getName)
+         .map(QFieldMetaData::getLabel)
          .collect(Collectors.joining(", "));
 
       QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
          .withName("upload")
          .withLabel("Upload File")
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withIsRequired(true))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "Upload a CSV or XLSX file with the following columns: " + fieldsForHelpText))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.FILE_UPLOAD));
+            .withValue("text", "Upload a CSV or XLSX file with the following columns: " + fieldsForHelpText));
 
       QBackendStepMetaData receiveFileStep = new QBackendStepMetaData()
          .withName("receiveFile")

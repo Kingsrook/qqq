@@ -23,13 +23,16 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
 import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
 
@@ -53,14 +56,24 @@ public class BulkInsertUtils
 
       byte[] bytes = optionalUploadedFile.get().getBytes();
 
+      /////////////////////////////////////////////////////
+      // let the user specify field labels instead names //
+      /////////////////////////////////////////////////////
+      QTableMetaData        table   = runBackendStepInput.getTable();
+      QKeyBasedFieldMapping mapping = new QKeyBasedFieldMapping();
+      for(Map.Entry<String, QFieldMetaData> entry : table.getFields().entrySet())
+      {
+         mapping.addMapping(entry.getKey(), entry.getValue().getLabel());
+      }
+
       // todo - sniff out file type...
       String        tableName = runBackendStepInput.getTableName();
-      List<QRecord> qRecords  = new CsvToQRecordAdapter().buildRecordsFromCsv(new String(bytes), runBackendStepInput.getInstance().getTable(tableName), null);
+      List<QRecord> qRecords  = new CsvToQRecordAdapter().buildRecordsFromCsv(new String(bytes), runBackendStepInput.getInstance().getTable(tableName), mapping);
 
       ////////////////////////////////////////////////
       // remove values from any non-editable fields //
       ////////////////////////////////////////////////
-      List<QFieldMetaData> nonEditableFields = runBackendStepInput.getTable().getFields().values().stream()
+      List<QFieldMetaData> nonEditableFields = table.getFields().values().stream()
          .filter(f -> !f.getIsEditable())
          .toList();
       if(!nonEditableFields.isEmpty())

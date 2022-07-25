@@ -52,7 +52,7 @@ class BulkInsertReceiveFileStepTest
       // create an uploaded file, similar to how an http server may //
       ////////////////////////////////////////////////////////////////
       QUploadedFile qUploadedFile = new QUploadedFile();
-      qUploadedFile.setBytes((TestUtils.getPersonCsvHeader() + TestUtils.getPersonCsvRow1() + TestUtils.getPersonCsvRow2()).getBytes());
+      qUploadedFile.setBytes((TestUtils.getPersonCsvHeaderUsingLabels() + TestUtils.getPersonCsvRow1() + TestUtils.getPersonCsvRow2()).getBytes());
       qUploadedFile.setFilename("test.csv");
       UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
       TempFileStateProvider.getInstance().put(key, qUploadedFile);
