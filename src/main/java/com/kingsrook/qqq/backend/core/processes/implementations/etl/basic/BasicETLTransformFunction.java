@@ -58,17 +58,22 @@ public class BasicETLTransformFunction implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
+      LOG.info("Start transform for destination table: " + tableName);
+
       ////////////////////////////////////////////////////////////////////////////////////////////
       // exit early with no-op if no records made it here, or if we don't have a mapping to use //
       ////////////////////////////////////////////////////////////////////////////////////////////
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
+         LOG.info("Exiting early with no-op for empty input record list.");
          return;
       }
 
       String mappingJSON = runBackendStepInput.getValueString(BasicETLProcess.FIELD_MAPPING_JSON);
       if(!StringUtils.hasContent(mappingJSON))
       {
+         LOG.info("Exiting early with no-op for empty mappingJSON.");
          return;
       }
 
@@ -81,7 +86,6 @@ public class BasicETLTransformFunction implements BackendStep
          throw (new QException("Mapping was not a Key-based mapping type.  Was a : " + mapping.getClass().getName()));
       }
 
-      String         tableName     = runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
       QTableMetaData table         = runBackendStepInput.getInstance().getTable(tableName);
       List<QRecord>  mappedRecords = applyMapping(runBackendStepInput.getRecords(), table, keyBasedFieldMapping);
 
@@ -91,6 +95,7 @@ public class BasicETLTransformFunction implements BackendStep
       removeNonNumericValuesFromMappedRecords(table, mappedRecords);
 
       runBackendStepOutput.setRecords(mappedRecords);
+      LOG.info("Done transforming " + runBackendStepOutput.getRecords().size() + " records.");
    }
 
 
