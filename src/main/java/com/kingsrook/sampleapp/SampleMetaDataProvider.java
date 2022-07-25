@@ -62,7 +62,8 @@ public class SampleMetaDataProvider
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
 
    public static final String AUTH0_AUTHENTICATION_MODULE_NAME = "auth0";
-   public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
+   // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
+   public static final String AUTH0_BASE_URL = "https://nutrifresh-one-development.us.auth0.com/";
 
    public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
@@ -125,7 +126,7 @@ public class SampleMetaDataProvider
          .withPort(3306)
          .withDatabaseName("qqq")
          .withUsername("root")
-         .withPassword("")
+         .withPassword("8BNWyoav8s79oi}Lqk")
          .withName(MYSQL_BACKEND_NAME);
    }
 
@@ -155,13 +156,16 @@ public class SampleMetaDataProvider
 
       table.addField(new QFieldMetaData("id", QFieldType.INTEGER));
 
-      table.addField(new QFieldMetaData("name", QFieldType.STRING));
+      table.addField(new QFieldMetaData("name", QFieldType.STRING)
+         .withIsRequired(true));
 
       table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo enum
          .withLabel("Company")
+         .withIsRequired(true)
          .withBackendName("comp_code"));
 
-      table.addField(new QFieldMetaData("service_level", QFieldType.STRING)); // todo enum
+      table.addField(new QFieldMetaData("service_level", QFieldType.STRING)
+         .withIsRequired(true)); // todo enum
 
       return (table);
    }
