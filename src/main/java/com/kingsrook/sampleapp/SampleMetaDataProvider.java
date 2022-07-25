@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -43,6 +42,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMe
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
@@ -59,6 +60,9 @@ public class SampleMetaDataProvider
 {
    public static final String MYSQL_BACKEND_NAME      = "mysql";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
+
+   public static final String AUTH0_AUTHENTICATION_MODULE_NAME = "auth0";
+   public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
 
    public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
@@ -103,9 +107,9 @@ public class SampleMetaDataProvider
     *******************************************************************************/
    private static QAuthenticationMetaData defineAuthentication()
    {
-      return new QAuthenticationMetaData()
-         .withName("Anonymous")
-         .withType("fullyAnonymous");
+      return (new Auth0AuthenticationMetaData()
+         .withBaseUrl(AUTH0_BASE_URL)
+         .withName(AUTH0_AUTHENTICATION_MODULE_NAME));
    }
 
 

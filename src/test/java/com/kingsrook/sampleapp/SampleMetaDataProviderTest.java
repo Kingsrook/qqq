@@ -100,7 +100,7 @@ class SampleMetaDataProviderTest
    @Test
    public void testGreetProcess() throws Exception
    {
-      QInstance         qInstance   = SampleMetaDataProvider.defineInstance();
+      QInstance       qInstance   = SampleMetaDataProvider.defineInstance();
       QTableMetaData  personTable = SampleMetaDataProvider.defineTablePerson();
       RunProcessInput request     = new RunProcessInput(qInstance);
       request.setSession(new QSession());
