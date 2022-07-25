@@ -89,15 +89,18 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             .map(x -> "?")
             .collect(Collectors.joining(", "));
 
-         String        tableName = getTableName(table);
-         StringBuilder sql       = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
-         List<Object>  params    = new ArrayList<>();
+         List<QRecord> outputRecords = new ArrayList<>();
+         rs.setRecords(outputRecords);
 
          try(Connection connection = getConnection(insertInput))
          {
             for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
             {
-               int recordIndex = 0;
+               String        tableName   = getTableName(table);
+               StringBuilder sql         = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
+               List<Object>  params      = new ArrayList<>();
+               int           recordIndex = 0;
+
                for(QRecord record : page)
                {
                   if(recordIndex++ > 0)
@@ -116,11 +119,9 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                // todo sql customization - can edit sql and/or param list
                // todo - non-serial-id style tables
                // todo - other generated values, e.g., createDate...  maybe need to re-select?
-               List<Integer> idList        = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
-               List<QRecord> outputRecords = new ArrayList<>();
-               rs.setRecords(outputRecords);
-               int index = 0;
-               for(QRecord record : insertInput.getRecords())
+               List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
+               int           index  = 0;
+               for(QRecord record : page)
                {
                   Integer id           = idList.get(index++);
                   QRecord outputRecord = new QRecord(record);

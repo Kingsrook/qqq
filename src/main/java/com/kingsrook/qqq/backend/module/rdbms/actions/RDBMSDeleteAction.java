@@ -28,12 +28,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -41,45 +45,63 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
  *******************************************************************************/
 public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInterface
 {
+   private static final Logger LOG = LogManager.getLogger(RDBMSDeleteAction.class);
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean supportsQueryFilterInput()
+   {
+      return (true);
+   }
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
    public DeleteOutput execute(DeleteInput deleteInput) throws QException
    {
-      try
+      DeleteOutput deleteOutput = new DeleteOutput();
+      deleteOutput.setRecordsWithErrors(new ArrayList<>());
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // Our strategy is:                                                            //
+      // - if there's a query filter, try to do a delete WHERE that filter.          //
+      // - - if that has an error, or if there wasn't a query filter, then continue: //
+      // - if there's only 1 pkey to delete, just run a delete where $pkey=? query   //
+      // - else if there's a list, try to delete it, but upon error:                 //
+      // - - do a single-delete for each entry in the list.                          //
+      /////////////////////////////////////////////////////////////////////////////////
+      try(Connection connection = getConnection(deleteInput))
       {
-         DeleteOutput   rs    = new DeleteOutput();
-         QTableMetaData table = deleteInput.getTable();
-
-         String tableName = getTableName(table);
-         String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
-         String sql = "DELETE FROM "
-            + tableName
-            + " WHERE "
-            + primaryKeyName
-            + " IN ("
-            + deleteInput.getPrimaryKeys().stream().map(x -> "?").collect(Collectors.joining(","))
-            + ")";
-         List<Serializable> params = deleteInput.getPrimaryKeys();
-
-         // todo sql customization - can edit sql and/or param list
-
-         try(Connection connection = getConnection(deleteInput))
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // if there's a query filter, try to do a single-delete with that filter in the WHERE clause //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         if(deleteInput.getQueryFilter() != null)
          {
-            QueryManager.executeUpdateForRowCount(connection, sql, params);
-            List<QRecord> outputRecords = new ArrayList<>();
-            rs.setRecords(outputRecords);
-            for(Serializable primaryKey : deleteInput.getPrimaryKeys())
+            try
             {
-               QRecord qRecord = new QRecord().withTableName(deleteInput.getTableName()).withValue("id", primaryKey);
-               // todo uh, identify any errors?
-               QRecord outputRecord = new QRecord(qRecord);
-               outputRecords.add(outputRecord);
+               deleteInput.getAsyncJobCallback().updateStatus("Running bulk delete via query filter.");
+               deleteQueryFilter(connection, deleteInput, deleteOutput);
+               return (deleteOutput);
+            }
+            catch(Exception e)
+            {
+               deleteInput.getAsyncJobCallback().updateStatus("Error running bulk delete via filter.  Fetching keys for individual deletes.");
+               LOG.info("Exception trying to delete by filter query.  Moving on to deleting by id now.");
+               deleteInput.setPrimaryKeys(DeleteAction.getPrimaryKeysFromQueryFilter(deleteInput));
             }
          }
 
-         return rs;
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // at this point, there either wasn't a query filter, or there was an error executing it (in which case, the query should //
+         // have been converted to a list of primary keys in the deleteInput). so, proceed now by deleting a list of pkeys.        //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         deleteList(connection, deleteInput, deleteOutput);
+         return (deleteOutput);
       }
       catch(Exception e)
       {
@@ -87,4 +109,142 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void deleteList(Connection connection, DeleteInput deleteInput, DeleteOutput deleteOutput)
+   {
+      List<Serializable> primaryKeys = deleteInput.getPrimaryKeys();
+      if(primaryKeys.size() == 1)
+      {
+         doDeleteOne(connection, deleteInput.getTable(), primaryKeys.get(0), deleteOutput);
+      }
+      else
+      {
+         // todo - page this?  or binary-tree it?
+         try
+         {
+            deleteInput.getAsyncJobCallback().updateStatus("Running bulk delete via key list.");
+            doDeleteList(connection, deleteInput.getTable(), primaryKeys, deleteOutput);
+         }
+         catch(Exception e)
+         {
+            deleteInput.getAsyncJobCallback().updateStatus("Error running bulk delete via key list.  Performing individual deletes.");
+            LOG.info("Caught an error doing list-delete - going to single-deletes now", e);
+            int current = 1;
+            for(Serializable primaryKey : primaryKeys)
+            {
+               deleteInput.getAsyncJobCallback().updateStatus(current++, primaryKeys.size());
+               doDeleteOne(connection, deleteInput.getTable(), primaryKey, deleteOutput);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void doDeleteOne(Connection connection, QTableMetaData table, Serializable primaryKey, DeleteOutput deleteOutput)
+   {
+      String tableName      = getTableName(table);
+      String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
+
+      // todo sql customization - can edit sql and/or param list?
+      String sql = "DELETE FROM "
+         + tableName
+         + " WHERE "
+         + primaryKeyName + " = ?";
+
+      try
+      {
+         int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKey);
+         deleteOutput.addToDeletedRecordCount(rowCount);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // it seems like maybe we shouldn't do the below - ids that aren't found will hit this condition,  //
+         // but we (1) don't care and (2) can't detect this case when doing an in-list delete, so, let's    //
+         // make the results match, and just avoid adding to the deleted count, not marking it as an error. //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if(rowCount == 1)
+         // {
+         //    deleteOutput.addToDeletedRecordCount(1);
+         // }
+         // else
+         // {
+         //    LOG.debug("rowCount 0 trying to delete [" + tableName + "][" + primaryKey + "]");
+         //    deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError("Record was not deleted (but no error was given from the database)"));
+         // }
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Exception trying to delete [" + tableName + "][" + primaryKey + "]", e);
+         deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError("Record was not deleted: " + e.getMessage()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void doDeleteList(Connection connection, QTableMetaData table, List<Serializable> primaryKeys, DeleteOutput deleteOutput) throws QException
+   {
+      try
+      {
+         String tableName      = getTableName(table);
+         String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
+         String sql = "DELETE FROM "
+            + tableName
+            + " WHERE "
+            + primaryKeyName
+            + " IN ("
+            + primaryKeys.stream().map(x -> "?").collect(Collectors.joining(","))
+            + ")";
+
+         // todo sql customization - can edit sql and/or param list
+
+         Integer rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKeys);
+         deleteOutput.addToDeletedRecordCount(rowCount);
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error executing delete: " + e.getMessage(), e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void deleteQueryFilter(Connection connection, DeleteInput deleteInput, DeleteOutput deleteOutput) throws QException
+   {
+      QQueryFilter       filter = deleteInput.getQueryFilter();
+      List<Serializable> params = new ArrayList<>();
+      QTableMetaData     table  = deleteInput.getTable();
+
+      String tableName   = getTableName(table);
+      String whereClause = makeWhereClause(table, filter.getCriteria(), params);
+
+      // todo sql customization - can edit sql and/or param list?
+      String sql = "DELETE FROM "
+         + tableName
+         + " WHERE "
+         + whereClause;
+
+      try
+      {
+         int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, params);
+
+         deleteOutput.setDeletedRecordCount(rowCount);
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error executing delete with filter: " + e.getMessage(), e);
+      }
+   }
 }

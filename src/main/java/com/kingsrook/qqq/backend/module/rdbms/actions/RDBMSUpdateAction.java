@@ -58,6 +58,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 {
    private static final Logger LOG = LogManager.getLogger(RDBMSUpdateAction.class);
 
+   private int statusCounter = 0;
+
 
 
    /*******************************************************************************
@@ -119,7 +121,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          /////////////////////////////////////////////////////////////////////////////////////////////
          for(List<String> fieldsBeingUpdated : recordsByFieldBeingUpdated.keySet())
          {
-            updateRecordsWithMatchingListOfFields(connection, table, recordsByFieldBeingUpdated.get(fieldsBeingUpdated), fieldsBeingUpdated);
+            updateRecordsWithMatchingListOfFields(updateInput, connection, table, recordsByFieldBeingUpdated.get(fieldsBeingUpdated), fieldsBeingUpdated);
          }
 
          return rs;
@@ -136,15 +138,25 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void updateRecordsWithMatchingListOfFields(Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
+   private void updateRecordsWithMatchingListOfFields(UpdateInput updateInput, Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
    {
       ////////////////////////////////////////////////////////////////////////////////
       // check for an optimization - if all of the records have the same values for //
       // all fields being updated, just do 1 update, with an IN list on the ids.    //
       ////////////////////////////////////////////////////////////////////////////////
-      if(areAllValuesBeingUpdatedTheSame(recordList, fieldsBeingUpdated))
+      boolean allAreTheSame;
+      if(updateInput.getAreAllValuesBeingUpdatedTheSame() != null)
       {
-         updateRecordsWithMatchingValuesAndFields(connection, table, recordList, fieldsBeingUpdated);
+         allAreTheSame = updateInput.getAreAllValuesBeingUpdatedTheSame();
+      }
+      else
+      {
+         allAreTheSame = areAllValuesBeingUpdatedTheSame(recordList, fieldsBeingUpdated);
+      }
+
+      if(allAreTheSame)
+      {
+         updateRecordsWithMatchingValuesAndFields(updateInput, connection, table, recordList, fieldsBeingUpdated);
          return;
       }
 
@@ -174,7 +186,9 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       // let query manager do the batch updates - note that it will internally page //
       ////////////////////////////////////////////////////////////////////////////////
       QueryManager.executeBatchUpdate(connection, sql, values);
+      incrementStatus(updateInput, recordList.size());
    }
+
 
 
 
@@ -198,7 +212,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void updateRecordsWithMatchingValuesAndFields(Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
+   private void updateRecordsWithMatchingValuesAndFields(UpdateInput updateInput, Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
    {
       for(List<QRecord> page : CollectionUtils.getPages(recordList, QueryManager.PAGE_SIZE))
       {
@@ -230,6 +244,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          // let query manager do the update //
          /////////////////////////////////////
          QueryManager.executeUpdate(connection, sql, params);
+         incrementStatus(updateInput, page.size());
       }
    }
 
@@ -260,5 +275,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 
       return (true);
    }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void incrementStatus(UpdateInput updateInput, int amount)
+   {
+      statusCounter += amount;
+      updateInput.getAsyncJobCallback().updateStatus(statusCounter, updateInput.getRecords().size());
+   }
+
 
 }
