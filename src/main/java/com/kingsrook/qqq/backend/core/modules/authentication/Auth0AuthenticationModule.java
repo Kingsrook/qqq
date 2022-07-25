@@ -286,6 +286,18 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 
 
       /*******************************************************************************
+       ** Make the key give a unique string to identify itself.
+       *
+       *******************************************************************************/
+      @Override
+      public String getUniqueIdentifier()
+      {
+         return (this.key);
+      }
+
+
+
+      /*******************************************************************************
        **
        *******************************************************************************/
       @Override
