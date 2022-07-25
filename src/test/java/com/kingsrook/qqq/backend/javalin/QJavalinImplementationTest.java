@@ -373,8 +373,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
-      assertEquals(1, jsonObject.getJSONArray("records").length());
-      assertEquals(3, jsonObject.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(1, jsonObject.getInt("deletedRecordCount"));
       TestUtils.runTestSql("SELECT id FROM person", (rs -> {
          int rowsFound = 0;
          while(rs.next())
