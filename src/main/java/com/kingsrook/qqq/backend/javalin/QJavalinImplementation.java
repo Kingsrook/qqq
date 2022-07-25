@@ -761,17 +761,13 @@ public class QJavalinImplementation
             return;
          }
 
+         ////////////////////////////////
+         // default exception handling //
+         ////////////////////////////////
          LOG.warn("Exception in javalin request", e);
          int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
          context.status(code).result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
       }
-
-      ////////////////////////////////
-      // default exception handling //
-      ////////////////////////////////
-      LOG.warn("Exception in javalin request", e);
-      context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-         .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
    }
 
 
