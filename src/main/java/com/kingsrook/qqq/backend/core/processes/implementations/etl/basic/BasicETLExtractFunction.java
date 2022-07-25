@@ -49,7 +49,7 @@ public class BasicETLExtractFunction implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
-      LOG.info("Start query on table: " + runBackendStepInput.getTableName());
+      LOG.info("Start query on table: " + tableName);
 
       QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
       queryInput.setSession(runBackendStepInput.getSession());
@@ -68,6 +68,6 @@ public class BasicETLExtractFunction implements BackendStep
       QueryOutput queryOutput = queryAction.execute(queryInput);
 
       runBackendStepOutput.setRecords(queryOutput.getRecords());
-      LOG.info("Query on table " + runBackendStepInput.getTableName() + " produced " + queryOutput.getRecords().size() + " records.");
+      LOG.info("Query on table " + tableName + " produced " + queryOutput.getRecords().size() + " records.");
    }
 }
