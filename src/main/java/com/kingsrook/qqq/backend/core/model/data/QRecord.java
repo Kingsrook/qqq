@@ -25,9 +25,12 @@ package com.kingsrook.qqq.backend.core.model.data;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -54,7 +57,7 @@ public class QRecord implements Serializable
    private Map<String, Serializable> values         = new LinkedHashMap<>();
    private Map<String, String>       displayValues  = new LinkedHashMap<>();
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
-   // todo private List<String>              errors         = new ArrayList<>();
+   private List<String>              errors         = new ArrayList<>();
 
 
 
@@ -63,6 +66,16 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public QRecord()
    {
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord(QTableMetaData tableMetaData, Serializable primaryKeyValue)
+   {
+      setTableName(tableMetaData.getName());
+      setValue(tableMetaData.getPrimaryKeyField(), primaryKeyValue);
    }
 
 
@@ -77,7 +90,7 @@ public class QRecord implements Serializable
       this.values = record.values;
       this.displayValues = record.displayValues;
       this.backendDetails = record.backendDetails;
-      // todo! this.errors = record.errors;
+      this.errors = record.errors;
    }
 
 
@@ -344,6 +357,49 @@ public class QRecord implements Serializable
    }
 
 
+   /*******************************************************************************
+    ** Getter for errors
+    **
+    *******************************************************************************/
+   public List<String> getErrors()
+   {
+      return (errors);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for errors
+    **
+    *******************************************************************************/
+   public void setErrors(List<String> errors)
+   {
+      this.errors = errors;
+   }
+
+
+
+   /*******************************************************************************
+    ** Add one error to this record
+    **
+    *******************************************************************************/
+   public void addError(String error)
+   {
+      this.errors.add(error);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluently Add one error to this record
+    **
+    *******************************************************************************/
+   public QRecord withError(String error)
+   {
+      addError(error);
+      return (this);
+   }
+
 
    /*******************************************************************************
     ** Convert this record to an QRecordEntity
@@ -352,4 +408,5 @@ public class QRecord implements Serializable
    {
       return (QRecordEntity.fromQRecord(c, this));
    }
+
 }

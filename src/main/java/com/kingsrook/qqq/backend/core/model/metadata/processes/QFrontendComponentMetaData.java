@@ -19,86 +19,104 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /*******************************************************************************
- ** Bean representing an element of a query order-by clause.
- **
+ ** Definition of a UI component in a frontend process steps.
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public class QFrontendComponentMetaData
 {
-   private String fieldName;
-   private boolean isAscending = true;
+   private QComponentType type;
+
+   private Map<String, Serializable> values;
 
 
 
    /*******************************************************************************
-    ** Getter for fieldName
+    ** Getter for type
     **
     *******************************************************************************/
-   public String getFieldName()
+   public QComponentType getType()
    {
-      return fieldName;
+      return type;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
+    ** Setter for type
     **
     *******************************************************************************/
-   public void setFieldName(String fieldName)
+   public void setType(QComponentType type)
    {
-      this.fieldName = fieldName;
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for fieldName
+    ** Fluent setter for type
     **
     *******************************************************************************/
-   public QFilterOrderBy withFieldName(String fieldName)
+   public QFrontendComponentMetaData withType(QComponentType type)
    {
-      this.fieldName = fieldName;
+      this.type = type;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isAscending
+    ** Getter for values
     **
     *******************************************************************************/
-   public boolean getIsAscending()
+   public Map<String, Serializable> getValues()
    {
-      return isAscending;
+      return values;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isAscending
+    ** Setter for values
     **
     *******************************************************************************/
-   public void setIsAscending(boolean ascending)
+   public void setValues(Map<String, Serializable> values)
    {
-      isAscending = ascending;
+      this.values = values;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for isAscending
+    ** Fluent setter for values
     **
     *******************************************************************************/
-   public QFilterOrderBy withIsAscending(boolean ascending)
+   public QFrontendComponentMetaData withValues(Map<String, Serializable> values)
    {
-      this.isAscending = ascending;
+      this.values = values;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for values
+    **
+    *******************************************************************************/
+   public QFrontendComponentMetaData withValue(String key, Serializable value)
+   {
+      if(values == null)
+      {
+         values = new HashMap<>();
+      }
+      values.put(key, value);
       return (this);
    }
 

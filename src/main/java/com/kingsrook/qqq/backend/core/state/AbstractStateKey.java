@@ -22,10 +22,13 @@
 package com.kingsrook.qqq.backend.core.state;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractStateKey
+public abstract class AbstractStateKey implements Serializable
 {
    /*******************************************************************************
     ** Make the key give a unique string to identify itself.

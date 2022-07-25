@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -56,6 +57,17 @@ public class QueryInput extends AbstractTableActionInput
    public QueryInput(QInstance instance)
    {
       super(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QueryInput(QInstance instance, QSession session)
+   {
+      super(instance);
+      setSession(session);
    }
 
 

@@ -19,39 +19,61 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.mock;
+package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Mocked up version of delete action.
- **
+ ** Model a file that a user uploaded (or otherwise submitted to the qqq backend).
  *******************************************************************************/
-public class MockDeleteAction implements DeleteInterface
+public class QUploadedFile implements Serializable
 {
+   private String filename;
+   private byte[] bytes;
+
+
 
    /*******************************************************************************
+    ** Getter for filename
     **
     *******************************************************************************/
-   public DeleteOutput execute(DeleteInput deleteInput) throws QException
+   public String getFilename()
    {
-      try
-      {
-         DeleteOutput rs = new DeleteOutput();
-
-         rs.setDeletedRecordCount(deleteInput.getPrimaryKeys().size());
-
-         return rs;
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error executing delete: " + e.getMessage(), e);
-      }
+      return filename;
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for filename
+    **
+    *******************************************************************************/
+   public void setFilename(String filename)
+   {
+      this.filename = filename;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for bytes
+    **
+    *******************************************************************************/
+   public byte[] getBytes()
+   {
+      return bytes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for bytes
+    **
+    *******************************************************************************/
+   public void setBytes(byte[] bytes)
+   {
+      this.bytes = bytes;
+   }
 }

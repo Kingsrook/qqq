@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -44,6 +45,7 @@ public class RunBackendStepInput extends AbstractActionInput
 {
    private ProcessState     processState;
    private String           processName;
+   private String           tableName;
    private String           stepName;
    private QProcessCallback callback;
    private AsyncJobCallback asyncJobCallback;
@@ -122,6 +124,55 @@ public class RunBackendStepInput extends AbstractActionInput
    {
       this.processName = processName;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableName
+    **
+    *******************************************************************************/
+   public String getTableName()
+   {
+      return tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableName
+    **
+    *******************************************************************************/
+   public void setTableName(String tableName)
+   {
+      this.tableName = tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    **
+    *******************************************************************************/
+   public RunBackendStepInput withTableName(String tableName)
+   {
+      this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData getTable()
+   {
+      if(tableName == null)
+      {
+         return (null);
+      }
+
+      return (instance.getTable(tableName));
    }
 
 
@@ -334,7 +385,7 @@ public class RunBackendStepInput extends AbstractActionInput
     *******************************************************************************/
    public AsyncJobCallback getAsyncJobCallback()
    {
-      if (asyncJobCallback == null)
+      if(asyncJobCallback == null)
       {
          /////////////////////////////////////////////////////////////////////////
          // avoid NPE in case we didn't have one of these!  create a new one... //

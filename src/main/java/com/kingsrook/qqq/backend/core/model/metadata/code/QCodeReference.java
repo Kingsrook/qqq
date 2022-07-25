@@ -22,14 +22,71 @@
 package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+
+
 /*******************************************************************************
- **
+ ** Pointer to code to be ran by the qqq framework, e.g., for custom behavior -
+ ** maybe process steps, maybe customization to a table, etc.
  *******************************************************************************/
 public class QCodeReference
 {
-   private String name;
-   private QCodeType codeType;
+   private String     name;
+   private QCodeType  codeType;
    private QCodeUsage codeUsage;
+
+
+
+   /*******************************************************************************
+    ** Default empty constructor
+    *******************************************************************************/
+   public QCodeReference()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor that takes all args
+    *******************************************************************************/
+   public QCodeReference(String name, QCodeType codeType, QCodeUsage codeUsage)
+   {
+      this.name = name;
+      this.codeType = codeType;
+      this.codeUsage = codeUsage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor that just takes a java class, and infers the other fields.
+    *******************************************************************************/
+   public QCodeReference(Class<?> javaClass)
+   {
+      this.name = javaClass.getName();
+      this.codeType = QCodeType.JAVA;
+
+      if(BackendStep.class.isAssignableFrom(javaClass))
+      {
+         this.codeUsage = QCodeUsage.BACKEND_STEP;
+      }
+      else
+      {
+         throw (new IllegalStateException("Unable to infer code usage type for class: " + javaClass.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor that just takes a java class and code usage.
+    *******************************************************************************/
+   public QCodeReference(Class<?> javaClass, QCodeUsage codeUsage)
+   {
+      this.name = javaClass.getName();
+      this.codeType = QCodeType.JAVA;
+      this.codeUsage = codeUsage;
+   }
 
 
 

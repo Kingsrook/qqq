@@ -109,6 +109,7 @@ public class RunBackendStepActionTest
                      XYZ""";
                   case HTML -> "<b>Oh my</b>";
                   case PASSWORD -> "myPa**word";
+                  case BLOB -> new byte[] { 1, 2, 3, 4 };
                });
          }
          return (rs);

@@ -26,12 +26,14 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 
 
 /*******************************************************************************
@@ -49,8 +51,12 @@ public class LoadInitialRecordsStep implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       /////////////////////////////////////////////////////////////////////////////////////////////////
-      // actually, this is a no-op... we Just need a backendStep to be the first step in the process //
+      // basically this is a no-op... we Just need a backendStep to be the first step in the process //
+      // but, while we're here, go ahead and put the query filter in the payload as a value, in case //
+      // someone else wants it (see BulkDelete)                                                      //
       /////////////////////////////////////////////////////////////////////////////////////////////////
+      QQueryFilter queryFilter = runBackendStepInput.getCallback().getQueryFilter();
+      runBackendStepOutput.addValue("queryFilterJSON", JsonUtils.toJson(queryFilter));
    }
 
 

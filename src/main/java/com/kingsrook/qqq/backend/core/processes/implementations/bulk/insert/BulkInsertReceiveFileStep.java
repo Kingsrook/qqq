@@ -19,39 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.mock;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- ** Mocked up version of delete action.
- **
+ ** Backend step to receive a bulk-insert upload file
  *******************************************************************************/
-public class MockDeleteAction implements DeleteInterface
+public class BulkInsertReceiveFileStep implements BackendStep
 {
-
    /*******************************************************************************
     **
     *******************************************************************************/
-   public DeleteOutput execute(DeleteInput deleteInput) throws QException
+   @Override
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      try
-      {
-         DeleteOutput rs = new DeleteOutput();
+      List<QRecord> qRecords = BulkInsertUtils.getQRecordsFromFile(runBackendStepInput);
 
-         rs.setDeletedRecordCount(deleteInput.getPrimaryKeys().size());
-
-         return rs;
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error executing delete: " + e.getMessage(), e);
-      }
+      runBackendStepOutput.addValue("noOfFileRows", qRecords.size());
+      runBackendStepOutput.setRecords(qRecords);
    }
-
 }

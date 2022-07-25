@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.actions;
 
 
+import java.util.UUID;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
@@ -40,7 +43,9 @@ public abstract class AbstractActionInput
    private static final Logger LOG = LogManager.getLogger(AbstractActionInput.class);
 
    protected QInstance instance;
-   protected QSession session;
+   protected QSession  session;
+
+   private AsyncJobCallback asyncJobCallback;
 
 
 
@@ -59,7 +64,16 @@ public abstract class AbstractActionInput
    public AbstractActionInput(QInstance instance)
    {
       this.instance = instance;
+      validateInstance(instance);
+   }
 
+
+
+   /*******************************************************************************
+    ** performance instance validation (if not previously done).
+    *******************************************************************************/
+   private void validateInstance(QInstance instance)
+   {
       ////////////////////////////////////////////////////////////
       // if this instance hasn't been validated yet, do so now  //
       // noting that this will also enrich any missing metaData //
@@ -107,6 +121,7 @@ public abstract class AbstractActionInput
     *******************************************************************************/
    public void setInstance(QInstance instance)
    {
+      validateInstance(instance);
       this.instance = instance;
    }
 
@@ -130,5 +145,34 @@ public abstract class AbstractActionInput
    public void setSession(QSession session)
    {
       this.session = session;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for asyncJobCallback
+    **
+    *******************************************************************************/
+   public AsyncJobCallback getAsyncJobCallback()
+   {
+      if(asyncJobCallback == null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // don't return null here (too easy to NPE).  instead, if someone wants one of these, create one and give it to them. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus());
+      }
+      return asyncJobCallback;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for asyncJobCallback
+    **
+    *******************************************************************************/
+   public void setAsyncJobCallback(AsyncJobCallback asyncJobCallback)
+   {
+      this.asyncJobCallback = asyncJobCallback;
    }
 }
