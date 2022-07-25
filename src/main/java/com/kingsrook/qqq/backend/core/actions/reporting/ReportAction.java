@@ -180,7 +180,7 @@ public class ReportAction
 
          if(countFromPreExecute != null)
          {
-            LOG.info(String.format("Processed %,d of %,d records so far"), recordCount, countFromPreExecute);
+            LOG.info(String.format("Processed %,d of %,d records so far", recordCount, countFromPreExecute));
          }
          else
          {
