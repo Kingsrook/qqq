@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -42,7 +43,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMe
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
@@ -108,9 +108,9 @@ public class SampleMetaDataProvider
     *******************************************************************************/
    private static QAuthenticationMetaData defineAuthentication()
    {
-      return (new Auth0AuthenticationMetaData()
-         .withBaseUrl(AUTH0_BASE_URL)
-         .withName(AUTH0_AUTHENTICATION_MODULE_NAME));
+      return (new QAuthenticationMetaData()
+         .withName("mock")
+         .withType(QAuthenticationType.MOCK));
    }
 
 
