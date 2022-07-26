@@ -198,6 +198,10 @@ public class ValueUtils
          {
             return (null);
          }
+         else if(value instanceof LocalDate ld)
+         {
+            return (ld);
+         }
          else if(value instanceof java.sql.Date d)
          {
             return d.toLocalDate();
@@ -227,12 +231,12 @@ public class ValueUtils
          }
          else
          {
-            throw (new IllegalArgumentException("Unsupported class " + value.getClass().getName() + " for converting to BigDecimal."));
+            throw (new IllegalArgumentException("Unsupported class " + value.getClass().getName() + " for converting to LocalDate."));
          }
       }
       catch(Exception e)
       {
-         throw (new QValueException("Value [" + value + "] could not be converted to an BigDecimal.", e));
+         throw (new QValueException("Value [" + value + "] could not be converted to an LocalDate.", e));
       }
    }
 
