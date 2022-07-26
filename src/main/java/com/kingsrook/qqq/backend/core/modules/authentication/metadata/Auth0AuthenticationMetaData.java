@@ -26,7 +26,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of an RDBMS backend (e.g., connection params)
+ ** Meta-data to provide details of an Auth0 Authentication module
  *******************************************************************************/
 public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
 {

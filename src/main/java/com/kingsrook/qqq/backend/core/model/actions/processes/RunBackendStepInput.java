@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -332,6 +333,17 @@ public class RunBackendStepInput extends AbstractActionInput
    public Serializable getValue(String fieldName)
    {
       return (processState.getValues().get(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's date value
+    **
+    *******************************************************************************/
+   public LocalDate getValueDate(String fieldName)
+   {
+      return ((LocalDate) getValue(fieldName));
    }
 
 
