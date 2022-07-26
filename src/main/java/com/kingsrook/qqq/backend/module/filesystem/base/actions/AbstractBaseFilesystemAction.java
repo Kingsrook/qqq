@@ -186,9 +186,8 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
       try
       {
-         QueryOutput   rs      = new QueryOutput();
+         QueryOutput   rs      = new QueryOutput(queryInput);
          List<QRecord> records = new ArrayList<>();
-         rs.setRecords(records);
 
          QTableMetaData                        table        = queryInput.getTable();
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
@@ -228,6 +227,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
             }
          }
 
+         rs.addRecords(records);
          return rs;
       }
       catch(Exception e)

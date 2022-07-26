@@ -26,13 +26,14 @@ import java.io.File;
 import java.io.IOException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
@@ -135,7 +136,7 @@ public class TestUtils
    {
       return new QAuthenticationMetaData()
          .withName("mock")
-         .withType("mock");
+         .withType(QAuthenticationType.MOCK);
    }
 
 
@@ -222,6 +223,6 @@ public class TestUtils
    public static QSession getMockSession()
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
-      return (mockAuthenticationModule.createSession(null));
+      return (mockAuthenticationModule.createSession(null, null));
    }
 }
