@@ -32,6 +32,5 @@ public enum StateType
 {
    PROCESS_STATUS,
    ASYNC_JOB_STATUS,
-   ASYNC_JOB_RESULT,
    UPLOADED_FILE
 }

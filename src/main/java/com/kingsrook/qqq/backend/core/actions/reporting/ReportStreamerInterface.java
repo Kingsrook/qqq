@@ -22,12 +22,10 @@
 package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
-import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
@@ -38,7 +36,7 @@ public interface ReportStreamerInterface
    /*******************************************************************************
     ** Called once, before any rows are available.  Meant to write a header, for example.
     *******************************************************************************/
-   void start(ReportInput reportInput) throws QReportingException;
+   void start(ReportInput reportInput, List<QFieldMetaData> fields) throws QReportingException;
 
    /*******************************************************************************
     ** Called as records flow into the pipe.
@@ -49,21 +47,5 @@ public interface ReportStreamerInterface
     ** Called once, after all rows are available.  Meant to write a footer, or close resources, for example.
     *******************************************************************************/
    void finish() throws QReportingException;
-
-   /*******************************************************************************
-    ** (Ideally, protected) method used within report streamer implementations, to
-    ** map field names from reportInput into list of fieldMetaData.
-    *******************************************************************************/
-   default List<QFieldMetaData> setupFieldList(QTableMetaData table, ReportInput reportInput)
-   {
-      if(reportInput.getFieldNames() != null)
-      {
-         return (reportInput.getFieldNames().stream().map(table::getField).toList());
-      }
-      else
-      {
-         return (new ArrayList<>(table.getFields().values()));
-      }
-   }
 
 }

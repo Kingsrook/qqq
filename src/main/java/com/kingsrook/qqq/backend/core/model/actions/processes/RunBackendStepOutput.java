@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
@@ -204,7 +205,7 @@ public class RunBackendStepOutput extends AbstractActionOutput
     *******************************************************************************/
    public String getValueString(String fieldName)
    {
-      return ((String) getValue(fieldName));
+      return (ValueUtils.getValueAsString(getValue(fieldName)));
    }
 
 
@@ -216,6 +217,28 @@ public class RunBackendStepOutput extends AbstractActionOutput
    public Integer getValueInteger(String fieldName)
    {
       return (ValueUtils.getValueAsInteger(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Boolean getValueBoolean(String fieldName)
+   {
+      return (ValueUtils.getValueAsBoolean(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public BigDecimal getValueBigDecimal(String fieldName)
+   {
+      return (ValueUtils.getValueAsBigDecimal(getValue(fieldName)));
    }
 
 }

@@ -72,16 +72,15 @@ public class ExcelReportStreamer implements ReportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ReportInput reportInput) throws QReportingException
+   public void start(ReportInput reportInput, List<QFieldMetaData> fields) throws QReportingException
    {
       this.reportInput = reportInput;
+      this.fields = fields;
       table = reportInput.getTable();
       outputStream = this.reportInput.getReportOutputStream();
 
       workbook = new Workbook(outputStream, "QQQ", null);
       worksheet = workbook.newWorksheet("Sheet 1");
-
-      fields = setupFieldList(table, reportInput);
 
       writeReportHeaderRow();
    }

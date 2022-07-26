@@ -23,16 +23,11 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit;
 
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -68,26 +63,7 @@ public class BulkEditReceiveValuesStep implements BackendStep
          }
       }
 
-      /////////////////////////////////////////////////////////////////////
-      // build the string to show the user what fields are being changed //
-      /////////////////////////////////////////////////////////////////////
-      List<String>   valuesBeingUpdated = new ArrayList<>();
-      QTableMetaData table              = runBackendStepInput.getTable();
-      for(String fieldName : enabledFields)
-      {
-         String       label = table.getField(fieldName).getLabel();
-         Serializable value = runBackendStepInput.getValue(fieldName);
-
-         if(StringUtils.hasContent(ValueUtils.getValueAsString(value)))
-         {
-            valuesBeingUpdated.add(label + " will be set to: " + value);
-         }
-         else
-         {
-            valuesBeingUpdated.add(label + " will be cleared out.");
-         }
-      }
-      runBackendStepOutput.addValue(FIELD_VALUES_BEING_UPDATED, String.join("\n", valuesBeingUpdated));
+      BulkEditUtils.setFieldValuesBeingUpdated(runBackendStepInput, runBackendStepOutput, enabledFields, "will be");
 
       runBackendStepOutput.setRecords(runBackendStepInput.getRecords());
    }

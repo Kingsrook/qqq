@@ -65,13 +65,12 @@ public class CsvReportStreamer implements ReportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ReportInput reportInput) throws QReportingException
+   public void start(ReportInput reportInput, List<QFieldMetaData> fields) throws QReportingException
    {
       this.reportInput = reportInput;
+      this.fields = fields;
       table = reportInput.getTable();
       outputStream = this.reportInput.getReportOutputStream();
-
-      fields = setupFieldList(table, reportInput);
 
       writeReportHeaderRow();
    }

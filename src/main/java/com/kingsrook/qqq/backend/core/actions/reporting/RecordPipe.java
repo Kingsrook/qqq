@@ -22,10 +22,9 @@
 package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -35,16 +34,16 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class RecordPipe
 {
-   private Queue<QRecord> queue = new ArrayDeque<>();
-
+   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(10_000);
 
 
    /*******************************************************************************
     ** Add a record to the pipe
+    ** Returns true iff the record fit in the pipe; false if the pipe is currently full.
     *******************************************************************************/
-   public void addRecord(QRecord record)
+   public boolean addRecord(QRecord record)
    {
-      queue.add(record);
+      return (queue.offer(record));
    }
 
 

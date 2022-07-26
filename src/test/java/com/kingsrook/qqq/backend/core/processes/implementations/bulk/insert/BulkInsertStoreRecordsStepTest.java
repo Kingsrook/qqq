@@ -64,7 +64,7 @@ class BulkInsertStoreRecordsStepTest
       RunBackendStepInput stepInput = new RunBackendStepInput(TestUtils.defineInstance());
       stepInput.setSession(TestUtils.getMockSession());
       stepInput.setTableName(TestUtils.defineTablePerson().getName());
-      stepInput.addValue("uploadedFileKey", key);
+      stepInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
 
       RunBackendStepOutput stepOutput = new RunBackendStepOutput();
       new BulkInsertStoreRecordsStep().run(stepInput, stepOutput);

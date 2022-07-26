@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -63,7 +64,7 @@ class BulkInsertReceiveFileStepTest
       RunBackendStepInput stepInput = new RunBackendStepInput(TestUtils.defineInstance());
       stepInput.setSession(TestUtils.getMockSession());
       stepInput.setTableName(TestUtils.defineTablePerson().getName());
-      stepInput.addValue("uploadedFileKey", key);
+      stepInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
 
       RunBackendStepOutput stepOutput = new RunBackendStepOutput();
       new BulkInsertReceiveFileStep().run(stepInput, stepOutput);
@@ -76,6 +77,38 @@ class BulkInsertReceiveFileStepTest
       assertNull(records.get(1).getValue("id"));
 
       assertEquals(2, stepOutput.getValueInteger("noOfFileRows"));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBadFileType() throws QException
+   {
+      ////////////////////////////////////////////////////////////////
+      // create an uploaded file, similar to how an http server may //
+      ////////////////////////////////////////////////////////////////
+      QUploadedFile qUploadedFile = new QUploadedFile();
+      qUploadedFile.setBytes((TestUtils.getPersonCsvHeaderUsingLabels() + TestUtils.getPersonCsvRow1() + TestUtils.getPersonCsvRow2()).getBytes()); // todo - this is NOT excel content...
+      qUploadedFile.setFilename("test.xslx");
+      UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
+      TempFileStateProvider.getInstance().put(key, qUploadedFile);
+
+      ////////////////////////////
+      // setup and run the step //
+      ////////////////////////////
+      RunBackendStepInput stepInput = new RunBackendStepInput(TestUtils.defineInstance());
+      stepInput.setSession(TestUtils.getMockSession());
+      stepInput.setTableName(TestUtils.defineTablePerson().getName());
+      stepInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
+
+      RunBackendStepOutput stepOutput = new RunBackendStepOutput();
+
+      assertThrows(QUserFacingException.class, () ->
+      {
+         new BulkInsertReceiveFileStep().run(stepInput, stepOutput);
+      });
    }
 
 }

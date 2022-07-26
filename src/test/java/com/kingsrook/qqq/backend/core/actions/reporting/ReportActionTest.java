@@ -34,7 +34,9 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.apache.commons.io.FileUtils;
@@ -58,6 +60,27 @@ class ReportActionTest
    public void testCSV() throws Exception
    {
       int    recordCount = 1000;
+      String filename    = "/tmp/ReportActionTest.csv";
+
+      runReport(recordCount, filename, ReportFormat.CSV, false);
+
+      File         file      = new File(filename);
+      List<String> fileLines = FileUtils.readLines(file, StandardCharsets.UTF_8.name());
+      assertEquals(recordCount + 1, fileLines.size());
+      assertTrue(file.delete());
+   }
+
+
+
+   /*******************************************************************************
+    ** This test runs for more records, to stress more of the pipe-filling and
+    ** other bits of the ReportAction.
+    *******************************************************************************/
+   @Test
+   public void testBigger() throws Exception
+   {
+      // int    recordCount = 2_000_000; // to really stress locally, use this.
+      int    recordCount = 200_000;
       String filename    = "/tmp/ReportActionTest.csv";
 
       runReport(recordCount, filename, ReportFormat.CSV, false);
@@ -142,12 +165,49 @@ class ReportActionTest
       ReportInput reportInput = new ReportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
       reportInput.setTableName("person");
 
-      ////////////////////////////////////////////////////////////////
-      // use xlsx, which has a max-rows limit, to verify that code. //
-      ////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // use xlsx, which has a max-rows limit, to verify that code runs, but doesn't throw when there aren't too many rows //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       reportInput.setReportFormat(ReportFormat.XLSX);
 
       new ReportAction().preExecute(reportInput);
+
+      ////////////////////////////////////////////////////////////////////////////
+      // nothing to assert - but if preExecute throws, then the test will fail. //
+      ////////////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTooManyColumns() throws QException
+   {
+      QTableMetaData wideTable = new QTableMetaData()
+         .withName("wide")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME);
+      for(int i = 0; i < ReportFormat.XLSX.getMaxCols() + 1; i++)
+      {
+         wideTable.addField(new QFieldMetaData("field" + i, QFieldType.STRING));
+      }
+
+      QInstance qInstance = TestUtils.defineInstance();
+      qInstance.addTable(wideTable);
+
+      ReportInput reportInput = new ReportInput(qInstance, TestUtils.getMockSession());
+      reportInput.setTableName("wide");
+
+      ////////////////////////////////////////////////////////////////
+      // use xlsx, which has a max-cols limit, to verify that code. //
+      ////////////////////////////////////////////////////////////////
+      reportInput.setReportFormat(ReportFormat.XLSX);
+
+      assertThrows(QUserFacingException.class, () ->
+      {
+         new ReportAction().preExecute(reportInput);
+      });
    }
 
 }

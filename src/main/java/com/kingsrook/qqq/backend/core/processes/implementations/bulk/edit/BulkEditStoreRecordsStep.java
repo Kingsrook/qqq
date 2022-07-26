@@ -69,7 +69,7 @@ public class BulkEditStoreRecordsStep implements BackendStep
          }
       }
 
-      runBackendStepInput.getAsyncJobCallback().updateStatus("Updating database...");
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Storing updated records...");
       runBackendStepInput.getAsyncJobCallback().clearCurrentAndTotal();
 
       UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
@@ -83,6 +83,8 @@ public class BulkEditStoreRecordsStep implements BackendStep
       UpdateOutput updateOutput = updateAction.execute(updateInput);
 
       runBackendStepOutput.setRecords(updateOutput.getRecords());
+
+      BulkEditUtils.setFieldValuesBeingUpdated(runBackendStepInput, runBackendStepOutput, enabledFields, "was");
    }
 
 }

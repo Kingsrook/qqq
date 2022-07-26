@@ -37,11 +37,12 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public enum ReportFormat
 {
-   XLSX(Worksheet.MAX_ROWS, ExcelReportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-   CSV(null, CsvReportStreamer::new, "text/csv");
+   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelReportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+   CSV(null, null, CsvReportStreamer::new, "text/csv");
 
 
    private final Integer maxRows;
+   private final Integer maxCols;
    private final String  mimeType;
 
    private final Supplier<? extends ReportStreamerInterface> streamerConstructor;
@@ -51,9 +52,10 @@ public enum ReportFormat
    /*******************************************************************************
     **
     *******************************************************************************/
-   ReportFormat(Integer maxRows, Supplier<? extends ReportStreamerInterface> streamerConstructor, String mimeType)
+   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ReportStreamerInterface> streamerConstructor, String mimeType)
    {
       this.maxRows = maxRows;
+      this.maxCols = maxCols;
       this.mimeType = mimeType;
       this.streamerConstructor = streamerConstructor;
    }
@@ -89,6 +91,16 @@ public enum ReportFormat
    public Integer getMaxRows()
    {
       return maxRows;
+   }
+
+
+   /*******************************************************************************
+    ** Getter for maxCols
+    **
+    *******************************************************************************/
+   public Integer getMaxCols()
+   {
+      return maxCols;
    }
 
 

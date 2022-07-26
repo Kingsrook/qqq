@@ -58,8 +58,16 @@ class QueryOutputRecordPipe implements QueryOutputStorageInterface
    @Override
    public void addRecord(QRecord record)
    {
-      recordPipe.addRecord(record);
-      blockIfPipeIsTooFull();
+      if(!recordPipe.addRecord(record))
+      {
+         do
+         {
+            LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
+            SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
+         }
+         while(!recordPipe.addRecord(record));
+         LOG.debug("Done blocking.");
+      }
    }
 
 

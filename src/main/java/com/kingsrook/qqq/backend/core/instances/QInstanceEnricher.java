@@ -246,14 +246,12 @@ public class QInstanceEnricher
          .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withIsRequired(true))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "Upload a CSV or XLSX file with the following columns: " + fieldsForHelpText));
+            // .withValue("text", "Upload a CSV or XLSX file with the following columns: " + fieldsForHelpText));
+            .withValue("text", "Upload a CSV file with the following columns: " + fieldsForHelpText));
 
       QBackendStepMetaData receiveFileStep = new QBackendStepMetaData()
          .withName("receiveFile")
          .withCode(new QCodeReference(BulkInsertReceiveFileStep.class))
-         .withInputData(new QFunctionInputMetaData()
-            // todo - our upload file as a field?  problem is, its type...
-            .withFieldList(List.of()))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withFieldList(List.of(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER))));
 
@@ -268,9 +266,6 @@ public class QInstanceEnricher
       QBackendStepMetaData storeStep = new QBackendStepMetaData()
          .withName("storeRecords")
          .withCode(new QCodeReference(BulkInsertStoreRecordsStep.class))
-         .withInputData(new QFunctionInputMetaData()
-            // todo - our upload file as a field?  problem is, its type...
-            .withFieldList(List.of()))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withFieldList(List.of(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER))));
 
@@ -342,15 +337,13 @@ public class QInstanceEnricher
       QBackendStepMetaData storeStep = new QBackendStepMetaData()
          .withName("storeRecords")
          .withCode(new QCodeReference(BulkEditStoreRecordsStep.class))
-         .withInputData(new QFunctionInputMetaData()
-            // todo - our upload file as a field?  problem is, its type...
-            .withFieldList(List.of()))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withFieldList(List.of(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER))));
 
       QFrontendStepMetaData resultsScreen = new QFrontendStepMetaData()
          .withName("results")
          .withRecordListFields(new ArrayList<>(table.getFields().values()))
+         .withViewField(new QFieldMetaData(BulkEditReceiveValuesStep.FIELD_VALUES_BEING_UPDATED, QFieldType.STRING))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
             .withValue("text", "The records below have been updated."));

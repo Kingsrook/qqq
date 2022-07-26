@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -66,8 +67,12 @@ public class ReportAction
 {
    private static final Logger LOG = LogManager.getLogger(ReportAction.class);
 
-   private boolean preExecuteRan = false;
+   private boolean preExecuteRan       = false;
    private Integer countFromPreExecute = null;
+
+   private static final int TIMEOUT_AFTER_NO_RECORDS_MS = 10 * 60 * 1000;
+   private static final int MAX_SLEEP_MS                = 1000;
+   private static final int INIT_SLEEP_MS               = 10;
 
 
 
@@ -137,7 +142,6 @@ public class ReportAction
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  backendModule            = qBackendModuleDispatcher.getQBackendModule(reportInput.getBackend());
-      QTableMetaData           table                    = reportInput.getTable();
 
       //////////////////////////
       // set up a query input //
@@ -160,70 +164,85 @@ public class ReportAction
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ReportFormat            reportFormat   = reportInput.getReportFormat();
       ReportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
-      reportStreamer.start(reportInput);
+      reportStreamer.start(reportInput, getFields(reportInput));
 
       //////////////////////////////////////////
       // run the query action as an async job //
       //////////////////////////////////////////
       AsyncJobManager asyncJobManager = new AsyncJobManager();
-      String          jobUUID         = asyncJobManager.startJob("ReportAction>QueryAction", (status) -> (queryInterface.execute(queryInput)));
-      LOG.info("Started query job [" + jobUUID + "] for report");
+      String          queryJobUUID    = asyncJobManager.startJob("ReportAction>QueryAction", (status) -> (queryInterface.execute(queryInput)));
+      LOG.info("Started query job [" + queryJobUUID + "] for report");
 
-      AsyncJobState  asyncJobState   = AsyncJobState.RUNNING;
-      AsyncJobStatus asyncJobStatus  = null;
-      int            nextSleepMillis = 10;
-      long           recordCount     = 0;
-      while(asyncJobState.equals(AsyncJobState.RUNNING))
+      AsyncJobState  queryJobState  = AsyncJobState.RUNNING;
+      AsyncJobStatus asyncJobStatus = null;
+
+      long recordCount           = 0;
+      int  nextSleepMillis       = INIT_SLEEP_MS;
+      long lastReceivedRecordsAt = System.currentTimeMillis();
+      long reportStartTime       = System.currentTimeMillis();
+
+      while(queryJobState.equals(AsyncJobState.RUNNING))
       {
-         int recordsConsumed = reportStreamer.takeRecordsFromPipe(recordPipe);
-         recordCount += recordsConsumed;
-
-         if(countFromPreExecute != null)
+         if(recordPipe.countAvailableRecords() == 0)
          {
-            LOG.info(String.format("Processed %,d of %,d records so far", recordCount, countFromPreExecute));
+            ///////////////////////////////////////////////////////////
+            // if the pipe is empty, sleep to let the producer work. //
+            // todo - smarter sleep?  like get notified vs. sleep?   //
+            ///////////////////////////////////////////////////////////
+            LOG.info("No records are available in the pipe. Sleeping [" + nextSleepMillis + "] ms to give producer a chance to work");
+            SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
+            nextSleepMillis = Math.min(nextSleepMillis * 2, MAX_SLEEP_MS);
+
+            long timeSinceLastReceivedRecord = System.currentTimeMillis() - lastReceivedRecordsAt;
+            if(timeSinceLastReceivedRecord > TIMEOUT_AFTER_NO_RECORDS_MS)
+            {
+               throw (new QReportingException("Query action appears to have stopped producing records (last record received " + timeSinceLastReceivedRecord + " ms ago)."));
+            }
          }
          else
          {
-            LOG.info(String.format("Processed %,d records so far", recordCount));
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the pipe has records, consume them.  reset the sleep timer so if we sleep again it'll be short. //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            lastReceivedRecordsAt = System.currentTimeMillis();
+            nextSleepMillis = INIT_SLEEP_MS;
+
+            int recordsConsumed = reportStreamer.takeRecordsFromPipe(recordPipe);
+            recordCount += recordsConsumed;
+
+            LOG.info(countFromPreExecute != null
+               ? String.format("Processed %,d of %,d records so far", recordCount, countFromPreExecute)
+               : String.format("Processed %,d records so far", recordCount));
          }
 
-         if(recordsConsumed == 0)
-         {
-            ////////////////////////////////////////////////////////////////////////////
-            // do we need to sleep to let the producer work?                          //
-            // todo - smarter sleep?  like get notified vs. sleep? eventually a fail? //
-            ////////////////////////////////////////////////////////////////////////////
-            LOG.info("Read 0 records from pipe, sleeping to give producer a chance to work");
-            SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
-            while(recordPipe.countAvailableRecords() == 0)
-            {
-               nextSleepMillis = Math.min(nextSleepMillis * 2, 1000);
-               LOG.info("Still no records in the pipe, so sleeping more [" + nextSleepMillis + "]ms");
-               SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
-            }
-         }
-
-         nextSleepMillis = 10;
-
-         Optional<AsyncJobStatus> optionalAsyncJobStatus = asyncJobManager.getJobStatus(jobUUID);
+         ////////////////////////////////////
+         // refresh the query job's status //
+         ////////////////////////////////////
+         Optional<AsyncJobStatus> optionalAsyncJobStatus = asyncJobManager.getJobStatus(queryJobUUID);
          if(optionalAsyncJobStatus.isEmpty())
          {
             /////////////////////////////////////////////////
             // todo - ... maybe some version of try-again? //
             /////////////////////////////////////////////////
-            throw (new QException("Could not get status of report query job [" + jobUUID + "]"));
+            throw (new QException("Could not get status of report query job [" + queryJobUUID + "]"));
          }
          asyncJobStatus = optionalAsyncJobStatus.get();
-         asyncJobState = asyncJobStatus.getState();
+         queryJobState = asyncJobStatus.getState();
       }
 
-      LOG.info("Query job [" + jobUUID + "] for report completed with status: " + asyncJobStatus);
+      LOG.info("Query job [" + queryJobUUID + "] for report completed with status: " + asyncJobStatus);
 
       ///////////////////////////////////////////////////
       // send the final records to the report streamer //
       ///////////////////////////////////////////////////
       int recordsConsumed = reportStreamer.takeRecordsFromPipe(recordPipe);
       recordCount += recordsConsumed;
+
+      long reportEndTime = System.currentTimeMillis();
+      LOG.info((countFromPreExecute != null
+         ? String.format("Processed %,d of %,d records", recordCount, countFromPreExecute)
+         : String.format("Processed %,d records", recordCount))
+         + String.format(" at end of report in %,d ms (%.2f records/second).", (reportEndTime - reportStartTime), 1000d * (recordCount / (.001d + (reportEndTime - reportStartTime)))));
 
       //////////////////////////////////////////////////////////////////
       // Critical:  we must close the stream here as our final action //
@@ -250,8 +269,37 @@ public class ReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private List<QFieldMetaData> getFields(ReportInput reportInput)
+   {
+      QTableMetaData table = reportInput.getTable();
+      if(reportInput.getFieldNames() != null)
+      {
+         return (reportInput.getFieldNames().stream().map(table::getField).toList());
+      }
+      else
+      {
+         return (new ArrayList<>(table.getFields().values()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void verifyCountUnderMax(ReportInput reportInput, QBackendModuleInterface backendModule, ReportFormat reportFormat) throws QException
    {
+      if(reportFormat.getMaxCols() != null)
+      {
+         List<QFieldMetaData> fields = getFields(reportInput);
+         if (fields.size() > reportFormat.getMaxCols())
+         {
+            throw (new QUserFacingException("The requested report would include more columns ("
+               + String.format("%,d", fields.size()) + ") than the maximum allowed ("
+               + String.format("%,d", reportFormat.getMaxCols()) + ") for the selected file format (" + reportFormat + ")."));
+         }
+      }
+
       if(reportFormat.getMaxRows() != null)
       {
          if(reportInput.getLimit() == null || reportInput.getLimit() > reportFormat.getMaxRows())

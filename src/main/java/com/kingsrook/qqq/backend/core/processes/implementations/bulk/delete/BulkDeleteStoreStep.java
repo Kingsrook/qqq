@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -33,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -43,6 +46,9 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class BulkDeleteStoreStep implements BackendStep
 {
+   public static final String ERROR_COUNT = "errorCount";
+
+
 
    /*******************************************************************************
     **
@@ -50,7 +56,7 @@ public class BulkDeleteStoreStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      runBackendStepInput.getAsyncJobCallback().updateStatus("Deleting records in database...");
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Deleting records...");
       runBackendStepInput.getAsyncJobCallback().clearCurrentAndTotal();
 
       DeleteInput deleteInput = new DeleteInput(runBackendStepInput.getInstance());
@@ -78,12 +84,16 @@ public class BulkDeleteStoreStep implements BackendStep
             .toList();
          deleteInput.setPrimaryKeys(primaryKeyList);
       }
+      else
+      {
+         throw (new QException("Missing required inputs (queryFilterJSON or record list)"));
+      }
 
       DeleteAction deleteAction = new DeleteAction();
       DeleteOutput deleteOutput = deleteAction.execute(deleteInput);
 
-      // todo - something with the output!!
-      deleteOutput.getRecordsWithErrors();
+      List<QRecord> recordsWithErrors = Objects.requireNonNullElse(deleteOutput.getRecordsWithErrors(), Collections.emptyList());
+      runBackendStepOutput.addValue(ERROR_COUNT, recordsWithErrors.size());
 
       runBackendStepOutput.setRecords(runBackendStepInput.getRecords());
    }

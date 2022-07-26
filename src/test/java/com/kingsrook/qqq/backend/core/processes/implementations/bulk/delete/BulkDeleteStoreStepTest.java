@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -50,6 +51,7 @@ class BulkDeleteStoreStepTest
 
       RunBackendStepOutput stepOutput = new RunBackendStepOutput();
       new BulkDeleteStoreStep().run(stepInput, stepOutput);
+      assertEquals(0, stepOutput.getValueInteger(BulkDeleteStoreStep.ERROR_COUNT));
    }
 
 
@@ -66,6 +68,7 @@ class BulkDeleteStoreStepTest
 
       RunBackendStepOutput stepOutput = new RunBackendStepOutput();
       new BulkDeleteStoreStep().run(stepInput, stepOutput);
+      assertEquals(0, stepOutput.getValueInteger(BulkDeleteStoreStep.ERROR_COUNT));
    }
 
 }

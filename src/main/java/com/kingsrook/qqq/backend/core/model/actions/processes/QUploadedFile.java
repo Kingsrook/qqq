@@ -30,6 +30,8 @@ import java.io.Serializable;
  *******************************************************************************/
 public class QUploadedFile implements Serializable
 {
+   public static final String DEFAULT_UPLOADED_FILE_FIELD_NAME = "uploadedFileKey";
+
    private String filename;
    private byte[] bytes;
 

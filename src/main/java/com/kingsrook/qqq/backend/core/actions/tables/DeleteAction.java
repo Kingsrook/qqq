@@ -77,6 +77,7 @@ public class DeleteAction
             LOG.info("0 primaryKeys found.  Returning with no-op");
             DeleteOutput deleteOutput = new DeleteOutput();
             deleteOutput.setRecordsWithErrors(new ArrayList<>());
+            deleteOutput.setDeletedRecordCount(0);
             return (deleteOutput);
          }
       }

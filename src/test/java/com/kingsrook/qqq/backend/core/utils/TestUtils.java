@@ -335,7 +335,7 @@ public class TestUtils
    public static String getPersonCsvHeader()
    {
       return ("""
-         "id","createDate","modifyDate","firstName","lastName","birthDate","email"\r
+         "id","createDate","modifyDate","firstName","lastName","birthDate","email"
          """);
    }
 
@@ -347,7 +347,7 @@ public class TestUtils
    public static String getPersonCsvHeaderUsingLabels()
    {
       return ("""
-         "Id","Create Date","Modify Date","First Name","Last Name","Birth Date","Email"\r
+         "Id","Create Date","Modify Date","First Name","Last Name","Birth Date","Email"
          """);
    }
 
@@ -359,7 +359,7 @@ public class TestUtils
    public static String getPersonCsvRow1()
    {
       return ("""
-         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com"\r
+         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com"
          """);
    }
 
@@ -371,7 +371,7 @@ public class TestUtils
    public static String getPersonCsvRow2()
    {
       return ("""
-         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Jane","Doe","1981-01-01","john@doe.com"\r
+         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Jane","Doe","1981-01-01","john@doe.com"
          """);
    }
 

@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
@@ -47,28 +49,36 @@ public class BulkInsertUtils
     *******************************************************************************/
    static List<QRecord> getQRecordsFromFile(RunBackendStepInput runBackendStepInput) throws QException
    {
-      AbstractStateKey        stateKey             = (AbstractStateKey) runBackendStepInput.getValue("uploadedFileKey");
+      AbstractStateKey        stateKey             = (AbstractStateKey) runBackendStepInput.getValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME);
       Optional<QUploadedFile> optionalUploadedFile = TempFileStateProvider.getInstance().get(QUploadedFile.class, stateKey);
       if(optionalUploadedFile.isEmpty())
       {
          throw (new QException("Could not find uploaded file"));
       }
 
-      byte[] bytes = optionalUploadedFile.get().getBytes();
+      byte[] bytes    = optionalUploadedFile.get().getBytes();
+      String fileName = optionalUploadedFile.get().getFilename();
 
       /////////////////////////////////////////////////////
       // let the user specify field labels instead names //
       /////////////////////////////////////////////////////
-      QTableMetaData        table   = runBackendStepInput.getTable();
-      QKeyBasedFieldMapping mapping = new QKeyBasedFieldMapping();
+      QTableMetaData        table     = runBackendStepInput.getTable();
+      String                tableName = runBackendStepInput.getTableName();
+      QKeyBasedFieldMapping mapping   = new QKeyBasedFieldMapping();
       for(Map.Entry<String, QFieldMetaData> entry : table.getFields().entrySet())
       {
          mapping.addMapping(entry.getKey(), entry.getValue().getLabel());
       }
 
-      // todo - sniff out file type...
-      String        tableName = runBackendStepInput.getTableName();
-      List<QRecord> qRecords  = new CsvToQRecordAdapter().buildRecordsFromCsv(new String(bytes), runBackendStepInput.getInstance().getTable(tableName), mapping);
+      List<QRecord> qRecords;
+      if(fileName.toLowerCase(Locale.ROOT).endsWith(".csv"))
+      {
+         qRecords = new CsvToQRecordAdapter().buildRecordsFromCsv(new String(bytes), runBackendStepInput.getInstance().getTable(tableName), mapping);
+      }
+      else
+      {
+         throw (new QUserFacingException("Unsupported file type."));
+      }
 
       ////////////////////////////////////////////////
       // remove values from any non-editable fields //
