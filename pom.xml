@@ -53,12 +53,12 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.2.0-20220721.162748-8</version>
+         <version>0.2.0-20220725.183211-13</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>0.2.0-20220721.162748-8</version>
+         <version>0.2.0-20220725.183409-11</version>
          <scope>test</scope>
       </dependency>
 
@@ -106,6 +106,12 @@
          <groupId>org.junit.jupiter</groupId>
          <artifactId>junit-jupiter-engine</artifactId>
          <version>5.8.1</version>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.assertj</groupId>
+         <artifactId>assertj-core</artifactId>
+         <version>3.23.1</version>
          <scope>test</scope>
       </dependency>
    </dependencies>
