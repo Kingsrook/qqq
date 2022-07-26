@@ -280,13 +280,11 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
-    ** Getter for a single field's value
     **
     *******************************************************************************/
-   public LocalDate getValueDate(String fieldName)
+   public LocalDate getValueLocalDate(String fieldName)
    {
-      // todo - rewrite using ValueUtils...
-      return ((LocalDate) values.get(fieldName));
+      return (ValueUtils.getValueAsLocalDate(values.get(fieldName)));
    }
 
 

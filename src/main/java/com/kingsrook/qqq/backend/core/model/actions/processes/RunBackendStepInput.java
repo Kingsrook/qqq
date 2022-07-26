@@ -341,9 +341,9 @@ public class RunBackendStepInput extends AbstractActionInput
     ** Getter for a single field's date value
     **
     *******************************************************************************/
-   public LocalDate getValueDate(String fieldName)
+   public LocalDate getValueLocalDate(String fieldName)
    {
-      return ((LocalDate) getValue(fieldName));
+      return (ValueUtils.getValueAsLocalDate(getValue(fieldName)));
    }
 
 
