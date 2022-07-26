@@ -327,6 +327,9 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private String selectModifyDate(Integer id) throws Exception
    {
       StringBuilder modifyDate = new StringBuilder();
