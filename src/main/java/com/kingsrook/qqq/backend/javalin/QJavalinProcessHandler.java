@@ -272,7 +272,7 @@ public class QJavalinProcessHandler
          UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
          TempFileStateProvider.getInstance().put(key, qUploadedFile);
          LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
-         runProcessInput.addValue("uploadedFileKey", key);
+         runProcessInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
       }
 
       /////////////////////////////////////////////////////////////
