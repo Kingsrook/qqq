@@ -278,8 +278,12 @@ public class QCommandBuilder
          .build());
       */
 
-      QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
-      addPrimaryKeyOrKeysOption(updateCommand, "update");
+      QFieldMetaData primaryKeyField = null;
+      if(table.getPrimaryKeyField() != null)
+      {
+         primaryKeyField = table.getField(table.getPrimaryKeyField());
+         addPrimaryKeyOrKeysOption(updateCommand, "update");
+      }
 
       for(QFieldMetaData field : table.getFields().values())
       {
