@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QValueException;
  *******************************************************************************/
 public class ValueUtils
 {
-   private static final DateTimeFormatter localDateDefaultFormatter = DateTimeFormatter.ofPattern("yyyy-MMM-dd");
+   private static final DateTimeFormatter localDateDefaultFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 
 
