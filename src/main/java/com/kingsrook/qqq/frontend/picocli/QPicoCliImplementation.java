@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
+import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -265,7 +266,7 @@ public class QPicoCliImplementation
          Log.info("No session information found in environment");
       }
 
-      return(dotenvOptional);
+      return (dotenvOptional);
    }
 
 
@@ -283,8 +284,8 @@ public class QPicoCliImplementation
          ////////////////////////////////////
          // look for .env environment file //
          ////////////////////////////////////
-         String sessionId = null;
-         Optional<Dotenv> dotenv = loadDotEnv();
+         String           sessionId = null;
+         Optional<Dotenv> dotenv    = loadDotEnv();
          if(dotenv.isPresent())
          {
             sessionId = dotenv.get().get("SESSION_ID");
@@ -293,8 +294,8 @@ public class QPicoCliImplementation
          Map<String, String> authenticationContext = new HashMap<>();
          if(sessionId == null && authenticationModule instanceof Auth0AuthenticationModule)
          {
-            LineReader lr = LineReaderBuilder.builder().build();
-            String tokenId = lr.readLine("Create a .env file with the contents of the Auth0 JWT Id Token in the variable 'SESSION_ID': \nPress enter once complete...");
+            LineReader lr      = LineReaderBuilder.builder().build();
+            String     tokenId = lr.readLine("Create a .env file with the contents of the Auth0 JWT Id Token in the variable 'SESSION_ID': \nPress enter once complete...");
             dotenv = loadDotEnv();
             if(dotenv.isPresent())
             {
@@ -701,6 +702,14 @@ public class QPicoCliImplementation
          String json = subParseResult.matchedOptionValue("--mapping", "");
          mapping = new JsonToQFieldMappingAdapter().buildMappingFromJson(json);
       }
+      else
+      {
+         mapping = new QKeyBasedFieldMapping();
+         for(Map.Entry<String, QFieldMetaData> entry : table.getFields().entrySet())
+         {
+            ((QKeyBasedFieldMapping) mapping).addMapping(entry.getKey(), entry.getValue().getLabel());
+         }
+      }
 
       /////////////////////////////////////////////
       // get the records that the user specified //
@@ -782,38 +791,81 @@ public class QPicoCliImplementation
       updateInput.setTableName(tableName);
       QTableMetaData table = qInstance.getTable(tableName);
 
-      List<QRecord> recordList = new ArrayList<>();
+      List<QRecord> recordsToUpdate = new ArrayList<>();
+      boolean       anyFields       = false;
 
-      boolean anyFields = false;
+      String   primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
+      String[] criteria         = subParseResult.matchedOptionValue("criteria", new String[] {});
 
-      String         primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
-      Serializable[] primaryKeyValues = primaryKeyOption.split(",");
-      for(Serializable primaryKeyValue : primaryKeyValues)
+      if(StringUtils.hasContent(primaryKeyOption))
       {
-         QRecord record = new QRecord();
+         //////////////////////////////////////////////////////////////////////////////////////
+         // if the primaryKey option was given, split it up and seed the recordToUpdate list //
+         //////////////////////////////////////////////////////////////////////////////////////
+         Serializable[] primaryKeyValues = primaryKeyOption.split(",");
+         for(Serializable primaryKeyValue : primaryKeyValues)
+         {
+            recordsToUpdate.add(new QRecord().withValue(table.getPrimaryKeyField(), primaryKeyValue));
+         }
+      }
+      else if(criteria.length > 0)
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // else if criteria were given, execute the query for the lsit of records to update //
+         //////////////////////////////////////////////////////////////////////////////////////
+         for(QRecord qRecord : executeQuery(tableName, subParseResult))
+         {
+            recordsToUpdate.add(new QRecord().withValue(table.getPrimaryKeyField(), qRecord.getValue(table.getPrimaryKeyField())));
+         }
+      }
+      else
+      {
+         commandLine.getErr().println("Error: Either primaryKey or criteria must be specified.");
+         CommandLine subCommandLine = commandLine.getSubcommands().get("update");
+         subCommandLine.usage(commandLine.getOut());
+         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+      }
 
-         recordList.add(record);
-         record.setValue(table.getPrimaryKeyField(), primaryKeyValue);
+      ///////////////////////////////////////////////////
+      // make sure at least one --field- arg was given //
+      ///////////////////////////////////////////////////
+      for(OptionSpec matchedOption : subParseResult.matchedOptions())
+      {
+         if(matchedOption.longestName().startsWith("--field-"))
+         {
+            anyFields = true;
+         }
+      }
 
+      if(!anyFields)
+      {
+         commandLine.getErr().println("Error: At least one field to update must be specified.");
+         CommandLine subCommandLine = commandLine.getSubcommands().get("update");
+         subCommandLine.usage(commandLine.getOut());
+         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+      }
+
+      if(recordsToUpdate.isEmpty())
+      {
+         commandLine.getErr().println("No rows to update were found.");
+         CommandLine subCommandLine = commandLine.getSubcommands().get("update");
+         subCommandLine.usage(commandLine.getOut());
+         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+      }
+
+      for(QRecord record : recordsToUpdate)
+      {
          for(OptionSpec matchedOption : subParseResult.matchedOptions())
          {
             if(matchedOption.longestName().startsWith("--field-"))
             {
-               anyFields = true;
                String fieldName = matchedOption.longestName().substring(8);
                record.setValue(fieldName, matchedOption.getValue());
             }
          }
       }
 
-      if(!anyFields || recordList.isEmpty())
-      {
-         CommandLine subCommandLine = commandLine.getSubcommands().get("update");
-         subCommandLine.usage(commandLine.getOut());
-         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
-      }
-
-      updateInput.setRecords(recordList);
+      updateInput.setRecords(recordsToUpdate);
 
       UpdateAction updateAction = new UpdateAction();
       UpdateOutput updateResult = updateAction.execute(updateInput);
@@ -835,9 +887,24 @@ public class QPicoCliImplementation
       /////////////////////////////////////////////
       // get the pKeys that the user specified //
       /////////////////////////////////////////////
-      String         primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
-      Serializable[] primaryKeyValues = primaryKeyOption.split(",");
-      deleteInput.setPrimaryKeys(Arrays.asList(primaryKeyValues));
+      String   primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
+      String[] criteria         = subParseResult.matchedOptionValue("criteria", new String[] {});
+
+      if(StringUtils.hasContent(primaryKeyOption))
+      {
+         deleteInput.setPrimaryKeys(Arrays.asList(primaryKeyOption.split(",")));
+      }
+      else if(criteria.length > 0)
+      {
+         deleteInput.setQueryFilter(generateQueryFilter(subParseResult));
+      }
+      else
+      {
+         commandLine.getErr().println("Error: Either primaryKey or criteria must be specified.");
+         CommandLine subCommandLine = commandLine.getSubcommands().get("delete");
+         subCommandLine.usage(commandLine.getOut());
+         return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+      }
 
       DeleteAction deleteAction = new DeleteAction();
       DeleteOutput deleteResult = deleteAction.execute(deleteInput);
@@ -864,5 +931,22 @@ public class QPicoCliImplementation
 
       commandLine.usage(commandLine.getOut());
       return commandLine.getCommandSpec().exitCodeOnUsageHelp();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<QRecord> executeQuery(String tableName, ParseResult subParseResult) throws QException
+   {
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setSession(session);
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(generateQueryFilter(subParseResult));
+
+      QueryAction queryAction = new QueryAction();
+      QueryOutput queryOutput = queryAction.execute(queryInput);
+      return (queryOutput.getRecords());
    }
 }

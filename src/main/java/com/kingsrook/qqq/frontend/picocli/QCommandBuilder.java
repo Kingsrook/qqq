@@ -179,14 +179,43 @@ public class QCommandBuilder
          .type(int.class)
          .description("Optional limit on the max number of records to include in the export.")
          .build());
-      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-c", "--criteria")
-         .type(String[].class)
-         .description("Query filter criteria for the export.  May be given multiple times.  Use format:  $fieldName $operator $value.  e.g., id EQUALS 42")
-         .build());
+      addCriteriaOption(exportCommand);
 
       // todo - add the fields as explicit params?
 
       return exportCommand;
+   }
+
+
+
+   /*******************************************************************************
+    ** add the standard '--criteria' option
+    *******************************************************************************/
+   private void addCriteriaOption(CommandLine.Model.CommandSpec commandSpec)
+   {
+      commandSpec.addOption(CommandLine.Model.OptionSpec.builder("-c", "--criteria")
+         .type(String[].class)
+         .description("""
+            Query filter criteria.  May be given multiple times.
+            Use format:  "$fieldName $operator $value".
+            e.g., "id EQUALS 42\"""")
+         .build());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void addPrimaryKeyOrKeysOption(CommandLine.Model.CommandSpec updateCommand, String verbForDescription)
+   {
+      updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--primaryKey")
+         // type(getClassForField(primaryKeyField))
+         .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
+         .description("""
+            Primary Key(s) for the records to %s.
+            May provide multiple values, separated by commas""".formatted(verbForDescription))
+         .build());
    }
 
 
@@ -214,9 +243,7 @@ public class QCommandBuilder
    private CommandLine.Model.CommandSpec defineCountCommand(QTableMetaData table)
    {
       CommandLine.Model.CommandSpec countCommand = CommandLine.Model.CommandSpec.create();
-      countCommand.addOption(CommandLine.Model.OptionSpec.builder("-c", "--criteria")
-         .type(String[].class)
-         .build());
+      addCriteriaOption(countCommand);
 
       // todo - add the fields as explicit params?
 
@@ -233,6 +260,7 @@ public class QCommandBuilder
       CommandLine.Model.CommandSpec updateCommand = CommandLine.Model.CommandSpec.create();
 
       /*
+      todo - future may accept files, similar to (bulk) insert
       updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--jsonBody")
          .type(String.class)
          .build());
@@ -251,10 +279,7 @@ public class QCommandBuilder
       */
 
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
-      updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--primaryKey")
-         // type(getClassForField(primaryKeyField))
-         .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
-         .build());
+      addPrimaryKeyOrKeysOption(updateCommand, "update");
 
       for(QFieldMetaData field : table.getFields().values())
       {
@@ -262,9 +287,14 @@ public class QCommandBuilder
          {
             updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--field-" + field.getName())
                .type(getClassForField(field))
+               .description("""
+                  Value to set for the field %s""".formatted(field.getName()))
                .build());
          }
       }
+
+      addCriteriaOption(updateCommand);
+
       return updateCommand;
    }
 
@@ -314,6 +344,8 @@ public class QCommandBuilder
       deleteCommand.addOption(CommandLine.Model.OptionSpec.builder("--primaryKey")
          .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
          .build());
+
+      addCriteriaOption(deleteCommand);
 
       return deleteCommand;
    }

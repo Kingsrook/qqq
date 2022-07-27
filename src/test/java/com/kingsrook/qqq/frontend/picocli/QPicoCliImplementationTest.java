@@ -447,11 +447,24 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
-    ** test running an update w/ fields as arguments
+    ** test running an update w/o specifying any pkeys or criteria, prints usage
     **
     *******************************************************************************/
    @Test
-   public void test_tableUpdateFieldArguments() throws Exception
+   public void test_tableUpdateNoRecordsPrintsUsage()
+   {
+      TestOutput testOutput = testCli("person", "update", "--field-firstName=Lucy");
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person update");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments and one primary key
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArgumentsOnePrimaryKey() throws Exception
    {
       assertRowValueById("person", "first_name", "Garret", 5);
       TestOutput testOutput = testCli("person", "update",
@@ -462,6 +475,55 @@ class QPicoCliImplementationTest
       assertNotNull(updateResult);
       assertEquals(1, updateResult.getJSONArray("records").length());
       assertEquals(5, updateResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertRowValueById("person", "first_name", "Lucy", 5);
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments and multiple primary keys
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArgumentsManyPrimaryKeys() throws Exception
+   {
+      assertRowValueById("person", "first_name", "Tyler", 4);
+      assertRowValueById("person", "first_name", "Garret", 5);
+      TestOutput testOutput = testCli("person", "update",
+         "--primaryKey=4,5",
+         "--field-firstName=Lucy",
+         "--field-lastName=Lu");
+      JSONObject updateResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(updateResult);
+      assertEquals(2, updateResult.getJSONArray("records").length());
+      assertEquals(4, updateResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(5, updateResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
+      assertRowValueById("person", "first_name", "Lucy", 4);
+      assertRowValueById("person", "first_name", "Lucy", 5);
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments and a criteria
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArgumentsCriteria() throws Exception
+   {
+      assertRowValueById("person", "first_name", "Tyler", 4);
+      assertRowValueById("person", "first_name", "Garret", 5);
+      TestOutput testOutput = testCli("person", "update",
+         "--criteria",
+         "id GREATER_THAN_OR_EQUALS 4",
+         "--field-firstName=Lucy",
+         "--field-lastName=Lu");
+      JSONObject updateResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(updateResult);
+      assertEquals(2, updateResult.getJSONArray("records").length());
+      assertEquals(4, updateResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(5, updateResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
+      assertRowValueById("person", "first_name", "Lucy", 4);
       assertRowValueById("person", "first_name", "Lucy", 5);
    }
 
@@ -484,6 +546,18 @@ class QPicoCliImplementationTest
       }));
    }
 
+
+
+   /*******************************************************************************
+    ** test running a delete without enough args
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableDeleteWithoutArgs() throws Exception
+   {
+      TestOutput testOutput   = testCli("person", "delete");
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person delete");
+   }
 
 
    /*******************************************************************************
@@ -717,7 +791,6 @@ class QPicoCliImplementationTest
 
 
 
-
    /*******************************************************************************
     ** test exporting a table
     **
@@ -735,6 +808,8 @@ class QPicoCliImplementationTest
 
       deleteFile(file);
    }
+
+
 
    /*******************************************************************************
     ** test exporting a table
