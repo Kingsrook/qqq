@@ -25,7 +25,7 @@
 
    <groupId>com.kingsrook.qqq</groupId>
    <artifactId>qqq-middleware-javalin</artifactId>
-   <version>0.1.0</version>
+   <version>0.2.0</version>
 
    <scm>
      <connection>scm:git:git@github.com:Kingsrook/qqq-middleware-javalin.git</connection>
@@ -53,12 +53,12 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.1.0</version>
+         <version>0.2.0</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>0.1.0</version>
+         <version>0.2.0</version>
          <scope>test</scope>
       </dependency>
 
@@ -66,7 +66,7 @@
       <dependency>
          <groupId>io.javalin</groupId>
          <artifactId>javalin</artifactId>
-         <version>3.13.13</version>
+         <version>4.6.1</version>
       </dependency>
       <dependency>
          <groupId>com.konghq</groupId>
@@ -84,6 +84,12 @@
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-simple</artifactId>
          <version>1.7.36</version>
+      </dependency>
+      <dependency>
+         <groupId>org.assertj</groupId>
+         <artifactId>assertj-core</artifactId>
+         <version>3.23.1</version>
+         <scope>test</scope>
       </dependency>
 
       <!-- Common deps for all qqq modules -->

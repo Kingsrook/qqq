@@ -24,50 +24,61 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.CountAction;
-import com.kingsrook.qqq.backend.core.actions.DeleteAction;
-import com.kingsrook.qqq.backend.core.actions.InsertAction;
-import com.kingsrook.qqq.backend.core.actions.MetaDataAction;
-import com.kingsrook.qqq.backend.core.actions.ProcessMetaDataAction;
-import com.kingsrook.qqq.backend.core.actions.QueryAction;
-import com.kingsrook.qqq.backend.core.actions.TableMetaDataAction;
-import com.kingsrook.qqq.backend.core.actions.UpdateAction;
+import java.util.Objects;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
+import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.reporting.ReportAction;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractQRequest;
-import com.kingsrook.qqq.backend.core.model.actions.count.CountRequest;
-import com.kingsrook.qqq.backend.core.model.actions.count.CountResult;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteRequest;
-import com.kingsrook.qqq.backend.core.model.actions.delete.DeleteResult;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertRequest;
-import com.kingsrook.qqq.backend.core.model.actions.insert.InsertResult;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataResult;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.process.ProcessMetaDataResult;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataRequest;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.table.TableMetaDataResult;
-import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.QAuthenticationModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -97,6 +108,7 @@ public class QJavalinImplementation
    private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
 
    private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
+   private static final String SESSION_ID_COOKIE_NAME = "sessionId";
 
    static QInstance qInstance;
 
@@ -182,36 +194,46 @@ public class QJavalinImplementation
    {
       return (() ->
       {
+         /////////////////////
+         // metadata routes //
+         /////////////////////
          path("/metaData", () ->
          {
             get("/", QJavalinImplementation::metaData);
-            path("/table/:table", () ->
+            path("/table/{table}", () ->
             {
                get("", QJavalinImplementation::tableMetaData);
             });
-            path("/process/:processName", () ->
+            path("/process/{processName}", () ->
             {
                get("", QJavalinImplementation::processMetaData);
             });
          });
-         path("/data", () ->
-         {
-            path("/:table", () ->
-            {
-               get("/", QJavalinImplementation::dataQuery);
-               post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
-               get("/count", QJavalinImplementation::dataCount);
 
-               // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
-               path("/:primaryKey", () ->
-               {
-                  get("", QJavalinImplementation::dataGet);
-                  patch("", QJavalinImplementation::dataUpdate);
-                  put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
-                  delete("", QJavalinImplementation::dataDelete);
-               });
+         /////////////////////////
+         // table (data) routes //
+         /////////////////////////
+         path("/data/{table}", () ->
+         {
+            get("/", QJavalinImplementation::dataQuery);
+            post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
+            get("/count", QJavalinImplementation::dataCount);
+            get("/export", QJavalinImplementation::dataExportWithoutFilename);
+            get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
+
+            // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
+            path("/{primaryKey}", () ->
+            {
+               get("", QJavalinImplementation::dataGet);
+               patch("", QJavalinImplementation::dataUpdate);
+               put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
+               delete("", QJavalinImplementation::dataDelete);
             });
          });
+
+         ////////////////////
+         // process routes //
+         ////////////////////
          path("", QJavalinProcessHandler.getRoutes());
       });
    }
@@ -221,18 +243,30 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void setupSession(Context context, AbstractQRequest request) throws QModuleDispatchException
+   static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
+      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
 
-      // todo - does this need some per-provider logic actually?  mmm...
-      Map<String, String> authenticationContext = new HashMap<>();
-      authenticationContext.put("sessionId", context.cookie("sessionId"));
-      QSession session = authenticationModule.createSession(authenticationContext);
-      request.setSession(session);
+      try
+      {
+         Map<String, String> authenticationContext = new HashMap<>();
+         authenticationContext.put(SESSION_ID_COOKIE_NAME, context.cookie(SESSION_ID_COOKIE_NAME));
+         QSession session = authenticationModule.createSession(qInstance, authenticationContext);
+         input.setSession(session);
 
-      context.cookie("sessionId", session.getIdReference(), SESSION_COOKIE_AGE);
+         context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+      }
+      catch(QAuthenticationException qae)
+      {
+         ////////////////////////////////////////////////////////////////////////////////
+         // if exception caught, clear out the cookie so the frontend will reauthorize //
+         ////////////////////////////////////////////////////////////////////////////////
+         if(authenticationModule instanceof Auth0AuthenticationModule)
+         {
+            context.removeCookie(SESSION_ID_COOKIE_NAME);
+         }
+      }
    }
 
 
@@ -244,17 +278,17 @@ public class QJavalinImplementation
    {
       try
       {
-         String             table       = context.pathParam("table");
+         String table = context.pathParam("table");
          List<Serializable> primaryKeys = new ArrayList<>();
          primaryKeys.add(context.pathParam("primaryKey"));
 
-         DeleteRequest deleteRequest = new DeleteRequest(qInstance);
-         setupSession(context, deleteRequest);
-         deleteRequest.setTableName(table);
-         deleteRequest.setPrimaryKeys(primaryKeys);
+         DeleteInput deleteInput = new DeleteInput(qInstance);
+         setupSession(context, deleteInput);
+         deleteInput.setTableName(table);
+         deleteInput.setPrimaryKeys(primaryKeys);
 
          DeleteAction deleteAction = new DeleteAction();
-         DeleteResult deleteResult = deleteAction.execute(deleteRequest);
+         DeleteOutput deleteResult = deleteAction.execute(deleteInput);
 
          context.result(JsonUtils.toJson(deleteResult));
       }
@@ -273,9 +307,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String table = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord       record     = new QRecord();
+         QRecord record = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -292,13 +326,13 @@ public class QJavalinImplementation
 
          record.setValue(tableMetaData.getPrimaryKeyField(), context.pathParam("primaryKey"));
 
-         UpdateRequest updateRequest = new UpdateRequest(qInstance);
-         setupSession(context, updateRequest);
-         updateRequest.setTableName(table);
-         updateRequest.setRecords(recordList);
+         UpdateInput updateInput = new UpdateInput(qInstance);
+         setupSession(context, updateInput);
+         updateInput.setTableName(table);
+         updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
-         UpdateResult updateResult = updateAction.execute(updateRequest);
+         UpdateOutput updateResult = updateAction.execute(updateInput);
 
          context.result(JsonUtils.toJson(updateResult));
       }
@@ -317,9 +351,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String table = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord       record     = new QRecord();
+         QRecord record = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -332,15 +366,15 @@ public class QJavalinImplementation
             }
          }
 
-         InsertRequest insertRequest = new InsertRequest(qInstance);
-         setupSession(context, insertRequest);
-         insertRequest.setTableName(table);
-         insertRequest.setRecords(recordList);
+         InsertInput insertInput = new InsertInput(qInstance);
+         setupSession(context, insertInput);
+         insertInput.setTableName(table);
+         insertInput.setRecords(recordList);
 
          InsertAction insertAction = new InsertAction();
-         InsertResult insertResult = insertAction.execute(insertRequest);
+         InsertOutput insertOutput = insertAction.execute(insertInput);
 
-         context.result(JsonUtils.toJson(insertResult));
+         context.result(JsonUtils.toJson(insertOutput));
       }
       catch(Exception e)
       {
@@ -357,13 +391,13 @@ public class QJavalinImplementation
    {
       try
       {
-         String         tableName    = context.pathParam("table");
-         QTableMetaData table        = qInstance.getTable(tableName);
-         String         primaryKey   = context.pathParam("primaryKey");
-         QueryRequest   queryRequest = new QueryRequest(qInstance);
+         String         tableName  = context.pathParam("table");
+         QTableMetaData table      = qInstance.getTable(tableName);
+         String         primaryKey = context.pathParam("primaryKey");
+         QueryInput     queryInput = new QueryInput(qInstance);
 
-         setupSession(context, queryRequest);
-         queryRequest.setTableName(tableName);
+         setupSession(context, queryInput);
+         queryInput.setTableName(tableName);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
@@ -371,25 +405,25 @@ public class QJavalinImplementation
          ///////////////////////////////////////////////////////
          // setup a filter for the primaryKey = the path-pram //
          ///////////////////////////////////////////////////////
-         queryRequest.setFilter(new QQueryFilter()
+         queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria()
                .withFieldName(table.getPrimaryKeyField())
                .withOperator(QCriteriaOperator.EQUALS)
                .withValues(List.of(primaryKey))));
 
          QueryAction queryAction = new QueryAction();
-         QueryResult queryResult = queryAction.execute(queryRequest);
+         QueryOutput queryOutput = queryAction.execute(queryInput);
 
          ///////////////////////////////////////////////////////
          // throw a not found error if the record isn't found //
          ///////////////////////////////////////////////////////
-         if(queryResult.getRecords().isEmpty())
+         if(queryOutput.getRecords().isEmpty())
          {
             throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         context.result(JsonUtils.toJson(queryResult.getRecords().get(0)));
+         context.result(JsonUtils.toJson(queryOutput.getRecords().get(0)));
       }
       catch(Exception e)
       {
@@ -415,20 +449,20 @@ public class QJavalinImplementation
    {
       try
       {
-         CountRequest countRequest = new CountRequest(qInstance);
-         setupSession(context, countRequest);
-         countRequest.setTableName(context.pathParam("table"));
+         CountInput countInput = new CountInput(qInstance);
+         setupSession(context, countInput);
+         countInput.setTableName(context.pathParam("table"));
 
          String filter = stringQueryParam(context, "filter");
          if(filter != null)
          {
-            countRequest.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
          CountAction countAction = new CountAction();
-         CountResult countResult = countAction.execute(countRequest);
+         CountOutput countOutput = countAction.execute(countInput);
 
-         context.result(JsonUtils.toJson(countResult));
+         context.result(JsonUtils.toJson(countOutput));
       }
       catch(Exception e)
       {
@@ -456,22 +490,22 @@ public class QJavalinImplementation
    {
       try
       {
-         QueryRequest queryRequest = new QueryRequest(qInstance);
-         setupSession(context, queryRequest);
-         queryRequest.setTableName(context.pathParam("table"));
-         queryRequest.setSkip(integerQueryParam(context, "skip"));
-         queryRequest.setLimit(integerQueryParam(context, "limit"));
+         QueryInput queryInput = new QueryInput(qInstance);
+         setupSession(context, queryInput);
+         queryInput.setTableName(context.pathParam("table"));
+         queryInput.setSkip(integerQueryParam(context, "skip"));
+         queryInput.setLimit(integerQueryParam(context, "limit"));
 
          String filter = stringQueryParam(context, "filter");
          if(filter != null)
          {
-            queryRequest.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
          QueryAction queryAction = new QueryAction();
-         QueryResult queryResult = queryAction.execute(queryRequest);
+         QueryOutput queryOutput = queryAction.execute(queryInput);
 
-         context.result(JsonUtils.toJson(queryResult));
+         context.result(JsonUtils.toJson(queryOutput));
       }
       catch(Exception e)
       {
@@ -488,12 +522,12 @@ public class QJavalinImplementation
    {
       try
       {
-         MetaDataRequest metaDataRequest = new MetaDataRequest(qInstance);
-         setupSession(context, metaDataRequest);
+         MetaDataInput metaDataInput = new MetaDataInput(qInstance);
+         setupSession(context, metaDataInput);
          MetaDataAction metaDataAction = new MetaDataAction();
-         MetaDataResult metaDataResult = metaDataAction.execute(metaDataRequest);
+         MetaDataOutput metaDataOutput = metaDataAction.execute(metaDataInput);
 
-         context.result(JsonUtils.toJson(metaDataResult));
+         context.result(JsonUtils.toJson(metaDataOutput));
       }
       catch(Exception e)
       {
@@ -510,13 +544,13 @@ public class QJavalinImplementation
    {
       try
       {
-         TableMetaDataRequest tableMetaDataRequest = new TableMetaDataRequest(qInstance);
-         setupSession(context, tableMetaDataRequest);
-         tableMetaDataRequest.setTableName(context.pathParam("table"));
+         TableMetaDataInput tableMetaDataInput = new TableMetaDataInput(qInstance);
+         setupSession(context, tableMetaDataInput);
+         tableMetaDataInput.setTableName(context.pathParam("table"));
          TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
-         TableMetaDataResult tableMetaDataResult = tableMetaDataAction.execute(tableMetaDataRequest);
+         TableMetaDataOutput tableMetaDataOutput = tableMetaDataAction.execute(tableMetaDataInput);
 
-         context.result(JsonUtils.toJson(tableMetaDataResult));
+         context.result(JsonUtils.toJson(tableMetaDataOutput));
       }
       catch(Exception e)
       {
@@ -533,13 +567,153 @@ public class QJavalinImplementation
    {
       try
       {
-         ProcessMetaDataRequest processMetaDataRequest = new ProcessMetaDataRequest(qInstance);
-         setupSession(context, processMetaDataRequest);
-         processMetaDataRequest.setProcessName(context.pathParam("processName"));
+         ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput(qInstance);
+         setupSession(context, processMetaDataInput);
+         processMetaDataInput.setProcessName(context.pathParam("processName"));
          ProcessMetaDataAction processMetaDataAction = new ProcessMetaDataAction();
-         ProcessMetaDataResult processMetaDataResult = processMetaDataAction.execute(processMetaDataRequest);
+         ProcessMetaDataOutput processMetaDataOutput = processMetaDataAction.execute(processMetaDataInput);
 
-         context.result(JsonUtils.toJson(processMetaDataResult));
+         context.result(JsonUtils.toJson(processMetaDataOutput));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void dataExportWithFilename(Context context)
+   {
+      String filename = context.pathParam("filename");
+      dataExport(context, Optional.of(filename));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void dataExportWithoutFilename(Context context)
+   {
+      dataExport(context, Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void dataExport(Context context, Optional<String> optionalFilename)
+   {
+      try
+      {
+         //////////////////////////////////////////
+         // read params from the request context //
+         //////////////////////////////////////////
+         String  tableName = context.pathParam("table");
+         String  format    = context.queryParam("format");
+         String  filter    = context.queryParam("filter");
+         Integer limit     = integerQueryParam(context, "limit");
+
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // if a format query param wasn't given, then try to get file extension from file name //
+         /////////////////////////////////////////////////////////////////////////////////////////
+         if(!StringUtils.hasContent(format) && optionalFilename.isPresent() && StringUtils.hasContent(optionalFilename.get()))
+         {
+            String filename = optionalFilename.get();
+            if(filename.contains("."))
+            {
+               format = filename.substring(filename.lastIndexOf(".") + 1);
+            }
+         }
+
+         ReportFormat reportFormat;
+         try
+         {
+            reportFormat = ReportFormat.fromString(format);
+         }
+         catch(QUserFacingException e)
+         {
+            handleException(HttpStatus.Code.BAD_REQUEST, context, e);
+            return;
+         }
+
+         String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
+
+         /////////////////////////////////////////////
+         // set up the report action's input object //
+         /////////////////////////////////////////////
+         ReportInput reportInput = new ReportInput(qInstance);
+         setupSession(context, reportInput);
+         reportInput.setTableName(tableName);
+         reportInput.setReportFormat(reportFormat);
+         reportInput.setFilename(filename);
+         reportInput.setLimit(limit);
+
+         String fields = stringQueryParam(context, "fields");
+         if(StringUtils.hasContent(fields))
+         {
+            reportInput.setFieldNames(List.of(fields.split(",")));
+         }
+
+         if(filter != null)
+         {
+            reportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up the I/O pipe streams.                                                                      //
+         // Critically, we must NOT open the outputStream in a try-with-resources.  The thread that writes to //
+         // the stream must close it when it's done writing.                                                  //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         PipedOutputStream pipedOutputStream = new PipedOutputStream();
+         PipedInputStream  pipedInputStream  = new PipedInputStream();
+         pipedOutputStream.connect(pipedInputStream);
+         reportInput.setReportOutputStream(pipedOutputStream);
+
+         ReportAction reportAction = new ReportAction();
+         reportAction.preExecute(reportInput);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // start the async job.                                                                            //
+         // Critically, this must happen before the pipedInputStream is passed to the javalin result method //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         new AsyncJobManager().startJob("Javalin>ReportAction", (o) ->
+         {
+            try
+            {
+               reportAction.execute(reportInput);
+               return (true);
+            }
+            catch(Exception e)
+            {
+               pipedOutputStream.write(("Error generating report: " + e.getMessage()).getBytes());
+               pipedOutputStream.close();
+               return (false);
+            }
+         });
+
+         ////////////////////////////////////////////
+         // set the response content type & stream //
+         ////////////////////////////////////////////
+         context.contentType(reportFormat.getMimeType());
+         context.header("Content-Disposition", "filename=" + filename);
+         context.result(pipedInputStream);
+
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // we'd like to check to see if the job failed, and if so, to give the user an error...   //
+         // but if we "block" here, then piped streams seem to never flush, so we deadlock things. //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // AsyncJobStatus asyncJobStatus = asyncJobManager.waitForJob(jobUUID);
+         // if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
+         // {
+         //    System.out.println("Well, here we are...");
+         //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
+         // }
       }
       catch(Exception e)
       {
@@ -554,26 +728,45 @@ public class QJavalinImplementation
     *******************************************************************************/
    public static void handleException(Context context, Exception e)
    {
+      handleException(null, context, e);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void handleException(HttpStatus.Code statusCode, Context context, Exception e)
+   {
       QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
       if(userFacingException != null)
       {
          if(userFacingException instanceof QNotFoundException)
          {
-            context.status(HttpStatus.NOT_FOUND_404)
-               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND).getCode();
+            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
          }
          else
          {
             LOG.info("User-facing exception", e);
-            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-               .result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
+            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
          }
       }
       else
       {
+         if(e instanceof QAuthenticationException)
+         {
+            context.status(HttpStatus.UNAUTHORIZED_401).result("{\"error\":\"" + e.getMessage() + "\"}");
+            return;
+         }
+
+         ////////////////////////////////
+         // default exception handling //
+         ////////////////////////////////
          LOG.warn("Exception in javalin request", e);
-         context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-            .result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
+         int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
+         context.status(code).result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
       }
    }
 

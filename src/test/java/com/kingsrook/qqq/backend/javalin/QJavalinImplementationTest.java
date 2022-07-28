@@ -27,6 +27,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -50,8 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class QJavalinImplementationTest extends QJavalinTestBase
 {
-
-
 
 
    /*******************************************************************************
@@ -269,7 +269,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    public void test_dataQueryWithFilter()
    {
-      String               filterJson = "{\"criteria\":[{\"fieldName\":\"firstName\",\"operator\":\"EQUALS\",\"values\":[\"Tim\"]}]}";
+      String               filterJson = getFirstNameEqualsTimFilterJSON();
       HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
 
       assertEquals(200, response.getStatus());
@@ -280,6 +280,17 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject record0 = records.getJSONObject(0);
       JSONObject values0 = record0.getJSONObject("values");
       assertEquals("Tim", values0.getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFirstNameEqualsTimFilterJSON()
+   {
+      return """
+         {"criteria":[{"fieldName":"firstName","operator":"EQUALS","values":["Tim"]}]}""";
    }
 
 
@@ -362,8 +373,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
-      assertEquals(1, jsonObject.getJSONArray("records").length());
-      assertEquals(3, jsonObject.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(1, jsonObject.getInt("deletedRecordCount"));
       TestUtils.runTestSql("SELECT id FROM person", (rs -> {
          int rowsFound = 0;
          while(rs.next())
@@ -373,6 +383,91 @@ class QJavalinImplementationTest extends QJavalinTestBase
          }
          assertEquals(4, rowsFound);
       }));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportCsvPerFileName()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/MyPersonExport.csv").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("text/csv", response.getHeaders().get("Content-Type").get(0));
+      assertEquals("filename=MyPersonExport.csv", response.getHeaders().get("Content-Disposition").get(0));
+      String[] csvLines = response.getBody().split("\n");
+      assertEquals(6, csvLines.length);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportNoFormat()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/").asString();
+      assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+      assertThat(response.getBody()).contains("Report format was not specified");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportExcelPerFormatQueryParam()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/?format=xlsx").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals(ReportFormat.XLSX.getMimeType(), response.getHeaders().get("Content-Type").get(0));
+      assertEquals("filename=person.xlsx", response.getHeaders().get("Content-Disposition").get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportFilterQueryParam()
+   {
+      String               filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/Favorite People.csv?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+      assertEquals("filename=Favorite People.csv", response.getHeaders().get("Content-Disposition").get(0));
+      String[] csvLines = response.getBody().split("\n");
+      assertEquals(2, csvLines.length);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportFieldsQueryParam()
+   {
+      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/People.csv?fields=id,birthDate").asString();
+      String[] csvLines = response.getBody().split("\n");
+      assertEquals("""
+         "Id","Birth Date\"""", csvLines[0]);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportSupportedFormat()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/?format=docx").asString();
+      assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+      assertThat(response.getBody()).contains("Unsupported report format");
    }
 
 }
