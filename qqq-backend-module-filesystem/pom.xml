@@ -33,7 +33,7 @@
 
    <properties>
       <!-- props specifically to this module -->
-      <!-- none at this time -->
+      <coverage.instructionCoveredRatioMinimum>0.60</coverage.instructionCoveredRatioMinimum>
    </properties>
 
    <dependencies>
