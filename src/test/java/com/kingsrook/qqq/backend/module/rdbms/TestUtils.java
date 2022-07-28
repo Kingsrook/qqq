@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 
@@ -35,6 +35,10 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDe
  *******************************************************************************/
 public class TestUtils
 {
+
+   public static final String DEFAULT_BACKEND_NAME = "default";
+
+
 
    /*******************************************************************************
     **
@@ -54,13 +58,12 @@ public class TestUtils
     *******************************************************************************/
    public static RDBMSBackendMetaData defineBackend()
    {
-      RDBMSBackendMetaData rdbmsBackendMetaData = new RDBMSBackendMetaData()
+      return (new RDBMSBackendMetaData()
+         .withName(DEFAULT_BACKEND_NAME)
          .withVendor("h2")
          .withHostName("mem")
          .withDatabaseName("test_database")
-         .withUsername("sa");
-      rdbmsBackendMetaData.setName("default");
-      return (rdbmsBackendMetaData);
+         .withUsername("sa"));
    }
 
 

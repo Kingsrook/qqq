@@ -24,27 +24,26 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterOrderBy;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,12 +60,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryResult execute(QueryRequest queryRequest) throws QException
+   public QueryOutput execute(QueryInput queryInput) throws QException
    {
       try
       {
-         QTableMetaData table = queryRequest.getTable();
-         String tableName = getTableName(table);
+         QTableMetaData table     = queryInput.getTable();
+         String         tableName = getTableName(table);
 
          List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
          String columns = fieldList.stream()
@@ -75,7 +74,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          String sql = "SELECT " + columns + " FROM " + tableName;
 
-         QQueryFilter filter = queryRequest.getFilter();
+         QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
          {
@@ -87,34 +86,31 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys());
          }
 
-         if(queryRequest.getLimit() != null)
+         if(queryInput.getLimit() != null)
          {
-            sql += " LIMIT " + queryRequest.getLimit();
+            sql += " LIMIT " + queryInput.getLimit();
 
-            if(queryRequest.getSkip() != null)
+            if(queryInput.getSkip() != null)
             {
                // todo - other sql grammars?
-               sql += " OFFSET " + queryRequest.getSkip();
+               sql += " OFFSET " + queryInput.getSkip();
             }
          }
 
          // todo sql customization - can edit sql and/or param list
 
-         QueryResult rs = new QueryResult();
-         List<QRecord> records = new ArrayList<>();
-         rs.setRecords(records);
+         QueryOutput queryOutput = new QueryOutput(queryInput);
 
-         try(Connection connection = getConnection(queryRequest))
+         try(Connection connection = getConnection(queryInput))
          {
-            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+            PreparedStatement statement = createStatement(connection, sql, queryInput);
+            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
-                  // todo - should refactor this for view etc to use too.
                   // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
                   QRecord record = new QRecord();
-                  records.add(record);
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
                   record.setValues(values);
@@ -125,18 +121,46 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                      Serializable   value          = getValue(qFieldMetaData, resultSet, i);
                      values.put(qFieldMetaData.getName(), value);
                   }
+
+                  queryOutput.addRecord(record);
                }
 
             }), params);
          }
 
-         return rs;
+         return queryOutput;
       }
       catch(Exception e)
       {
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
+   {
+      RDBMSBackendMetaData backend = (RDBMSBackendMetaData) queryInput.getBackend();
+      PreparedStatement    statement;
+      if("mysql".equals(backend.getVendor()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-implementation-notes.html //
+         // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                     //
+         // with this change, we start to get results immediately, and the total runtime also seems lower...                                                                //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+         statement.setFetchSize(Integer.MIN_VALUE);
+      }
+      else
+      {
+         statement = connection.prepareStatement(sql);
+      }
+      return (statement);
    }
 
 
@@ -190,8 +214,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
       for(QFilterOrderBy orderBy : orderBys)
       {
-         QFieldMetaData field = table.getField(orderBy.getFieldName());
-         String column = getColumnName(field);
+         QFieldMetaData field  = table.getField(orderBy.getFieldName());
+         String         column = getColumnName(field);
          clauses.add(column + " " + (orderBy.getIsAscending() ? "ASC" : "DESC"));
       }
       return (String.join(", ", clauses));

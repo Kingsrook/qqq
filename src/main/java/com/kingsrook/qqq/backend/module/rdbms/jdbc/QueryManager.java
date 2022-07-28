@@ -55,7 +55,9 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class QueryManager
 {
-   public static final  int PAGE_SIZE        = 2000;
+   public static final int DEFAULT_PAGE_SIZE = 2000;
+   public static       int PAGE_SIZE         = DEFAULT_PAGE_SIZE;
+
    private static final int MS_PER_SEC       = 1000;
    private static final int NINETEEN_HUNDRED = 1900;
 
@@ -85,19 +87,13 @@ public class QueryManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void executeStatement(Connection connection, String sql, ResultSetProcessor procesor, Object... params) throws SQLException
+   public static void executeStatement(Connection connection, String sql, ResultSetProcessor processor, Object... params) throws SQLException
    {
       PreparedStatement statement = null;
-      ResultSet         resultSet = null;
-
       try
       {
          statement = prepareStatementAndBindParams(connection, sql, params);
-         statement.execute();
-         incrementStatistic(STAT_QUERIES_RAN);
-         resultSet = statement.getResultSet();
-
-         procesor.processResultSet(resultSet);
+         executeStatement(statement, processor, params);
       }
       finally
       {
@@ -105,7 +101,30 @@ public class QueryManager
          {
             statement.close();
          }
+      }
+   }
 
+
+
+   /*******************************************************************************
+    ** Let the caller provide their own prepared statement (e.g., possibly with some
+    ** customized settings/optimizations).
+    *******************************************************************************/
+   public static void executeStatement(PreparedStatement statement, ResultSetProcessor processor, Object... params) throws SQLException
+   {
+      ResultSet resultSet = null;
+
+      try
+      {
+         bindParams(statement, params);
+         incrementStatistic(STAT_QUERIES_RAN);
+         statement.execute();
+         resultSet = statement.getResultSet();
+
+         processor.processResultSet(resultSet);
+      }
+      finally
+      {
          if(resultSet != null)
          {
             resultSet.close();
@@ -354,8 +373,8 @@ public class QueryManager
    public static PreparedStatement executeUpdate(Connection connection, String sql, Object... params) throws SQLException
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
-      statement.executeUpdate();
       incrementStatistic(STAT_QUERIES_RAN);
+      statement.executeUpdate();
       return (statement);
    }
 
@@ -367,8 +386,8 @@ public class QueryManager
    public static PreparedStatement executeUpdate(Connection connection, String sql, List<Object> params) throws SQLException
    {
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
-      statement.executeUpdate();
       incrementStatistic(STAT_QUERIES_RAN);
+      statement.executeUpdate();
       return (statement);
    }
 
@@ -413,8 +432,8 @@ public class QueryManager
    {
       try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
       {
-         statement.executeUpdate();
          incrementStatistic(STAT_QUERIES_RAN);
+         statement.executeUpdate();
          return (statement.getUpdateCount());
       }
    }
@@ -473,9 +492,9 @@ public class QueryManager
       try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
       {
          bindParams(params.toArray(), statement);
+         incrementStatistic(STAT_QUERIES_RAN);
          statement.executeUpdate();
          ResultSet generatedKeys = statement.getGeneratedKeys();
-         incrementStatistic(STAT_QUERIES_RAN);
          while(generatedKeys.next())
          {
             rs.add(getInteger(generatedKeys, 1));
@@ -565,8 +584,8 @@ public class QueryManager
             bindParams(updatePS, params);
             updatePS.addBatch();
          }
-         updatePS.executeBatch();
          incrementStatistic(STAT_BATCHES_RAN);
+         updatePS.executeBatch();
       }
    }
 
@@ -640,7 +659,7 @@ public class QueryManager
 
 
    /*******************************************************************************
-    *
+    * index is 1-based!!
     *******************************************************************************/
    @SuppressWarnings("unchecked")
    public static int bindParamObject(PreparedStatement statement, int index, Object value) throws SQLException
@@ -651,34 +670,34 @@ public class QueryManager
          return (1);
       }
       else*/
-      if(value instanceof Integer)
+      if(value instanceof Integer i)
       {
-         bindParam(statement, index, (Integer) value);
+         bindParam(statement, index, i);
          return (1);
       }
-      else if(value instanceof Short)
+      else if(value instanceof Short s)
       {
-         bindParam(statement, index, ((Short) value).intValue());
+         bindParam(statement, index, s.intValue());
          return (1);
       }
-      else if(value instanceof Long)
+      else if(value instanceof Long l)
       {
-         bindParam(statement, index, ((Long) value).intValue());
+         bindParam(statement, index, l.intValue());
          return (1);
       }
-      else if(value instanceof String)
+      else if(value instanceof String s)
       {
-         bindParam(statement, index, (String) value);
+         bindParam(statement, index, s);
          return (1);
       }
-      else if(value instanceof Boolean)
+      else if(value instanceof Boolean b)
       {
-         bindParam(statement, index, (Boolean) value);
+         bindParam(statement, index, b);
          return (1);
       }
-      else if(value instanceof Timestamp)
+      else if(value instanceof Timestamp ts)
       {
-         bindParam(statement, index, (Timestamp) value);
+         bindParam(statement, index, ts);
          return (1);
       }
       else if(value instanceof Date)
@@ -686,14 +705,14 @@ public class QueryManager
          bindParam(statement, index, (Date) value);
          return (1);
       }
-      else if(value instanceof Calendar)
+      else if(value instanceof Calendar c)
       {
-         bindParam(statement, index, (Calendar) value);
+         bindParam(statement, index, c);
          return (1);
       }
-      else if(value instanceof BigDecimal)
+      else if(value instanceof BigDecimal bd)
       {
-         bindParam(statement, index, (BigDecimal) value);
+         bindParam(statement, index, bd);
          return (1);
       }
       else if(value == null)
@@ -701,42 +720,47 @@ public class QueryManager
          statement.setNull(index, Types.CHAR);
          return (1);
       }
-      else if(value instanceof Collection)
+      else if(value instanceof Collection c)
       {
-         Collection<?> collection  = (Collection<?>) value;
-         int           paramsBound = 0;
-         for(Object o : collection)
+         int paramsBound = 0;
+         for(Object o : c)
          {
             paramsBound += bindParamObject(statement, (index + paramsBound), o);
          }
          return (paramsBound);
       }
-      else if(value instanceof byte[])
+      else if(value instanceof byte[] ba)
       {
-         statement.setBytes(index, (byte[]) value);
+         statement.setBytes(index, ba);
          return (1);
       }
-      else if(value instanceof Instant)
+      else if(value instanceof Instant i)
       {
-         Timestamp timestamp = new Timestamp(((Instant) value).toEpochMilli());
+         long      epochMillis = i.toEpochMilli();
+         Timestamp timestamp   = new Timestamp(epochMillis);
          statement.setTimestamp(index, timestamp);
          return (1);
       }
-      else if(value instanceof LocalDate)
+      else if(value instanceof LocalDate ld)
       {
-         Timestamp timestamp = new Timestamp(((LocalDate) value).atTime(0, 0).toEpochSecond(ZoneOffset.UTC) * MS_PER_SEC);
+         ZoneOffset offset      = OffsetDateTime.now().getOffset();
+         long       epochMillis = ld.atStartOfDay().toEpochSecond(offset) * MS_PER_SEC;
+         Timestamp  timestamp   = new Timestamp(epochMillis);
          statement.setTimestamp(index, timestamp);
          return (1);
       }
-      else if(value instanceof OffsetDateTime)
+      else if(value instanceof OffsetDateTime odt)
       {
-         Timestamp timestamp = new Timestamp(((OffsetDateTime) value).toEpochSecond() * MS_PER_SEC);
+         long      epochMillis = odt.toEpochSecond() * MS_PER_SEC;
+         Timestamp timestamp   = new Timestamp(epochMillis);
          statement.setTimestamp(index, timestamp);
          return (1);
       }
-      else if(value instanceof LocalDateTime)
+      else if(value instanceof LocalDateTime ldt)
       {
-         Timestamp timestamp = new Timestamp(((LocalDateTime) value).toEpochSecond(ZoneOffset.UTC) * MS_PER_SEC);
+         ZoneOffset offset      = OffsetDateTime.now().getOffset();
+         long       epochMillis = ldt.toEpochSecond(offset) * MS_PER_SEC;
+         Timestamp  timestamp   = new Timestamp(epochMillis);
          statement.setTimestamp(index, timestamp);
          return (1);
       }
@@ -1120,15 +1144,12 @@ public class QueryManager
     *******************************************************************************/
    public static BigDecimal getBigDecimal(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       BigDecimal value = resultSet.getBigDecimal(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1153,15 +1174,12 @@ public class QueryManager
     *******************************************************************************/
    public static Date getDate(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Date value = resultSet.getDate(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1186,8 +1204,6 @@ public class QueryManager
     *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1196,7 +1212,6 @@ public class QueryManager
       Calendar rs = Calendar.getInstance();
       rs.setTimeInMillis(value.getTime());
       return (rs);
-      */
    }
 
 
@@ -1206,8 +1221,6 @@ public class QueryManager
     *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1216,7 +1229,6 @@ public class QueryManager
       Calendar rs = Calendar.getInstance();
       rs.setTimeInMillis(value.getTime());
       return (rs);
-      */
    }
 
 
@@ -1227,8 +1239,6 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static LocalDate getLocalDate(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1237,7 +1247,24 @@ public class QueryManager
 
       LocalDate date = LocalDate.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate());
       return (date);
-      */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   public static LocalDate getLocalDate(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      LocalDate date = LocalDate.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate());
+      return (date);
    }
 
 
@@ -1248,8 +1275,6 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static LocalDateTime getLocalDateTime(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1258,7 +1283,6 @@ public class QueryManager
 
       LocalDateTime dateTime = LocalDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0);
       return (dateTime);
-      */
    }
 
 
@@ -1287,8 +1311,6 @@ public class QueryManager
    @SuppressWarnings("deprecation")
    public static OffsetDateTime getOffsetDateTime(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
@@ -1297,7 +1319,24 @@ public class QueryManager
 
       OffsetDateTime dateTime = OffsetDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0, OffsetDateTime.now().getOffset());
       return (dateTime);
-      */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   public static OffsetDateTime getOffsetDateTime(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      OffsetDateTime dateTime = OffsetDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0, OffsetDateTime.now().getOffset());
+      return (dateTime);
    }
 
 
@@ -1307,15 +1346,12 @@ public class QueryManager
     *******************************************************************************/
    public static Boolean getBoolean(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Boolean value = resultSet.getBoolean(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1325,15 +1361,12 @@ public class QueryManager
     *******************************************************************************/
    public static Boolean getBoolean(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Boolean value = resultSet.getBoolean(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1343,15 +1376,12 @@ public class QueryManager
     *******************************************************************************/
    public static Long getLong(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       long value = resultSet.getLong(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1361,15 +1391,12 @@ public class QueryManager
     *******************************************************************************/
    public static Long getLong(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       long value = resultSet.getLong(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1379,15 +1406,12 @@ public class QueryManager
     *******************************************************************************/
    public static Timestamp getTimestamp(ResultSet resultSet, int column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1397,15 +1421,12 @@ public class QueryManager
     *******************************************************************************/
    public static Timestamp getTimestamp(ResultSet resultSet, String column) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       Timestamp value = resultSet.getTimestamp(column);
       if(resultSet.wasNull())
       {
          return (null);
       }
       return (value);
-      */
    }
 
 
@@ -1618,6 +1639,27 @@ public class QueryManager
    public static Map<String, Integer> getStatistics()
    {
       return statistics;
+   }
+
+
+
+   /*******************************************************************************
+    ** Note - this changes a static field that impacts all usages.  Really, it's meant
+    ** to only be called in unit tests (at least as of the time of this writing).
+    *******************************************************************************/
+   public static void setPageSize(int pageSize)
+   {
+      PAGE_SIZE = pageSize;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void resetPageSize()
+   {
+      PAGE_SIZE = DEFAULT_PAGE_SIZE;
    }
 
 }

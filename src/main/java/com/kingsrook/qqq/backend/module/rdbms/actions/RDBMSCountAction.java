@@ -25,15 +25,14 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.count.CountRequest;
-import com.kingsrook.qqq.backend.core.model.actions.count.CountResult;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.logging.log4j.LogManager;
@@ -52,16 +51,16 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
    /*******************************************************************************
     **
     *******************************************************************************/
-   public CountResult execute(CountRequest countRequest) throws QException
+   public CountOutput execute(CountInput countInput) throws QException
    {
       try
       {
-         QTableMetaData table     = countRequest.getTable();
+         QTableMetaData table     = countInput.getTable();
          String         tableName = getTableName(table);
 
          String sql = "SELECT count(*) as record_count FROM " + tableName;
 
-         QQueryFilter       filter = countRequest.getFilter();
+         QQueryFilter       filter = countInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
          {
@@ -70,13 +69,12 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
 
          // todo sql customization - can edit sql and/or param list
 
-         CountResult rs = new CountResult();
+         CountOutput rs = new CountOutput();
 
-         try(Connection connection = getConnection(countRequest))
+         try(Connection connection = getConnection(countInput))
          {
             QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
-               ResultSetMetaData metaData = resultSet.getMetaData();
                if(resultSet.next())
                {
                   rs.setCount(resultSet.getInt("record_count"));

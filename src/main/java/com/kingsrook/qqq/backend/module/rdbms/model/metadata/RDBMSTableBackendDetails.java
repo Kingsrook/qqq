@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 
 

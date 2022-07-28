@@ -24,11 +24,11 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.count.CountRequest;
-import com.kingsrook.qqq.backend.core.model.actions.count.CountResult;
-import com.kingsrook.qqq.backend.core.model.actions.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,9 +58,9 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    @Test
    public void testUnfilteredCount() throws QException
    {
-      CountRequest countRequest = initCountRequest();
-      CountResult countResult = new RDBMSCountAction().execute(countRequest);
-      Assertions.assertEquals(5, countResult.getCount(), "Unfiltered query should find all rows");
+      CountInput  countInput  = initCountRequest();
+      CountOutput countOutput = new RDBMSCountAction().execute(countInput);
+      Assertions.assertEquals(5, countOutput.getCount(), "Unfiltered query should find all rows");
    }
 
 
@@ -73,15 +73,15 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    {
       String email = "darin.kelkhoff@gmail.com";
 
-      CountRequest countRequest = initCountRequest();
-      countRequest.setFilter(new QQueryFilter()
+      CountInput countInput = initCountRequest();
+      countInput.setFilter(new QQueryFilter()
          .withCriteria(new QFilterCriteria()
             .withFieldName("email")
             .withOperator(QCriteriaOperator.EQUALS)
             .withValues(List.of(email)))
       );
-      CountResult countResult = new RDBMSCountAction().execute(countRequest);
-      Assertions.assertEquals(1, countResult.getCount(), "Expected # of rows");
+      CountOutput countOutput = new RDBMSCountAction().execute(countInput);
+      Assertions.assertEquals(1, countOutput.getCount(), "Expected # of rows");
    }
 
 
@@ -94,15 +94,15 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    {
       String email = "darin.kelkhoff@gmail.com";
 
-      CountRequest countRequest = initCountRequest();
-      countRequest.setFilter(new QQueryFilter()
+      CountInput countInput = initCountRequest();
+      countInput.setFilter(new QQueryFilter()
          .withCriteria(new QFilterCriteria()
             .withFieldName("email")
             .withOperator(QCriteriaOperator.NOT_EQUALS)
             .withValues(List.of(email)))
       );
-      CountResult countResult = new RDBMSCountAction().execute(countRequest);
-      Assertions.assertEquals(4, countResult.getCount(), "Expected # of rows");
+      CountOutput countOutput = new RDBMSCountAction().execute(countInput);
+      Assertions.assertEquals(4, countOutput.getCount(), "Expected # of rows");
    }
 
 
@@ -110,12 +110,12 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private CountRequest initCountRequest()
+   private CountInput initCountRequest()
    {
-      CountRequest countRequest = new CountRequest();
-      countRequest.setInstance(TestUtils.defineInstance());
-      countRequest.setTableName(TestUtils.defineTablePerson().getName());
-      return countRequest;
+      CountInput countInput = new CountInput();
+      countInput.setInstance(TestUtils.defineInstance());
+      countInput.setTableName(TestUtils.defineTablePerson().getName());
+      return countInput;
    }
 
 }
