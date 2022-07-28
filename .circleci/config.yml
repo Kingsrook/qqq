@@ -77,6 +77,8 @@ jobs:
   mvn_deploy:
     executor: localstack/default
     steps:
+      - localstack/startup
+      - install_java17
       - mvn_verify
       - mvn_jar_deploy
       - slack/notify:
