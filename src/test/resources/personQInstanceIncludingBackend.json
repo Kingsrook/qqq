@@ -1,0 +1,163 @@
+{
+  "tables": {
+    "person": {
+      "primaryKeyField": "id",
+      "name": "person",
+      "backendName": "default",
+      "label": "Person",
+      "fields": {
+        "firstName": {
+          "name": "firstName",
+          "backendName": null,
+          "label": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "lastName": {
+          "name": "lastName",
+          "backendName": null,
+          "label": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "modifyDate": {
+          "name": "modifyDate",
+          "backendName": null,
+          "label": null,
+          "type": "DATE_TIME",
+          "possibleValueSourceName": null
+        },
+        "homeState": {
+          "name": "homeState",
+          "backendName": null,
+          "label": null,
+          "type": "STRING",
+          "possibleValueSourceName": "state"
+        },
+        "id": {
+          "name": "id",
+          "backendName": null,
+          "label": null,
+          "type": "INTEGER",
+          "possibleValueSourceName": null
+        },
+        "birthDate": {
+          "name": "birthDate",
+          "backendName": null,
+          "label": null,
+          "type": "DATE",
+          "possibleValueSourceName": null
+        },
+        "email": {
+          "name": "email",
+          "backendName": null,
+          "label": null,
+          "type": "STRING",
+          "possibleValueSourceName": null
+        },
+        "createDate": {
+          "name": "createDate",
+          "backendName": null,
+          "label": null,
+          "type": "DATE_TIME",
+          "possibleValueSourceName": null
+        }
+      }
+    }
+  },
+  "processes": {
+    "greet": {
+      "functionList": [
+        {
+          "code": {
+            "codeUsage": "FUNCTION",
+            "codeType": "JAVA",
+            "name": "com.kingsrook.qqq.backend.core.interfaces.mock.MockFunctionBody"
+          },
+          "inputMetaData": {
+            "recordListMetaData": {
+              "fields": null,
+              "tableName": "person"
+            },
+            "fieldList": [
+              {
+                "name": "greetingPrefix",
+                "backendName": null,
+                "label": null,
+                "type": "STRING",
+                "possibleValueSourceName": null
+              },
+              {
+                "name": "greetingSuffix",
+                "backendName": null,
+                "label": null,
+                "type": "STRING",
+                "possibleValueSourceName": null
+              }
+            ]
+          },
+          "outputMetaData": {
+            "recordListMetaData": {
+              "fields": {
+                "fullGreeting": {
+                  "name": "fullGreeting",
+                  "backendName": null,
+                  "label": null,
+                  "type": "STRING",
+                  "possibleValueSourceName": null
+                }
+              },
+              "tableName": "person"
+            },
+            "fieldList": [
+              {
+                "name": "outputMessage",
+                "backendName": null,
+                "label": null,
+                "type": "STRING",
+                "possibleValueSourceName": null
+              }
+            ]
+          },
+          "outputView": {
+            "messageField": "outputMessage",
+            "recordListView": {
+              "fieldNames": [
+                "id",
+                "firstName",
+                "lastName",
+                "fullGreeting"
+              ]
+            }
+          },
+          "name": "prepare",
+          "label": null
+        }
+      ],
+      "name": "greet",
+      "tableName": "person"
+    }
+  },
+  "possibleValueSources": {
+    "state": {
+      "name": "state",
+      "type": "ENUM",
+      "enumValues": [
+        "IL",
+        "MO"
+      ]
+    }
+  },
+  "backends": {
+    "default": {
+      "values": null,
+      "name": "default",
+      "type": "mock"
+    }
+  },
+  "authentication": {
+    "values": null,
+    "name": "mock",
+    "type": "mock"
+  }
+}
