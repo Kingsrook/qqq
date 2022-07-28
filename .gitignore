@@ -1,5 +1,6 @@
 target/
 *.iml
+.env
 
 #############################################
 ## Original contents from github template: ##
