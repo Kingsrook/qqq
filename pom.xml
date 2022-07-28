@@ -53,12 +53,12 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.2.0-20220726.214150-15</version>
+         <version>0.2.0</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>0.2.0-20220726.214633-12</version>
+         <version>0.2.0</version>
          <scope>test</scope>
       </dependency>
 
