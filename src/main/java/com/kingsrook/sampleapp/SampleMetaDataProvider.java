@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFor
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import io.github.cdimascio.dotenv.Dotenv;
 
 
 /*******************************************************************************
@@ -120,13 +121,14 @@ public class SampleMetaDataProvider
     *******************************************************************************/
    public static QBackendMetaData defineMysqlBackend()
    {
+      Dotenv dotenv = Dotenv.configure().load();
       return new RDBMSBackendMetaData()
          .withVendor("mysql")
          .withHostName("127.0.0.1")
          .withPort(3306)
          .withDatabaseName("qqq")
          .withUsername("root")
-         .withPassword("8BNWyoav8s79oi}Lqk")
+         .withPassword(dotenv.get("RDBMS_PASSWORD"))
          .withName(MYSQL_BACKEND_NAME);
    }
 
