@@ -59,12 +59,14 @@ import io.github.cdimascio.dotenv.Dotenv;
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static final String MYSQL_BACKEND_NAME      = "mysql";
+   public static boolean USE_MYSQL = false;
+
+   public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
 
    public static final String AUTH0_AUTHENTICATION_MODULE_NAME = "auth0";
    // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
-   public static final String AUTH0_BASE_URL = "https://nutrifresh-one-development.us.auth0.com/";
+   public static final String AUTH0_BASE_URL                   = "https://nutrifresh-one-development.us.auth0.com/";
 
    public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
@@ -88,7 +90,7 @@ public class SampleMetaDataProvider
       QInstance qInstance = new QInstance();
 
       qInstance.setAuthentication(defineAuthentication());
-      qInstance.addBackend(defineMysqlBackend());
+      qInstance.addBackend(defineRdbmsBackend());
       qInstance.addBackend(defineFilesystemBackend());
       qInstance.addTable(defineTableCarrier());
       qInstance.addTable(defineTablePerson());
@@ -119,17 +121,29 @@ public class SampleMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QBackendMetaData defineMysqlBackend()
+   public static RDBMSBackendMetaData defineRdbmsBackend()
    {
-      Dotenv dotenv = Dotenv.configure().load();
-      return new RDBMSBackendMetaData()
-         .withVendor("mysql")
-         .withHostName("127.0.0.1")
-         .withPort(3306)
-         .withDatabaseName("qqq")
-         .withUsername("root")
-         .withPassword(dotenv.get("RDBMS_PASSWORD"))
-         .withName(MYSQL_BACKEND_NAME);
+      if(USE_MYSQL)
+      {
+         Dotenv dotenv = Dotenv.configure().load();
+         return new RDBMSBackendMetaData()
+            .withName(RDBMS_BACKEND_NAME)
+            .withVendor("mysql")
+            .withHostName("127.0.0.1")
+            .withPort(3306)
+            .withDatabaseName("qqq")
+            .withUsername("root")
+            .withPassword(dotenv.get("RDBMS_PASSWORD"));
+      }
+      else
+      {
+         return (new RDBMSBackendMetaData()
+            .withName(RDBMS_BACKEND_NAME)
+            .withVendor("h2")
+            .withHostName("mem")
+            .withDatabaseName("test_database")
+            .withUsername("sa"));
+      }
    }
 
 
@@ -153,7 +167,7 @@ public class SampleMetaDataProvider
    {
       QTableMetaData table = new QTableMetaData();
       table.setName("carrier");
-      table.setBackendName(MYSQL_BACKEND_NAME);
+      table.setBackendName(RDBMS_BACKEND_NAME);
       table.setPrimaryKeyField("id");
 
       table.addField(new QFieldMetaData("id", QFieldType.INTEGER));
@@ -182,7 +196,7 @@ public class SampleMetaDataProvider
       return new QTableMetaData()
          .withName("person")
          .withLabel("Person")
-         .withBackendName(MYSQL_BACKEND_NAME)
+         .withBackendName(RDBMS_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
@@ -443,7 +457,7 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP))
             .withInputData(new QFunctionInputMetaData()
-               .addField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+               .withField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
    }
 

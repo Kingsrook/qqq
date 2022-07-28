@@ -62,7 +62,7 @@ public class BasicETLProcess
             .withCodeType(QCodeType.JAVA)
             .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
-            .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING)));
+            .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING)));
 
       QStepMetaData transformFunction = new QBackendStepMetaData()
          .withName(FUNCTION_NAME_TRANSFORM)
@@ -71,8 +71,8 @@ public class BasicETLProcess
             .withCodeType(QCodeType.JAVA)
             .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
-            .addField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))
-            .addField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)));
+            .withField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))
+            .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)));
 
       QStepMetaData loadFunction = new QBackendStepMetaData()
          .withName(FUNCTION_NAME_LOAD)
@@ -81,7 +81,7 @@ public class BasicETLProcess
             .withCodeType(QCodeType.JAVA)
             .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withInputData(new QFunctionInputMetaData()
-            .addField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)))
+            .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .addField(new QFieldMetaData(FIELD_RECORD_COUNT, QFieldType.INTEGER)));
 

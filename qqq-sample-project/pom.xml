@@ -65,6 +65,12 @@
          <artifactId>qqq-middleware-picocli</artifactId>
          <version>${revision}</version>
       </dependency>
+      <dependency>
+         <groupId>com.h2database</groupId>
+         <artifactId>h2</artifactId>
+         <version>2.1.212</version>
+         <scope>test</scope>
+      </dependency>
 
       <!-- 3rd party deps specifically for this module -->
       <!-- none at this time -->

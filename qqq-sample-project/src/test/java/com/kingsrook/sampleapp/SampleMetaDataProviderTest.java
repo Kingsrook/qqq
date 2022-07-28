@@ -24,9 +24,13 @@ package com.kingsrook.sampleapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.util.List;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -37,10 +41,16 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -49,6 +59,40 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class SampleMetaDataProviderTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   void beforeEach() throws Exception
+   {
+      primeTestDatabase("prime-test-database.sql");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   private void primeTestDatabase(String sqlFileName) throws Exception
+   {
+      ConnectionManager connectionManager = new ConnectionManager();
+      try(Connection connection = connectionManager.getConnection(SampleMetaDataProvider.defineRdbmsBackend()))
+      {
+         InputStream primeTestDatabaseSqlStream = SampleMetaDataProviderTest.class.getResourceAsStream("/" + sqlFileName);
+         Assert.assertNotNull(primeTestDatabaseSqlStream);
+         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
+         String joinedSQL = String.join("\n", lines);
+         for(String sql : joinedSQL.split(";"))
+         {
+            QueryManager.executeUpdate(connection, sql);
+         }
+      }
+   }
+
+
 
    /*******************************************************************************
     **
@@ -77,6 +121,9 @@ class SampleMetaDataProviderTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private File copyTestFileToRandomNameUnderTable(QTableMetaData fedExTable) throws IOException
    {
       File destinationDir = new File(SampleMetaDataProvider.defineFilesystemBackend().getBasePath() + File.separator +
@@ -119,6 +166,26 @@ class SampleMetaDataProviderTest
       RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testThrowProcess() throws Exception
+   {
+      QInstance       qInstance = SampleMetaDataProvider.defineInstance();
+      RunProcessInput request   = new RunProcessInput(qInstance);
+      request.setSession(new QSession());
+      request.setProcessName(SampleMetaDataProvider.PROCESS_NAME_SIMPLE_THROW);
+      request.addValue(SampleMetaDataProvider.ThrowerStep.FIELD_SLEEP_MILLIS, 10);
+
+      assertThrows(QException.class, () ->
+      {
+         new RunProcessAction().execute(request);
+      });
    }
 
 }

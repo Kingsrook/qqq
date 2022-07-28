@@ -225,7 +225,7 @@ public class DeserializerUtils
                         // otherwise, either find some jackson annotation that makes sense, and apply it to the setter method, //
                         // or if no jackson annotation is right, then come up with annotation of our own.                      //
                         /////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        method.invoke(output, reflectivelyDeserialize((Class) parameterType, (TreeNode) value));
+                        method.invoke(output, reflectivelyDeserialize((Class<?>) parameterType, (TreeNode) value));
                      }
                   }
                   catch(IllegalAccessException | InvocationTargetException | NoSuchMethodException | IOException e)

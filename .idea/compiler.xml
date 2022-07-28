@@ -22,6 +22,7 @@
       <module name="qqq-backend-module-rdbms" options="-Xlint:unchecked" />
       <module name="qqq-middleware-javalin" options="-Xlint:unchecked" />
       <module name="qqq-middleware-picocli" options="-Xlint:unchecked" />
+      <module name="qqq-parent-project" options="" />
       <module name="qqq-sample-project" options="-Xlint:unchecked" />
     </option>
   </component>
