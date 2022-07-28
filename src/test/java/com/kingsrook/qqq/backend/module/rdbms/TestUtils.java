@@ -36,6 +36,10 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDe
 public class TestUtils
 {
 
+   public static final String DEFAULT_BACKEND_NAME = "default";
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -54,13 +58,12 @@ public class TestUtils
     *******************************************************************************/
    public static RDBMSBackendMetaData defineBackend()
    {
-      RDBMSBackendMetaData rdbmsBackendMetaData = new RDBMSBackendMetaData()
+      return (new RDBMSBackendMetaData()
+         .withName(DEFAULT_BACKEND_NAME)
          .withVendor("h2")
          .withHostName("mem")
          .withDatabaseName("test_database")
-         .withUsername("sa");
-      rdbmsBackendMetaData.setName("default");
-      return (rdbmsBackendMetaData);
+         .withUsername("sa"));
    }
 
 

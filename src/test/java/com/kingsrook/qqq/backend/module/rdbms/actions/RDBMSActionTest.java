@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.AfterEach;
 import static junit.framework.Assert.assertNotNull;
 
 
@@ -38,17 +39,39 @@ import static junit.framework.Assert.assertNotNull;
 public class RDBMSActionTest
 {
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   private void afterEachRDBMSActionTest()
+   {
+      QueryManager.resetPageSize();
+      QueryManager.resetStatistics();
+      QueryManager.setCollectStatistics(false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void primeTestDatabase() throws Exception
+   {
+      primeTestDatabase("prime-test-database.sql");
+   }
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
-   protected void primeTestDatabase() throws Exception
+   protected void primeTestDatabase(String sqlFileName) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
       try(Connection connection = connectionManager.getConnection(TestUtils.defineBackend()))
       {
-         InputStream primeTestDatabaseSqlStream = RDBMSActionTest.class.getResourceAsStream("/prime-test-database.sql");
+         InputStream primeTestDatabaseSqlStream = RDBMSActionTest.class.getResourceAsStream("/" + sqlFileName);
          assertNotNull(primeTestDatabaseSqlStream);
          List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();

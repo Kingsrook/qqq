@@ -30,13 +30,15 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -56,17 +58,6 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
       QueryManager.setCollectStatistics(true);
       QueryManager.resetStatistics();
-   }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @AfterEach
-   public void afterEach() throws Exception
-   {
-      QueryManager.resetStatistics();
-      QueryManager.setCollectStatistics(false);
    }
 
 
@@ -307,6 +298,48 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          }
          assertEquals(5, rowsFound);
       }));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testModifyDateGetsUpdated() throws Exception
+   {
+      String originalModifyDate = selectModifyDate(1);
+
+      UpdateInput   updateInput = initUpdateRequest();
+      List<QRecord> records     = new ArrayList<>();
+      records.add(new QRecord().withTableName("person")
+         .withValue("id", 1)
+         .withValue("firstName", "Johnny Updated"));
+      updateInput.setRecords(records);
+      new RDBMSUpdateAction().execute(updateInput);
+
+      String updatedModifyDate = selectModifyDate(1);
+
+      assertTrue(StringUtils.hasContent(originalModifyDate));
+      assertTrue(StringUtils.hasContent(updatedModifyDate));
+      assertNotEquals(originalModifyDate, updatedModifyDate);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String selectModifyDate(Integer id) throws Exception
+   {
+      StringBuilder modifyDate = new StringBuilder();
+      runTestSql("SELECT modify_date FROM person WHERE id = " + id, (rs -> {
+         if(rs.next())
+         {
+            modifyDate.append(rs.getString("modify_date"));
+         }
+      }));
+      return (modifyDate.toString());
    }
 
 
