@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+   <Properties>
+      <Property name="LOG_PATTERN">%date{ISO8601} | %relative | %level | %threadName{1} | %logger{1}.%method | %message%n</Property>
+   </Properties>
+   <Appenders>
+      <File name="LogFile" fileName="log/qqq-picocli.log">
+         <PatternLayout pattern="${LOG_PATTERN}"/>
+      </File>
+   </Appenders>
+   <Loggers>
+      <Logger name="org.apache.log4j.xml" additivity="false">
+      </Logger>
+      <Root level="all">
+         <AppenderRef ref="LogFile"/>
+      </Root>
+   </Loggers>
+</Configuration>

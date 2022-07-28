@@ -31,6 +31,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -40,6 +41,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -226,7 +228,7 @@ class QPicoCliImplementationTest
       int count = countResult.getInt("count");
       assertEquals(4, count);
 
-      testOutput  = testCli("person", "count", "--criteria", "id EQUALS 3");
+      testOutput = testCli("person", "count", "--criteria", "id EQUALS 3");
       countResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(countResult);
       count = countResult.getInt("count");
@@ -250,6 +252,49 @@ class QPicoCliImplementationTest
       // query for id != 3, and skipping 1, expect to get back rows 2 & 4
       assertEquals(2, records.getJSONObject(0).getJSONObject("values").getInt("id"));
       assertEquals(4, records.getJSONObject(1).getJSONObject("values").getInt("id"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a "get single record" action (singleton query) on a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableGetNoIdGiven()
+   {
+      TestOutput testOutput = testCli("person", "get");
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person get PARAM");
+      assertTestOutputContains(testOutput, "Primary key value from the table");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a "get single record" action (singleton query) on a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableGet()
+   {
+      TestOutput testOutput = testCli("person", "get", "1");
+      JSONObject getResult  = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(getResult);
+      assertEquals(1, getResult.getJSONObject("values").getInt("id"));
+      assertEquals("Darin", getResult.getJSONObject("values").getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a "get single record" action (singleton query) on a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableGetMissingId()
+   {
+      TestOutput testOutput = testCli("person", "get", "1976");
+      assertTestOutputContains(testOutput, "No Person found for Id: 1976");
    }
 
 
@@ -402,11 +447,24 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
-    ** test running an update w/ fields as arguments
+    ** test running an update w/o specifying any pkeys or criteria, prints usage
     **
     *******************************************************************************/
    @Test
-   public void test_tableUpdateFieldArguments() throws Exception
+   public void test_tableUpdateNoRecordsPrintsUsage()
+   {
+      TestOutput testOutput = testCli("person", "update", "--field-firstName=Lucy");
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person update");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments and one primary key
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArgumentsOnePrimaryKey() throws Exception
    {
       assertRowValueById("person", "first_name", "Garret", 5);
       TestOutput testOutput = testCli("person", "update",
@@ -422,6 +480,59 @@ class QPicoCliImplementationTest
 
 
 
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments and multiple primary keys
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArgumentsManyPrimaryKeys() throws Exception
+   {
+      assertRowValueById("person", "first_name", "Tyler", 4);
+      assertRowValueById("person", "first_name", "Garret", 5);
+      TestOutput testOutput = testCli("person", "update",
+         "--primaryKey=4,5",
+         "--field-birthDate=1980-05-31",
+         "--field-firstName=Lucy",
+         "--field-lastName=Lu");
+      JSONObject updateResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(updateResult);
+      assertEquals(2, updateResult.getJSONArray("records").length());
+      assertEquals(4, updateResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(5, updateResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
+      assertRowValueById("person", "first_name", "Lucy", 4);
+      assertRowValueById("person", "first_name", "Lucy", 5);
+   }
+
+
+
+   /*******************************************************************************
+    ** test running an update w/ fields as arguments and a criteria
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableUpdateFieldArgumentsCriteria() throws Exception
+   {
+      assertRowValueById("person", "first_name", "Tyler", 4);
+      assertRowValueById("person", "first_name", "Garret", 5);
+      TestOutput testOutput = testCli("person", "update",
+         "--criteria",
+         "id GREATER_THAN_OR_EQUALS 4",
+         "--field-firstName=Lucy",
+         "--field-lastName=Lu");
+      JSONObject updateResult = JsonUtils.toJSONObject(testOutput.getOutput());
+      assertNotNull(updateResult);
+      assertEquals(2, updateResult.getJSONArray("records").length());
+      assertEquals(4, updateResult.getJSONArray("records").getJSONObject(0).getJSONObject("values").getInt("id"));
+      assertEquals(5, updateResult.getJSONArray("records").getJSONObject(1).getJSONObject("values").getInt("id"));
+      assertRowValueById("person", "first_name", "Lucy", 4);
+      assertRowValueById("person", "first_name", "Lucy", 5);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void assertRowValueById(String tableName, String columnName, String value, Integer id) throws Exception
    {
       TestUtils.runTestSql("SELECT " + columnName + " FROM " + tableName + " WHERE id=" + id, (rs -> {
@@ -439,6 +550,18 @@ class QPicoCliImplementationTest
 
 
    /*******************************************************************************
+    ** test running a delete without enough args
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableDeleteWithoutArgs() throws Exception
+   {
+      TestOutput testOutput   = testCli("person", "delete");
+      assertTestOutputContains(testOutput, "Usage: " + CLI_NAME + " person delete");
+   }
+
+
+   /*******************************************************************************
     ** test running a delete against a table
     **
     *******************************************************************************/
@@ -448,10 +571,7 @@ class QPicoCliImplementationTest
       TestOutput testOutput   = testCli("person", "delete", "--primaryKey", "2,4");
       JSONObject deleteResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(deleteResult);
-      JSONArray records = deleteResult.getJSONArray("records");
-      assertEquals(2, records.length());
-      assertEquals(2, records.getJSONObject(0).getJSONObject("values").getInt("id"));
-      assertEquals(4, records.getJSONObject(1).getJSONObject("values").getInt("id"));
+      assertEquals(2, deleteResult.getInt("deletedRecordCount"));
       TestUtils.runTestSql("SELECT id FROM person", (rs -> {
          int rowsFound = 0;
          while(rs.next())
@@ -470,7 +590,7 @@ class QPicoCliImplementationTest
     **
     *******************************************************************************/
    @Test
-   public void test_tableProcess() throws Exception
+   public void test_tableProcess()
    {
       TestOutput testOutput = testCli("person", "process");
 
@@ -487,7 +607,7 @@ class QPicoCliImplementationTest
     **
     *******************************************************************************/
    @Test
-   public void test_tableProcessUnknownName() throws Exception
+   public void test_tableProcessUnknownName()
    {
       String     badProcessName = "not-a-process";
       TestOutput testOutput     = testCli("person", "process", badProcessName);
@@ -502,7 +622,7 @@ class QPicoCliImplementationTest
     **
     *******************************************************************************/
    @Test
-   public void test_tableProcessGreetUsingCallbackForFields() throws Exception
+   public void test_tableProcessGreetUsingCallbackForFields()
    {
       setStandardInputLines("Hi", "How are you?");
       TestOutput testOutput = testCli("person", "process", "greet");
@@ -511,12 +631,217 @@ class QPicoCliImplementationTest
    }
 
 
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportNoArgsExcel()
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".xlsx";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename);
+      assertTestOutputContains(testOutput, "Wrote 5 records to file " + filename);
+
+      File file = new File(filename);
+      assertTrue(file.exists());
+
+      // todo - some day when we learn to read Excel, assert that we wrote as expected.
+
+      deleteFile(file);
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportWithLimit() throws Exception
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".csv";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--limit=3");
+      assertTestOutputContains(testOutput, "Wrote 3 records to file " + filename);
+
+      File file = new File(filename);
+      @SuppressWarnings("unchecked")
+      List<String> list = FileUtils.readLines(file);
+      assertEquals(4, list.size());
+      assertThat(list.get(0)).contains("""
+         "Id","Create Date","Modify Date\"""");
+      assertThat(list.get(1)).matches("""
+         ^"1",.*"Darin.*""");
+      assertThat(list.get(3)).matches("""
+         ^"3",.*"Tim.*""");
+
+      deleteFile(file);
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportWithCriteria() throws Exception
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".csv";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--criteria", "id NOT_EQUALS 3");
+      assertTestOutputContains(testOutput, "Wrote 4 records to file " + filename);
+
+      File file = new File(filename);
+      @SuppressWarnings("unchecked")
+      List<String> list = FileUtils.readLines(file);
+      assertEquals(5, list.size());
+      assertThat(list.get(0)).contains("""
+         "Id","Create Date","Modify Date\"""");
+      assertThat(list.get(1)).matches("^\"1\",.*");
+      assertThat(list.get(2)).matches("^\"2\",.*");
+      assertThat(list.get(3)).matches("^\"4\",.*");
+      assertThat(list.get(4)).matches("^\"5\",.*");
+
+      deleteFile(file);
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportWithoutFilename()
+   {
+      TestOutput testOutput = testCli("person", "export");
+      assertTestErrorContains(testOutput, "Missing required option: '--filename=PARAM'");
+      assertTestErrorContains(testOutput, "Usage: " + CLI_NAME + " person export");
+      assertTestErrorContains(testOutput, "-f=PARAM");
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportNoFileExtension()
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID();
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename);
+      assertTestErrorContains(testOutput, "File name did not contain an extension");
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportBadFileType()
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".docx";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename);
+      assertTestErrorContains(testOutput, "Unsupported report format: docx.");
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportBadFilePath()
+   {
+      String     filename   = "/no-such/directory/" + UUID.randomUUID() + "report.csv";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename);
+      assertTestErrorContains(testOutput, "No such file or directory");
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportBadFieldNams()
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".csv";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--fieldNames=foo");
+      assertTestErrorContains(testOutput, "Field name foo was not found on the Person table");
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportBadFieldNames()
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".csv";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--fieldNames=foo,bar,baz");
+      assertTestErrorContains(testOutput, "Fields names foo, bar, and baz were not found on the Person table");
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportGoodFieldNamesXslx() throws IOException
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".xlsx";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--fieldNames=id,lastName,birthDate");
+
+      File file = new File(filename);
+      assertTrue(file.exists());
+
+      // todo - some day when we learn to read Excel, assert that we wrote as expected (with 3 columns)
+
+      deleteFile(file);
+   }
+
+
+
+   /*******************************************************************************
+    ** test exporting a table
+    **
+    *******************************************************************************/
+   @Test
+   public void test_tableExportGoodFieldNamesCSV() throws IOException
+   {
+      String     filename   = "/tmp/" + UUID.randomUUID() + ".csv";
+      TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--fieldNames=id,lastName,birthDate");
+
+      File file = new File(filename);
+      @SuppressWarnings("unchecked")
+      List<String> list = FileUtils.readLines(file);
+      assertEquals(6, list.size());
+      assertThat(list.get(0)).isEqualTo("""
+         "Id","Last Name","Birth Date\"""");
+      assertThat(list.get(1)).isEqualTo("""
+         "1","Kelkhoff","1980-05-31\"""");
+
+      deleteFile(file);
+   }
+
+
+
    /*******************************************************************************
     ** test running a process on a table
     **
     *******************************************************************************/
    @Test
-   public void test_tableProcessGreetUsingOptionsForFields() throws Exception
+   public void test_tableProcessGreetUsingOptionsForFields()
    {
       TestOutput testOutput = testCli("person", "process", "greet", "--field-greetingPrefix=Hello", "--field-greetingSuffix=World");
       assertTestOutputDoesNotContain(testOutput, "Please supply a value for the field");
@@ -563,6 +888,16 @@ class QPicoCliImplementationTest
          fail("Expected error-output to contain this regex pattern:\n" + expectedRegexSubstring
             + "\nBut it did not.  The full error-output was:\n" + testOutput.getOutput());
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** delete a file, asserting that we did so.
+    *******************************************************************************/
+   private void deleteFile(File file)
+   {
+      assertTrue(file.delete());
    }
 
 
@@ -628,118 +963,4 @@ class QPicoCliImplementationTest
       System.setIn(stdin);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static class TestOutput
-   {
-      private String   output;
-      private String[] outputLines;
-      private String   error;
-      private String[] errorLines;
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public TestOutput(String output, String error)
-      {
-         this.output = output;
-         this.error = error;
-
-         this.outputLines = output.split("\n");
-         this.errorLines = error.split("\n");
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for output
-       **
-       *******************************************************************************/
-      public String getOutput()
-      {
-         return output;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for output
-       **
-       *******************************************************************************/
-      public void setOutput(String output)
-      {
-         this.output = output;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for outputLines
-       **
-       *******************************************************************************/
-      public String[] getOutputLines()
-      {
-         return outputLines;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for outputLines
-       **
-       *******************************************************************************/
-      public void setOutputLines(String[] outputLines)
-      {
-         this.outputLines = outputLines;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for error
-       **
-       *******************************************************************************/
-      public String getError()
-      {
-         return error;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for error
-       **
-       *******************************************************************************/
-      public void setError(String error)
-      {
-         this.error = error;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for errorLines
-       **
-       *******************************************************************************/
-      public String[] getErrorLines()
-      {
-         return errorLines;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for errorLines
-       **
-       *******************************************************************************/
-      public void setErrorLines(String[] errorLines)
-      {
-         this.errorLines = errorLines;
-      }
-   }
 }

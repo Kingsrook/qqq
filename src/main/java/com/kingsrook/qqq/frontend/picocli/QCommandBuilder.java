@@ -29,10 +29,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import picocli.CommandLine;
@@ -90,11 +90,13 @@ public class QCommandBuilder
          // add table-specific sub-commands for the table //
          ///////////////////////////////////////////////////
          tableCommand.addSubcommand("meta-data", defineMetaDataCommand(table));
-         tableCommand.addSubcommand("count", defineQueryCommand(table));
+         tableCommand.addSubcommand("count", defineCountCommand(table));
+         tableCommand.addSubcommand("get", defineGetCommand(table));
          tableCommand.addSubcommand("query", defineQueryCommand(table));
          tableCommand.addSubcommand("insert", defineInsertCommand(table));
          tableCommand.addSubcommand("update", defineUpdateCommand(table));
          tableCommand.addSubcommand("delete", defineDeleteCommand(table));
+         tableCommand.addSubcommand("export", defineExportCommand(table));
 
          List<QProcessMetaData> processes = qInstance.getProcessesForTable(tableName);
          if(CollectionUtils.nullSafeHasContents(processes))
@@ -161,11 +163,104 @@ public class QCommandBuilder
    /*******************************************************************************
     **
     *******************************************************************************/
+   private CommandLine.Model.CommandSpec defineExportCommand(QTableMetaData table)
+   {
+      CommandLine.Model.CommandSpec exportCommand = CommandLine.Model.CommandSpec.create();
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-f", "--filename")
+         .type(String.class)
+         .description("File name (including path) to write to.  File extension will be used to determine the report format.  Supported formats are:  csv, xlsx.")
+         .required(true)
+         .build());
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-e", "--fieldNames")
+         .type(String.class)
+         .description("Comma-separated list of field names (e.g., from table meta-data) to include in the export.  If not given, then all fields in the table are included.")
+         .build());
+      exportCommand.addOption(CommandLine.Model.OptionSpec.builder("-l", "--limit")
+         .type(int.class)
+         .description("Optional limit on the max number of records to include in the export.")
+         .build());
+      addCriteriaOption(exportCommand);
+
+      // todo - add the fields as explicit params?
+
+      return exportCommand;
+   }
+
+
+
+   /*******************************************************************************
+    ** add the standard '--criteria' option
+    *******************************************************************************/
+   private void addCriteriaOption(CommandLine.Model.CommandSpec commandSpec)
+   {
+      commandSpec.addOption(CommandLine.Model.OptionSpec.builder("-c", "--criteria")
+         .type(String[].class)
+         .description("""
+            Query filter criteria.  May be given multiple times.
+            Use format:  "$fieldName $operator $value".
+            e.g., "id EQUALS 42\"""")
+         .build());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void addPrimaryKeyOrKeysOption(CommandLine.Model.CommandSpec updateCommand, String verbForDescription)
+   {
+      updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--primaryKey")
+         // type(getClassForField(primaryKeyField))
+         .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
+         .description("""
+            Primary Key(s) for the records to %s.
+            May provide multiple values, separated by commas""".formatted(verbForDescription))
+         .build());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private CommandLine.Model.CommandSpec defineGetCommand(QTableMetaData table)
+   {
+      CommandLine.Model.CommandSpec getCommand = CommandLine.Model.CommandSpec.create();
+      getCommand.addPositional(CommandLine.Model.PositionalParamSpec.builder()
+         .index("0")
+         // .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
+         .description("Primary key value from the table")
+         .build());
+
+      return getCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private CommandLine.Model.CommandSpec defineCountCommand(QTableMetaData table)
+   {
+      CommandLine.Model.CommandSpec countCommand = CommandLine.Model.CommandSpec.create();
+      addCriteriaOption(countCommand);
+
+      // todo - add the fields as explicit params?
+
+      return countCommand;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private CommandLine.Model.CommandSpec defineUpdateCommand(QTableMetaData table)
    {
       CommandLine.Model.CommandSpec updateCommand = CommandLine.Model.CommandSpec.create();
 
       /*
+      todo - future may accept files, similar to (bulk) insert
       updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--jsonBody")
          .type(String.class)
          .build());
@@ -183,11 +278,12 @@ public class QCommandBuilder
          .build());
       */
 
-      QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
-      updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--primaryKey")
-         // type(getClassForField(primaryKeyField))
-         .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
-         .build());
+      QFieldMetaData primaryKeyField = null;
+      if(table.getPrimaryKeyField() != null)
+      {
+         primaryKeyField = table.getField(table.getPrimaryKeyField());
+         addPrimaryKeyOrKeysOption(updateCommand, "update");
+      }
 
       for(QFieldMetaData field : table.getFields().values())
       {
@@ -195,9 +291,14 @@ public class QCommandBuilder
          {
             updateCommand.addOption(CommandLine.Model.OptionSpec.builder("--field-" + field.getName())
                .type(getClassForField(field))
+               .description("""
+                  Value to set for the field %s""".formatted(field.getName()))
                .build());
          }
       }
+
+      addCriteriaOption(updateCommand);
+
       return updateCommand;
    }
 
@@ -247,6 +348,8 @@ public class QCommandBuilder
       deleteCommand.addOption(CommandLine.Model.OptionSpec.builder("--primaryKey")
          .type(String.class) // todo - mmm, better as picocli's "compound" thing, w/ the actual pkey's type?
          .build());
+
+      addCriteriaOption(deleteCommand);
 
       return deleteCommand;
    }
@@ -306,6 +409,7 @@ public class QCommandBuilder
          case DATE -> LocalDate.class;
          // case TIME -> LocalTime.class;
          case DATE_TIME -> LocalDateTime.class;
+         case BLOB -> byte[].class;
       };
       // @formatter:on
    }

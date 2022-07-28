@@ -27,9 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import com.kingsrook.qqq.backend.core.callbacks.QProcessCallback;
-import com.kingsrook.qqq.backend.core.model.actions.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import picocli.CommandLine;
 
 

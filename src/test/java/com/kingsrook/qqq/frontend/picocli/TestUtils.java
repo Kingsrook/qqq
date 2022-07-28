@@ -25,15 +25,16 @@ package com.kingsrook.qqq.frontend.picocli;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.interfaces.mock.MockBackendStep;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
@@ -112,7 +113,7 @@ public class TestUtils
    {
       return new QAuthenticationMetaData()
          .withName("mock")
-         .withType("mock");
+         .withType(QAuthenticationType.MOCK);
    }
 
 
