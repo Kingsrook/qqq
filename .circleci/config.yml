@@ -21,7 +21,7 @@ commands:
           command: |
             mvn -s .circleci/mvn-settings.xml verify
       - store_artifacts:
-          path: */target/site/jacoco
+          path: "*/target/site/jacoco"
       - run:
           name: Save test results
           command: |
@@ -54,15 +54,15 @@ jobs:
   mvn_test:
     executor: java17
     steps:
-      - mvn_verify:
+      - mvn_verify
       - slack/notify:
           event: fail
 
   mvn_deploy:
     executor: java17
     steps:
-      - mvn_verify:
-      - mvn_jar_deploy:
+      - mvn_verify
+      - mvn_jar_deploy
       - slack/notify:
           event: always
 
