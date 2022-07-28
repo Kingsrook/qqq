@@ -220,9 +220,9 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QSession getMockSession()
+   public static QSession getMockSession() throws QInstanceValidationException
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
-      return (mockAuthenticationModule.createSession(null, null));
+      return (mockAuthenticationModule.createSession(defineInstance(), null));
    }
 }

@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -186,8 +185,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
       try
       {
-         QueryOutput   rs      = new QueryOutput(queryInput);
-         List<QRecord> records = new ArrayList<>();
+         QueryOutput queryOutput = new QueryOutput(queryInput);
 
          QTableMetaData                        table        = queryInput.getTable();
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
@@ -206,7 +204,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
-                  records.addAll(recordsInFile);
+                  queryOutput.addRecords(recordsInFile);
                   break;
                }
                case JSON:
@@ -217,7 +215,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
-                  records.addAll(recordsInFile);
+                  queryOutput.addRecords(recordsInFile);
                   break;
                }
                default:
@@ -227,8 +225,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
             }
          }
 
-         rs.addRecords(records);
-         return rs;
+         return queryOutput;
       }
       catch(Exception e)
       {
