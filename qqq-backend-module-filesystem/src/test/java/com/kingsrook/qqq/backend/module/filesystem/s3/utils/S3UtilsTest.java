@@ -29,15 +29,12 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@DisabledOnOs(OS.LINUX)
 public class S3UtilsTest extends BaseS3Test
 {
 
