@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
 /*******************************************************************************

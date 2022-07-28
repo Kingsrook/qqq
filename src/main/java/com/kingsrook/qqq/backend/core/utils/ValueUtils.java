@@ -23,6 +23,12 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 
 
@@ -31,6 +37,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QValueException;
  *******************************************************************************/
 public class ValueUtils
 {
+   private static final DateTimeFormatter localDateDefaultFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+
 
    /*******************************************************************************
     ** Type-safely make a String from any Object.
@@ -171,6 +180,63 @@ public class ValueUtils
       catch(Exception e)
       {
          throw (new QValueException("Value [" + value + "] could not be converted to an Integer.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Type-safely make a LocalDate from any Object.
+    ** null and empty-string inputs return null.
+    ** We may throw if the input can't be converted to a LocalDate
+    *******************************************************************************/
+   public static LocalDate getValueAsLocalDate(Object value) throws QValueException
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof LocalDate ld)
+         {
+            return (ld);
+         }
+         else if(value instanceof java.sql.Date d)
+         {
+            return d.toLocalDate();
+         }
+         else if(value instanceof java.util.Date d)
+         {
+            return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+         }
+         else if(value instanceof Calendar c)
+         {
+            TimeZone tz = c.getTimeZone();
+            ZoneId zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
+            return LocalDateTime.ofInstant(c.toInstant(), zid).toLocalDate();
+         }
+         else if(value instanceof LocalDateTime ldt)
+         {
+            return ldt.toLocalDate();
+         }
+         else if(value instanceof String s)
+         {
+            if(!StringUtils.hasContent(s))
+            {
+               return (null);
+            }
+
+            return LocalDate.parse(s, localDateDefaultFormatter);
+         }
+         else
+         {
+            throw (new IllegalArgumentException("Unsupported class " + value.getClass().getName() + " for converting to LocalDate."));
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to an LocalDate.", e));
       }
    }
 

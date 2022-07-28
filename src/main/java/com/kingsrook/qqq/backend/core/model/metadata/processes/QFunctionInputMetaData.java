@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
 /*******************************************************************************
@@ -124,7 +124,23 @@ public class QFunctionInputMetaData
 
 
    /*******************************************************************************
-    ** Setter for fieldList
+    ** Fluently ADD a list of fields to this object's existing list
+    **
+    *******************************************************************************/
+   public QFunctionInputMetaData withFields(List<QFieldMetaData> fieldList)
+   {
+      if(this.fieldList == null)
+      {
+         this.fieldList = new ArrayList<>();
+      }
+      this.fieldList.addAll(fieldList);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for fieldList - e.g., will overwrite any previously set fields!!
     **
     *******************************************************************************/
    public QFunctionInputMetaData withFieldList(List<QFieldMetaData> fieldList)
@@ -136,10 +152,10 @@ public class QFunctionInputMetaData
 
 
    /*******************************************************************************
-    ** Setter for fieldList
+    ** Fluently add a field to the list
     **
     *******************************************************************************/
-   public QFunctionInputMetaData addField(QFieldMetaData field)
+   public QFunctionInputMetaData withField(QFieldMetaData field)
    {
       if(this.fieldList == null)
       {
@@ -147,6 +163,19 @@ public class QFunctionInputMetaData
       }
       this.fieldList.add(field);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Use withField instead, please.
+    **
+    ** @deprecated
+    *******************************************************************************/
+   @Deprecated
+   public QFunctionInputMetaData addField(QFieldMetaData field)
+   {
+      return (withField(field));
    }
 
 }

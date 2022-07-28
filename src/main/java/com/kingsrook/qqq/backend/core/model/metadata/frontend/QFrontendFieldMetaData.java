@@ -24,8 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
@@ -40,6 +40,7 @@ public class QFrontendFieldMetaData
    private String label;
    private QFieldType type;
    private boolean isRequired;
+   private boolean isEditable;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -48,7 +49,7 @@ public class QFrontendFieldMetaData
 
 
    /*******************************************************************************
-    **
+    ** Constructor
     *******************************************************************************/
    public QFrontendFieldMetaData(QFieldMetaData fieldMetaData)
    {
@@ -56,6 +57,7 @@ public class QFrontendFieldMetaData
       this.label = fieldMetaData.getLabel();
       this.type = fieldMetaData.getType();
       this.isRequired = fieldMetaData.getIsRequired();
+      this.isEditable = fieldMetaData.getIsEditable();
    }
 
 
@@ -101,4 +103,16 @@ public class QFrontendFieldMetaData
    {
       return isRequired;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isEditable
+    **
+    *******************************************************************************/
+   public boolean getIsEditable()
+   {
+      return isEditable;
+   }
+
 }

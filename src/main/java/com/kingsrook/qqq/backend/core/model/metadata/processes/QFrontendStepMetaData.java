@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
 /*******************************************************************************
@@ -34,9 +34,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
  *******************************************************************************/
 public class QFrontendStepMetaData extends QStepMetaData
 {
-   private List<QFieldMetaData> formFields;
-   private List<QFieldMetaData> viewFields;
-   private List<QFieldMetaData> recordListFields;
+   private List<QFrontendComponentMetaData> components;
+   private List<QFieldMetaData>             formFields;
+   private List<QFieldMetaData>             viewFields;
+   private List<QFieldMetaData>             recordListFields;
 
 
 
@@ -46,6 +47,56 @@ public class QFrontendStepMetaData extends QStepMetaData
    public QFrontendStepMetaData()
    {
       setStepType("frontend");
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for components
+    **
+    *******************************************************************************/
+   public List<QFrontendComponentMetaData> getComponents()
+   {
+      return components;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for components
+    **
+    *******************************************************************************/
+   public void setComponents(List<QFrontendComponentMetaData> components)
+   {
+      this.components = components;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 component
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withComponent(QFrontendComponentMetaData component)
+   {
+      if(this.components == null)
+      {
+         this.components = new ArrayList<>();
+      }
+      this.components.add(component);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for components
+    **
+    *******************************************************************************/
+   public QFrontendStepMetaData withComponents(List<QFrontendComponentMetaData> components)
+   {
+      this.components = components;
+      return (this);
    }
 
 

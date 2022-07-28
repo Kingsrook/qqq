@@ -28,8 +28,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
 /*******************************************************************************

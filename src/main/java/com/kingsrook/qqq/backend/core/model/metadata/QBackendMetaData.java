@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QBackendMetaDataDeserializer;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
 /*******************************************************************************

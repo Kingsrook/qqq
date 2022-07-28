@@ -31,5 +31,6 @@ package com.kingsrook.qqq.backend.core.state;
 public enum StateType
 {
    PROCESS_STATUS,
-   ASYNC_JOB_STATUS
+   ASYNC_JOB_STATUS,
+   UPLOADED_FILE
 }

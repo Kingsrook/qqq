@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
-import com.kingsrook.qqq.backend.core.actions.RunProcessAction;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -46,14 +46,14 @@ class BasicETLProcessTest
    @Test
    public void test() throws QException
    {
-      RunProcessRequest request = new RunProcessRequest(TestUtils.defineInstance());
+      RunProcessInput request = new RunProcessInput(TestUtils.defineInstance());
       request.setSession(TestUtils.getMockSession());
       request.setProcessName(BasicETLProcess.PROCESS_NAME);
       request.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.defineTablePerson().getName());
       request.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.definePersonFileTable().getName());
       request.addValue(BasicETLProcess.FIELD_MAPPING_JSON, "");
 
-      RunProcessResult result = new RunProcessAction().execute(request);
+      RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
       assertTrue(result.getException().isEmpty());
@@ -67,7 +67,7 @@ class BasicETLProcessTest
    @Test
    public void testMappingTransformation() throws QException
    {
-      RunProcessRequest request = new RunProcessRequest(TestUtils.defineInstance());
+      RunProcessInput request = new RunProcessInput(TestUtils.defineInstance());
       request.setSession(TestUtils.getMockSession());
       request.setProcessName(BasicETLProcess.PROCESS_NAME);
       request.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.definePersonFileTable().getName());
@@ -80,7 +80,7 @@ class BasicETLProcessTest
       // request.addValue(BasicETLProcess.FIELD_MAPPING_JSON, JsonUtils.toJson(mapping.getMapping()));
       request.addValue(BasicETLProcess.FIELD_MAPPING_JSON, JsonUtils.toJson(mapping));
 
-      RunProcessResult result = new RunProcessAction().execute(request);
+      RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
       assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
       assertTrue(result.getException().isEmpty());
