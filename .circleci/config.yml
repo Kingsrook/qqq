@@ -5,6 +5,16 @@ orbs:
   localstack: localstack/platform@1.0
 
 commands:
+  store_jacoco_site:
+    parameters:
+      module:
+        type: string
+    steps:
+      - store_artifacts:
+          path: << parameters.module >>/target/site/jacoco/index.html
+      - store_artifacts:
+          path: << parameters.module >>/target/site/jacoco/jacoco-resources
+
   install_java17:
     steps:
       - run:
@@ -14,6 +24,7 @@ commands:
             sudo apt install -y openjdk-17-jdk
             sudo rm /etc/alternatives/java
             sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
+
   mvn_verify:
     steps:
       - checkout
@@ -24,18 +35,18 @@ commands:
           name: Run Maven Verify
           command: |
             mvn -s .circleci/mvn-settings.xml verify
-      - store_artifacts:
-          path: qqq-backend-core/target/site/jacoco
-      - store_artifacts:
-          path: qqq-backend-module-filesystem/target/site/jacoco
-      - store_artifacts:
-          path: qqq-backend-module-rdbms/target/site/jacoco
-      - store_artifacts:
-          path: qqq-middleware-javalin/target/site/jacoco
-      - store_artifacts:
-          path: qqq-middleware-picocli/target/site/jacoco
-      - store_artifacts:
-          path: qqq-sample-project/target/site/jacoco
+      - store_jacoco_site:
+          module: qqq-backend-core
+      - store_jacoco_site:
+          module: qqq-backend-module-filesystem
+      - store_jacoco_site:
+          module: qqq-backend-module-rdbms
+      - store_jacoco_site:
+          module: qqq-middleware-javalin
+      - store_jacoco_site:
+          module: qqq-middleware-picocli
+      - store_jacoco_site:
+          module: qqq-sample-project
       - run:
           name: Save test results
           command: |
