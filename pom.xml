@@ -49,32 +49,27 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>0.2.0-SNAPSHOT</version>
-         <scope>compile</scope>
+         <version>0.2.0-20220726.214150-15</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>0.2.0-SNAPSHOT</version>
-         <scope>compile</scope>
+         <version>0.2.0-20220726.214633-12</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-filesystem</artifactId>
-         <version>0.2.0-SNAPSHOT</version>
-         <scope>compile</scope>
+         <version>0.2.0-20220726.215110-8</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-middleware-javalin</artifactId>
-         <version>0.2.0-SNAPSHOT</version>
-         <scope>compile</scope>
+         <version>0.2.0-20220726.215233-6</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-middleware-picocli</artifactId>
-         <version>0.2.0-SNAPSHOT</version>
-         <scope>compile</scope>
+         <version>0.2.0-20220726.215232-6</version>
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->

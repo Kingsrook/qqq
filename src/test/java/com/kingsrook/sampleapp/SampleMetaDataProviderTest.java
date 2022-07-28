@@ -25,8 +25,8 @@ package com.kingsrook.sampleapp;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import org.apache.commons.io.FileUtils;
@@ -100,7 +101,7 @@ class SampleMetaDataProviderTest
    @Test
    public void testGreetProcess() throws Exception
    {
-      QInstance         qInstance   = SampleMetaDataProvider.defineInstance();
+      QInstance       qInstance   = SampleMetaDataProvider.defineInstance();
       QTableMetaData  personTable = SampleMetaDataProvider.defineTablePerson();
       RunProcessInput request     = new RunProcessInput(qInstance);
       request.setSession(new QSession());
@@ -112,8 +113,8 @@ class SampleMetaDataProviderTest
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
       request.setRecords(queryOutput.getRecords());
-      request.addValue("greetingPrefix", "Hello");
-      request.addValue("greetingSuffix", "sir");
+      request.addValue(MockBackendStep.FIELD_GREETING_PREFIX, "Hello");
+      request.addValue(MockBackendStep.FIELD_GREETING_SUFFIX, "sir");
 
       RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
