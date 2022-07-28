@@ -491,6 +491,7 @@ class QPicoCliImplementationTest
       assertRowValueById("person", "first_name", "Garret", 5);
       TestOutput testOutput = testCli("person", "update",
          "--primaryKey=4,5",
+         "--field-birthDate=1980-05-31",
          "--field-firstName=Lucy",
          "--field-lastName=Lu");
       JSONObject updateResult = JsonUtils.toJSONObject(testOutput.getOutput());

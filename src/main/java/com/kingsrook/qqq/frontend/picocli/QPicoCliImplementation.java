@@ -536,7 +536,6 @@ public class QPicoCliImplementation
       queryInput.setSession(session);
       queryInput.setTableName(tableName);
       queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
-      queryInput.setLimit(subParseResult.matchedOptionValue("limit", DEFAULT_QUERY_LIMIT));
       String primaryKeyValue = subParseResult.matchedPositionalValue(0, null);
 
       if(primaryKeyValue == null)
@@ -579,7 +578,7 @@ public class QPicoCliImplementation
       queryInput.setSession(session);
       queryInput.setTableName(tableName);
       queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
-      queryInput.setLimit(subParseResult.matchedOptionValue("limit", DEFAULT_QUERY_LIMIT));
+      queryInput.setLimit(subParseResult.matchedOptionValue("limit", null));
       queryInput.setFilter(generateQueryFilter(subParseResult));
 
       QueryAction queryAction = new QueryAction();
