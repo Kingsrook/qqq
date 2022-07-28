@@ -32,11 +32,14 @@ import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemExceptio
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 
 /*******************************************************************************
  ** Unit test for S3BackendModule
  *******************************************************************************/
+@DisabledOnOs(OS.LINUX)
 public class S3BackendModuleTest extends BaseS3Test
 {
    private final String PATH_THAT_WONT_EXIST = "some/path/that/wont/exist";

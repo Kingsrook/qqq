@@ -31,11 +31,14 @@ import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendD
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
+@DisabledOnOs(OS.LINUX)
 public class S3QueryActionTest extends BaseS3Test
 {
 
