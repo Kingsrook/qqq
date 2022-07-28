@@ -23,21 +23,21 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 
 import java.io.File;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.interfaces.BackendStep;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeUsage;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.modules.QBackendModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
@@ -67,11 +67,11 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
     ** Execute the step - using the request as input, and the result as output.
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepRequest runBackendStepRequest, RunBackendStepResult runBackendStepResult) throws QException
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      String                  sourceTableName = runBackendStepRequest.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
-      QTableMetaData          table           = runBackendStepRequest.getInstance().getTable(sourceTableName);
-      QBackendMetaData        backend         = runBackendStepRequest.getInstance().getBackendForTable(sourceTableName);
+      String                  sourceTableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
+      QTableMetaData          table           = runBackendStepInput.getInstance().getTable(sourceTableName);
+      QBackendMetaData        backend         = runBackendStepInput.getInstance().getBackendForTable(sourceTableName);
       QBackendModuleInterface module          = new QBackendModuleDispatcher().getQBackendModule(backend);
 
       if(!(module instanceof FilesystemBackendModuleInterface filesystemModule))
@@ -81,7 +81,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
       AbstractBaseFilesystemAction actionBase = filesystemModule.getActionBase();
       actionBase.preAction(backend);
 
-      String sourceFilePaths = runBackendStepRequest.getValueString(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS);
+      String sourceFilePaths = runBackendStepInput.getValueString(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS);
       if(!StringUtils.hasContent(sourceFilePaths))
       {
          LOG.info("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS + "]");
@@ -91,21 +91,21 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
       String[] sourceFiles = sourceFilePaths.split(",");
       for(String sourceFile : sourceFiles)
       {
-         String moveOrDelete = runBackendStepRequest.getValueString(FIELD_MOVE_OR_DELETE);
+         String moveOrDelete = runBackendStepInput.getValueString(FIELD_MOVE_OR_DELETE);
          if(VALUE_DELETE.equals(moveOrDelete))
          {
-            actionBase.deleteFile(runBackendStepRequest.getInstance(), table, sourceFile);
+            actionBase.deleteFile(runBackendStepInput.getInstance(), table, sourceFile);
          }
          else if(VALUE_MOVE.equals(moveOrDelete))
          {
-            String destinationForMoves = runBackendStepRequest.getValueString(FIELD_DESTINATION_FOR_MOVES);
+            String destinationForMoves = runBackendStepInput.getValueString(FIELD_DESTINATION_FOR_MOVES);
             if(!StringUtils.hasContent(destinationForMoves))
             {
                throw (new QException("Field [" + FIELD_DESTINATION_FOR_MOVES + "] is missing a value."));
             }
             String filePathWithoutBase = actionBase.stripBackendAndTableBasePathsFromFileName(sourceFile, backend, table);
             String destinationPath     = destinationForMoves + File.separator + filePathWithoutBase;
-            actionBase.moveFile(runBackendStepRequest.getInstance(), table, sourceFile, destinationPath);
+            actionBase.moveFile(runBackendStepInput.getInstance(), table, sourceFile, destinationPath);
          }
          else
          {

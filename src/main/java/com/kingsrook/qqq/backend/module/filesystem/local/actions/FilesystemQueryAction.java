@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
-import com.kingsrook.qqq.backend.core.modules.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 
 
 /*******************************************************************************
@@ -37,9 +37,9 @@ public class FilesystemQueryAction extends AbstractFilesystemAction implements Q
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryResult execute(QueryRequest queryRequest) throws QException
+   public QueryOutput execute(QueryInput queryInput) throws QException
    {
-      return executeQuery(queryRequest);
+      return executeQuery(queryInput);
    }
 
 }

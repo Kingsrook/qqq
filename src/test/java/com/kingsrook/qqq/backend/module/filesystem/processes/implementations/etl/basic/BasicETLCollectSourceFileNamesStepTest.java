@@ -24,9 +24,9 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 import java.util.Arrays;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.RunBackendStepAction;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
+import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -101,14 +101,14 @@ class BasicETLCollectSourceFileNamesStepTest
       List<QRecord> records = Arrays.stream(fileNames).map(fileName ->
          new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, fileName)).toList();
 
-      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
-      runBackendStepRequest.setSession(TestUtils.getMockSession());
-      runBackendStepRequest.setStepName(backendStepMetaData.getName());
-      runBackendStepRequest.setProcessName(qProcessMetaData.getName());
-      runBackendStepRequest.setRecords(records);
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      runBackendStepInput.setSession(TestUtils.getMockSession());
+      runBackendStepInput.setStepName(backendStepMetaData.getName());
+      runBackendStepInput.setProcessName(qProcessMetaData.getName());
+      runBackendStepInput.setRecords(records);
 
       RunBackendStepAction runBackendStepAction = new RunBackendStepAction();
-      RunBackendStepResult result               = runBackendStepAction.execute(runBackendStepRequest);
+      RunBackendStepOutput result               = runBackendStepAction.execute(runBackendStepInput);
 
       return ((String) result.getValues().get(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS));
    }

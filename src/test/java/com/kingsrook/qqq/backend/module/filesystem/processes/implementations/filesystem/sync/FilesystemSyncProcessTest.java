@@ -24,13 +24,13 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 
 import java.io.File;
 import java.io.IOException;
-import com.kingsrook.qqq.backend.core.actions.RunBackendStepAction;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepRequest;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepResult;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QFieldType;
+import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
@@ -83,13 +83,13 @@ class FilesystemSyncProcessTest
       //////////////////////
       // run the step //
       //////////////////////
-      RunBackendStepRequest runBackendStepRequest = new RunBackendStepRequest(qInstance);
-      runBackendStepRequest.setStepName(step.getName());
-      runBackendStepRequest.setProcessName(process.getName());
-      runBackendStepRequest.setSession(TestUtils.getMockSession());
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      runBackendStepInput.setStepName(step.getName());
+      runBackendStepInput.setProcessName(process.getName());
+      runBackendStepInput.setSession(TestUtils.getMockSession());
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
-      RunBackendStepResult runBackendStepResult = runFunctionAction.execute(runBackendStepRequest);
+      RunBackendStepOutput runBackendStepOutput = runFunctionAction.execute(runBackendStepInput);
       // System.out.println(runBackendStepResult);
    }
 

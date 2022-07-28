@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateRequest;
-import com.kingsrook.qqq.backend.core.model.actions.update.UpdateResult;
-import com.kingsrook.qqq.backend.core.modules.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -38,7 +38,7 @@ public class S3UpdateAction implements UpdateInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   public UpdateResult execute(UpdateRequest updateRequest) throws QException
+   public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       throw new NotImplementedException("S3 update not implemented");
       /*

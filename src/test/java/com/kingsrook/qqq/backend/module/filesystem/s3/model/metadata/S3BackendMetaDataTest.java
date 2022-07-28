@@ -70,8 +70,7 @@ class S3BackendMetaDataTest
       String    json      = qInstanceAdapter.qInstanceToJsonIncludingBackend(qInstance);
 
       QInstance deserialized = qInstanceAdapter.jsonToQInstanceIncludingBackends(json);
-      assertThat(deserialized).usingRecursiveComparison()
-         .ignoringFields("hasBeenValidated") // note, this field is @JsonIgnore
-         .isEqualTo(qInstance);
+      assertThat(deserialized.getBackends()).usingRecursiveComparison()
+         .isEqualTo(qInstance.getBackends());
    }
 }

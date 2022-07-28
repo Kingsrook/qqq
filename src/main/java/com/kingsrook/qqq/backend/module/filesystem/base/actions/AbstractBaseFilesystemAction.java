@@ -25,21 +25,20 @@ package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryRequest;
-import com.kingsrook.qqq.backend.core.model.actions.query.QueryResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
@@ -180,19 +179,17 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    /*******************************************************************************
     ** Generic implementation of the execute method from the QueryInterface
     *******************************************************************************/
-   public QueryResult executeQuery(QueryRequest queryRequest) throws QException
+   public QueryOutput executeQuery(QueryInput queryInput) throws QException
    {
-      preAction(queryRequest.getBackend());
+      preAction(queryInput.getBackend());
 
       try
       {
-         QueryResult   rs      = new QueryResult();
-         List<QRecord> records = new ArrayList<>();
-         rs.setRecords(records);
+         QueryOutput queryOutput = new QueryOutput(queryInput);
 
-         QTableMetaData                        table        = queryRequest.getTable();
+         QTableMetaData                        table        = queryInput.getTable();
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
-         List<FILE>                            files        = listFiles(table, queryRequest.getBackend());
+         List<FILE>                            files        = listFiles(table, queryInput.getBackend());
 
          for(FILE file : files)
          {
@@ -207,7 +204,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
-                  records.addAll(recordsInFile);
+                  queryOutput.addRecords(recordsInFile);
                   break;
                }
                case JSON:
@@ -218,7 +215,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
-                  records.addAll(recordsInFile);
+                  queryOutput.addRecords(recordsInFile);
                   break;
                }
                default:
@@ -228,7 +225,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
             }
          }
 
-         return rs;
+         return queryOutput;
       }
       catch(Exception e)
       {

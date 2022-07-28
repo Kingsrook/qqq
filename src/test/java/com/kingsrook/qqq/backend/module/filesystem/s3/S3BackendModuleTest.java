@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
