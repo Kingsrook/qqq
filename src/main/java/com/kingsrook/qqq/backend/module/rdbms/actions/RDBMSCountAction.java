@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
@@ -76,7 +75,6 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          {
             QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
-               ResultSetMetaData metaData = resultSet.getMetaData();
                if(resultSet.next())
                {
                   rs.setCount(resultSet.getInt("record_count"));

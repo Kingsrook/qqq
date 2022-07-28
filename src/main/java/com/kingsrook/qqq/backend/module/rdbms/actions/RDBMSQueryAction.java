@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -42,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,12 +103,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          try(Connection connection = getConnection(queryInput))
          {
-            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+            PreparedStatement statement = createStatement(connection, sql, queryInput);
+            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
-                  // todo - should refactor this for view etc to use too.
                   // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
                   QRecord record = new QRecord();
                   record.setTableName(table.getName());
@@ -133,6 +135,32 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
+   {
+      RDBMSBackendMetaData backend = (RDBMSBackendMetaData) queryInput.getBackend();
+      PreparedStatement    statement;
+      if("mysql".equals(backend.getVendor()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-implementation-notes.html //
+         // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                     //
+         // with this change, we start to get results immediately, and the total runtime also seems lower...                                                                //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+         statement.setFetchSize(Integer.MIN_VALUE);
+      }
+      else
+      {
+         statement = connection.prepareStatement(sql);
+      }
+      return (statement);
    }
 
 

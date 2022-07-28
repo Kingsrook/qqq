@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
@@ -58,7 +59,7 @@ class QueryManagerTest
    void beforeEach() throws SQLException
    {
       Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, "CREATE TABLE t (i INTEGER, dt DATETIME, c CHAR(1))");
+      QueryManager.executeUpdate(connection, "CREATE TABLE t (i INTEGER, dt DATETIME, c CHAR(1), d DATE)");
    }
 
 
@@ -86,7 +87,8 @@ class QueryManagerTest
 
 
    /*******************************************************************************
-    ** Test the various overloads that bind params
+    ** Test the various overloads that bind params.
+    ** Note, we're just confirming that these methods don't throw...
     *******************************************************************************/
    @Test
    void testBindParams() throws SQLException
@@ -222,6 +224,48 @@ class QueryManagerTest
       assertNull(QueryManager.getTimestamp(rs, 2));
       assertNull(QueryManager.getObject(rs, "c"));
       assertNull(QueryManager.getObject(rs, 3));
+   }
+
+
+
+   /*******************************************************************************
+    ** We had a bug where LocalDates weren't being properly bound.  This test
+    ** confirms (more?) correct behavior
+    *******************************************************************************/
+   @Test
+   void testLocalDate() throws SQLException
+   {
+      Connection connection = getConnection();
+      QueryManager.executeUpdate(connection, "INSERT INTO t (d) VALUES (?)", LocalDate.of(2013, Month.OCTOBER, 1));
+
+      PreparedStatement preparedStatement = connection.prepareStatement("SELECT d from t");
+      preparedStatement.execute();
+      ResultSet rs = preparedStatement.getResultSet();
+      rs.next();
+
+      Date date = QueryManager.getDate(rs, 1);
+      assertEquals(1, date.getDate(), "Date value");
+      assertEquals(Month.OCTOBER.getValue(), date.getMonth() + 1, "Month value");
+      assertEquals(2013, date.getYear() + 1900, "Year value");
+
+      LocalDate localDate = QueryManager.getLocalDate(rs, 1);
+      assertEquals(1, localDate.getDayOfMonth(), "Date value");
+      assertEquals(Month.OCTOBER, localDate.getMonth(), "Month value");
+      assertEquals(2013, localDate.getYear(), "Year value");
+
+      LocalDateTime localDateTime = QueryManager.getLocalDateTime(rs, 1);
+      assertEquals(1, localDateTime.getDayOfMonth(), "Date value");
+      assertEquals(Month.OCTOBER, localDateTime.getMonth(), "Month value");
+      assertEquals(2013, localDateTime.getYear(), "Year value");
+      assertEquals(0, localDateTime.getHour(), "Hour value");
+      assertEquals(0, localDateTime.getMinute(), "Minute value");
+
+      OffsetDateTime offsetDateTime = QueryManager.getOffsetDateTime(rs, 1);
+      assertEquals(1, offsetDateTime.getDayOfMonth(), "Date value");
+      assertEquals(Month.OCTOBER, offsetDateTime.getMonth(), "Month value");
+      assertEquals(2013, offsetDateTime.getYear(), "Year value");
+      assertEquals(0, offsetDateTime.getHour(), "Hour value");
+      assertEquals(0, offsetDateTime.getMinute(), "Minute value");
    }
 
 }
