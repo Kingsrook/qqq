@@ -1,0 +1,96 @@
+## Deviations from qqq-java library standard circleci config:
+## - To test AWS S3, uses localstsack executor, orb, and startup step
+## - This docker image doesn't have java-17, so we install (and cache) jvm-17
+version: 2.1
+
+executors:
+  java17:
+    docker:
+      - image: 'cimg/openjdk:17.0'
+    resource_class: small
+
+orbs:
+  slack: circleci/slack@4.10.1
+  localstack: localstack/platform@1.0
+
+commands:
+  install_java17:
+    steps:
+      - run:
+          name: Install Java 17
+          command: |
+            sudo add-apt-repository -y ppa:openjdk-r/ppa
+            sudo apt install -y openjdk-17-jdk
+            sudo rm /etc/alternatives/java
+            sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
+  run_maven:
+    parameters:
+      maven_subcommand:
+        default: test
+        type: string
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Run Maven
+          command: |
+            mvn -s .circleci/mvn-settings.xml << parameters.maven_subcommand >>
+      - store_artifacts:
+          path: target/site/jacoco
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/test-results
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+jobs:
+  mvn_test:
+    executor: localstack/default
+    steps:
+      - localstack/startup
+      - install_java17
+      - run_maven:
+          maven_subcommand: verify
+      - slack/notify:
+          event: fail
+
+  mvn_deploy:
+    executor: localstack/default
+    steps:
+      - localstack/startup
+      - install_java17
+      - run_maven:
+          maven_subcommand: deploy
+      - slack/notify:
+          event: always
+
+workflows:
+  test_only:
+    jobs:
+      - mvn_test:
+          context: [ qqq-maven-registry-credentials, kingsrook-slack ]
+          filters:
+            branches:
+              ignore: /dev/
+            tags:
+              ignore: /(version|snapshot)-.*/
+
+  deploy:
+    jobs:
+      - mvn_deploy:
+          context: [ qqq-maven-registry-credentials, kingsrook-slack ]
+          filters:
+            branches:
+              only: /dev/
+            tags:
+              only: /(version|snapshot)-.*/
+
