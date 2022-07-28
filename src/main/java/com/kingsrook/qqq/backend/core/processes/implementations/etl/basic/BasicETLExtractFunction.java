@@ -29,6 +29,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -36,12 +38,22 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
  *******************************************************************************/
 public class BasicETLExtractFunction implements BackendStep
 {
+   private static final Logger LOG = LogManager.getLogger(BasicETLExtractFunction.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
+      LOG.info("Start query on table: " + tableName);
+
       QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
       queryInput.setSession(runBackendStepInput.getSession());
-      queryInput.setTableName(runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE));
+      queryInput.setTableName(tableName);
 
       // queryRequest.setSkip(integerQueryParam(context, "skip"));
       // queryRequest.setLimit(integerQueryParam(context, "limit"));
@@ -56,5 +68,6 @@ public class BasicETLExtractFunction implements BackendStep
       QueryOutput queryOutput = queryAction.execute(queryInput);
 
       runBackendStepOutput.setRecords(queryOutput.getRecords());
+      LOG.info("Query on table " + tableName + " produced " + queryOutput.getRecords().size() + " records.");
    }
 }

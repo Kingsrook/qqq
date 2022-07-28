@@ -127,7 +127,7 @@ public class RunProcessAction
                ///////////////////////
                // Run backend steps //
                ///////////////////////
-               runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, processState);
+               runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
             }
             else
             {
@@ -225,11 +225,12 @@ public class RunProcessAction
    /*******************************************************************************
     ** Run a single backend step.
     *******************************************************************************/
-   private void runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, ProcessState processState) throws Exception
+   private void runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
    {
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput(runProcessInput.getInstance(), processState);
       runBackendStepInput.setProcessName(process.getName());
       runBackendStepInput.setStepName(backendStep.getName());
+      runBackendStepInput.setTableName(process.getTableName());
       runBackendStepInput.setSession(runProcessInput.getSession());
       runBackendStepInput.setCallback(runProcessInput.getCallback());
       runBackendStepInput.setAsyncJobCallback(runProcessInput.getAsyncJobCallback());

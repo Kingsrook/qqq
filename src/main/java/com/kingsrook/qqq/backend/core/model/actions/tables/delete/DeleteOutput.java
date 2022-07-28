@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.delete;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -31,18 +33,31 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  * Output for a delete action
  *
  *******************************************************************************/
-public class DeleteOutput extends AbstractActionOutput
+public class DeleteOutput extends AbstractActionOutput implements Serializable
 {
-   private List<QRecord> records;
+   private int           deletedRecordCount = 0;
+   private List<QRecord> recordsWithErrors;
 
 
 
    /*******************************************************************************
+    ** Getter for deletedRecordCount
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public int getDeletedRecordCount()
    {
-      return records;
+      return deletedRecordCount;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for deletedRecordCount
+    **
+    *******************************************************************************/
+   public void setDeletedRecordCount(int deletedRecordCount)
+   {
+      this.deletedRecordCount = deletedRecordCount;
    }
 
 
@@ -50,8 +65,40 @@ public class DeleteOutput extends AbstractActionOutput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void setRecords(List<QRecord> records)
+   public List<QRecord> getRecordsWithErrors()
    {
-      this.records = records;
+      return recordsWithErrors;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setRecordsWithErrors(List<QRecord> recordsWithErrors)
+   {
+      this.recordsWithErrors = recordsWithErrors;
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addRecordWithError(QRecord recordWithError)
+   {
+      if(this.recordsWithErrors == null)
+      {
+         this.recordsWithErrors = new ArrayList<>();
+      }
+      this.recordsWithErrors.add(recordWithError);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addToDeletedRecordCount(int i)
+   {
+      deletedRecordCount += i;
    }
 }

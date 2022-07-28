@@ -23,9 +23,7 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

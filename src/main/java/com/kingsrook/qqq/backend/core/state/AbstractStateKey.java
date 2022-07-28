@@ -22,11 +22,19 @@
 package com.kingsrook.qqq.backend.core.state;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractStateKey
+public abstract class AbstractStateKey implements Serializable
 {
+   /*******************************************************************************
+    ** Make the key give a unique string to identify itself.
+    *
+    *******************************************************************************/
+   public abstract String getUniqueIdentifier();
 
    /*******************************************************************************
     ** Require all state keys to implement the equals method

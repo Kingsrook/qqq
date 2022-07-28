@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.state;
 
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -29,7 +30,7 @@ import java.util.UUID;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class UUIDAndTypeStateKey extends AbstractStateKey
+public class UUIDAndTypeStateKey extends AbstractStateKey implements Serializable
 {
    private final UUID      uuid;
    private final StateType stateType;
@@ -77,6 +78,18 @@ public class UUIDAndTypeStateKey extends AbstractStateKey
    public StateType getStateType()
    {
       return stateType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Make the key give a unique string to identify itself.
+    *
+    *******************************************************************************/
+   @Override
+   public String getUniqueIdentifier()
+   {
+      return (uuid.toString());
    }
 
 

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import org.apache.logging.log4j.LogManager;
@@ -43,7 +44,7 @@ public class MockAuthenticationModule implements QAuthenticationModuleInterface
     **
     *******************************************************************************/
    @Override
-   public QSession createSession(Map<String, String> context)
+   public QSession createSession(QInstance qInstance, Map<String, String> context)
    {
       QUser qUser = new QUser();
       qUser.setIdReference("User:" + (System.currentTimeMillis() % USER_ID_MODULO));

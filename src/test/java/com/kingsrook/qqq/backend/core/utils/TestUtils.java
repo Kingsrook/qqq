@@ -25,9 +25,15 @@ package com.kingsrook.qqq.backend.core.utils;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -56,8 +62,8 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
  *******************************************************************************/
 public class TestUtils
 {
-   public static String DEFAULT_BACKEND_NAME = "default";
-   public static String PROCESS_NAME_GREET_PEOPLE = "greet";
+   public static String DEFAULT_BACKEND_NAME                  = "default";
+   public static String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
 
 
@@ -109,7 +115,7 @@ public class TestUtils
    {
       return new QAuthenticationMetaData()
          .withName("mock")
-         .withType("mock");
+         .withType(QAuthenticationType.MOCK);
    }
 
 
@@ -136,9 +142,9 @@ public class TestUtils
          .withLabel("Person")
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
-         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("firstName", QFieldType.STRING))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
@@ -304,6 +310,69 @@ public class TestUtils
    public static QSession getMockSession()
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
-      return (mockAuthenticationModule.createSession(null));
+      return (mockAuthenticationModule.createSession(null, null));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<QRecord> queryTable(String tableName) throws QException
+   {
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setSession(TestUtils.getMockSession());
+      queryInput.setTableName(tableName);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      return (queryOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getPersonCsvHeader()
+   {
+      return ("""
+         "id","createDate","modifyDate","firstName","lastName","birthDate","email"
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getPersonCsvHeaderUsingLabels()
+   {
+      return ("""
+         "Id","Create Date","Modify Date","First Name","Last Name","Birth Date","Email"
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getPersonCsvRow1()
+   {
+      return ("""
+         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com"
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getPersonCsvRow2()
+   {
+      return ("""
+         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Jane","Doe","1981-01-01","john@doe.com"
+         """);
+   }
+
 }

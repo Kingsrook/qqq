@@ -49,10 +49,21 @@ public class AsyncJobManager
 
 
    /*******************************************************************************
-    ** Run a job - if it finishes within the specified timeout, get its results,
+    ** Start a job - if it finishes within the specified timeout, get its results,
     ** else, get back an exception with the job id.
     *******************************************************************************/
    public <T extends Serializable> T startJob(long timeout, TimeUnit timeUnit, AsyncJob<T> asyncJob) throws JobGoingAsyncException, QException
+   {
+      return (startJob("Anonymous", timeout, timeUnit, asyncJob));
+   }
+
+
+
+   /*******************************************************************************
+    ** Start a job - if it finishes within the specified timeout, get its results,
+    ** else, get back an exception with the job id.
+    *******************************************************************************/
+   public <T extends Serializable> T startJob(String jobName, long timeout, TimeUnit timeUnit, AsyncJob<T> asyncJob) throws JobGoingAsyncException, QException
    {
       UUIDAndTypeStateKey uuidAndTypeStateKey = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.ASYNC_JOB_STATUS);
       AsyncJobStatus      asyncJobStatus      = new AsyncJobStatus();
@@ -63,23 +74,13 @@ public class AsyncJobManager
       {
          CompletableFuture<T> future = CompletableFuture.supplyAsync(() ->
          {
-            try
-            {
-               LOG.info("Starting job " + uuidAndTypeStateKey.getUuid());
-               T result = asyncJob.run(new AsyncJobCallback(uuidAndTypeStateKey.getUuid(), asyncJobStatus));
-               asyncJobStatus.setState(AsyncJobState.COMPLETE);
-               getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
-               LOG.info("Completed job " + uuidAndTypeStateKey.getUuid());
-               return (result);
-            }
-            catch(Exception e)
-            {
-               asyncJobStatus.setState(AsyncJobState.ERROR);
-               asyncJobStatus.setCaughtException(e);
-               getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
-               throw (new CompletionException(e));
-            }
+            return (runAsyncJob(jobName, asyncJob, uuidAndTypeStateKey, asyncJobStatus));
          });
+
+         if(timeout == 0)
+         {
+            throw (new JobGoingAsyncException(uuidAndTypeStateKey.getUuid().toString()));
+         }
 
          T result = future.get(timeout, timeUnit);
          return (result);
@@ -92,6 +93,66 @@ public class AsyncJobManager
       {
          LOG.info("Job going async " + uuidAndTypeStateKey.getUuid());
          throw (new JobGoingAsyncException(uuidAndTypeStateKey.getUuid().toString()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Start a job, and always, just get back the job UUID.
+    *******************************************************************************/
+   public <T extends Serializable> String startJob(AsyncJob<T> asyncJob) throws QException
+   {
+      return (startJob("Anonymous", asyncJob));
+   }
+
+
+
+   /*******************************************************************************
+    ** Start a job, and always, just get back the job UUID.
+    *******************************************************************************/
+   public <T extends Serializable> String startJob(String jobName, AsyncJob<T> asyncJob) throws QException
+   {
+      try
+      {
+         startJob(jobName, 0, TimeUnit.MILLISECONDS, asyncJob);
+         throw (new QException("Job was expected to go asynchronous, but did not"));
+      }
+      catch(JobGoingAsyncException jgae)
+      {
+         return (jgae.getJobUUID());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** run the job.
+    *******************************************************************************/
+   private <T extends Serializable> T runAsyncJob(String jobName, AsyncJob<T> asyncJob, UUIDAndTypeStateKey uuidAndTypeStateKey, AsyncJobStatus asyncJobStatus)
+   {
+      String originalThreadName = Thread.currentThread().getName();
+      Thread.currentThread().setName("Job:" + jobName + ":" + uuidAndTypeStateKey.getUuid().toString().substring(0, 8));
+      try
+      {
+         LOG.info("Starting job " + uuidAndTypeStateKey.getUuid());
+         T result = asyncJob.run(new AsyncJobCallback(uuidAndTypeStateKey.getUuid(), asyncJobStatus));
+         asyncJobStatus.setState(AsyncJobState.COMPLETE);
+         getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
+         LOG.info("Completed job " + uuidAndTypeStateKey.getUuid());
+         return (result);
+      }
+      catch(Exception e)
+      {
+         asyncJobStatus.setState(AsyncJobState.ERROR);
+         asyncJobStatus.setCaughtException(e);
+         getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
+         LOG.warn("Job " + uuidAndTypeStateKey.getUuid() + " ended with an exception: ", e);
+         throw (new CompletionException(e));
+      }
+      finally
+      {
+         Thread.currentThread().setName(originalThreadName);
       }
    }
 

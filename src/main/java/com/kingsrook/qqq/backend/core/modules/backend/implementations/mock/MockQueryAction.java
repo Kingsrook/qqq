@@ -27,8 +27,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -53,21 +53,24 @@ public class MockQueryAction implements QueryInterface
       {
          QTableMetaData table = queryInput.getTable();
 
-         QueryOutput   rs      = new QueryOutput();
-         List<QRecord> records = new ArrayList<>();
-         rs.setRecords(records);
+         QueryOutput queryOutput = new QueryOutput(queryInput);
 
-         QRecord record = new QRecord();
-         records.add(record);
-         record.setTableName(table.getName());
-
-         for(String field : table.getFields().keySet())
+         int rows = Objects.requireNonNullElse(queryInput.getLimit(), 1);
+         for(int i = 0; i < rows; i++)
          {
-            Serializable value = getValue(table, field);
-            record.setValue(field, value);
+            QRecord record = new QRecord();
+            record.setTableName(table.getName());
+
+            for(String field : table.getFields().keySet())
+            {
+               Serializable value = field.equals("id") ? (i + 1) : getValue(table, field);
+               record.setValue(field, value);
+            }
+
+            queryOutput.addRecord(record);
          }
 
-         return rs;
+         return (queryOutput);
       }
       catch(Exception e)
       {
@@ -87,7 +90,7 @@ public class MockQueryAction implements QueryInterface
       // @formatter:off // IJ can't do new-style switch correctly yet...
       return switch(table.getField(field).getType())
       {
-         case STRING -> "Foo";
+         case STRING -> UUID.randomUUID().toString();
          case INTEGER -> 42;
          case DECIMAL -> new BigDecimal("3.14159");
          case DATE -> LocalDate.of(1970, Month.JANUARY, 1);

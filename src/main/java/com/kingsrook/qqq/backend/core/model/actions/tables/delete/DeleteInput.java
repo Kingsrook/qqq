@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.delete;
 import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
@@ -35,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 public class DeleteInput extends AbstractTableActionInput
 {
    private List<Serializable> primaryKeys;
+   private QQueryFilter queryFilter;
 
 
 
@@ -88,4 +90,37 @@ public class DeleteInput extends AbstractTableActionInput
       this.primaryKeys = primaryKeys;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for queryFilter
+    **
+    *******************************************************************************/
+   public QQueryFilter getQueryFilter()
+   {
+      return queryFilter;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryFilter
+    **
+    *******************************************************************************/
+   public void setQueryFilter(QQueryFilter queryFilter)
+   {
+      this.queryFilter = queryFilter;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryFilter
+    **
+    *******************************************************************************/
+   public DeleteInput withQueryFilter(QQueryFilter queryFilter)
+   {
+      this.queryFilter = queryFilter;
+      return this;
+   }
+
 }

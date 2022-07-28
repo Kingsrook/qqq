@@ -19,39 +19,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonFilter;
+import java.io.OutputStream;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of an authentication provider (e.g., google, saml,
- ** etc) within a qqq instance
- **
+ ** Input for a Report action
  *******************************************************************************/
-public class QAuthenticationMetaData
+public class ReportInput extends AbstractTableActionInput
 {
-   private String name;
-   private String type;
+   private QQueryFilter queryFilter;
+   private Integer      limit;
+   private List<String> fieldNames;
 
-   @JsonFilter("secretsFilter")
-   private Map<String, String> values;
+   private String       filename;
+   private ReportFormat reportFormat;
+   private OutputStream reportOutputStream;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getValue(String key)
+   public ReportInput()
    {
-      if(values == null)
-      {
-         return null;
-      }
-      return values.get(key);
    }
 
 
@@ -59,13 +57,9 @@ public class QAuthenticationMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void setValue(String key, String value)
+   public ReportInput(QInstance instance)
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
+      super(instance);
    }
 
 
@@ -73,109 +67,141 @@ public class QAuthenticationMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withValue(String key, String value)
+   public ReportInput(QInstance instance, QSession session)
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
-      return (this);
+      super(instance);
+      setSession(session);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for queryFilter
     **
     *******************************************************************************/
-   public String getName()
+   public QQueryFilter getQueryFilter()
    {
-      return name;
+      return queryFilter;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for queryFilter
     **
     *******************************************************************************/
-   public void setName(String name)
+   public void setQueryFilter(QQueryFilter queryFilter)
    {
-      this.name = name;
+      this.queryFilter = queryFilter;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for limit
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withName(String name)
+   public Integer getLimit()
    {
-      this.name = name;
-      return (this);
+      return limit;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Setter for limit
     **
     *******************************************************************************/
-   public String getType()
+   public void setLimit(Integer limit)
    {
-      return type;
+      this.limit = limit;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for type
+    ** Getter for fieldNames
     **
     *******************************************************************************/
-   public void setType(String type)
+   public List<String> getFieldNames()
    {
-      this.type = type;
+      return fieldNames;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for fieldNames
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withType(String type)
+   public void setFieldNames(List<String> fieldNames)
    {
-      this.type = type;
-      return (this);
+      this.fieldNames = fieldNames;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for filename
     **
     *******************************************************************************/
-   public Map<String, String> getValues()
+   public String getFilename()
    {
-      return values;
+      return filename;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for filename
     **
     *******************************************************************************/
-   public void setValues(Map<String, String> values)
+   public void setFilename(String filename)
    {
-      this.values = values;
+      this.filename = filename;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for reportFormat
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withVales(Map<String, String> values)
+   public ReportFormat getReportFormat()
    {
-      this.values = values;
-      return (this);
+      return reportFormat;
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for reportFormat
+    **
+    *******************************************************************************/
+   public void setReportFormat(ReportFormat reportFormat)
+   {
+      this.reportFormat = reportFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for reportOutputStream
+    **
+    *******************************************************************************/
+   public OutputStream getReportOutputStream()
+   {
+      return reportOutputStream;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reportOutputStream
+    **
+    *******************************************************************************/
+   public void setReportOutputStream(OutputStream reportOutputStream)
+   {
+      this.reportOutputStream = reportOutputStream;
+   }
 }

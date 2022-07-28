@@ -22,8 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -35,6 +37,8 @@ public class QueryInput extends AbstractTableActionInput
    private QQueryFilter filter;
    private Integer skip;
    private Integer limit;
+
+   private RecordPipe recordPipe;
 
 
 
@@ -53,6 +57,17 @@ public class QueryInput extends AbstractTableActionInput
    public QueryInput(QInstance instance)
    {
       super(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QueryInput(QInstance instance, QSession session)
+   {
+      super(instance);
+      setSession(session);
    }
 
 
@@ -120,4 +135,27 @@ public class QueryInput extends AbstractTableActionInput
    {
       this.limit = limit;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordPipe
+    **
+    *******************************************************************************/
+   public RecordPipe getRecordPipe()
+   {
+      return recordPipe;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordPipe
+    **
+    *******************************************************************************/
+   public void setRecordPipe(RecordPipe recordPipe)
+   {
+      this.recordPipe = recordPipe;
+   }
+
 }

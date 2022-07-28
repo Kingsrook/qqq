@@ -43,7 +43,7 @@ public class GetAgeStatistics implements BackendStep
       LocalDate now = LocalDate.now();
       for(QRecord record : runBackendStepInput.getRecords())
       {
-         LocalDate birthDate = record.getValueDate("birthDate");
+         LocalDate birthDate = record.getValueLocalDate("birthDate");
          Period until = birthDate.until(now);
          int age = until.getYears();
          record.setValue("age", age);

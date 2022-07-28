@@ -26,7 +26,6 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
@@ -45,11 +44,7 @@ public class MockDeleteAction implements DeleteInterface
       {
          DeleteOutput rs = new DeleteOutput();
 
-         rs.setRecords(deleteInput.getPrimaryKeys().stream().map(primaryKey ->
-               new QRecord()
-                  .withTableName(deleteInput.getTableName())
-                  .withValue("id", primaryKey))
-            .toList());
+         rs.setDeletedRecordCount(deleteInput.getPrimaryKeys().size());
 
          return rs;
       }

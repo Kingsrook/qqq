@@ -40,6 +40,12 @@ public class QFieldMetaData
    private String     backendName;
    private QFieldType type;
    private boolean    isRequired = false;
+   private boolean    isEditable = true;
+
+   ///////////////////////////////////////////////////////////////////////////////////
+   // if we need "only edit on insert" or "only edit on update" in the future,      //
+   // propose doing that in a secondary field, e.g., "onlyEditableOn=insert|update" //
+   ///////////////////////////////////////////////////////////////////////////////////
 
    private Serializable defaultValue;
    private String       possibleValueSourceName;
@@ -312,6 +318,39 @@ public class QFieldMetaData
    public QFieldMetaData withIsRequired(boolean isRequired)
    {
       this.isRequired = isRequired;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isEditable
+    **
+    *******************************************************************************/
+   public boolean getIsEditable()
+   {
+      return isEditable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isEditable
+    **
+    *******************************************************************************/
+   public void setIsEditable(boolean isEditable)
+   {
+      this.isEditable = isEditable;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData withIsEditable(boolean isEditable)
+   {
+      this.isEditable = isEditable;
       return (this);
    }
 

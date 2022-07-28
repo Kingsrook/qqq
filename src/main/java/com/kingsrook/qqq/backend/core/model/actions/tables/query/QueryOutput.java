@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -31,9 +32,52 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  ** Output for a query action
  **
  *******************************************************************************/
-public class QueryOutput extends AbstractActionOutput
+public class QueryOutput extends AbstractActionOutput implements Serializable
 {
-   private List<QRecord> records;
+   private QueryOutputStorageInterface storage;
+
+
+
+   /*******************************************************************************
+    ** Construct a new query output, based on a query input (which will drive some
+    ** of how our output is structured... e.g., if we pipe the output)
+    *******************************************************************************/
+   public QueryOutput(QueryInput queryInput)
+   {
+      if(queryInput.getRecordPipe() != null)
+      {
+         storage = new QueryOutputRecordPipe(queryInput.getRecordPipe());
+      }
+      else
+      {
+         storage = new QueryOutputList();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Add a record to this output.  Note - we often don't care, in such a method,
+    ** whether the record is "completed" or not (e.g., all of its values have been
+    ** populated) - but - note in here - that this records MAY be going into a pipe
+    ** that could be read asynchronously, at any time, by another thread - SO - only
+    ** completely populated records should be passed into this method.
+    *******************************************************************************/
+   public void addRecord(QRecord record)
+   {
+      storage.addRecord(record);
+   }
+
+
+
+   /*******************************************************************************
+    ** add a list of records to this output
+    *******************************************************************************/
+   public void addRecords(List<QRecord> records)
+   {
+      storage.addRecords(records);
+   }
+
 
 
    /*******************************************************************************
@@ -41,16 +85,7 @@ public class QueryOutput extends AbstractActionOutput
     *******************************************************************************/
    public List<QRecord> getRecords()
    {
-      return records;
+      return storage.getRecords();
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setRecords(List<QRecord> records)
-   {
-      this.records = records;
-   }
 }

@@ -24,9 +24,9 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
-import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 
 
 /*******************************************************************************
@@ -40,7 +40,7 @@ public class FullyAnonymousAuthenticationModule implements QAuthenticationModule
     **
     *******************************************************************************/
    @Override
-   public QSession createSession(Map<String, String> context)
+   public QSession createSession(QInstance qInstance, Map<String, String> context)
    {
       QUser qUser = new QUser();
       qUser.setIdReference("anonymous");
@@ -68,10 +68,6 @@ public class FullyAnonymousAuthenticationModule implements QAuthenticationModule
    @Override
    public boolean isSessionValid(QSession session)
    {
-      if(session == null)
-      {
-         return (false);
-      }
-      return (true);
+      return session != null;
    }
 }

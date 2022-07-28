@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
@@ -45,6 +46,16 @@ public class MockInsertAction implements InsertInterface
          InsertOutput rs = new InsertOutput();
 
          rs.setRecords(insertInput.getRecords());
+
+         String primaryKeyField = insertInput.getTable().getPrimaryKeyField();
+         int i = 1;
+         for(QRecord record : rs.getRecords())
+         {
+            if(record.getValue(primaryKeyField) == null)
+            {
+               record.setValue(primaryKeyField, i++);
+            }
+         }
 
          return rs;
       }
