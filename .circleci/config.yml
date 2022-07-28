@@ -52,7 +52,9 @@ jobs:
     executor: java17
     steps:
       - run_maven:
-          maven_subcommand: deploy
+          maven_subcommand: verify
+      - run_maven:
+          maven_subcommand: jar:jar deploy:deploy
       - slack/notify:
           event: always
 
