@@ -69,7 +69,7 @@ commands:
       - run:
           name: Run Maven Jar Deploy
           command: |
-            mvn -s .circleci/mvn-settings.xml jar:jar deploy:deploy
+            mvn -s .circleci/mvn-settings.xml flatten:flatten jar:jar deploy:deploy
       - save_cache:
           paths:
             - ~/.m2
