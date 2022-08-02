@@ -189,7 +189,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          }
          case DATE:
          {
+            // todo - queryManager.getLocalDate?
             return (QueryManager.getDate(resultSet, i));
+         }
+         case TIME:
+         {
+            return (QueryManager.getLocalTime(resultSet, i));
          }
          case DATE_TIME:
          {

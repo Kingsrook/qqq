@@ -47,7 +47,10 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEd
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertStoreRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -57,6 +60,10 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class QInstanceEnricher
 {
+   private static final Logger LOG = LogManager.getLogger(QInstanceEnricher.class);
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -180,6 +187,16 @@ public class QInstanceEnricher
       if(name == null)
       {
          return (null);
+      }
+
+      if(name.length() == 0)
+      {
+         return ("");
+      }
+
+      if(name.length() == 1)
+      {
+         return (name.substring(0, 1).toUpperCase(Locale.ROOT));
       }
 
       return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z])", " $1"));
@@ -403,4 +420,96 @@ public class QInstanceEnricher
             )));
    }
 
+
+
+   /*******************************************************************************
+    ** for all fields in a table, set their backendName, using the default "inference" logic
+    ** see {@link #inferBackendName(String)}
+    *******************************************************************************/
+   public static void setInferredFieldBackendNames(QTableMetaData tableMetaData)
+   {
+      if(tableMetaData == null)
+      {
+         LOG.warn("Requested to infer field backend names with a null table as input.  Returning with noop.");
+         return;
+      }
+
+      if(CollectionUtils.nullSafeIsEmpty(tableMetaData.getFields()))
+      {
+         LOG.warn("Requested to infer field backend names on a table [" + tableMetaData.getName() + "] with no fields.  Returning with noop.");
+         return;
+      }
+
+      for(QFieldMetaData field : tableMetaData.getFields().values())
+      {
+         String fieldName        = field.getName();
+         String fieldBackendName = field.getBackendName();
+         if(!StringUtils.hasContent(fieldBackendName))
+         {
+            String backendName = inferBackendName(fieldName);
+            field.setBackendName(backendName);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a default mapping from a camelCase field name to an underscore_style
+    ** name for a backend.
+    *******************************************************************************/
+   static String inferBackendName(String fieldName)
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // build a list of words in the name, then join them with _ and lower-case the result //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      List<String>  words       = new ArrayList<>();
+      StringBuilder currentWord = new StringBuilder();
+      for(int i = 0; i < fieldName.length(); i++)
+      {
+         Character thisChar = fieldName.charAt(i);
+         Character nextChar = i < (fieldName.length() - 1) ? fieldName.charAt(i + 1) : null;
+
+         /////////////////////////////////////////////////////////////////////////////////////
+         // if we're at the end of the whole string, then we're at the end of the last word //
+         /////////////////////////////////////////////////////////////////////////////////////
+         if(nextChar == null)
+         {
+            currentWord.append(thisChar);
+            words.add(currentWord.toString());
+         }
+
+         ///////////////////////////////////////////////////////////
+         // transitioning from a lower to an upper starts a word. //
+         ///////////////////////////////////////////////////////////
+         else if(Character.isLowerCase(thisChar) && Character.isUpperCase(nextChar))
+         {
+            currentWord.append(thisChar);
+            words.add(currentWord.toString());
+            currentWord = new StringBuilder();
+         }
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // transitioning from an upper to a lower - it starts a word, as long as there were already letters in the current word                                    //
+         // e.g., on wordThenTLAInMiddle, when thisChar=I and nextChar=n.  currentWord will be "TLA".  So finish that word, and start a new one with the 'I'        //
+         // but the normal single-upper condition, e.g., firstName, when thisChar=N and nextChar=a, current word will be empty string, so just append the 'a' to it //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         else if(Character.isUpperCase(thisChar) && Character.isLowerCase(nextChar) && currentWord.length() > 0)
+         {
+            words.add(currentWord.toString());
+            currentWord = new StringBuilder();
+            currentWord.append(thisChar);
+         }
+
+         /////////////////////////////////////////////////////////////
+         // by default, just add this character to the current word //
+         /////////////////////////////////////////////////////////////
+         else
+         {
+            currentWord.append(thisChar);
+         }
+      }
+
+      return (String.join("_", words).toLowerCase(Locale.ROOT));
+   }
 }

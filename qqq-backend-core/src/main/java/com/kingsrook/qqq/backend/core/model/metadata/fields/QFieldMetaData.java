@@ -24,9 +24,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -78,11 +82,48 @@ public class QFieldMetaData
     *******************************************************************************/
    public <T> QFieldMetaData(Fun.With1ParamAndVoid<T> getterRef) throws QException
    {
+      Method getter = Fun.toMethod(getterRef);
+      constructFromGetter(getter);
+   }
+
+
+
+   /*******************************************************************************
+    ** Initialize a fieldMetaData from a getter method from an entity
+    **
+    *******************************************************************************/
+   public <T> QFieldMetaData(Method getter) throws QException
+   {
+      constructFromGetter(getter);
+   }
+
+
+
+   /*******************************************************************************
+    ** From a getter method, populate attributes in this field meta-data, including
+    ** those from the @QField annotation on the field in the class, if present.
+    *******************************************************************************/
+   private void constructFromGetter(Method getter) throws QException
+   {
       try
       {
-         Method getter = Fun.toMethod(getterRef);
          this.name = QRecordEntity.getFieldNameFromGetter(getter);
          this.type = QFieldType.fromClass(getter.getReturnType());
+
+         @SuppressWarnings("unchecked")
+         Optional<QField> optionalFieldAnnotation = QRecordEntity.getQFieldAnnotation((Class<? extends QRecordEntity>) getter.getDeclaringClass(), this.name);
+
+         if(optionalFieldAnnotation.isPresent())
+         {
+            QField fieldAnnotation = optionalFieldAnnotation.get();
+            setIsRequired(fieldAnnotation.isRequired());
+            setIsEditable(fieldAnnotation.isEditable());
+
+            if(StringUtils.hasContent(fieldAnnotation.backendName()))
+            {
+               setBackendName(fieldAnnotation.backendName());
+            }
+         }
       }
       catch(QException qe)
       {
@@ -90,7 +131,7 @@ public class QFieldMetaData
       }
       catch(Exception e)
       {
-         throw (new QException("Error constructing field from getterRef: " + getterRef, e));
+         throw (new QException("Error constructing field from getter method: " + getter.getName(), e));
       }
    }
 

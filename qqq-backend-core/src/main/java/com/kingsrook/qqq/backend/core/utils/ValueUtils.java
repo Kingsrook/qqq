@@ -23,11 +23,14 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 
@@ -37,7 +40,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QValueException;
  *******************************************************************************/
 public class ValueUtils
 {
-   private static final DateTimeFormatter localDateDefaultFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+   private static final DateTimeFormatter yyyyMMddWithDashesFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+   private static final DateTimeFormatter MdyyyyWithSlashesFormatter  = DateTimeFormatter.ofPattern("M/d/yyyy");
 
 
 
@@ -174,8 +178,12 @@ public class ValueUtils
          }
          else
          {
-            throw (new IllegalArgumentException("Unsupported class " + value.getClass().getName() + " for converting to Integer."));
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to Integer."));
          }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
       }
       catch(Exception e)
       {
@@ -212,8 +220,8 @@ public class ValueUtils
          }
          else if(value instanceof Calendar c)
          {
-            TimeZone tz = c.getTimeZone();
-            ZoneId zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
+            TimeZone tz  = c.getTimeZone();
+            ZoneId   zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
             return LocalDateTime.ofInstant(c.toInstant(), zid).toLocalDate();
          }
          else if(value instanceof LocalDateTime ldt)
@@ -227,17 +235,43 @@ public class ValueUtils
                return (null);
             }
 
-            return LocalDate.parse(s, localDateDefaultFormatter);
+            return tryLocalDateParsers(s);
          }
          else
          {
-            throw (new IllegalArgumentException("Unsupported class " + value.getClass().getName() + " for converting to LocalDate."));
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to LocalDate."));
          }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
       }
       catch(Exception e)
       {
-         throw (new QValueException("Value [" + value + "] could not be converted to an LocalDate.", e));
+         throw (new QValueException("Value [" + value + "] could not be converted to a LocalDate.", e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static LocalDate tryLocalDateParsers(String s)
+   {
+      DateTimeParseException lastException = null;
+      for(DateTimeFormatter dateTimeFormatter : List.of(yyyyMMddWithDashesFormatter, MdyyyyWithSlashesFormatter))
+      {
+         try
+         {
+            return LocalDate.parse(s, dateTimeFormatter);
+         }
+         catch(DateTimeParseException dtpe)
+         {
+            lastException = dtpe;
+         }
+      }
+      throw (new QValueException("Could not parse value [" + s + "] to a local date", lastException));
    }
 
 
@@ -305,13 +339,80 @@ public class ValueUtils
          }
          else
          {
-            throw (new IllegalArgumentException("Unsupported class " + value.getClass().getName() + " for converting to BigDecimal."));
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to BigDecimal."));
          }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
       }
       catch(Exception e)
       {
-         throw (new QValueException("Value [" + value + "] could not be converted to an BigDecimal.", e));
+         throw (new QValueException("Value [" + value + "] could not be converted to a BigDecimal.", e));
       }
    }
 
+
+
+   /*******************************************************************************
+    ** Type-safely make an Instant from any Object.
+    ** null and empty-string inputs return null.
+    ** We may throw if the input can't be converted to a Instant
+    *******************************************************************************/
+   public static Instant getValueAsInstant(Object value)
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof Instant i)
+         {
+            return (i);
+         }
+         else if(value instanceof java.sql.Date d)
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // note - in the jdk, this method throws UnsupportedOperationException (because of the lack of time in sql Dates) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            return d.toInstant();
+         }
+         else if(value instanceof java.util.Date d)
+         {
+            return d.toInstant();
+         }
+         else if(value instanceof Calendar c)
+         {
+            TimeZone tz = c.getTimeZone();
+            return (c.toInstant());
+         }
+         else if(value instanceof LocalDateTime ldt)
+         {
+            ZoneId zoneId = ZoneId.systemDefault();
+            return ldt.toInstant(zoneId.getRules().getOffset(ldt));
+         }
+         else if(value instanceof String s)
+         {
+            if(!StringUtils.hasContent(s))
+            {
+               return (null);
+            }
+
+            return Instant.parse(s);
+         }
+         else
+         {
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to Instant."));
+         }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to a Instant.", e));
+      }
+   }
 }

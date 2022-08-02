@@ -32,16 +32,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -50,10 +47,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 
 
 /*******************************************************************************
@@ -62,9 +62,15 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
  *******************************************************************************/
 public class TestUtils
 {
-   public static String DEFAULT_BACKEND_NAME                  = "default";
-   public static String PROCESS_NAME_GREET_PEOPLE             = "greet";
-   public static String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
+   public static final String DEFAULT_BACKEND_NAME = "default";
+
+   public static final String TABLE_NAME_PERSON = "person";
+
+   public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
+   public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
+   public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
+   public static final String TABLE_NAME_PERSON_FILE                = "personFile";
+   public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
 
 
 
@@ -138,7 +144,7 @@ public class TestUtils
    public static QTableMetaData defineTablePerson()
    {
       return new QTableMetaData()
-         .withName("person")
+         .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
@@ -160,7 +166,7 @@ public class TestUtils
    public static QTableMetaData definePersonFileTable()
    {
       return (new QTableMetaData()
-         .withName("personFile")
+         .withName(TABLE_NAME_PERSON_FILE)
          .withLabel("Person File")
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
@@ -175,7 +181,7 @@ public class TestUtils
    public static QTableMetaData defineTableIdAndNameOnly()
    {
       return new QTableMetaData()
-         .withName("idAndNameOnly")
+         .withName(TABLE_NAME_ID_AND_NAME_ONLY)
          .withLabel("Id and Name Only")
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
@@ -192,7 +198,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_PEOPLE)
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
@@ -200,14 +206,14 @@ public class TestUtils
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -223,7 +229,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
 
          .addStep(new QFrontendStepMetaData()
             .withName("setup")
@@ -238,14 +244,14 @@ public class TestUtils
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -270,8 +276,8 @@ public class TestUtils
    private static QProcessMetaData defineProcessAddToPeoplesAge()
    {
       return new QProcessMetaData()
-         .withName("addToPeoplesAge")
-         .withTableName("person")
+         .withName(PROCESS_NAME_ADD_TO_PEOPLES_AGE)
+         .withTableName(TABLE_NAME_PERSON)
          .addStep(new QBackendStepMetaData()
             .withName("getAgeStatistics")
             .withCode(new QCodeReference()
@@ -279,10 +285,10 @@ public class TestUtils
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP))
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person")))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON)))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("age", QFieldType.INTEGER)))
                .withFieldList(List.of(
                   new QFieldMetaData("minAge", QFieldType.INTEGER),
@@ -297,7 +303,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("yearsToAdd", QFieldType.INTEGER))))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("newAge", QFieldType.INTEGER)))));
 
    }

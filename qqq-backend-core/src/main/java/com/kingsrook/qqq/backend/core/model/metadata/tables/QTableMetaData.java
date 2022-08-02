@@ -28,6 +28,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
@@ -87,6 +91,22 @@ public class QTableMetaData implements Serializable
       }
 
       return (field);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withFieldsFromEntity(Class<? extends QRecordEntity> entityClass) throws QException
+   {
+      List<QRecordEntityField> recordEntityFieldList = QRecordEntity.getFieldList(entityClass);
+      for(QRecordEntityField recordEntityField : recordEntityFieldList)
+      {
+         QFieldMetaData field = new QFieldMetaData(recordEntityField.getGetter());
+         addField(field);
+      }
+      return (this);
    }
 
 
@@ -431,6 +451,17 @@ public class QTableMetaData implements Serializable
    public QTableMetaData withCustomizers(Map<String, QCodeReference> customizers)
    {
       this.customizers = customizers;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withInferredFieldBackendNames()
+   {
+      QInstanceEnricher.setInferredFieldBackendNames(this);
       return (this);
    }
 

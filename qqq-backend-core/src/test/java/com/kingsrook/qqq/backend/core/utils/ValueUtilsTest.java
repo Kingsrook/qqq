@@ -24,8 +24,16 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneOffset;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -41,6 +49,7 @@ class ValueUtilsTest
    @Test
    void testGetValueAsString() throws QValueException
    {
+      //noinspection ConstantConditions
       assertNull(ValueUtils.getValueAsString(null));
       assertEquals("", ValueUtils.getValueAsString(""));
       assertEquals("  ", ValueUtils.getValueAsString("  "));
@@ -132,12 +141,89 @@ class ValueUtilsTest
       assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal(1.0F));
       assertEquals(new BigDecimal("1"), ValueUtils.getValueAsBigDecimal(1.0D));
       assertEquals(new BigDecimal("1000000000000"), ValueUtils.getValueAsBigDecimal(1_000_000_000_000L));
+      //noinspection ConstantConditions
       assertEquals(0, new BigDecimal("1.1").compareTo(ValueUtils.getValueAsBigDecimal(1.1F).round(MathContext.DECIMAL32)));
+      //noinspection ConstantConditions
       assertEquals(0, new BigDecimal("1.1").compareTo(ValueUtils.getValueAsBigDecimal(1.1D).round(MathContext.DECIMAL64)));
 
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsBigDecimal("a"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsBigDecimal("a,b"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsBigDecimal(new Object()));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   @Test
+   void testGetValueAsLocalDate() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsLocalDate(null));
+      assertNull(ValueUtils.getValueAsLocalDate(""));
+      assertNull(ValueUtils.getValueAsLocalDate(" "));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDate.of(1980, 5, 31)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.sql.Date(80, 4, 31)));
+      //noinspection MagicConstant
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, 4, 31)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 12, 0)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 4, 0)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 22, 0)));
+      //noinspection MagicConstant
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new GregorianCalendar(1980, 4, 31)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new GregorianCalendar(1980, Calendar.MAY, 31)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 12, 0)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 4, 0)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 22, 0)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, Month.MAY, 31, 12, 0)));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate("1980-05-31"));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate("05/31/1980"));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDate("a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDate("a,b"));
+      assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDate("1980/05/31")).getMessage()).contains("parse");
+      assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDate(new Object())).getMessage()).contains("Unsupported class");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   @Test
+   void testGetValueAsInstant() throws QValueException
+   {
+      Instant expected = Instant.parse("1980-05-31T12:30:00Z");
+
+      assertNull(ValueUtils.getValueAsInstant(null));
+      assertNull(ValueUtils.getValueAsInstant(""));
+      assertNull(ValueUtils.getValueAsInstant(" "));
+      assertEquals(expected, ValueUtils.getValueAsInstant(expected));
+      assertEquals(expected, ValueUtils.getValueAsInstant("1980-05-31T12:30:00Z"));
+
+      ////////////////////////////
+      // todo - time zone logic //
+      ////////////////////////////
+      // //noinspection MagicConstant
+      // assertEquals(expected, ValueUtils.getValueAsInstant(new java.util.Date(80, 4, 31, 7, 30)));
+
+      // //noinspection MagicConstant
+      // assertEquals(expected, ValueUtils.getValueAsInstant(new GregorianCalendar(1980, 4, 31)));
+      // assertEquals(expected, ValueUtils.getValueAsInstant(new GregorianCalendar(1980, Calendar.MAY, 31)));
+      // // assertEquals(expected, ValueUtils.getValueAsInstant(InstantTime.of(1980, 5, 31, 12, 0)));
+      // // assertEquals(expected, ValueUtils.getValueAsInstant(InstantTime.of(1980, 5, 31, 4, 0)));
+      // // assertEquals(expected, ValueUtils.getValueAsInstant(InstantTime.of(1980, 5, 31, 22, 0)));
+      // // assertEquals(expected, ValueUtils.getValueAsInstant(InstantTime.of(1980, Month.MAY, 31, 12, 0)));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant(new java.sql.Date(80, 4, 31)));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("a,b"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("1980/05/31"));
+      assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant(new Object())).getMessage()).contains("Unsupported class");
+   }
+
 
 }

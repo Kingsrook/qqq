@@ -35,6 +35,7 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -121,7 +123,10 @@ public class QueryManager
          statement.execute();
          resultSet = statement.getResultSet();
 
-         processor.processResultSet(resultSet);
+         if(processor != null)
+         {
+            processor.processResultSet(resultSet);
+         }
       }
       finally
       {
@@ -743,10 +748,14 @@ public class QueryManager
       }
       else if(value instanceof LocalDate ld)
       {
-         ZoneOffset offset      = OffsetDateTime.now().getOffset();
-         long       epochMillis = ld.atStartOfDay().toEpochSecond(offset) * MS_PER_SEC;
-         Timestamp  timestamp   = new Timestamp(epochMillis);
-         statement.setTimestamp(index, timestamp);
+         java.sql.Date date = new java.sql.Date(ld.getYear() - 1900, ld.getMonthValue() - 1, ld.getDayOfMonth());
+         statement.setDate(index, date);
+         return (1);
+      }
+      else if(value instanceof LocalTime lt)
+      {
+         java.sql.Time time = new java.sql.Time(lt.getHour(), lt.getMinute(), lt.getSecond());
+         statement.setTime(index, time);
          return (1);
       }
       else if(value instanceof OffsetDateTime odt)
@@ -1195,6 +1204,67 @@ public class QueryManager
          return (null);
       }
       return (value);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static LocalTime getLocalTime(ResultSet resultSet, int column) throws SQLException
+   {
+      String timeString = resultSet.getString(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+      return stringToLocalTime(timeString);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static LocalTime getLocalTime(ResultSet resultSet, String column) throws SQLException
+   {
+      String timeString = resultSet.getString(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+      return stringToLocalTime(timeString);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static LocalTime stringToLocalTime(String timeString) throws SQLException
+   {
+      if(!StringUtils.hasContent(timeString))
+      {
+         return (null);
+      }
+
+      String[] parts = timeString.split(":");
+      if(parts.length == 1)
+      {
+         return LocalTime.of(Integer.parseInt(parts[0]), 0);
+      }
+      if(parts.length == 2)
+      {
+         return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+      }
+      else if(parts.length == 3)
+      {
+         return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+      }
+      else
+      {
+         throw (new SQLException("Unable to parse time value [" + timeString + "] to LocalTime"));
+      }
    }
 
 
