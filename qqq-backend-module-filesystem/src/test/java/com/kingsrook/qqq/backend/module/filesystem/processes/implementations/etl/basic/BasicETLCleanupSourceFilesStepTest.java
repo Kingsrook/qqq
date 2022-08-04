@@ -198,7 +198,7 @@ public class BasicETLCleanupSourceFilesStepTest
       runBackendStepInput.setProcessName(qProcessMetaData.getName());
       // runFunctionRequest.setRecords(records);
       runBackendStepInput.setSession(TestUtils.getMockSession());
-      runBackendStepInput.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      runBackendStepInput.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       runBackendStepInput.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
       runBackendStepInput.addValue(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));
 
@@ -219,7 +219,7 @@ public class BasicETLCleanupSourceFilesStepTest
    private String getRandomFilePathPersonTable(QInstance qInstance)
    {
       FilesystemBackendMetaData     backend        = (FilesystemBackendMetaData) qInstance.getBackend(TestUtils.BACKEND_NAME_LOCAL_FS);
-      FilesystemTableBackendDetails backendDetails = (FilesystemTableBackendDetails) qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS).getBackendDetails();
+      FilesystemTableBackendDetails backendDetails = (FilesystemTableBackendDetails) qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON).getBackendDetails();
       String                        tablePath      = backend.getBasePath() + File.separator + backendDetails.getBasePath();
       String                        filePath       = tablePath + File.separator + UUID.randomUUID();
       return filePath;

@@ -71,7 +71,7 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
       QueryInput queryInput = new QueryInput();
       QInstance  instance   = TestUtils.defineInstance();
 
-      QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       table.withCustomizer(FilesystemBackendModuleInterface.CUSTOMIZER_FILE_POST_FILE_READ, new QCodeReference()
          .withName(ValueUpshifter.class.getName())
          .withCodeType(QCodeType.JAVA)

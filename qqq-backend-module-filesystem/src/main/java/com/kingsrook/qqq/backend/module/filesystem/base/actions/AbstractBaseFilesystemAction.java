@@ -201,10 +201,16 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   String fileContents = IOUtils.toString(readFile(file));
                   fileContents = customizeFileContentsAfterReading(table, fileContents);
 
-                  List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
-                  addBackendDetailsToRecords(recordsInFile, file);
-
-                  queryOutput.addRecords(recordsInFile);
+                  if(queryInput.getRecordPipe() != null)
+                  {
+                     new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record -> addBackendDetailsToRecord(record, file)));
+                  }
+                  else
+                  {
+                     List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
+                     addBackendDetailsToRecords(recordsInFile, file);
+                     queryOutput.addRecords(recordsInFile);
+                  }
                   break;
                }
                case JSON:
@@ -212,6 +218,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   String fileContents = IOUtils.toString(readFile(file));
                   fileContents = customizeFileContentsAfterReading(table, fileContents);
 
+                  // todo - pipe support!!
                   List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
                   addBackendDetailsToRecords(recordsInFile, file);
 
@@ -241,10 +248,17 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    protected void addBackendDetailsToRecords(List<QRecord> recordsInFile, FILE file)
    {
-      recordsInFile.forEach(record ->
-      {
-         record.withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, getFullPathForFile(file));
-      });
+      recordsInFile.forEach(r -> addBackendDetailsToRecord(r, file));
+   }
+
+
+
+   /*******************************************************************************
+    ** Add backend details to a record about the file that it is in.
+    *******************************************************************************/
+   protected void addBackendDetailsToRecord(QRecord record, FILE file)
+   {
+      record.addBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, getFullPathForFile(file));
    }
 
 

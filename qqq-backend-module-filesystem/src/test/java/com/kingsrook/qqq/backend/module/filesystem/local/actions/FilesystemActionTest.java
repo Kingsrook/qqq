@@ -80,7 +80,8 @@ public class FilesystemActionTest
          fail("Failed to make directories at [" + baseDirectory + "] for filesystem backend module");
       }
 
-      writePersonFiles(baseDirectory);
+      writePersonJSONFiles(baseDirectory);
+      writePersonCSVFiles(baseDirectory);
    }
 
 
@@ -88,7 +89,7 @@ public class FilesystemActionTest
    /*******************************************************************************
     ** Write some data files into the directory for the filesystem module.
     *******************************************************************************/
-   private void writePersonFiles(File baseDirectory) throws IOException
+   private void writePersonJSONFiles(File baseDirectory) throws IOException
    {
       String fullPath = baseDirectory.getAbsolutePath();
       if (TestUtils.defineLocalFilesystemJSONPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
@@ -114,6 +115,38 @@ public class FilesystemActionTest
          ]
          """;
       FileUtils.writeStringToFile(new File(fullPath + "DATA-2.json"), jsonData2);
+   }
+
+
+
+   /*******************************************************************************
+    ** Write some data files into the directory for the filesystem module.
+    *******************************************************************************/
+   private void writePersonCSVFiles(File baseDirectory) throws IOException
+   {
+      String fullPath = baseDirectory.getAbsolutePath();
+      if (TestUtils.defineLocalFilesystemCSVPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
+      {
+         if (StringUtils.hasContent(details.getBasePath()))
+         {
+            fullPath += File.separatorChar + details.getBasePath();
+         }
+      }
+      fullPath += File.separatorChar;
+
+      String csvData1 = """
+         "id","createDate","modifyDate","firstName","lastName","birthDate","email"
+         "1","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1981-01-01","john@kingsrook.com"
+         "2","2022-06-17 14:52:59","2022-06-17 14:52:59","Jane","Smith","1982-02-02","jane@kingsrook.com"
+         """;
+      FileUtils.writeStringToFile(new File(fullPath + "FILE-1.csv"), csvData1);
+
+      String csvData2 = """
+         "id","createDate","modifyDate","firstName","lastName","birthDate","email"
+         "3","2021-11-27 15:40:38","2021-11-27 15:40:38","Homer","S","1983-03-03","homer.s@kingsrook.com"
+         "4","2022-07-18 15:53:00","2022-07-18 15:53:00","Marge","S","1984-04-04","marge.s@kingsrook.com"
+         "5","2022-11-11 12:00:00","2022-11-12 13:00:00","Bart","S","1985-05-05","bart.s@kingsrook.com\""""; // intentionally no \n at EOL here
+      FileUtils.writeStringToFile(new File(fullPath + "FILE-2.csv"), csvData2);
    }
 
 
