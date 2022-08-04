@@ -24,10 +24,12 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
@@ -49,9 +51,13 @@ public class QInstance
 
    private QAuthenticationMetaData authentication = null;
 
-   private Map<String, QTableMetaData>          tables               = new HashMap<>();
-   private Map<String, QPossibleValueSource<?>> possibleValueSources = new HashMap<>();
-   private Map<String, QProcessMetaData>        processes            = new HashMap<>();
+   ////////////////////////////////////////////////////////////////////////////////////////////
+   // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
+   ////////////////////////////////////////////////////////////////////////////////////////////
+   private Map<String, QTableMetaData>          tables               = new LinkedHashMap<>();
+   private Map<String, QPossibleValueSource<?>> possibleValueSources = new LinkedHashMap<>();
+   private Map<String, QProcessMetaData>        processes            = new LinkedHashMap<>();
+   private Map<String, QAppMetaData>            apps                 = new LinkedHashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -171,6 +177,11 @@ public class QInstance
     *******************************************************************************/
    public QTableMetaData getTable(String name)
    {
+      if(this.tables == null)
+      {
+         return (null);
+      }
+
       return (this.tables.get(name));
    }
 
@@ -261,6 +272,40 @@ public class QInstance
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addApp(QAppMetaData app)
+   {
+      this.addApp(app.getName(), app);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addApp(String name, QAppMetaData app)
+   {
+      if(this.apps.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second app with name: " + name));
+      }
+      this.apps.put(name, app);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAppMetaData getApp(String name)
+   {
+      return (this.apps.get(name));
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for backends
     **
     *******************************************************************************/
@@ -344,6 +389,28 @@ public class QInstance
    public void setProcesses(Map<String, QProcessMetaData> processes)
    {
       this.processes = processes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apps
+    **
+    *******************************************************************************/
+   public Map<String, QAppMetaData> getApps()
+   {
+      return apps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apps
+    **
+    *******************************************************************************/
+   public void setApps(Map<String, QAppMetaData> apps)
+   {
+      this.apps = apps;
    }
 
 

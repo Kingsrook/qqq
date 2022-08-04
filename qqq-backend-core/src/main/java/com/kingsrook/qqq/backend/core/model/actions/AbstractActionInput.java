@@ -87,7 +87,7 @@ public abstract class AbstractActionInput
          catch(QInstanceValidationException e)
          {
             LOG.warn(e);
-            throw (new IllegalArgumentException("QInstance failed validation" + e.getMessage()));
+            throw (new IllegalArgumentException("QInstance failed validation" + e.getMessage(), e));
          }
       }
    }

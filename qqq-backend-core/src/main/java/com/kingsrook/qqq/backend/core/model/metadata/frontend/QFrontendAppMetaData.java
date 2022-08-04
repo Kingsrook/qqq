@@ -19,115 +19,146 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- * Output for a metaData action
+ * Version of QAppMetaData that's meant for transmitting to a frontend.
  *
  *******************************************************************************/
-public class MetaDataOutput extends AbstractActionOutput
+@JsonInclude(Include.NON_NULL)
+public class QFrontendAppMetaData
 {
-   private Map<String, QFrontendTableMetaData>   tables;
-   private Map<String, QFrontendProcessMetaData> processes;
-   private Map<String, QFrontendAppMetaData>     apps;
+   private AppTreeNodeType type;
 
-   private List<QFrontendAppMetaData> appTree;
+   private String name;
+   private String label;
+
+   private List<QFrontendAppMetaData> children = new ArrayList<>();
+
+   private String iconName;
 
 
 
    /*******************************************************************************
-    ** Getter for tables
     **
     *******************************************************************************/
-   public Map<String, QFrontendTableMetaData> getTables()
+   public QFrontendAppMetaData(QAppChildMetaData appChildMetaData)
    {
-      return tables;
+      this.name = appChildMetaData.getName();
+      this.label = appChildMetaData.getLabel();
+
+      if(appChildMetaData.getClass().equals(QTableMetaData.class))
+      {
+         this.type = AppTreeNodeType.TABLE;
+      }
+      else if(appChildMetaData.getClass().equals(QProcessMetaData.class))
+      {
+         this.type = AppTreeNodeType.PROCESS;
+      }
+      else if(appChildMetaData.getClass().equals(QAppMetaData.class))
+      {
+         this.type = AppTreeNodeType.APP;
+      }
+      else
+      {
+         throw (new IllegalStateException("Unrecognized class for app child meta data: " + appChildMetaData.getClass()));
+      }
+
+      if(appChildMetaData.getIcon() != null && StringUtils.hasContent(appChildMetaData.getIcon().getName()))
+      {
+         this.iconName = appChildMetaData.getIcon().getName();
+      }
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tables
+    ** Getter for name
     **
     *******************************************************************************/
-   public void setTables(Map<String, QFrontendTableMetaData> tables)
+   public String getName()
    {
-      this.tables = tables;
+      return name;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for processes
+    ** Getter for label
     **
     *******************************************************************************/
-   public Map<String, QFrontendProcessMetaData> getProcesses()
+   public String getLabel()
    {
-      return processes;
+      return label;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for processes
+    ** Getter for type
     **
     *******************************************************************************/
-   public void setProcesses(Map<String, QFrontendProcessMetaData> processes)
+   public AppTreeNodeType getType()
    {
-      this.processes = processes;
-   }
-
-
-
-
-   /*******************************************************************************
-    ** Getter for appTree
-    **
-    *******************************************************************************/
-   public List<QFrontendAppMetaData> getAppTree()
-   {
-      return appTree;
+      return type;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for appTree
+    ** Getter for children
     **
     *******************************************************************************/
-   public void setAppTree(List<QFrontendAppMetaData> appTree)
+   public List<QFrontendAppMetaData> getChildren()
    {
-      this.appTree = appTree;
+      return children;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for apps
+    ** Getter for iconName
     **
     *******************************************************************************/
-   public Map<String, QFrontendAppMetaData> getApps()
+   public String getIconName()
    {
-      return apps;
+      return iconName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for apps
+    ** Setter for iconName
     **
     *******************************************************************************/
-   public void setApps(Map<String, QFrontendAppMetaData> apps)
+   public void setIconName(String iconName)
    {
-      this.apps = apps;
+      this.iconName = iconName;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addChild(QFrontendAppMetaData qFrontendAppMetaData)
+   {
+      if(children == null)
+      {
+         children = new ArrayList<>();
+      }
+      children.add(qFrontendAppMetaData);
    }
 }

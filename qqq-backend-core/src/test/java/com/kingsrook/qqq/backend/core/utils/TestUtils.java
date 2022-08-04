@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -62,9 +63,19 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
  *******************************************************************************/
 public class TestUtils
 {
-   public static String DEFAULT_BACKEND_NAME                  = "default";
-   public static String PROCESS_NAME_GREET_PEOPLE             = "greet";
-   public static String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
+   public static final String DEFAULT_BACKEND_NAME = "default";
+
+   public static final String APP_NAME_GREETINGS     = "greetingsApp";
+   public static final String APP_NAME_PEOPLE        = "peopleApp";
+   public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
+
+   public static final String TABLE_NAME_PERSON = "person";
+
+   public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
+   public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
+   public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
+   public static final String TABLE_NAME_PERSON_FILE                = "personFile";
+   public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
 
 
 
@@ -77,18 +88,47 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
+
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(defineTableIdAndNameOnly());
+
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
+
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
       qInstance.addProcess(defineProcessAddToPeoplesAge());
       qInstance.addProcess(new BasicETLProcess().defineProcessMetaData());
 
+      defineApps(qInstance);
+
       System.out.println(new QInstanceAdapter().qInstanceToJson(qInstance));
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineApps(QInstance qInstance)
+   {
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_GREETINGS)
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_PEOPLE))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_PEOPLE)
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON))
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON_FILE))
+         .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_MISCELLANEOUS)
+         .withChild(qInstance.getTable(TABLE_NAME_ID_AND_NAME_ONLY))
+         .withChild(qInstance.getProcess(BasicETLProcess.PROCESS_NAME)));
    }
 
 

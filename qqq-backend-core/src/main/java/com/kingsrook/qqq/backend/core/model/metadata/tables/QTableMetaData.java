@@ -30,13 +30,15 @@ import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
 /*******************************************************************************
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData implements Serializable
+public class QTableMetaData implements QAppChildMetaData, Serializable
 {
    private String name;
    private String label;
@@ -59,6 +61,8 @@ public class QTableMetaData implements Serializable
 
    private Map<String, QCodeReference> customizers;
 
+   private String parentAppName;
+   private QIcon  icon;
 
 
    /*******************************************************************************
@@ -431,6 +435,74 @@ public class QTableMetaData implements Serializable
    public QTableMetaData withCustomizers(Map<String, QCodeReference> customizers)
    {
       this.customizers = customizers;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withInferredFieldBackendNames()
+   {
+      // todo not commit QInstanceEnricher.setInferredFieldBackendNames(this);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for parentAppName
+    **
+    *******************************************************************************/
+   @Override
+   public String getParentAppName()
+   {
+      return parentAppName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for parentAppName
+    **
+    *******************************************************************************/
+   @Override
+   public void setParentAppName(String parentAppName)
+   {
+      this.parentAppName = parentAppName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for icon
+    **
+    *******************************************************************************/
+   public void setIcon(QIcon icon)
+   {
+      this.icon = icon;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for icon
+    **
+    *******************************************************************************/
+   public QTableMetaData withIcon(QIcon icon)
+   {
+      this.icon = icon;
       return (this);
    }
 
