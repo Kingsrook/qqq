@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -34,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  *******************************************************************************/
 public class InsertInput extends AbstractTableActionInput
 {
+   private QBackendTransaction transaction;
    private List<QRecord> records;
 
 
@@ -53,6 +55,39 @@ public class InsertInput extends AbstractTableActionInput
    public InsertInput(QInstance instance)
    {
       super(instance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for transaction
+    **
+    *******************************************************************************/
+   public QBackendTransaction getTransaction()
+   {
+      return transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for transaction
+    **
+    *******************************************************************************/
+   public InsertInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+      return (this);
    }
 
 

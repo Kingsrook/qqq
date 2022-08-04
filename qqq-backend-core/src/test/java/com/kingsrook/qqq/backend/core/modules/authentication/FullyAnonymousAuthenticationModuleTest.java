@@ -49,8 +49,8 @@ public class FullyAnonymousAuthenticationModuleTest
       assertNotNull(session.getIdReference(), "Session id ref should not be null");
       assertNotNull(session.getUser(), "Session User should not be null");
       assertNotNull(session.getUser().getIdReference(), "Session User id ref should not be null");
-      assertTrue(fullyAnonymousAuthenticationModule.isSessionValid(session), "Any session should be valid");
-      assertFalse(fullyAnonymousAuthenticationModule.isSessionValid(null), "null should be not valid");
+      assertTrue(fullyAnonymousAuthenticationModule.isSessionValid(null, session), "Any session should be valid");
+      assertFalse(fullyAnonymousAuthenticationModule.isSessionValid(null, null), "null should be not valid");
    }
 
 }

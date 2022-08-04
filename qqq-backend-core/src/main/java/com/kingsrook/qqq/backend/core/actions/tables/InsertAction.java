@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
@@ -47,14 +48,35 @@ public class InsertAction
     *******************************************************************************/
    public InsertOutput execute(InsertInput insertInput) throws QException
    {
-      ActionHelper.validateSession(insertInput);
-
-      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(insertInput.getBackend());
+      QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
       // todo pre-customization - just get to modify the request?
       InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
       // todo post-customization - can do whatever w/ the result if you want
       return insertOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QBackendModuleInterface getBackendModuleInterface(InsertInput insertInput) throws QException
+   {
+      ActionHelper.validateSession(insertInput);
+      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(insertInput.getBackend());
+      return (qModule);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QBackendTransaction openTransaction(InsertInput insertInput) throws QException
+   {
+      QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
+      return (qModule.getInsertInterface().openTransaction(insertInput));
    }
 
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -43,6 +44,8 @@ import org.apache.logging.log4j.Logger;
 public class BasicETLLoadFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
+
+   private QBackendTransaction transaction;
 
 
 
@@ -86,15 +89,27 @@ public class BasicETLLoadFunction implements BackendStep
          insertInput.setSession(runBackendStepInput.getSession());
          insertInput.setTableName(table);
          insertInput.setRecords(page);
+         insertInput.setTransaction(transaction);
 
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
-         outputRecords.addAll(insertOutput.getRecords());
+         // todo - this is to avoid garbage leak in state provider... outputRecords.addAll(insertOutput.getRecords());
 
          recordsInserted += insertOutput.getRecords().size();
       }
       runBackendStepOutput.setRecords(outputRecords);
       runBackendStepOutput.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
    }
 
 }

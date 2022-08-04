@@ -25,7 +25,11 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -34,16 +38,25 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class RecordPipe
 {
-   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(10_000);
+   private static final Logger LOG = LogManager.getLogger(RecordPipe.class);
+
+   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
 
 
    /*******************************************************************************
     ** Add a record to the pipe
     ** Returns true iff the record fit in the pipe; false if the pipe is currently full.
     *******************************************************************************/
-   public boolean addRecord(QRecord record)
+   public void addRecord(QRecord record)
    {
-      return (queue.offer(record));
+      boolean offerResult = queue.offer(record);
+
+      while(!offerResult)
+      {
+         LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
+         SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+         offerResult = queue.offer(record);
+      }
    }
 
 
@@ -53,7 +66,7 @@ public class RecordPipe
     *******************************************************************************/
    public void addRecords(List<QRecord> records)
    {
-      queue.addAll(records);
+      records.forEach(this::addRecord);
    }
 
 

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
@@ -31,7 +32,6 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
-import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.AUTH0_ID_TOKEN_KEY;
@@ -40,7 +40,8 @@ import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0Authent
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -49,9 +50,9 @@ import static org.junit.jupiter.api.Assertions.fail;
  *******************************************************************************/
 public class Auth0AuthenticationModuleTest
 {
-   private static final String VALID_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA";
-   private static final String INVALID_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA-thismakesinvalid";
-   private static final String EXPIRED_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE4VDIxOjM4OjE1LjM4NloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MTgwNDc3LCJleHAiOjE2NTgyMTY0NzcsIm5vbmNlIjoiVkZkQlYzWmplR2hvY1cwMk9WZEtabHBLU0c1K1ZXbElhMEV3VkZaeFpVdEJVMDErZUZaT1RtMTNiZz09In0.fU7EwUgNrupOPz_PX_aQKON2xG1-LWD85xVo1Bn41WNEek-iMyJoch8l6NUihi7Bou14BoOfeWIG_sMqsLHqI2Pk7el7l1kigsjURx0wpiXadBt8piMxdIlxdToZEMuZCBzg7eJvXh4sM8tlV5cm0gPa6FT9Ih3VGJajNlXi5BcYS_JRpIvFvHn8-Bxj4KiAlZ5XPPkopjnDgP8kFfc4cMn_nxDkqWYlhj-5TaGW2xCLC9Qr_9UNxX0fm-CkKjYs3Z5ezbiXNkc-bxrCYvxeBeDPf8-T3EqrxCRVqCZSJ85BHdOc_E7UZC_g8bNj0umoplGwlCbzO4XIuOO-KlIaOg";
+   private static final String VALID_TOKEN       = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA";
+   private static final String INVALID_TOKEN     = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA-thismakesinvalid";
+   private static final String EXPIRED_TOKEN     = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE4VDIxOjM4OjE1LjM4NloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MTgwNDc3LCJleHAiOjE2NTgyMTY0NzcsIm5vbmNlIjoiVkZkQlYzWmplR2hvY1cwMk9WZEtabHBLU0c1K1ZXbElhMEV3VkZaeFpVdEJVMDErZUZaT1RtMTNiZz09In0.fU7EwUgNrupOPz_PX_aQKON2xG1-LWD85xVo1Bn41WNEek-iMyJoch8l6NUihi7Bou14BoOfeWIG_sMqsLHqI2Pk7el7l1kigsjURx0wpiXadBt8piMxdIlxdToZEMuZCBzg7eJvXh4sM8tlV5cm0gPa6FT9Ih3VGJajNlXi5BcYS_JRpIvFvHn8-Bxj4KiAlZ5XPPkopjnDgP8kFfc4cMn_nxDkqWYlhj-5TaGW2xCLC9Qr_9UNxX0fm-CkKjYs3Z5ezbiXNkc-bxrCYvxeBeDPf8-T3EqrxCRVqCZSJ85BHdOc_E7UZC_g8bNj0umoplGwlCbzO4XIuOO-KlIaOg";
    private static final String UNDECODABLE_TOKEN = "UNDECODABLE";
 
    public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
@@ -59,32 +60,79 @@ public class Auth0AuthenticationModuleTest
 
 
    /*******************************************************************************
-    ** Test a valid token where 'now' is set to a time that would be valid for it
+    ** Test an expired token where 'now' is set to a time that would not require it to be
+    ** re-checked, so it'll show as valid
     **
     *******************************************************************************/
    @Test
-   public void testLastTimeChecked() throws QAuthenticationException
+   public void testLastTimeCheckedNow()
    {
-      //////////////////////////////////////////////////////////
-      // Tuesday, July 19, 2022 12:40:27.299 PM GMT-05:00 DST //
-      //////////////////////////////////////////////////////////
-      Instant now = Instant.now();
+      assertTrue(testLastTimeChecked(Instant.now(), UNDECODABLE_TOKEN), "A session just checked 'now' should always be valid");
+   }
 
-      /////////////////////////////////////////////////////////
-      // put the 'now' from the past into the state provider //
-      /////////////////////////////////////////////////////////
-      StateProviderInterface spi = InMemoryStateProvider.getInstance();
-      Auth0AuthenticationModule.Auth0StateKey key = new Auth0AuthenticationModule.Auth0StateKey(VALID_TOKEN);
-      spi.put(key, now);
+
+
+   /*******************************************************************************
+    ** Test an expired token where 'now' is set to a time that would not require it to be
+    ** re-checked, so it'll show as valid
+    **
+    *******************************************************************************/
+   @Test
+   public void testLastTimeCheckedJustUnderThreshold()
+   {
+      Instant underThreshold = Instant.now().minus(Auth0AuthenticationModule.ID_TOKEN_VALIDATION_INTERVAL_SECONDS - 60, ChronoUnit.SECONDS);
+      assertTrue(testLastTimeChecked(underThreshold, INVALID_TOKEN), "A session checked under threshold should be valid");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test an expired token where 'now' is set to a time that would require it to be
+    ** re-checked
+    **
+    *******************************************************************************/
+   @Test
+   public void testLastTimeCheckedJustOverThreshold()
+   {
+      Instant overThreshold = Instant.now().minus(Auth0AuthenticationModule.ID_TOKEN_VALIDATION_INTERVAL_SECONDS + 60, ChronoUnit.SECONDS);
+      assertFalse(testLastTimeChecked(overThreshold, INVALID_TOKEN), "A session checked over threshold should be re-validated, and in this case, not be valid.");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test an expired token where 'now' is set to a time that would require it to be
+    ** re-checked
+    **
+    *******************************************************************************/
+   @Test
+   public void testLastTimeCheckedOverThresholdAndUndecodable()
+   {
+      Instant overThreshold = Instant.now().minus(Auth0AuthenticationModule.ID_TOKEN_VALIDATION_INTERVAL_SECONDS + 60, ChronoUnit.SECONDS);
+      assertFalse(testLastTimeChecked(overThreshold, UNDECODABLE_TOKEN), "A session checked over threshold should be re-validated, and in this case, not be valid.");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean testLastTimeChecked(Instant lastTimeChecked, String token)
+   {
+      /////////////////////////////////////////////////////////////
+      // put the input last-time-checked into the state provider //
+      /////////////////////////////////////////////////////////////
+      Auth0AuthenticationModule.Auth0StateKey key = new Auth0AuthenticationModule.Auth0StateKey(token);
+      InMemoryStateProvider.getInstance().put(key, lastTimeChecked);
 
       //////////////////////
       // build up session //
       //////////////////////
       QSession session = new QSession();
-      session.setIdReference(VALID_TOKEN);
+      session.setIdReference(token);
 
       Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
-      assertEquals(true, auth0AuthenticationModule.isSessionValid(session), "Session should return as still valid.");
+      return (auth0AuthenticationModule.isSessionValid(getQInstance(), session));
    }
 
 
@@ -114,7 +162,7 @@ public class Auth0AuthenticationModuleTest
 
 
    /*******************************************************************************
-    ** Test failure case, token cant be decoded
+    ** Test failure case, token can't be decoded
     **
     *******************************************************************************/
    @Test
@@ -220,4 +268,5 @@ public class Auth0AuthenticationModuleTest
       qInstance.setAuthentication(authenticationMetaData);
       return (qInstance);
    }
+
 }

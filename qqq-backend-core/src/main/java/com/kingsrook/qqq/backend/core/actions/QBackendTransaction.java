@@ -19,66 +19,64 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.actions;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.io.IOException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
 /*******************************************************************************
- ** Query output that uses a RecordPipe
+ ** Container wherein backend modules can track data and/or objects that are
+ ** part of a transaction.
+ **
+ ** Most obvious use-case would be a JDBC Connection.  See subclass in rdbms module.
  *******************************************************************************/
-class QueryOutputRecordPipe implements QueryOutputStorageInterface
+public class QBackendTransaction
 {
-   private static final Logger LOG = LogManager.getLogger(QueryOutputRecordPipe.class);
 
-   private RecordPipe recordPipe;
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void commit() throws QException
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryOutputRecordPipe(RecordPipe recordPipe)
+   public void rollback() throws QException
    {
-      this.recordPipe = recordPipe;
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 
 
    /*******************************************************************************
-    ** add a record to this output
+    * Closes this stream and releases any system resources associated
+    * with it. If the stream is already closed then invoking this
+    * method has no effect.
+    *
+    * <p> As noted in {@link AutoCloseable#close()}, cases where the
+    * close may fail require careful attention. It is strongly advised
+    * to relinquish the underlying resources and to internally
+    * <em>mark</em> the {@code Closeable} as closed, prior to throwing
+    * the {@code IOException}.
+    *
+    * @throws IOException
+    *    if an I/O error occurs
     *******************************************************************************/
-   @Override
-   public void addRecord(QRecord record)
+   public void close()
    {
-      recordPipe.addRecord(record);
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
-
-
-
-   /*******************************************************************************
-    ** add a list of records to this output
-    *******************************************************************************/
-   @Override
-   public void addRecords(List<QRecord> records)
-   {
-      recordPipe.addRecords(records);
-   }
-
-
-
-   /*******************************************************************************
-    ** Get all stored records
-    *******************************************************************************/
-   @Override
-   public List<QRecord> getRecords()
-   {
-      throw (new IllegalStateException("getRecords may not be called on a piped query output"));
-   }
-
 }

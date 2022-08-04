@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -39,6 +40,8 @@ import org.apache.logging.log4j.Logger;
 public class BasicETLExtractFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLExtractFunction.class);
+
+   private RecordPipe recordPipe = null;
 
 
 
@@ -64,10 +67,35 @@ public class BasicETLExtractFunction implements BackendStep
       //    queryRequest.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
       // }
 
+      //////////////////////////////////////////////////////////////////////
+      // if the caller gave us a record pipe, pass it to the query action //
+      //////////////////////////////////////////////////////////////////////
+      if (recordPipe != null)
+      {
+         queryInput.setRecordPipe(recordPipe);
+      }
+
       QueryAction queryAction = new QueryAction();
       QueryOutput queryOutput = queryAction.execute(queryInput);
 
-      runBackendStepOutput.setRecords(queryOutput.getRecords());
-      LOG.info("Query on table " + tableName + " produced " + queryOutput.getRecords().size() + " records.");
+      if (recordPipe == null)
+      {
+         ////////////////////////////////////////////////////////////////////////////
+         // only return the records (and log about them) if there's no record pipe //
+         ////////////////////////////////////////////////////////////////////////////
+         runBackendStepOutput.setRecords(queryOutput.getRecords());
+         LOG.info("Query on table " + tableName + " produced " + queryOutput.getRecords().size() + " records.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordPipe
+    **
+    *******************************************************************************/
+   public void setRecordPipe(RecordPipe recordPipe)
+   {
+      this.recordPipe = recordPipe;
    }
 }
