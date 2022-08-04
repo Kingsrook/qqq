@@ -685,6 +685,11 @@ public class QueryManager
          bindParam(statement, index, l.intValue());
          return (1);
       }
+      else if(value instanceof Double d)
+      {
+         bindParam(statement, index, d.doubleValue());
+         return (1);
+      }
       else if(value instanceof String s)
       {
          bindParam(statement, index, s);
@@ -846,6 +851,23 @@ public class QueryManager
       else
       {
          statement.setInt(index, value);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    *
+    *******************************************************************************/
+   public static void bindParam(PreparedStatement statement, int index, Double value) throws SQLException
+   {
+      if(value == null)
+      {
+         statement.setNull(index, Types.DOUBLE);
+      }
+      else
+      {
+         statement.setDouble(index, value);
       }
    }
 
