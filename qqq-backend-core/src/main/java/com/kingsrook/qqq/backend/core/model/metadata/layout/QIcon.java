@@ -19,61 +19,73 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.javalin;
-
-
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
 /*******************************************************************************
- ** base class for javalin implementation tests.
+ ** Icon to show associated with an App, Table, Process, etc.
+ **
+ ** Currently, name here must be a reference from https://fonts.google.com/icons
+ ** e.g., local_shipping for https://fonts.google.com/icons?selected=Material+Symbols+Outlined:local_shipping
+ **
+ ** Future may allow something like a "namespace", and/or multiple icons for
+ ** use in different frontends, etc.
  *******************************************************************************/
-public class QJavalinTestBase
+public class QIcon
 {
-   private static final   int    PORT     = 6262;
-   protected static final String BASE_URL = "http://localhost:" + PORT;
-
-   private static QJavalinImplementation qJavalinImplementation;
+   private String name;
 
 
 
    /*******************************************************************************
-    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
-   @BeforeAll
-   public static void beforeAll() throws QInstanceValidationException
+   public QIcon()
    {
-      qJavalinImplementation = new QJavalinImplementation(TestUtils.defineInstance());
-      QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
-      qJavalinImplementation.startJavalinServer(PORT);
    }
 
 
 
    /*******************************************************************************
-    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
-   @AfterAll
-   public static void afterAll()
+   public QIcon(String name)
    {
-      qJavalinImplementation.stopJavalinServer();
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
-    ** Fully rebuild the test-database before each test runs, for completely known state.
+    ** Getter for name
     **
     *******************************************************************************/
-   @BeforeEach
-   public void beforeEach() throws Exception
+   public String getName()
    {
-      TestUtils.primeTestDatabase();
+      return name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    **
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    **
+    *******************************************************************************/
+   public QIcon withName(String name)
+   {
+      this.name = name;
+      return (this);
    }
 
 }

@@ -25,8 +25,10 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
@@ -50,5 +52,13 @@ class QueryActionTest
       request.setTableName("person");
       QueryOutput result = new QueryAction().execute(request);
       assertNotNull(result);
+
+      assertThat(result.getRecords()).isNotEmpty();
+      for(QRecord record : result.getRecords())
+      {
+         assertThat(record.getValues()).isNotEmpty();
+         assertThat(record.getDisplayValues()).isNotEmpty();
+         assertThat(record.getErrors()).isEmpty();
+      }
    }
 }

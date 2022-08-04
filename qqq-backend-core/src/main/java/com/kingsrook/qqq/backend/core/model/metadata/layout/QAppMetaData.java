@@ -19,31 +19,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.processes;
+package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 
 
 /*******************************************************************************
- ** Meta-Data to define a process in a QQQ instance.
  **
  *******************************************************************************/
-public class QProcessMetaData implements QAppChildMetaData
+public class QAppMetaData implements QAppChildMetaData
 {
-   private String  name;
-   private String  label;
-   private String  tableName;
-   private boolean isHidden = false;
+   private String name;
+   private String label;
 
-   private List<QStepMetaData> stepList;
+   private List<QAppChildMetaData> children;
 
    private String parentAppName;
+   private QIcon  icon;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAppMetaData()
+   {
+   }
 
 
 
@@ -70,10 +73,10 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Fluent setter for name
     **
     *******************************************************************************/
-   public QProcessMetaData withName(String name)
+   public QAppMetaData withName(String name)
    {
       this.name = name;
       return (this);
@@ -104,10 +107,10 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Fluent setter for label
     **
     *******************************************************************************/
-   public QProcessMetaData withLabel(String label)
+   public QAppMetaData withLabel(String label)
    {
       this.label = label;
       return (this);
@@ -116,184 +119,62 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Getter for tableName
+    ** Getter for children
     **
     *******************************************************************************/
-   public String getTableName()
+   public List<QAppChildMetaData> getChildren()
    {
-      return tableName;
+      return children;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tableName
+    ** Setter for children
     **
     *******************************************************************************/
-   public void setTableName(String tableName)
+   public void setChildren(List<QAppChildMetaData> children)
    {
-      this.tableName = tableName;
+      this.children = children;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tableName
+    ** Add a child to this app.
     **
     *******************************************************************************/
-   public QProcessMetaData withTableName(String tableName)
+   public void addChild(QAppChildMetaData child)
    {
-      this.tableName = tableName;
+      if(this.children == null)
+      {
+         this.children = new ArrayList<>();
+      }
+      this.children.add(child);
+      child.setParentAppName(this.getName());
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluently add a child to this app.
+    **
+    *******************************************************************************/
+   public QAppMetaData withChild(QAppChildMetaData child)
+   {
+      addChild(child);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for stepList
+    ** Fluent setter for children
     **
     *******************************************************************************/
-   public List<QStepMetaData> getStepList()
+   public QAppMetaData withChildren(List<QAppChildMetaData> children)
    {
-      return stepList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for stepList
-    **
-    *******************************************************************************/
-   public QProcessMetaData withStepList(List<QStepMetaData> stepList)
-   {
-      this.stepList = stepList;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for stepList
-    **
-    *******************************************************************************/
-   public QProcessMetaData addStep(QStepMetaData step)
-   {
-      if(this.stepList == null)
-      {
-         this.stepList = new ArrayList<>();
-      }
-      this.stepList.add(step);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for stepList
-    **
-    *******************************************************************************/
-   public void setStepList(List<QStepMetaData> stepList)
-   {
-      this.stepList = stepList;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QStepMetaData getStep(String stepName)
-   {
-      for(QStepMetaData step : stepList)
-      {
-         if(step.getName().equals(stepName))
-         {
-            return (step);
-         }
-      }
-
-      return (null);
-   }
-
-
-
-   /*******************************************************************************
-    ** Wrapper to getStep, that internally casts to BackendStepMetaData
-    *******************************************************************************/
-   public QBackendStepMetaData getBackendStep(String name)
-   {
-      return (QBackendStepMetaData) getStep(name);
-   }
-
-
-
-   /*******************************************************************************
-    ** Get a list of all of the input fields used by all the steps in this process.
-    *******************************************************************************/
-   @JsonIgnore
-   public List<QFieldMetaData> getInputFields()
-   {
-      List<QFieldMetaData> rs = new ArrayList<>();
-      if(stepList != null)
-      {
-         for(QStepMetaData step : stepList)
-         {
-            rs.addAll(step.getInputFields());
-         }
-      }
-      return (rs);
-   }
-
-
-
-   /*******************************************************************************
-    ** Get a list of all of the output fields used by all the steps in this process.
-    *******************************************************************************/
-   @JsonIgnore
-   public List<QFieldMetaData> getOutputFields()
-   {
-      List<QFieldMetaData> rs = new ArrayList<>();
-      if(stepList != null)
-      {
-         for(QStepMetaData step : stepList)
-         {
-            rs.addAll(step.getOutputFields());
-         }
-      }
-      return (rs);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for isHidden
-    **
-    *******************************************************************************/
-   public boolean getIsHidden()
-   {
-      return (isHidden);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for isHidden
-    **
-    *******************************************************************************/
-   public void setIsHidden(boolean isHidden)
-   {
-      this.isHidden = isHidden;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent Setter for isHidden
-    **
-    *******************************************************************************/
-   public QProcessMetaData withIsHidden(boolean isHidden)
-   {
-      this.isHidden = isHidden;
+      this.children = children;
       return (this);
    }
 
@@ -319,6 +200,38 @@ public class QProcessMetaData implements QAppChildMetaData
    public void setParentAppName(String parentAppName)
    {
       this.parentAppName = parentAppName;
+   }
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for icon
+    **
+    *******************************************************************************/
+   public void setIcon(QIcon icon)
+   {
+      this.icon = icon;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for icon
+    **
+    *******************************************************************************/
+   public QAppMetaData withIcon(QIcon icon)
+   {
+      this.icon = icon;
+      return (this);
    }
 
 }

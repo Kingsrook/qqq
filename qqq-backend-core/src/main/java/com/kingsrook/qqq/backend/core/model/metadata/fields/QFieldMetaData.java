@@ -51,6 +51,7 @@ public class QFieldMetaData
    // propose doing that in a secondary field, e.g., "onlyEditableOn=insert|update" //
    ///////////////////////////////////////////////////////////////////////////////////
 
+   private String       displayFormat = "%s";
    private Serializable defaultValue;
    private String       possibleValueSourceName;
 
@@ -392,6 +393,38 @@ public class QFieldMetaData
    public QFieldMetaData withIsEditable(boolean isEditable)
    {
       this.isEditable = isEditable;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for displayFormat
+    **
+    *******************************************************************************/
+   public String getDisplayFormat()
+   {
+      return displayFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for displayFormat
+    **
+    *******************************************************************************/
+   public void setDisplayFormat(String displayFormat)
+   {
+      this.displayFormat = displayFormat;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for displayFormat
+    **
+    *******************************************************************************/
+   public QFieldMetaData withDisplayFormat(String displayFormat)
+   {
+      this.displayFormat = displayFormat;
       return (this);
    }
 

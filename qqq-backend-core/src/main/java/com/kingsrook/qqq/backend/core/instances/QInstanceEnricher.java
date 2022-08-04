@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -83,6 +84,11 @@ public class QInstanceEnricher
       if(qInstance.getBackends() != null)
       {
          qInstance.getBackends().values().forEach(this::enrich);
+      }
+
+      if(qInstance.getApps() != null)
+      {
+         qInstance.getApps().values().forEach(this::enrich);
       }
    }
 
@@ -174,6 +180,19 @@ public class QInstanceEnricher
       if(!StringUtils.hasContent(field.getLabel()))
       {
          field.setLabel(nameToLabel(field.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QAppMetaData app)
+   {
+      if(!StringUtils.hasContent(app.getLabel()))
+      {
+         app.setLabel(nameToLabel(app.getName()));
       }
    }
 

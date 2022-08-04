@@ -65,6 +65,10 @@ public enum QFieldType
       {
          return (INTEGER);
       }
+      if(c.equals(Boolean.class))
+      {
+         return (BOOLEAN);
+      }
       if(c.equals(BigDecimal.class))
       {
          return (DECIMAL);

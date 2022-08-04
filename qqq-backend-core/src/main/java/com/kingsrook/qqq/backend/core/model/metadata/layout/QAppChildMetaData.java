@@ -19,61 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.javalin;
-
-
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
 /*******************************************************************************
- ** base class for javalin implementation tests.
+ ** Interface shared by meta-data objects which can be placed into an App.
  *******************************************************************************/
-public class QJavalinTestBase
+public interface QAppChildMetaData
 {
-   private static final   int    PORT     = 6262;
-   protected static final String BASE_URL = "http://localhost:" + PORT;
-
-   private static QJavalinImplementation qJavalinImplementation;
-
-
-
    /*******************************************************************************
-    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
-   @BeforeAll
-   public static void beforeAll() throws QInstanceValidationException
-   {
-      qJavalinImplementation = new QJavalinImplementation(TestUtils.defineInstance());
-      QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
-      qJavalinImplementation.startJavalinServer(PORT);
-   }
-
-
+   void setParentAppName(String parentAppName);
 
    /*******************************************************************************
-    ** Before the class (all) runs, start a javalin server.
     **
     *******************************************************************************/
-   @AfterAll
-   public static void afterAll()
-   {
-      qJavalinImplementation.stopJavalinServer();
-   }
-
-
+   String getParentAppName();
 
    /*******************************************************************************
-    ** Fully rebuild the test-database before each test runs, for completely known state.
     **
     *******************************************************************************/
-   @BeforeEach
-   public void beforeEach() throws Exception
+   String getName();
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   String getLabel();
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default QIcon getIcon()
    {
-      TestUtils.primeTestDatabase();
+      return (null);
    }
 
 }

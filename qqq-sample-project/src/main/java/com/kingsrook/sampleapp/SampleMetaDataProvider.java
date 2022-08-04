@@ -29,13 +29,13 @@ import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
@@ -59,7 +59,7 @@ import io.github.cdimascio.dotenv.Dotenv;
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static boolean USE_MYSQL = false;
+   public static boolean USE_MYSQL = true;
 
    public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
@@ -68,11 +68,19 @@ public class SampleMetaDataProvider
    // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
    public static final String AUTH0_BASE_URL                   = "https://nutrifresh-one-development.us.auth0.com/";
 
+   public static final String APP_NAME_GREETINGS     = "greetingsApp";
+   public static final String APP_NAME_PEOPLE        = "peopleApp";
+   public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
+
    public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_SIMPLE_SLEEP      = "simpleSleep";
    public static final String PROCESS_NAME_SIMPLE_THROW      = "simpleThrow";
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
+
+   public static final String TABLE_NAME_PERSON  = "person";
+   public static final String TABLE_NAME_CARRIER = "carrier";
+   public static final String TABLE_NAME_CITY    = "city";
 
    public static final String STEP_NAME_SLEEPER = "sleeper";
    public static final String STEP_NAME_THROWER = "thrower";
@@ -101,7 +109,35 @@ public class SampleMetaDataProvider
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
+      defineApps(qInstance);
+
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineApps(QInstance qInstance)
+   {
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_GREETINGS)
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE)));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_PEOPLE)
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON))
+         .withChild(qInstance.getTable(TABLE_NAME_CITY))
+         .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_MISCELLANEOUS)
+         .withChild(qInstance.getTable(TABLE_NAME_CARRIER))
+         .withChild(qInstance.getProcess(PROCESS_NAME_SIMPLE_SLEEP))
+         .withChild(qInstance.getProcess(PROCESS_NAME_SLEEP_INTERACTIVE))
+         .withChild(qInstance.getProcess(PROCESS_NAME_SIMPLE_THROW)));
    }
 
 
@@ -166,7 +202,7 @@ public class SampleMetaDataProvider
    public static QTableMetaData defineTableCarrier()
    {
       QTableMetaData table = new QTableMetaData();
-      table.setName("carrier");
+      table.setName(TABLE_NAME_CARRIER);
       table.setBackendName(RDBMS_BACKEND_NAME);
       table.setPrimaryKeyField("id");
 
@@ -194,7 +230,7 @@ public class SampleMetaDataProvider
    public static QTableMetaData defineTablePerson()
    {
       return new QTableMetaData()
-         .withName("person")
+         .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(RDBMS_BACKEND_NAME)
          .withPrimaryKeyField("id")
@@ -215,7 +251,7 @@ public class SampleMetaDataProvider
    public static QTableMetaData defineTableCityFile()
    {
       return new QTableMetaData()
-         .withName("city")
+         .withName(TABLE_NAME_CITY)
          .withLabel("Cities")
          .withIsHidden(true)
          .withBackendName(FILESYSTEM_BACKEND_NAME)
@@ -240,7 +276,7 @@ public class SampleMetaDataProvider
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET)
          .withLabel("Greet People")
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
          .withIsHidden(true)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
@@ -249,14 +285,14 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -272,9 +308,9 @@ public class SampleMetaDataProvider
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_INTERACTIVE)
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
 
-         .addStep(LoadInitialRecordsStep.defineMetaData("person"))
+         .addStep(LoadInitialRecordsStep.defineMetaData(TABLE_NAME_PERSON))
 
          .addStep(new QFrontendStepMetaData()
             .withName("setup")
@@ -289,14 +325,14 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
