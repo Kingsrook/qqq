@@ -251,11 +251,39 @@ public class QJavalinImplementation
       try
       {
          Map<String, String> authenticationContext = new HashMap<>();
-         authenticationContext.put(SESSION_ID_COOKIE_NAME, context.cookie(SESSION_ID_COOKIE_NAME));
+
+         /////////////////////////////////////////////////////////////////////////////////
+         // look for a token in either the sessionId cookie, or an Authorization header //
+         /////////////////////////////////////////////////////////////////////////////////
+         String sessionIdCookieValue = context.cookie(SESSION_ID_COOKIE_NAME);
+         if(StringUtils.hasContent(sessionIdCookieValue))
+         {
+            authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
+         }
+         else
+         {
+            String authorizationHeaderValue = context.header("Authorization");
+            if (authorizationHeaderValue != null)
+            {
+               String bearerPrefix = "Bearer ";
+               if(authorizationHeaderValue.startsWith(bearerPrefix))
+               {
+                  authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
+               }
+               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
+            }
+         }
+
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          input.setSession(session);
 
-         context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+         /////////////////////////////////////////////////////////////////////////////////
+         // if we got a session id cookie in, then send it back with updated cookie age //
+         /////////////////////////////////////////////////////////////////////////////////
+         if(StringUtils.hasContent(sessionIdCookieValue))
+         {
+            context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+         }
       }
       catch(QAuthenticationException qae)
       {

@@ -31,3 +31,4 @@ target/
 hs_err_pid*
 .DS_Store
 *.swp
+.flattened-pom.xml

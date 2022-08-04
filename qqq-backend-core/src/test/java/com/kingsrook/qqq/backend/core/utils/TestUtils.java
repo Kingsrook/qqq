@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthentic
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 
 
 /*******************************************************************************
@@ -91,6 +92,7 @@ public class TestUtils
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
       qInstance.addProcess(defineProcessAddToPeoplesAge());
       qInstance.addProcess(new BasicETLProcess().defineProcessMetaData());
+      qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
 
       System.out.println(new QInstanceAdapter().qInstanceToJson(qInstance));
 

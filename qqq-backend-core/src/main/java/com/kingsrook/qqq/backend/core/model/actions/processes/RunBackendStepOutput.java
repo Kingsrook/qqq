@@ -35,7 +35,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  ** Output data container for the RunBackendStep action
  **
  *******************************************************************************/
-public class RunBackendStepOutput extends AbstractActionOutput
+public class RunBackendStepOutput extends AbstractActionOutput implements Serializable
 {
    private ProcessState processState;
    private Exception    exception; // todo - make optional

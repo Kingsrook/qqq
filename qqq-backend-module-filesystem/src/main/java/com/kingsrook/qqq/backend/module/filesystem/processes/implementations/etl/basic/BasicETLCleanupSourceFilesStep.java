@@ -94,11 +94,13 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
          String moveOrDelete = runBackendStepInput.getValueString(FIELD_MOVE_OR_DELETE);
          if(VALUE_DELETE.equals(moveOrDelete))
          {
+            LOG.info("Deleting ETL source file: " + sourceFile);
             actionBase.deleteFile(runBackendStepInput.getInstance(), table, sourceFile);
          }
          else if(VALUE_MOVE.equals(moveOrDelete))
          {
             String destinationForMoves = runBackendStepInput.getValueString(FIELD_DESTINATION_FOR_MOVES);
+            LOG.info("Moving ETL source file: " + sourceFile + " to " + destinationForMoves);
             if(!StringUtils.hasContent(destinationForMoves))
             {
                throw (new QException("Field [" + FIELD_DESTINATION_FOR_MOVES + "] is missing a value."));

@@ -43,5 +43,5 @@ public interface QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   boolean isSessionValid(QSession session);
+   boolean isSessionValid(QInstance instance, QSession session);
 }

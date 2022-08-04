@@ -66,7 +66,7 @@ public class FullyAnonymousAuthenticationModule implements QAuthenticationModule
     **
     *******************************************************************************/
    @Override
-   public boolean isSessionValid(QSession session)
+   public boolean isSessionValid(QInstance instance, QSession session)
    {
       return session != null;
    }

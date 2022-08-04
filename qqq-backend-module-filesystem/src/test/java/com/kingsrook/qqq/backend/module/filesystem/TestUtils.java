@@ -24,20 +24,27 @@ package com.kingsrook.qqq.backend.module.filesystem;
 
 import java.io.File;
 import java.io.IOException;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.etl.streamed.StreamedETLFilesystemBackendStep;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
@@ -49,10 +56,16 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TestUtils
 {
-   public static final String BACKEND_NAME_LOCAL_FS      = "local-filesystem";
-   public static final String BACKEND_NAME_S3            = "s3";
-   public static final String TABLE_NAME_PERSON_LOCAL_FS = "person";
-   public static final String TABLE_NAME_PERSON_S3       = "person-s3";
+   public static final String BACKEND_NAME_LOCAL_FS = "local-filesystem";
+   public static final String BACKEND_NAME_S3       = "s3";
+   public static final String BACKEND_NAME_MOCK     = "mock";
+
+   public static final String TABLE_NAME_PERSON_LOCAL_FS_JSON = "person-local-json";
+   public static final String TABLE_NAME_PERSON_LOCAL_FS_CSV  = "person-local-csv";
+   public static final String TABLE_NAME_PERSON_S3            = "person-s3";
+   public static final String TABLE_NAME_PERSON_MOCK          = "person-mock";
+
+   public static final String PROCESS_NAME_STREAMED_ETL = "etl.streamed";
 
    ///////////////////////////////////////////////////////////////////
    // shouldn't be accessed directly, as we append a counter to it. //
@@ -112,14 +125,18 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QInstance defineInstance() throws QInstanceValidationException
+   public static QInstance defineInstance() throws QException
    {
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineLocalFilesystemBackend());
       qInstance.addTable(defineLocalFilesystemJSONPersonTable());
+      qInstance.addTable(defineLocalFilesystemCSVPersonTable());
       qInstance.addBackend(defineS3Backend());
       qInstance.addTable(defineS3CSVPersonTable());
+      qInstance.addBackend(defineMockBackend());
+      qInstance.addTable(defineMockPersonTable());
+      qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
 
       new QInstanceValidator().validate(qInstance);
 
@@ -159,21 +176,55 @@ public class TestUtils
    public static QTableMetaData defineLocalFilesystemJSONPersonTable()
    {
       return new QTableMetaData()
-         .withName(TABLE_NAME_PERSON_LOCAL_FS)
+         .withName(TABLE_NAME_PERSON_LOCAL_FS_JSON)
          .withLabel("Person")
          .withBackendName(defineLocalFilesystemBackend().getName())
          .withPrimaryKeyField("id")
-         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
-         .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"))
-         .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
-         .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withFields(defineCommonPersonTableFields())
          .withBackendDetails(new FilesystemTableBackendDetails()
             .withBasePath("persons")
             .withRecordFormat(RecordFormat.JSON)
             .withCardinality(Cardinality.MANY)
+            .withGlob("*.json")
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QFieldMetaData> defineCommonPersonTableFields()
+   {
+      return (List.of(
+         new QFieldMetaData("id", QFieldType.INTEGER),
+         new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"),
+         new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"),
+         new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"),
+         new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"),
+         new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"),
+         new QFieldMetaData("email", QFieldType.STRING)
+      ));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineLocalFilesystemCSVPersonTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_PERSON_LOCAL_FS_CSV)
+         .withLabel("Person")
+         .withBackendName(defineLocalFilesystemBackend().getName())
+         .withPrimaryKeyField("id")
+         .withFields(defineCommonPersonTableFields())
+         .withBackendDetails(new FilesystemTableBackendDetails()
+            .withBasePath("persons-csv")
+            .withRecordFormat(RecordFormat.CSV)
+            .withCardinality(Cardinality.MANY)
+            .withGlob("*.csv")
          );
    }
 
@@ -202,13 +253,7 @@ public class TestUtils
          .withLabel("Person S3 Table")
          .withBackendName(defineS3Backend().getName())
          .withPrimaryKeyField("id")
-         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
-         .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"))
-         .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
-         .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withFields(defineCommonPersonTableFields())
          .withBackendDetails(new S3TableBackendDetails()
             .withRecordFormat(RecordFormat.CSV)
             .withCardinality(Cardinality.MANY)
@@ -220,7 +265,52 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QSession getMockSession() throws QInstanceValidationException
+   public static QBackendMetaData defineMockBackend()
+   {
+      return (new QBackendMetaData()
+         .withBackendType("mock")
+         .withName(BACKEND_NAME_MOCK));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineMockPersonTable()
+   {
+      return (new QTableMetaData()
+         .withName(TABLE_NAME_PERSON_MOCK)
+         .withLabel("Person Mock Table")
+         .withBackendName(BACKEND_NAME_MOCK)
+         .withPrimaryKeyField("id")
+         .withFields(defineCommonPersonTableFields()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineStreamedLocalCsvToMockETLProcess() throws QException
+   {
+      QProcessMetaData qProcessMetaData = new StreamedETLProcess().defineProcessMetaData();
+      qProcessMetaData.setName(PROCESS_NAME_STREAMED_ETL);
+      QBackendStepMetaData backendStep  = qProcessMetaData.getBackendStep(StreamedETLProcess.FUNCTION_NAME_ETL);
+      backendStep.setCode(new QCodeReference(StreamedETLFilesystemBackendStep.class));
+
+      backendStep.getInputMetaData().getFieldThrowing(StreamedETLProcess.FIELD_SOURCE_TABLE).setDefaultValue(TABLE_NAME_PERSON_LOCAL_FS_CSV);
+      backendStep.getInputMetaData().getFieldThrowing(StreamedETLProcess.FIELD_DESTINATION_TABLE).setDefaultValue(TABLE_NAME_PERSON_MOCK);
+
+      return (qProcessMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QSession getMockSession() throws QException
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
       return (mockAuthenticationModule.createSession(defineInstance(), null));

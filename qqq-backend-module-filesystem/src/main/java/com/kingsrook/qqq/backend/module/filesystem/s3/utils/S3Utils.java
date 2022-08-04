@@ -137,7 +137,7 @@ public class S3Utils
             ////////////////////////////////////////////////////////////////////////////////
             if(key.endsWith("/"))
             {
-               LOG.debug("Skipping file [{}] because it is a folder", key);
+               // LOG.debug("Skipping file [{}] because it is a folder", key);
                continue;
             }
 
@@ -146,7 +146,7 @@ public class S3Utils
             ///////////////////////////////////////////
             if(!pathMatcher.matches(Path.of(URI.create("file:///" + key))))
             {
-               LOG.debug("Skipping file [{}] that does not match glob [{}]", key, glob);
+               // LOG.debug("Skipping file [{}] that does not match glob [{}]", key, glob);
                continue;
             }
 

@@ -34,6 +34,9 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
  *******************************************************************************/
 public class ActionHelper
 {
+   private int f;
+
+
 
    /*******************************************************************************
     **
@@ -42,7 +45,7 @@ public class ActionHelper
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
-      if(!authenticationModule.isSessionValid(request.getSession()))
+      if(!authenticationModule.isSessionValid(request.getInstance(), request.getSession()))
       {
          throw new QAuthenticationException("Invalid session in request");
       }
