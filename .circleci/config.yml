@@ -32,6 +32,10 @@ commands:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
+          name: Write .env
+          command: |
+            echo "RDBMS_PASSWORD=$RDBMS_PASSWORD" >> .env
+      - run:
           name: Run Maven Verify
           command: |
             mvn -s .circleci/mvn-settings.xml verify
@@ -99,7 +103,7 @@ workflows:
   test_only:
     jobs:
       - mvn_test:
-          context: [ qqq-maven-registry-credentials, kingsrook-slack ]
+          context: [ qqq-maven-registry-credentials, kingsrook-slack, build-qqq-sample-app ]
           filters:
             branches:
               ignore: /dev/
@@ -109,7 +113,7 @@ workflows:
   deploy:
     jobs:
       - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, kingsrook-slack ]
+          context: [ qqq-maven-registry-credentials, kingsrook-slack, build-qqq-sample-app ]
           filters:
             branches:
               only: /dev/
