@@ -38,7 +38,7 @@ commands:
       - run:
           name: Run Maven Verify
           command: |
-            mvn -s .circleci/mvn-settings.xml verify
+            mvn -s .circleci/mvn-settings.xml -T4 verify
       - store_jacoco_site:
           module: qqq-backend-core
       - store_jacoco_site:
@@ -73,7 +73,7 @@ commands:
       - run:
           name: Run Maven Jar Deploy
           command: |
-            mvn -s .circleci/mvn-settings.xml flatten:flatten jar:jar deploy:deploy
+            mvn -s .circleci/mvn-settings.xml -T4 flatten:flatten jar:jar deploy:deploy
       - save_cache:
           paths:
             - ~/.m2
