@@ -34,7 +34,7 @@ commands:
       - run:
           name: Write .env
           command: |
-            echo "RDBMS_PASSWORD=$RDBMS_PASSWORD" >> .env
+            echo "RDBMS_PASSWORD=$RDBMS_PASSWORD" >> qqq-sample-project/.env
       - run:
           name: Run Maven Verify
           command: |
