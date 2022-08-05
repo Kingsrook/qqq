@@ -49,6 +49,8 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
+@DisabledOnOs(OS.LINUX) // uses database; not available in CI at this time...
 class SampleMetaDataProviderTest
 {
 
