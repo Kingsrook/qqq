@@ -46,6 +46,7 @@ public class BasicETLLoadFunction implements BackendStep
    private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
 
    private QBackendTransaction transaction;
+   private boolean             returnStoredRecords = false;
 
 
 
@@ -93,7 +94,11 @@ public class BasicETLLoadFunction implements BackendStep
 
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
-         // todo - this is to avoid garbage leak in state provider... outputRecords.addAll(insertOutput.getRecords());
+
+         if(returnStoredRecords)
+         {
+            outputRecords.addAll(insertOutput.getRecords());
+         }
 
          recordsInserted += insertOutput.getRecords().size();
       }
@@ -112,4 +117,14 @@ public class BasicETLLoadFunction implements BackendStep
       this.transaction = transaction;
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for returnStoredRecords
+    **
+    *******************************************************************************/
+   public void setReturnStoredRecords(boolean returnStoredRecords)
+   {
+      this.returnStoredRecords = returnStoredRecords;
+   }
 }

@@ -27,14 +27,18 @@ import java.math.MathContext;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Month;
-import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -225,5 +229,25 @@ class ValueUtilsTest
       assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant(new Object())).getMessage()).contains("Unsupported class");
    }
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsLocalTime() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsInstant(null));
+      assertNull(ValueUtils.getValueAsInstant(""));
+      assertNull(ValueUtils.getValueAsInstant(" "));
+      assertEquals(LocalTime.of(10, 42), ValueUtils.getValueAsLocalTime(LocalTime.of(10, 42)));
+      assertEquals(LocalTime.of(10, 42, 59), ValueUtils.getValueAsLocalTime(LocalTime.of(10, 42, 59)));
+      assertEquals(LocalTime.of(10, 42), ValueUtils.getValueAsLocalTime("10:42"));
+      assertEquals(LocalTime.of(10, 42, 59), ValueUtils.getValueAsLocalTime("10:42:59"));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("a,b"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("1980/05/31"));
+      assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant(new Object())).getMessage()).contains("Unsupported class");
+   }
 
 }

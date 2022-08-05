@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -158,6 +159,11 @@ public class QRecordEntityField
          if(type.equals(Instant.class))
          {
             return (ValueUtils.getValueAsInstant(value));
+         }
+
+         if(type.equals(LocalTime.class))
+         {
+            return (ValueUtils.getValueAsLocalTime(value));
          }
       }
       catch(Exception e)
