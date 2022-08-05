@@ -44,6 +44,8 @@ public class BasicETLLoadFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
 
+   private boolean returnStoredRecords = false;
+
 
 
    /*******************************************************************************
@@ -89,12 +91,27 @@ public class BasicETLLoadFunction implements BackendStep
 
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
-         outputRecords.addAll(insertOutput.getRecords());
+
+         if(returnStoredRecords)
+         {
+            outputRecords.addAll(insertOutput.getRecords());
+         }
 
          recordsInserted += insertOutput.getRecords().size();
       }
       runBackendStepOutput.setRecords(outputRecords);
       runBackendStepOutput.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for returnStoredRecords
+    **
+    *******************************************************************************/
+   public void setReturnStoredRecords(boolean returnStoredRecords)
+   {
+      this.returnStoredRecords = returnStoredRecords;
    }
 
 }

@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -413,6 +415,47 @@ public class ValueUtils
       catch(Exception e)
       {
          throw (new QValueException("Value [" + value + "] could not be converted to a Instant.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Object getValueAsLocalTime(Serializable value)
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof LocalTime lt)
+         {
+            return (lt);
+         }
+         else if(value instanceof String s)
+         {
+            if(!StringUtils.hasContent(s))
+            {
+               return (null);
+            }
+
+            return LocalTime.parse(s);
+         }
+         else
+         {
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to LocalTime."));
+         }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to a LocalTime.", e));
       }
    }
 }
