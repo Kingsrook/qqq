@@ -33,16 +33,20 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
@@ -123,18 +127,25 @@ public class SampleMetaDataProvider
    {
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_GREETINGS)
-         .withChild(qInstance.getProcess(PROCESS_NAME_GREET))
-         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE)));
+         .withIcon(new QIcon().withName("emoji_people"))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET)
+            .withIcon(new QIcon().withName("emoji_people")))
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON)
+            .withIcon(new QIcon().withName("person")))
+         .withChild(qInstance.getTable(TABLE_NAME_CITY)
+            .withIcon(new QIcon().withName("location_city")))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE))
+         .withIcon(new QIcon().withName("waving_hand")));
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_PEOPLE)
-         .withChild(qInstance.getTable(TABLE_NAME_PERSON))
-         .withChild(qInstance.getTable(TABLE_NAME_CITY))
+         .withIcon(new QIcon().withName("person"))
          .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_MISCELLANEOUS)
-         .withChild(qInstance.getTable(TABLE_NAME_CARRIER))
+         .withIcon(new QIcon().withName("stars"))
+         .withChild(qInstance.getTable(TABLE_NAME_CARRIER).withIcon(new QIcon("local_shipping")))
          .withChild(qInstance.getProcess(PROCESS_NAME_SIMPLE_SLEEP))
          .withChild(qInstance.getProcess(PROCESS_NAME_SLEEP_INTERACTIVE))
          .withChild(qInstance.getProcess(PROCESS_NAME_SIMPLE_THROW)));
@@ -205,19 +216,25 @@ public class SampleMetaDataProvider
       table.setName(TABLE_NAME_CARRIER);
       table.setBackendName(RDBMS_BACKEND_NAME);
       table.setPrimaryKeyField("id");
+      table.setRecordLabelFormat("%s");
+      table.setRecordLabelFields(List.of("name"));
 
       table.addField(new QFieldMetaData("id", QFieldType.INTEGER));
 
       table.addField(new QFieldMetaData("name", QFieldType.STRING)
          .withIsRequired(true));
 
-      table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo enum
+      table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo PVS
          .withLabel("Company")
          .withIsRequired(true)
          .withBackendName("comp_code"));
 
-      table.addField(new QFieldMetaData("service_level", QFieldType.STRING)
-         .withIsRequired(true)); // todo enum
+      table.addField(new QFieldMetaData("service_level", QFieldType.STRING) // todo PVS
+            .withLabel("Service Level")
+            .withIsRequired(true));
+
+      table.addSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "name")));
+      table.addSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("company_code", "service_level")));
 
       return (table);
    }
@@ -234,13 +251,24 @@ public class SampleMetaDataProvider
          .withLabel("Person")
          .withBackendName(RDBMS_BACKEND_NAME)
          .withPrimaryKeyField("id")
-         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields(List.of("firstName", "lastName"))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
          .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name").withIsRequired(true))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name").withIsRequired(true))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING));
+         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("annualSalary", QFieldType.DECIMAL).withBackendName("annual_salary").withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked").withDisplayFormat(DisplayFormat.COMMAS))
+
+         .withSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "firstName", "lastName")))
+         .withSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("email", "birthDate")))
+         .withSection(new QFieldSection("employmentInfo", "Employment Info", new QIcon("work"), Tier.T2, List.of("annualSalary", "daysWorked")))
+         .withSection(new QFieldSection("dates", "Dates", new QIcon("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
+
+         .withInferredFieldBackendNames();
    }
 
 

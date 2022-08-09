@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -44,6 +45,8 @@ public class QFrontendProcessMetaData
    private String  label;
    private String  tableName;
    private boolean isHidden;
+
+   private String iconName;
 
    private List<QFrontendStepMetaData> frontendSteps;
 
@@ -76,6 +79,11 @@ public class QFrontendProcessMetaData
          {
             frontendSteps = new ArrayList<>();
          }
+      }
+
+      if(processMetaData.getIcon() != null && StringUtils.hasContent(processMetaData.getIcon().getName()))
+      {
+         this.iconName = processMetaData.getIcon().getName();
       }
    }
 
@@ -148,12 +156,12 @@ public class QFrontendProcessMetaData
 
 
    /*******************************************************************************
-    ** Setter for isHidden
+    ** Getter for iconName
     **
     *******************************************************************************/
-   public void setIsHidden(boolean isHidden)
+   public String getIconName()
    {
-      this.isHidden = isHidden;
+      return iconName;
    }
 
 }

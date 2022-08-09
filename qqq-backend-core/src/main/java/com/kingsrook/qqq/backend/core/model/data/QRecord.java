@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -55,7 +54,9 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class QRecord implements Serializable
 {
-   private String                    tableName;
+   private String tableName;
+   private String recordLabel;
+
    private Map<String, Serializable> values         = new LinkedHashMap<>();
    private Map<String, String>       displayValues  = new LinkedHashMap<>();
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
@@ -90,6 +91,7 @@ public class QRecord implements Serializable
    public QRecord(QRecord record)
    {
       this.tableName = record.tableName;
+      this.recordLabel = record.recordLabel;
       this.values = record.values;
       this.displayValues = record.displayValues;
       this.backendDetails = record.backendDetails;
@@ -139,15 +141,6 @@ public class QRecord implements Serializable
 
 
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setDisplayValue(QFieldMetaData field, Serializable rawValue)
-   {
-      displayValues.put(field.getName(), QValueFormatter.formatValue(field, rawValue));
-   }
-
-
 
    /*******************************************************************************
     **
@@ -155,17 +148,6 @@ public class QRecord implements Serializable
    public QRecord withDisplayValue(String fieldName, String displayValue)
    {
       setDisplayValue(fieldName, displayValue);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QRecord withDisplayValue(QFieldMetaData field, Serializable rawValue)
-   {
-      setDisplayValue(field, rawValue);
       return (this);
    }
 
@@ -200,6 +182,39 @@ public class QRecord implements Serializable
    public QRecord withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordLabel
+    **
+    *******************************************************************************/
+   public String getRecordLabel()
+   {
+      return recordLabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordLabel
+    **
+    *******************************************************************************/
+   public void setRecordLabel(String recordLabel)
+   {
+      this.recordLabel = recordLabel;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordLabel
+    **
+    *******************************************************************************/
+   public QRecord withRecordLabel(String recordLabel)
+   {
+      this.recordLabel = recordLabel;
       return (this);
    }
 

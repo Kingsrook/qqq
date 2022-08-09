@@ -24,10 +24,17 @@ package com.kingsrook.qqq.backend.core.instances;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -279,6 +286,124 @@ class QInstanceValidatorTest
          miscApp.withChild(greetingsApp);
          greetingsApp.withChild(miscApp);
       }, "Circular app reference");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsMissingName()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection(null, "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "Missing a name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsMissingLabel()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", null, new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "Missing a label");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsNoFields()
+   {
+      QTableMetaData table1 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of()))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table1), "section1 does not have any fields", "field id is not listed in any field sections");
+
+      QTableMetaData table2 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, null))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table2), "section1 does not have any fields", "field id is not listed in any field sections");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsUnrecognizedFieldName()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "od")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "not a field on this table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsDuplicatedFieldName()
+   {
+      QTableMetaData table1 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table1), "more than once");
+
+      QTableMetaData table2 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("section2", "Section 2", new QIcon("person"), Tier.T2, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table2), "more than once");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNotInAnySections()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "not listed in any field sections");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsMultipleTier1()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("section2", "Section 2", new QIcon("person"), Tier.T1, List.of("name")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section listed as Tier 1");
    }
 
 
