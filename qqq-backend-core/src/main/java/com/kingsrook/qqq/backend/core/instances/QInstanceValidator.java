@@ -32,6 +32,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -160,7 +163,58 @@ public class QInstanceValidator
                   }
                });
             }
+
+            //////////////////////////////////////////
+            // validate field sections in the table //
+            //////////////////////////////////////////
+            Set<String> fieldNamesInSections = new HashSet<>();
+            QFieldSection tier1Section = null;
+            if(table.getSections() != null)
+            {
+               for(QFieldSection section : table.getSections())
+               {
+                  validateSection(errors, table, section, fieldNamesInSections);
+                  if(section.getTier().equals(Tier.T1))
+                  {
+                     assertCondition(errors, tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
+                     tier1Section = section;
+                  }
+               }
+            }
+
+            if(CollectionUtils.nullSafeHasContents(table.getFields()))
+            {
+               for(String fieldName : table.getFields().keySet())
+               {
+                  assertCondition(errors, fieldNamesInSections.contains(fieldName), "Table " + tableName + " field " + fieldName + " is not listed in any field sections.");
+               }
+            }
+
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateSection(List<String> errors, QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
+   {
+      assertCondition(errors, StringUtils.hasContent(section.getName()), "Missing a name for field section in table " + table.getName() + ".");
+      assertCondition(errors, StringUtils.hasContent(section.getLabel()), "Missing a label for field section in table " + table.getLabel() + ".");
+      if(assertCondition(errors, CollectionUtils.nullSafeHasContents(section.getFieldNames()), "Table " + table.getName() + " section " + section.getName() + " does not have any fields."))
+      {
+         if(table.getFields() != null)
+         {
+            for(String fieldName : section.getFieldNames())
+            {
+               assertCondition(errors, table.getFields().containsKey(fieldName), "Table " + table.getName() + " section " + section.getName() + " specifies fieldName " + fieldName + ", which is not a field on this table.");
+               assertCondition(errors, !fieldNamesInSections.contains(fieldName), "Table " + table.getName() + " has field " + fieldName + " listed more than once in its field sections.");
+
+               fieldNamesInSections.add(fieldName);
+            }
+         }
       }
    }
 

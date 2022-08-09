@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -32,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -41,13 +44,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMe
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteStoreStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditReceiveValuesStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditStoreRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertStoreRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -110,6 +116,11 @@ public class QInstanceEnricher
       if(table.getFields() != null)
       {
          table.getFields().values().forEach(this::enrich);
+      }
+
+      if(CollectionUtils.nullSafeIsEmpty(table.getSections()))
+      {
+         generateTableFieldSections(table);
       }
    }
 
@@ -196,12 +207,19 @@ public class QInstanceEnricher
     *******************************************************************************/
    private String nameToLabel(String name)
    {
-      if(name == null)
+      if(!StringUtils.hasContent(name))
       {
-         return (null);
+         return (name);
       }
 
-      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z])", " $1"));
+      if(name.length() == 1)
+      {
+         return (name.substring(0, 1).toUpperCase(Locale.ROOT));
+      }
+      else
+      {
+         return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z])", " $1"));
+      }
    }
 
 
@@ -422,4 +440,71 @@ public class QInstanceEnricher
             )));
    }
 
+
+
+   /*******************************************************************************
+    ** If a table didn't have any sections, generate "sensible defaults"
+    *******************************************************************************/
+   private void generateTableFieldSections(QTableMetaData table)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(table.getFields()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // assume this table is invalid if it has no fields, but surely it doesn't need any sections then. //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         return;
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // create an identity section for the id and any fields in the record label //
+      //////////////////////////////////////////////////////////////////////////////
+      QFieldSection identitySection = new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, new ArrayList<>());
+
+      Set<String> usedFieldNames = new HashSet<>();
+
+      if(StringUtils.hasContent(table.getPrimaryKeyField()))
+      {
+         identitySection.getFieldNames().add(table.getPrimaryKeyField());
+         usedFieldNames.add(table.getPrimaryKeyField());
+      }
+
+      if(CollectionUtils.nullSafeHasContents(table.getRecordLabelFields()))
+      {
+         for(String fieldName : table.getRecordLabelFields())
+         {
+            if(!usedFieldNames.contains(fieldName))
+            {
+               identitySection.getFieldNames().add(fieldName);
+               usedFieldNames.add(fieldName);
+            }
+         }
+      }
+
+      if(!identitySection.getFieldNames().isEmpty())
+      {
+         table.addSection(identitySection);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // if there are more fields, then add them in a default/Other Fields section //
+      ///////////////////////////////////////////////////////////////////////////////
+      QFieldSection otherSection = new QFieldSection("otherFields", "Other Fields", new QIcon("dataset"), Tier.T2, new ArrayList<>());
+      if(CollectionUtils.nullSafeHasContents(table.getFields()))
+      {
+         for(String fieldName : table.getFields().keySet())
+         {
+            if(!usedFieldNames.contains(fieldName))
+            {
+               otherSection.getFieldNames().add(fieldName);
+               usedFieldNames.add(fieldName);
+            }
+         }
+      }
+
+      if(!otherSection.getFieldNames().isEmpty())
+      {
+         table.addSection(otherSection);
+      }
+
+   }
 }

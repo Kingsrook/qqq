@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +64,12 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private String parentAppName;
    private QIcon  icon;
+
+   private String       recordLabelFormat;
+   private List<String> recordLabelFields;
+
+   private List<QFieldSection> sections;
+
 
 
    /*******************************************************************************
@@ -496,6 +503,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for icon
     **
@@ -503,6 +511,133 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withIcon(QIcon icon)
    {
       this.icon = icon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordLabelFormat
+    **
+    *******************************************************************************/
+   public String getRecordLabelFormat()
+   {
+      return recordLabelFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordLabelFormat
+    **
+    *******************************************************************************/
+   public void setRecordLabelFormat(String recordLabelFormat)
+   {
+      this.recordLabelFormat = recordLabelFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordLabelFormat
+    **
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFormat(String recordLabelFormat)
+   {
+      this.recordLabelFormat = recordLabelFormat;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordLabelFields
+    **
+    *******************************************************************************/
+   public List<String> getRecordLabelFields()
+   {
+      return recordLabelFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordLabelFields
+    **
+    *******************************************************************************/
+   public void setRecordLabelFields(List<String> recordLabelFields)
+   {
+      this.recordLabelFields = recordLabelFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordLabelFields
+    **
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFields(List<String> recordLabelFields)
+   {
+      this.recordLabelFields = recordLabelFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sections
+    **
+    *******************************************************************************/
+   public List<QFieldSection> getSections()
+   {
+      return sections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sections
+    **
+    *******************************************************************************/
+   public void setSections(List<QFieldSection> sections)
+   {
+      this.sections = sections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sections
+    **
+    *******************************************************************************/
+   public QTableMetaData withSections(List<QFieldSection> fieldSections)
+   {
+      this.sections = fieldSections;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSection(QFieldSection fieldSection)
+   {
+      if(this.sections == null)
+      {
+         this.sections = new ArrayList<>();
+      }
+      this.sections.add(fieldSection);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withSection(QFieldSection fieldSection)
+   {
+      addSection(fieldSection);
       return (this);
    }
 

@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 
@@ -48,7 +50,21 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.setAuthentication(defineAuthentication());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the authentication used in standard tests - using 'mock' type.
+    **
+    *******************************************************************************/
+   public static QAuthenticationMetaData defineAuthentication()
+   {
+      return new QAuthenticationMetaData()
+         .withName("mock")
+         .withType(QAuthenticationType.MOCK);
    }
 
 

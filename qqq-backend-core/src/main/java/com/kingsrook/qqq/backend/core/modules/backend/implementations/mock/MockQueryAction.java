@@ -65,7 +65,6 @@ public class MockQueryAction implements QueryInterface
             {
                Serializable value = field.equals("id") ? (i + 1) : getValue(table, field);
                record.setValue(field, value);
-               record.setDisplayValue(table.getField(field), value);
             }
 
             queryOutput.addRecord(record);

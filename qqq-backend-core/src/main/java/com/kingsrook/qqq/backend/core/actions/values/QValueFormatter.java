@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
@@ -63,7 +66,25 @@ public class QValueFormatter
          }
          catch(Exception e)
          {
-            LOG.warn("Error formatting value [" + value + "] for field [" + field.getName() + "] with format [" + field.getDisplayFormat() + "]: " + e.getMessage());
+            try
+            {
+               if(e.getMessage().equals("f != java.lang.Integer"))
+               {
+                  return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
+               }
+               else if(e.getMessage().equals("d != java.math.BigDecimal"))
+               {
+                  return formatValue(field, ValueUtils.getValueAsInteger(value));
+               }
+               else
+               {
+                  LOG.warn("Error formatting value [" + value + "] for field [" + field.getName() + "] with format [" + field.getDisplayFormat() + "]: " + e.getMessage());
+               }
+            }
+            catch(Exception e2)
+            {
+               LOG.warn("Caught secondary exception trying to convert type on field [" + field.getName() + "] for formatting", e);
+            }
          }
       }
 
@@ -72,4 +93,86 @@ public class QValueFormatter
       ////////////////////////////////////////
       return (ValueUtils.getValueAsString(value));
    }
+
+
+
+   /*******************************************************************************
+    ** Make a string from a table's recordLabelFormat and fields, for a given record.
+    *******************************************************************************/
+   public static String formatRecordLabel(QTableMetaData table, QRecord record)
+   {
+      if(!StringUtils.hasContent(table.getRecordLabelFormat()))
+      {
+         return (formatRecordLabelExceptionalCases(table, record));
+      }
+
+      ///////////////////////////////////////////////////////////////////////
+      // get list of values, then pass them to the string formatter method //
+      ///////////////////////////////////////////////////////////////////////
+      try
+      {
+         List<Serializable> values = table.getRecordLabelFields().stream()
+            .map(record::getValue)
+            .map(v -> v == null ? "" : v)
+            .toList();
+         return (table.getRecordLabelFormat().formatted(values.toArray()));
+      }
+      catch(Exception e)
+      {
+         return (formatRecordLabelExceptionalCases(table, record));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Deal with non-happy-path cases for making a record label.
+    *******************************************************************************/
+   private static String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // if there's no record label format, then just return the primary key display value //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      String pkeyDisplayValue = record.getDisplayValue(table.getPrimaryKeyField());
+      if(StringUtils.hasContent(pkeyDisplayValue))
+      {
+         return (pkeyDisplayValue);
+      }
+
+      String pkeyRawValue = ValueUtils.getValueAsString(record.getValue(table.getPrimaryKeyField()));
+      if(StringUtils.hasContent(pkeyRawValue))
+      {
+         return (pkeyRawValue);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // worst case scenario, return empty string, but never null from this method //
+      ///////////////////////////////////////////////////////////////////////////////
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of records, set their recordLabels and display values
+    *******************************************************************************/
+   public static void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
+   {
+      if(records == null)
+      {
+         return;
+      }
+
+      for(QRecord record : records)
+      {
+         for(QFieldMetaData field : table.getFields().values())
+         {
+            String formattedValue = QValueFormatter.formatValue(field, record.getValue(field.getName()));
+            record.setDisplayValue(field.getName(), formattedValue);
+         }
+
+         record.setRecordLabel(QValueFormatter.formatRecordLabel(table, record));
+      }
+   }
+
 }
