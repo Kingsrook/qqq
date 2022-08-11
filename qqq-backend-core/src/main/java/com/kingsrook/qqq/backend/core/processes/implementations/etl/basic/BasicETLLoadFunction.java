@@ -46,7 +46,7 @@ public class BasicETLLoadFunction implements BackendStep
    private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
 
    private QBackendTransaction transaction;
-   private boolean             returnStoredRecords = false;
+   private boolean             returnStoredRecords = true;
 
 
 

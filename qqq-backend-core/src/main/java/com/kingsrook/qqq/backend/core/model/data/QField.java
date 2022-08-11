@@ -26,17 +26,22 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
+ ** Annotation to place onto fields in a QRecordEntity, to add additional attributes
+ ** for propagating down into the corresponding QFieldMetaData
  **
  *******************************************************************************/
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface QField
 {
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   String label() default "";
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -51,4 +56,13 @@ public @interface QField
     **
     *******************************************************************************/
    boolean isEditable() default true;
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   String displayFormat() default "";
+
+   //////////////////////////////////////////////////////////////////////////////////////////
+   // new attributes here likely need implementation in QFieldMetaData.constructFromGetter //
+   //////////////////////////////////////////////////////////////////////////////////////////
 }

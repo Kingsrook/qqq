@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Item;
 import com.kingsrook.qqq.backend.core.model.data.testentities.ItemWithPrimitives;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -177,6 +178,8 @@ class QRecordEntityTest
       ///////////////////////////////////////////////////////////////
       // assert about attributes that came from @QField annotation //
       ///////////////////////////////////////////////////////////////
+      assertEquals("SKU", qTableMetaData.getField("sku").getLabel());
+      assertEquals(DisplayFormat.COMMAS, qTableMetaData.getField("quantity").getDisplayFormat());
       assertTrue(qTableMetaData.getField("sku").getIsRequired());
       assertFalse(qTableMetaData.getField("quantity").getIsEditable());
       assertEquals("is_featured", qTableMetaData.getField("featured").getBackendName());

@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -462,17 +461,6 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withCustomizers(Map<String, QCodeReference> customizers)
    {
       this.customizers = customizers;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QTableMetaData withInferredFieldBackendNames()
-   {
-      QInstanceEnricher.setInferredFieldBackendNames(this);
       return (this);
    }
 

@@ -447,7 +447,6 @@ public class QInstanceEnricher
 
 
    /*******************************************************************************
-<<<<<<< HEAD
     ** for all fields in a table, set their backendName, using the default "inference" logic
     ** see {@link #inferBackendName(String)}
     *******************************************************************************/
@@ -482,6 +481,17 @@ public class QInstanceEnricher
    /*******************************************************************************
     ** Do a default mapping from a camelCase field name to an underscore_style
     ** name for a backend.
+    **
+    ** Examples:
+    ** <ul>
+    **   <li>wordAnotherWordMoreWords -> word_another_word_more_words</li>
+    **   <li>lUlUlUl -> l_ul_ul_ul</li>
+    **   <li>StartsUpper -> starts_upper</li>
+    **   <li>TLAFirst -> tla_first</li>
+    **   <li>wordThenTLAInMiddle -> word_then_tla_in_middle</li>
+    **   <li>endWithTLA -> end_with_tla</li>
+    **   <li>TLAAndAnotherTLA -> tla_and_another_tla</li>
+    ** </ul>
     *******************************************************************************/
    static String inferBackendName(String fieldName)
    {

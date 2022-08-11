@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -188,8 +189,6 @@ public class QueryManager
    @SuppressWarnings("unchecked")
    public static <T> T executeStatementForSingleValue(Connection connection, Class<T> returnClass, String sql, Object... params) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.execute();
       ResultSet resultSet = statement.getResultSet();
@@ -238,7 +237,6 @@ public class QueryManager
       {
          return (null);
       }
-      */
    }
 
 
@@ -1393,6 +1391,38 @@ public class QueryManager
 
       LocalDateTime dateTime = LocalDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0);
       return (dateTime);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getInstant(ResultSet resultSet, String column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      return (value.toInstant());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getInstant(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      return (value.toInstant());
    }
 
 

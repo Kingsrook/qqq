@@ -28,7 +28,6 @@ import java.util.Optional;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -120,9 +119,19 @@ public class QFieldMetaData
             setIsRequired(fieldAnnotation.isRequired());
             setIsEditable(fieldAnnotation.isEditable());
 
+            if(StringUtils.hasContent(fieldAnnotation.label()))
+            {
+               setLabel(fieldAnnotation.label());
+            }
+
             if(StringUtils.hasContent(fieldAnnotation.backendName()))
             {
                setBackendName(fieldAnnotation.backendName());
+            }
+
+            if(StringUtils.hasContent(fieldAnnotation.displayFormat()))
+            {
+               setDisplayFormat(fieldAnnotation.displayFormat());
             }
          }
       }

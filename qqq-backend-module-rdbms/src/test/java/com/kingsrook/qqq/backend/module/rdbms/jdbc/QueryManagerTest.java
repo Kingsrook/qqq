@@ -329,4 +329,35 @@ class QueryManagerTest
       assertEquals(59, localTime.getSecond(), "Second value");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExecuteStatementForSingleValue() throws SQLException
+   {
+      Connection connection = getConnection();
+      QueryManager.executeUpdate(connection, """
+         INSERT INTO test_table
+         ( int_col, datetime_col, char_col, date_col, time_col )
+         VALUES
+         ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
+         """);
+      assertEquals(null, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table WHERE int_col = -1"));
+      assertEquals(1, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT COUNT(*) FROM test_table"));
+      assertEquals(47, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table"));
+      assertEquals("Q", QueryManager.executeStatementForSingleValue(connection, String.class, "SELECT char_col FROM test_table"));
+      assertEquals(new BigDecimal("1.1"), QueryManager.executeStatementForSingleValue(connection, BigDecimal.class, "SELECT 1.1 FROM test_table"));
+      assertEquals(1, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT 1.1 FROM test_table"));
+
+      QueryManager.executeUpdate(connection, """
+         INSERT INTO test_table
+         ( int_col, datetime_col, char_col, date_col, time_col )
+         VALUES
+         ( null, null, null, null, null)
+         """);
+      assertEquals(null, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table WHERE int_col IS NULL"));
+   }
+
 }

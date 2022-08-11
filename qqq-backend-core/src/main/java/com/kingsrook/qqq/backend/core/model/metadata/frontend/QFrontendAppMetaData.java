@@ -27,10 +27,6 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -40,12 +36,10 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendAppMetaData
 {
-   private AppTreeNodeType type;
-
    private String name;
    private String label;
 
-   private List<QFrontendAppMetaData> children = new ArrayList<>();
+   private List<AppTreeNode> children = new ArrayList<>();
 
    private String iconName;
 
@@ -59,24 +53,7 @@ public class QFrontendAppMetaData
       this.name = appChildMetaData.getName();
       this.label = appChildMetaData.getLabel();
 
-      if(appChildMetaData.getClass().equals(QTableMetaData.class))
-      {
-         this.type = AppTreeNodeType.TABLE;
-      }
-      else if(appChildMetaData.getClass().equals(QProcessMetaData.class))
-      {
-         this.type = AppTreeNodeType.PROCESS;
-      }
-      else if(appChildMetaData.getClass().equals(QAppMetaData.class))
-      {
-         this.type = AppTreeNodeType.APP;
-      }
-      else
-      {
-         throw (new IllegalStateException("Unrecognized class for app child meta data: " + appChildMetaData.getClass()));
-      }
-
-      if(appChildMetaData.getIcon() != null && StringUtils.hasContent(appChildMetaData.getIcon().getName()))
+      if(appChildMetaData.getIcon() != null)
       {
          this.iconName = appChildMetaData.getIcon().getName();
       }
@@ -107,21 +84,10 @@ public class QFrontendAppMetaData
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
-    *******************************************************************************/
-   public AppTreeNodeType getType()
-   {
-      return type;
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for children
     **
     *******************************************************************************/
-   public List<QFrontendAppMetaData> getChildren()
+   public List<AppTreeNode> getChildren()
    {
       return children;
    }
@@ -153,12 +119,12 @@ public class QFrontendAppMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addChild(QFrontendAppMetaData qFrontendAppMetaData)
+   public void addChild(AppTreeNode childAppTreeNode)
    {
       if(children == null)
       {
          children = new ArrayList<>();
       }
-      children.add(qFrontendAppMetaData);
+      children.add(childAppTreeNode);
    }
 }

@@ -24,66 +24,72 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- * Version of QProcessMetaData that's meant for transmitting to a frontend.
- * e.g., it excludes backend-only details.
- *
+ ** Frontend-version of objects that are parts of the app-hierarchy/tree.
+ ** e.g., Tables, Processes, and Apps themselves (since they can be nested).
+ **
+ ** These objects are organized into a tree - where each Node can have 0 or more
+ ** other Nodes as children.
  *******************************************************************************/
-@JsonInclude(Include.NON_NULL)
-public class QFrontendProcessMetaData
+public class AppTreeNode
 {
-   private String  name;
-   private String  label;
-   private String  tableName;
-   private boolean isHidden;
+   private AppTreeNodeType   type;
+   private String            name;
+   private String            label;
+   private List<AppTreeNode> children;
 
    private String iconName;
-
-   private List<QFrontendStepMetaData> frontendSteps;
-
-   //////////////////////////////////////////////////////////////////////////////////
-   // do not add setters.  take values from the source-object in the constructor!! //
-   //////////////////////////////////////////////////////////////////////////////////
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendProcessMetaData(QProcessMetaData processMetaData, boolean includeSteps)
+   public AppTreeNode(QAppChildMetaData appChildMetaData)
    {
-      this.name = processMetaData.getName();
-      this.label = processMetaData.getLabel();
-      this.tableName = processMetaData.getTableName();
-      this.isHidden = processMetaData.getIsHidden();
+      this.name = appChildMetaData.getName();
+      this.label = appChildMetaData.getLabel();
 
-      if(includeSteps)
+      if(appChildMetaData.getClass().equals(QTableMetaData.class))
       {
-         if(CollectionUtils.nullSafeHasContents(processMetaData.getStepList()))
-         {
-            this.frontendSteps = processMetaData.getStepList().stream()
-               .filter(QFrontendStepMetaData.class::isInstance)
-               .map(QFrontendStepMetaData.class::cast)
-               .collect(Collectors.toList());
-         }
-         else
-         {
-            frontendSteps = new ArrayList<>();
-         }
+         this.type = AppTreeNodeType.TABLE;
+      }
+      else if(appChildMetaData.getClass().equals(QProcessMetaData.class))
+      {
+         this.type = AppTreeNodeType.PROCESS;
+      }
+      else if(appChildMetaData.getClass().equals(QAppMetaData.class))
+      {
+         this.type = AppTreeNodeType.APP;
+         children = new ArrayList<>();
+      }
+      else
+      {
+         throw (new IllegalStateException("Unrecognized class for app child meta data: " + appChildMetaData.getClass()));
       }
 
-      if(processMetaData.getIcon() != null)
+      if(appChildMetaData.getIcon() != null)
       {
-         this.iconName = processMetaData.getIcon().getName();
+         // todo - propagate icons from parents, if they aren't set here...
+         this.iconName = appChildMetaData.getIcon().getName();
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    **
+    *******************************************************************************/
+   public AppTreeNodeType getType()
+   {
+      return type;
    }
 
 
@@ -111,45 +117,12 @@ public class QFrontendProcessMetaData
 
 
    /*******************************************************************************
-    ** Getter for primaryKeyField
+    ** Getter for children
     **
     *******************************************************************************/
-   public String getTableName()
+   public List<AppTreeNode> getChildren()
    {
-      return tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for frontendSteps
-    **
-    *******************************************************************************/
-   public List<QFrontendStepMetaData> getFrontendSteps()
-   {
-      return frontendSteps;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for frontendSteps
-    **
-    *******************************************************************************/
-   public void setFrontendSteps(List<QFrontendStepMetaData> frontendSteps)
-   {
-      this.frontendSteps = frontendSteps;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for isHidden
-    **
-    *******************************************************************************/
-   public boolean getIsHidden()
-   {
-      return isHidden;
+      return children;
    }
 
 
@@ -163,4 +136,17 @@ public class QFrontendProcessMetaData
       return iconName;
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addChild(AppTreeNode childTreeNode)
+   {
+      if(children == null)
+      {
+         children = new ArrayList<>();
+      }
+      children.add(childTreeNode);
+   }
 }

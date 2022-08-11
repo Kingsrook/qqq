@@ -30,13 +30,10 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
 
 
 /*******************************************************************************
- **
+ ** Utility methods to be shared by all of the various Actions (e.g., InsertAction)
  *******************************************************************************/
 public class ActionHelper
 {
-   private int f;
-
-
 
    /*******************************************************************************
     **

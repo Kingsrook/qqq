@@ -27,7 +27,8 @@ import java.util.List;
 
 
 /*******************************************************************************
- **
+ ** MetaData definition of an App - an entity that organizes tables & processes
+ ** and can be arranged hierarchically (e.g, apps can contain other apps).
  *******************************************************************************/
 public class QAppMetaData implements QAppChildMetaData
 {

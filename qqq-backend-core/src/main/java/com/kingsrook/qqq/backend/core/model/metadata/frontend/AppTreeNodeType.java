@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
 /*******************************************************************************
- **
+ ** Type for an Node in the an app tree.
  *******************************************************************************/
 public enum AppTreeNodeType
 {

@@ -42,8 +42,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QValueException;
  *******************************************************************************/
 public class ValueUtils
 {
-   private static final DateTimeFormatter yyyyMMddWithDashesFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-   private static final DateTimeFormatter MdyyyyWithSlashesFormatter  = DateTimeFormatter.ofPattern("M/d/yyyy");
+   private static final DateTimeFormatter dateTimeFormatter_yyyyMMddWithDashes = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+   private static final DateTimeFormatter dateTimeFormatter_MdyyyyWithSlashes  = DateTimeFormatter.ofPattern("M/d/yyyy");
 
 
 
@@ -262,7 +262,7 @@ public class ValueUtils
    private static LocalDate tryLocalDateParsers(String s)
    {
       DateTimeParseException lastException = null;
-      for(DateTimeFormatter dateTimeFormatter : List.of(yyyyMMddWithDashesFormatter, MdyyyyWithSlashesFormatter))
+      for(DateTimeFormatter dateTimeFormatter : List.of(dateTimeFormatter_yyyyMMddWithDashes, dateTimeFormatter_MdyyyyWithSlashes))
       {
          try
          {
@@ -386,7 +386,6 @@ public class ValueUtils
          }
          else if(value instanceof Calendar c)
          {
-            TimeZone tz = c.getTimeZone();
             return (c.toInstant());
          }
          else if(value instanceof LocalDateTime ldt)

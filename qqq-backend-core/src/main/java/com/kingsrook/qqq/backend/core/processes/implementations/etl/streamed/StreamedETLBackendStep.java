@@ -78,12 +78,12 @@ public class StreamedETLBackendStep implements BackendStep
          // run the query action as an async job //
          //////////////////////////////////////////
          AsyncJobManager asyncJobManager = new AsyncJobManager();
-         String queryJobUUID = asyncJobManager.startJob("ReportAction>QueryAction", (status) ->
+         String queryJobUUID = asyncJobManager.startJob("StreamedETL>QueryAction", (status) ->
          {
             basicETLExtractFunction.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);
          });
-         LOG.info("Started query job [" + queryJobUUID + "] for report");
+         LOG.info("Started query job [" + queryJobUUID + "] for streamed ETL");
 
          AsyncJobState  queryJobState  = AsyncJobState.RUNNING;
          AsyncJobStatus asyncJobStatus = null;
@@ -140,6 +140,14 @@ public class StreamedETLBackendStep implements BackendStep
          }
 
          LOG.info("Query job [" + queryJobUUID + "] for ETL completed with status: " + asyncJobStatus);
+
+         /////////////////////////////////////////
+         // propagate errors from the query job //
+         /////////////////////////////////////////
+         if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
+         {
+            throw (new QException("Query job failed with an error", asyncJobStatus.getCaughtException()));
+         }
 
          //////////////////////////////////////////////////////
          // send the final records to transform & load steps //
@@ -207,6 +215,7 @@ public class StreamedETLBackendStep implements BackendStep
 
       runBackendStepInput.setRecords(runBackendStepOutput.getRecords());
       BasicETLLoadFunction basicETLLoadFunction = new BasicETLLoadFunction();
+      basicETLLoadFunction.setReturnStoredRecords(false);
       basicETLLoadFunction.setTransaction(transaction);
       basicETLLoadFunction.run(runBackendStepInput, runBackendStepOutput);
 

@@ -172,8 +172,6 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
       {
          LOG.info("Opening transaction");
          Connection connection = getConnection(insertInput);
-         connection.setAutoCommit(false);
-         System.out.println("Set connection [" + connection + "] to auto-commit false");
 
          return (new RDBMSTransaction(connection));
       }

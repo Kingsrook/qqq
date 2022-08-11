@@ -26,6 +26,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
@@ -227,7 +228,7 @@ public class SampleMetaDataProvider
       table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo PVS
          .withLabel("Company")
          .withIsRequired(true)
-         .withBackendName("comp_code"));
+         .withBackendName("company_code"));
 
       table.addField(new QFieldMetaData("service_level", QFieldType.STRING) // todo PVS
             .withLabel("Service Level")
@@ -246,7 +247,7 @@ public class SampleMetaDataProvider
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
    {
-      return new QTableMetaData()
+      QTableMetaData qTableMetaData = new QTableMetaData()
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(RDBMS_BACKEND_NAME)
@@ -266,9 +267,11 @@ public class SampleMetaDataProvider
          .withSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "firstName", "lastName")))
          .withSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("email", "birthDate")))
          .withSection(new QFieldSection("employmentInfo", "Employment Info", new QIcon("work"), Tier.T2, List.of("annualSalary", "daysWorked")))
-         .withSection(new QFieldSection("dates", "Dates", new QIcon("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
+         .withSection(new QFieldSection("dates", "Dates", new QIcon("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
-         .withInferredFieldBackendNames();
+      QInstanceEnricher.setInferredFieldBackendNames(qTableMetaData);
+
+      return (qTableMetaData);
    }
 
 

@@ -53,7 +53,6 @@ class ValueUtilsTest
    @Test
    void testGetValueAsString() throws QValueException
    {
-      //noinspection ConstantConditions
       assertNull(ValueUtils.getValueAsString(null));
       assertEquals("", ValueUtils.getValueAsString(""));
       assertEquals("  ", ValueUtils.getValueAsString("  "));
@@ -164,26 +163,28 @@ class ValueUtilsTest
    @Test
    void testGetValueAsLocalDate() throws QValueException
    {
+      LocalDate expected = LocalDate.of(1980, Month.MAY, 31);
+
       assertNull(ValueUtils.getValueAsLocalDate(null));
       assertNull(ValueUtils.getValueAsLocalDate(""));
       assertNull(ValueUtils.getValueAsLocalDate(" "));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDate.of(1980, 5, 31)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.sql.Date(80, 4, 31)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(LocalDate.of(1980, 5, 31)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new java.sql.Date(80, 4, 31)));
       //noinspection MagicConstant
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, 4, 31)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 12, 0)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 4, 0)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 22, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new java.util.Date(80, 4, 31)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 12, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 4, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new java.util.Date(80, Calendar.MAY, 31, 22, 0)));
       //noinspection MagicConstant
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new GregorianCalendar(1980, 4, 31)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(new GregorianCalendar(1980, Calendar.MAY, 31)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 12, 0)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 4, 0)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 22, 0)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, Month.MAY, 31, 12, 0)));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate("1980-05-31"));
-      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsLocalDate("05/31/1980"));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new GregorianCalendar(1980, 4, 31)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(new GregorianCalendar(1980, Calendar.MAY, 31)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 12, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 4, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, 5, 31, 22, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate(LocalDateTime.of(1980, Month.MAY, 31, 12, 0)));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate("1980-05-31"));
+      assertEquals(expected, ValueUtils.getValueAsLocalDate("05/31/1980"));
 
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDate("a"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDate("a,b"));

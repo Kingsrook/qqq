@@ -50,7 +50,10 @@ public class QueryAction
       QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
       // todo post-customization - can do whatever w/ the result if you want
 
-      QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
+      if (queryInput.getRecordPipe() == null)
+      {
+         QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
+      }
 
       return queryOutput;
    }

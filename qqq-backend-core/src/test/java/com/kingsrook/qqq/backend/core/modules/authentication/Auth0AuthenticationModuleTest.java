@@ -60,21 +60,8 @@ public class Auth0AuthenticationModuleTest
 
 
    /*******************************************************************************
-    ** Test an expired token where 'now' is set to a time that would not require it to be
-    ** re-checked, so it'll show as valid
-    **
-    *******************************************************************************/
-   @Test
-   public void testLastTimeCheckedNow()
-   {
-      assertTrue(testLastTimeChecked(Instant.now(), UNDECODABLE_TOKEN), "A session just checked 'now' should always be valid");
-   }
-
-
-
-   /*******************************************************************************
-    ** Test an expired token where 'now' is set to a time that would not require it to be
-    ** re-checked, so it'll show as valid
+    ** Test a token where last-checked is set to a time that would not require it to be
+    ** re-checked, so it'll show as valid no matter what the token is.
     **
     *******************************************************************************/
    @Test
@@ -87,8 +74,8 @@ public class Auth0AuthenticationModuleTest
 
 
    /*******************************************************************************
-    ** Test an expired token where 'now' is set to a time that would require it to be
-    ** re-checked
+    ** Test a token where last-checked is set to a time that would require it to be
+    ** re-checked, so it'll show as invalid.
     **
     *******************************************************************************/
    @Test
@@ -101,8 +88,8 @@ public class Auth0AuthenticationModuleTest
 
 
    /*******************************************************************************
-    ** Test an expired token where 'now' is set to a time that would require it to be
-    ** re-checked
+    ** Test a token where last-checked is past the threshold, so it'll get re-checked,
+    ** and will fail.
     **
     *******************************************************************************/
    @Test

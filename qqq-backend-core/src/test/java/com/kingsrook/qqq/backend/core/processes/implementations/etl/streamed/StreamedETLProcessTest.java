@@ -55,7 +55,10 @@ class StreamedETLProcessTest
 
       RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
-      assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+      ///////////////////////////////////////////////////////////////////////
+      // since this is streamed, assert there are no records in the output //
+      ///////////////////////////////////////////////////////////////////////
+      assertTrue(result.getRecords().isEmpty());
       assertTrue(result.getException().isEmpty());
    }
 
@@ -77,12 +80,14 @@ class StreamedETLProcessTest
       // define our mapping from destination-table field names to source-table field names //
       ///////////////////////////////////////////////////////////////////////////////////////
       QKeyBasedFieldMapping mapping = new QKeyBasedFieldMapping().withMapping("name", "firstName");
-      // request.addValue(StreamedETLProcess.FIELD_MAPPING_JSON, JsonUtils.toJson(mapping.getMapping()));
       request.addValue(StreamedETLProcess.FIELD_MAPPING_JSON, JsonUtils.toJson(mapping));
 
       RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
-      assertTrue(result.getRecords().stream().allMatch(r -> r.getValues().containsKey("id")), "records should have an id, set by the process");
+      ///////////////////////////////////////////////////////////////////////
+      // since this is streamed, assert there are no records in the output //
+      ///////////////////////////////////////////////////////////////////////
+      assertTrue(result.getRecords().isEmpty());
       assertTrue(result.getException().isEmpty());
    }
 

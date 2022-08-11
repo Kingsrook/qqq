@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.metadata;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
@@ -40,7 +41,7 @@ public class MetaDataOutput extends AbstractActionOutput
    private Map<String, QFrontendProcessMetaData> processes;
    private Map<String, QFrontendAppMetaData>     apps;
 
-   private List<QFrontendAppMetaData> appTree;
+   private List<AppTreeNode> appTree;
 
 
 
@@ -93,7 +94,7 @@ public class MetaDataOutput extends AbstractActionOutput
     ** Getter for appTree
     **
     *******************************************************************************/
-   public List<QFrontendAppMetaData> getAppTree()
+   public List<AppTreeNode> getAppTree()
    {
       return appTree;
    }
@@ -104,7 +105,7 @@ public class MetaDataOutput extends AbstractActionOutput
     ** Setter for appTree
     **
     *******************************************************************************/
-   public void setAppTree(List<QFrontendAppMetaData> appTree)
+   public void setAppTree(List<AppTreeNode> appTree)
    {
       this.appTree = appTree;
    }

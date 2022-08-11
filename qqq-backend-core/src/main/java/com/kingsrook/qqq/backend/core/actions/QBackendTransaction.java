@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.actions;
 
 
-import java.io.IOException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
@@ -31,12 +30,14 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
  ** part of a transaction.
  **
  ** Most obvious use-case would be a JDBC Connection.  See subclass in rdbms module.
+ **
+ ** Note:  One would imagine that this class shouldn't ever implement Serializable...
  *******************************************************************************/
 public class QBackendTransaction
 {
 
    /*******************************************************************************
-    **
+    ** Commit the transaction.
     *******************************************************************************/
    public void commit() throws QException
    {
@@ -48,7 +49,7 @@ public class QBackendTransaction
 
 
    /*******************************************************************************
-    **
+    ** Rollback the transaction.
     *******************************************************************************/
    public void rollback() throws QException
    {
@@ -60,18 +61,8 @@ public class QBackendTransaction
 
 
    /*******************************************************************************
-    * Closes this stream and releases any system resources associated
-    * with it. If the stream is already closed then invoking this
-    * method has no effect.
-    *
-    * <p> As noted in {@link AutoCloseable#close()}, cases where the
-    * close may fail require careful attention. It is strongly advised
-    * to relinquish the underlying resources and to internally
-    * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-    * the {@code IOException}.
-    *
-    * @throws IOException
-    *    if an I/O error occurs
+    ** Close any resources associated with the transaction.  In theory, should only
+    ** be called after a commit or rollback was done.
     *******************************************************************************/
    public void close()
    {

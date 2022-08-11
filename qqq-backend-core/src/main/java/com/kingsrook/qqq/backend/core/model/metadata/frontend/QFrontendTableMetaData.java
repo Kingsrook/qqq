@@ -30,7 +30,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -78,7 +77,7 @@ public class QFrontendTableMetaData
          this.sections = tableMetaData.getSections();
       }
 
-      if(tableMetaData.getIcon() != null && StringUtils.hasContent(tableMetaData.getIcon().getName()))
+      if(tableMetaData.getIcon() != null)
       {
          this.iconName = tableMetaData.getIcon().getName();
       }

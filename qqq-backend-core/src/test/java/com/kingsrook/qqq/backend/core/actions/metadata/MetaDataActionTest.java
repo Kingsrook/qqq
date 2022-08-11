@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ class MetaDataActionTest
 
       QFrontendAppMetaData peopleApp = apps.get(TestUtils.APP_NAME_PEOPLE);
       assertThat(peopleApp.getChildren()).isNotEmpty();
-      Optional<QFrontendAppMetaData> greetingsAppUnderPeopleFromMapOptional = peopleApp.getChildren().stream()
+      Optional<AppTreeNode> greetingsAppUnderPeopleFromMapOptional = peopleApp.getChildren().stream()
          .filter(e -> e.getName().equals(TestUtils.APP_NAME_GREETINGS)).findFirst();
       assertThat(greetingsAppUnderPeopleFromMapOptional).isPresent();
 
@@ -97,18 +98,18 @@ class MetaDataActionTest
       ///////////////////////////////////////////////
       // assert against the hierarchical apps tree //
       ///////////////////////////////////////////////
-      List<QFrontendAppMetaData> appTree             = result.getAppTree();
-      Set<String>                appNamesInTopOfTree = appTree.stream().map(QFrontendAppMetaData::getName).collect(Collectors.toSet());
+      List<AppTreeNode> appTree             = result.getAppTree();
+      Set<String>       appNamesInTopOfTree = appTree.stream().map(AppTreeNode::getName).collect(Collectors.toSet());
       assertThat(appNamesInTopOfTree).contains(TestUtils.APP_NAME_PEOPLE);
       assertThat(appNamesInTopOfTree).contains(TestUtils.APP_NAME_MISCELLANEOUS);
       assertThat(appNamesInTopOfTree).doesNotContain(TestUtils.APP_NAME_GREETINGS);
 
-      Optional<QFrontendAppMetaData> peopleAppOptional = appTree.stream()
+      Optional<AppTreeNode> peopleAppOptional = appTree.stream()
          .filter(e -> e.getName().equals(TestUtils.APP_NAME_PEOPLE)).findFirst();
       assertThat(peopleAppOptional).isPresent();
       assertThat(peopleAppOptional.get().getChildren()).isNotEmpty();
 
-      Optional<QFrontendAppMetaData> greetingsAppUnderPeopleFromTree = peopleAppOptional.get().getChildren().stream()
+      Optional<AppTreeNode> greetingsAppUnderPeopleFromTree = peopleAppOptional.get().getChildren().stream()
          .filter(e -> e.getName().equals(TestUtils.APP_NAME_GREETINGS)).findFirst();
       assertThat(greetingsAppUnderPeopleFromTree).isPresent();
 

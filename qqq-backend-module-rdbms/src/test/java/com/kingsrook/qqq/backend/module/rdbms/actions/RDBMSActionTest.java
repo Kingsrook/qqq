@@ -22,15 +22,11 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
-import java.io.InputStream;
 import java.sql.Connection;
-import java.util.List;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
-import static junit.framework.Assert.assertNotNull;
 
 
 /*******************************************************************************
@@ -57,31 +53,9 @@ public class RDBMSActionTest
     *******************************************************************************/
    protected void primeTestDatabase() throws Exception
    {
-      primeTestDatabase("prime-test-database.sql");
+      TestUtils.primeTestDatabase("prime-test-database.sql");
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   protected void primeTestDatabase(String sqlFileName) throws Exception
-   {
-      ConnectionManager connectionManager = new ConnectionManager();
-      try(Connection connection = connectionManager.getConnection(TestUtils.defineBackend()))
-      {
-         InputStream primeTestDatabaseSqlStream = RDBMSActionTest.class.getResourceAsStream("/" + sqlFileName);
-         assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
-         lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
-         String joinedSQL = String.join("\n", lines);
-         for(String sql : joinedSQL.split(";"))
-         {
-            QueryManager.executeUpdate(connection, sql);
-         }
-      }
-   }
 
 
 

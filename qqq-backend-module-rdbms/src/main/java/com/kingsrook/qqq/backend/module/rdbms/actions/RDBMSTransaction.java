@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
-import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import org.apache.logging.log4j.LogManager;
@@ -46,8 +46,9 @@ public class RDBMSTransaction extends QBackendTransaction
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RDBMSTransaction(Connection connection)
+   public RDBMSTransaction(Connection connection) throws SQLException
    {
+      connection.setAutoCommit(false);
       this.connection = connection;
    }
 
@@ -73,7 +74,6 @@ public class RDBMSTransaction extends QBackendTransaction
       try
       {
          RDBMSTransaction.LOG.info("Committing transaction");
-         System.out.println("Calling commit on connection [" + connection + "]");
          connection.commit();
          RDBMSTransaction.LOG.info("Commit complete");
       }
@@ -108,18 +108,7 @@ public class RDBMSTransaction extends QBackendTransaction
 
 
    /*******************************************************************************
-    * Closes this stream and releases any system resources associated
-    * with it. If the stream is already closed then invoking this
-    * method has no effect.
-    *
-    * <p> As noted in {@link AutoCloseable#close()}, cases where the
-    * close may fail require careful attention. It is strongly advised
-    * to relinquish the underlying resources and to internally
-    * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-    * the {@code IOException}.
-    *
-    * @throws IOException
-    *    if an I/O error occurs
+    **
     *******************************************************************************/
    @Override
    public void close()
