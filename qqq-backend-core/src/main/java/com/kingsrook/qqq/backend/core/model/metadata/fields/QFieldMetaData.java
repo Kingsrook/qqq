@@ -24,9 +24,12 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -47,6 +50,7 @@ public class QFieldMetaData
    // propose doing that in a secondary field, e.g., "onlyEditableOn=insert|update" //
    ///////////////////////////////////////////////////////////////////////////////////
 
+   private String       displayFormat = "%s";
    private Serializable defaultValue;
    private String       possibleValueSourceName;
 
@@ -78,11 +82,58 @@ public class QFieldMetaData
     *******************************************************************************/
    public <T> QFieldMetaData(Fun.With1ParamAndVoid<T> getterRef) throws QException
    {
+      Method getter = Fun.toMethod(getterRef);
+      constructFromGetter(getter);
+   }
+
+
+
+   /*******************************************************************************
+    ** Initialize a fieldMetaData from a getter method from an entity
+    **
+    *******************************************************************************/
+   public <T> QFieldMetaData(Method getter) throws QException
+   {
+      constructFromGetter(getter);
+   }
+
+
+
+   /*******************************************************************************
+    ** From a getter method, populate attributes in this field meta-data, including
+    ** those from the @QField annotation on the field in the class, if present.
+    *******************************************************************************/
+   private void constructFromGetter(Method getter) throws QException
+   {
       try
       {
-         Method getter = Fun.toMethod(getterRef);
          this.name = QRecordEntity.getFieldNameFromGetter(getter);
          this.type = QFieldType.fromClass(getter.getReturnType());
+
+         @SuppressWarnings("unchecked")
+         Optional<QField> optionalFieldAnnotation = QRecordEntity.getQFieldAnnotation((Class<? extends QRecordEntity>) getter.getDeclaringClass(), this.name);
+
+         if(optionalFieldAnnotation.isPresent())
+         {
+            QField fieldAnnotation = optionalFieldAnnotation.get();
+            setIsRequired(fieldAnnotation.isRequired());
+            setIsEditable(fieldAnnotation.isEditable());
+
+            if(StringUtils.hasContent(fieldAnnotation.label()))
+            {
+               setLabel(fieldAnnotation.label());
+            }
+
+            if(StringUtils.hasContent(fieldAnnotation.backendName()))
+            {
+               setBackendName(fieldAnnotation.backendName());
+            }
+
+            if(StringUtils.hasContent(fieldAnnotation.displayFormat()))
+            {
+               setDisplayFormat(fieldAnnotation.displayFormat());
+            }
+         }
       }
       catch(QException qe)
       {
@@ -90,7 +141,7 @@ public class QFieldMetaData
       }
       catch(Exception e)
       {
-         throw (new QException("Error constructing field from getterRef: " + getterRef, e));
+         throw (new QException("Error constructing field from getter method: " + getter.getName(), e));
       }
    }
 
@@ -351,6 +402,38 @@ public class QFieldMetaData
    public QFieldMetaData withIsEditable(boolean isEditable)
    {
       this.isEditable = isEditable;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for displayFormat
+    **
+    *******************************************************************************/
+   public String getDisplayFormat()
+   {
+      return displayFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for displayFormat
+    **
+    *******************************************************************************/
+   public void setDisplayFormat(String displayFormat)
+   {
+      this.displayFormat = displayFormat;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for displayFormat
+    **
+    *******************************************************************************/
+   public QFieldMetaData withDisplayFormat(String displayFormat)
+   {
+      this.displayFormat = displayFormat;
       return (this);
    }
 

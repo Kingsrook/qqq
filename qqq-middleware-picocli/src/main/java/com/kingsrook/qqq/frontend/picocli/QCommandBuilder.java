@@ -25,6 +25,7 @@ package com.kingsrook.qqq.frontend.picocli;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -407,7 +408,8 @@ public class QCommandBuilder
          case INTEGER -> Integer.class;
          case DECIMAL -> BigDecimal.class;
          case DATE -> LocalDate.class;
-         // case TIME -> LocalTime.class;
+         case TIME -> LocalTime.class;
+         case BOOLEAN -> Boolean.class;
          case DATE_TIME -> LocalDateTime.class;
          case BLOB -> byte[].class;
       };

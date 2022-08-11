@@ -23,10 +23,8 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,35 +56,7 @@ class QueryOutputRecordPipe implements QueryOutputStorageInterface
    @Override
    public void addRecord(QRecord record)
    {
-      if(!recordPipe.addRecord(record))
-      {
-         do
-         {
-            LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
-            SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
-         }
-         while(!recordPipe.addRecord(record));
-         LOG.debug("Done blocking.");
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void blockIfPipeIsTooFull()
-   {
-      if(recordPipe.countAvailableRecords() >= 100_000)
-      {
-         LOG.info("Record pipe is kinda full.  Blocking for a bit");
-         do
-         {
-            SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
-         }
-         while(recordPipe.countAvailableRecords() >= 10_000);
-         LOG.info("Done blocking.");
-      }
+      recordPipe.addRecord(record);
    }
 
 
@@ -98,7 +68,6 @@ class QueryOutputRecordPipe implements QueryOutputStorageInterface
    public void addRecords(List<QRecord> records)
    {
       recordPipe.addRecords(records);
-      blockIfPipeIsTooFull();
    }
 
 

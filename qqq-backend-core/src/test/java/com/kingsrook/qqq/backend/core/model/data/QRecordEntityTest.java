@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Item;
 import com.kingsrook.qqq.backend.core.model.data.testentities.ItemWithPrimitives;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -162,15 +163,76 @@ class QRecordEntityTest
     *******************************************************************************/
    @SuppressWarnings("ResultOfMethodCallIgnored")
    @Test
-   void testQTableConstructionFromEntity() throws QException
+   void testQTableConstructionFromEntityGetterReferences() throws QException
    {
       QTableMetaData qTableMetaData = new QTableMetaData()
          .withField(new QFieldMetaData(Item::getSku))
          .withField(new QFieldMetaData(Item::getDescription))
-         .withField(new QFieldMetaData(Item::getQuantity));
+         .withField(new QFieldMetaData(Item::getQuantity))
+         .withField(new QFieldMetaData(Item::getFeatured))
+         .withField(new QFieldMetaData(Item::getPrice));
 
       assertEquals(QFieldType.STRING, qTableMetaData.getField("sku").getType());
       assertEquals(QFieldType.INTEGER, qTableMetaData.getField("quantity").getType());
+
+      ///////////////////////////////////////////////////////////////
+      // assert about attributes that came from @QField annotation //
+      ///////////////////////////////////////////////////////////////
+      assertEquals("SKU", qTableMetaData.getField("sku").getLabel());
+      assertEquals(DisplayFormat.COMMAS, qTableMetaData.getField("quantity").getDisplayFormat());
+      assertTrue(qTableMetaData.getField("sku").getIsRequired());
+      assertFalse(qTableMetaData.getField("quantity").getIsEditable());
+      assertEquals("is_featured", qTableMetaData.getField("featured").getBackendName());
+
+      //////////////////////////////////////////////////////////////////////////
+      // assert about attributes that weren't specified in @QField annotation //
+      //////////////////////////////////////////////////////////////////////////
+      assertTrue(qTableMetaData.getField("sku").getIsEditable());
+      assertFalse(qTableMetaData.getField("quantity").getIsRequired());
+      assertNull(qTableMetaData.getField("sku").getBackendName());
+
+      /////////////////////////////////////////////////////////////////////
+      // assert about attributes for fields without a @QField annotation //
+      /////////////////////////////////////////////////////////////////////
+      assertTrue(qTableMetaData.getField("price").getIsEditable());
+      assertFalse(qTableMetaData.getField("price").getIsRequired());
+      assertNull(qTableMetaData.getField("price").getBackendName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQTableConstructionFromEntity() throws QException
+   {
+      QTableMetaData qTableMetaData = new QTableMetaData()
+         .withFieldsFromEntity(Item.class);
+
+      assertEquals(QFieldType.STRING, qTableMetaData.getField("sku").getType());
+      assertEquals(QFieldType.INTEGER, qTableMetaData.getField("quantity").getType());
+
+      ///////////////////////////////////////////////////////////////
+      // assert about attributes that came from @QField annotation //
+      ///////////////////////////////////////////////////////////////
+      assertTrue(qTableMetaData.getField("sku").getIsRequired());
+      assertFalse(qTableMetaData.getField("quantity").getIsEditable());
+      assertEquals("is_featured", qTableMetaData.getField("featured").getBackendName());
+
+      //////////////////////////////////////////////////////////////////////////
+      // assert about attributes that weren't specified in @QField annotation //
+      //////////////////////////////////////////////////////////////////////////
+      assertTrue(qTableMetaData.getField("sku").getIsEditable());
+      assertFalse(qTableMetaData.getField("quantity").getIsRequired());
+      assertNull(qTableMetaData.getField("sku").getBackendName());
+
+      /////////////////////////////////////////////////////////////////////
+      // assert about attributes for fields without a @QField annotation //
+      /////////////////////////////////////////////////////////////////////
+      assertTrue(qTableMetaData.getField("price").getIsEditable());
+      assertFalse(qTableMetaData.getField("price").getIsRequired());
+      assertNull(qTableMetaData.getField("price").getBackendName());
    }
 
 

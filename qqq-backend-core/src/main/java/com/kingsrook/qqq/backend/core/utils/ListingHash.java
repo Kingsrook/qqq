@@ -41,7 +41,7 @@ public class ListingHash<K, V> implements Map<K, List<V>>, Serializable
 {
    public static final long serialVersionUID = 0L;
 
-   private HashMap<K, List<V>> hashMap = null;
+   private Map<K, List<V>> hashMap = null;
 
 
 
@@ -51,7 +51,19 @@ public class ListingHash<K, V> implements Map<K, List<V>>, Serializable
     *******************************************************************************/
    public ListingHash()
    {
-      this.hashMap = new HashMap<K, List<V>>();
+      this.hashMap = new HashMap<>();
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor where you can supply a source map (e.g., if you want a specific
+    ** Map type (like LinkedHashMap), or with pre-values
+    **
+    *******************************************************************************/
+   public ListingHash(Map<K, List<V>> sourceMap)
+   {
+      this.hashMap = sourceMap;
    }
 
 

@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
@@ -94,7 +95,8 @@ public abstract class AbstractRDBMSAction
 
 
    /*******************************************************************************
-    ** Handle obvious problems with values - like empty string for integer should be null.
+    ** Handle obvious problems with values - like empty string for integer should be null,
+    ** and type conversions that we can do "better" than jdbc...
     **
     *******************************************************************************/
    protected Serializable scrubValue(QFieldMetaData field, Serializable value, boolean isInsert)
@@ -106,6 +108,18 @@ public abstract class AbstractRDBMSAction
          {
             value = null;
          }
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // value utils is good at making values from strings - jdbc, not as much... //
+      //////////////////////////////////////////////////////////////////////////////
+      if(field.getType().equals(QFieldType.DATE) && value instanceof String)
+      {
+         value = ValueUtils.getValueAsLocalDate(value);
+      }
+      else if(field.getType().equals(QFieldType.DECIMAL) && value instanceof String)
+      {
+         value = ValueUtils.getValueAsBigDecimal(value);
       }
 
       return (value);

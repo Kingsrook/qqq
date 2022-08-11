@@ -32,9 +32,30 @@ import java.util.List;
  *******************************************************************************/
 public class QFilterCriteria implements Serializable
 {
-   private String fieldName;
-   private QCriteriaOperator operator;
+   private String             fieldName;
+   private QCriteriaOperator  operator;
    private List<Serializable> values;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFilterCriteria()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFilterCriteria(String fieldName, QCriteriaOperator operator, List<Serializable> values)
+   {
+      this.fieldName = fieldName;
+      this.operator = operator;
+      this.values = values;
+   }
 
 
 
@@ -125,6 +146,7 @@ public class QFilterCriteria implements Serializable
    {
       this.values = values;
    }
+
 
 
    /*******************************************************************************

@@ -70,7 +70,7 @@ public class FilesystemBackendModuleTest
    public void testDeleteFile() throws Exception
    {
       QInstance      qInstance = TestUtils.defineInstance();
-      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
 
       /////////////////////////////////////////////////////////////////////////////////////////////
       // first list the files - then delete one, then re-list, and assert that we have one fewer //
@@ -94,7 +94,7 @@ public class FilesystemBackendModuleTest
    public void testDeleteFileDoesNotExist() throws Exception
    {
       QInstance      qInstance = TestUtils.defineInstance();
-      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // first list the files - then try to delete a fake path, then re-list, and assert that we have the same count //
@@ -120,7 +120,7 @@ public class FilesystemBackendModuleTest
    public void testMoveFile() throws Exception
    {
       QInstance      qInstance = TestUtils.defineInstance();
-      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       String         basePath  = ((FilesystemBackendMetaData) qInstance.getBackendForTable(table.getName())).getBasePath();
       String         subPath   = basePath + File.separator + "subdir";
 
@@ -157,7 +157,7 @@ public class FilesystemBackendModuleTest
    public void testMoveFileDoesNotExit() throws Exception
    {
       QInstance      qInstance        = TestUtils.defineInstance();
-      QTableMetaData table            = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS);
+      QTableMetaData table            = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       String         basePath         = ((FilesystemBackendMetaData) qInstance.getBackendForTable(table.getName())).getBasePath();
       String         subPath          = basePath + File.separator + "subdir";
       List<File>     filesBeforeMove  = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));

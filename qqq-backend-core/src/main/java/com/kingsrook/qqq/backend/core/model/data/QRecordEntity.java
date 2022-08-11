@@ -23,8 +23,12 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -104,7 +108,7 @@ public abstract class QRecordEntity
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<QRecordEntityField> getFieldList(Class<? extends QRecordEntity> c)
+   public static List<QRecordEntityField> getFieldList(Class<? extends QRecordEntity> c)
    {
       if(!fieldMapping.containsKey(c))
       {
@@ -114,10 +118,12 @@ public abstract class QRecordEntity
             if(isGetter(possibleGetter))
             {
                Optional<Method> setter = getSetterForGetter(c, possibleGetter);
+
                if(setter.isPresent())
                {
-                  String name = getFieldNameFromGetter(possibleGetter);
-                  fieldList.add(new QRecordEntityField(name, possibleGetter, setter.get(), possibleGetter.getReturnType()));
+                  String           fieldName       = getFieldNameFromGetter(possibleGetter);
+                  Optional<QField> fieldAnnotation = getQFieldAnnotation(c, fieldName);
+                  fieldList.add(new QRecordEntityField(fieldName, possibleGetter, setter.get(), possibleGetter.getReturnType(), fieldAnnotation.orElse(null)));
                }
                else
                {
@@ -128,6 +134,27 @@ public abstract class QRecordEntity
          fieldMapping.put(c, fieldList);
       }
       return (fieldMapping.get(c));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Optional<QField> getQFieldAnnotation(Class<? extends QRecordEntity> c, String fieldName)
+   {
+      try
+      {
+         Field field = c.getDeclaredField(fieldName);
+         return (Optional.ofNullable(field.getAnnotation(QField.class)));
+      }
+      catch(NoSuchFieldException e)
+      {
+         //////////////////////////////////////////
+         // ok, we just won't have an annotation //
+         //////////////////////////////////////////
+      }
+      return (Optional.empty());
    }
 
 
@@ -207,7 +234,15 @@ public abstract class QRecordEntity
          || returnType.equals(int.class)
          || returnType.equals(Boolean.class)
          || returnType.equals(boolean.class)
-         || returnType.equals(BigDecimal.class));
+         || returnType.equals(BigDecimal.class)
+         || returnType.equals(Instant.class)
+         || returnType.equals(LocalDate.class)
+         || returnType.equals(LocalTime.class));
+      /////////////////////////////////////////////
+      // note - this list has implications upon: //
+      // - QFieldType.fromClass                  //
+      // - QRecordEntityField.convertValueType   //
+      /////////////////////////////////////////////
    }
 
 }

@@ -151,7 +151,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       //////////////////////////////////////////////////////////////////
       // load the parent-child tables, with foreign keys and instance //
       //////////////////////////////////////////////////////////////////
-      super.primeTestDatabase("prime-test-database-parent-child-tables.sql");
+      TestUtils.primeTestDatabase("prime-test-database-parent-child-tables.sql");
       DeleteInput deleteInput = initChildTableInstanceAndDeleteRequest();
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

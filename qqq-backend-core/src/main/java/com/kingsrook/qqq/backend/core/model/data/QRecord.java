@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -53,7 +54,9 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class QRecord implements Serializable
 {
-   private String                    tableName;
+   private String tableName;
+   private String recordLabel;
+
    private Map<String, Serializable> values         = new LinkedHashMap<>();
    private Map<String, String>       displayValues  = new LinkedHashMap<>();
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
@@ -67,6 +70,7 @@ public class QRecord implements Serializable
    public QRecord()
    {
    }
+
 
 
    /*******************************************************************************
@@ -87,6 +91,7 @@ public class QRecord implements Serializable
    public QRecord(QRecord record)
    {
       this.tableName = record.tableName;
+      this.recordLabel = record.recordLabel;
       this.values = record.values;
       this.displayValues = record.displayValues;
       this.backendDetails = record.backendDetails;
@@ -101,6 +106,16 @@ public class QRecord implements Serializable
    public void setValue(String fieldName, Serializable value)
    {
       values.put(fieldName, value);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setValue(QFieldMetaData field, Serializable value)
+   {
+      values.put(field.getName(), value);
    }
 
 
@@ -123,6 +138,7 @@ public class QRecord implements Serializable
    {
       displayValues.put(fieldName, displayValue);
    }
+
 
 
 
@@ -166,6 +182,39 @@ public class QRecord implements Serializable
    public QRecord withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordLabel
+    **
+    *******************************************************************************/
+   public String getRecordLabel()
+   {
+      return recordLabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordLabel
+    **
+    *******************************************************************************/
+   public void setRecordLabel(String recordLabel)
+   {
+      this.recordLabel = recordLabel;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordLabel
+    **
+    *******************************************************************************/
+   public QRecord withRecordLabel(String recordLabel)
+   {
+      this.recordLabel = recordLabel;
       return (this);
    }
 
@@ -355,6 +404,7 @@ public class QRecord implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Getter for errors
     **
@@ -397,6 +447,7 @@ public class QRecord implements Serializable
       addError(error);
       return (this);
    }
+
 
 
    /*******************************************************************************

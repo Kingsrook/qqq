@@ -46,10 +46,12 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -121,7 +123,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void main(String[] args)
+   public static void main(String[] args) throws QInstanceValidationException
    {
       QInstance qInstance = new QInstance();
       // todo - parse args to look up metaData and prime instance
@@ -135,9 +137,10 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QJavalinImplementation(QInstance qInstance)
+   public QJavalinImplementation(QInstance qInstance) throws QInstanceValidationException
    {
       QJavalinImplementation.qInstance = qInstance;
+      new QInstanceValidator().validate(qInstance);
    }
 
 
@@ -251,11 +254,39 @@ public class QJavalinImplementation
       try
       {
          Map<String, String> authenticationContext = new HashMap<>();
-         authenticationContext.put(SESSION_ID_COOKIE_NAME, context.cookie(SESSION_ID_COOKIE_NAME));
+
+         /////////////////////////////////////////////////////////////////////////////////
+         // look for a token in either the sessionId cookie, or an Authorization header //
+         /////////////////////////////////////////////////////////////////////////////////
+         String sessionIdCookieValue = context.cookie(SESSION_ID_COOKIE_NAME);
+         if(StringUtils.hasContent(sessionIdCookieValue))
+         {
+            authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
+         }
+         else
+         {
+            String authorizationHeaderValue = context.header("Authorization");
+            if (authorizationHeaderValue != null)
+            {
+               String bearerPrefix = "Bearer ";
+               if(authorizationHeaderValue.startsWith(bearerPrefix))
+               {
+                  authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
+               }
+               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
+            }
+         }
+
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          input.setSession(session);
 
-         context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+         /////////////////////////////////////////////////////////////////////////////////
+         // if we got a session id cookie in, then send it back with updated cookie age //
+         /////////////////////////////////////////////////////////////////////////////////
+         if(StringUtils.hasContent(sessionIdCookieValue))
+         {
+            context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+         }
       }
       catch(QAuthenticationException qae)
       {

@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
@@ -43,7 +45,10 @@ public class QFrontendTableMetaData
    private boolean isHidden;
    private String  primaryKeyField;
 
+   private String iconName;
+
    private Map<String, QFrontendFieldMetaData> fields;
+   private List<QFieldSection>                 sections;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -68,6 +73,13 @@ public class QFrontendTableMetaData
          {
             this.fields.put(entry.getKey(), new QFrontendFieldMetaData(entry.getValue()));
          }
+
+         this.sections = tableMetaData.getSections();
+      }
+
+      if(tableMetaData.getIcon() != null)
+      {
+         this.iconName = tableMetaData.getIcon().getName();
       }
    }
 
@@ -118,6 +130,17 @@ public class QFrontendTableMetaData
 
 
    /*******************************************************************************
+    ** Getter for sections
+    **
+    *******************************************************************************/
+   public List<QFieldSection> getSections()
+   {
+      return sections;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for isHidden
     **
     *******************************************************************************/
@@ -129,11 +152,11 @@ public class QFrontendTableMetaData
 
 
    /*******************************************************************************
-    ** Setter for isHidden
+    ** Getter for iconName
     **
     *******************************************************************************/
-   public void setIsHidden(boolean isHidden)
+   public String getIconName()
    {
-      this.isHidden = isHidden;
+      return iconName;
    }
 }

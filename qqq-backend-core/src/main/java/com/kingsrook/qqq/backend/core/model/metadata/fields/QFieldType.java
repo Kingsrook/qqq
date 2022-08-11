@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
@@ -35,8 +38,9 @@ public enum QFieldType
    STRING,
    INTEGER,
    DECIMAL,
+   BOOLEAN,
    DATE,
-   // TIME,
+   TIME,
    DATE_TIME,
    TEXT,
    HTML,
@@ -64,6 +68,22 @@ public enum QFieldType
       if(c.equals(BigDecimal.class))
       {
          return (DECIMAL);
+      }
+      if(c.equals(Instant.class))
+      {
+         return (DATE_TIME);
+      }
+      if(c.equals(LocalDate.class))
+      {
+         return (DATE);
+      }
+      if(c.equals(LocalTime.class))
+      {
+         return (TIME);
+      }
+      if(c.equals(Boolean.class))
+      {
+         return (BOOLEAN);
       }
 
       throw (new QException("Unrecognized class [" + c + "]"));

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -43,6 +44,9 @@ import org.apache.logging.log4j.Logger;
 public class BasicETLLoadFunction implements BackendStep
 {
    private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
+
+   private QBackendTransaction transaction;
+   private boolean             returnStoredRecords = true;
 
 
 
@@ -86,10 +90,15 @@ public class BasicETLLoadFunction implements BackendStep
          insertInput.setSession(runBackendStepInput.getSession());
          insertInput.setTableName(table);
          insertInput.setRecords(page);
+         insertInput.setTransaction(transaction);
 
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
-         outputRecords.addAll(insertOutput.getRecords());
+
+         if(returnStoredRecords)
+         {
+            outputRecords.addAll(insertOutput.getRecords());
+         }
 
          recordsInserted += insertOutput.getRecords().size();
       }
@@ -97,4 +106,25 @@ public class BasicETLLoadFunction implements BackendStep
       runBackendStepOutput.addValue(BasicETLProcess.FIELD_RECORD_COUNT, recordsInserted);
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for returnStoredRecords
+    **
+    *******************************************************************************/
+   public void setReturnStoredRecords(boolean returnStoredRecords)
+   {
+      this.returnStoredRecords = returnStoredRecords;
+   }
 }

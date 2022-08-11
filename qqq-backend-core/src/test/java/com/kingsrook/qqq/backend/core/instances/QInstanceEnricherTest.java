@@ -22,8 +22,11 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.util.Collections;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -45,13 +48,14 @@ class QInstanceEnricherTest
    @Test
    public void test_nullTableLabelComesFromName()
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance      qInstance   = TestUtils.defineInstance();
       QTableMetaData personTable = qInstance.getTable("person");
       personTable.setLabel(null);
       assertNull(personTable.getLabel());
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("Person", personTable.getLabel());
    }
+
 
 
    /*******************************************************************************
@@ -62,7 +66,7 @@ class QInstanceEnricherTest
    @Test
    public void test_nullNameGivesNullLabel()
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance      qInstance   = TestUtils.defineInstance();
       QTableMetaData personTable = qInstance.getTable("person");
       personTable.setLabel(null);
       personTable.setName(null);
@@ -74,6 +78,7 @@ class QInstanceEnricherTest
    }
 
 
+
    /*******************************************************************************
     ** Test that a field missing a label gets the default label applied (name w/ UC-first)
     **
@@ -81,12 +86,64 @@ class QInstanceEnricherTest
    @Test
    public void test_nullFieldLabelComesFromName()
    {
-      QInstance qInstance = TestUtils.defineInstance();
-      QFieldMetaData idField = qInstance.getTable("person").getField("id");
+      QInstance      qInstance = TestUtils.defineInstance();
+      QFieldMetaData idField   = qInstance.getTable("person").getField("id");
       idField.setLabel(null);
       assertNull(idField.getLabel());
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("Id", idField.getLabel());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetInferredFieldBackendNames()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("firstName", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("nonstandard", QFieldType.INTEGER).withBackendName("whateverImNon_standard"));
+      QInstanceEnricher.setInferredFieldBackendNames(table);
+      assertEquals("id", table.getField("id").getBackendName());
+      assertEquals("first_name", table.getField("firstName").getBackendName());
+      assertEquals("whateverImNon_standard", table.getField("nonstandard").getBackendName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetInferredFieldBackendNamesEdgeCases()
+   {
+      ///////////////////////////////////////////////////////////////
+      // make sure none of these cases throw (but all should warn) //
+      ///////////////////////////////////////////////////////////////
+      QInstanceEnricher.setInferredFieldBackendNames(null);
+      QInstanceEnricher.setInferredFieldBackendNames(new QTableMetaData());
+      QInstanceEnricher.setInferredFieldBackendNames(new QTableMetaData().withFields(Collections.emptyMap()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInferBackendName()
+   {
+      assertEquals("id", QInstanceEnricher.inferBackendName("id"));
+      assertEquals("word_another_word_more_words", QInstanceEnricher.inferBackendName("wordAnotherWordMoreWords"));
+      assertEquals("l_ul_ul_ul", QInstanceEnricher.inferBackendName("lUlUlUl"));
+      assertEquals("starts_upper", QInstanceEnricher.inferBackendName("StartsUpper"));
+      assertEquals("tla_first", QInstanceEnricher.inferBackendName("TLAFirst"));
+      assertEquals("word_then_tla_in_middle", QInstanceEnricher.inferBackendName("wordThenTLAInMiddle"));
+      assertEquals("end_with_tla", QInstanceEnricher.inferBackendName("endWithTLA"));
+      assertEquals("tla_and_another_tla", QInstanceEnricher.inferBackendName("TLAAndAnotherTLA"));
    }
 
 }

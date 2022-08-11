@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -92,7 +93,20 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          List<QRecord> outputRecords = new ArrayList<>();
          rs.setRecords(outputRecords);
 
-         try(Connection connection = getConnection(insertInput))
+         Connection connection;
+         boolean    needToCloseConnection = false;
+         if(insertInput.getTransaction() != null && insertInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
+         {
+            LOG.debug("Using connection from insertInput [" + rdbmsTransaction.getConnection() + "]");
+            connection = rdbmsTransaction.getConnection();
+         }
+         else
+         {
+            connection = getConnection(insertInput);
+            needToCloseConnection = true;
+         }
+
+         try
          {
             for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
             {
@@ -130,6 +144,13 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                }
             }
          }
+         finally
+         {
+            if(needToCloseConnection)
+            {
+               connection.close();
+            }
+         }
 
          return rs;
       }
@@ -138,5 +159,27 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QBackendTransaction openTransaction(InsertInput insertInput) throws QException
+   {
+      try
+      {
+         LOG.info("Opening transaction");
+         Connection connection = getConnection(insertInput);
+
+         return (new RDBMSTransaction(connection));
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error opening transaction: " + e.getMessage(), e);
+      }
+   }
+
 
 }

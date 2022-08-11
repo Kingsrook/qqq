@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -35,6 +36,7 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -47,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -121,7 +124,10 @@ public class QueryManager
          statement.execute();
          resultSet = statement.getResultSet();
 
-         processor.processResultSet(resultSet);
+         if(processor != null)
+         {
+            processor.processResultSet(resultSet);
+         }
       }
       finally
       {
@@ -183,8 +189,6 @@ public class QueryManager
    @SuppressWarnings("unchecked")
    public static <T> T executeStatementForSingleValue(Connection connection, Class<T> returnClass, String sql, Object... params) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.execute();
       ResultSet resultSet = statement.getResultSet();
@@ -233,7 +237,6 @@ public class QueryManager
       {
          return (null);
       }
-      */
    }
 
 
@@ -685,6 +688,11 @@ public class QueryManager
          bindParam(statement, index, l.intValue());
          return (1);
       }
+      else if(value instanceof Double d)
+      {
+         bindParam(statement, index, d.doubleValue());
+         return (1);
+      }
       else if(value instanceof String s)
       {
          bindParam(statement, index, s);
@@ -743,10 +751,14 @@ public class QueryManager
       }
       else if(value instanceof LocalDate ld)
       {
-         ZoneOffset offset      = OffsetDateTime.now().getOffset();
-         long       epochMillis = ld.atStartOfDay().toEpochSecond(offset) * MS_PER_SEC;
-         Timestamp  timestamp   = new Timestamp(epochMillis);
-         statement.setTimestamp(index, timestamp);
+         java.sql.Date date = new java.sql.Date(ld.getYear() - 1900, ld.getMonthValue() - 1, ld.getDayOfMonth());
+         statement.setDate(index, date);
+         return (1);
+      }
+      else if(value instanceof LocalTime lt)
+      {
+         java.sql.Time time = new java.sql.Time(lt.getHour(), lt.getMinute(), lt.getSecond());
+         statement.setTime(index, time);
          return (1);
       }
       else if(value instanceof OffsetDateTime odt)
@@ -846,6 +858,23 @@ public class QueryManager
       else
       {
          statement.setInt(index, value);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    *
+    *******************************************************************************/
+   public static void bindParam(PreparedStatement statement, int index, Double value) throws SQLException
+   {
+      if(value == null)
+      {
+         statement.setNull(index, Types.DOUBLE);
+      }
+      else
+      {
+         statement.setDouble(index, value);
       }
    }
 
@@ -1202,6 +1231,67 @@ public class QueryManager
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static LocalTime getLocalTime(ResultSet resultSet, int column) throws SQLException
+   {
+      String timeString = resultSet.getString(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+      return stringToLocalTime(timeString);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static LocalTime getLocalTime(ResultSet resultSet, String column) throws SQLException
+   {
+      String timeString = resultSet.getString(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+      return stringToLocalTime(timeString);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static LocalTime stringToLocalTime(String timeString) throws SQLException
+   {
+      if(!StringUtils.hasContent(timeString))
+      {
+         return (null);
+      }
+
+      String[] parts = timeString.split(":");
+      if(parts.length == 1)
+      {
+         return LocalTime.of(Integer.parseInt(parts[0]), 0);
+      }
+      if(parts.length == 2)
+      {
+         return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+      }
+      else if(parts.length == 3)
+      {
+         return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+      }
+      else
+      {
+         throw (new SQLException("Unable to parse time value [" + timeString + "] to LocalTime"));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static Calendar getCalendar(ResultSet resultSet, String column) throws SQLException
    {
       Timestamp value = resultSet.getTimestamp(column);
@@ -1301,6 +1391,38 @@ public class QueryManager
 
       LocalDateTime dateTime = LocalDateTime.of(value.getYear() + NINETEEN_HUNDRED, value.getMonth() + 1, value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds(), 0);
       return (dateTime);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getInstant(ResultSet resultSet, String column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      return (value.toInstant());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getInstant(ResultSet resultSet, int column) throws SQLException
+   {
+      Timestamp value = resultSet.getTimestamp(column);
+      if(resultSet.wasNull())
+      {
+         return (null);
+      }
+
+      return (value.toInstant());
    }
 
 

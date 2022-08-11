@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
 import java.math.BigDecimal;
+import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 
 
 /*******************************************************************************
@@ -31,11 +33,19 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
  *******************************************************************************/
 public class Item extends QRecordEntity
 {
-   private String     sku;
-   private String     description;
-   private Integer    quantity;
+   @QField(isRequired = true, label = "SKU")
+   private String sku;
+
+   @QField()
+   private String description;
+
+   @QField(isEditable = false, displayFormat = DisplayFormat.COMMAS)
+   private Integer quantity;
+
    private BigDecimal price;
-   private Boolean    featured;
+
+   @QField(backendName = "is_featured")
+   private Boolean featured;
 
 
 

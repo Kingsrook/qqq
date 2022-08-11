@@ -103,7 +103,8 @@ public class RunBackendStepActionTest
                   case STRING -> "ABC";
                   case INTEGER -> 42;
                   case DECIMAL -> new BigDecimal("47");
-                  case DATE, DATE_TIME -> null;
+                  case BOOLEAN -> true;
+                  case DATE, TIME, DATE_TIME -> null;
                   case TEXT -> """
                      ABC
                      XYZ""";

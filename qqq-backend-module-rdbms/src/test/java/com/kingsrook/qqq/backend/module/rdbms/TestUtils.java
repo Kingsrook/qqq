@@ -22,12 +22,22 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import java.io.InputStream;
+import java.sql.Connection;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import org.apache.commons.io.IOUtils;
+import static junit.framework.Assert.assertNotNull;
 
 
 /*******************************************************************************
@@ -43,12 +53,49 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public static void primeTestDatabase(String sqlFileName) throws Exception
+   {
+      ConnectionManager connectionManager = new ConnectionManager();
+      try(Connection connection = connectionManager.getConnection(TestUtils.defineBackend()))
+      {
+         InputStream primeTestDatabaseSqlStream = RDBMSActionTest.class.getResourceAsStream("/" + sqlFileName);
+         assertNotNull(primeTestDatabaseSqlStream);
+         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
+         String joinedSQL = String.join("\n", lines);
+         for(String sql : joinedSQL.split(";"))
+         {
+            QueryManager.executeUpdate(connection, sql);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static QInstance defineInstance()
    {
       QInstance qInstance = new QInstance();
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.setAuthentication(defineAuthentication());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the authentication used in standard tests - using 'mock' type.
+    **
+    *******************************************************************************/
+   public static QAuthenticationMetaData defineAuthentication()
+   {
+      return new QAuthenticationMetaData()
+         .withName("mock")
+         .withType(QAuthenticationType.MOCK);
    }
 
 

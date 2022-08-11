@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +45,7 @@ public class QJavalinTestBase
     **
     *******************************************************************************/
    @BeforeAll
-   public static void beforeAll()
+   public static void beforeAll() throws QInstanceValidationException
    {
       qJavalinImplementation = new QJavalinImplementation(TestUtils.defineInstance());
       QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);

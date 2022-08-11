@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
@@ -60,7 +59,7 @@ public class S3QueryActionTest extends BaseS3Test
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QueryInput initQueryRequest() throws QInstanceValidationException
+   private QueryInput initQueryRequest() throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setInstance(TestUtils.defineInstance());

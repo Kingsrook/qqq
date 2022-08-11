@@ -22,8 +22,11 @@
 package com.kingsrook.qqq.backend.core.model.actions.metadata;
 
 
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 
@@ -36,6 +39,9 @@ public class MetaDataOutput extends AbstractActionOutput
 {
    private Map<String, QFrontendTableMetaData>   tables;
    private Map<String, QFrontendProcessMetaData> processes;
+   private Map<String, QFrontendAppMetaData>     apps;
+
+   private List<AppTreeNode> appTree;
 
 
 
@@ -79,5 +85,50 @@ public class MetaDataOutput extends AbstractActionOutput
    public void setProcesses(Map<String, QFrontendProcessMetaData> processes)
    {
       this.processes = processes;
+   }
+
+
+
+
+   /*******************************************************************************
+    ** Getter for appTree
+    **
+    *******************************************************************************/
+   public List<AppTreeNode> getAppTree()
+   {
+      return appTree;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for appTree
+    **
+    *******************************************************************************/
+   public void setAppTree(List<AppTreeNode> appTree)
+   {
+      this.appTree = appTree;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apps
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendAppMetaData> getApps()
+   {
+      return apps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apps
+    **
+    *******************************************************************************/
+   public void setApps(Map<String, QFrontendAppMetaData> apps)
+   {
+      this.apps = apps;
    }
 }

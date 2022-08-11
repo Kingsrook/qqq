@@ -26,13 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
 /*******************************************************************************
  ** Meta-Data to define a process in a QQQ instance.
  **
  *******************************************************************************/
-public class QProcessMetaData
+public class QProcessMetaData implements QAppChildMetaData
 {
    private String  name;
    private String  label;
@@ -40,6 +42,9 @@ public class QProcessMetaData
    private boolean isHidden = false;
 
    private List<QStepMetaData> stepList;
+
+   private String parentAppName;
+   private QIcon  icon;
 
 
 
@@ -290,6 +295,64 @@ public class QProcessMetaData
    public QProcessMetaData withIsHidden(boolean isHidden)
    {
       this.isHidden = isHidden;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for parentAppName
+    **
+    *******************************************************************************/
+   @Override
+   public String getParentAppName()
+   {
+      return parentAppName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for parentAppName
+    **
+    *******************************************************************************/
+   @Override
+   public void setParentAppName(String parentAppName)
+   {
+      this.parentAppName = parentAppName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for icon
+    **
+    *******************************************************************************/
+   public void setIcon(QIcon icon)
+   {
+      this.icon = icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icon
+    **
+    *******************************************************************************/
+   public QProcessMetaData withIcon(QIcon icon)
+   {
+      this.icon = icon;
       return (this);
    }
 

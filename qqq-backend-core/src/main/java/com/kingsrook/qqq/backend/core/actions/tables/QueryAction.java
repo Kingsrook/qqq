@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -48,6 +49,13 @@ public class QueryAction
       // todo pre-customization - just get to modify the request?
       QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
       // todo post-customization - can do whatever w/ the result if you want
+
+      if (queryInput.getRecordPipe() == null)
+      {
+         QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
+      }
+
       return queryOutput;
    }
+
 }

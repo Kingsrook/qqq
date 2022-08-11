@@ -23,16 +23,20 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /*******************************************************************************
@@ -416,7 +420,29 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       QueryInput queryInput = new QueryInput();
       queryInput.setInstance(TestUtils.defineInstance());
       queryInput.setTableName(TestUtils.defineTablePerson().getName());
+      queryInput.setSession(new QSession());
       return queryInput;
+   }
+
+
+
+   /*******************************************************************************
+    ** This doesn't really test any RDBMS code, but is a checkpoint that the core
+    ** module is populating displayValues when it performs the system-level query action.
+    *******************************************************************************/
+   @Test
+   public void testThatDisplayValuesGetSetGoingThroughQueryAction() throws QException
+   {
+      QueryInput  queryInput  = initQueryRequest();
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
+
+      for(QRecord record : queryOutput.getRecords())
+      {
+         assertThat(record.getValues()).isNotEmpty();
+         assertThat(record.getDisplayValues()).isNotEmpty();
+         assertThat(record.getErrors()).isEmpty();
+      }
    }
 
 }

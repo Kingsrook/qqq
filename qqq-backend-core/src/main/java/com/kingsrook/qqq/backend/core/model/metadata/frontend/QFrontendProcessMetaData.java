@@ -45,6 +45,8 @@ public class QFrontendProcessMetaData
    private String  tableName;
    private boolean isHidden;
 
+   private String iconName;
+
    private List<QFrontendStepMetaData> frontendSteps;
 
    //////////////////////////////////////////////////////////////////////////////////
@@ -76,6 +78,11 @@ public class QFrontendProcessMetaData
          {
             frontendSteps = new ArrayList<>();
          }
+      }
+
+      if(processMetaData.getIcon() != null)
+      {
+         this.iconName = processMetaData.getIcon().getName();
       }
    }
 
@@ -148,12 +155,12 @@ public class QFrontendProcessMetaData
 
 
    /*******************************************************************************
-    ** Setter for isHidden
+    ** Getter for iconName
     **
     *******************************************************************************/
-   public void setIsHidden(boolean isHidden)
+   public String getIconName()
    {
-      this.isHidden = isHidden;
+      return iconName;
    }
 
 }

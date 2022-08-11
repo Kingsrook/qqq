@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -41,9 +43,44 @@ import org.apache.commons.csv.CSVRecord;
 /*******************************************************************************
  ** Adapter class to convert a CSV string into a list of QRecords.
  **
+ ** Based on which method is called, can either take a pipe, and stream records
+ ** into it - or return a list of all records from the file.  Either way, at this
+ ** time, the full CSV string is read & parsed - a future optimization might read
+ ** the CSV content from a stream as well.
  *******************************************************************************/
 public class CsvToQRecordAdapter
 {
+   private RecordPipe    recordPipe = null;
+   private List<QRecord> recordList = null;
+
+
+
+   /*******************************************************************************
+    ** stream records from a CSV String into a RecordPipe, for a given table, optionally
+    ** using a given mapping.
+    **
+    *******************************************************************************/
+   public void buildRecordsFromCsv(RecordPipe recordPipe, String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping, Consumer<QRecord> recordCustomizer)
+   {
+      this.recordPipe = recordPipe;
+      doBuildRecordsFromCsv(csv, table, mapping, recordCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    ** convert a CSV String into a List of QRecords, for a given table, optionally
+    ** using a given mapping.
+    **
+    *******************************************************************************/
+   public List<QRecord> buildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping)
+   {
+      this.recordList = new ArrayList<>();
+      doBuildRecordsFromCsv(csv, table, mapping, null);
+      return (recordList);
+   }
+
+
 
    /*******************************************************************************
     ** convert a CSV String into a List of QRecords, for a given table, optionally
@@ -51,14 +88,13 @@ public class CsvToQRecordAdapter
     **
     ** todo - meta-data validation, type handling
     *******************************************************************************/
-   public List<QRecord> buildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping)
+   public void doBuildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping, Consumer<QRecord> recordCustomizer)
    {
       if(!StringUtils.hasContent(csv))
       {
          throw (new IllegalArgumentException("Empty csv value was provided."));
       }
 
-      List<QRecord> rs = new ArrayList<>();
       try
       {
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,7 +118,7 @@ public class CsvToQRecordAdapter
                // put values from the CSV record into a map of header -> value //
                //////////////////////////////////////////////////////////////////
                Map<String, String> csvValues = new HashMap<>();
-               for(int i=0; i<headers.size(); i++)
+               for(int i = 0; i < headers.size(); i++)
                {
                   csvValues.put(headers.get(i), csvRecord.get(i));
                }
@@ -91,12 +127,14 @@ public class CsvToQRecordAdapter
                // now move values into the QRecord, using the mapping to get the 'header' corresponding to each QField //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////
                QRecord qRecord = new QRecord();
-               rs.add(qRecord);
                for(QFieldMetaData field : table.getFields().values())
                {
                   String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
                   qRecord.setValue(field.getName(), csvValues.get(fieldSource));
                }
+
+               runRecordCustomizer(recordCustomizer, qRecord);
+               addRecord(qRecord);
             }
          }
          else if(AbstractQFieldMapping.SourceType.INDEX.equals(mapping.getSourceType()))
@@ -125,12 +163,14 @@ public class CsvToQRecordAdapter
                // now move values into the QRecord, using the mapping to get the 'header' corresponding to each QField //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////
                QRecord qRecord = new QRecord();
-               rs.add(qRecord);
                for(QFieldMetaData field : table.getFields().values())
                {
                   Integer fieldIndex = (Integer) mapping.getFieldSource(field.getName());
                   qRecord.setValue(field.getName(), csvValues.get(fieldIndex));
                }
+
+               runRecordCustomizer(recordCustomizer, qRecord);
+               addRecord(qRecord);
             }
          }
          else
@@ -142,8 +182,19 @@ public class CsvToQRecordAdapter
       {
          throw (new IllegalArgumentException("Error parsing CSV: " + e.getMessage(), e));
       }
+   }
 
-      return (rs);
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void runRecordCustomizer(Consumer<QRecord> recordCustomizer, QRecord qRecord)
+   {
+      if(recordCustomizer != null)
+      {
+         recordCustomizer.accept(qRecord);
+      }
    }
 
 
@@ -165,7 +216,7 @@ public class CsvToQRecordAdapter
 
       for(String header : headers)
       {
-         String headerToUse = header;
+         String headerToUse         = header;
          String headerWithoutSuffix = header.replaceFirst(" \\d+$", "");
 
          if(countsByHeader.containsKey(headerWithoutSuffix))
@@ -181,6 +232,24 @@ public class CsvToQRecordAdapter
          rs.add(headerToUse);
       }
       return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Add a record - either to the pipe, or list, whichever we're building.
+    *******************************************************************************/
+   private void addRecord(QRecord record)
+   {
+      if(recordPipe != null)
+      {
+         recordPipe.addRecord(record);
+      }
+
+      if(recordList != null)
+      {
+         recordList.add(record);
+      }
    }
 
 }

@@ -63,7 +63,7 @@ public class MockAuthenticationModule implements QAuthenticationModuleInterface
     **
     *******************************************************************************/
    @Override
-   public boolean isSessionValid(QSession session)
+   public boolean isSessionValid(QInstance instance, QSession session)
    {
       if(session == null)
       {

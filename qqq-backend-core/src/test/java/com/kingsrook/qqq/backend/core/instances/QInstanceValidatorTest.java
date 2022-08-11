@@ -22,13 +22,24 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -52,23 +63,29 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** make sure we don't re-validate if already validated
+    **
+    *******************************************************************************/
+   @Test
+   public void test_doNotReValidate() throws QInstanceValidationException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      qInstance.setHasBeenValidated(new QInstanceValidationKey());
+      qInstance.setBackends(null);
+      new QInstanceValidator().validate(qInstance);
+   }
+
+
+
+   /*******************************************************************************
     ** Test an instance with null backends - should throw.
     **
     *******************************************************************************/
    @Test
    public void test_validateNullBackends()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.setBackends(null);
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("At least 1 backend must be defined", e);
-      }
+      assertValidationFailureReasons((qInstance) -> qInstance.setBackends(null),
+         "At least 1 backend must be defined");
    }
 
 
@@ -80,17 +97,8 @@ class QInstanceValidatorTest
    @Test
    public void test_validateEmptyBackends()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.setBackends(new HashMap<>());
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("At least 1 backend must be defined", e);
-      }
+      assertValidationFailureReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
+         "At least 1 backend must be defined");
    }
 
 
@@ -102,17 +110,12 @@ class QInstanceValidatorTest
    @Test
    public void test_validateNullTables()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.setTables(null);
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("At least 1 table must be defined", e);
-      }
+      assertValidationFailureReasons((qInstance) ->
+         {
+            qInstance.setTables(null);
+            qInstance.setProcesses(null);
+         },
+         "At least 1 table must be defined");
    }
 
 
@@ -124,17 +127,12 @@ class QInstanceValidatorTest
    @Test
    public void test_validateEmptyTables()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.setTables(new HashMap<>());
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("At least 1 table must be defined", e);
-      }
+      assertValidationFailureReasons((qInstance) ->
+         {
+            qInstance.setTables(new HashMap<>());
+            qInstance.setProcesses(new HashMap<>());
+         },
+         "At least 1 table must be defined");
    }
 
 
@@ -147,19 +145,15 @@ class QInstanceValidatorTest
    @Test
    public void test_validateInconsistentNames()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.getTable("person").setName("notPerson");
-         qInstance.getBackend("default").setName("notDefault");
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("Inconsistent naming for table", e);
-         assertReason("Inconsistent naming for backend", e);
-      }
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+         {
+            qInstance.getTable("person").setName("notPerson");
+            qInstance.getBackend("default").setName("notDefault");
+            qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setName("notGreetPeople");
+         },
+         "Inconsistent naming for table",
+         "Inconsistent naming for backend",
+         "Inconsistent naming for process");
    }
 
 
@@ -171,17 +165,8 @@ class QInstanceValidatorTest
    @Test
    public void test_validateTableWithoutBackend()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.getTable("person").setBackendName(null);
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("Missing backend name for table", e);
-      }
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setBackendName(null),
+         "Missing backend name for table");
    }
 
 
@@ -193,17 +178,53 @@ class QInstanceValidatorTest
    @Test
    public void test_validateTableWithMissingBackend()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.getTable("person").setBackendName("notARealBackend");
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("Unrecognized backend", e);
-      }
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setBackendName("notARealBackend"),
+         "Unrecognized backend");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that if a process specifies a table that doesn't exist, that it fails.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessWithMissingTable()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setTableName("notATableName"),
+         "Unrecognized table");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that a process with no steps fails
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessWithNoSteps()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setStepList(Collections.emptyList()),
+         "At least 1 step");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setStepList(null),
+         "At least 1 step");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that a process step with an empty string name fails
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessStepWithEmptyName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).getStepList().get(0).setName(""),
+         "Missing name for a step");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(1).setName(null),
+         "Missing name for a step");
    }
 
 
@@ -215,29 +236,11 @@ class QInstanceValidatorTest
    @Test
    public void test_validateTableWithNoFields()
    {
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.getTable("person").setFields(null);
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("At least 1 field", e);
-      }
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setFields(null),
+         "At least 1 field");
 
-      try
-      {
-         QInstance qInstance = TestUtils.defineInstance();
-         qInstance.getTable("person").setFields(new HashMap<>());
-         new QInstanceValidator().validate(qInstance);
-         fail("Should have thrown validationException");
-      }
-      catch(QInstanceValidationException e)
-      {
-         assertReason("At least 1 field", e);
-      }
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setFields(new HashMap<>()),
+         "At least 1 field");
    }
 
 
@@ -249,16 +252,209 @@ class QInstanceValidatorTest
    @Test
    public void test_validateFieldWithMissingPossibleValueSource()
    {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeState").setPossibleValueSourceName("not a real possible value source"),
+         "Unrecognized possibleValueSourceName");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testChildrenWithBadParentAppName()
+   {
+      String[] reasons = new String[] { "Unrecognized parent app", "does not have its parent app properly set" };
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).setParentAppName("notAnApp"), reasons);
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setParentAppName("notAnApp"), reasons);
+      assertValidationFailureReasons((qInstance) -> qInstance.getApp(TestUtils.APP_NAME_GREETINGS).setParentAppName("notAnApp"), reasons);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppCircularReferences()
+   {
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+      {
+         QAppMetaData miscApp      = qInstance.getApp(TestUtils.APP_NAME_MISCELLANEOUS);
+         QAppMetaData greetingsApp = qInstance.getApp(TestUtils.APP_NAME_GREETINGS);
+
+         miscApp.withChild(greetingsApp);
+         greetingsApp.withChild(miscApp);
+      }, "Circular app reference");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsMissingName()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection(null, "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "Missing a name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsMissingLabel()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", null, new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "Missing a label");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsNoFields()
+   {
+      QTableMetaData table1 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of()))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table1), "section1 does not have any fields", "field id is not listed in any field sections");
+
+      QTableMetaData table2 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, null))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table2), "section1 does not have any fields", "field id is not listed in any field sections");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsUnrecognizedFieldName()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "od")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "not a field on this table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsDuplicatedFieldName()
+   {
+      QTableMetaData table1 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table1), "more than once");
+
+      QTableMetaData table2 = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("section2", "Section 2", new QIcon("person"), Tier.T2, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table2), "more than once");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNotInAnySections()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "not listed in any field sections");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionsMultipleTier1()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("section2", "Section 2", new QIcon("person"), Tier.T1, List.of("name")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section listed as Tier 1");
+   }
+
+
+
+   /*******************************************************************************
+    ** Run a little setup code on a qInstance; then validate it, and assert that it
+    ** failed validation with reasons that match the supplied vararg-reasons (but allow
+    ** more reasons - e.g., helpful when one thing we're testing causes other errors).
+    *******************************************************************************/
+   private void assertValidationFailureReasonsAllowingExtraReasons(Consumer<QInstance> setup, String... reasons)
+   {
+      assertValidationFailureReasons(setup, true, reasons);
+   }
+
+
+
+   /*******************************************************************************
+    ** Run a little setup code on a qInstance; then validate it, and assert that it
+    ** failed validation with reasons that match the supplied vararg-reasons (and
+    ** require that exact # of reasons).
+    *******************************************************************************/
+   private void assertValidationFailureReasons(Consumer<QInstance> setup, String... reasons)
+   {
+      assertValidationFailureReasons(setup, false, reasons);
+   }
+
+
+
+   /*******************************************************************************
+    ** Implementation for the overloads of this name.
+    *******************************************************************************/
+   private void assertValidationFailureReasons(Consumer<QInstance> setup, boolean allowExtraReasons, String... reasons)
+   {
       try
       {
          QInstance qInstance = TestUtils.defineInstance();
-         qInstance.getTable("person").getField("homeState").setPossibleValueSourceName("not a real possible value source");
+         setup.accept(qInstance);
          new QInstanceValidator().validate(qInstance);
          fail("Should have thrown validationException");
       }
       catch(QInstanceValidationException e)
       {
-         assertReason("Unrecognized possibleValueSourceName", e);
+         if(!allowExtraReasons)
+         {
+            assertEquals(reasons.length, e.getReasons().size(), "Expected number of validation failure reasons\nExpected: " + String.join(",", reasons) + "\nActual: " + e.getReasons());
+         }
+
+         for(String reason : reasons)
+         {
+            assertReason(reason, e);
+         }
       }
    }
 
@@ -271,7 +467,9 @@ class QInstanceValidatorTest
     *******************************************************************************/
    private void assertReason(String reason, QInstanceValidationException e)
    {
-      assertNotNull(e.getReasons());
-      assertTrue(e.getReasons().stream().anyMatch(s -> s.contains(reason)));
+      assertNotNull(e.getReasons(), "Expected there to be a reason for the failure (but there was not)");
+      assertThat(e.getReasons())
+         .withFailMessage("Expected any of:\n%s\nTo match: [%s]", e.getReasons(), reason)
+         .anyMatch(s -> s.contains(reason));
    }
 }

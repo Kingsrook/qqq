@@ -22,14 +22,20 @@
 package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
@@ -50,22 +56,87 @@ public class MetaDataAction
       // todo pre-customization - just get to modify the request?
       MetaDataOutput metaDataOutput = new MetaDataOutput();
 
+      Map<String, AppTreeNode> treeNodes = new LinkedHashMap<>();
+
+      /////////////////////////////////////
+      // map tables to frontend metadata //
+      /////////////////////////////////////
       Map<String, QFrontendTableMetaData> tables = new LinkedHashMap<>();
       for(Map.Entry<String, QTableMetaData> entry : metaDataInput.getInstance().getTables().entrySet())
       {
          tables.put(entry.getKey(), new QFrontendTableMetaData(entry.getValue(), false));
+         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
       }
       metaDataOutput.setTables(tables);
 
+      ////////////////////////////////////////
+      // map processes to frontend metadata //
+      ////////////////////////////////////////
       Map<String, QFrontendProcessMetaData> processes = new LinkedHashMap<>();
       for(Map.Entry<String, QProcessMetaData> entry : metaDataInput.getInstance().getProcesses().entrySet())
       {
          processes.put(entry.getKey(), new QFrontendProcessMetaData(entry.getValue(), false));
+         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
       }
       metaDataOutput.setProcesses(processes);
 
-      // todo post-customization - can do whatever w/ the result if you want
+      ///////////////////////////////////
+      // map apps to frontend metadata //
+      ///////////////////////////////////
+      Map<String, QFrontendAppMetaData> apps = new LinkedHashMap<>();
+      for(Map.Entry<String, QAppMetaData> entry : metaDataInput.getInstance().getApps().entrySet())
+      {
+         apps.put(entry.getKey(), new QFrontendAppMetaData(entry.getValue()));
+         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
+
+         for(QAppChildMetaData child : entry.getValue().getChildren())
+         {
+            apps.get(entry.getKey()).addChild(new AppTreeNode(child));
+         }
+      }
+      metaDataOutput.setApps(apps);
+
+      ////////////////////////////////////////////////
+      // organize app tree nodes by their hierarchy //
+      ////////////////////////////////////////////////
+      List<AppTreeNode> appTree = new ArrayList<>();
+      for(QAppMetaData appMetaData : metaDataInput.getInstance().getApps().values())
+      {
+         if(appMetaData.getParentAppName() == null)
+         {
+            buildAppTree(treeNodes, appTree, appMetaData);
+         }
+      }
+      metaDataOutput.setAppTree(appTree);
+
+      // todo post-customization - can do whatever w/ the result if you want?
 
       return metaDataOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void buildAppTree(Map<String, AppTreeNode> treeNodes, List<AppTreeNode> nodeList, QAppChildMetaData childMetaData)
+   {
+      AppTreeNode treeNode = treeNodes.get(childMetaData.getName());
+      if(treeNode == null)
+      {
+         return;
+      }
+
+      nodeList.add(treeNode);
+      if(childMetaData instanceof QAppMetaData app)
+      {
+         if(app.getChildren() != null)
+         {
+            for(QAppChildMetaData child : app.getChildren())
+            {
+               buildAppTree(treeNodes, treeNode.getChildren(), child);
+            }
+         }
+      }
    }
 }

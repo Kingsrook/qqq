@@ -26,23 +26,28 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
@@ -59,7 +64,7 @@ import io.github.cdimascio.dotenv.Dotenv;
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static boolean USE_MYSQL = false;
+   public static boolean USE_MYSQL = true;
 
    public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
@@ -68,11 +73,19 @@ public class SampleMetaDataProvider
    // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
    public static final String AUTH0_BASE_URL                   = "https://nutrifresh-one-development.us.auth0.com/";
 
+   public static final String APP_NAME_GREETINGS     = "greetingsApp";
+   public static final String APP_NAME_PEOPLE        = "peopleApp";
+   public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
+
    public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_SIMPLE_SLEEP      = "simpleSleep";
    public static final String PROCESS_NAME_SIMPLE_THROW      = "simpleThrow";
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
+
+   public static final String TABLE_NAME_PERSON  = "person";
+   public static final String TABLE_NAME_CARRIER = "carrier";
+   public static final String TABLE_NAME_CITY    = "city";
 
    public static final String STEP_NAME_SLEEPER = "sleeper";
    public static final String STEP_NAME_THROWER = "thrower";
@@ -101,7 +114,42 @@ public class SampleMetaDataProvider
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
+      defineApps(qInstance);
+
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineApps(QInstance qInstance)
+   {
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_GREETINGS)
+         .withIcon(new QIcon().withName("emoji_people"))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET)
+            .withIcon(new QIcon().withName("emoji_people")))
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON)
+            .withIcon(new QIcon().withName("person")))
+         .withChild(qInstance.getTable(TABLE_NAME_CITY)
+            .withIcon(new QIcon().withName("location_city")))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE))
+         .withIcon(new QIcon().withName("waving_hand")));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_PEOPLE)
+         .withIcon(new QIcon().withName("person"))
+         .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
+
+      qInstance.addApp(new QAppMetaData()
+         .withName(APP_NAME_MISCELLANEOUS)
+         .withIcon(new QIcon().withName("stars"))
+         .withChild(qInstance.getTable(TABLE_NAME_CARRIER).withIcon(new QIcon("local_shipping")))
+         .withChild(qInstance.getProcess(PROCESS_NAME_SIMPLE_SLEEP))
+         .withChild(qInstance.getProcess(PROCESS_NAME_SLEEP_INTERACTIVE))
+         .withChild(qInstance.getProcess(PROCESS_NAME_SIMPLE_THROW)));
    }
 
 
@@ -166,22 +214,28 @@ public class SampleMetaDataProvider
    public static QTableMetaData defineTableCarrier()
    {
       QTableMetaData table = new QTableMetaData();
-      table.setName("carrier");
+      table.setName(TABLE_NAME_CARRIER);
       table.setBackendName(RDBMS_BACKEND_NAME);
       table.setPrimaryKeyField("id");
+      table.setRecordLabelFormat("%s");
+      table.setRecordLabelFields(List.of("name"));
 
       table.addField(new QFieldMetaData("id", QFieldType.INTEGER));
 
       table.addField(new QFieldMetaData("name", QFieldType.STRING)
          .withIsRequired(true));
 
-      table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo enum
+      table.addField(new QFieldMetaData("company_code", QFieldType.STRING) // todo PVS
          .withLabel("Company")
          .withIsRequired(true)
-         .withBackendName("comp_code"));
+         .withBackendName("company_code"));
 
-      table.addField(new QFieldMetaData("service_level", QFieldType.STRING)
-         .withIsRequired(true)); // todo enum
+      table.addField(new QFieldMetaData("service_level", QFieldType.STRING) // todo PVS
+            .withLabel("Service Level")
+            .withIsRequired(true));
+
+      table.addSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "name")));
+      table.addSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("company_code", "service_level")));
 
       return (table);
    }
@@ -193,18 +247,31 @@ public class SampleMetaDataProvider
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
    {
-      return new QTableMetaData()
-         .withName("person")
+      QTableMetaData qTableMetaData = new QTableMetaData()
+         .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(RDBMS_BACKEND_NAME)
          .withPrimaryKeyField("id")
-         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields(List.of("firstName", "lastName"))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
          .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name").withIsRequired(true))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name").withIsRequired(true))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING));
+         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("annualSalary", QFieldType.DECIMAL).withBackendName("annual_salary").withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked").withDisplayFormat(DisplayFormat.COMMAS))
+
+         .withSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "firstName", "lastName")))
+         .withSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("email", "birthDate")))
+         .withSection(new QFieldSection("employmentInfo", "Employment Info", new QIcon("work"), Tier.T2, List.of("annualSalary", "daysWorked")))
+         .withSection(new QFieldSection("dates", "Dates", new QIcon("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      QInstanceEnricher.setInferredFieldBackendNames(qTableMetaData);
+
+      return (qTableMetaData);
    }
 
 
@@ -215,7 +282,7 @@ public class SampleMetaDataProvider
    public static QTableMetaData defineTableCityFile()
    {
       return new QTableMetaData()
-         .withName("city")
+         .withName(TABLE_NAME_CITY)
          .withLabel("Cities")
          .withIsHidden(true)
          .withBackendName(FILESYSTEM_BACKEND_NAME)
@@ -240,7 +307,7 @@ public class SampleMetaDataProvider
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET)
          .withLabel("Greet People")
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
          .withIsHidden(true)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
@@ -249,14 +316,14 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -272,9 +339,9 @@ public class SampleMetaDataProvider
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_INTERACTIVE)
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
 
-         .addStep(LoadInitialRecordsStep.defineMetaData("person"))
+         .addStep(LoadInitialRecordsStep.defineMetaData(TABLE_NAME_PERSON))
 
          .addStep(new QFrontendStepMetaData()
             .withName("setup")
@@ -289,14 +356,14 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))

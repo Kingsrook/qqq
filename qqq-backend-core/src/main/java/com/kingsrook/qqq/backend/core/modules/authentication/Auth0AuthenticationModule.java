@@ -57,19 +57,24 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 {
-   private static final Logger logger = LogManager.getLogger(Auth0AuthenticationModule.class);
+   private static final Logger LOG = LogManager.getLogger(Auth0AuthenticationModule.class);
 
-   private static final int ID_TOKEN_VALIDATION_INTERVAL_SECONDS = 300;
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // 30 minutes - ideally this would be lower, but right now we've been dealing with re-validation issues... //
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   public static final int ID_TOKEN_VALIDATION_INTERVAL_SECONDS = 1800;
 
    public static final String AUTH0_ID_TOKEN_KEY = "sessionId";
 
    public static final String TOKEN_NOT_PROVIDED_ERROR = "Id Token was not provided";
-   public static final String COULD_NOT_DECODE_ERROR = "Unable to decode id token";
-   public static final String EXPIRED_TOKEN_ERROR = "Token has expired";
-   public static final String INVALID_TOKEN_ERROR = "An invalid token was provided";
+   public static final String COULD_NOT_DECODE_ERROR   = "Unable to decode id token";
+   public static final String EXPIRED_TOKEN_ERROR      = "Token has expired";
+   public static final String INVALID_TOKEN_ERROR      = "An invalid token was provided";
 
 
    private Instant now;
+
+
 
    /*******************************************************************************
     **
@@ -83,7 +88,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       String idToken = context.get(AUTH0_ID_TOKEN_KEY);
       if(idToken == null)
       {
-         logger.warn(TOKEN_NOT_PROVIDED_ERROR);
+         LOG.warn(TOKEN_NOT_PROVIDED_ERROR);
          throw (new QAuthenticationException(TOKEN_NOT_PROVIDED_ERROR));
       }
 
@@ -97,7 +102,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // then call method to check more session validity //
          /////////////////////////////////////////////////////
          QSession qSession = buildQSessionFromToken(idToken);
-         if(isSessionValid(qSession))
+         if(isSessionValid(qInstance, qSession))
          {
             return (qSession);
          }
@@ -112,7 +117,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // put now into state so we dont check until next interval passes //
          ///////////////////////////////////////////////////////////////////
          StateProviderInterface spi = getStateProvider();
-         Auth0StateKey key = new Auth0StateKey(qSession.getIdReference());
+         Auth0StateKey          key = new Auth0StateKey(qSession.getIdReference());
          spi.put(key, Instant.now());
 
          return (qSession);
@@ -122,12 +127,12 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          ////////////////////////////////
          // could not decode the token //
          ////////////////////////////////
-         logger.warn(COULD_NOT_DECODE_ERROR, jde);
+         LOG.warn(COULD_NOT_DECODE_ERROR, jde);
          throw (new QAuthenticationException(COULD_NOT_DECODE_ERROR));
       }
       catch(TokenExpiredException tee)
       {
-         logger.info(EXPIRED_TOKEN_ERROR, tee);
+         LOG.info(EXPIRED_TOKEN_ERROR, tee);
          throw (new QAuthenticationException(EXPIRED_TOKEN_ERROR));
       }
       catch(JWTVerificationException | JwkException jve)
@@ -135,7 +140,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          ///////////////////////////////////////////
          // token had invalid signature or claims //
          ///////////////////////////////////////////
-         logger.warn(INVALID_TOKEN_ERROR, jve);
+         LOG.warn(INVALID_TOKEN_ERROR, jve);
          throw (new QAuthenticationException(INVALID_TOKEN_ERROR));
       }
       catch(Exception e)
@@ -144,7 +149,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // ¯\_(ツ)_/¯ //
          ////////////////
          String message = "An unknown error occurred";
-         logger.error(message, e);
+         LOG.error(message, e);
          throw (new QAuthenticationException(message));
       }
    }
@@ -155,16 +160,16 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     **
     *******************************************************************************/
    @Override
-   public boolean isSessionValid(QSession session)
+   public boolean isSessionValid(QInstance instance, QSession session)
    {
       if(session == null)
       {
          return (false);
       }
 
-      StateProviderInterface spi = getStateProvider();
-      Auth0StateKey key = new Auth0StateKey(session.getIdReference());
-      Optional<Instant> lastTimeCheckedOptional = spi.get(Instant.class, key);
+      StateProviderInterface spi                     = getStateProvider();
+      Auth0StateKey          key                     = new Auth0StateKey(session.getIdReference());
+      Optional<Instant>      lastTimeCheckedOptional = spi.get(Instant.class, key);
       if(lastTimeCheckedOptional.isPresent())
       {
          Instant lastTimeChecked = lastTimeCheckedOptional.get();
@@ -174,7 +179,28 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // - so this is basically saying, if the time between the last time we checked the token and     //
          // right now is more than ID_TOKEN_VALIDATION_INTERVAL_SECTIONS, then session needs revalidated  //
          ///////////////////////////////////////////////////////////////////////////////////////////////////
-         return (Duration.between(lastTimeChecked, Instant.now()).compareTo(Duration.ofSeconds(ID_TOKEN_VALIDATION_INTERVAL_SECONDS)) < 0);
+         if(Duration.between(lastTimeChecked, Instant.now()).compareTo(Duration.ofSeconds(ID_TOKEN_VALIDATION_INTERVAL_SECONDS)) < 0)
+         {
+            return (true);
+         }
+
+         try
+         {
+            LOG.debug("Re-validating token due to validation interval being passed: " + session.getIdReference());
+            revalidateToken(instance, session.getIdReference());
+
+            //////////////////////////////////////////////////////////////////
+            // update the timestamp in state provider, to avoid re-checking //
+            //////////////////////////////////////////////////////////////////
+            spi.put(key, Instant.now());
+
+            return (true);
+         }
+         catch(Exception e)
+         {
+            LOG.warn(INVALID_TOKEN_ERROR, e);
+            return (false);
+         }
       }
 
       return (false);
@@ -190,10 +216,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    {
       Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
 
-      DecodedJWT jwt = JWT.decode(idToken);
-      JwkProvider provider = new UrlJwkProvider(metaData.getBaseUrl());
-      Jwk jwk = provider.get(jwt.getKeyId());
-      Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+      DecodedJWT  jwt       = JWT.decode(idToken);
+      JwkProvider provider  = new UrlJwkProvider(metaData.getBaseUrl());
+      Jwk         jwk       = provider.get(jwt.getKeyId());
+      Algorithm   algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
       JWTVerifier verifier = JWT.require(algorithm)
          .withIssuer(metaData.getBaseUrl())
          .build();
@@ -217,20 +243,31 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       ////////////////////////////////////
       // decode and extract the payload //
       ////////////////////////////////////
-      DecodedJWT jwt = JWT.decode(idToken);
-      Base64.Decoder decoder = Base64.getUrlDecoder();
-      String payloadString = new String(decoder.decode(jwt.getPayload()));
-      JSONObject payload = new JSONObject(payloadString);
+      DecodedJWT     jwt           = JWT.decode(idToken);
+      Base64.Decoder decoder       = Base64.getUrlDecoder();
+      String         payloadString = new String(decoder.decode(jwt.getPayload()));
+      JSONObject     payload       = new JSONObject(payloadString);
 
       QUser qUser = new QUser();
-      qUser.setFullName(payload.getString("name"));
+      if(payload.has("name"))
+      {
+         qUser.setFullName(payload.getString("name"));
+      }
+      else
+      {
+         qUser.setFullName("Unknown");
+      }
+
       if(payload.has("email"))
       {
          qUser.setIdReference(payload.getString("email"));
       }
       else
       {
-         qUser.setIdReference(payload.getString("nickname"));
+         if(payload.has("sub"))
+         {
+            qUser.setIdReference(payload.getString("sub"));
+         }
       }
 
       QSession qSession = new QSession();
