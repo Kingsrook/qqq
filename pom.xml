@@ -176,6 +176,8 @@
                <postReleaseGoals>install</postReleaseGoals>  <!-- Let CI run deploys -->
                <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
                <versionDigitToIncrement>1</versionDigitToIncrement> <!-- In general, we update the minor -->
+               <versionProperty>revision</versionProperty>
+               <skipUpdateVersion>true</skipUpdateVersion>
             </configuration>
          </plugin>
          <plugin>
