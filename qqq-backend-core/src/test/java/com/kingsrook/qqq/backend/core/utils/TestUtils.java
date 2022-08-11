@@ -26,7 +26,6 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -52,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
@@ -65,12 +65,14 @@ import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackend
 public class TestUtils
 {
    public static final String DEFAULT_BACKEND_NAME = "default";
+   public static final String MEMORY_BACKEND_NAME  = "memory";
 
    public static final String APP_NAME_GREETINGS     = "greetingsApp";
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
    public static final String TABLE_NAME_PERSON = "person";
+   public static final String TABLE_NAME_SHAPE  = "shape";
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
@@ -89,10 +91,12 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
+      qInstance.addBackend(defineMemoryBackend());
 
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(defineTableIdAndNameOnly());
+      qInstance.addTable(defineTableShape());
 
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
 
@@ -103,8 +107,6 @@ public class TestUtils
       qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
 
       defineApps(qInstance);
-
-      System.out.println(new QInstanceAdapter().qInstanceToJson(qInstance));
 
       return (qInstance);
    }
@@ -175,6 +177,18 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the in-memory backend used in standard tests
+    *******************************************************************************/
+   public static QBackendMetaData defineMemoryBackend()
+   {
+      return new QBackendMetaData()
+         .withName(MEMORY_BACKEND_NAME)
+         .withBackendType(MemoryBackendModule.class);
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
@@ -192,6 +206,27 @@ public class TestUtils
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withField(new QFieldMetaData("homeState", QFieldType.STRING).withPossibleValueSourceName("state"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the 'shape' table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableShape()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_SHAPE)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withField(new QFieldMetaData("type", QFieldType.STRING)) // todo PVS
+         .withField(new QFieldMetaData("noOfSides", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("isPolygon", QFieldType.BOOLEAN)) // mmm, should be derived from type, no?
+         ;
    }
 
 
