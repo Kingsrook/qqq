@@ -31,6 +31,8 @@ import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -246,6 +248,24 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public CountOutput executeCount(CountInput countInput) throws QException
+   {
+      QueryInput queryInput = new QueryInput(countInput.getInstance());
+      queryInput.setSession(countInput.getSession());
+      queryInput.setTableName(countInput.getTableName());
+      queryInput.setFilter(countInput.getFilter());
+      QueryOutput queryOutput = executeQuery(queryInput);
+
+      CountOutput countOutput = new CountOutput();
+      countOutput.setCount(queryOutput.getRecords().size());
+      return (countOutput);
    }
 
 

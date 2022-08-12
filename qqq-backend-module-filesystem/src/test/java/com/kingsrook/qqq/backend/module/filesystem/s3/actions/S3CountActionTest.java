@@ -19,25 +19,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.sampleapp;
+package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SampleCli
+public class S3CountActionTest extends BaseS3Test
 {
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void main(String[] args)
+   @Test
+   public void testCount1() throws QException
    {
-      new SampleCli().run(args);
+      CountInput    countInput    = initCountRequest();
+      S3CountAction s3CountAction = new S3CountAction();
+      s3CountAction.setS3Utils(getS3Utils());
+      CountOutput countOutput = s3CountAction.execute(countInput);
+      Assertions.assertEquals(5, countOutput.getCount(), "Expected # of rows from unfiltered count");
    }
 
 
@@ -45,31 +55,12 @@ public class SampleCli
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void run(String[] args)
+   private CountInput initCountRequest() throws QException
    {
-      try
-      {
-         int exitCode = runForExitCode(args);
-         System.exit(exitCode);
-      }
-      catch(Exception e)
-      {
-         e.printStackTrace();
-         System.exit(-1);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   int runForExitCode(String[] args) throws QException
-   {
-      QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
-      QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-      int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-      return exitCode;
+      CountInput countInput = new CountInput();
+      countInput.setInstance(TestUtils.defineInstance());
+      countInput.setTableName(TestUtils.defineS3CSVPersonTable().getName());
+      return countInput;
    }
 
 }

@@ -29,6 +29,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -277,8 +278,6 @@ public class QueryManager
     *******************************************************************************/
    public static SimpleEntity executeStatementForSimpleEntity(Connection connection, String sql, Object... params) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
       statement.execute();
       ResultSet resultSet = statement.getResultSet();
@@ -290,7 +289,6 @@ public class QueryManager
       {
          return (null);
       }
-      */
    }
 
 
@@ -355,8 +353,6 @@ public class QueryManager
     *******************************************************************************/
    public static SimpleEntity buildSimpleEntity(ResultSet resultSet) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       SimpleEntity row = new SimpleEntity();
 
       ResultSetMetaData metaData = resultSet.getMetaData();
@@ -365,7 +361,6 @@ public class QueryManager
          row.put(metaData.getColumnName(i), getObject(resultSet, i));
       }
       return row;
-      */
    }
 
 

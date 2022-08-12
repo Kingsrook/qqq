@@ -23,53 +23,24 @@ package com.kingsrook.sampleapp;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- **
+ ** Unit test for SampleCli
  *******************************************************************************/
-public class SampleCli
+class SampleCliTest
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void main(String[] args)
-   {
-      new SampleCli().run(args);
-   }
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void run(String[] args)
+   @Test
+   void test() throws QException
    {
-      try
-      {
-         int exitCode = runForExitCode(args);
-         System.exit(exitCode);
-      }
-      catch(Exception e)
-      {
-         e.printStackTrace();
-         System.exit(-1);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   int runForExitCode(String[] args) throws QException
-   {
-      QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
-      QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-      int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-      return exitCode;
+      int exitCode = new SampleCli().runForExitCode(new String[] { "--meta-data" });
+      assertEquals(0, exitCode);
    }
 
 }

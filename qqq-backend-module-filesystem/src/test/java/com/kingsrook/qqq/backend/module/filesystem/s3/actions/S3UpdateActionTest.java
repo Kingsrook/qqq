@@ -19,57 +19,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.sampleapp;
+package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
+import org.apache.commons.lang.NotImplementedException;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SampleCli
+public class S3UpdateActionTest extends BaseS3Test
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void main(String[] args)
-   {
-      new SampleCli().run(args);
-   }
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void run(String[] args)
+   @Test
+   public void test() throws QException
    {
-      try
-      {
-         int exitCode = runForExitCode(args);
-         System.exit(exitCode);
-      }
-      catch(Exception e)
-      {
-         e.printStackTrace();
-         System.exit(-1);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   int runForExitCode(String[] args) throws QException
-   {
-      QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
-      QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-      int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-      return exitCode;
+      assertThrows(NotImplementedException.class, () -> new S3UpdateAction().execute(new UpdateInput()));
    }
 
 }

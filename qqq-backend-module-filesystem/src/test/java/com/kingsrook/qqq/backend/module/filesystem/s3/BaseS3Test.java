@@ -31,8 +31,6 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 
@@ -40,7 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  ** Base class for tests that want to be able to work with localstack s3.
  *******************************************************************************/
 @ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(services = { ServiceName.S3 }, portEdge = "2960", portElasticSearch = "2961")
+@LocalstackDockerProperties(useSingleDockerContainer = true, services = { ServiceName.S3 }, portEdge = "2960", portElasticSearch = "2961")
 public class BaseS3Test
 {
    public static final String BUCKET_NAME = "localstack-test-bucket";

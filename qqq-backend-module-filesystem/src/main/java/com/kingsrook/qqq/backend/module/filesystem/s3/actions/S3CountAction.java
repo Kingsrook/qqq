@@ -19,57 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.sampleapp;
+package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SampleCli
+public class S3CountAction extends AbstractS3Action implements CountInterface
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void main(String[] args)
-   {
-      new SampleCli().run(args);
-   }
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void run(String[] args)
+   public CountOutput execute(CountInput countInput) throws QException
    {
-      try
-      {
-         int exitCode = runForExitCode(args);
-         System.exit(exitCode);
-      }
-      catch(Exception e)
-      {
-         e.printStackTrace();
-         System.exit(-1);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   int runForExitCode(String[] args) throws QException
-   {
-      QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
-      QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-      int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-      return exitCode;
+      return (executeCount(countInput));
    }
 
 }
