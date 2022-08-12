@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.filesystem.local;
 
 
 import java.io.File;
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
@@ -33,6 +34,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemCountAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemDeleteAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemInsertAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
@@ -104,6 +106,16 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
    public QueryInterface getQueryInterface()
    {
       return new FilesystemQueryAction();
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public CountInterface getCountInterface()
+   {
+      return new FilesystemCountAction();
    }
 
 

@@ -40,7 +40,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
@@ -203,7 +202,15 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
                   if(queryInput.getRecordPipe() != null)
                   {
-                     new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record -> addBackendDetailsToRecord(record, file)));
+                     new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record ->
+                     {
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // since the CSV adapter is the one responsible for putting records into the pipe (rather than the queryOutput), //
+                        // we must do some of QueryOutput's normal job here - and run the runPostQueryRecordCustomizer                   //
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        addBackendDetailsToRecord(record, file);
+                        queryOutput.runPostQueryRecordCustomizer(record);
+                     }));
                   }
                   else
                   {
@@ -281,7 +288,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    private String customizeFileContentsAfterReading(QTableMetaData table, String fileContents) throws QException
    {
-      Optional<QCodeReference> optionalCustomizer = table.getCustomizer(FilesystemBackendModuleInterface.CUSTOMIZER_FILE_POST_FILE_READ);
+      Optional<QCodeReference> optionalCustomizer = table.getCustomizer(FilesystemCustomizers.POST_READ_FILE);
       if(optionalCustomizer.isEmpty())
       {
          return (fileContents);

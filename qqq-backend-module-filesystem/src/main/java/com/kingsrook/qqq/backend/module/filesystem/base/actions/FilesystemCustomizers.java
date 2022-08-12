@@ -19,23 +19,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.base;
+package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 
 
-import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.core.actions.customizers.Customizers;
 
 
 /*******************************************************************************
- ** Interface to add additional functionality commonly among the various filesystem
- ** module implementations.
+ ** Standard place where the names of QQQ Customization points for filesystem-based
+ ** backends are defined.
  *******************************************************************************/
-public interface FilesystemBackendModuleInterface<FILE>
+public interface FilesystemCustomizers extends Customizers
 {
-
-   /*******************************************************************************
-    ** For filesystem backends, get the module-specific action base-class, that helps
-    ** with functions like listing and deleting files.
-    *******************************************************************************/
-   AbstractBaseFilesystemAction<FILE> getActionBase();
-
+   String POST_READ_FILE = "postReadFile";
 }

@@ -19,23 +19,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.base;
+package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
-import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 
 
 /*******************************************************************************
- ** Interface to add additional functionality commonly among the various filesystem
- ** module implementations.
+ **
  *******************************************************************************/
-public interface FilesystemBackendModuleInterface<FILE>
+public class FilesystemCountAction extends AbstractFilesystemAction implements CountInterface
 {
 
    /*******************************************************************************
-    ** For filesystem backends, get the module-specific action base-class, that helps
-    ** with functions like listing and deleting files.
+    **
     *******************************************************************************/
-   AbstractBaseFilesystemAction<FILE> getActionBase();
+   public CountOutput execute(CountInput countInput) throws QException
+   {
+      QueryInput queryInput = new QueryInput(countInput.getInstance());
+      queryInput.setSession(countInput.getSession());
+      queryInput.setTableName(countInput.getTableName());
+      queryInput.setFilter(countInput.getFilter());
+      QueryOutput queryOutput = executeQuery(queryInput);
+
+      CountOutput countOutput = new CountOutput();
+      countOutput.setCount(queryOutput.getRecords().size());
+      return (countOutput);
+   }
 
 }

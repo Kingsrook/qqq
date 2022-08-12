@@ -24,8 +24,13 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.CustomizerLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.Customizers;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -34,7 +39,11 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class QueryOutput extends AbstractActionOutput implements Serializable
 {
+   private static final Logger LOG = LogManager.getLogger(QueryOutput.class);
+
    private QueryOutputStorageInterface storage;
+
+   private Function<QRecord, QRecord> postQueryRecordCustomizer;
 
 
 
@@ -52,6 +61,8 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
       {
          storage = new QueryOutputList();
       }
+
+      postQueryRecordCustomizer = (Function<QRecord, QRecord>) CustomizerLoader.getTableCustomizerFunction(queryInput.getTable(), Customizers.POST_QUERY_RECORD);
    }
 
 
@@ -65,7 +76,22 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
     *******************************************************************************/
    public void addRecord(QRecord record)
    {
+      record = runPostQueryRecordCustomizer(record);
       storage.addRecord(record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord runPostQueryRecordCustomizer(QRecord record)
+   {
+      if(this.postQueryRecordCustomizer != null)
+      {
+         record = this.postQueryRecordCustomizer.apply(record);
+      }
+      return record;
    }
 
 
@@ -75,6 +101,11 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
     *******************************************************************************/
    public void addRecords(List<QRecord> records)
    {
+      if(this.postQueryRecordCustomizer != null)
+      {
+         records.replaceAll(t -> this.postQueryRecordCustomizer.apply(t));
+      }
+
       storage.addRecords(records);
    }
 

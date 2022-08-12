@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
 import java.util.List;
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.Customizers;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -40,6 +42,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -90,28 +94,9 @@ class MemoryBackendModuleTest
       InsertInput insertInput = new InsertInput(qInstance);
       insertInput.setSession(session);
       insertInput.setTableName(table.getName());
-      insertInput.setRecords(List.of(
-         new QRecord()
-            .withTableName(table.getName())
-            .withValue("name", "My Triangle")
-            .withValue("type", "triangle")
-            .withValue("noOfSides", 3)
-            .withValue("isPolygon", true),
-         new QRecord()
-            .withTableName(table.getName())
-            .withValue("name", "Your Square")
-            .withValue("type", "square")
-            .withValue("noOfSides", 4)
-            .withValue("isPolygon", true),
-         new QRecord()
-            .withTableName(table.getName())
-            .withValue("name", "Some Circle")
-            .withValue("type", "circle")
-            .withValue("noOfSides", null)
-            .withValue("isPolygon", false)
-      ));
+      insertInput.setRecords(getTestRecords(table));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
-      assertEquals(insertOutput.getRecords().size(), 3);
+      assertEquals(3, insertOutput.getRecords().size());
       assertTrue(insertOutput.getRecords().stream().allMatch(r -> r.getValue("id") != null));
       assertTrue(insertOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1)));
       assertTrue(insertOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(2)));
@@ -124,7 +109,7 @@ class MemoryBackendModuleTest
       queryInput.setSession(session);
       queryInput.setTableName(table.getName());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      assertEquals(queryOutput.getRecords().size(), 3);
+      assertEquals(3, queryOutput.getRecords().size());
       assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("id") != null));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(2)));
@@ -152,10 +137,10 @@ class MemoryBackendModuleTest
             .withValue("type", "ellipse")
       ));
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-      assertEquals(updateOutput.getRecords().size(), 2);
+      assertEquals(2, updateOutput.getRecords().size());
 
       queryOutput = new QueryAction().execute(queryInput);
-      assertEquals(queryOutput.getRecords().size(), 3);
+      assertEquals(3, queryOutput.getRecords().size());
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("name").equals("My Triangle")));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueString("name").equals("Not My Triangle any more")));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueString("type").equals("ellipse")));
@@ -171,15 +156,104 @@ class MemoryBackendModuleTest
       deleteInput.setTableName(table.getName());
       deleteInput.setPrimaryKeys(List.of(1, 2));
       DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
-      assertEquals(deleteOutput.getDeletedRecordCount(), 2);
+      assertEquals(2, deleteOutput.getDeletedRecordCount());
 
       assertEquals(1, new CountAction().execute(countInput).getCount());
 
       queryOutput = new QueryAction().execute(queryInput);
-      assertEquals(queryOutput.getRecords().size(), 1);
+      assertEquals(1, queryOutput.getRecords().size());
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(1)));
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(2)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3)));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<QRecord> getTestRecords(QTableMetaData table)
+   {
+      return List.of(
+         new QRecord()
+            .withTableName(table.getName())
+            .withValue("name", "My Triangle")
+            .withValue("type", "triangle")
+            .withValue("noOfSides", 3)
+            .withValue("isPolygon", true),
+         new QRecord()
+            .withTableName(table.getName())
+            .withValue("name", "Your Square")
+            .withValue("type", "square")
+            .withValue("noOfSides", 4)
+            .withValue("isPolygon", true),
+         new QRecord()
+            .withTableName(table.getName())
+            .withValue("name", "Some Circle")
+            .withValue("type", "circle")
+            .withValue("noOfSides", null)
+            .withValue("isPolygon", false)
+      );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCustomizer() throws QException
+   {
+      QInstance      qInstance = TestUtils.defineInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+      QSession       session   = new QSession();
+
+      ///////////////////////////////////
+      // add a customizer to the table //
+      ///////////////////////////////////
+      table.withCustomizer(Customizers.POST_QUERY_RECORD, new QCodeReference(ShapeTestCustomizer.class, QCodeUsage.CUSTOMIZER));
+
+      //////////////////
+      // do an insert //
+      //////////////////
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(session);
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(getTestRecords(table));
+      new InsertAction().execute(insertInput);
+
+      ///////////////////////////////////////////////////////
+      // do a query - assert that the customizer did stuff //
+      ///////////////////////////////////////////////////////
+      ShapeTestCustomizer.executionCount = 0;
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setSession(session);
+      queryInput.setTableName(table.getName());
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(3, queryOutput.getRecords().size());
+      assertEquals(3, ShapeTestCustomizer.executionCount);
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1) && r.getValueInteger("tenTimesId").equals(10)));
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(2) && r.getValueInteger("tenTimesId").equals(20)));
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3) && r.getValueInteger("tenTimesId").equals(30)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class ShapeTestCustomizer implements Function<QRecord, QRecord>
+   {
+      static int executionCount = 0;
+
+
+
+      @Override
+      public QRecord apply(QRecord record)
+      {
+         executionCount++;
+         record.setValue("tenTimesId", record.getValueInteger("id") * 10);
+         return (record);
+      }
+   }
 }

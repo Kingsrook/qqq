@@ -408,12 +408,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
       }
 
       QCodeReference function = customizers.get(customizerName);
-      if(function == null)
-      {
-         throw (new IllegalArgumentException("Customizer  [" + customizerName + "] was not found in table [" + name + "]."));
-      }
-
-      return (Optional.of(function));
+      return (Optional.ofNullable(function));
    }
 
 
