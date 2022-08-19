@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -281,4 +282,60 @@ class CsvToQRecordAdapterTest
       // todo - this is what the method header comment means when it says we don't handle all cases well...
       //  Assertions.assertEquals(List.of("A", "B", "C", "C 2", "C 3"), csvToQRecordAdapter.makeHeadersUnique(List.of("A", "B", "C 2", "C", "C 3")));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testByteOrderMarker()
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      List<QRecord> records = csvToQRecordAdapter.buildRecordsFromCsv("""
+         ﻿id,firstName
+         1,John""", TestUtils.defineTablePerson(), null);
+
+      assertEquals(1, records.get(0).getValueInteger("id"));
+      assertEquals("John", records.get(0).getValueString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Fix an IndexOutOfBounds that we used to throw.
+    *******************************************************************************/
+   @Test
+   void testTooFewBodyColumns()
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      List<QRecord> records = csvToQRecordAdapter.buildRecordsFromCsv("""
+         id,firstName,lastName
+         1,John""", TestUtils.defineTablePerson(), null);
+
+      assertEquals(1, records.get(0).getValueInteger("id"));
+      assertEquals("John", records.get(0).getValueString("firstName"));
+      assertNull(records.get(0).getValueString("lastName"));
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testTooFewColumnsIndexMapping()
+   {
+      int index = 1;
+      QIndexBasedFieldMapping mapping = new QIndexBasedFieldMapping()
+         .withMapping("id", index++)
+         .withMapping("firstName", index++)
+         .withMapping("lastName", index++);
+
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      List<QRecord> records = csvToQRecordAdapter.buildRecordsFromCsv("1,John", TestUtils.defineTablePerson(), mapping);
+
+      assertEquals(1, records.get(0).getValueInteger("id"));
+      assertEquals("John", records.get(0).getValueString("firstName"));
+      assertNull(records.get(0).getValueString("lastName"));
+   }
+
 }

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -45,14 +46,24 @@ public class QueryAction
       ActionHelper.validateSession(queryInput);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
       // todo pre-customization - just get to modify the request?
       QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
       // todo post-customization - can do whatever w/ the result if you want
 
-      if (queryInput.getRecordPipe() == null)
+      if(queryInput.getRecordPipe() == null)
       {
-         QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
+         if(queryInput.getShouldGenerateDisplayValues())
+         {
+            QValueFormatter qValueFormatter = new QValueFormatter();
+            qValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
+         }
+
+         if(queryInput.getShouldTranslatePossibleValues())
+         {
+            QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
+            qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
+         }
       }
 
       return queryOutput;

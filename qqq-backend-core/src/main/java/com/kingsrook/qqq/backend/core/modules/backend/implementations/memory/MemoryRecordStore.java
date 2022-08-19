@@ -24,18 +24,21 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
@@ -47,6 +50,12 @@ public class MemoryRecordStore
 
    private Map<String, Map<Serializable, QRecord>> data;
    private Map<String, Integer>                    nextSerials;
+
+   private static boolean collectStatistics = false;
+
+   private static final Map<String, Integer> statistics = Collections.synchronizedMap(new HashMap<>());
+
+   public static final String STAT_QUERIES_RAN = "queriesRan";
 
 
 
@@ -105,9 +114,56 @@ public class MemoryRecordStore
     *******************************************************************************/
    public List<QRecord> query(QueryInput input)
    {
+      incrementStatistic(STAT_QUERIES_RAN);
+
       Map<Serializable, QRecord> tableData = getTableData(input.getTable());
-      List<QRecord>              records   = new ArrayList<>(tableData.values());
-      // todo - filtering
+      List<QRecord>              records   = new ArrayList<>();
+
+      for(QRecord qRecord : tableData.values())
+      {
+         boolean recordMatches = true;
+         if(input.getFilter() != null && input.getFilter().getCriteria() != null)
+         {
+            for(QFilterCriteria criterion : input.getFilter().getCriteria())
+            {
+               String       fieldName = criterion.getFieldName();
+               Serializable value     = qRecord.getValue(fieldName);
+               switch(criterion.getOperator())
+               {
+                  case EQUALS:
+                  {
+                     if(!value.equals(criterion.getValues().get(0)))
+                     {
+                        recordMatches = false;
+                     }
+                     break;
+                  }
+                  case IN:
+                  {
+                     if(!criterion.getValues().contains(value))
+                     {
+                        recordMatches = false;
+                     }
+                     break;
+                  }
+                  default:
+                  {
+                     throw new NotImplementedException("Operator [" + criterion.getOperator() + "] is not yet implemented in the Memory backend.");
+                  }
+               }
+               if(!recordMatches)
+               {
+                  break;
+               }
+            }
+         }
+
+         if(recordMatches)
+         {
+            records.add(qRecord);
+         }
+      }
+
       return (records);
    }
 
@@ -120,7 +176,7 @@ public class MemoryRecordStore
    {
       Map<Serializable, QRecord> tableData = getTableData(input.getTable());
       List<QRecord>              records   = new ArrayList<>(tableData.values());
-      // todo - filtering
+      // todo - filtering (call query)
       return (records.size());
    }
 
@@ -235,4 +291,53 @@ public class MemoryRecordStore
 
       return (rowsDeleted);
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for collectStatistics
+    **
+    *******************************************************************************/
+   public static void setCollectStatistics(boolean collectStatistics)
+   {
+      MemoryRecordStore.collectStatistics = collectStatistics;
+   }
+
+
+
+   /*******************************************************************************
+    ** Increment a statistic
+    **
+    *******************************************************************************/
+   public static void incrementStatistic(String statName)
+   {
+      if(collectStatistics)
+      {
+         statistics.putIfAbsent(statName, 0);
+         statistics.put(statName, statistics.get(statName) + 1);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** clear the map of statistics
+    **
+    *******************************************************************************/
+   public static void resetStatistics()
+   {
+      statistics.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for statistics
+    **
+    *******************************************************************************/
+   public static Map<String, Integer> getStatistics()
+   {
+      return statistics;
+   }
+
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -582,6 +583,18 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withRecordLabelFields(List<String> recordLabelFields)
    {
       this.recordLabelFields = recordLabelFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordLabelFields
+    **
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFields(String... recordLabelFields)
+   {
+      this.recordLabelFields = Arrays.asList(recordLabelFields);
       return (this);
    }
 

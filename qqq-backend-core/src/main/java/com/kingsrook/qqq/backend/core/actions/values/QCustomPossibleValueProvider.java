@@ -19,16 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.actions.values;
+
+
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 
 
 /*******************************************************************************
- ** Possible usages for Q-Code entities
- **
+ ** Interface to be implemented by user-defined code that serves as the backing
+ ** for a CUSTOM type possibleValueSource
  *******************************************************************************/
-public enum QCodeUsage
+public interface QCustomPossibleValueProvider
 {
-   BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER, // a function to customize part of a QQQ table's behavior
-   POSSIBLE_VALUE_PROVIDER // code that drives a custom possibleValueSource
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   QPossibleValue<?> getPossibleValue(Serializable idValue);
+
+   // todo - get/search list of possible values
+
 }

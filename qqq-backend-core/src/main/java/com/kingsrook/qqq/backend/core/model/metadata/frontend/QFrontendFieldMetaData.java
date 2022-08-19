@@ -36,11 +36,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendFieldMetaData
 {
-   private String name;
-   private String label;
+   private String     name;
+   private String     label;
    private QFieldType type;
-   private boolean isRequired;
-   private boolean isEditable;
+   private boolean    isRequired;
+   private boolean    isEditable;
+   private String     possibleValueSourceName;
+   private String     displayFormat;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -58,6 +60,8 @@ public class QFrontendFieldMetaData
       this.type = fieldMetaData.getType();
       this.isRequired = fieldMetaData.getIsRequired();
       this.isEditable = fieldMetaData.getIsEditable();
+      this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
+      this.displayFormat = fieldMetaData.getDisplayFormat();
    }
 
 
@@ -113,6 +117,28 @@ public class QFrontendFieldMetaData
    public boolean getIsEditable()
    {
       return isEditable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for displayFormat
+    **
+    *******************************************************************************/
+   public String getDisplayFormat()
+   {
+      return displayFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleValueSourceName
+    **
+    *******************************************************************************/
+   public String getPossibleValueSourceName()
+   {
+      return possibleValueSourceName;
    }
 
 }

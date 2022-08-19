@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -39,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -80,6 +83,10 @@ public class TestUtils
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
 
+   public static final String POSSIBLE_VALUE_SOURCE_STATE  = "state"; // enum-type
+   public static final String POSSIBLE_VALUE_SOURCE_SHAPE  = "shape"; // table-type
+   public static final String POSSIBLE_VALUE_SOURCE_CUSTOM = "custom"; // custom-type
+
 
 
    /*******************************************************************************
@@ -99,6 +106,8 @@ public class TestUtils
       qInstance.addTable(defineTableShape());
 
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
+      qInstance.addPossibleValueSource(defineShapePossibleValueSource());
+      qInstance.addPossibleValueSource(defineCustomPossibleValueSource());
 
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
@@ -141,12 +150,40 @@ public class TestUtils
     ** Define the "states" possible value source used in standard tests
     **
     *******************************************************************************/
-   private static QPossibleValueSource<String> defineStatesPossibleValueSource()
+   private static QPossibleValueSource defineStatesPossibleValueSource()
    {
-      return new QPossibleValueSource<String>()
-         .withName("state")
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_STATE)
          .withType(QPossibleValueSourceType.ENUM)
-         .withEnumValues(List.of("IL", "MO"));
+         .withEnumValues(List.of(new QPossibleValue<>(1, "IL"), new QPossibleValue<>(2, "MO")));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the "shape" possible value source used in standard tests
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource defineShapePossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_SHAPE)
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TABLE_NAME_SHAPE);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the "custom" possible value source used in standard tests
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource defineCustomPossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_CUSTOM)
+         .withType(QPossibleValueSourceType.CUSTOM)
+         .withCustomCodeReference(new QCodeReference(CustomPossibleValueSource.class));
    }
 
 
@@ -205,7 +242,10 @@ public class TestUtils
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
-         .withField(new QFieldMetaData("homeState", QFieldType.STRING).withPossibleValueSourceName("state"));
+         .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STATE))
+         .withField(new QFieldMetaData("favoriteShapeId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_SHAPE))
+         .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
+         ;
    }
 
 
@@ -219,6 +259,7 @@ public class TestUtils
          .withName(TABLE_NAME_SHAPE)
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
+         .withRecordLabelFields("name")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -452,4 +493,21 @@ public class TestUtils
          """);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomPossibleValueSource implements QCustomPossibleValueProvider
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public QPossibleValue<?> getPossibleValue(Serializable idValue)
+      {
+         return (new QPossibleValue<>(idValue, "Custom[" + idValue + "]"));
+      }
+   }
 }

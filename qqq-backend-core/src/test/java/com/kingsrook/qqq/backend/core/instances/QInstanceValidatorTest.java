@@ -22,16 +22,20 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -110,7 +114,7 @@ class QInstanceValidatorTest
    @Test
    public void test_validateNullTables()
    {
-      assertValidationFailureReasons((qInstance) ->
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
          {
             qInstance.setTables(null);
             qInstance.setProcesses(null);
@@ -127,7 +131,7 @@ class QInstanceValidatorTest
    @Test
    public void test_validateEmptyTables()
    {
-      assertValidationFailureReasons((qInstance) ->
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
          {
             qInstance.setTables(new HashMap<>());
             qInstance.setProcesses(new HashMap<>());
@@ -150,10 +154,13 @@ class QInstanceValidatorTest
             qInstance.getTable("person").setName("notPerson");
             qInstance.getBackend("default").setName("notDefault");
             qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setName("notGreetPeople");
+            qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setName("notStates");
          },
          "Inconsistent naming for table",
          "Inconsistent naming for backend",
-         "Inconsistent naming for process");
+         "Inconsistent naming for process",
+         "Inconsistent naming for possibleValueSource"
+      );
    }
 
 
@@ -180,6 +187,19 @@ class QInstanceValidatorTest
    {
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setBackendName("notARealBackend"),
          "Unrecognized backend");
+   }
+
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateTableBadRecordFormatField()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withRecordLabelFields("notAField"),
+         "not a field");
    }
 
 
@@ -252,7 +272,7 @@ class QInstanceValidatorTest
    @Test
    public void test_validateFieldWithMissingPossibleValueSource()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeState").setPossibleValueSourceName("not a real possible value source"),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId").setPossibleValueSourceName("not a real possible value source"),
          "Unrecognized possibleValueSourceName");
    }
 
@@ -319,6 +339,7 @@ class QInstanceValidatorTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -376,6 +397,7 @@ class QInstanceValidatorTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -391,6 +413,7 @@ class QInstanceValidatorTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -404,6 +427,96 @@ class QInstanceValidatorTest
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section listed as Tier 1");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMissingType()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setType(null),
+         "Missing type for possibleValueSource");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMissingIdType()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setIdType(null),
+         "Missing an idType for possibleValueSource");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMisConfiguredEnum()
+   {
+      assertValidationFailureReasons((qInstance) -> {
+            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+            possibleValueSource.setTableName("person");
+            possibleValueSource.setCustomCodeReference(new QCodeReference());
+            possibleValueSource.setEnumValues(null);
+         },
+         "should not have a tableName",
+         "should not have a customCodeReference",
+         "is missing enum values");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setEnumValues(new ArrayList<>()),
+         "is missing enum values");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMisConfiguredTable()
+   {
+      assertValidationFailureReasons((qInstance) -> {
+            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+            possibleValueSource.setTableName(null);
+            possibleValueSource.setCustomCodeReference(new QCodeReference());
+            possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+         },
+         "should not have enum values",
+         "should not have a customCodeReference",
+         "is missing a tableName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setTableName("Not a table"),
+         "Unrecognized table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMisConfiguredCustom()
+   {
+      assertValidationFailureReasons((qInstance) -> {
+            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+            possibleValueSource.setTableName("person");
+            possibleValueSource.setCustomCodeReference(null);
+            possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+         },
+         "should not have enum values",
+         "should not have a tableName",
+         "is missing a customCodeReference");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM).setCustomCodeReference(new QCodeReference()),
+         "not a possibleValueProvider");
    }
 
 

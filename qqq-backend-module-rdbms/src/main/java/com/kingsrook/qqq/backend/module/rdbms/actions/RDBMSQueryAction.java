@@ -200,6 +200,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          {
             return (QueryManager.getLocalDateTime(resultSet, i));
          }
+         case BOOLEAN:
+         {
+            return (QueryManager.getBoolean(resultSet, i));
+         }
          default:
          {
             throw new IllegalStateException("Unexpected field type: " + qFieldMetaData.getType());

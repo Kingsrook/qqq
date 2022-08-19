@@ -19,16 +19,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
 /*******************************************************************************
- ** Possible usages for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeUsage
+public interface PossibleValueEnum<T>
 {
-   BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER, // a function to customize part of a QQQ table's behavior
-   POSSIBLE_VALUE_PROVIDER // code that drives a custom possibleValueSource
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   T getPossibleValueId();
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   String getPossibleValueLabel();
 }

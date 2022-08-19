@@ -25,8 +25,10 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +36,8 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Utility to apply display formats to values for fields
+ ** Utility to apply display formats to values for records and fields.
+ ** Note that this includes handling PossibleValues.
  *******************************************************************************/
 public class QValueFormatter
 {
@@ -45,7 +48,16 @@ public class QValueFormatter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String formatValue(QFieldMetaData field, Serializable value)
+   public QValueFormatter()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatValue(QFieldMetaData field, Serializable value)
    {
       //////////////////////////////////
       // null values get null results //
@@ -54,6 +66,16 @@ public class QValueFormatter
       {
          return (null);
       }
+
+      // todo - is this appropriate, with this class and possibleValueTransaltor being decoupled - to still do standard formatting here?
+      //  alternatively, shold we return null here?
+      // ///////////////////////////////////////////////
+      // // if the field has a possible value, use it //
+      // ///////////////////////////////////////////////
+      // if(field.getPossibleValueSourceName() != null)
+      // {
+      //    return (this.possibleValueTranslator.translatePossibleValue(field, value));
+      // }
 
       ////////////////////////////////////////////////////////
       // if the field has a display format, try to apply it //
@@ -68,6 +90,7 @@ public class QValueFormatter
          {
             try
             {
+               // todo - revisit if we actually want this - or - if you should get an error if you mis-configure your table this way (ideally during validation!)
                if(e.getMessage().equals("f != java.lang.Integer"))
                {
                   return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
@@ -99,7 +122,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** Make a string from a table's recordLabelFormat and fields, for a given record.
     *******************************************************************************/
-   public static String formatRecordLabel(QTableMetaData table, QRecord record)
+   public String formatRecordLabel(QTableMetaData table, QRecord record)
    {
       if(!StringUtils.hasContent(table.getRecordLabelFormat()))
       {
@@ -128,7 +151,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** Deal with non-happy-path cases for making a record label.
     *******************************************************************************/
-   private static String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
+   private String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
    {
       ///////////////////////////////////////////////////////////////////////////////////////
       // if there's no record label format, then just return the primary key display value //
@@ -156,7 +179,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a list of records, set their recordLabels and display values
     *******************************************************************************/
-   public static void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
+   public void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
       if(records == null)
       {
@@ -167,12 +190,13 @@ public class QValueFormatter
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            String formattedValue = QValueFormatter.formatValue(field, record.getValue(field.getName()));
+            String formattedValue = formatValue(field, record.getValue(field.getName()));
             record.setDisplayValue(field.getName(), formattedValue);
          }
 
-         record.setRecordLabel(QValueFormatter.formatRecordLabel(table, record));
+         record.setRecordLabel(formatRecordLabel(table, record));
       }
    }
+
 
 }
