@@ -86,6 +86,8 @@ public class BasicETLLoadFunction implements BackendStep
       for(List<QRecord> page : CollectionUtils.getPages(inputRecords, pageSize))
       {
          LOG.info("Inserting a page of [" + page.size() + "] records. Progress:  " + recordsInserted + " loaded out of " + inputRecords.size() + " total");
+         runBackendStepInput.getAsyncJobCallback().updateStatus("Inserting records", recordsInserted, inputRecords.size());
+
          InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
          insertInput.setSession(runBackendStepInput.getSession());
          insertInput.setTableName(table);

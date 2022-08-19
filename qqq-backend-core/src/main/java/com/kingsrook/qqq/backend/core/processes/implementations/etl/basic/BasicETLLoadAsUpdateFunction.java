@@ -82,6 +82,8 @@ public class BasicETLLoadAsUpdateFunction implements BackendStep
       for(List<QRecord> page : CollectionUtils.getPages(inputRecords, pageSize))
       {
          LOG.info("Updating a page of [" + page.size() + "] records. Progress:  " + recordsUpdated + " loaded out of " + inputRecords.size() + " total");
+         runBackendStepInput.getAsyncJobCallback().updateStatus("Updating records", recordsUpdated, inputRecords.size());
+
          UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
          updateInput.setSession(runBackendStepInput.getSession());
          updateInput.setTableName(table);
