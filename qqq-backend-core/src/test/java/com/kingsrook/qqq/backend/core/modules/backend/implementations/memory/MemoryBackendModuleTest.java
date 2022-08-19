@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,8 +63,9 @@ class MemoryBackendModuleTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @BeforeEach
    @AfterEach
-   void afterEach()
+   void beforeAndAfter()
    {
       MemoryRecordStore.getInstance().reset();
    }
@@ -119,6 +121,8 @@ class MemoryBackendModuleTest
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueString("name").equals("Some Circle")));
 
       assertEquals(3, new CountAction().execute(countInput).getCount());
+
+      // todo - filters in query
 
       //////////////////
       // do an update //

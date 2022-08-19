@@ -27,8 +27,8 @@
           "type": "DATE_TIME",
           "possibleValueSourceName": null
         },
-        "homeState": {
-          "name": "homeState",
+        "homeStateId": {
+          "name": "homeStateId",
           "backendName": null,
           "label": null,
           "type": "STRING",

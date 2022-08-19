@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
@@ -88,6 +89,7 @@ public class QInstanceValidator
          validateTables(qInstance, errors);
          validateProcesses(qInstance, errors);
          validateApps(qInstance, errors);
+         validatePossibleValueSources(qInstance, errors);
       }
       catch(Exception e)
       {
@@ -167,8 +169,8 @@ public class QInstanceValidator
             //////////////////////////////////////////
             // validate field sections in the table //
             //////////////////////////////////////////
-            Set<String> fieldNamesInSections = new HashSet<>();
-            QFieldSection tier1Section = null;
+            Set<String>   fieldNamesInSections = new HashSet<>();
+            QFieldSection tier1Section         = null;
             if(table.getSections() != null)
             {
                for(QFieldSection section : table.getSections())
@@ -190,6 +192,16 @@ public class QInstanceValidator
                }
             }
 
+            ///////////////////////////////
+            // validate the record label //
+            ///////////////////////////////
+            if(table.getRecordLabelFields() != null)
+            {
+               for(String recordLabelField : table.getRecordLabelFields())
+               {
+                  assertCondition(errors, table.getFields().containsKey(recordLabelField), "Table " + tableName + " record label field " + recordLabelField + " is not a field on this table.");
+               }
+            }
          });
       }
    }
@@ -225,7 +237,7 @@ public class QInstanceValidator
     *******************************************************************************/
    private void validateProcesses(QInstance qInstance, List<String> errors)
    {
-      if(!CollectionUtils.nullSafeIsEmpty(qInstance.getProcesses()))
+      if(CollectionUtils.nullSafeHasContents(qInstance.getProcesses()))
       {
          qInstance.getProcesses().forEach((processName, process) ->
          {
@@ -264,7 +276,7 @@ public class QInstanceValidator
     *******************************************************************************/
    private void validateApps(QInstance qInstance, List<String> errors)
    {
-      if(!CollectionUtils.nullSafeIsEmpty(qInstance.getApps()))
+      if(CollectionUtils.nullSafeHasContents(qInstance.getApps()))
       {
          qInstance.getApps().forEach((appName, app) ->
          {
@@ -283,6 +295,61 @@ public class QInstanceValidator
                   assertCondition(errors, Objects.equals(appName, child.getParentAppName()), "Child " + child.getName() + " of app " + appName + " does not have its parent app properly set.");
                   assertCondition(errors, !childNames.contains(child.getName()), "App " + appName + " contains more than one child named " + child.getName());
                   childNames.add(child.getName());
+               }
+            }
+         });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validatePossibleValueSources(QInstance qInstance, List<String> errors)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getPossibleValueSources()))
+      {
+         qInstance.getPossibleValueSources().forEach((pvsName, possibleValueSource) ->
+         {
+            assertCondition(errors, Objects.equals(pvsName, possibleValueSource.getName()), "Inconsistent naming for possibleValueSource: " + pvsName + "/" + possibleValueSource.getName() + ".");
+            assertCondition(errors, possibleValueSource.getIdType() != null, "Missing an idType for possibleValueSource: " + pvsName);
+            if(assertCondition(errors, possibleValueSource.getType() != null, "Missing type for possibleValueSource: " + pvsName))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // assert about fields that should and should not be set, based on possible value source type //
+               // do additional type-specific validations as well                                            //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               switch(possibleValueSource.getType())
+               {
+                  case ENUM ->
+                  {
+                     assertCondition(errors, !StringUtils.hasContent(possibleValueSource.getTableName()), "enum-type possibleValueSource " + pvsName + " should not have a tableName.");
+                     assertCondition(errors, possibleValueSource.getCustomCodeReference() == null, "enum-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
+
+                     assertCondition(errors, CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()), "enum-type possibleValueSource " + pvsName + " is missing enum values");
+                  }
+                  case TABLE ->
+                  {
+                     assertCondition(errors, CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "table-type possibleValueSource " + pvsName + " should not have enum values.");
+                     assertCondition(errors, possibleValueSource.getCustomCodeReference() == null, "table-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
+
+                     if(assertCondition(errors, StringUtils.hasContent(possibleValueSource.getTableName()), "table-type possibleValueSource " + pvsName + " is missing a tableName."))
+                     {
+                        assertCondition(errors, qInstance.getTable(possibleValueSource.getTableName()) != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + pvsName + ".");
+                     }
+                  }
+                  case CUSTOM ->
+                  {
+                     assertCondition(errors, CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "custom-type possibleValueSource " + pvsName + " should not have enum values.");
+                     assertCondition(errors, !StringUtils.hasContent(possibleValueSource.getTableName()), "custom-type possibleValueSource " + pvsName + " should not have a tableName.");
+
+                     if(assertCondition(errors, possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
+                     {
+                        assertCondition(errors, QCodeUsage.POSSIBLE_VALUE_PROVIDER.equals(possibleValueSource.getCustomCodeReference().getCodeUsage()), "customCodeReference for possibleValueSource " + pvsName + " is not a possibleValueProvider.");
+                     }
+                  }
+                  default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
                }
             }
          });

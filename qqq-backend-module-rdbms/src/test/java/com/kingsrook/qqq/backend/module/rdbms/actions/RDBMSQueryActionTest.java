@@ -428,12 +428,14 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
 
    /*******************************************************************************
     ** This doesn't really test any RDBMS code, but is a checkpoint that the core
-    ** module is populating displayValues when it performs the system-level query action.
+    ** module is populating displayValues when it performs the system-level query action
+    ** (if so requested by input field).
     *******************************************************************************/
    @Test
    public void testThatDisplayValuesGetSetGoingThroughQueryAction() throws QException
    {
       QueryInput  queryInput  = initQueryRequest();
+      queryInput.setShouldGenerateDisplayValues(true);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       Assertions.assertEquals(5, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
 

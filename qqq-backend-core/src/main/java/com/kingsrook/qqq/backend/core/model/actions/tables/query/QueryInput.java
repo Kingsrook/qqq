@@ -40,6 +40,8 @@ public class QueryInput extends AbstractTableActionInput
 
    private RecordPipe recordPipe;
 
+   private boolean shouldTranslatePossibleValues = false;
+   private boolean shouldGenerateDisplayValues = false;
 
 
    /*******************************************************************************
@@ -158,4 +160,47 @@ public class QueryInput extends AbstractTableActionInput
       this.recordPipe = recordPipe;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for shouldTranslatePossibleValues
+    **
+    *******************************************************************************/
+   public boolean getShouldTranslatePossibleValues()
+   {
+      return shouldTranslatePossibleValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldTranslatePossibleValues
+    **
+    *******************************************************************************/
+   public void setShouldTranslatePossibleValues(boolean shouldTranslatePossibleValues)
+   {
+      this.shouldTranslatePossibleValues = shouldTranslatePossibleValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldGenerateDisplayValues
+    **
+    *******************************************************************************/
+   public boolean getShouldGenerateDisplayValues()
+   {
+      return shouldGenerateDisplayValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldGenerateDisplayValues
+    **
+    *******************************************************************************/
+   public void setShouldGenerateDisplayValues(boolean shouldGenerateDisplayValues)
+   {
+      this.shouldGenerateDisplayValues = shouldGenerateDisplayValues;
+   }
 }

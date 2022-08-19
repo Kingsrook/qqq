@@ -47,18 +47,33 @@ class QueryActionTest
    @Test
    public void test() throws QException
    {
-      QueryInput request = new QueryInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
-      request.setTableName("person");
-      QueryOutput result = new QueryAction().execute(request);
-      assertNotNull(result);
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setSession(TestUtils.getMockSession());
+      queryInput.setTableName("person");
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertNotNull(queryOutput);
 
-      assertThat(result.getRecords()).isNotEmpty();
-      for(QRecord record : result.getRecords())
+      assertThat(queryOutput.getRecords()).isNotEmpty();
+      for(QRecord record : queryOutput.getRecords())
       {
          assertThat(record.getValues()).isNotEmpty();
-         assertThat(record.getDisplayValues()).isNotEmpty();
          assertThat(record.getErrors()).isEmpty();
+
+         ///////////////////////////////////////////////////////////////
+         // this SHOULD be empty, based on the default for the should //
+         ///////////////////////////////////////////////////////////////
+         assertThat(record.getDisplayValues()).isEmpty();
+      }
+
+      ////////////////////////////////////
+      // now flip that field and re-run //
+      ////////////////////////////////////
+      queryInput.setShouldGenerateDisplayValues(true);
+      assertThat(queryOutput.getRecords()).isNotEmpty();
+      queryOutput = new QueryAction().execute(queryInput);
+      for(QRecord record : queryOutput.getRecords())
+      {
+         assertThat(record.getDisplayValues()).isNotEmpty();
       }
    }
 }

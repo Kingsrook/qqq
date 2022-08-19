@@ -167,6 +167,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          return (false);
       }
 
+      if(session.getIdReference() == null)
+      {
+         return (false);
+      }
+
       StateProviderInterface spi                     = getStateProvider();
       Auth0StateKey          key                     = new Auth0StateKey(session.getIdReference());
       Optional<Instant>      lastTimeCheckedOptional = spi.get(Instant.class, key);

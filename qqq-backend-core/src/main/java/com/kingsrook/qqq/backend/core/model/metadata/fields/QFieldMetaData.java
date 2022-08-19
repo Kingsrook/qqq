@@ -133,6 +133,11 @@ public class QFieldMetaData
             {
                setDisplayFormat(fieldAnnotation.displayFormat());
             }
+
+            if(StringUtils.hasContent(fieldAnnotation.possibleValueSourceName()))
+            {
+               setPossibleValueSourceName(fieldAnnotation.possibleValueSourceName());
+            }
          }
       }
       catch(QException qe)
@@ -406,6 +411,7 @@ public class QFieldMetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for displayFormat
     **
@@ -425,6 +431,7 @@ public class QFieldMetaData
    {
       this.displayFormat = displayFormat;
    }
+
 
 
    /*******************************************************************************

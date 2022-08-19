@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -128,6 +129,11 @@ public class QInstanceEnricher
       {
          generateTableFieldSections(table);
       }
+
+      if(CollectionUtils.nullSafeHasContents(table.getRecordLabelFields()) && !StringUtils.hasContent(table.getRecordLabelFormat()))
+      {
+         table.setRecordLabelFormat(String.join(" ", Collections.nCopies(table.getRecordLabelFields().size(), "%s")));
+      }
    }
 
 
@@ -211,7 +217,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String nameToLabel(String name)
+   static String nameToLabel(String name)
    {
       if(!StringUtils.hasContent(name))
       {
@@ -223,7 +229,7 @@ public class QInstanceEnricher
          return (name.substring(0, 1).toUpperCase(Locale.ROOT));
       }
 
-      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z])", " $1"));
+      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z0-9]+)", " $1").replaceAll("([0-9])([A-Za-z])", "$1 $2"));
    }
 
 
@@ -579,7 +585,7 @@ public class QInstanceEnricher
       {
          for(String fieldName : table.getRecordLabelFields())
          {
-            if(!usedFieldNames.contains(fieldName))
+            if(!usedFieldNames.contains(fieldName) && table.getFields().containsKey(fieldName))
             {
                identitySection.getFieldNames().add(fieldName);
                usedFieldNames.add(fieldName);

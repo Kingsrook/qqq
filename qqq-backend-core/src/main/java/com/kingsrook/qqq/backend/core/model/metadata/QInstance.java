@@ -54,10 +54,10 @@ public class QInstance
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
    ////////////////////////////////////////////////////////////////////////////////////////////
-   private Map<String, QTableMetaData>          tables               = new LinkedHashMap<>();
-   private Map<String, QPossibleValueSource<?>> possibleValueSources = new LinkedHashMap<>();
-   private Map<String, QProcessMetaData>        processes            = new LinkedHashMap<>();
-   private Map<String, QAppMetaData>            apps                 = new LinkedHashMap<>();
+   private Map<String, QTableMetaData>       tables               = new LinkedHashMap<>();
+   private Map<String, QPossibleValueSource> possibleValueSources = new LinkedHashMap<>();
+   private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
+   private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -190,7 +190,7 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addPossibleValueSource(QPossibleValueSource<?> possibleValueSource)
+   public void addPossibleValueSource(QPossibleValueSource possibleValueSource)
    {
       this.addPossibleValueSource(possibleValueSource.getName(), possibleValueSource);
    }
@@ -353,7 +353,7 @@ public class QInstance
     ** Getter for possibleValueSources
     **
     *******************************************************************************/
-   public Map<String, QPossibleValueSource<?>> getPossibleValueSources()
+   public Map<String, QPossibleValueSource> getPossibleValueSources()
    {
       return possibleValueSources;
    }
@@ -364,7 +364,7 @@ public class QInstance
     ** Setter for possibleValueSources
     **
     *******************************************************************************/
-   public void setPossibleValueSources(Map<String, QPossibleValueSource<?>> possibleValueSources)
+   public void setPossibleValueSources(Map<String, QPossibleValueSource> possibleValueSources)
    {
       this.possibleValueSources = possibleValueSources;
    }

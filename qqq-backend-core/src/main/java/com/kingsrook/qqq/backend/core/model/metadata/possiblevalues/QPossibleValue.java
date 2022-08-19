@@ -19,55 +19,60 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.data;
-
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
 /*******************************************************************************
- ** Annotation to place onto fields in a QRecordEntity, to add additional attributes
- ** for propagating down into the corresponding QFieldMetaData
+ ** An actual possible value - an id and label.
  **
  *******************************************************************************/
-@Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface QField
+public class QPossibleValue<T>
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   String label() default "";
+   private final T      id;
+   private final String label;
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   String backendName() default "";
+   @SuppressWarnings("unchecked")
+   public QPossibleValue(String value)
+   {
+      this.id = (T) value;
+      this.label = value;
+   }
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   boolean isRequired() default false;
+   public QPossibleValue(T id, String label)
+   {
+      this.id = id;
+      this.label = label;
+   }
+
+
 
    /*******************************************************************************
+    ** Getter for id
     **
     *******************************************************************************/
-   boolean isEditable() default true;
+   public T getId()
+   {
+      return id;
+   }
+
+
 
    /*******************************************************************************
+    ** Getter for label
     **
     *******************************************************************************/
-   String displayFormat() default "";
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   String possibleValueSourceName() default "";
-
-   //////////////////////////////////////////////////////////////////////////////////////////
-   // new attributes here likely need implementation in QFieldMetaData.constructFromGetter //
-   //////////////////////////////////////////////////////////////////////////////////////////
+   public String getLabel()
+   {
+      return label;
+   }
 }
