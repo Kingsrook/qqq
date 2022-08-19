@@ -56,7 +56,7 @@ public class MetaDataAction
       // todo pre-customization - just get to modify the request?
       MetaDataOutput metaDataOutput = new MetaDataOutput();
 
-      Map<String, AppTreeNode> treeNodes = new LinkedHashMap<>());
+      Map<String, AppTreeNode> treeNodes = new LinkedHashMap<>();
 
       /////////////////////////////////////
       // map tables to frontend metadata //
