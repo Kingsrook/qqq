@@ -229,6 +229,16 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
+    ** Wrapper to getStep, that internally casts to FrontendStepMetaData
+    *******************************************************************************/
+   public QFrontendStepMetaData getFrontendStep(String name)
+   {
+      return (QFrontendStepMetaData) getStep(name);
+   }
+
+
+
+   /*******************************************************************************
     ** Get a list of all of the input fields used by all the steps in this process.
     *******************************************************************************/
    @JsonIgnore

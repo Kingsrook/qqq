@@ -31,7 +31,6 @@ import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
  ** Argument passed to an AsyncJob when it runs, which can be used to communicate
  ** data back out of the job.
  **
- ** TODO - future - allow cancellation to be indicated here?
  *******************************************************************************/
 public class AsyncJobCallback
 {
@@ -105,6 +104,19 @@ public class AsyncJobCallback
    protected void storeUpdatedStatus()
    {
       AsyncJobManager.getStateProvider().put(new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS), asyncJobStatus);
+   }
+
+
+
+   /*******************************************************************************
+    ** Check if the asyncJobStatus had a cancellation requested.
+    **
+    ** TODO - concern about multiple threads writing this object to a non-in-memory
+    **  state provider, and this value getting lost...
+    *******************************************************************************/
+   public boolean wasCancelRequested()
+   {
+      return (this.asyncJobStatus.getCancelRequested());
    }
 
 }

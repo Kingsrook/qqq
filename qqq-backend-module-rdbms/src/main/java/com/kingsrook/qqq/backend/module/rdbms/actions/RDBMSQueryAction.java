@@ -123,6 +123,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                   }
 
                   queryOutput.addRecord(record);
+
+                  if(queryInput.getAsyncJobCallback().wasCancelRequested())
+                  {
+                     LOG.info("Breaking query job, as requested.");
+                     break;
+                  }
                }
 
             }), params);

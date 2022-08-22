@@ -183,4 +183,15 @@ public class AsyncJobManager
       // return TempFileStateProvider.getInstance();
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void cancelJob(String jobUUID)
+   {
+      Optional<AsyncJobStatus> jobStatus = getJobStatus(jobUUID);
+      jobStatus.ifPresent(asyncJobStatus -> asyncJobStatus.setCancelRequested(true));
+   }
+
 }

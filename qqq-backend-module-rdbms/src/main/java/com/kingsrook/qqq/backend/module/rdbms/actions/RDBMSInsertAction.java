@@ -28,7 +28,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -159,27 +158,5 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
    }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public QBackendTransaction openTransaction(InsertInput insertInput) throws QException
-   {
-      try
-      {
-         LOG.info("Opening transaction");
-         Connection connection = getConnection(insertInput);
-
-         return (new RDBMSTransaction(connection));
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error opening transaction: " + e.getMessage(), e);
-      }
-   }
-
 
 }

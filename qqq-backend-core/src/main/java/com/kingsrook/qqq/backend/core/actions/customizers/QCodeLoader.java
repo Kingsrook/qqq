@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 import java.util.Optional;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -92,5 +93,45 @@ public class QCodeLoader
          return (null);
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T extends BackendStep> T getBackendStep(Class<T> expectedType, QCodeReference codeReference)
+   {
+      if(codeReference == null)
+      {
+         return (null);
+      }
+
+      if(!codeReference.getCodeType().equals(QCodeType.JAVA))
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////
+         // todo - 1) support more languages, 2) wrap them w/ java Functions here, 3) profit! //
+         ///////////////////////////////////////////////////////////////////////////////////////
+         throw (new IllegalArgumentException("Only JAVA BackendSteps are supported at this time."));
+      }
+
+      try
+      {
+         Class<?> customizerClass = Class.forName(codeReference.getName());
+         return ((T) customizerClass.getConstructor().newInstance());
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error initializing customizer: " + codeReference);
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // return null here - under the assumption that during normal run-time operations, we'll never hit here //
+         // as we'll want to validate all functions in the instance validator at startup time (and IT will throw //
+         // if it finds an invalid code reference                                                                //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (null);
+      }
+   }
+
+
 
 }
