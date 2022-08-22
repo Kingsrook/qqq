@@ -25,8 +25,8 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Function;
-import com.kingsrook.qqq.backend.core.actions.customizers.CustomizerLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.Customizers;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import org.apache.logging.log4j.LogManager;
@@ -62,7 +62,7 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
          storage = new QueryOutputList();
       }
 
-      postQueryRecordCustomizer = (Function<QRecord, QRecord>) CustomizerLoader.getTableCustomizerFunction(queryInput.getTable(), Customizers.POST_QUERY_RECORD);
+      postQueryRecordCustomizer = (Function<QRecord, QRecord>) QCodeLoader.getTableCustomizerFunction(queryInput.getTable(), Customizers.POST_QUERY_RECORD);
    }
 
 
