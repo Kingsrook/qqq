@@ -34,9 +34,9 @@ import org.apache.logging.log4j.Logger;
 /*******************************************************************************
  ** Utility to load code for running QQQ customizers.
  *******************************************************************************/
-public class CustomizerLoader
+public class QCodeLoader
 {
-   private static final Logger LOG = LogManager.getLogger(CustomizerLoader.class);
+   private static final Logger LOG = LogManager.getLogger(QCodeLoader.class);
 
 
 
@@ -48,7 +48,7 @@ public class CustomizerLoader
       Optional<QCodeReference> codeReference = table.getCustomizer(customizerName);
       if(codeReference.isPresent())
       {
-         return (CustomizerLoader.getFunction(codeReference.get()));
+         return (QCodeLoader.getFunction(codeReference.get()));
       }
 
       return null;
