@@ -80,7 +80,10 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////
          // commit the work //
          /////////////////////
-         transaction.commit();
+         if(transaction != null)
+         {
+            transaction.commit();
+         }
       }
       catch(Exception e)
       {
