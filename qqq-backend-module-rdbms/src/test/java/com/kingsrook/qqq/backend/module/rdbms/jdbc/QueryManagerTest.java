@@ -36,6 +36,8 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.time.OffsetDateTime;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -379,6 +381,27 @@ class QueryManagerTest
       assertNotNull(simpleEntity);
       assertEquals(47, simpleEntity.get("INT_COL"));
       assertEquals("Q", simpleEntity.get("CHAR_COL"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryForRows() throws SQLException
+   {
+      Connection connection = getConnection();
+      QueryManager.executeUpdate(connection, """
+         INSERT INTO test_table
+         ( int_col, datetime_col, char_col, date_col, time_col )
+         VALUES
+         ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
+         """);
+      List<Map<String, Object>> rows = QueryManager.executeStatementForRows(connection, "SELECT * FROM test_table");
+      assertNotNull(rows);
+      assertEquals(47, rows.get(0).get("INT_COL"));
+      assertEquals("Q", rows.get(0).get("CHAR_COL"));
    }
 
 }

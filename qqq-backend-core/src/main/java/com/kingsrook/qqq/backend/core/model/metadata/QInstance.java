@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -58,6 +59,8 @@ public class QInstance
    private Map<String, QPossibleValueSource> possibleValueSources = new LinkedHashMap<>();
    private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
    private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
+
+   private Map<String, QWidgetMetaData> widgets = new LinkedHashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -445,4 +448,60 @@ public class QInstance
    {
       this.authentication = authentication;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public Map<String, QWidgetMetaData> getWidgets()
+   {
+      return widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for widgets
+    **
+    *******************************************************************************/
+   public void setWidgets(Map<String, QWidgetMetaData> widgets)
+   {
+      this.widgets = widgets;
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addWidget(QWidgetMetaData widget)
+   {
+      this.addWidget(widget.getName(), widget);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addWidget(String name, QWidgetMetaData widget)
+   {
+      if(this.widgets.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second widget with name: " + name));
+      }
+      this.widgets.put(name, widget);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QWidgetMetaData getWidget(String name)
+   {
+      return (this.widgets.get(name));
+   }
+
 }

@@ -40,6 +40,7 @@ public class QAppMetaData implements QAppChildMetaData
    private String parentAppName;
    private QIcon  icon;
 
+   private List<String> widgets;
 
 
    /*******************************************************************************
@@ -232,6 +233,40 @@ public class QAppMetaData implements QAppChildMetaData
    public QAppMetaData withIcon(QIcon icon)
    {
       this.icon = icon;
+      return (this);
+   }
+
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public List<String> getWidgets()
+   {
+      return widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for widgets
+    **
+    *******************************************************************************/
+   public void setWidgets(List<String> widgets)
+   {
+      this.widgets = widgets;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for widgets
+    **
+    *******************************************************************************/
+   public QAppMetaData withWidgets(List<String> widgets)
+   {
+      this.widgets = widgets;
       return (this);
    }
 

@@ -470,4 +470,21 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertThat(response.getBody()).contains("Unsupported report format");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWidget()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/widget/" + PersonsByCreateDateBarChart.class.getSimpleName()).asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertEquals("barChart", jsonObject.getString("type"));
+      assertNotNull(jsonObject.getString("title"));
+      assertNotNull(jsonObject.getJSONObject("barChartData"));
+   }
+
 }

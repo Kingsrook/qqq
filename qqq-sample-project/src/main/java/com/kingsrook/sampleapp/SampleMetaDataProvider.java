@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -56,6 +57,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFor
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.sampleapp.dashboard.widgets.PersonsByCreateDateBarChart;
 import io.github.cdimascio.dotenv.Dotenv;
 
 
@@ -114,9 +116,23 @@ public class SampleMetaDataProvider
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
+      defineWidgets(qInstance);
+
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineWidgets(QInstance qInstance)
+   {
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName(PersonsByCreateDateBarChart.class.getSimpleName())
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
    }
 
 
@@ -136,7 +152,9 @@ public class SampleMetaDataProvider
          .withChild(qInstance.getTable(TABLE_NAME_CITY)
             .withIcon(new QIcon().withName("location_city")))
          .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE))
-         .withIcon(new QIcon().withName("waving_hand")));
+         .withIcon(new QIcon().withName("waving_hand"))
+         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName()))
+      );
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_PEOPLE)

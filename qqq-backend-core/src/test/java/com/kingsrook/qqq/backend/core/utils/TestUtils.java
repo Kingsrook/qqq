@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -38,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -115,9 +117,23 @@ public class TestUtils
       qInstance.addProcess(new BasicETLProcess().defineProcessMetaData());
       qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
 
+      defineWidgets(qInstance);
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineWidgets(QInstance qInstance)
+   {
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName(PersonsByCreateDateBarChart.class.getSimpleName())
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
    }
 
 
@@ -136,7 +152,8 @@ public class TestUtils
          .withName(APP_NAME_PEOPLE)
          .withChild(qInstance.getTable(TABLE_NAME_PERSON))
          .withChild(qInstance.getTable(TABLE_NAME_PERSON_FILE))
-         .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
+         .withChild(qInstance.getApp(APP_NAME_GREETINGS))
+         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName())));
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_MISCELLANEOUS)
