@@ -1,19 +1,13 @@
 package com.kingsrook.sampleapp.dashboard.widgets;
 
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.BarChart;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.sampleapp.SampleMetaDataProvider;
 
 
 /*******************************************************************************
@@ -29,6 +23,8 @@ public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
    {
       try
       {
+         /*
+         // todo - always do this as SQL... if we had database in CI...
          ConnectionManager connectionManager = new ConnectionManager();
          Connection        connection        = connectionManager.getConnection(SampleMetaDataProvider.defineRdbmsBackend());
 
@@ -46,14 +42,30 @@ public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
 
          List<Map<String, Object>> rows = QueryManager.executeStatementForRows(connection, sql);
 
-         List<String> labels = new ArrayList<>();
-         List<Number> data   = new ArrayList<>();
-
          for(Map<String, Object> row : rows)
          {
             labels.add(ValueUtils.getValueAsString(row.get("month")));
             data.add(ValueUtils.getValueAsInteger(row.get("count")));
          }
+          */
+
+         List<String> labels = new ArrayList<>();
+         List<Number> data   = new ArrayList<>();
+
+         labels.add("Jan. 2022");
+         data.add(17);
+
+         labels.add("Feb. 2022");
+         data.add(42);
+
+         labels.add("Mar. 2022");
+         data.add(47);
+
+         labels.add("Apr. 2022");
+         data.add(0);
+
+         labels.add("May 2022");
+         data.add(64);
 
          return (new BarChart("Persons created per Month", "Person records", labels, data));
       }

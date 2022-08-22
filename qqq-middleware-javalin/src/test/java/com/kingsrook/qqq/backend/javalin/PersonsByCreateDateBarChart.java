@@ -1,7 +1,6 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractWidgetRenderer;
@@ -9,7 +8,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.BarChart;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 
 
 /*******************************************************************************
@@ -25,9 +23,6 @@ public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
    {
       try
       {
-         ConnectionManager connectionManager = new ConnectionManager();
-         Connection        connection        = connectionManager.getConnection(TestUtils.defineBackend());
-
          List<String> labels = new ArrayList<>();
          List<Number> data = new ArrayList<>();
 
