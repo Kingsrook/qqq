@@ -292,6 +292,11 @@ class CsvToQRecordAdapterTest
    void testByteOrderMarker()
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // note - there's a zero-width non-breaking-space character (0xFEFF or some-such)                       //
+      // at the start of this string!!  You may not be able to see it, depending on where you view this file. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<QRecord> records = csvToQRecordAdapter.buildRecordsFromCsv("""
          ﻿id,firstName
          1,John""", TestUtils.defineTablePerson(), null);

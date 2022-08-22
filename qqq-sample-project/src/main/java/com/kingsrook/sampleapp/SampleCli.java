@@ -22,7 +22,6 @@
 package com.kingsrook.sampleapp;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.frontend.picocli.QPicoCliImplementation;
 
@@ -37,7 +36,8 @@ public class SampleCli
     *******************************************************************************/
    public static void main(String[] args)
    {
-      new SampleCli().run(args);
+      int exitCode = new SampleCli().run(args);
+      System.exit(exitCode);
    }
 
 
@@ -45,31 +45,20 @@ public class SampleCli
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void run(String[] args)
+   int run(String[] args)
    {
       try
       {
-         int exitCode = runForExitCode(args);
-         System.exit(exitCode);
+         QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
+         QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
+
+         return (qPicoCliImplementation.runCli("my-sample-cli", args));
       }
       catch(Exception e)
       {
          e.printStackTrace();
-         System.exit(-1);
+         return (-1);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   int runForExitCode(String[] args) throws QException
-   {
-      QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
-      QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-      int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-      return exitCode;
    }
 
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.apache.logging.log4j.LogManager;
@@ -42,12 +43,31 @@ public class RecordPipe
 
    private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
 
+   private Consumer<List<QRecord>> postRecordActions = null;
+
+
 
    /*******************************************************************************
     ** Add a record to the pipe
     ** Returns true iff the record fit in the pipe; false if the pipe is currently full.
     *******************************************************************************/
    public void addRecord(QRecord record)
+   {
+      if(postRecordActions != null)
+      {
+         postRecordActions.accept(List.of(record));
+      }
+
+      doAddRecord(record);
+   }
+
+
+
+   /*******************************************************************************
+    ** Private internal version of add record - assumes the postRecordActions have
+    ** already ran.
+    *******************************************************************************/
+   private void doAddRecord(QRecord record)
    {
       boolean offerResult = queue.offer(record);
 
@@ -66,7 +86,15 @@ public class RecordPipe
     *******************************************************************************/
    public void addRecords(List<QRecord> records)
    {
-      records.forEach(this::addRecord);
+      if(postRecordActions != null)
+      {
+         postRecordActions.accept(records);
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure to go to the private version of doAddRecord - to avoid re-running the post-actions //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      records.forEach(this::doAddRecord);
    }
 
 
@@ -99,6 +127,16 @@ public class RecordPipe
    public int countAvailableRecords()
    {
       return (queue.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setPostRecordActions(Consumer<List<QRecord>> postRecordActions)
+   {
+      this.postRecordActions = postRecordActions;
    }
 
 }

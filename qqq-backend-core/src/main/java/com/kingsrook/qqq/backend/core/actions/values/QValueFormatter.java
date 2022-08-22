@@ -25,10 +25,8 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
@@ -37,20 +35,11 @@ import org.apache.logging.log4j.Logger;
 
 /*******************************************************************************
  ** Utility to apply display formats to values for records and fields.
- ** Note that this includes handling PossibleValues.
+ **
  *******************************************************************************/
 public class QValueFormatter
 {
    private static final Logger LOG = LogManager.getLogger(QValueFormatter.class);
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QValueFormatter()
-   {
-   }
 
 
 
@@ -66,16 +55,6 @@ public class QValueFormatter
       {
          return (null);
       }
-
-      // todo - is this appropriate, with this class and possibleValueTransaltor being decoupled - to still do standard formatting here?
-      //  alternatively, shold we return null here?
-      // ///////////////////////////////////////////////
-      // // if the field has a possible value, use it //
-      // ///////////////////////////////////////////////
-      // if(field.getPossibleValueSourceName() != null)
-      // {
-      //    return (this.possibleValueTranslator.translatePossibleValue(field, value));
-      // }
 
       ////////////////////////////////////////////////////////
       // if the field has a display format, try to apply it //
@@ -197,6 +176,5 @@ public class QValueFormatter
          record.setRecordLabel(formatRecordLabel(table, record));
       }
    }
-
 
 }

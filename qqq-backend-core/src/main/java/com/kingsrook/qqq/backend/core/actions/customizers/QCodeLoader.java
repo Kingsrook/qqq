@@ -24,8 +24,11 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 import java.util.Optional;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,15 +46,14 @@ public class QCodeLoader
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Function<?, ?> getTableCustomizerFunction(QTableMetaData table, String customizerName)
+   public static <T, R> Optional<Function<T, R>> getTableCustomizerFunction(QTableMetaData table, String customizerName)
    {
       Optional<QCodeReference> codeReference = table.getCustomizer(customizerName);
       if(codeReference.isPresent())
       {
-         return (QCodeLoader.getFunction(codeReference.get()));
+         return (Optional.ofNullable(QCodeLoader.getFunction(codeReference.get())));
       }
-
-      return null;
+      return (Optional.empty());
    }
 
 
@@ -93,4 +95,30 @@ public class QCodeLoader
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QCustomPossibleValueProvider getCustomPossibleValueProvider(QPossibleValueSource possibleValueSource) throws QException
+   {
+      try
+      {
+         Class<?> codeClass  = Class.forName(possibleValueSource.getCustomCodeReference().getName());
+         Object   codeObject = codeClass.getConstructor().newInstance();
+         if(!(codeObject instanceof QCustomPossibleValueProvider customPossibleValueProvider))
+         {
+            throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of QCustomPossibleValueProvider"));
+         }
+         return (customPossibleValueProvider);
+      }
+      catch(QException qe)
+      {
+         throw (qe);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error getting custom possible value provider for PVS [" + possibleValueSource.getName() + "]", e));
+      }
+   }
 }

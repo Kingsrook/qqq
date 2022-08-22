@@ -91,7 +91,7 @@ public class FilesystemSyncStep implements BackendStep
             String sourceFileName = sourceEntry.getKey();
             if(!archiveFiles.contains(sourceFileName))
             {
-               LOG.info("Syncing file [" + sourceFileName + "] to [" + archiveTable.getName() + "] and [" + processingTable.getName() + "]");
+               LOG.info("Syncing file [" + sourceFileName + "] to [" + archiveTable + "] and [" + processingTable + "]");
                InputStream inputStream = sourceActionBase.readFile(sourceEntry.getValue());
                byte[]      bytes       = inputStream.readAllBytes();
 

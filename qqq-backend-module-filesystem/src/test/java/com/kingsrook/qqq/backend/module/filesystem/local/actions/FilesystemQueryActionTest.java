@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
-import com.kingsrook.qqq.backend.module.filesystem.base.actions.FilesystemCustomizers;
+import com.kingsrook.qqq.backend.module.filesystem.base.actions.FilesystemTableCustomizers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +71,7 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
       QInstance  instance   = TestUtils.defineInstance();
 
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
-      table.withCustomizer(FilesystemCustomizers.POST_READ_FILE, new QCodeReference(ValueUpshifter.class, QCodeUsage.CUSTOMIZER));
+      table.withCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole(), new QCodeReference(ValueUpshifter.class, QCodeUsage.CUSTOMIZER));
 
       queryInput.setInstance(instance);
       queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());

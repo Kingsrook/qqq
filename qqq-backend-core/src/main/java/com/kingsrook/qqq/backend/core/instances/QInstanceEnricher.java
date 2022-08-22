@@ -229,7 +229,21 @@ public class QInstanceEnricher
          return (name.substring(0, 1).toUpperCase(Locale.ROOT));
       }
 
-      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1).replaceAll("([A-Z0-9]+)", " $1").replaceAll("([0-9])([A-Za-z])", "$1 $2"));
+      String suffix = name.substring(1)
+
+         //////////////////////////////////////////////////////////////////////
+         // Put a space before capital letters or numbers embedded in a name //
+         // e.g., omethingElse -> omething Else; umber1 -> umber 1           //
+         //////////////////////////////////////////////////////////////////////
+         .replaceAll("([A-Z0-9]+)", " $1")
+
+         ////////////////////////////////////////////////////////////////
+         // put a space between numbers and words that come after them //
+         // e.g., umber1dad -> number 1 dad                            //
+         ////////////////////////////////////////////////////////////////
+         .replaceAll("([0-9])([A-Za-z])", "$1 $2");
+
+      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix);
    }
 
 
