@@ -1,58 +1,65 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Base class for the Transform logic of Streamed ETL processes.
  **
+ ** Records are to be read out of the inputRecordPage field, and after transformation,
+ ** should be written to the outputRecordPage.  That is to say, DO NOT use the
+ ** recordList in the step input/output objects.
  *******************************************************************************/
-public abstract class AbstractExtractFunction implements BackendStep
+public abstract class AbstractTransformStep implements BackendStep
 {
-   private RecordPipe recordPipe;
-   private Integer    limit;
+   private List<QRecord> inputRecordPage = new ArrayList<>();
+   private List<QRecord> outputRecordPage = new ArrayList<>();
 
 
 
    /*******************************************************************************
+    ** Getter for recordPage
     **
     *******************************************************************************/
-   public void setRecordPipe(RecordPipe recordPipe)
+   public List<QRecord> getInputRecordPage()
    {
-      this.recordPipe = recordPipe;
+      return inputRecordPage;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for recordPage
     **
     *******************************************************************************/
-   public RecordPipe getRecordPipe()
+   public void setInputRecordPage(List<QRecord> inputRecordPage)
    {
-      return recordPipe;
+      this.inputRecordPage = inputRecordPage;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for limit
+    ** Getter for outputRecordPage
     **
     *******************************************************************************/
-   public Integer getLimit()
+   public List<QRecord> getOutputRecordPage()
    {
-      return limit;
+      return outputRecordPage;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for limit
+    ** Setter for outputRecordPage
     **
     *******************************************************************************/
-   public void setLimit(Integer limit)
+   public void setOutputRecordPage(List<QRecord> outputRecordPage)
    {
-      this.limit = limit;
+      this.outputRecordPage = outputRecordPage;
    }
-
 }

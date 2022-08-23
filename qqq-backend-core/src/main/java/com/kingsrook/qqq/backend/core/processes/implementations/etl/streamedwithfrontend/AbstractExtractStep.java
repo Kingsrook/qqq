@@ -1,34 +1,39 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Base class for the Extract logic of Streamed ETL processes.
  **
+ ** These steps are invoked by both the "preview" and the "execute" steps of a
+ ** StreamedETLWithFrontend process.
+ **
+ ** Key here, is that subclasses here should put records that they're "Extracting"
+ ** into the recordPipe member.  That is to say, DO NOT use the recordList in
+ ** the Step input/output objects.
+ **
+ ** Ideally, they'll also stop once they've hit the "limit" number of records
+ ** (though if you keep going, the pipe will get terminated and the job will be
+ ** cancelled, etc...).
  *******************************************************************************/
-public abstract class AbstractLoadFunction implements BackendStep
+public abstract class AbstractExtractStep implements BackendStep
 {
-   private List<QRecord> inputRecordPage = new ArrayList<>();
-   private List<QRecord> outputRecordPage = new ArrayList<>();
-
-   protected QBackendTransaction transaction;
+   private RecordPipe recordPipe;
+   private Integer    limit;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBackendTransaction openTransaction(RunBackendStepInput runBackendStepInput) throws QException
+   public Integer doCount(RunBackendStepInput runBackendStepInput) throws QException
    {
-      this.transaction = doOpenTransaction(runBackendStepInput);
-      return (transaction);
+      return (null);
    }
 
 
@@ -36,50 +41,41 @@ public abstract class AbstractLoadFunction implements BackendStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected abstract QBackendTransaction doOpenTransaction(RunBackendStepInput runBackendStepInput) throws QException;
-
-
-
-   /*******************************************************************************
-    ** Getter for recordPage
-    **
-    *******************************************************************************/
-   public List<QRecord> getInputRecordPage()
+   public void setRecordPipe(RecordPipe recordPipe)
    {
-      return inputRecordPage;
+      this.recordPipe = recordPipe;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordPage
     **
     *******************************************************************************/
-   public void setInputRecordPage(List<QRecord> inputRecordPage)
+   public RecordPipe getRecordPipe()
    {
-      this.inputRecordPage = inputRecordPage;
+      return recordPipe;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for outputRecordPage
+    ** Getter for limit
     **
     *******************************************************************************/
-   public List<QRecord> getOutputRecordPage()
+   public Integer getLimit()
    {
-      return outputRecordPage;
+      return limit;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for outputRecordPage
+    ** Setter for limit
     **
     *******************************************************************************/
-   public void setOutputRecordPage(List<QRecord> outputRecordPage)
+   public void setLimit(Integer limit)
    {
-      this.outputRecordPage = outputRecordPage;
+      this.limit = limit;
    }
 
 }

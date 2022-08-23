@@ -11,17 +11,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  *******************************************************************************/
 public class BaseStreamedETLStep
 {
-   protected static final int IN_MEMORY_RECORD_LIMIT = 20;
+   protected static final int PROCESS_OUTPUT_RECORD_LIST_LIMIT = 20;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected AbstractExtractFunction getExtractFunction(RunBackendStepInput runBackendStepInput)
+   protected AbstractExtractStep getExtractStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_EXTRACT_CODE);
-      return (QCodeLoader.getBackendStep(AbstractExtractFunction.class, codeReference));
+      return (QCodeLoader.getBackendStep(AbstractExtractStep.class, codeReference));
    }
 
 
@@ -29,10 +29,10 @@ public class BaseStreamedETLStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected AbstractTransformFunction getTransformFunction(RunBackendStepInput runBackendStepInput)
+   protected AbstractTransformStep getTransformStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_TRANSFORM_CODE);
-      return (QCodeLoader.getBackendStep(AbstractTransformFunction.class, codeReference));
+      return (QCodeLoader.getBackendStep(AbstractTransformStep.class, codeReference));
    }
 
 
@@ -40,10 +40,10 @@ public class BaseStreamedETLStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected AbstractLoadFunction getLoadFunction(RunBackendStepInput runBackendStepInput)
+   protected AbstractLoadStep getLoadStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_LOAD_CODE);
-      return (QCodeLoader.getBackendStep(AbstractLoadFunction.class, codeReference));
+      return (QCodeLoader.getBackendStep(AbstractLoadStep.class, codeReference));
    }
 
 }

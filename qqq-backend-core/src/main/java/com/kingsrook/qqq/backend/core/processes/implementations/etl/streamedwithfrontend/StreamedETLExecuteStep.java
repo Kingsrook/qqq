@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
@@ -36,10 +37,14 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.Str
 
 
 /*******************************************************************************
- ** Backend step to do a execute a streamed ETL job
+ ** Backend step to do the execute portion of a streamed ETL job.
+ **
+ ** Works within a transaction (per the backend module of the destination table).
  *******************************************************************************/
 public class StreamedETLExecuteStep extends BaseStreamedETLStep implements BackendStep
 {
+   private int currentRowCount = 1;
+
 
 
    /*******************************************************************************
@@ -49,29 +54,30 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
    @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QBackendTransaction transaction = null;
+      Optional<QBackendTransaction> transaction = Optional.empty();
 
       try
       {
          ///////////////////////////////////////////////////////
          // set up the extract, transform, and load functions //
          ///////////////////////////////////////////////////////
-         RecordPipe              recordPipe      = new RecordPipe();
-         AbstractExtractFunction extractFunction = getExtractFunction(runBackendStepInput);
-         extractFunction.setRecordPipe(recordPipe);
+         RecordPipe          recordPipe  = new RecordPipe();
+         AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+         extractStep.setRecordPipe(recordPipe);
 
-         AbstractTransformFunction transformFunction = getTransformFunction(runBackendStepInput);
-         AbstractLoadFunction      loadFunction      = getLoadFunction(runBackendStepInput);
+         AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+         AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
 
-         transaction = loadFunction.openTransaction(runBackendStepInput);
+         transaction = loadStep.openTransaction(runBackendStepInput);
+         loadStep.setTransaction(transaction);
 
          List<QRecord> loadedRecordList = new ArrayList<>();
-         int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Execute>ExtractFunction", null, recordPipe, (status) ->
+         int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
             {
-               extractFunction.run(runBackendStepInput, runBackendStepOutput);
+               extractStep.run(runBackendStepInput, runBackendStepOutput);
                return (runBackendStepOutput);
             },
-            () -> (consumeRecordsFromPipe(recordPipe, transformFunction, loadFunction, runBackendStepInput, runBackendStepOutput, loadedRecordList))
+            () -> (consumeRecordsFromPipe(recordPipe, transformStep, loadStep, runBackendStepInput, runBackendStepOutput, loadedRecordList))
          );
 
          runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
@@ -80,9 +86,9 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////
          // commit the work //
          /////////////////////
-         if(transaction != null)
+         if(transaction.isPresent())
          {
-            transaction.commit();
+            transaction.get().commit();
          }
       }
       catch(Exception e)
@@ -90,9 +96,9 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          ////////////////////////////////////////////////////////////////////////////////
          // rollback the work, then re-throw the error for up-stream to catch & report //
          ////////////////////////////////////////////////////////////////////////////////
-         if(transaction != null)
+         if(transaction.isPresent())
          {
-            transaction.rollback();
+            transaction.get().rollback();
          }
          throw (e);
       }
@@ -101,9 +107,9 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          ////////////////////////////////////////////////////////////
          // always close our transactions (e.g., jdbc connections) //
          ////////////////////////////////////////////////////////////
-         if(transaction != null)
+         if(transaction.isPresent())
          {
-            transaction.close();
+            transaction.get().close();
          }
       }
    }
@@ -113,8 +119,14 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
    /*******************************************************************************
     **
     *******************************************************************************/
-   private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformFunction transformFunction, AbstractLoadFunction loadFunction, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> loadedRecordList) throws QException
+   private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformStep transformStep, AbstractLoadStep loadStep, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> loadedRecordList) throws QException
    {
+      Integer totalRows = runBackendStepInput.getValueInteger(StreamedETLProcess.FIELD_RECORD_COUNT);
+      if(totalRows != null)
+      {
+         runBackendStepInput.getAsyncJobCallback().updateStatus(currentRowCount, totalRows);
+      }
+
       ///////////////////////////////////
       // get the records from the pipe //
       ///////////////////////////////////
@@ -123,26 +135,27 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformFunction.setInputRecordPage(qRecords);
-      transformFunction.setOutputRecordPage(new ArrayList<>());
-      transformFunction.run(runBackendStepInput, runBackendStepOutput);
+      transformStep.setInputRecordPage(qRecords);
+      transformStep.setOutputRecordPage(new ArrayList<>());
+      transformStep.run(runBackendStepInput, runBackendStepOutput);
 
       ////////////////////////////////////////////////
       // pass the records through the load function //
       ////////////////////////////////////////////////
-      loadFunction.setInputRecordPage(transformFunction.getOutputRecordPage());
-      loadFunction.setOutputRecordPage(new ArrayList<>());
-      loadFunction.run(runBackendStepInput, runBackendStepOutput);
+      loadStep.setInputRecordPage(transformStep.getOutputRecordPage());
+      loadStep.setOutputRecordPage(new ArrayList<>());
+      loadStep.run(runBackendStepInput, runBackendStepOutput);
 
       ///////////////////////////////////////////////////////
       // copy a small number of records to the output list //
       ///////////////////////////////////////////////////////
       int i = 0;
-      while(loadedRecordList.size() < IN_MEMORY_RECORD_LIMIT && i < loadFunction.getOutputRecordPage().size())
+      while(loadedRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < loadStep.getOutputRecordPage().size())
       {
-         loadedRecordList.add(loadFunction.getOutputRecordPage().get(i++));
+         loadedRecordList.add(loadStep.getOutputRecordPage().get(i++));
       }
 
+      currentRowCount += qRecords.size();
       return (qRecords.size());
    }
 

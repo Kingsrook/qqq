@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 
 
 /*******************************************************************************
@@ -47,20 +48,26 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
    @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      RecordPipe              recordPipe      = new RecordPipe();
-      AbstractExtractFunction extractFunction = getExtractFunction(runBackendStepInput);
-      extractFunction.setLimit(IN_MEMORY_RECORD_LIMIT); // todo - process field?
-      extractFunction.setRecordPipe(recordPipe);
+      RecordPipe          recordPipe  = new RecordPipe();
+      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+      extractStep.setLimit(PROCESS_OUTPUT_RECORD_LIST_LIMIT); // todo - make this an input?
+      extractStep.setRecordPipe(recordPipe);
 
-      AbstractTransformFunction transformFunction = getTransformFunction(runBackendStepInput);
+      ///////////////////////////////////////////
+      // request a count from the extract step //
+      ///////////////////////////////////////////
+      Integer recordCount = extractStep.doCount(runBackendStepInput);
+      runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
 
       List<QRecord> transformedRecordList = new ArrayList<>();
-      new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractFunction", IN_MEMORY_RECORD_LIMIT, recordPipe, (status) ->
+      new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
          {
-            extractFunction.run(runBackendStepInput, runBackendStepOutput);
+            extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);
          },
-         () -> (consumeRecordsFromPipe(recordPipe, transformFunction, runBackendStepInput, runBackendStepOutput, transformedRecordList))
+         () -> (consumeRecordsFromPipe(recordPipe, transformStep, runBackendStepInput, runBackendStepOutput, transformedRecordList))
       );
 
       runBackendStepOutput.setRecords(transformedRecordList);
@@ -71,7 +78,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
    /*******************************************************************************
     **
     *******************************************************************************/
-   private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformFunction transformFunction, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> transformedRecordList) throws QException
+   private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformStep transformStep, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> transformedRecordList) throws QException
    {
       ///////////////////////////////////
       // get the records from the pipe //
@@ -81,13 +88,13 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformFunction.setInputRecordPage(qRecords);
-      transformFunction.run(runBackendStepInput, runBackendStepOutput);
+      transformStep.setInputRecordPage(qRecords);
+      transformStep.run(runBackendStepInput, runBackendStepOutput);
 
       ////////////////////////////////////////////////////
       // add the transformed records to the output list //
       ////////////////////////////////////////////////////
-      transformedRecordList.addAll(transformFunction.getOutputRecordPage());
+      transformedRecordList.addAll(transformStep.getOutputRecordPage());
 
       return (qRecords.size());
    }

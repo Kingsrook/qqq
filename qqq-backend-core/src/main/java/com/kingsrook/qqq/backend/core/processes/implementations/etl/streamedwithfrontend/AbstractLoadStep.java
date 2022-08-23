@@ -3,17 +3,39 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Base class for the Load (aka, store) logic of Streamed ETL processes.
  **
+ ** Records are to be read out of the inputRecordPage field, and after storing,
+ ** should be written to the outputRecordPage.  That is to say, DO NOT use the
+ ** recordList in the step input/output objects.
+ **
+ ** Also - use the transaction member variable - though be aware, it
  *******************************************************************************/
-public abstract class AbstractTransformFunction implements BackendStep
+public abstract class AbstractLoadStep implements BackendStep
 {
-   private List<QRecord> inputRecordPage = new ArrayList<>();
+   private List<QRecord> inputRecordPage  = new ArrayList<>();
    private List<QRecord> outputRecordPage = new ArrayList<>();
+
+   private Optional<QBackendTransaction> transaction = Optional.empty();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
+   {
+      return (Optional.empty());
+   }
 
 
 
@@ -57,5 +79,27 @@ public abstract class AbstractTransformFunction implements BackendStep
    public void setOutputRecordPage(List<QRecord> outputRecordPage)
    {
       this.outputRecordPage = outputRecordPage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(Optional<QBackendTransaction> transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for transaction
+    **
+    *******************************************************************************/
+   public Optional<QBackendTransaction> getTransaction()
+   {
+      return (transaction);
    }
 }

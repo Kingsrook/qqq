@@ -12,7 +12,10 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
+ ** Class that knows how to Run an asynchronous job (lambda, supplier) that writes into a
+ ** RecordPipe, with another lambda (consumer) that consumes records from the pipe.
  **
+ ** Takes care of the job status monitoring, blocking when the pipe is empty, etc.
  *******************************************************************************/
 public class AsyncRecordPipeLoop
 {
@@ -20,22 +23,32 @@ public class AsyncRecordPipeLoop
 
    private static final int TIMEOUT_AFTER_NO_RECORDS_MS = 10 * 60 * 1000;
 
-   private static final int MAX_SLEEP_MS  = 1000;
-   private static final int INIT_SLEEP_MS = 10;
+   private static final int MAX_SLEEP_MS           = 1000;
+   private static final int INIT_SLEEP_MS          = 10;
+   private static final int MIN_RECORDS_TO_CONSUME = 10;
 
 
 
    /*******************************************************************************
+    ** Run an async-record-pipe-loop.
     **
+    ** @param jobName name for the async job thread
+    ** @param recordLimit optionally, cancel the supplier/job after this number of records.
+    *                     e.g., for a preview step.
+    ** @param recordPipe constructed before this call, and used in both of the lambdas
+    ** @param supplier lambda that adds records into the pipe.
+    *                  e.g., a query or extract step.
+    ** @param consumer lambda that consumes records from the pipe
+    *                  e.g., a transform/load step.
     *******************************************************************************/
-   public int run(String jobName, Integer recordLimit, RecordPipe recordPipe, UnsafeFunction<AsyncJobCallback, ? extends Serializable> job, UnsafeSupplier<Integer> consumer) throws QException
+   public int run(String jobName, Integer recordLimit, RecordPipe recordPipe, UnsafeFunction<AsyncJobCallback, ? extends Serializable> supplier, UnsafeSupplier<Integer> consumer) throws QException
    {
       ///////////////////////////////////////////////////
       // start the extraction function as an async job //
       ///////////////////////////////////////////////////
       AsyncJobManager asyncJobManager = new AsyncJobManager();
-      String          jobUUID         = asyncJobManager.startJob(jobName, job::apply);
-      LOG.info("Started job [" + jobUUID + "] for record pipe streaming");
+      String          jobUUID         = asyncJobManager.startJob(jobName, supplier::apply);
+      LOG.info("Started supplier job [" + jobUUID + "] for record pipe.");
 
       AsyncJobState  jobState       = AsyncJobState.RUNNING;
       AsyncJobStatus asyncJobStatus = null;
@@ -47,13 +60,13 @@ public class AsyncRecordPipeLoop
 
       while(jobState.equals(AsyncJobState.RUNNING))
       {
-         if(recordPipe.countAvailableRecords() == 0)
+         if(recordPipe.countAvailableRecords() < MIN_RECORDS_TO_CONSUME)
          {
-            ///////////////////////////////////////////////////////////
-            // if the pipe is empty, sleep to let the producer work. //
-            // todo - smarter sleep?  like get notified vs. sleep?   //
-            ///////////////////////////////////////////////////////////
-            LOG.info("No records are available in the pipe. Sleeping [" + nextSleepMillis + "] ms to give producer a chance to work");
+            ///////////////////////////////////////////////////////////////
+            // if the pipe is too empty, sleep to let the producer work. //
+            // todo - smarter sleep?  like get notified vs. sleep?       //
+            ///////////////////////////////////////////////////////////////
+            LOG.debug("Too few records are available in the pipe. Sleeping [" + nextSleepMillis + "] ms to give producer a chance to work");
             SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
             nextSleepMillis = Math.min(nextSleepMillis * 2, MAX_SLEEP_MS);
 
@@ -114,9 +127,9 @@ public class AsyncRecordPipeLoop
          throw (new QException("Job failed with an error", asyncJobStatus.getCaughtException()));
       }
 
-      //////////////////////////////////////////////////////
-      // send the final records to transform & load steps //
-      //////////////////////////////////////////////////////
+      ////////////////////////////////////////////
+      // send the final records to the consumer //
+      ////////////////////////////////////////////
       recordCount += consumer.get();
 
       long endTime = System.currentTimeMillis();

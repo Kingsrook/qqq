@@ -1,23 +1,22 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
+import java.io.Serializable;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,65 +31,47 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StreamedETLWithFrontendProcessTest
 {
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
-   void test() throws QException
+   void testSimpleSmallQueryTransformInsert() throws QException
    {
-      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData();
-      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
-
-      for(QFieldMetaData inputField : process.getInputFields())
-      {
-         if(StreamedETLWithFrontendProcess.FIELD_EXTRACT_CODE.equals(inputField.getName()))
-         {
-            inputField.setDefaultValue(new QCodeReference(TestExtractStep.class));
-         }
-         else if(StreamedETLWithFrontendProcess.FIELD_TRANSFORM_CODE.equals(inputField.getName()))
-         {
-            inputField.setDefaultValue(new QCodeReference(TestTransformStep.class));
-         }
-         else if(StreamedETLWithFrontendProcess.FIELD_LOAD_CODE.equals(inputField.getName()))
-         {
-            inputField.setDefaultValue(new QCodeReference(TestLoadStep.class));
-         }
-      }
-
       QInstance instance = TestUtils.defineInstance();
+
+      ////////////////////////////////////////////////////////
+      // define the process - an ELT from Shapes to Persons //
+      ////////////////////////////////////////////////////////
+      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(TestUtils.TABLE_NAME_SHAPE, TestUtils.TABLE_NAME_PERSON, ExtractViaQueryStep.class, TestTransformStep.class, LoadViaInsertStep.class);
+      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
 
-      InsertInput insertInput = new InsertInput(instance);
-      insertInput.setSession(TestUtils.getMockSession());
-      insertInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
-      insertInput.setRecords(List.of(
-         new QRecord().withTableName(TestUtils.TABLE_NAME_SHAPE).withValue("id", 1).withValue("name", "Circle"),
-         new QRecord().withTableName(TestUtils.TABLE_NAME_SHAPE).withValue("id", 2).withValue("name", "Triangle"),
-         new QRecord().withTableName(TestUtils.TABLE_NAME_SHAPE).withValue("id", 3).withValue("name", "Square")
-      ));
-      new InsertAction().execute(insertInput);
+      ///////////////////////////////////////////////////////
+      // switch the person table to use the memory backend //
+      ///////////////////////////////////////////////////////
+      instance.getTable(TestUtils.TABLE_NAME_PERSON).setBackendName(TestUtils.MEMORY_BACKEND_NAME);
 
-      List<QRecord> preList = TestUtils.queryTable(TestUtils.TABLE_NAME_SHAPE);
+      TestUtils.insertDefaultShapes(instance);
 
+      /////////////////////
+      // run the process //
+      /////////////////////
       RunProcessInput request = new RunProcessInput(instance);
       request.setSession(TestUtils.getMockSession());
       request.setProcessName(process.getName());
       request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+      request.setCallback(new Callback());
 
       RunProcessOutput result = new RunProcessAction().execute(request);
       assertNotNull(result);
-
       assertTrue(result.getException().isEmpty());
 
-      List<QRecord> postList = TestUtils.queryTable(TestUtils.TABLE_NAME_SHAPE);
-      assertEquals(6, postList.size());
+      List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON);
       assertThat(postList)
-         .anyMatch(qr -> qr.getValue("name").equals("Circle"))
-         .anyMatch(qr -> qr.getValue("name").equals("Triangle"))
-         .anyMatch(qr -> qr.getValue("name").equals("Square"))
-         .anyMatch(qr -> qr.getValue("name").equals("Transformed: Circle"))
-         .anyMatch(qr -> qr.getValue("name").equals("Transformed: Triangle"))
-         .anyMatch(qr -> qr.getValue("name").equals("Transformed: Square"));
+         .as("Should have inserted Circle").anyMatch(qr -> qr.getValue("lastName").equals("Circle"))
+         .as("Should have inserted Triangle").anyMatch(qr -> qr.getValue("lastName").equals("Triangle"))
+         .as("Should have inserted Square").anyMatch(qr -> qr.getValue("lastName").equals("Square"));
    }
 
 
@@ -98,22 +79,34 @@ class StreamedETLWithFrontendProcessTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class TestExtractStep extends AbstractExtractFunction
+   @Test
+   void testBig() throws QException
    {
+      QInstance instance = TestUtils.defineInstance();
 
-      /*******************************************************************************
-       ** Execute the backend step - using the request as input, and the result as output.
-       **
-       *******************************************************************************/
-      @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
-      {
-         QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-         queryInput.setSession(runBackendStepInput.getSession());
-         queryInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
-         queryInput.setRecordPipe(getRecordPipe());
-         new QueryAction().execute(queryInput);
-      }
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // define the process - an ELT from Persons to Persons - using the mock backend, and set to do many many records //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSON, ExtractViaQueryWithCustomLimitStep.class, TestTransformStep.class, LoadViaInsertStep.class);
+      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      instance.addProcess(process);
+
+      /////////////////////
+      // run the process //
+      /////////////////////
+      RunProcessInput request = new RunProcessInput(instance);
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(process.getName());
+      request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+      request.setCallback(new Callback());
+
+      RunProcessOutput result = new RunProcessAction().execute(request);
+      assertNotNull(result);
+      assertTrue(result.getException().isEmpty());
+
+      assertEquals(new ExtractViaQueryWithCustomLimitStep().getLimit(), result.getValues().get(StreamedETLProcess.FIELD_RECORD_COUNT));
+
+      // todo what can we assert?
    }
 
 
@@ -121,7 +114,7 @@ class StreamedETLWithFrontendProcessTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class TestTransformStep extends AbstractTransformFunction
+   public static class TestTransformStep extends AbstractTransformStep
    {
 
       /*******************************************************************************
@@ -134,8 +127,8 @@ class StreamedETLWithFrontendProcessTest
          for(QRecord qRecord : getInputRecordPage())
          {
             QRecord newQRecord = new QRecord();
-            newQRecord.setValue("id", null);
-            newQRecord.setValue("name", "Transformed: " + qRecord.getValueString("name"));
+            newQRecord.setValue("firstName", "Johnny");
+            newQRecord.setValue("lastName", qRecord.getValueString("name"));
             getOutputRecordPage().add(newQRecord);
          }
       }
@@ -146,34 +139,41 @@ class StreamedETLWithFrontendProcessTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class TestLoadStep extends AbstractLoadFunction
+   public static class Callback implements QProcessCallback
    {
-
       /*******************************************************************************
-       ** Execute the backend step - using the request as input, and the result as output.
-       **
+       ** Get the filter query for this callback.
        *******************************************************************************/
       @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public QQueryFilter getQueryFilter()
       {
-         InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
-         insertInput.setSession(runBackendStepInput.getSession());
-         insertInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
-         insertInput.setTransaction(transaction);
-         insertInput.setRecords(getInputRecordPage());
-         new InsertAction().execute(insertInput);
+         return (new QQueryFilter());
       }
 
 
 
       /*******************************************************************************
-       **
+       ** Get the field values for this callback.
        *******************************************************************************/
       @Override
-      protected QBackendTransaction doOpenTransaction(RunBackendStepInput runBackendStepInput) throws QException
+      public Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields)
       {
-         return null;
+         return (null);
       }
    }
 
+
+
+   /*******************************************************************************
+    ** The Mock backend - its query action will return as many rows as the limit -
+    ** so let's make sure to give it a big limit.
+    *******************************************************************************/
+   public static class ExtractViaQueryWithCustomLimitStep extends ExtractViaQueryStep
+   {
+      @Override
+      public Integer getLimit()
+      {
+         return (10_000);
+      }
+   }
 }

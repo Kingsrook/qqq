@@ -23,12 +23,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed;
 
 
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
-import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
-import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -41,7 +37,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLLoadFunction;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLTransformFunction;
-import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -64,6 +59,7 @@ public class StreamedETLBackendStep implements BackendStep
     **
     *******************************************************************************/
    @Override
+   @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       QBackendTransaction transaction = openTransaction(runBackendStepInput);
@@ -74,96 +70,23 @@ public class StreamedETLBackendStep implements BackendStep
          BasicETLExtractFunction basicETLExtractFunction = new BasicETLExtractFunction();
          basicETLExtractFunction.setRecordPipe(recordPipe);
 
-         //////////////////////////////////////////
-         // run the query action as an async job //
-         //////////////////////////////////////////
-         AsyncJobManager asyncJobManager = new AsyncJobManager();
-         String queryJobUUID = asyncJobManager.startJob("StreamedETL>QueryAction", (status) ->
-         {
-            basicETLExtractFunction.run(runBackendStepInput, runBackendStepOutput);
-            return (runBackendStepOutput);
-         });
-         LOG.info("Started query job [" + queryJobUUID + "] for streamed ETL");
-
-         AsyncJobState  queryJobState  = AsyncJobState.RUNNING;
-         AsyncJobStatus asyncJobStatus = null;
-
-         long recordCount           = 0;
-         int  nextSleepMillis       = INIT_SLEEP_MS;
-         long lastReceivedRecordsAt = System.currentTimeMillis();
-         long jobStartTime          = System.currentTimeMillis();
-
-         while(queryJobState.equals(AsyncJobState.RUNNING))
-         {
-            if(recordPipe.countAvailableRecords() == 0)
+         ////////////////////////////////////
+         // run the async-record-pipe loop //
+         ////////////////////////////////////
+         int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Extract", null, recordPipe, (status) ->
             {
-               ///////////////////////////////////////////////////////////
-               // if the pipe is empty, sleep to let the producer work. //
-               // todo - smarter sleep?  like get notified vs. sleep?   //
-               ///////////////////////////////////////////////////////////
-               LOG.info("No records are available in the pipe. Sleeping [" + nextSleepMillis + "] ms to give producer a chance to work");
-               SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
-               nextSleepMillis = Math.min(nextSleepMillis * 2, MAX_SLEEP_MS);
+               basicETLExtractFunction.run(runBackendStepInput, runBackendStepOutput);
+               return (runBackendStepOutput);
+            },
+            () -> (consumeRecordsFromPipe(recordPipe, runBackendStepInput, runBackendStepOutput, transaction))
+         );
 
-               long timeSinceLastReceivedRecord = System.currentTimeMillis() - lastReceivedRecordsAt;
-               if(timeSinceLastReceivedRecord > TIMEOUT_AFTER_NO_RECORDS_MS)
-               {
-                  throw (new QException("Query action appears to have stopped producing records (last record received " + timeSinceLastReceivedRecord + " ms ago)."));
-               }
-            }
-            else
-            {
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////
-               // if the pipe has records, consume them.  reset the sleep timer so if we sleep again it'll be short. //
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////
-               lastReceivedRecordsAt = System.currentTimeMillis();
-               nextSleepMillis = INIT_SLEEP_MS;
-
-               recordCount += consumeRecordsFromPipe(recordPipe, runBackendStepInput, runBackendStepOutput, transaction);
-
-               LOG.info(String.format("Processed %,d records so far", recordCount));
-            }
-
-            ////////////////////////////////////
-            // refresh the query job's status //
-            ////////////////////////////////////
-            Optional<AsyncJobStatus> optionalAsyncJobStatus = asyncJobManager.getJobStatus(queryJobUUID);
-            if(optionalAsyncJobStatus.isEmpty())
-            {
-               /////////////////////////////////////////////////
-               // todo - ... maybe some version of try-again? //
-               /////////////////////////////////////////////////
-               throw (new QException("Could not get status of report query job [" + queryJobUUID + "]"));
-            }
-            asyncJobStatus = optionalAsyncJobStatus.get();
-            queryJobState = asyncJobStatus.getState();
-         }
-
-         LOG.info("Query job [" + queryJobUUID + "] for ETL completed with status: " + asyncJobStatus);
-
-         /////////////////////////////////////////
-         // propagate errors from the query job //
-         /////////////////////////////////////////
-         if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
-         {
-            throw (new QException("Query job failed with an error", asyncJobStatus.getCaughtException()));
-         }
-
-         //////////////////////////////////////////////////////
-         // send the final records to transform & load steps //
-         //////////////////////////////////////////////////////
-         recordCount += consumeRecordsFromPipe(recordPipe, runBackendStepInput, runBackendStepOutput, transaction);
+         runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
 
          /////////////////////
          // commit the work //
          /////////////////////
          transaction.commit();
-
-         long reportEndTime = System.currentTimeMillis();
-         LOG.info(String.format("Processed %,d records", recordCount)
-            + String.format(" at end of ETL job in %,d ms (%.2f records/second).", (reportEndTime - jobStartTime), 1000d * (recordCount / (.001d + (reportEndTime - jobStartTime)))));
-
-         runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
       }
       catch(Exception e)
       {

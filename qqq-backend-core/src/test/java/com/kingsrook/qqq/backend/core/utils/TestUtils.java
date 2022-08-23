@@ -440,7 +440,17 @@ public class TestUtils
     *******************************************************************************/
    public static List<QRecord> queryTable(String tableName) throws QException
    {
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      return (queryTable(TestUtils.defineInstance(), tableName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<QRecord> queryTable(QInstance instance, String tableName) throws QException
+   {
+      QueryInput queryInput = new QueryInput(instance);
       queryInput.setSession(TestUtils.getMockSession());
       queryInput.setTableName(tableName);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
