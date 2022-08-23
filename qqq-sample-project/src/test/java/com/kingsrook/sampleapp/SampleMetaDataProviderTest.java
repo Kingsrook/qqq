@@ -43,7 +43,6 @@ import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQuery
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
@@ -84,7 +83,7 @@ class SampleMetaDataProviderTest
       try(Connection connection = connectionManager.getConnection(SampleMetaDataProvider.defineRdbmsBackend()))
       {
          InputStream primeTestDatabaseSqlStream = SampleMetaDataProviderTest.class.getResourceAsStream("/" + sqlFileName);
-         Assert.assertNotNull(primeTestDatabaseSqlStream);
+         assertNotNull(primeTestDatabaseSqlStream);
          List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);

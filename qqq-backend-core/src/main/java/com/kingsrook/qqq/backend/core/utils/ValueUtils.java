@@ -423,7 +423,7 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Object getValueAsLocalTime(Serializable value)
+   public static LocalTime getValueAsLocalTime(Serializable value)
    {
       try
       {

@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -63,8 +63,10 @@ public class QPossibleValueTranslator
    private final QInstance qInstance;
    private final QSession  session;
 
-   // top-level keys are pvsNames (not table names)
-   // 2nd-level keys are pkey values from the PVS table
+   ///////////////////////////////////////////////////////
+   // top-level keys are pvsNames (not table names)     //
+   // 2nd-level keys are pkey values from the PVS table //
+   ///////////////////////////////////////////////////////
    private Map<String, Map<Serializable, String>> possibleValueCache;
 
 
@@ -120,9 +122,6 @@ public class QPossibleValueTranslator
          return (null);
       }
 
-      // todo - memoize!!!
-      // todo - bulk!!!
-
       String resultValue = null;
       if(possibleValueSource.getType().equals(QPossibleValueSourceType.ENUM))
       {
@@ -154,22 +153,14 @@ public class QPossibleValueTranslator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String translatePossibleValueCustom(QFieldMetaData field, Serializable value, QPossibleValueSource possibleValueSource)
+   private String translatePossibleValueEnum(Serializable value, QPossibleValueSource possibleValueSource)
    {
-      try
+      for(QPossibleValue<?> possibleValue : possibleValueSource.getEnumValues())
       {
-         Class<?> codeClass  = Class.forName(possibleValueSource.getCustomCodeReference().getName());
-         Object   codeObject = codeClass.getConstructor().newInstance();
-         if(!(codeObject instanceof QCustomPossibleValueProvider customPossibleValueProvider))
+         if(possibleValue.getId().equals(value))
          {
-            throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of QCustomPossibleValueProvider"));
+            return (formatPossibleValue(possibleValueSource, possibleValue));
          }
-
-         return (formatPossibleValue(possibleValueSource, customPossibleValueProvider.getPossibleValue(value)));
-      }
-      catch(Exception e)
-      {
-         LOG.warn("Error sending [" + value + "] for field [" + field + "] through custom code for PVS [" + field.getPossibleValueSourceName() + "]", e);
       }
 
       return (null);
@@ -201,6 +192,26 @@ public class QPossibleValueTranslator
       }
 
       return (cacheForPvs.get(value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String translatePossibleValueCustom(QFieldMetaData field, Serializable value, QPossibleValueSource possibleValueSource)
+   {
+      try
+      {
+         QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+         return (formatPossibleValue(possibleValueSource, customPossibleValueProvider.getPossibleValue(value)));
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error sending [" + value + "] for field [" + field + "] through custom code for PVS [" + field.getPossibleValueSourceName() + "]", e);
+      }
+
+      return (null);
    }
 
 
@@ -257,25 +268,10 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String translatePossibleValueEnum(Serializable value, QPossibleValueSource possibleValueSource)
-   {
-      for(QPossibleValue<?> possibleValue : possibleValueSource.getEnumValues())
-      {
-         if(possibleValue.getId().equals(value))
-         {
-            return (formatPossibleValue(possibleValueSource, possibleValue));
-         }
-      }
-
-      return (null);
-   }
-
-
-
-   /*******************************************************************************
     ** prime the cache (e.g., by doing bulk-queries) for table-based PVS's
+    **
+    ** @param table the table that the records are from
+    ** @param records the records that have the possible value id's (e.g., foreign keys)
     *******************************************************************************/
    void primePvsCache(QTableMetaData table, List<QRecord> records)
    {

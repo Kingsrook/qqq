@@ -174,10 +174,13 @@ public class MemoryRecordStore
     *******************************************************************************/
    public Integer count(CountInput input)
    {
-      Map<Serializable, QRecord> tableData = getTableData(input.getTable());
-      List<QRecord>              records   = new ArrayList<>(tableData.values());
-      // todo - filtering (call query)
-      return (records.size());
+      QueryInput queryInput = new QueryInput(input.getInstance());
+      queryInput.setSession(input.getSession());
+      queryInput.setTableName(input.getTableName());
+      queryInput.setFilter(input.getFilter());
+      List<QRecord> queryResult = query(queryInput);
+
+      return (queryResult.size());
    }
 
 
@@ -192,25 +195,41 @@ public class MemoryRecordStore
          return (new ArrayList<>());
       }
 
-      QTableMetaData             table      = input.getTable();
-      Map<Serializable, QRecord> tableData  = getTableData(table);
-      Integer                    nextSerial = nextSerials.get(table.getName());
+      QTableMetaData             table     = input.getTable();
+      Map<Serializable, QRecord> tableData = getTableData(table);
+
+      ////////////////////////////////////////
+      // grab the next unique serial to use //
+      ////////////////////////////////////////
+      Integer nextSerial = nextSerials.get(table.getName());
       if(nextSerial == null)
       {
          nextSerial = 1;
-         while(tableData.containsKey(nextSerial))
-         {
-            nextSerial++;
-         }
+      }
+
+      while(tableData.containsKey(nextSerial))
+      {
+         nextSerial++;
       }
 
       List<QRecord>  outputRecords   = new ArrayList<>();
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
       for(QRecord record : input.getRecords())
       {
+         /////////////////////////////////////////////////
+         // set the next serial in the record if needed //
+         /////////////////////////////////////////////////
          if(record.getValue(primaryKeyField.getName()) == null && primaryKeyField.getType().equals(QFieldType.INTEGER))
          {
             record.setValue(primaryKeyField.getName(), nextSerial++);
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure that if the user supplied a serial, greater than the one we had, that we skip ahead //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         if(primaryKeyField.getType().equals(QFieldType.INTEGER) && record.getValueInteger(primaryKeyField.getName()) > nextSerial)
+         {
+            nextSerial = record.getValueInteger(primaryKeyField.getName()) + 1;
          }
 
          tableData.put(record.getValue(primaryKeyField.getName()), record);
@@ -219,6 +238,8 @@ public class MemoryRecordStore
             outputRecords.add(record);
          }
       }
+
+      nextSerials.put(table.getName(), nextSerial);
 
       return (outputRecords);
    }
@@ -255,10 +276,6 @@ public class MemoryRecordStore
             {
                outputRecords.add(record);
             }
-         }
-         else
-         {
-            outputRecords.add(record);
          }
       }
 

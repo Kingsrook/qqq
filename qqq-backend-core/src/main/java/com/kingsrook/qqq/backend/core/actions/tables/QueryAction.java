@@ -22,12 +22,18 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
@@ -38,12 +44,28 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class QueryAction
 {
+   private Optional<Function<QRecord, QRecord>> postQueryRecordCustomizer;
+
+   private QueryInput               queryInput;
+   private QValueFormatter          qValueFormatter;
+   private QPossibleValueTranslator qPossibleValueTranslator;
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    public QueryOutput execute(QueryInput queryInput) throws QException
    {
       ActionHelper.validateSession(queryInput);
+
+      postQueryRecordCustomizer = QCodeLoader.getTableCustomizerFunction(queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
+      this.queryInput = queryInput;
+
+      if(queryInput.getRecordPipe() != null)
+      {
+         queryInput.getRecordPipe().setPostRecordActions(this::postRecordActions);
+      }
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
@@ -53,20 +75,42 @@ public class QueryAction
 
       if(queryInput.getRecordPipe() == null)
       {
-         if(queryInput.getShouldGenerateDisplayValues())
-         {
-            QValueFormatter qValueFormatter = new QValueFormatter();
-            qValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
-         }
-
-         if(queryInput.getShouldTranslatePossibleValues())
-         {
-            QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
-            qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), queryOutput.getRecords());
-         }
+         postRecordActions(queryOutput.getRecords());
       }
 
       return queryOutput;
    }
 
+
+
+   /*******************************************************************************
+    ** Run the necessary actions on a list of records (which must be a mutable list - e.g.,
+    ** not one created via List.of()).  This may include setting display values,
+    ** translating possible values, and running post-record customizations.
+    *******************************************************************************/
+   public void postRecordActions(List<QRecord> records)
+   {
+      if(this.postQueryRecordCustomizer.isPresent())
+      {
+         records.replaceAll(t -> postQueryRecordCustomizer.get().apply(t));
+      }
+
+      if(queryInput.getShouldGenerateDisplayValues())
+      {
+         if(qValueFormatter == null)
+         {
+            qValueFormatter = new QValueFormatter();
+         }
+         qValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
+      }
+
+      if(queryInput.getShouldTranslatePossibleValues())
+      {
+         if(qPossibleValueTranslator == null)
+         {
+            qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
+         }
+         qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records);
+      }
+   }
 }

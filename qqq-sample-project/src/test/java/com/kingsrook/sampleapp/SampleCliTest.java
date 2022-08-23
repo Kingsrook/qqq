@@ -25,6 +25,7 @@ package com.kingsrook.sampleapp;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 
 /*******************************************************************************
@@ -37,10 +38,21 @@ class SampleCliTest
     **
     *******************************************************************************/
    @Test
-   void test() throws QException
+   void testExitSuccess() throws QException
    {
-      int exitCode = new SampleCli().runForExitCode(new String[] { "--meta-data" });
+      int exitCode = new SampleCli().run(new String[] { "--meta-data" });
       assertEquals(0, exitCode);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNotExitSuccess() throws QException
+   {
+      int exitCode = new SampleCli().run(new String[] { "asdfasdf" });
+      assertNotEquals(0, exitCode);
    }
 
 }

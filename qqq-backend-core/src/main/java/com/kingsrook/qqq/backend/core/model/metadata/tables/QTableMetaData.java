@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
@@ -81,6 +82,17 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
     *******************************************************************************/
    public QTableMetaData()
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return ("QTableMetaData[" + name + "]");
    }
 
 
@@ -447,6 +459,16 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
       // todo - check for dupes?
       this.customizers.put(role, customizer);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizer(TableCustomizer tableCustomizer, QCodeReference customizer)
+   {
+      return (withCustomizer(tableCustomizer.getRole(), customizer));
    }
 
 

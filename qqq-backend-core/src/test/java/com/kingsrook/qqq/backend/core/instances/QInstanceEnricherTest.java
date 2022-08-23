@@ -140,6 +140,7 @@ class QInstanceEnricherTest
       assertEquals("Field 20", QInstanceEnricher.nameToLabel("field20"));
       assertEquals("Something USA", QInstanceEnricher.nameToLabel("somethingUSA"));
       assertEquals("Number 1 Dad", QInstanceEnricher.nameToLabel("number1Dad"));
+      assertEquals("Number 417 Dad", QInstanceEnricher.nameToLabel("number417Dad"));
    }
 
 

@@ -334,7 +334,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public LocalTime getValueLocalTime(String fieldName)
    {
-      return ((LocalTime) ValueUtils.getValueAsLocalTime(values.get(fieldName)));
+      return (ValueUtils.getValueAsLocalTime(values.get(fieldName)));
    }
 
 

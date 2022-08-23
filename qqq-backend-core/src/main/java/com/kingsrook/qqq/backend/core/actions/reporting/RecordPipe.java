@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.apache.logging.log4j.LogManager;
@@ -43,6 +44,13 @@ public class RecordPipe
    private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
 
    private boolean isTerminated = false;
+
+   private Consumer<List<QRecord>> postRecordActions = null;
+
+   /////////////////////////////////////
+   // See usage below for explanation //
+   /////////////////////////////////////
+   private List<QRecord> singleRecordListForPostRecordActions = new ArrayList<>();
 
 
    /*******************************************************************************
@@ -69,6 +77,30 @@ public class RecordPipe
          return;
       }
 
+      if(postRecordActions != null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////
+         // the initial use-case of this method is to call QueryAction.postRecordActions   //
+         // that method requires that the list param be modifiable.  Originally we used    //
+         // List.of here - but that is immutable, so, instead use this single-record-list  //
+         // (which we'll create as a field in this class, to avoid always re-constructing) //
+         ////////////////////////////////////////////////////////////////////////////////////
+         singleRecordListForPostRecordActions.add(record);
+         postRecordActions.accept(singleRecordListForPostRecordActions);
+         record = singleRecordListForPostRecordActions.remove(0);
+      }
+
+      doAddRecord(record);
+   }
+
+
+
+   /*******************************************************************************
+    ** Private internal version of add record - assumes the postRecordActions have
+    ** already ran.
+    *******************************************************************************/
+   private void doAddRecord(QRecord record)
+   {
       boolean offerResult = queue.offer(record);
 
       while(!offerResult && !isTerminated)
@@ -86,7 +118,15 @@ public class RecordPipe
     *******************************************************************************/
    public void addRecords(List<QRecord> records)
    {
-      records.forEach(this::addRecord);
+      if(postRecordActions != null)
+      {
+         postRecordActions.accept(records);
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure to go to the private version of doAddRecord - to avoid re-running the post-actions //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      records.forEach(this::doAddRecord);
    }
 
 
@@ -124,6 +164,16 @@ public class RecordPipe
       }
 
       return (queue.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setPostRecordActions(Consumer<List<QRecord>> postRecordActions)
+   {
+      this.postRecordActions = postRecordActions;
    }
 
 }

@@ -25,43 +25,23 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
- ** Meta-data to represent a single field in a table.
+ ** Meta-data to represent a "Possible value" - e.g., a translation of a foreign
+ ** key and/or a limited set of "possible values" for a field (e.g., from a foreign
+ ** table or an enum).
  **
  *******************************************************************************/
 public class QPossibleValueSource
 {
    private String                   name;
    private QPossibleValueSourceType type;
-   private QFieldType               idType = QFieldType.INTEGER;
 
-   private String       valueFormat           = ValueFormat.DEFAULT;
-   private List<String> valueFields           = ValueFields.DEFAULT;
+   private String       valueFormat           = PVSValueFormatAndFields.LABEL_ONLY.getFormat();
+   private List<String> valueFields           = PVSValueFormatAndFields.LABEL_ONLY.getFields();
    private String       valueFormatIfNotFound = null;
    private List<String> valueFieldsIfNotFound = null;
-
-
-
-   public interface ValueFormat
-   {
-      String DEFAULT         = "%s";
-      String LABEL_ONLY      = "%s";
-      String LABEL_PARENS_ID = "%s (%s)";
-      String ID_COLON_LABEL  = "%s: %s";
-   }
-
-
-
-   public interface ValueFields
-   {
-      List<String> DEFAULT         = List.of("label");
-      List<String> LABEL_ONLY      = List.of("label");
-      List<String> LABEL_PARENS_ID = List.of("label", "id");
-      List<String> ID_COLON_LABEL  = List.of("id", "label");
-   }
 
    // todo - optimization hints, such as "table is static, fully cache" or "table is small, so we can pull the whole thing into memory?"
 
@@ -149,40 +129,6 @@ public class QPossibleValueSource
    public QPossibleValueSource withType(QPossibleValueSourceType type)
    {
       this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for idType
-    **
-    *******************************************************************************/
-   public QFieldType getIdType()
-   {
-      return idType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for idType
-    **
-    *******************************************************************************/
-   public void setIdType(QFieldType idType)
-   {
-      this.idType = idType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for idType
-    **
-    *******************************************************************************/
-   public QPossibleValueSource withIdType(QFieldType idType)
-   {
-      this.idType = idType;
       return (this);
    }
 
@@ -407,6 +353,9 @@ public class QPossibleValueSource
 
 
    /*******************************************************************************
+    ** This is the easiest way to add the values from an enum to a PossibleValueSource.
+    ** Make sure the enum implements PossibleValueEnum - then call as:
+    **   myPossibleValueSource.withValuesFromEnum(MyEnum.values()));
     **
     *******************************************************************************/
    public <T extends PossibleValueEnum<?>> QPossibleValueSource withValuesFromEnum(T[] values)
@@ -450,6 +399,28 @@ public class QPossibleValueSource
    public QPossibleValueSource withCustomCodeReference(QCodeReference customCodeReference)
    {
       this.customCodeReference = customCodeReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setValueFormatAndFields(PVSValueFormatAndFields valueFormatAndFields)
+   {
+      this.valueFormat = valueFormatAndFields.getFormat();
+      this.valueFields = valueFormatAndFields.getFields();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withValueFormatAndFields(PVSValueFormatAndFields valueFormatAndFields)
+   {
+      setValueFormatAndFields(valueFormatAndFields);
       return (this);
    }
 
