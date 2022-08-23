@@ -84,11 +84,16 @@ public class QueryAction
 
 
    /*******************************************************************************
-    **
+    ** Run the necessary actions on a list of records (which must be a mutable list - e.g.,
+    ** not one created via List.of()).  This may include setting display values,
+    ** translating possible values, and running post-record customizations.
     *******************************************************************************/
    public void postRecordActions(List<QRecord> records)
    {
-      this.postQueryRecordCustomizer.ifPresent(qRecordQRecordFunction -> records.replaceAll(qRecordQRecordFunction::apply));
+      if(this.postQueryRecordCustomizer.isPresent())
+      {
+         records.replaceAll(t -> postQueryRecordCustomizer.get().apply(t));
+      }
 
       if(queryInput.getShouldGenerateDisplayValues())
       {

@@ -45,17 +45,28 @@ public class RecordPipe
 
    private Consumer<List<QRecord>> postRecordActions = null;
 
+   /////////////////////////////////////
+   // See usage below for explanation //
+   /////////////////////////////////////
+   private List<QRecord> singleRecordListForPostRecordActions = new ArrayList<>();
 
 
    /*******************************************************************************
-    ** Add a record to the pipe
-    ** Returns true iff the record fit in the pipe; false if the pipe is currently full.
+    ** Add a record to the pipe.  Will block if the pipe is full.
     *******************************************************************************/
    public void addRecord(QRecord record)
    {
       if(postRecordActions != null)
       {
-         postRecordActions.accept(List.of(record));
+         ////////////////////////////////////////////////////////////////////////////////////
+         // the initial use-case of this method is to call QueryAction.postRecordActions   //
+         // that method requires that the list param be modifiable.  Originally we used    //
+         // List.of here - but that is immutable, so, instead use this single-record-list  //
+         // (which we'll create as a field in this class, to avoid always re-constructing) //
+         ////////////////////////////////////////////////////////////////////////////////////
+         singleRecordListForPostRecordActions.add(record);
+         postRecordActions.accept(singleRecordListForPostRecordActions);
+         record = singleRecordListForPostRecordActions.remove(0);
       }
 
       doAddRecord(record);
