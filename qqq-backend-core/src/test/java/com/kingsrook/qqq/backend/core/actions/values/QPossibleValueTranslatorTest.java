@@ -25,9 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -135,16 +133,7 @@ public class QPossibleValueTranslatorTest
       QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
       QPossibleValueSource     possibleValueSource     = qInstance.getPossibleValueSource(shapeField.getPossibleValueSourceName());
 
-      List<QRecord> shapeRecords = List.of(
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 1).withValue("name", "Triangle"),
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 2).withValue("name", "Square"),
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 3).withValue("name", "Circle"));
-
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
-      insertInput.setTableName(shapeTable.getName());
-      insertInput.setRecords(shapeRecords);
-      new InsertAction().execute(insertInput);
+      TestUtils.insertDefaultShapes(qInstance);
 
       //////////////////////////////////////////////////////////////////////////
       // assert the default formatting for a not-found value is a null string //
@@ -235,18 +224,7 @@ public class QPossibleValueTranslatorTest
          .withPossibleValueSourceName("shapeV2")
       );
 
-      ///////////////////////////////
-      // insert the list of shapes //
-      ///////////////////////////////
-      List<QRecord> shapeRecords = List.of(
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 1).withValue("name", "Triangle"),
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 2).withValue("name", "Square"),
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 3).withValue("name", "Circle"));
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
-      insertInput.setTableName(shapeTable.getName());
-      insertInput.setRecords(shapeRecords);
-      new InsertAction().execute(insertInput);
+      TestUtils.insertDefaultShapes(qInstance);
 
       ///////////////////////////////////////////////////////
       // define a list of persons pointing at those shapes //
