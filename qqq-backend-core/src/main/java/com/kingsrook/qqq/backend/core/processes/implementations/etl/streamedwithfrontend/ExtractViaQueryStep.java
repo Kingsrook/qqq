@@ -78,14 +78,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       String queryFilterJson = runBackendStepInput.getValueString("queryFilterJson");
       if(queryFilterJson != null)
       {
-         try
-         {
-            return (JsonUtils.toObject(queryFilterJson, QQueryFilter.class));
-         }
-         catch(IOException e)
-         {
-            throw new QException("Error loading query filter from json field", e);
-         }
+         return getQueryFilterFromJson(queryFilterJson, "Error loading query filter from json field");
       }
       else if(runBackendStepInput.getCallback() != null && runBackendStepInput.getCallback().getQueryFilter() != null)
       {
@@ -106,20 +99,30 @@ public class ExtractViaQueryStep extends AbstractExtractStep
          {
             return (filter);
          }
-         if(defaultQueryFilter instanceof String string)
+         else if(defaultQueryFilter instanceof String string)
          {
-            try
-            {
-               return (JsonUtils.toObject(string, QQueryFilter.class));
-            }
-            catch(IOException e)
-            {
-               throw new QException("Error loading default query filter from json", e);
-            }
+            return getQueryFilterFromJson(string, "Error loading default query filter from json");
          }
       }
 
       throw (new QException("Could not find query filter for Extract step."));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QQueryFilter getQueryFilterFromJson(String queryFilterJson, String message) throws QException
+   {
+      try
+      {
+         return (JsonUtils.toObject(queryFilterJson, QQueryFilter.class));
+      }
+      catch(IOException e)
+      {
+         throw new QException(message, e);
+      }
    }
 
 }
