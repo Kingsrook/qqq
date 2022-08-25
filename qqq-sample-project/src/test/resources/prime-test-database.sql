@@ -31,15 +31,16 @@ CREATE TABLE person
    birth_date DATE,
    email VARCHAR(250) NOT NULL,
 
+   is_employed BOOLEAN,
    annual_salary DECIMAL(12, 2),
    days_worked INTEGER
 );
 
-INSERT INTO person (id, first_name, last_name, birth_date, email, annual_salary, days_worked) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 75003.50, 1001);
-INSERT INTO person (id, first_name, last_name, birth_date, email, annual_salary, days_worked) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com', 150000, 10100);
-INSERT INTO person (id, first_name, last_name, birth_date, email, annual_salary, days_worked) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com', 300000, 100100);
-INSERT INTO person (id, first_name, last_name, birth_date, email, annual_salary, days_worked) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com', 950000, 75);
-INSERT INTO person (id, first_name, last_name, birth_date, email, annual_salary, days_worked) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com', 1500000, 1);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 1, 75003.50, 1001);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com', 1, 150000, 10100);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com', 1, 300000, 100100);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com', 1, 950000, 75);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com', 0, 1500000, 1);
 
 DROP TABLE IF EXISTS carrier;
 CREATE TABLE carrier

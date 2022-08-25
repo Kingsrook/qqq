@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 
 
 /*******************************************************************************
@@ -69,6 +70,10 @@ public class QCodeReference
       if(BackendStep.class.isAssignableFrom(javaClass))
       {
          this.codeUsage = QCodeUsage.BACKEND_STEP;
+      }
+      else if(QCustomPossibleValueProvider.class.isAssignableFrom(javaClass))
+      {
+         this.codeUsage = QCodeUsage.POSSIBLE_VALUE_PROVIDER;
       }
       else
       {

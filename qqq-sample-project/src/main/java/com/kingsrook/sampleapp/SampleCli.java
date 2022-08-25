@@ -36,7 +36,8 @@ public class SampleCli
     *******************************************************************************/
    public static void main(String[] args)
    {
-      new SampleCli().run(args);
+      int exitCode = new SampleCli().run(args);
+      System.exit(exitCode);
    }
 
 
@@ -44,19 +45,19 @@ public class SampleCli
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void run(String[] args)
+   int run(String[] args)
    {
       try
       {
          QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
          QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
-         int                    exitCode               = qPicoCliImplementation.runCli("my-sample-cli", args);
-         System.exit(exitCode);
+
+         return (qPicoCliImplementation.runCli("my-sample-cli", args));
       }
       catch(Exception e)
       {
          e.printStackTrace();
-         System.exit(-1);
+         return (-1);
       }
    }
 

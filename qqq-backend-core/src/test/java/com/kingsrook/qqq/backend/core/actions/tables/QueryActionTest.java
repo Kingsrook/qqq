@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -47,18 +49,79 @@ class QueryActionTest
    @Test
    public void test() throws QException
    {
-      QueryInput request = new QueryInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
-      request.setTableName("person");
-      QueryOutput result = new QueryAction().execute(request);
-      assertNotNull(result);
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setSession(TestUtils.getMockSession());
+      queryInput.setTableName("person");
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertNotNull(queryOutput);
 
-      assertThat(result.getRecords()).isNotEmpty();
-      for(QRecord record : result.getRecords())
+      assertThat(queryOutput.getRecords()).isNotEmpty();
+      for(QRecord record : queryOutput.getRecords())
       {
          assertThat(record.getValues()).isNotEmpty();
-         assertThat(record.getDisplayValues()).isNotEmpty();
          assertThat(record.getErrors()).isEmpty();
+
+         ///////////////////////////////////////////////////////////////
+         // this SHOULD be empty, based on the default for the should //
+         ///////////////////////////////////////////////////////////////
+         assertThat(record.getDisplayValues()).isEmpty();
+      }
+
+      ////////////////////////////////////
+      // now flip that field and re-run //
+      ////////////////////////////////////
+      queryInput.setShouldGenerateDisplayValues(true);
+      assertThat(queryOutput.getRecords()).isNotEmpty();
+      queryOutput = new QueryAction().execute(queryInput);
+      for(QRecord record : queryOutput.getRecords())
+      {
+         assertThat(record.getDisplayValues()).isNotEmpty();
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Test running with a recordPipe - using the shape table, which uses the memory
+    ** backend, which is known to do an addAll to the query output.
+    **
+    *******************************************************************************/
+   @Test
+   public void testRecordPipeShapeTable() throws QException
+   {
+      TestUtils.insertDefaultShapes(TestUtils.defineInstance());
+
+      RecordPipe pipe = new RecordPipe();
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setSession(TestUtils.getMockSession());
+      queryInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      queryInput.setRecordPipe(pipe);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertNotNull(queryOutput);
+
+      List<QRecord> records = pipe.consumeAvailableRecords();
+      assertThat(records).isNotEmpty();
+   }
+
+
+   /*******************************************************************************
+    ** Test running with a recordPipe - using the person table, which uses the mock
+    ** backend, which is known to do a single-add (not addAll) to the query output.
+    **
+    *******************************************************************************/
+   @Test
+   public void testRecordPipePersonTable() throws QException
+   {
+      RecordPipe pipe = new RecordPipe();
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setSession(TestUtils.getMockSession());
+      queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      queryInput.setRecordPipe(pipe);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertNotNull(queryOutput);
+
+      List<QRecord> records = pipe.consumeAvailableRecords();
+      assertThat(records).isNotEmpty();
+   }
+
 }

@@ -31,11 +31,11 @@ import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFile
  *******************************************************************************/
 public interface FilesystemBackendModuleInterface<FILE>
 {
-   String CUSTOMIZER_FILE_POST_FILE_READ = "postFileRead";
 
    /*******************************************************************************
     ** For filesystem backends, get the module-specific action base-class, that helps
     ** with functions like listing and deleting files.
     *******************************************************************************/
    AbstractBaseFilesystemAction<FILE> getActionBase();
+
 }

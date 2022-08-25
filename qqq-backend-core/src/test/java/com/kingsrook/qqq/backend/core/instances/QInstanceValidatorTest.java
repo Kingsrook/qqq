@@ -22,16 +22,25 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -115,7 +124,8 @@ class QInstanceValidatorTest
             qInstance.setTables(null);
             qInstance.setProcesses(null);
          },
-         "At least 1 table must be defined");
+         "At least 1 table must be defined",
+         "Unrecognized table shape for possibleValueSource shape");
    }
 
 
@@ -132,7 +142,8 @@ class QInstanceValidatorTest
             qInstance.setTables(new HashMap<>());
             qInstance.setProcesses(new HashMap<>());
          },
-         "At least 1 table must be defined");
+         "At least 1 table must be defined",
+         "Unrecognized table shape for possibleValueSource shape");
    }
 
 
@@ -150,10 +161,13 @@ class QInstanceValidatorTest
             qInstance.getTable("person").setName("notPerson");
             qInstance.getBackend("default").setName("notDefault");
             qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setName("notGreetPeople");
+            qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setName("notStates");
          },
          "Inconsistent naming for table",
          "Inconsistent naming for backend",
-         "Inconsistent naming for process");
+         "Inconsistent naming for process",
+         "Inconsistent naming for possibleValueSource"
+      );
    }
 
 
@@ -180,6 +194,18 @@ class QInstanceValidatorTest
    {
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setBackendName("notARealBackend"),
          "Unrecognized backend");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateTableBadRecordFormatField()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withRecordLabelFields("notAField"),
+         "not a field");
    }
 
 
@@ -246,13 +272,145 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableCustomizers()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference()),
+         "missing a code reference name", "missing a code type");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(null, QCodeType.JAVA, null)),
+         "missing a code reference name");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("", QCodeType.JAVA, null)),
+         "missing a code reference name");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", null, null)),
+         "missing a code type");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", QCodeType.JAVA, QCodeUsage.CUSTOMIZER)),
+         "Class for CodeReference could not be found");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithNoVoidConstructor.class, QCodeUsage.CUSTOMIZER)),
+         "Instance of CodeReference could not be created");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotAFunction.class, QCodeUsage.CUSTOMIZER)),
+         "CodeReference could not be casted");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameters.class, QCodeUsage.CUSTOMIZER)),
+         "Error validating customizer type parameters");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameter1.class, QCodeUsage.CUSTOMIZER)),
+         "Error validating customizer type parameters");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameter2.class, QCodeUsage.CUSTOMIZER)),
+         "Error validating customizer type parameters");
+
+      assertValidationSuccess((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerValid.class, QCodeUsage.CUSTOMIZER)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerWithNoVoidConstructor
+   {
+      public CustomizerWithNoVoidConstructor(boolean b)
+      {
+
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerWithOnlyPrivateConstructor
+   {
+      private CustomizerWithOnlyPrivateConstructor()
+      {
+
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerThatIsNotAFunction
+   {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerFunctionWithIncorrectTypeParameters implements Function<String, String>
+   {
+      @Override
+      public String apply(String s)
+      {
+         return null;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerFunctionWithIncorrectTypeParameter1 implements Function<String, QRecord>
+   {
+      @Override
+      public QRecord apply(String s)
+      {
+         return null;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerFunctionWithIncorrectTypeParameter2 implements Function<QRecord, String>
+   {
+      @Override
+      public String apply(QRecord s)
+      {
+         return "Test";
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomizerValid implements Function<QRecord, QRecord>
+   {
+      @Override
+      public QRecord apply(QRecord record)
+      {
+         return null;
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Test that if a field specifies a backend that doesn't exist, that it fails.
     **
     *******************************************************************************/
    @Test
    public void test_validateFieldWithMissingPossibleValueSource()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeState").setPossibleValueSourceName("not a real possible value source"),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId").setPossibleValueSourceName("not a real possible value source"),
          "Unrecognized possibleValueSourceName");
    }
 
@@ -319,6 +477,7 @@ class QInstanceValidatorTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -376,6 +535,7 @@ class QInstanceValidatorTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -391,6 +551,7 @@ class QInstanceValidatorTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -404,6 +565,86 @@ class QInstanceValidatorTest
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section listed as Tier 1");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMissingType()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setType(null),
+         "Missing type for possibleValueSource");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMisConfiguredEnum()
+   {
+      assertValidationFailureReasons((qInstance) -> {
+            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+            possibleValueSource.setTableName("person");
+            possibleValueSource.setCustomCodeReference(new QCodeReference());
+            possibleValueSource.setEnumValues(null);
+         },
+         "should not have a tableName",
+         "should not have a customCodeReference",
+         "is missing enum values");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setEnumValues(new ArrayList<>()),
+         "is missing enum values");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMisConfiguredTable()
+   {
+      assertValidationFailureReasons((qInstance) -> {
+            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+            possibleValueSource.setTableName(null);
+            possibleValueSource.setCustomCodeReference(new QCodeReference());
+            possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+         },
+         "should not have enum values",
+         "should not have a customCodeReference",
+         "is missing a tableName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setTableName("Not a table"),
+         "Unrecognized table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueSourceMisConfiguredCustom()
+   {
+      assertValidationFailureReasons((qInstance) -> {
+            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+            possibleValueSource.setTableName("person");
+            possibleValueSource.setCustomCodeReference(null);
+            possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+         },
+         "should not have enum values",
+         "should not have a tableName",
+         "is missing a customCodeReference");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM).setCustomCodeReference(new QCodeReference()),
+         "not a possibleValueProvider",
+         "missing a code reference name",
+         "missing a code type");
    }
 
 
@@ -448,13 +689,33 @@ class QInstanceValidatorTest
       {
          if(!allowExtraReasons)
          {
-            assertEquals(reasons.length, e.getReasons().size(), "Expected number of validation failure reasons\nExpected: " + String.join(",", reasons) + "\nActual: " + e.getReasons());
+            int noOfReasons = e.getReasons() == null ? 0 : e.getReasons().size();
+            assertEquals(reasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", reasons) + "\nActual reasons: " + e.getReasons());
          }
 
          for(String reason : reasons)
          {
             assertReason(reason, e);
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Assert that an instance is valid!
+    *******************************************************************************/
+   private void assertValidationSuccess(Consumer<QInstance> setup)
+   {
+      try
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         setup.accept(qInstance);
+         new QInstanceValidator().validate(qInstance);
+      }
+      catch(QInstanceValidationException e)
+      {
+         fail("Expected no validation errors, but received: " + e.getMessage());
       }
    }
 

@@ -57,7 +57,7 @@ public class QInstanceValidationException extends QException
    {
       super(
          (reasons != null && reasons.size() > 0)
-            ? "Instance validation failed for the following reasons:  " + StringUtils.joinWithCommasAndAnd(reasons)
+            ? "Instance validation failed for the following reasons:\n - " + StringUtils.join("\n - ", reasons)
             : "Validation failed, but no reasons were provided");
 
       if(reasons != null && reasons.size() > 0)
