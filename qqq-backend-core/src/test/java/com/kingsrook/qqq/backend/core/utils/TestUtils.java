@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -40,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -52,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
@@ -65,18 +70,24 @@ import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackend
 public class TestUtils
 {
    public static final String DEFAULT_BACKEND_NAME = "default";
+   public static final String MEMORY_BACKEND_NAME  = "memory";
 
    public static final String APP_NAME_GREETINGS     = "greetingsApp";
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
    public static final String TABLE_NAME_PERSON = "person";
+   public static final String TABLE_NAME_SHAPE  = "shape";
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
+
+   public static final String POSSIBLE_VALUE_SOURCE_STATE  = "state"; // enum-type
+   public static final String POSSIBLE_VALUE_SOURCE_SHAPE  = "shape"; // table-type
+   public static final String POSSIBLE_VALUE_SOURCE_CUSTOM = "custom"; // custom-type
 
 
 
@@ -89,12 +100,16 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineBackend());
+      qInstance.addBackend(defineMemoryBackend());
 
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(defineTableIdAndNameOnly());
+      qInstance.addTable(defineTableShape());
 
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
+      qInstance.addPossibleValueSource(defineShapePossibleValueSource());
+      qInstance.addPossibleValueSource(defineCustomPossibleValueSource());
 
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
@@ -103,8 +118,6 @@ public class TestUtils
       qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
 
       defineApps(qInstance);
-
-      System.out.println(new QInstanceAdapter().qInstanceToJson(qInstance));
 
       return (qInstance);
    }
@@ -139,12 +152,40 @@ public class TestUtils
     ** Define the "states" possible value source used in standard tests
     **
     *******************************************************************************/
-   private static QPossibleValueSource<String> defineStatesPossibleValueSource()
+   private static QPossibleValueSource defineStatesPossibleValueSource()
    {
-      return new QPossibleValueSource<String>()
-         .withName("state")
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_STATE)
          .withType(QPossibleValueSourceType.ENUM)
-         .withEnumValues(List.of("IL", "MO"));
+         .withEnumValues(List.of(new QPossibleValue<>(1, "IL"), new QPossibleValue<>(2, "MO")));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the "shape" possible value source used in standard tests
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource defineShapePossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_SHAPE)
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TABLE_NAME_SHAPE);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the "custom" possible value source used in standard tests
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource defineCustomPossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_CUSTOM)
+         .withType(QPossibleValueSourceType.CUSTOM)
+         .withCustomCodeReference(new QCodeReference(CustomPossibleValueSource.class));
    }
 
 
@@ -175,6 +216,18 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the in-memory backend used in standard tests
+    *******************************************************************************/
+   public static QBackendMetaData defineMemoryBackend()
+   {
+      return new QBackendMetaData()
+         .withName(MEMORY_BACKEND_NAME)
+         .withBackendType(MemoryBackendModule.class);
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
@@ -191,7 +244,32 @@ public class TestUtils
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
-         .withField(new QFieldMetaData("homeState", QFieldType.STRING).withPossibleValueSourceName("state"));
+         .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STATE))
+         .withField(new QFieldMetaData("favoriteShapeId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_SHAPE))
+         .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
+         ;
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the 'shape' table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableShape()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_SHAPE)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withRecordLabelFields("name")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withField(new QFieldMetaData("type", QFieldType.STRING)) // todo PVS
+         .withField(new QFieldMetaData("noOfSides", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("isPolygon", QFieldType.BOOLEAN)) // mmm, should be derived from type, no?
+         ;
    }
 
 
@@ -374,6 +452,25 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void insertDefaultShapes(QInstance qInstance) throws QException
+   {
+      List<QRecord> shapeRecords = List.of(
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 1).withValue("name", "Triangle"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 2).withValue("name", "Square"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 3).withValue("name", "Circle"));
+
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(TABLE_NAME_SHAPE);
+      insertInput.setRecords(shapeRecords);
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String getPersonCsvHeader()
    {
       return ("""
@@ -417,4 +514,21 @@ public class TestUtils
          """);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class CustomPossibleValueSource implements QCustomPossibleValueProvider
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public QPossibleValue<?> getPossibleValue(Serializable idValue)
+      {
+         return (new QPossibleValue<>(idValue, "Custom[" + idValue + "]"));
+      }
+   }
 }

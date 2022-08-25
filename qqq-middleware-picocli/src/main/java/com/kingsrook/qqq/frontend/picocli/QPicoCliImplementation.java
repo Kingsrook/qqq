@@ -536,6 +536,11 @@ public class QPicoCliImplementation
       queryInput.setSession(session);
       queryInput.setTableName(tableName);
       queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
+
+      // todo - think about these (e.g., based on user's requested output format?
+      // queryInput.setShouldGenerateDisplayValues(true);
+      // queryInput.setShouldTranslatePossibleValues(true);
+
       String primaryKeyValue = subParseResult.matchedPositionalValue(0, null);
 
       if(primaryKeyValue == null)
@@ -580,6 +585,10 @@ public class QPicoCliImplementation
       queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
       queryInput.setLimit(subParseResult.matchedOptionValue("limit", null));
       queryInput.setFilter(generateQueryFilter(subParseResult));
+
+      // todo - think about these (e.g., based on user's requested output format?
+      // queryInput.setShouldGenerateDisplayValues(true);
+      // queryInput.setShouldTranslatePossibleValues(true);
 
       QueryAction queryAction = new QueryAction();
       QueryOutput queryOutput = queryAction.execute(queryInput);

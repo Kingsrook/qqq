@@ -73,11 +73,14 @@ public class FilesystemActionTest
       TestUtils.increaseTestInstanceCounter();
       FilesystemBackendMetaData filesystemBackendMetaData = TestUtils.defineLocalFilesystemBackend();
 
-      File    baseDirectory = new File(filesystemBackendMetaData.getBasePath());
-      boolean mkdirsResult  = baseDirectory.mkdirs();
-      if(!mkdirsResult)
+      File baseDirectory = new File(filesystemBackendMetaData.getBasePath());
+      if(!baseDirectory.exists())
       {
-         fail("Failed to make directories at [" + baseDirectory + "] for filesystem backend module");
+         boolean mkdirsResult = baseDirectory.mkdirs();
+         if(!mkdirsResult)
+         {
+            fail("Failed to make directories at [" + baseDirectory + "] for filesystem backend module");
+         }
       }
 
       writePersonJSONFiles(baseDirectory);
@@ -92,9 +95,9 @@ public class FilesystemActionTest
    private void writePersonJSONFiles(File baseDirectory) throws IOException
    {
       String fullPath = baseDirectory.getAbsolutePath();
-      if (TestUtils.defineLocalFilesystemJSONPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
+      if(TestUtils.defineLocalFilesystemJSONPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
       {
-         if (StringUtils.hasContent(details.getBasePath()))
+         if(StringUtils.hasContent(details.getBasePath()))
          {
             fullPath += File.separatorChar + details.getBasePath();
          }
@@ -125,9 +128,9 @@ public class FilesystemActionTest
    private void writePersonCSVFiles(File baseDirectory) throws IOException
    {
       String fullPath = baseDirectory.getAbsolutePath();
-      if (TestUtils.defineLocalFilesystemCSVPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
+      if(TestUtils.defineLocalFilesystemCSVPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
       {
-         if (StringUtils.hasContent(details.getBasePath()))
+         if(StringUtils.hasContent(details.getBasePath()))
          {
             fullPath += File.separatorChar + details.getBasePath();
          }

@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
@@ -109,10 +110,15 @@ public class QJavalinImplementation
 {
    private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
 
-   private static final int SESSION_COOKIE_AGE = 60 * 60 * 24;
+   private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
    private static final String SESSION_ID_COOKIE_NAME = "sessionId";
 
    static QInstance qInstance;
+
+   private static Supplier<QInstance> qInstanceHotSwapSupplier;
+   private static long                lastQInstanceHotSwapMillis;
+
+   private static final long MILLIS_BETWEEN_HOT_SWAPS = 2500;
 
    private static int DEFAULT_PORT = 8001;
 
@@ -166,6 +172,50 @@ public class QJavalinImplementation
       // todo base path from arg? - and then potentially multiple instances too (chosen based on the root path??)
       service = Javalin.create().start(port);
       service.routes(getRoutes());
+      service.before(QJavalinImplementation::hotSwapQInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** If there's a qInstanceHotSwapSupplier, and its been a little while, replace
+    ** the qInstance with a new one from the supplier.  Meant to be used while doing
+    ** development.
+    *******************************************************************************/
+   public static void hotSwapQInstance(Context context)
+   {
+      if(qInstanceHotSwapSupplier != null)
+      {
+         long now = System.currentTimeMillis();
+         if(now - lastQInstanceHotSwapMillis < MILLIS_BETWEEN_HOT_SWAPS)
+         {
+            return;
+         }
+
+         lastQInstanceHotSwapMillis = now;
+
+         try
+         {
+            QInstance newQInstance = qInstanceHotSwapSupplier.get();
+            if(newQInstance == null)
+            {
+               LOG.warn("Got a null qInstance from hotSwapSupplier.  Not hot-swapping.");
+               return;
+            }
+
+            new QInstanceValidator().validate(newQInstance);
+            QJavalinImplementation.qInstance = newQInstance;
+            LOG.info("Swapped qInstance");
+         }
+         catch(QInstanceValidationException e)
+         {
+            LOG.warn(e.getMessage());
+         }
+         catch(Exception e)
+         {
+            LOG.error("Error swapping QInstance", e);
+         }
+      }
    }
 
 
@@ -249,7 +299,7 @@ public class QJavalinImplementation
    static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
 
       try
       {
@@ -266,7 +316,7 @@ public class QJavalinImplementation
          else
          {
             String authorizationHeaderValue = context.header("Authorization");
-            if (authorizationHeaderValue != null)
+            if(authorizationHeaderValue != null)
             {
                String bearerPrefix = "Bearer ";
                if(authorizationHeaderValue.startsWith(bearerPrefix))
@@ -309,7 +359,7 @@ public class QJavalinImplementation
    {
       try
       {
-         String table = context.pathParam("table");
+         String             table       = context.pathParam("table");
          List<Serializable> primaryKeys = new ArrayList<>();
          primaryKeys.add(context.pathParam("primaryKey"));
 
@@ -338,9 +388,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String table = context.pathParam("table");
+         String        table      = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord record = new QRecord();
+         QRecord       record     = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -382,9 +432,9 @@ public class QJavalinImplementation
    {
       try
       {
-         String table = context.pathParam("table");
+         String        table      = context.pathParam("table");
          List<QRecord> recordList = new ArrayList<>();
-         QRecord record = new QRecord();
+         QRecord       record     = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
@@ -429,6 +479,8 @@ public class QJavalinImplementation
 
          setupSession(context, queryInput);
          queryInput.setTableName(tableName);
+         queryInput.setShouldGenerateDisplayValues(true);
+         queryInput.setShouldTranslatePossibleValues(true);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
@@ -524,6 +576,8 @@ public class QJavalinImplementation
          QueryInput queryInput = new QueryInput(qInstance);
          setupSession(context, queryInput);
          queryInput.setTableName(context.pathParam("table"));
+         queryInput.setShouldGenerateDisplayValues(true);
+         queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setSkip(integerQueryParam(context, "skip"));
          queryInput.setLimit(integerQueryParam(context, "limit"));
 
@@ -834,6 +888,16 @@ public class QJavalinImplementation
       }
 
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qInstanceHotSwapSupplier
+    *******************************************************************************/
+   public static void setQInstanceHotSwapSupplier(Supplier<QInstance> qInstanceHotSwapSupplier)
+   {
+      QJavalinImplementation.qInstanceHotSwapSupplier = qInstanceHotSwapSupplier;
    }
 
 }

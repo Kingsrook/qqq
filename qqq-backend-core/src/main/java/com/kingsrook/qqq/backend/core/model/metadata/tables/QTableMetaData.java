@@ -24,11 +24,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
@@ -80,6 +82,17 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
     *******************************************************************************/
    public QTableMetaData()
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return ("QTableMetaData[" + name + "]");
    }
 
 
@@ -408,12 +421,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
       }
 
       QCodeReference function = customizers.get(customizerName);
-      if(function == null)
-      {
-         throw (new IllegalArgumentException("Customizer  [" + customizerName + "] was not found in table [" + name + "]."));
-      }
-
-      return (Optional.of(function));
+      return (Optional.ofNullable(function));
    }
 
 
@@ -451,6 +459,16 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
       // todo - check for dupes?
       this.customizers.put(role, customizer);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizer(TableCustomizer tableCustomizer, QCodeReference customizer)
+   {
+      return (withCustomizer(tableCustomizer.getRole(), customizer));
    }
 
 
@@ -587,6 +605,18 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withRecordLabelFields(List<String> recordLabelFields)
    {
       this.recordLabelFields = recordLabelFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordLabelFields
+    **
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFields(String... recordLabelFields)
+   {
+      this.recordLabelFields = Arrays.asList(recordLabelFields);
       return (this);
    }
 

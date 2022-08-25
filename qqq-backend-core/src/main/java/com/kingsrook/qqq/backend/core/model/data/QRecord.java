@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -324,6 +325,16 @@ public class QRecord implements Serializable
    public Boolean getValueBoolean(String fieldName)
    {
       return (ValueUtils.getValueAsBoolean(values.get(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public LocalTime getValueLocalTime(String fieldName)
+   {
+      return (ValueUtils.getValueAsLocalTime(values.get(fieldName)));
    }
 
 

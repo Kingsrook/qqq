@@ -29,5 +29,6 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
 public enum QCodeUsage
 {
    BACKEND_STEP, // a backend-step in a process
-   CUSTOMIZER // a function to customize part of a QQQ table's behavior
+   CUSTOMIZER, // a function to customize part of a QQQ table's behavior
+   POSSIBLE_VALUE_PROVIDER // code that drives a custom possibleValueSource
 }

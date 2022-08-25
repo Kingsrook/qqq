@@ -24,19 +24,42 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- ** Meta-data to represent a single field in a table.
+ ** Meta-data to represent a "Possible value" - e.g., a translation of a foreign
+ ** key and/or a limited set of "possible values" for a field (e.g., from a foreign
+ ** table or an enum).
  **
  *******************************************************************************/
-public class QPossibleValueSource<T>
+public class QPossibleValueSource
 {
-   private String name;
+   private String                   name;
    private QPossibleValueSourceType type;
 
-   // should these be in sub-types??
-   private List<T> enumValues;
+   private String       valueFormat           = PVSValueFormatAndFields.LABEL_ONLY.getFormat();
+   private List<String> valueFields           = PVSValueFormatAndFields.LABEL_ONLY.getFields();
+   private String       valueFormatIfNotFound = null;
+   private List<String> valueFieldsIfNotFound = null;
+
+   // todo - optimization hints, such as "table is static, fully cache" or "table is small, so we can pull the whole thing into memory?"
+
+   //////////////////////
+   // for type = TABLE //
+   //////////////////////
+   private String tableName;
+   // todo - override labelFormat & labelFields?
+
+   /////////////////////
+   // for type = ENUM //
+   /////////////////////
+   private List<QPossibleValue<?>> enumValues;
+
+   ///////////////////////
+   // for type = CUSTOM //
+   ///////////////////////
+   private QCodeReference customCodeReference;
 
 
 
@@ -72,7 +95,7 @@ public class QPossibleValueSource<T>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QPossibleValueSource<T> withName(String name)
+   public QPossibleValueSource withName(String name)
    {
       this.name = name;
       return (this);
@@ -103,9 +126,179 @@ public class QPossibleValueSource<T>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QPossibleValueSource<T> withType(QPossibleValueSourceType type)
+   public QPossibleValueSource withType(QPossibleValueSourceType type)
    {
       this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for valueFormat
+    **
+    *******************************************************************************/
+   public String getValueFormat()
+   {
+      return valueFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valueFormat
+    **
+    *******************************************************************************/
+   public void setValueFormat(String valueFormat)
+   {
+      this.valueFormat = valueFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valueFormat
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withValueFormat(String valueFormat)
+   {
+      this.valueFormat = valueFormat;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for valueFields
+    **
+    *******************************************************************************/
+   public List<String> getValueFields()
+   {
+      return valueFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valueFields
+    **
+    *******************************************************************************/
+   public void setValueFields(List<String> valueFields)
+   {
+      this.valueFields = valueFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valueFields
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withValueFields(List<String> valueFields)
+   {
+      this.valueFields = valueFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for valueFormatIfNotFound
+    **
+    *******************************************************************************/
+   public String getValueFormatIfNotFound()
+   {
+      return valueFormatIfNotFound;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valueFormatIfNotFound
+    **
+    *******************************************************************************/
+   public void setValueFormatIfNotFound(String valueFormatIfNotFound)
+   {
+      this.valueFormatIfNotFound = valueFormatIfNotFound;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valueFormatIfNotFound
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withValueFormatIfNotFound(String valueFormatIfNotFound)
+   {
+      this.valueFormatIfNotFound = valueFormatIfNotFound;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for valueFieldsIfNotFound
+    **
+    *******************************************************************************/
+   public List<String> getValueFieldsIfNotFound()
+   {
+      return valueFieldsIfNotFound;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valueFieldsIfNotFound
+    **
+    *******************************************************************************/
+   public void setValueFieldsIfNotFound(List<String> valueFieldsIfNotFound)
+   {
+      this.valueFieldsIfNotFound = valueFieldsIfNotFound;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valueFieldsIfNotFound
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withValueFieldsIfNotFound(List<String> valueFieldsIfNotFound)
+   {
+      this.valueFieldsIfNotFound = valueFieldsIfNotFound;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableName
+    **
+    *******************************************************************************/
+   public String getTableName()
+   {
+      return tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableName
+    **
+    *******************************************************************************/
+   public void setTableName(String tableName)
+   {
+      this.tableName = tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withTableName(String tableName)
+   {
+      this.tableName = tableName;
       return (this);
    }
 
@@ -115,7 +308,7 @@ public class QPossibleValueSource<T>
     ** Getter for enumValues
     **
     *******************************************************************************/
-   public List<T> getEnumValues()
+   public List<QPossibleValue<?>> getEnumValues()
    {
       return enumValues;
    }
@@ -126,7 +319,7 @@ public class QPossibleValueSource<T>
     ** Setter for enumValues
     **
     *******************************************************************************/
-   public void setEnumValues(List<T> enumValues)
+   public void setEnumValues(List<QPossibleValue<?>> enumValues)
    {
       this.enumValues = enumValues;
    }
@@ -137,7 +330,7 @@ public class QPossibleValueSource<T>
     ** Fluent setter for enumValues
     **
     *******************************************************************************/
-   public QPossibleValueSource<T> withEnumValues(List<T> enumValues)
+   public QPossibleValueSource withEnumValues(List<QPossibleValue<?>> enumValues)
    {
       this.enumValues = enumValues;
       return this;
@@ -146,16 +339,89 @@ public class QPossibleValueSource<T>
 
 
    /*******************************************************************************
-    ** Fluent adder for enumValues
     **
     *******************************************************************************/
-   public QPossibleValueSource<T> addEnumValue(T enumValue)
+   public void addEnumValue(QPossibleValue<?> possibleValue)
    {
       if(this.enumValues == null)
       {
          this.enumValues = new ArrayList<>();
       }
-      this.enumValues.add(enumValue);
-      return this;
+      this.enumValues.add(possibleValue);
    }
+
+
+
+   /*******************************************************************************
+    ** This is the easiest way to add the values from an enum to a PossibleValueSource.
+    ** Make sure the enum implements PossibleValueEnum - then call as:
+    **   myPossibleValueSource.withValuesFromEnum(MyEnum.values()));
+    **
+    *******************************************************************************/
+   public <T extends PossibleValueEnum<?>> QPossibleValueSource withValuesFromEnum(T[] values)
+   {
+      for(T t : values)
+      {
+         addEnumValue(new QPossibleValue<>(t.getPossibleValueId(), t.getPossibleValueLabel()));
+      }
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for customCodeReference
+    **
+    *******************************************************************************/
+   public QCodeReference getCustomCodeReference()
+   {
+      return customCodeReference;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customCodeReference
+    **
+    *******************************************************************************/
+   public void setCustomCodeReference(QCodeReference customCodeReference)
+   {
+      this.customCodeReference = customCodeReference;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for customCodeReference
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withCustomCodeReference(QCodeReference customCodeReference)
+   {
+      this.customCodeReference = customCodeReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setValueFormatAndFields(PVSValueFormatAndFields valueFormatAndFields)
+   {
+      this.valueFormat = valueFormatAndFields.getFormat();
+      this.valueFields = valueFormatAndFields.getFields();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withValueFormatAndFields(PVSValueFormatAndFields valueFormatAndFields)
+   {
+      setValueFormatAndFields(valueFormatAndFields);
+      return (this);
+   }
+
 }

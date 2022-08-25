@@ -34,7 +34,8 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Utility to apply display formats to values for fields
+ ** Utility to apply display formats to values for records and fields.
+ **
  *******************************************************************************/
 public class QValueFormatter
 {
@@ -45,7 +46,7 @@ public class QValueFormatter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String formatValue(QFieldMetaData field, Serializable value)
+   public String formatValue(QFieldMetaData field, Serializable value)
    {
       //////////////////////////////////
       // null values get null results //
@@ -68,6 +69,7 @@ public class QValueFormatter
          {
             try
             {
+               // todo - revisit if we actually want this - or - if you should get an error if you mis-configure your table this way (ideally during validation!)
                if(e.getMessage().equals("f != java.lang.Integer"))
                {
                   return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
@@ -99,7 +101,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** Make a string from a table's recordLabelFormat and fields, for a given record.
     *******************************************************************************/
-   public static String formatRecordLabel(QTableMetaData table, QRecord record)
+   public String formatRecordLabel(QTableMetaData table, QRecord record)
    {
       if(!StringUtils.hasContent(table.getRecordLabelFormat()))
       {
@@ -128,7 +130,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** Deal with non-happy-path cases for making a record label.
     *******************************************************************************/
-   private static String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
+   private String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
    {
       ///////////////////////////////////////////////////////////////////////////////////////
       // if there's no record label format, then just return the primary key display value //
@@ -156,7 +158,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a list of records, set their recordLabels and display values
     *******************************************************************************/
-   public static void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
+   public void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
       if(records == null)
       {
@@ -167,11 +169,11 @@ public class QValueFormatter
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            String formattedValue = QValueFormatter.formatValue(field, record.getValue(field.getName()));
+            String formattedValue = formatValue(field, record.getValue(field.getName()));
             record.setDisplayValue(field.getName(), formattedValue);
          }
 
-         record.setRecordLabel(QValueFormatter.formatRecordLabel(table, record));
+         record.setRecordLabel(formatRecordLabel(table, record));
       }
    }
 

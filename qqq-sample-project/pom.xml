@@ -98,6 +98,11 @@
          <artifactId>assertj-core</artifactId>
          <scope>test</scope>
       </dependency>
+      <dependency>
+         <groupId>org.liquibase</groupId>
+         <artifactId>liquibase-core</artifactId>
+         <version>4.10.0</version>
+      </dependency>
    </dependencies>
 
    <build>
@@ -114,6 +119,19 @@
                      <mainClass>com.kingsrook.sampleapp.SampleCli</mainClass>
                   </manifest>
                </archive>
+            </configuration>
+         </plugin>
+
+         <plugin>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-maven-plugin</artifactId>
+            <version>4.10.0</version>
+            <configuration>
+               <propertyFile>/src/main/resources/liquibase/liquibase.properties</propertyFile>
+               <url>${env.LB_DB_URL}</url>
+               <username>${env.LB_DB_USERNAME}</username>
+               <password>${env.LB_DB_PASSWORD}</password>
+               <contexts>${env.LB_CONTEXTS}</contexts>
             </configuration>
          </plugin>
       </plugins>

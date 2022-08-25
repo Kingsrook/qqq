@@ -253,7 +253,7 @@ public class SampleMetaDataProvider
          .withBackendName(RDBMS_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withRecordLabelFormat("%s %s")
-         .withRecordLabelFields(List.of("firstName", "lastName"))
+         .withRecordLabelFields("firstName", "lastName")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
@@ -261,12 +261,13 @@ public class SampleMetaDataProvider
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name").withIsRequired(true))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("isEmployed", QFieldType.BOOLEAN).withBackendName("is_employed"))
          .withField(new QFieldMetaData("annualSalary", QFieldType.DECIMAL).withBackendName("annual_salary").withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked").withDisplayFormat(DisplayFormat.COMMAS))
 
          .withSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "firstName", "lastName")))
          .withSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("email", "birthDate")))
-         .withSection(new QFieldSection("employmentInfo", "Employment Info", new QIcon("work"), Tier.T2, List.of("annualSalary", "daysWorked")))
+         .withSection(new QFieldSection("employmentInfo", "Employment Info", new QIcon("work"), Tier.T2, List.of("isEmployed", "annualSalary", "daysWorked")))
          .withSection(new QFieldSection("dates", "Dates", new QIcon("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       QInstanceEnricher.setInferredFieldBackendNames(qTableMetaData);

@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.util.ArrayList;
 import java.util.Collections;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -134,6 +134,21 @@ class QInstanceEnricherTest
     **
     *******************************************************************************/
    @Test
+   void testNameToLabel()
+   {
+      assertEquals("Address 2", QInstanceEnricher.nameToLabel("address2"));
+      assertEquals("Field 20", QInstanceEnricher.nameToLabel("field20"));
+      assertEquals("Something USA", QInstanceEnricher.nameToLabel("somethingUSA"));
+      assertEquals("Number 1 Dad", QInstanceEnricher.nameToLabel("number1Dad"));
+      assertEquals("Number 417 Dad", QInstanceEnricher.nameToLabel("number417Dad"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testInferBackendName()
    {
       assertEquals("id", QInstanceEnricher.inferBackendName("id"));
@@ -144,6 +159,30 @@ class QInstanceEnricherTest
       assertEquals("word_then_tla_in_middle", QInstanceEnricher.inferBackendName("wordThenTLAInMiddle"));
       assertEquals("end_with_tla", QInstanceEnricher.inferBackendName("endWithTLA"));
       assertEquals("tla_and_another_tla", QInstanceEnricher.inferBackendName("TLAAndAnotherTLA"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInferredRecordLabelFormat()
+   {
+      QInstance      qInstance = TestUtils.defineInstance();
+      QTableMetaData table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields(new ArrayList<>());
+      new QInstanceEnricher().enrich(qInstance);
+      assertNull(table.getRecordLabelFormat());
+
+      qInstance = TestUtils.defineInstance();
+      table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName");
+      new QInstanceEnricher().enrich(qInstance);
+      assertEquals("%s", table.getRecordLabelFormat());
+
+      qInstance = TestUtils.defineInstance();
+      table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName", "lastName");
+      new QInstanceEnricher().enrich(qInstance);
+      assertEquals("%s %s", table.getRecordLabelFormat());
    }
 
 }

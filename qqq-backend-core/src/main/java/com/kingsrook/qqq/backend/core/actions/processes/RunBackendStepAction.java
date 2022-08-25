@@ -215,7 +215,7 @@ public class RunBackendStepAction
          Object   codeObject = codeClass.getConstructor().newInstance();
          if(!(codeObject instanceof BackendStep backendStepCodeObject))
          {
-            throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of FunctionBody"));
+            throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of BackendStep"));
          }
 
          backendStepCodeObject.run(runBackendStepInput, runBackendStepOutput);

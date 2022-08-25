@@ -95,6 +95,15 @@ public class CsvToQRecordAdapter
          throw (new IllegalArgumentException("Empty csv value was provided."));
       }
 
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // once, from a DOS csv file (that had come from Excel), we had a "﻿" character (FEFF, Byte-order marker) at the start of a //
+      // CSV, which caused our first header to not match...  So, let us strip away any FEFF or FFFE's at the start of CSV strings.     //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(csv.length() > 1 && (csv.charAt(0) == 0xfeff || csv.charAt(0) == 0xfffe))
+      {
+         csv = csv.substring(1);
+      }
+
       try
       {
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +127,7 @@ public class CsvToQRecordAdapter
                // put values from the CSV record into a map of header -> value //
                //////////////////////////////////////////////////////////////////
                Map<String, String> csvValues = new HashMap<>();
-               for(int i = 0; i < headers.size(); i++)
+               for(int i = 0; i < headers.size() && i < csvRecord.size(); i++)
                {
                   csvValues.put(headers.get(i), csvRecord.get(i));
                }

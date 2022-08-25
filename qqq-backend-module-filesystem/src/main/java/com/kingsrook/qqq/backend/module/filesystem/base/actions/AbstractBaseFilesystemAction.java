@@ -31,6 +31,8 @@ import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -40,7 +42,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
@@ -203,7 +204,13 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
                   if(queryInput.getRecordPipe() != null)
                   {
-                     new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record -> addBackendDetailsToRecord(record, file)));
+                     new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record ->
+                     {
+                        ////////////////////////////////////////////////////////////////////////////////////////////
+                        // Before the records go into the pipe, make sure their backend details are added to them //
+                        ////////////////////////////////////////////////////////////////////////////////////////////
+                        addBackendDetailsToRecord(record, file);
+                     }));
                   }
                   else
                   {
@@ -239,6 +246,24 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public CountOutput executeCount(CountInput countInput) throws QException
+   {
+      QueryInput queryInput = new QueryInput(countInput.getInstance());
+      queryInput.setSession(countInput.getSession());
+      queryInput.setTableName(countInput.getTableName());
+      queryInput.setFilter(countInput.getFilter());
+      QueryOutput queryOutput = executeQuery(queryInput);
+
+      CountOutput countOutput = new CountOutput();
+      countOutput.setCount(queryOutput.getRecords().size());
+      return (countOutput);
    }
 
 
@@ -281,7 +306,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    private String customizeFileContentsAfterReading(QTableMetaData table, String fileContents) throws QException
    {
-      Optional<QCodeReference> optionalCustomizer = table.getCustomizer(FilesystemBackendModuleInterface.CUSTOMIZER_FILE_POST_FILE_READ);
+      Optional<QCodeReference> optionalCustomizer = table.getCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole());
       if(optionalCustomizer.isEmpty())
       {
          return (fileContents);
