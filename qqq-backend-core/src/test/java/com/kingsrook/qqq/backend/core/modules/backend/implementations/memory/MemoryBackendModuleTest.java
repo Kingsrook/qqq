@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 import java.util.List;
 import java.util.function.Function;
-import com.kingsrook.qqq.backend.core.actions.customizers.Customizers;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -36,6 +36,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -68,6 +71,7 @@ class MemoryBackendModuleTest
    void beforeAndAfter()
    {
       MemoryRecordStore.getInstance().reset();
+      MemoryRecordStore.resetStatistics();
    }
 
 
@@ -122,8 +126,6 @@ class MemoryBackendModuleTest
 
       assertEquals(3, new CountAction().execute(countInput).getCount());
 
-      // todo - filters in query
-
       //////////////////
       // do an update //
       //////////////////
@@ -152,6 +154,24 @@ class MemoryBackendModuleTest
 
       assertEquals(3, new CountAction().execute(countInput).getCount());
 
+      /////////////////////////
+      // do a filtered query //
+      /////////////////////////
+      queryInput = new QueryInput(qInstance);
+      queryInput.setSession(session);
+      queryInput.setTableName(table.getName());
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 3))));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(2, queryOutput.getRecords().size());
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1)));
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3)));
+
+      /////////////////////////
+      // do a filtered count //
+      /////////////////////////
+      countInput.setFilter(queryInput.getFilter());
+      assertEquals(2, new CountAction().execute(countInput).getCount());
+
       /////////////////
       // do a delete //
       /////////////////
@@ -169,6 +189,57 @@ class MemoryBackendModuleTest
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(1)));
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(2)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSerials() throws QException
+   {
+      QInstance      qInstance = TestUtils.defineInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+      QSession       session   = new QSession();
+
+      //////////////////
+      // do an insert //
+      //////////////////
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(session);
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("name", "Shape 1")));
+      new InsertAction().execute(insertInput);
+
+      insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("name", "Shape 2")));
+      new InsertAction().execute(insertInput);
+
+      insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("name", "Shape 3")));
+      new InsertAction().execute(insertInput);
+
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setSession(new QSession());
+      queryInput.setTableName(table.getName());
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1)));
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(2)));
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3)));
+
+      insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("id", 4).withValue("name", "Shape 4")));
+      new InsertAction().execute(insertInput);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(4)));
+
+      insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("id", 6).withValue("name", "Shape 6")));
+      new InsertAction().execute(insertInput);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(6)));
+
+      insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("name", "Shape 7")));
+      new InsertAction().execute(insertInput);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(7)));
    }
 
 
@@ -215,7 +286,7 @@ class MemoryBackendModuleTest
       ///////////////////////////////////
       // add a customizer to the table //
       ///////////////////////////////////
-      table.withCustomizer(Customizers.POST_QUERY_RECORD, new QCodeReference(ShapeTestCustomizer.class, QCodeUsage.CUSTOMIZER));
+      table.withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(ShapeTestCustomizer.class, QCodeUsage.CUSTOMIZER));
 
       //////////////////
       // do an insert //

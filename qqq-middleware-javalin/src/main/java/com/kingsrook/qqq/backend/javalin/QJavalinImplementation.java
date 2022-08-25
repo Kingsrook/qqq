@@ -198,6 +198,12 @@ public class QJavalinImplementation
          try
          {
             QInstance newQInstance = qInstanceHotSwapSupplier.get();
+            if(newQInstance == null)
+            {
+               LOG.warn("Got a null qInstance from hotSwapSupplier.  Not hot-swapping.");
+               return;
+            }
+
             new QInstanceValidator().validate(newQInstance);
             QJavalinImplementation.qInstance = newQInstance;
             LOG.info("Swapped qInstance");

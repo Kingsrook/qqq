@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
 /*******************************************************************************
+ ** Interface to be implemented by enums which can be used as a PossibleValueSource.
  **
  *******************************************************************************/
 public interface PossibleValueEnum<T>

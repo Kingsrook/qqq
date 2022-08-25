@@ -22,13 +22,20 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -38,6 +45,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,6 +61,11 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class QInstanceValidator
 {
+   private static final Logger LOG = LogManager.getLogger(QInstanceValidator.class);
+
+   private boolean printWarnings = false;
+
+
 
    /*******************************************************************************
     **
@@ -202,8 +216,126 @@ public class QInstanceValidator
                   assertCondition(errors, table.getFields().containsKey(recordLabelField), "Table " + tableName + " record label field " + recordLabelField + " is not a field on this table.");
                }
             }
+
+            if(table.getCustomizers() != null)
+            {
+               for(Map.Entry<String, QCodeReference> entry : table.getCustomizers().entrySet())
+               {
+                  validateTableCustomizer(errors, tableName, entry.getKey(), entry.getValue());
+               }
+            }
          });
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableCustomizer(List<String> errors, String tableName, String customizerName, QCodeReference codeReference)
+   {
+      String prefix = "Table " + tableName + ", customizer " + customizerName + ": ";
+
+      if(!preAssertionsForCodeReference(errors, codeReference, prefix))
+      {
+         return;
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // make sure (at this time) that it's a java type, then do some java checks //
+      //////////////////////////////////////////////////////////////////////////////
+      if(assertCondition(errors, codeReference.getCodeType().equals(QCodeType.JAVA), prefix + "Only JAVA customizers are supported at this time."))
+      {
+         ///////////////////////////////////////
+         // make sure the class can be loaded //
+         ///////////////////////////////////////
+         Class<?> customizerClass = getClassForCodeReference(errors, codeReference, prefix);
+         if(customizerClass != null)
+         {
+            //////////////////////////////////////////////////
+            // make sure the customizer can be instantiated //
+            //////////////////////////////////////////////////
+            Object customizerInstance = getInstanceOfCodeReference(errors, prefix, customizerClass);
+
+            TableCustomizers tableCustomizer = TableCustomizers.forRole(customizerName);
+            if(tableCustomizer == null)
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////////
+               // todo - in the future, load customizers from backend-modules (e.g., FilesystemTableCustomizers) //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////
+               warn(prefix + "Unrecognized table customizer name (at least at backend-core level)");
+            }
+            else
+            {
+               ////////////////////////////////////////////////////////////////////////
+               // make sure the customizer instance can be cast to the expected type //
+               ////////////////////////////////////////////////////////////////////////
+               if(customizerInstance != null && tableCustomizer.getTableCustomizer().getExpectedType() != null)
+               {
+                  Object castedObject = getCastedObject(errors, prefix, tableCustomizer.getTableCustomizer().getExpectedType(), customizerInstance);
+
+                  Consumer<Object> validationFunction = tableCustomizer.getTableCustomizer().getValidationFunction();
+                  if(castedObject != null && validationFunction != null)
+                  {
+                     try
+                     {
+                        validationFunction.accept(castedObject);
+                     }
+                     catch(ClassCastException e)
+                     {
+                        errors.add(prefix + "Error validating customizer type parameters: " + e.getMessage());
+                     }
+                     catch(Exception e)
+                     {
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // mmm, calling customizers w/ random data is expected to often throw, so, this check is iffy at best... //
+                        // if we run into more trouble here, we might consider disabling the whole "validation function" check.  //
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private <T> T getCastedObject(List<String> errors, String prefix, Class<T> expectedType, Object customizerInstance)
+   {
+      T castedObject = null;
+      try
+      {
+         castedObject = expectedType.cast(customizerInstance);
+      }
+      catch(ClassCastException e)
+      {
+         errors.add(prefix + "CodeReference could not be casted to the expected type: " + expectedType);
+      }
+      return castedObject;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Object getInstanceOfCodeReference(List<String> errors, String prefix, Class<?> customizerClass)
+   {
+      Object customizerInstance = null;
+      try
+      {
+         customizerInstance = customizerClass.getConstructor().newInstance();
+      }
+      catch(InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e)
+      {
+         errors.add(prefix + "Instance of CodeReference could not be created: " + e);
+      }
+      return customizerInstance;
    }
 
 
@@ -313,7 +445,6 @@ public class QInstanceValidator
          qInstance.getPossibleValueSources().forEach((pvsName, possibleValueSource) ->
          {
             assertCondition(errors, Objects.equals(pvsName, possibleValueSource.getName()), "Inconsistent naming for possibleValueSource: " + pvsName + "/" + possibleValueSource.getName() + ".");
-            assertCondition(errors, possibleValueSource.getIdType() != null, "Missing an idType for possibleValueSource: " + pvsName);
             if(assertCondition(errors, possibleValueSource.getType() != null, "Missing type for possibleValueSource: " + pvsName))
             {
                ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,6 +478,7 @@ public class QInstanceValidator
                      if(assertCondition(errors, possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
                      {
                         assertCondition(errors, QCodeUsage.POSSIBLE_VALUE_PROVIDER.equals(possibleValueSource.getCustomCodeReference().getCodeUsage()), "customCodeReference for possibleValueSource " + pvsName + " is not a possibleValueProvider.");
+                        validateCustomPossibleValueSourceCode(errors, pvsName, possibleValueSource.getCustomCodeReference());
                      }
                   }
                   default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
@@ -354,6 +486,87 @@ public class QInstanceValidator
             }
          });
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateCustomPossibleValueSourceCode(List<String> errors, String pvsName, QCodeReference codeReference)
+   {
+      String prefix = "PossibleValueSource " + pvsName + " custom code reference: ";
+
+      if(!preAssertionsForCodeReference(errors, codeReference, prefix))
+      {
+         return;
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // make sure (at this time) that it's a java type, then do some java checks //
+      //////////////////////////////////////////////////////////////////////////////
+      if(assertCondition(errors, codeReference.getCodeType().equals(QCodeType.JAVA), prefix + "Only JAVA customizers are supported at this time."))
+      {
+         ///////////////////////////////////////
+         // make sure the class can be loaded //
+         ///////////////////////////////////////
+         Class<?> customizerClass = getClassForCodeReference(errors, codeReference, prefix);
+         if(customizerClass != null)
+         {
+            //////////////////////////////////////////////////
+            // make sure the customizer can be instantiated //
+            //////////////////////////////////////////////////
+            Object customizerInstance = getInstanceOfCodeReference(errors, prefix, customizerClass);
+
+            ////////////////////////////////////////////////////////////////////////
+            // make sure the customizer instance can be cast to the expected type //
+            ////////////////////////////////////////////////////////////////////////
+            if(customizerInstance != null)
+            {
+               getCastedObject(errors, prefix, QCustomPossibleValueProvider.class, customizerInstance);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Class<?> getClassForCodeReference(List<String> errors, QCodeReference codeReference, String prefix)
+   {
+      Class<?> customizerClass = null;
+      try
+      {
+         customizerClass = Class.forName(codeReference.getName());
+      }
+      catch(ClassNotFoundException e)
+      {
+         errors.add(prefix + "Class for CodeReference could not be found.");
+      }
+      return customizerClass;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean preAssertionsForCodeReference(List<String> errors, QCodeReference codeReference, String prefix)
+   {
+      boolean okay = true;
+      if(!assertCondition(errors, StringUtils.hasContent(codeReference.getName()), prefix + " is missing a code reference name"))
+      {
+         okay = false;
+      }
+
+      if(!assertCondition(errors, codeReference.getCodeType() != null, prefix + " is missing a code type"))
+      {
+         okay = false;
+      }
+
+      return (okay);
    }
 
 
@@ -410,4 +623,16 @@ public class QInstanceValidator
       return (condition);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void warn(String message)
+   {
+      if(printWarnings)
+      {
+         LOG.info("Validation warning: " + message);
+      }
+   }
 }

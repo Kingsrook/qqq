@@ -22,7 +22,6 @@
 package com.kingsrook.sampleapp;
 
 
-import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.Javalin;
@@ -71,6 +70,24 @@ public class SampleJavalinServer
             config.enableCorsForAllOrigins();
          }).start(PORT);
          javalinService.routes(qJavalinImplementation.getRoutes());
+
+         /////////////////////////////////////////////////////////////////
+         // set the server to hot-swap the q instance before all routes //
+         /////////////////////////////////////////////////////////////////
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() ->
+         {
+            try
+            {
+               return (SampleMetaDataProvider.defineInstance());
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error hot-swapping meta data", e);
+               return (null);
+            }
+         });
+         javalinService.before(QJavalinImplementation::hotSwapQInstance);
+
          javalinService.after(ctx ->
             ctx.res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
       }

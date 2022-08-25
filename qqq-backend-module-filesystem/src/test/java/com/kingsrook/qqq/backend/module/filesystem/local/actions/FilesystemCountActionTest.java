@@ -22,22 +22,16 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
-import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
-import com.kingsrook.qqq.backend.module.filesystem.base.actions.FilesystemCustomizers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- **
+ ** Unit test for FilesystemCountAction
  *******************************************************************************/
 public class FilesystemCountActionTest extends FilesystemActionTest
 {
@@ -53,37 +47,6 @@ public class FilesystemCountActionTest extends FilesystemActionTest
       countInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       CountOutput countOutput = new FilesystemCountAction().execute(countInput);
       Assertions.assertEquals(3, countOutput.getCount(), "Unfiltered count should find all rows");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   public void testCountWithFileCustomizer() throws QException
-   {
-      CountInput countInput = new CountInput();
-      QInstance  instance   = TestUtils.defineInstance();
-
-      QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
-      table.withCustomizer(FilesystemCustomizers.POST_READ_FILE, new QCodeReference(ValueUpshifter.class, QCodeUsage.CUSTOMIZER));
-
-      countInput.setInstance(instance);
-      countInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
-      CountOutput countOutput = new FilesystemCountAction().execute(countInput);
-      Assertions.assertEquals(3, countOutput.getCount(), "Unfiltered count should find all rows");
-   }
-
-
-
-   public static class ValueUpshifter implements Function<String, String>
-   {
-      @Override
-      public String apply(String s)
-      {
-         return (s.replaceAll("kingsrook.com", "KINGSROOK.COM"));
-      }
    }
 
 }

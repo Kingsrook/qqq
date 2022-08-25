@@ -27,9 +27,11 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -460,6 +462,25 @@ public class TestUtils
       queryInput.setTableName(tableName);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertDefaultShapes(QInstance qInstance) throws QException
+   {
+      List<QRecord> shapeRecords = List.of(
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 1).withValue("name", "Triangle"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 2).withValue("name", "Square"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 3).withValue("name", "Circle"));
+
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(TABLE_NAME_SHAPE);
+      insertInput.setRecords(shapeRecords);
+      new InsertAction().execute(insertInput);
    }
 
 

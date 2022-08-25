@@ -25,29 +25,41 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- **
+ ** Unit test for QPossibleValueTranslator
  *******************************************************************************/
 public class QPossibleValueTranslatorTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   void beforeEach()
+   {
+      MemoryRecordStore.getInstance().reset();
+      MemoryRecordStore.resetStatistics();
+   }
+
+
 
    /*******************************************************************************
     **
@@ -90,22 +102,20 @@ public class QPossibleValueTranslatorTest
       /////////////////////////////////////////////////////////////////
       // assert the LABEL_ONLY format (when called out specifically) //
       /////////////////////////////////////////////////////////////////
-      possibleValueSource.setValueFormat(QPossibleValueSource.ValueFormat.LABEL_ONLY);
-      possibleValueSource.setValueFields(QPossibleValueSource.ValueFields.LABEL_ONLY);
+      possibleValueSource.setValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);
       assertEquals("IL", possibleValueTranslator.translatePossibleValue(stateField, 1));
 
       ///////////////////////////////////////
       // assert the LABEL_PARAMS_ID format //
       ///////////////////////////////////////
-      possibleValueSource.setValueFormat(QPossibleValueSource.ValueFormat.LABEL_PARENS_ID);
-      possibleValueSource.setValueFields(QPossibleValueSource.ValueFields.LABEL_PARENS_ID);
+      possibleValueSource.setValueFormatAndFields(PVSValueFormatAndFields.LABEL_PARENS_ID);
       assertEquals("IL (1)", possibleValueTranslator.translatePossibleValue(stateField, 1));
 
       //////////////////////////////////////
       // assert the ID_COLON_LABEL format //
       //////////////////////////////////////
-      possibleValueSource.setValueFormat(QPossibleValueSource.ValueFormat.ID_COLON_LABEL);
-      possibleValueSource.setValueFields(QPossibleValueSource.ValueFields.ID_COLON_LABEL);
+      possibleValueSource.setValueFormat(PVSValueFormatAndFields.ID_COLON_LABEL.getFormat());
+      possibleValueSource.setValueFields(PVSValueFormatAndFields.ID_COLON_LABEL.getFields());
       assertEquals("1: IL", possibleValueTranslator.translatePossibleValue(stateField, 1));
    }
 
@@ -123,16 +133,7 @@ public class QPossibleValueTranslatorTest
       QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
       QPossibleValueSource     possibleValueSource     = qInstance.getPossibleValueSource(shapeField.getPossibleValueSourceName());
 
-      List<QRecord> shapeRecords = List.of(
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 1).withValue("name", "Triangle"),
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 2).withValue("name", "Square"),
-         new QRecord().withTableName(shapeTable.getName()).withValue("id", 3).withValue("name", "Circle"));
-
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
-      insertInput.setTableName(shapeTable.getName());
-      insertInput.setRecords(shapeRecords);
-      new InsertAction().execute(insertInput);
+      TestUtils.insertDefaultShapes(qInstance);
 
       //////////////////////////////////////////////////////////////////////////
       // assert the default formatting for a not-found value is a null string //
@@ -156,8 +157,7 @@ public class QPossibleValueTranslatorTest
       ///////////////////////////////////////
       // assert the LABEL_PARAMS_ID format //
       ///////////////////////////////////////
-      possibleValueSource.setValueFormat(QPossibleValueSource.ValueFormat.LABEL_PARENS_ID);
-      possibleValueSource.setValueFields(QPossibleValueSource.ValueFields.LABEL_PARENS_ID);
+      possibleValueSource.setValueFormatAndFields(PVSValueFormatAndFields.LABEL_PARENS_ID);
       assertEquals("Circle (3)", possibleValueTranslator.translatePossibleValue(shapeField, 3));
 
       ///////////////////////////////////////////////////////////
@@ -196,18 +196,112 @@ public class QPossibleValueTranslatorTest
 
 
    /*******************************************************************************
+    ** Make sure that if we have 2 different PVS's pointed at the same 1 table,
+    ** that we avoid re-doing queries, and that we actually get different (formatted) values.
+    *******************************************************************************/
+   @Test
+   void testPossibleValueTableMultiplePvsForATable() throws QException
+   {
+      QInstance      qInstance   = TestUtils.defineInstance();
+      QTableMetaData shapeTable  = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+      QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
+
+      ////////////////////////////////////////////////////////////////////
+      // define a second version of the Shape PVS, with a unique format //
+      ////////////////////////////////////////////////////////////////////
+      qInstance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("shapeV2")
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TestUtils.TABLE_NAME_SHAPE)
+         .withValueFormat("%d: %s")
+         .withValueFields(List.of("id", "label"))
+      );
+
+      //////////////////////////////////////////////////////
+      // use that PVS in a new column on the person table //
+      //////////////////////////////////////////////////////
+      personTable.addField(new QFieldMetaData("currentShapeId", QFieldType.INTEGER)
+         .withPossibleValueSourceName("shapeV2")
+      );
+
+      TestUtils.insertDefaultShapes(qInstance);
+
+      ///////////////////////////////////////////////////////
+      // define a list of persons pointing at those shapes //
+      ///////////////////////////////////////////////////////
+      List<QRecord> personRecords = List.of(
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 1).withValue("currentShapeId", 2),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 1).withValue("currentShapeId", 3),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 2).withValue("currentShapeId", 3),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 2).withValue("currentShapeId", 3)
+      );
+
+      /////////////////////////
+      // translate the PVS's //
+      /////////////////////////
+      MemoryRecordStore.setCollectStatistics(true);
+      new QPossibleValueTranslator(qInstance, new QSession()).translatePossibleValuesInRecords(personTable, personRecords);
+
+      /////////////////////////////////
+      // assert only 1 query was ran //
+      /////////////////////////////////
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should only run 1 query");
+
+      ////////////////////////////////////////
+      // assert expected values and formats //
+      ////////////////////////////////////////
+      assertEquals("Triangle", personRecords.get(0).getDisplayValue("favoriteShapeId"));
+      assertEquals("2: Square", personRecords.get(0).getDisplayValue("currentShapeId"));
+      assertEquals("Triangle", personRecords.get(1).getDisplayValue("favoriteShapeId"));
+      assertEquals("3: Circle", personRecords.get(1).getDisplayValue("currentShapeId"));
+      assertEquals("Square", personRecords.get(2).getDisplayValue("favoriteShapeId"));
+      assertEquals("3: Circle", personRecords.get(2).getDisplayValue("currentShapeId"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Make sure that if we have 2 different PVS's pointed at the same 1 table,
+    ** that we avoid re-doing queries, and that we actually get different (formatted) values.
+    *******************************************************************************/
+   @Test
+   void testCustomPossibleValue() throws QException
+   {
+      QInstance      qInstance   = TestUtils.defineInstance();
+      QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
+      String         fieldName   = "customValue";
+
+      //////////////////////////////////////////////////////////////
+      // define a list of persons with values in the custom field //
+      //////////////////////////////////////////////////////////////
+      List<QRecord> personRecords = List.of(
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue(fieldName, 1),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue(fieldName, 2),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue(fieldName, "Buckle my shoe")
+      );
+
+      /////////////////////////
+      // translate the PVS's //
+      /////////////////////////
+      new QPossibleValueTranslator(qInstance, new QSession()).translatePossibleValuesInRecords(personTable, personRecords);
+
+      ////////////////////////////////////////
+      // assert expected values and formats //
+      ////////////////////////////////////////
+      assertEquals("Custom[1]", personRecords.get(0).getDisplayValue(fieldName));
+      assertEquals("Custom[2]", personRecords.get(1).getDisplayValue(fieldName));
+      assertEquals("Custom[Buckle my shoe]", personRecords.get(2).getDisplayValue(fieldName));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Test
    void testSetDisplayValuesInRecords()
    {
-      QTableMetaData table = new QTableMetaData()
-         .withRecordLabelFormat("%s %s")
-         .withRecordLabelFields("firstName", "lastName")
-         .withField(new QFieldMetaData("firstName", QFieldType.STRING))
-         .withField(new QFieldMetaData("lastName", QFieldType.STRING))
-         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
-         .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(TestUtils.POSSIBLE_VALUE_SOURCE_STATE));
+      QTableMetaData table = TestUtils.defineTablePerson();
 
       /////////////////////////////////////////////////////////////////
       // first, make sure it doesn't crash with null or empty inputs //
