@@ -33,7 +33,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 
 
 /*******************************************************************************
@@ -80,7 +79,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             () -> (consumeRecordsFromPipe(recordPipe, transformStep, loadStep, runBackendStepInput, runBackendStepOutput, loadedRecordList))
          );
 
-         runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT, recordCount);
          runBackendStepOutput.setRecords(loadedRecordList);
 
          /////////////////////
@@ -89,6 +88,15 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          if(transaction.isPresent())
          {
             transaction.get().commit();
+         }
+
+         if(transformStep instanceof ProcessSummaryProviderInterface processSummaryProvider)
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            // get the process summary from the ... transform step?  the load step?  each knows some... //
+            // TODO!!                                                                                   //
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryProvider.getProcessSummary(true));
          }
       }
       catch(Exception e)
@@ -121,7 +129,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
     *******************************************************************************/
    private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformStep transformStep, AbstractLoadStep loadStep, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> loadedRecordList) throws QException
    {
-      Integer totalRows = runBackendStepInput.getValueInteger(StreamedETLProcess.FIELD_RECORD_COUNT);
+      Integer totalRows = runBackendStepInput.getValueInteger(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT);
       if(totalRows != null)
       {
          runBackendStepInput.getAsyncJobCallback().updateStatus(currentRowCount, totalRows);

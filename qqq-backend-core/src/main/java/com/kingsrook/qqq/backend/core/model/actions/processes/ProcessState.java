@@ -38,6 +38,7 @@ public class ProcessState implements Serializable
 {
    private List<QRecord>             records      = new ArrayList<>();
    private Map<String, Serializable> values       = new HashMap<>();
+   private List<String>              stepList     = new ArrayList<>();
    private Optional<String>          nextStepName = Optional.empty();
 
 
@@ -117,4 +118,25 @@ public class ProcessState implements Serializable
       this.nextStepName = Optional.empty();
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for stepList
+    **
+    *******************************************************************************/
+   public List<String> getStepList()
+   {
+      return stepList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for stepList
+    **
+    *******************************************************************************/
+   public void setStepList(List<String> stepList)
+   {
+      this.stepList = stepList;
+   }
 }

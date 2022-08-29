@@ -2,16 +2,19 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -155,7 +158,7 @@ class StreamedETLWithFrontendProcessTest
          assertThat(postList).as("Should have transformed and updated " + name).anyMatch(qr -> qr.getValue("name").equals("Transformed:" + name));
       }
 
-      for(String name : new String[] { "Circle", "Triangle"})
+      for(String name : new String[] { "Circle", "Triangle" })
       {
          assertThat(postList).as("Should not have transformed and updated " + name).anyMatch(qr -> qr.getValue("name").equals(name));
       }
@@ -195,10 +198,52 @@ class StreamedETLWithFrontendProcessTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testWithValidationStep() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+
+      ////////////////////////////////////////////////////////
+      // define the process - an ELT from Shapes to Persons //
+      ////////////////////////////////////////////////////////
+      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(
+         TestUtils.TABLE_NAME_SHAPE,
+         TestUtils.TABLE_NAME_PERSON,
+         ExtractViaQueryStep.class,
+         TestTransformShapeToPersonWithValidationStep.class,
+         LoadViaInsertStep.class);
+      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      instance.addProcess(process);
+
+      ///////////////////////////////////////////////////////
+      // switch the person table to use the memory backend //
+      ///////////////////////////////////////////////////////
+      instance.getTable(TestUtils.TABLE_NAME_PERSON).setBackendName(TestUtils.MEMORY_BACKEND_NAME);
+
+      TestUtils.insertDefaultShapes(instance);
+
+      /////////////////////
+      // run the process // todo - don't skip FE steps
+      /////////////////////
+      runProcess(instance, process);
+
+      List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON);
+      assertThat(postList)
+         .as("Should have inserted Circle").anyMatch(qr -> qr.getValue("lastName").equals("Circle"))
+         .as("Should have inserted Triangle").anyMatch(qr -> qr.getValue("lastName").equals("Triangle"))
+         .as("Should have inserted Square").anyMatch(qr -> qr.getValue("lastName").equals("Square"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private RunProcessOutput runProcess(QInstance instance, QProcessMetaData process) throws QException
    {
       return (runProcess(instance, process, new HashMap<>(), new Callback()));
    }
+
 
 
    /*******************************************************************************
@@ -240,6 +285,63 @@ class StreamedETLWithFrontendProcessTest
             newQRecord.setValue("firstName", "Johnny");
             newQRecord.setValue("lastName", qRecord.getValueString("name"));
             getOutputRecordPage().add(newQRecord);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestTransformShapeToPersonWithValidationStep extends AbstractTransformStep implements ProcessSummaryProviderInterface
+   {
+      private ProcessSummaryLine okSummary          = new ProcessSummaryLine(Status.OK, 0, "can be transformed into a Person");
+      private ProcessSummaryLine notAPolygonSummary = new ProcessSummaryLine(Status.OK, 0, "cannot be transformed, because they are not a Polygon");
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen)
+      {
+         if(isForResultScreen)
+         {
+            okSummary.setMessage("were transformed into a Person");
+         }
+
+         ArrayList<ProcessSummaryLine> summaryList = new ArrayList<>();
+         summaryList.add(okSummary);
+         summaryList.add(notAPolygonSummary);
+         return (summaryList);
+      }
+
+
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         for(QRecord qRecord : getInputRecordPage())
+         {
+            if(qRecord.getValueString("name").equals("Circle"))
+            {
+               notAPolygonSummary.incrementCountAndAddPrimaryKey(qRecord.getValue("id"));
+            }
+            else
+            {
+               QRecord newQRecord = new QRecord();
+               newQRecord.setValue("firstName", "Johnny");
+               newQRecord.setValue("lastName", qRecord.getValueString("name"));
+               getOutputRecordPage().add(newQRecord);
+
+               okSummary.incrementCountAndAddPrimaryKey(qRecord.getValue("id"));
+            }
          }
       }
    }

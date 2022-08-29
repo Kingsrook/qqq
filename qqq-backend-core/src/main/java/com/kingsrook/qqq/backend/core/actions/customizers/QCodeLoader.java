@@ -119,7 +119,9 @@ public class QCodeLoader
       try
       {
          Class<?> customizerClass = Class.forName(codeReference.getName());
-         return ((T) customizerClass.getConstructor().newInstance());
+         @SuppressWarnings("unchecked")
+         T t = (T) customizerClass.getConstructor().newInstance();
+         return t;
       }
       catch(Exception e)
       {

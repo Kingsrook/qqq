@@ -24,6 +24,7 @@ public enum TableCustomizers
 {
    POST_QUERY_RECORD(new TableCustomizer("postQueryRecord", Function.class, ((Object x) ->
    {
+      @SuppressWarnings("unchecked")
       Function<QRecord, QRecord> function = (Function<QRecord, QRecord>) x;
       QRecord                    output   = function.apply(new QRecord());
    })));

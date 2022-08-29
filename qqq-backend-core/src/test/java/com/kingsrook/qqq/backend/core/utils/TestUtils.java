@@ -328,7 +328,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          );
@@ -366,7 +366,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
@@ -403,7 +403,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("age", QFieldType.INTEGER)))
+                  .withField(new QFieldMetaData("age", QFieldType.INTEGER)))
                .withFieldList(List.of(
                   new QFieldMetaData("minAge", QFieldType.INTEGER),
                   new QFieldMetaData("maxAge", QFieldType.INTEGER)))))
@@ -418,7 +418,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("newAge", QFieldType.INTEGER)))));
+                  .withField(new QFieldMetaData("newAge", QFieldType.INTEGER)))));
 
    }
 

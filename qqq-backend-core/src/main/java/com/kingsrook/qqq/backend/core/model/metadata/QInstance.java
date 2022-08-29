@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -129,6 +130,10 @@ public class QInstance
     *******************************************************************************/
    public void addBackend(String name, QBackendMetaData backend)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a backend without a name."));
+      }
       if(this.backends.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second backend with name: " + name));
@@ -163,6 +168,10 @@ public class QInstance
     *******************************************************************************/
    public void addTable(String name, QTableMetaData table)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a table without a name."));
+      }
       if(this.tables.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second table with name: " + name));
@@ -202,6 +211,10 @@ public class QInstance
     *******************************************************************************/
    public void addPossibleValueSource(String name, QPossibleValueSource possibleValueSource)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a possibleValueSource without a name."));
+      }
       if(this.possibleValueSources.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second possibleValueSource with name: " + name));
@@ -252,6 +265,10 @@ public class QInstance
     *******************************************************************************/
    public void addProcess(String name, QProcessMetaData process)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a process without a name."));
+      }
       if(this.processes.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second process with name: " + name));
@@ -286,6 +303,10 @@ public class QInstance
     *******************************************************************************/
    public void addApp(String name, QAppMetaData app)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add an app without a name."));
+      }
       if(this.apps.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second app with name: " + name));

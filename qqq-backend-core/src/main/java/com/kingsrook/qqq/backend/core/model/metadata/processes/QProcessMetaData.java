@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
@@ -41,7 +43,8 @@ public class QProcessMetaData implements QAppChildMetaData
    private String  tableName;
    private boolean isHidden = false;
 
-   private List<QStepMetaData> stepList;
+   private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
+   private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
    private String parentAppName;
    private QIcon  icon;
@@ -167,14 +170,18 @@ public class QProcessMetaData implements QAppChildMetaData
     *******************************************************************************/
    public QProcessMetaData withStepList(List<QStepMetaData> stepList)
    {
-      this.stepList = stepList;
+      if(stepList != null)
+      {
+         stepList.forEach(this::addStep);
+      }
+
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for stepList
+    ** add a step to the stepList and map
     **
     *******************************************************************************/
    public QProcessMetaData addStep(QStepMetaData step)
@@ -184,6 +191,30 @@ public class QProcessMetaData implements QAppChildMetaData
          this.stepList = new ArrayList<>();
       }
       this.stepList.add(step);
+
+      if(this.steps == null)
+      {
+         this.steps = new HashMap<>();
+      }
+      this.steps.put(step.getName(), step);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** add a step ONLY to the step map - NOT the list w/ default execution order.
+    **
+    *******************************************************************************/
+   public QProcessMetaData addOptionalStep(QStepMetaData step)
+   {
+      if(this.steps == null)
+      {
+         this.steps = new HashMap<>();
+      }
+      this.steps.put(step.getName(), step);
+
       return (this);
    }
 
@@ -205,15 +236,7 @@ public class QProcessMetaData implements QAppChildMetaData
     *******************************************************************************/
    public QStepMetaData getStep(String stepName)
    {
-      for(QStepMetaData step : stepList)
-      {
-         if(step.getName().equals(stepName))
-         {
-            return (step);
-         }
-      }
-
-      return (null);
+      return (steps.get(stepName));
    }
 
 
@@ -245,9 +268,9 @@ public class QProcessMetaData implements QAppChildMetaData
    public List<QFieldMetaData> getInputFields()
    {
       List<QFieldMetaData> rs = new ArrayList<>();
-      if(stepList != null)
+      if(steps != null)
       {
-         for(QStepMetaData step : stepList)
+         for(QStepMetaData step : steps.values())
          {
             rs.addAll(step.getInputFields());
          }
@@ -264,9 +287,9 @@ public class QProcessMetaData implements QAppChildMetaData
    public List<QFieldMetaData> getOutputFields()
    {
       List<QFieldMetaData> rs = new ArrayList<>();
-      if(stepList != null)
+      if(steps != null)
       {
-         for(QStepMetaData step : stepList)
+         for(QStepMetaData step : steps.values())
          {
             rs.addAll(step.getOutputFields());
          }

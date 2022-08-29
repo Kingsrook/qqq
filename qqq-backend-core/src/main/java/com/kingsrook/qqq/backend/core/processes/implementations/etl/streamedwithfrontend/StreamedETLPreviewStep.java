@@ -32,6 +32,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -39,6 +41,8 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.Str
  *******************************************************************************/
 public class StreamedETLPreviewStep extends BaseStreamedETLStep implements BackendStep
 {
+   private static final Logger LOG = LogManager.getLogger(StreamedETLPreviewStep.class);
+
 
 
    /*******************************************************************************
@@ -48,29 +52,72 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
    @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      RecordPipe          recordPipe  = new RecordPipe();
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      extractStep.setLimit(PROCESS_OUTPUT_RECORD_LIST_LIMIT); // todo - make this an input?
-      extractStep.setRecordPipe(recordPipe);
+      Integer limit = PROCESS_OUTPUT_RECORD_LIST_LIMIT; // todo - use a field instead of hard-coded here?
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the do-full-validation flag has already been set, then do the validation step instead of this one //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      boolean supportsFullValidation = runBackendStepInput.getValue_boolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
+      boolean doFullValidation       = runBackendStepInput.getValue_boolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
+      if(supportsFullValidation && doFullValidation)
+      {
+         skipToValidateStep(runBackendStepOutput);
+         return;
+      }
 
       ///////////////////////////////////////////
       // request a count from the extract step //
       ///////////////////////////////////////////
-      Integer recordCount = extractStep.doCount(runBackendStepInput);
+      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+      Integer             recordCount = extractStep.doCount(runBackendStepInput);
       runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the count is less than the normal limit here, and this process supports validation, then go straight to the validation step //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - maybe some future version we do this - maybe based on a user-preference
+      // if(supportsFullValidation && recordCount <= limit)
+      // {
+      //    skipToValidateStep(runBackendStepOutput);
+      //    return;
+      // }
+
+      ////////////////////////////////////////////////////////
+      // proceed with a doing a limited extract & transform //
+      ////////////////////////////////////////////////////////
+      RecordPipe recordPipe = new RecordPipe();
+      extractStep.setLimit(limit);
+      extractStep.setRecordPipe(recordPipe);
 
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
 
-      List<QRecord> transformedRecordList = new ArrayList<>();
+      List<QRecord> previewRecordList = new ArrayList<>();
       new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
          {
             extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);
          },
-         () -> (consumeRecordsFromPipe(recordPipe, transformStep, runBackendStepInput, runBackendStepOutput, transformedRecordList))
+         () -> (consumeRecordsFromPipe(recordPipe, transformStep, runBackendStepInput, runBackendStepOutput, previewRecordList))
       );
 
-      runBackendStepOutput.setRecords(transformedRecordList);
+      runBackendStepOutput.setRecords(previewRecordList);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void skipToValidateStep(RunBackendStepOutput runBackendStepOutput)
+   {
+      LOG.info("Skipping to validation step");
+      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
+      ArrayList<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
+      System.out.println("Step list pre: " + stepList);
+      stepList.removeIf(s -> s.equals(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW));
+      stepList.add(stepList.indexOf(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) + 1, StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
+      runBackendStepOutput.getProcessState().setStepList(stepList);
+      System.out.println("Step list post: " + stepList);
    }
 
 

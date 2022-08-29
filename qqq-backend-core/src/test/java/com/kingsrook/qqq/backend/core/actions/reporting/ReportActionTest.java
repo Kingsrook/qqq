@@ -64,7 +64,8 @@ class ReportActionTest
 
       runReport(recordCount, filename, ReportFormat.CSV, false);
 
-      File         file      = new File(filename);
+      File file = new File(filename);
+      @SuppressWarnings("unchecked")
       List<String> fileLines = FileUtils.readLines(file, StandardCharsets.UTF_8.name());
       assertEquals(recordCount + 1, fileLines.size());
       assertTrue(file.delete());
@@ -85,7 +86,8 @@ class ReportActionTest
 
       runReport(recordCount, filename, ReportFormat.CSV, false);
 
-      File         file      = new File(filename);
+      File file = new File(filename);
+      @SuppressWarnings("unchecked")
       List<String> fileLines = FileUtils.readLines(file, StandardCharsets.UTF_8.name());
       assertEquals(recordCount + 1, fileLines.size());
       assertTrue(file.delete());

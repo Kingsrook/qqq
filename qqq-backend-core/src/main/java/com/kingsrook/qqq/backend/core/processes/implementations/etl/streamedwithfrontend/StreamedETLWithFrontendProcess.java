@@ -22,11 +22,17 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 
@@ -51,27 +57,32 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
  *******************************************************************************/
 public class StreamedETLWithFrontendProcess
 {
-   public static final String PROCESS_NAME = "etl.streamedWithFrontend";
+   public static final String STEP_NAME_PREVIEW  = "preview";
+   public static final String STEP_NAME_REVIEW   = "review";
+   public static final String STEP_NAME_VALIDATE = "validate";
+   public static final String STEP_NAME_EXECUTE  = "execute";
+   public static final String STEP_NAME_RESULT   = "result";
 
-   public static final String STEP_NAME_PREVIEW = "preview";
-   public static final String STEP_NAME_REVIEW  = "review";
-   public static final String STEP_NAME_EXECUTE = "execute";
-   public static final String STEP_NAME_RESULT  = "result";
+   public static final String FIELD_EXTRACT_CODE   = "extract"; // QCodeReference, of AbstractExtractStep
+   public static final String FIELD_TRANSFORM_CODE = "transform"; // QCodeReference, of AbstractTransformStep
+   public static final String FIELD_LOAD_CODE      = "load"; // QCodeReference, of AbstractLoadStep
 
-   public static final String FIELD_EXTRACT_CODE   = "extract";
-   public static final String FIELD_TRANSFORM_CODE = "transform";
-   public static final String FIELD_LOAD_CODE      = "load";
+   public static final String FIELD_SOURCE_TABLE         = "sourceTable"; // String
+   public static final String FIELD_DESTINATION_TABLE    = "destinationTable"; // String
+   public static final String FIELD_RECORD_COUNT         = "recordCount"; // Integer
+   public static final String FIELD_DEFAULT_QUERY_FILTER = "defaultQueryFilter"; // QQueryFilter or String (json, of q QQueryFilter)
 
-   public static final String FIELD_SOURCE_TABLE         = "sourceTable";
-   public static final String FIELD_DEFAULT_QUERY_FILTER = "defaultQueryFilter";
-   public static final String FIELD_DESTINATION_TABLE    = "destinationTable";
+   public static final String FIELD_SUPPORTS_FULL_VALIDATION = "supportsFullValidation"; // Boolean
+   public static final String FIELD_DO_FULL_VALIDATION       = "doFullValidation"; // Boolean
+   public static final String FIELD_VALIDATION_SUMMARY       = "validationSummary"; // List<ProcessSummaryLine>
+   public static final String FIELD_PROCESS_SUMMARY          = "processResults"; // List<ProcessSummaryLine>
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QProcessMetaData defineProcessMetaData(
+   public static QProcessMetaData defineProcessMetaData(
       String sourceTableName,
       String destinationTableName,
       Class<? extends AbstractExtractStep> extractStepClass,
@@ -79,32 +90,71 @@ public class StreamedETLWithFrontendProcess
       Class<? extends AbstractLoadStep> loadStepClass
    )
    {
+      Map<String, Serializable> defaultFieldValues = new HashMap<>();
+      defaultFieldValues.put(FIELD_SOURCE_TABLE, sourceTableName);
+      defaultFieldValues.put(FIELD_DESTINATION_TABLE, destinationTableName);
+      return defineProcessMetaData(extractStepClass, transformStepClass, loadStepClass, defaultFieldValues);
+   }
+
+
+
+   /*******************************************************************************
+    ** @param defaultFieldValues - expected to possibly contain values for the following field names:
+    ** - FIELD_SOURCE_TABLE
+    ** - FIELD_DESTINATION_TABLE
+    ** - FIELD_SUPPORTS_FULL_VALIDATION
+    ** - FIELD_DEFAULT_QUERY_FILTER
+    ** - FIELD_DO_FULL_VALIDATION
+    *******************************************************************************/
+   public static QProcessMetaData defineProcessMetaData(
+      Class<? extends AbstractExtractStep> extractStepClass,
+      Class<? extends AbstractTransformStep> transformStepClass,
+      Class<? extends AbstractLoadStep> loadStepClass,
+      Map<String, Serializable> defaultFieldValues
+   )
+   {
       QStepMetaData previewStep = new QBackendStepMetaData()
          .withName(STEP_NAME_PREVIEW)
          .withCode(new QCodeReference(StreamedETLPreviewStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_SOURCE_TABLE).withDefaultValue(sourceTableName))
-            .withField(new QFieldMetaData().withName(FIELD_DEFAULT_QUERY_FILTER))
+            .withField(new QFieldMetaData().withName(FIELD_SOURCE_TABLE).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
+            .withField(new QFieldMetaData().withName(FIELD_SUPPORTS_FULL_VALIDATION).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, false)))
+            .withField(new QFieldMetaData().withName(FIELD_DEFAULT_QUERY_FILTER).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
             .withField(new QFieldMetaData().withName(FIELD_EXTRACT_CODE).withDefaultValue(new QCodeReference(extractStepClass)))
-            .withField(new QFieldMetaData().withName(FIELD_TRANSFORM_CODE).withDefaultValue(new QCodeReference(transformStepClass))));
+            .withField(new QFieldMetaData().withName(FIELD_TRANSFORM_CODE).withDefaultValue(new QCodeReference(transformStepClass)))
+         );
 
       QFrontendStepMetaData reviewStep = new QFrontendStepMetaData()
-         .withName(STEP_NAME_REVIEW);
+         .withName(STEP_NAME_REVIEW)
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VALIDATION_REVIEW_SCREEN));
+
+      QStepMetaData validateStep = new QBackendStepMetaData()
+         .withName(STEP_NAME_VALIDATE)
+         .withCode(new QCodeReference(StreamedETLValidateStep.class))
+         .withInputData(new QFunctionInputMetaData()
+            .withField(new QFieldMetaData().withName(FIELD_DO_FULL_VALIDATION).withDefaultValue(defaultFieldValues.get(FIELD_DO_FULL_VALIDATION))))
+         .withOutputMetaData(new QFunctionOutputMetaData()
+            .withField(new QFieldMetaData().withName(FIELD_VALIDATION_SUMMARY))
+         );
 
       QStepMetaData executeStep = new QBackendStepMetaData()
          .withName(STEP_NAME_EXECUTE)
          .withCode(new QCodeReference(StreamedETLExecuteStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_DESTINATION_TABLE).withDefaultValue(destinationTableName))
-            .withField(new QFieldMetaData().withName(FIELD_LOAD_CODE).withDefaultValue(new QCodeReference(loadStepClass))));
+            .withField(new QFieldMetaData().withName(FIELD_DESTINATION_TABLE).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
+            .withField(new QFieldMetaData().withName(FIELD_LOAD_CODE).withDefaultValue(new QCodeReference(loadStepClass))))
+         .withOutputMetaData(new QFunctionOutputMetaData()
+            .withField(new QFieldMetaData().withName(FIELD_PROCESS_SUMMARY))
+         );
 
       QFrontendStepMetaData resultStep = new QFrontendStepMetaData()
-         .withName(STEP_NAME_RESULT);
+         .withName(STEP_NAME_RESULT)
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.PROCESS_SUMMARY_RESULTS));
 
       return new QProcessMetaData()
-         .withName(PROCESS_NAME)
          .addStep(previewStep)
          .addStep(reviewStep)
+         .addStep(validateStep)
          .addStep(executeStep)
          .addStep(resultStep);
    }

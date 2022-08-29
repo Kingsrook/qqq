@@ -82,15 +82,28 @@ public class RunProcessAction
       runProcessOutput.setProcessUUID(runProcessInput.getProcessUUID());
 
       UUIDAndTypeStateKey stateKey     = new UUIDAndTypeStateKey(UUID.fromString(runProcessInput.getProcessUUID()), StateType.PROCESS_STATUS);
-      ProcessState        processState = primeProcessState(runProcessInput, stateKey);
+      ProcessState        processState = primeProcessState(runProcessInput, stateKey, process);
 
-      // todo - custom routing
-      List<QStepMetaData> stepList = getAvailableStepList(process, runProcessInput);
       try
       {
+         String lastStepName = runProcessInput.getStartAfterStep();
+
          STEP_LOOP:
-         for(QStepMetaData step : stepList)
+         while(true)
          {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            // always refresh the step list - as any step that runs can modify it (in the process state).        //
+            // this is why we don't do a loop over the step list - as we'd get ConcurrentModificationExceptions. //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            List<QStepMetaData> stepList = getAvailableStepList(processState, process, lastStepName);
+            if(stepList.isEmpty())
+            {
+               break;
+            }
+
+            QStepMetaData step = stepList.get(0);
+            lastStepName = step.getName();
+
             if(step instanceof QFrontendStepMetaData)
             {
                ////////////////////////////////////////////////////////////////
@@ -127,6 +140,7 @@ public class RunProcessAction
                ///////////////////////
                // Run backend steps //
                ///////////////////////
+               LOG.info("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
                runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
             }
             else
@@ -169,7 +183,7 @@ public class RunProcessAction
     ** When we start running a process (or resuming it), get data in the RunProcessRequest
     ** either from the state provider (if they're found, for a resume).
     *******************************************************************************/
-   ProcessState primeProcessState(RunProcessInput runProcessInput, UUIDAndTypeStateKey stateKey) throws QException
+   ProcessState primeProcessState(RunProcessInput runProcessInput, UUIDAndTypeStateKey stateKey, QProcessMetaData process) throws QException
    {
       Optional<ProcessState> optionalProcessState = loadState(stateKey);
       if(optionalProcessState.isEmpty())
@@ -177,11 +191,13 @@ public class RunProcessAction
          if(runProcessInput.getStartAfterStep() == null)
          {
             ///////////////////////////////////////////////////////////////////////////////////
-            // this is fine - it means its our first time running in the backend.            //
+            // this is fine - it means it's our first time running in the backend.           //
             // Go ahead and store the state that we have (e.g., w/ initial records & values) //
             ///////////////////////////////////////////////////////////////////////////////////
-            storeState(stateKey, runProcessInput.getProcessState());
-            optionalProcessState = Optional.of(runProcessInput.getProcessState());
+            ProcessState processState = runProcessInput.getProcessState();
+            processState.setStepList(process.getStepList().stream().map(QStepMetaData::getName).toList());
+            storeState(stateKey, processState);
+            optionalProcessState = Optional.of(processState);
          }
          else
          {
@@ -249,37 +265,59 @@ public class RunProcessAction
    /*******************************************************************************
     ** Get the list of steps which are eligible to run.
     *******************************************************************************/
-   private List<QStepMetaData> getAvailableStepList(QProcessMetaData process, RunProcessInput runProcessInput)
+   private List<QStepMetaData> getAvailableStepList(ProcessState processState, QProcessMetaData process, String lastStep) throws QException
    {
-      if(runProcessInput.getStartAfterStep() == null)
+      if(lastStep == null)
       {
-         /////////////////////////////////////////////////////////////////////////////
-         // if the caller did not supply a 'startAfterStep', then use the full list //
-         /////////////////////////////////////////////////////////////////////////////
-         return (process.getStepList());
+         ///////////////////////////////////////////////////////////////////////
+         // if the caller did not supply a 'lastStep', then use the full list //
+         ///////////////////////////////////////////////////////////////////////
+         return (stepNamesToSteps(process, processState.getStepList()));
       }
       else
       {
-         ////////////////////////////////////////////////////////////////////////////////
-         // else, loop until the startAfterStep is found, and return the ones after it //
-         ////////////////////////////////////////////////////////////////////////////////
-         boolean             foundStartAfterStep = false;
-         List<QStepMetaData> rs                  = new ArrayList<>();
+         ////////////////////////////////////////////////////////////////////////////
+         // else, loop until the 'lastStep' is found, and return the ones after it //
+         ////////////////////////////////////////////////////////////////////////////
+         boolean      foundLastStep  = false;
+         List<String> validStepNames = new ArrayList<>();
 
-         for(QStepMetaData step : process.getStepList())
+         for(String stepName : processState.getStepList())
          {
-            if(foundStartAfterStep)
+            if(foundLastStep)
             {
-               rs.add(step);
+               validStepNames.add(stepName);
             }
 
-            if(step.getName().equals(runProcessInput.getStartAfterStep()))
+            if(stepName.equals(lastStep))
             {
-               foundStartAfterStep = true;
+               foundLastStep = true;
             }
          }
-         return (rs);
+         return (stepNamesToSteps(process, validStepNames));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<QStepMetaData> stepNamesToSteps(QProcessMetaData process, List<String> stepNames) throws QException
+   {
+      List<QStepMetaData> result = new ArrayList<>();
+
+      for(String stepName : stepNames)
+      {
+         QStepMetaData step = process.getStep(stepName);
+         if(step == null)
+         {
+            throw(new QException("Could not find a step named [" + stepName + "] in this process."));
+         }
+         result.add(step);
+      }
+
+      return (result);
    }
 
 

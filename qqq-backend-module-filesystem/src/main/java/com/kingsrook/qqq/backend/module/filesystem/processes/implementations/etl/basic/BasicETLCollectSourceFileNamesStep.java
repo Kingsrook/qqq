@@ -79,6 +79,6 @@ public class BasicETLCollectSourceFileNamesStep implements BackendStep
             .withCodeType(QCodeType.JAVA)
             .withCodeUsage(QCodeUsage.BACKEND_STEP))
          .withOutputMetaData(new QFunctionOutputMetaData()
-            .addField(new QFieldMetaData(FIELD_SOURCE_FILE_PATHS, QFieldType.STRING))));
+            .withField(new QFieldMetaData(FIELD_SOURCE_FILE_PATHS, QFieldType.STRING))));
    }
 }
