@@ -62,12 +62,13 @@ class StreamedETLWithFrontendProcessTest
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Persons //
       ////////////////////////////////////////////////////////
-      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
          TestUtils.TABLE_NAME_SHAPE,
          TestUtils.TABLE_NAME_PERSON,
          ExtractViaQueryStep.class,
          TestTransformShapeToPersonStep.class,
          LoadViaInsertStep.class);
+      process.setName("test");
       process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
 
@@ -103,12 +104,13 @@ class StreamedETLWithFrontendProcessTest
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Shapes //
       ////////////////////////////////////////////////////////
-      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
          TestUtils.TABLE_NAME_SHAPE,
          TestUtils.TABLE_NAME_SHAPE,
          ExtractViaQueryStep.class,
          TestTransformUpdateShapeStep.class,
          LoadViaUpdateStep.class);
+      process.setName("test");
       process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
 
@@ -136,12 +138,13 @@ class StreamedETLWithFrontendProcessTest
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Shapes //
       ////////////////////////////////////////////////////////
-      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
          TestUtils.TABLE_NAME_SHAPE,
          TestUtils.TABLE_NAME_SHAPE,
          ExtractViaQueryStep.class,
          TestTransformUpdateShapeStep.class,
          LoadViaUpdateStep.class);
+      process.setName("test");
       process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
 
@@ -177,12 +180,13 @@ class StreamedETLWithFrontendProcessTest
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // define the process - an ELT from Persons to Persons - using the mock backend, and set to do very many records //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
          TestUtils.TABLE_NAME_PERSON,
          TestUtils.TABLE_NAME_PERSON,
          ExtractViaQueryWithCustomLimitStep.class,
          TestTransformShapeToPersonStep.class,
          LoadViaInsertStep.class);
+      process.setName("test");
       process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
 
@@ -206,12 +210,13 @@ class StreamedETLWithFrontendProcessTest
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Persons //
       ////////////////////////////////////////////////////////
-      QProcessMetaData process = new StreamedETLWithFrontendProcess().defineProcessMetaData(
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
          TestUtils.TABLE_NAME_SHAPE,
          TestUtils.TABLE_NAME_PERSON,
          ExtractViaQueryStep.class,
          TestTransformShapeToPersonWithValidationStep.class,
          LoadViaInsertStep.class);
+      process.setName("test");
       process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
 
@@ -222,14 +227,47 @@ class StreamedETLWithFrontendProcessTest
 
       TestUtils.insertDefaultShapes(instance);
 
-      /////////////////////
-      // run the process // todo - don't skip FE steps
-      /////////////////////
-      runProcess(instance, process);
+      ///////////////////////////////////////////////////////////////////////////
+      // run the process - breaking on the first instance of the Review screen //
+      ///////////////////////////////////////////////////////////////////////////
+      RunProcessOutput runProcessOutput = runProcess(instance, process, Map.of(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION, true), new Callback(), RunProcessInput.FrontendStepBehavior.BREAK);
+      assertThat(runProcessOutput.getProcessState().getNextStepName()).hasValue("review");
 
+      ////////////////////////////////////////////////////////
+      // continue the process - telling it to do validation //
+      ////////////////////////////////////////////////////////
+      RunProcessInput runProcessInput = new RunProcessInput(instance);
+      runProcessInput.setSession(TestUtils.getMockSession());
+      runProcessInput.setProcessName(process.getName());
+      runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
+      runProcessInput.setProcessUUID(runProcessOutput.getProcessUUID());
+      runProcessInput.setStartAfterStep(runProcessOutput.getProcessState().getNextStepName().get());
+      runProcessInput.setValues(Map.of(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true));
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      assertNotNull(runProcessOutput);
+      assertTrue(runProcessOutput.getException().isEmpty());
+      assertThat(runProcessOutput.getProcessState().getNextStepName()).hasValue("review");
+
+      List<ProcessSummaryLine> validationSummaryLines = (List<ProcessSummaryLine>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY);
+      assertThat(validationSummaryLines)
+         .usingRecursiveFieldByFieldElementComparatorOnFields("status", "count")
+         .contains(new ProcessSummaryLine(Status.OK, 2, null))
+         .contains(new ProcessSummaryLine(Status.ERROR, 1, null));
+
+      ///////////////////////////////////////////////////////
+      // continue the process - going to the result screen //
+      ///////////////////////////////////////////////////////
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      assertNotNull(runProcessOutput);
+      assertTrue(runProcessOutput.getException().isEmpty());
+      assertThat(runProcessOutput.getProcessState().getNextStepName()).hasValue("result");
+
+      ////////////////////////////////////
+      // query for the inserted records //
+      ////////////////////////////////////
       List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON);
       assertThat(postList)
-         .as("Should have inserted Circle").anyMatch(qr -> qr.getValue("lastName").equals("Circle"))
+         .as("Should not have inserted Circle").noneMatch(qr -> qr.getValue("lastName").equals("Circle"))
          .as("Should have inserted Triangle").anyMatch(qr -> qr.getValue("lastName").equals("Triangle"))
          .as("Should have inserted Square").anyMatch(qr -> qr.getValue("lastName").equals("Square"));
    }
@@ -251,11 +289,24 @@ class StreamedETLWithFrontendProcessTest
     *******************************************************************************/
    private RunProcessOutput runProcess(QInstance instance, QProcessMetaData process, Map<String, Serializable> values, QProcessCallback callback) throws QException
    {
+      return (runProcess(instance, process, values, callback, RunProcessInput.FrontendStepBehavior.SKIP));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private RunProcessOutput runProcess(QInstance instance, QProcessMetaData process, Map<String, Serializable> values, QProcessCallback callback, RunProcessInput.FrontendStepBehavior frontendStepBehavior) throws QException
+   {
       RunProcessInput request = new RunProcessInput(instance);
       request.setSession(TestUtils.getMockSession());
       request.setProcessName(process.getName());
-      request.setValues(values);
-      request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+      //////////////////////////////////////////////////////////////
+      // wrap the map here, in case it was given as un-modifiable //
+      //////////////////////////////////////////////////////////////
+      request.setValues(new HashMap<>(values));
+      request.setFrontendStepBehavior(frontendStepBehavior);
       request.setCallback(callback);
 
       RunProcessOutput output = new RunProcessAction().execute(request);
@@ -297,7 +348,7 @@ class StreamedETLWithFrontendProcessTest
    public static class TestTransformShapeToPersonWithValidationStep extends AbstractTransformStep implements ProcessSummaryProviderInterface
    {
       private ProcessSummaryLine okSummary          = new ProcessSummaryLine(Status.OK, 0, "can be transformed into a Person");
-      private ProcessSummaryLine notAPolygonSummary = new ProcessSummaryLine(Status.OK, 0, "cannot be transformed, because they are not a Polygon");
+      private ProcessSummaryLine notAPolygonSummary = new ProcessSummaryLine(Status.ERROR, 0, "cannot be transformed, because they are not a Polygon");
 
 
 
