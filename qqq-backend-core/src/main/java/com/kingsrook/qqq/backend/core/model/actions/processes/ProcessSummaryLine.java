@@ -52,6 +52,18 @@ public class ProcessSummaryLine implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
+   public ProcessSummaryLine(Status status, String message)
+   {
+      this.status = status;
+      this.message = message;
+      this.count = 0;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public String toString()
    {

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -117,11 +118,11 @@ public class StreamedETLWithFrontendProcess
          .withName(STEP_NAME_PREVIEW)
          .withCode(new QCodeReference(StreamedETLPreviewStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_SOURCE_TABLE).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
-            .withField(new QFieldMetaData().withName(FIELD_SUPPORTS_FULL_VALIDATION).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, false)))
-            .withField(new QFieldMetaData().withName(FIELD_DEFAULT_QUERY_FILTER).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
-            .withField(new QFieldMetaData().withName(FIELD_EXTRACT_CODE).withDefaultValue(new QCodeReference(extractStepClass)))
-            .withField(new QFieldMetaData().withName(FIELD_TRANSFORM_CODE).withDefaultValue(new QCodeReference(transformStepClass)))
+            .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
+            .withField(new QFieldMetaData(FIELD_SUPPORTS_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, false)))
+            .withField(new QFieldMetaData(FIELD_DEFAULT_QUERY_FILTER, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
+            .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(extractStepClass)))
+            .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(transformStepClass)))
          );
 
       QFrontendStepMetaData reviewStep = new QFrontendStepMetaData()
@@ -132,19 +133,19 @@ public class StreamedETLWithFrontendProcess
          .withName(STEP_NAME_VALIDATE)
          .withCode(new QCodeReference(StreamedETLValidateStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_DO_FULL_VALIDATION).withDefaultValue(defaultFieldValues.get(FIELD_DO_FULL_VALIDATION))))
+            .withField(new QFieldMetaData(FIELD_DO_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.get(FIELD_DO_FULL_VALIDATION))))
          .withOutputMetaData(new QFunctionOutputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_VALIDATION_SUMMARY))
+            .withField(new QFieldMetaData(FIELD_VALIDATION_SUMMARY, QFieldType.STRING))
          );
 
       QStepMetaData executeStep = new QBackendStepMetaData()
          .withName(STEP_NAME_EXECUTE)
          .withCode(new QCodeReference(StreamedETLExecuteStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_DESTINATION_TABLE).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
-            .withField(new QFieldMetaData().withName(FIELD_LOAD_CODE).withDefaultValue(new QCodeReference(loadStepClass))))
+            .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
+            .withField(new QFieldMetaData(FIELD_LOAD_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(loadStepClass))))
          .withOutputMetaData(new QFunctionOutputMetaData()
-            .withField(new QFieldMetaData().withName(FIELD_PROCESS_SUMMARY))
+            .withField(new QFieldMetaData(FIELD_PROCESS_SUMMARY, QFieldType.STRING))
          );
 
       QFrontendStepMetaData resultStep = new QFrontendStepMetaData()

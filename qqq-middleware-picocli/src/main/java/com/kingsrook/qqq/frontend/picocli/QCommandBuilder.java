@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -384,7 +385,7 @@ public class QCommandBuilder
          for(QFieldMetaData field : inputFieldMap.values())
          {
             processCommand.addOption(CommandLine.Model.OptionSpec.builder("--field-" + field.getName())
-               .type(getClassForField(field))
+               .type(Objects.requireNonNullElse(getClassForField(field), String.class))
                .build());
          }
 
@@ -401,6 +402,14 @@ public class QCommandBuilder
    @SuppressWarnings("checkstyle:Indentation")
    private Class<?> getClassForField(QFieldMetaData field)
    {
+      if(field.getType() == null)
+      {
+         ///////////////////////////////////////////////////
+         // shouldn't happen, but just in case, avoid NPE //
+         ///////////////////////////////////////////////////
+         return (null);
+      }
+
       // @formatter:off // IJ can't do new-style switch correctly yet...
       return switch(field.getType())
       {

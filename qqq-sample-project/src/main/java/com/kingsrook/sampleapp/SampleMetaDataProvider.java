@@ -43,6 +43,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
@@ -320,10 +322,7 @@ public class SampleMetaDataProvider
          .withIsHidden(true)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
-            .withCode(new QCodeReference()
-               .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+            .withCode(new QCodeReference(MockBackendStep.class))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -354,6 +353,7 @@ public class SampleMetaDataProvider
 
          .addStep(new QFrontendStepMetaData()
             .withName("setup")
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
             .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
             .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
          )
@@ -380,6 +380,8 @@ public class SampleMetaDataProvider
 
          .addStep(new QFrontendStepMetaData()
             .withName("results")
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST))
             .withViewField(new QFieldMetaData("noOfPeopleGreeted", QFieldType.INTEGER))
             .withViewField(new QFieldMetaData("outputMessage", QFieldType.STRING))
             .withRecordListField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -442,10 +444,12 @@ public class SampleMetaDataProvider
          .withName(PROCESS_NAME_SLEEP_INTERACTIVE)
          .addStep(new QFrontendStepMetaData()
             .withName(SCREEN_0)
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)))
          .addStep(SleeperStep.getMetaData())
          .addStep(new QFrontendStepMetaData()
             .withName(SCREEN_1)
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)));
    }
 
