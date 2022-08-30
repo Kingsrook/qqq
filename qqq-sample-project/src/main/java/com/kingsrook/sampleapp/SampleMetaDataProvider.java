@@ -137,12 +137,13 @@ public class SampleMetaDataProvider
 
       Dotenv dotenv = Dotenv.configure()
          .ignoreIfMissing()
+         .systemProperties()
          .load();
       QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
-         .withAccountId(dotenv.get("QUICKSIGHT_ACCCOUNT_ID"))
-         .withAccessKey(dotenv.get("QUICKSIGHT_ACCESS_KEY"))
-         .withSecretKey(dotenv.get("QUICKSIGHT_SECRET_KEY"))
-         .withUserArn(dotenv.get("QUICKSIGHT_USER_ARN"))
+         .withAccountId(System.getProperty("QUICKSIGHT_ACCCOUNT_ID"))
+         .withAccessKey(System.getProperty("QUICKSIGHT_ACCESS_KEY"))
+         .withSecretKey(System.getProperty("QUICKSIGHT_SECRET_KEY"))
+         .withUserArn(System.getProperty("QUICKSIGHT_USER_ARN"))
          .withDashboardId("9e452e78-8509-4c81-bb7f-967abfc356da")
          .withRegion(Regions.US_EAST_2.getName())
          .withName(QuickSightChartRenderer.class.getSimpleName())
@@ -212,15 +213,18 @@ public class SampleMetaDataProvider
    {
       if(USE_MYSQL)
       {
-         Dotenv dotenv = Dotenv.configure().load();
+         Dotenv dotenv = Dotenv.configure()
+            .ignoreIfMissing()
+            .systemProperties()
+            .load();
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)
-            .withVendor(dotenv.get("RDBMS_VENDOR"))
-            .withHostName(dotenv.get("RDBMS_HOSTNAME"))
-            .withPort(Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))))
-            .withDatabaseName(dotenv.get("RDBMS_DATABASE_NAME"))
-            .withUsername(dotenv.get("RDBMS_USERNAME"))
-            .withPassword(dotenv.get("RDBMS_PASSWORD"));
+            .withVendor(System.getProperty("RDBMS_VENDOR"))
+            .withHostName(System.getProperty("RDBMS_HOSTNAME"))
+            .withPort(Integer.valueOf(Objects.requireNonNull(System.getProperty("RDBMS_PORT"))))
+            .withDatabaseName(System.getProperty("RDBMS_DATABASE_NAME"))
+            .withUsername(System.getProperty("RDBMS_USERNAME"))
+            .withPassword(System.getProperty("RDBMS_PASSWORD"));
       }
       else
       {

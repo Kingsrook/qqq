@@ -104,15 +104,16 @@ class ConnectionManagerTest
    private RDBMSBackendMetaData getAuroraBacked()
    {
       Dotenv dotenv = Dotenv.configure()
+         .systemProperties()
          .ignoreIfMissing()
          .load();
       return new RDBMSBackendMetaData()
          .withName("aurora-test")
-         .withVendor(dotenv.get("RDBMS_VENDOR"))
-         .withHostName(dotenv.get("RDBMS_HOSTNAME"))
-         .withPort(Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))))
-         .withDatabaseName(dotenv.get("RDBMS_DATABASE_NAME"))
-         .withUsername(dotenv.get("RDBMS_USERNAME"))
-         .withPassword(dotenv.get("RDBMS_PASSWORD"));
+         .withVendor(System.getProperty("RDBMS_VENDOR"))
+         .withHostName(System.getProperty("RDBMS_HOSTNAME"))
+         .withPort(Integer.valueOf(Objects.requireNonNull(System.getProperty("RDBMS_PORT"))))
+         .withDatabaseName(System.getProperty("RDBMS_DATABASE_NAME"))
+         .withUsername(System.getProperty("RDBMS_USERNAME"))
+         .withPassword(System.getProperty("RDBMS_PASSWORD"));
    }
 }
