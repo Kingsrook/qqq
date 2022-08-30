@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -60,7 +60,7 @@ public class QInstance
    private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
    private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
 
-   private Map<String, QWidgetMetaData> widgets = new LinkedHashMap<>();
+   private Map<String, QWidgetMetaDataInterface> widgets = new LinkedHashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -455,7 +455,7 @@ public class QInstance
     ** Getter for widgets
     **
     *******************************************************************************/
-   public Map<String, QWidgetMetaData> getWidgets()
+   public Map<String, QWidgetMetaDataInterface> getWidgets()
    {
       return widgets;
    }
@@ -466,7 +466,7 @@ public class QInstance
     ** Setter for widgets
     **
     *******************************************************************************/
-   public void setWidgets(Map<String, QWidgetMetaData> widgets)
+   public void setWidgets(Map<String, QWidgetMetaDataInterface> widgets)
    {
       this.widgets = widgets;
    }
@@ -475,7 +475,7 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addWidget(QWidgetMetaData widget)
+   public void addWidget(QWidgetMetaDataInterface widget)
    {
       this.addWidget(widget.getName(), widget);
    }
@@ -485,7 +485,7 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addWidget(String name, QWidgetMetaData widget)
+   public void addWidget(String name, QWidgetMetaDataInterface widget)
    {
       if(this.widgets.containsKey(name))
       {
@@ -499,7 +499,7 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QWidgetMetaData getWidget(String name)
+   public QWidgetMetaDataInterface getWidget(String name)
    {
       return (this.widgets.get(name));
    }

@@ -23,7 +23,7 @@ class PersonsByCreateDateBarChartTest
    @Test
    void test() throws QException
    {
-      Object widgetData = new PersonsByCreateDateBarChart().render(SampleMetaDataProvider.defineInstance(), new QSession());
+      Object widgetData = new PersonsByCreateDateBarChart().render(SampleMetaDataProvider.defineInstance(), new QSession(), null);
       assertThat(widgetData).isInstanceOf(BarChart.class);
       BarChart barChart = (BarChart) widgetData;
       assertEquals("barChart", barChart.getType());

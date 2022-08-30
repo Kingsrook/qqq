@@ -7,77 +7,36 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QWidgetMetaData implements QWidgetMetaDataInterface
+public interface QWidgetMetaDataInterface
 {
-   protected String         name;
-   protected QCodeReference codeReference;
-
-
-
    /*******************************************************************************
     ** Getter for name
-    **
     *******************************************************************************/
-   public String getName()
-   {
-      return name;
-   }
-
-
+   String getName();
 
    /*******************************************************************************
     ** Setter for name
-    **
     *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
-   }
-
-
+   void setName(String name);
 
    /*******************************************************************************
     ** Fluent setter for name
-    **
     *******************************************************************************/
-   public QWidgetMetaData withName(String name)
-   {
-      this.name = name;
-      return (this);
-   }
-
-
+   QWidgetMetaDataInterface withName(String name);
 
    /*******************************************************************************
     ** Getter for codeReference
-    **
     *******************************************************************************/
-   public QCodeReference getCodeReference()
-   {
-      return codeReference;
-   }
-
-
+   QCodeReference getCodeReference();
 
    /*******************************************************************************
     ** Setter for codeReference
-    **
     *******************************************************************************/
-   public void setCodeReference(QCodeReference codeReference)
-   {
-      this.codeReference = codeReference;
-   }
-
-
+   void setCodeReference(QCodeReference codeReference);
 
    /*******************************************************************************
     ** Fluent setter for codeReference
-    **
     *******************************************************************************/
-   public QWidgetMetaData withCodeReference(QCodeReference codeReference)
-   {
-      this.codeReference = codeReference;
-      return (this);
-   }
+   QWidgetMetaDataInterface withCodeReference(QCodeReference codeReference);
 
 }

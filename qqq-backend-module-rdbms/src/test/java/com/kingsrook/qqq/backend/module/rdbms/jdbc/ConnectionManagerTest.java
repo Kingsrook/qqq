@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -101,13 +103,14 @@ class ConnectionManagerTest
 
    private RDBMSBackendMetaData getAuroraBacked()
    {
+      Dotenv dotenv = Dotenv.configure().load();
       return new RDBMSBackendMetaData()
          .withName("aurora-test")
-         .withVendor("aurora")
-         .withHostName("nf-one-development-aurora.cwuhqcx1inwx.us-east-2.rds.amazonaws.com")
-         .withPort(3306)
-         .withDatabaseName("nutrifresh_one")
-         .withUsername("nf_admin")
-         .withPassword("%!2rwcH+fb#WgPg");
+         .withVendor(dotenv.get("RDBMS_VENDOR"))
+         .withHostName(dotenv.get("RDBMS_HOSTNAME"))
+         .withPort(Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))))
+         .withDatabaseName(dotenv.get("RDBMS_DATABASE_NAME"))
+         .withUsername(dotenv.get("RDBMS_USERNAME"))
+         .withPassword(dotenv.get("RDBMS_PASSWORD"));
    }
 }

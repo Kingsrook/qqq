@@ -23,6 +23,9 @@ package com.kingsrook.sampleapp;
 
 
 import java.util.List;
+import java.util.Objects;
+import com.amazonaws.regions.Regions;
+import com.kingsrook.qqq.backend.core.actions.dashboard.QuickSightChartRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
@@ -35,6 +38,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -68,26 +73,22 @@ public class SampleMetaDataProvider
 {
    public static boolean USE_MYSQL = true;
 
-   public static final String RDBMS_BACKEND_NAME      = "rdbms";
+   public static final String RDBMS_BACKEND_NAME = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
 
-   public static final String AUTH0_AUTHENTICATION_MODULE_NAME = "auth0";
-   // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
-   public static final String AUTH0_BASE_URL                   = "https://nutrifresh-one-development.us.auth0.com/";
-
-   public static final String APP_NAME_GREETINGS     = "greetingsApp";
-   public static final String APP_NAME_PEOPLE        = "peopleApp";
+   public static final String APP_NAME_GREETINGS = "greetingsApp";
+   public static final String APP_NAME_PEOPLE = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
-   public static final String PROCESS_NAME_GREET             = "greet";
+   public static final String PROCESS_NAME_GREET = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
-   public static final String PROCESS_NAME_SIMPLE_SLEEP      = "simpleSleep";
-   public static final String PROCESS_NAME_SIMPLE_THROW      = "simpleThrow";
+   public static final String PROCESS_NAME_SIMPLE_SLEEP = "simpleSleep";
+   public static final String PROCESS_NAME_SIMPLE_THROW = "simpleThrow";
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
 
-   public static final String TABLE_NAME_PERSON  = "person";
+   public static final String TABLE_NAME_PERSON = "person";
    public static final String TABLE_NAME_CARRIER = "carrier";
-   public static final String TABLE_NAME_CITY    = "city";
+   public static final String TABLE_NAME_CITY = "city";
 
    public static final String STEP_NAME_SLEEPER = "sleeper";
    public static final String STEP_NAME_THROWER = "thrower";
@@ -133,6 +134,20 @@ public class SampleMetaDataProvider
       qInstance.addWidget(new QWidgetMetaData()
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
          .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+
+      Dotenv dotenv = Dotenv.configure().load();
+      QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
+         .withAccountId(dotenv.get("QUICKSIGHT_ACCCOUNT_ID"))
+         .withAccessKey(dotenv.get("QUICKSIGHT_ACCESS_KEY"))
+         .withSecretKey(dotenv.get("QUICKSIGHT_SECRET_KEY"))
+         .withUserArn(dotenv.get("QUICKSIGHT_USER_ARN"))
+         .withDashboardId("9e452e78-8509-4c81-bb7f-967abfc356da")
+         .withRegion(Regions.US_EAST_2.getName())
+         .withName(QuickSightChartRenderer.class.getSimpleName())
+         .withLabel("Example Quicksight Chart")
+         .withCodeReference(new QCodeReference(QuickSightChartRenderer.class, null));
+
+      qInstance.addWidget(quickSightChartMetaData);
    }
 
 
@@ -153,7 +168,11 @@ public class SampleMetaDataProvider
             .withIcon(new QIcon().withName("location_city")))
          .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE))
          .withIcon(new QIcon().withName("waving_hand"))
-         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName()))
+         .withWidgets(List.of
+            (
+               PersonsByCreateDateBarChart.class.getSimpleName(),
+               QuickSightChartRenderer.class.getSimpleName()
+            ))
       );
 
       qInstance.addApp(new QAppMetaData()
@@ -194,11 +213,11 @@ public class SampleMetaDataProvider
          Dotenv dotenv = Dotenv.configure().load();
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)
-            .withVendor("mysql")
-            .withHostName("127.0.0.1")
-            .withPort(3306)
-            .withDatabaseName("qqq")
-            .withUsername("root")
+            .withVendor(dotenv.get("RDBMS_VENDOR"))
+            .withHostName(dotenv.get("RDBMS_HOSTNAME"))
+            .withPort(Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))))
+            .withDatabaseName(dotenv.get("RDBMS_DATABASE_NAME"))
+            .withUsername(dotenv.get("RDBMS_USERNAME"))
             .withPassword(dotenv.get("RDBMS_PASSWORD"));
       }
       else
@@ -249,8 +268,8 @@ public class SampleMetaDataProvider
          .withBackendName("company_code"));
 
       table.addField(new QFieldMetaData("service_level", QFieldType.STRING) // todo PVS
-            .withLabel("Service Level")
-            .withIsRequired(true));
+         .withLabel("Service Level")
+         .withIsRequired(true));
 
       table.addSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "name")));
       table.addSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("company_code", "service_level")));

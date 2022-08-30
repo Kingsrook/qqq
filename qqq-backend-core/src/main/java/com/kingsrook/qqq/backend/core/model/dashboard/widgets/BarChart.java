@@ -7,7 +7,7 @@ import java.util.List;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class BarChart
+public class BarChart implements QWidget
 {
 
    /*
@@ -19,9 +19,8 @@ public class BarChart
          },
     */
 
-   private String type = "barChart";
    private String title;
-   private Data   barChartData;
+   private Data barChartData;
 
 
 
@@ -34,8 +33,19 @@ public class BarChart
       setBarChartData(new BarChart.Data()
          .withLabels(labels)
          .withDatasets(new BarChart.Data.DataSet()
-            .withLabel("Parcel Invoice Lines")
+            .withLabel(seriesLabel)
             .withData(data)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    **
+    *******************************************************************************/
+   public String getType()
+   {
+      return "barChart";
    }
 
 
@@ -109,45 +119,12 @@ public class BarChart
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
-    *******************************************************************************/
-   public String getType()
-   {
-      return type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    **
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-   /*******************************************************************************
-    ** Fluent setter for type
-    **
-    *******************************************************************************/
-   public BarChart withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     **
     *******************************************************************************/
    public static class Data
    {
       private List<String> labels;
-      private DataSet      datasets;
+      private DataSet datasets;
 
 
 
@@ -224,7 +201,7 @@ public class BarChart
        *******************************************************************************/
       public static class DataSet
       {
-         private String       label;
+         private String label;
          private List<Number> data;
 
 
