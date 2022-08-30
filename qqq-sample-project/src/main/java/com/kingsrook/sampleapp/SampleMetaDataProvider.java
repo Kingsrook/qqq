@@ -135,7 +135,9 @@ public class SampleMetaDataProvider
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
          .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
 
-      Dotenv dotenv = Dotenv.configure().load();
+      Dotenv dotenv = Dotenv.configure()
+         .ignoreIfMissing()
+         .load();
       QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
          .withAccountId(dotenv.get("QUICKSIGHT_ACCCOUNT_ID"))
          .withAccessKey(dotenv.get("QUICKSIGHT_ACCESS_KEY"))

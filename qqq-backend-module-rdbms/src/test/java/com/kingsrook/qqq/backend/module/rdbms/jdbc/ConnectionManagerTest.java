@@ -103,7 +103,9 @@ class ConnectionManagerTest
 
    private RDBMSBackendMetaData getAuroraBacked()
    {
-      Dotenv dotenv = Dotenv.configure().load();
+      Dotenv dotenv = Dotenv.configure()
+         .ignoreIfMissing()
+         .load();
       return new RDBMSBackendMetaData()
          .withName("aurora-test")
          .withVendor(dotenv.get("RDBMS_VENDOR"))
