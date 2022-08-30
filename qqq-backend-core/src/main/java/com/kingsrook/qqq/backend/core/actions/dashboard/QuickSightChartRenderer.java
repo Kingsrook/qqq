@@ -9,8 +9,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMe
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.services.quicksight.QuickSightClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.quicksight.QuickSightClient;
 import software.amazon.awssdk.services.quicksight.model.GenerateEmbedUrlForRegisteredUserRequest;
 import software.amazon.awssdk.services.quicksight.model.GenerateEmbedUrlForRegisteredUserResponse;
 import software.amazon.awssdk.services.quicksight.model.RegisteredUserDashboardEmbeddingConfiguration;
