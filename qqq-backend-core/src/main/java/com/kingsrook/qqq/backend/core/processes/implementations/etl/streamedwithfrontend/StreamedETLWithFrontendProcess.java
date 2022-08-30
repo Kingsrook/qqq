@@ -78,6 +78,10 @@ public class StreamedETLWithFrontendProcess
    public static final String FIELD_VALIDATION_SUMMARY       = "validationSummary"; // List<ProcessSummaryLine>
    public static final String FIELD_PROCESS_SUMMARY          = "processResults"; // List<ProcessSummaryLine>
 
+   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_INSERT = "This is a preview of the records that will be created.";
+   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_UPDATE = "This is a preview of the records that will be updated.";
+   public static final String FIELD_PREVIEW_MESSAGE              = "previewMessage";
+
 
 
    /*******************************************************************************
@@ -106,6 +110,7 @@ public class StreamedETLWithFrontendProcess
     ** - FIELD_SUPPORTS_FULL_VALIDATION
     ** - FIELD_DEFAULT_QUERY_FILTER
     ** - FIELD_DO_FULL_VALIDATION
+    ** - FIELD_PREVIEW_MESSAGE
     *******************************************************************************/
    public static QProcessMetaData defineProcessMetaData(
       Class<? extends AbstractExtractStep> extractStepClass,
@@ -119,10 +124,12 @@ public class StreamedETLWithFrontendProcess
          .withCode(new QCodeReference(StreamedETLPreviewStep.class))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
+            .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
             .withField(new QFieldMetaData(FIELD_SUPPORTS_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, false)))
             .withField(new QFieldMetaData(FIELD_DEFAULT_QUERY_FILTER, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
             .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(extractStepClass)))
             .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(transformStepClass)))
+            .withField(new QFieldMetaData(FIELD_PREVIEW_MESSAGE, QFieldType.STRING).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_PREVIEW_MESSAGE, DEFAULT_PREVIEW_MESSAGE_FOR_INSERT)))
          );
 
       QFrontendStepMetaData reviewStep = new QFrontendStepMetaData()
@@ -142,7 +149,6 @@ public class StreamedETLWithFrontendProcess
          .withName(STEP_NAME_EXECUTE)
          .withCode(new QCodeReference(StreamedETLExecuteStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
             .withField(new QFieldMetaData(FIELD_LOAD_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(loadStepClass))))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withField(new QFieldMetaData(FIELD_PROCESS_SUMMARY, QFieldType.STRING))

@@ -307,8 +307,8 @@ public class QInstanceEnricher
          .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withIsRequired(true))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            // .withValue("text", "Upload a CSV or XLSX file with the following columns: " + fieldsForHelpText));
-            .withValue("text", "Upload a CSV file with the following columns: " + fieldsForHelpText));
+            .withValue("text", "Upload a CSV file with the following columns: " + fieldsForHelpText))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
 
       QBackendStepMetaData receiveFileStep = new QBackendStepMetaData()
          .withName("receiveFile")
@@ -322,7 +322,9 @@ public class QInstanceEnricher
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
             .withValue("text", "The records below were parsed from your file, and will be inserted if you click Submit."))
-         .withViewField(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER).withLabel("# of file rows"));
+         .withViewField(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER).withLabel("# of file rows"))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST));
 
       QBackendStepMetaData storeStep = new QBackendStepMetaData()
          .withName("storeRecords")
@@ -336,7 +338,9 @@ public class QInstanceEnricher
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
             .withValue("text", "The records below have been inserted."))
-         .withViewField(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER).withLabel("# of file rows"));
+         .withViewField(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER).withLabel("# of file rows"))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST));
 
       qInstance.addProcess(
          new QProcessMetaData()
@@ -375,9 +379,7 @@ public class QInstanceEnricher
                The values you supply here will be updated in all of the records you are bulk editing.
                You can clear out the value in a field by flipping the switch on for that field and leaving the input field blank.
                Fields whose switches are off will not be updated."""))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.BULK_EDIT_FORM)
-         );
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_EDIT_FORM));
 
       QBackendStepMetaData receiveValuesStep = new QBackendStepMetaData()
          .withName("receiveValues")
@@ -393,7 +395,9 @@ public class QInstanceEnricher
          .withViewField(new QFieldMetaData(BulkEditReceiveValuesStep.FIELD_VALUES_BEING_UPDATED, QFieldType.STRING))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below will be updated if you click Submit."));
+            .withValue("text", "The records below will be updated if you click Submit."))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST));
 
       QBackendStepMetaData storeStep = new QBackendStepMetaData()
          .withName("storeRecords")
@@ -407,7 +411,9 @@ public class QInstanceEnricher
          .withViewField(new QFieldMetaData(BulkEditReceiveValuesStep.FIELD_VALUES_BEING_UPDATED, QFieldType.STRING))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below have been updated."));
+            .withValue("text", "The records below have been updated."))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST));
 
       qInstance.addProcess(
          new QProcessMetaData()
@@ -437,7 +443,8 @@ public class QInstanceEnricher
          .withRecordListFields(new ArrayList<>(table.getFields().values()))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below will be deleted if you click Submit."));
+            .withValue("text", "The records below will be deleted if you click Submit."))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST));
 
       QBackendStepMetaData storeStep = new QBackendStepMetaData()
          .withName("delete")
@@ -448,7 +455,8 @@ public class QInstanceEnricher
          .withRecordListFields(new ArrayList<>(table.getFields().values()))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below have been deleted."));
+            .withValue("text", "The records below have been deleted."))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST));
 
       qInstance.addProcess(
          new QProcessMetaData()
@@ -567,6 +575,7 @@ public class QInstanceEnricher
 
       return (String.join("_", words).toLowerCase(Locale.ROOT));
    }
+
 
 
    /*******************************************************************************

@@ -41,6 +41,9 @@ public class RecordPipe
 {
    private static final Logger LOG = LogManager.getLogger(RecordPipe.class);
 
+   private static final long BLOCKING_SLEEP_MILLIS = 100;
+   private static final long MAX_SLEEP_LOOP_MILLIS = 300_000; // 5 minutes
+
    private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
 
    private boolean isTerminated = false;
@@ -51,6 +54,7 @@ public class RecordPipe
    // See usage below for explanation //
    /////////////////////////////////////
    private List<QRecord> singleRecordListForPostRecordActions = new ArrayList<>();
+
 
 
    /*******************************************************************************
@@ -103,11 +107,22 @@ public class RecordPipe
    {
       boolean offerResult = queue.offer(record);
 
-      while(!offerResult && !isTerminated)
+      if(!offerResult && !isTerminated)
       {
-         LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
-         SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
-         offerResult = queue.offer(record);
+         long sleepLoopStartTime = System.currentTimeMillis();
+         long now                = System.currentTimeMillis();
+         while(!offerResult && !isTerminated)
+         {
+            if(now - sleepLoopStartTime > MAX_SLEEP_LOOP_MILLIS)
+            {
+               LOG.warn("Giving up adding record to pipe, due to pipe being full for more than {} millis", MAX_SLEEP_LOOP_MILLIS);
+               throw (new IllegalStateException("Giving up adding record to pipe, due to pipe staying full too long."));
+            }
+            LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
+            SleepUtils.sleep(BLOCKING_SLEEP_MILLIS, TimeUnit.MILLISECONDS);
+            offerResult = queue.offer(record);
+            now = System.currentTimeMillis();
+         }
       }
    }
 

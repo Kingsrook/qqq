@@ -94,11 +94,13 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       if(!(transformStep instanceof ProcessSummaryProviderInterface processSummaryProvider))
       {
+         // todo - really?  if this is required, then put it on the AbstractTransformStep class
          throw (new QException("Transform Step " + transformStep.getClass().getName() + " does not implement ProcessSummaryProviderInterface."));
       }
+      transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
-      int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Preview>ValidateStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
+      int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Preview>ValidateStep", null, recordPipe, (status) ->
          {
             extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);
@@ -106,6 +108,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
          () -> (consumeRecordsFromPipe(recordPipe, transformStep, runBackendStepInput, runBackendStepOutput, previewRecordList))
       );
 
+      updateRecordsWithDisplayValuesAndPossibleValues(runBackendStepInput, previewRecordList);
       runBackendStepOutput.setRecords(previewRecordList);
       runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT, recordCount);
 
@@ -113,6 +116,8 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       // get the process summary from the validation step //
       //////////////////////////////////////////////////////
       runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, processSummaryProvider.getProcessSummary(false));
+
+      transformStep.postRun(runBackendStepInput, runBackendStepOutput);
    }
 
 

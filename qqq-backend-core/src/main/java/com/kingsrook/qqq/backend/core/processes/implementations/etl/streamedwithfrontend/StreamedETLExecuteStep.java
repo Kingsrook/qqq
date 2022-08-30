@@ -67,6 +67,8 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
 
+         transformStep.preRun(runBackendStepInput, runBackendStepOutput);
+
          transaction = loadStep.openTransaction(runBackendStepInput);
          loadStep.setTransaction(transaction);
 
@@ -80,15 +82,9 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          );
 
          runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT, recordCount);
-         runBackendStepOutput.setRecords(loadedRecordList);
 
-         /////////////////////
-         // commit the work //
-         /////////////////////
-         if(transaction.isPresent())
-         {
-            transaction.get().commit();
-         }
+         updateRecordsWithDisplayValuesAndPossibleValues(runBackendStepInput, loadedRecordList);
+         runBackendStepOutput.setRecords(loadedRecordList);
 
          if(transformStep instanceof ProcessSummaryProviderInterface processSummaryProvider)
          {
@@ -97,6 +93,17 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             // TODO!!                                                                                   //
             //////////////////////////////////////////////////////////////////////////////////////////////
             runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryProvider.getProcessSummary(true));
+         }
+
+         transformStep.postRun(runBackendStepInput, runBackendStepOutput);
+         loadStep.postRun(runBackendStepInput, runBackendStepOutput);
+
+         /////////////////////
+         // commit the work //
+         /////////////////////
+         if(transaction.isPresent())
+         {
+            transaction.get().commit();
          }
       }
       catch(Exception e)
