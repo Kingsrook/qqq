@@ -103,17 +103,21 @@ class ConnectionManagerTest
 
    private RDBMSBackendMetaData getAuroraBacked()
    {
-      Dotenv dotenv = Dotenv.configure()
-         .systemProperties()
-         .ignoreIfMissing()
-         .load();
+      Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+      String vendor = (dotenv.get("RDBMS_VENDOR") != null) ? dotenv.get("RDBMS_VENDOR") : System.getenv("RDBMS_VENDOR");
+      String hostname = (dotenv.get("RDBMS_HOSTNAME") != null) ? dotenv.get("RDBMS_HOSTNAME") : System.getenv("RDBMS_HOSTNAME");
+      Integer port = (dotenv.get("RDBMS_PORT") != null) ? Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))) : Integer.valueOf(System.getenv("RDBMS_PORT"));
+      String databaseName = (dotenv.get("RDBMS_DATABASE_NAME") != null) ? dotenv.get("RDBMS_DATABASE_NAME") : System.getenv("RDBMS_DATABASE_NAME");
+      String userName = (dotenv.get("RDBMS_USERNAME") != null) ? dotenv.get("RDBMS_USERNAME") : System.getenv("RDBMS_USERNAME");
+      String password = (dotenv.get("RDBMS_PASSWORD") != null) ? dotenv.get("RDBMS_PASSWORD") : System.getenv("RDBMS_PASSWORD");
+
       return new RDBMSBackendMetaData()
          .withName("aurora-test")
-         .withVendor(System.getProperty("RDBMS_VENDOR"))
-         .withHostName(System.getProperty("RDBMS_HOSTNAME"))
-         .withPort(Integer.valueOf(Objects.requireNonNull(System.getProperty("RDBMS_PORT"))))
-         .withDatabaseName(System.getProperty("RDBMS_DATABASE_NAME"))
-         .withUsername(System.getProperty("RDBMS_USERNAME"))
-         .withPassword(System.getProperty("RDBMS_PASSWORD"));
+         .withVendor(vendor)
+         .withHostName(hostname)
+         .withPort(port)
+         .withDatabaseName(databaseName)
+         .withUsername(userName)
+         .withPassword(password);
    }
 }

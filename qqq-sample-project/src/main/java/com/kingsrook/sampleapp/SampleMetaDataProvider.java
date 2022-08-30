@@ -73,22 +73,22 @@ public class SampleMetaDataProvider
 {
    public static boolean USE_MYSQL = true;
 
-   public static final String RDBMS_BACKEND_NAME = "rdbms";
+   public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
 
-   public static final String APP_NAME_GREETINGS = "greetingsApp";
-   public static final String APP_NAME_PEOPLE = "peopleApp";
+   public static final String APP_NAME_GREETINGS     = "greetingsApp";
+   public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
-   public static final String PROCESS_NAME_GREET = "greet";
+   public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
-   public static final String PROCESS_NAME_SIMPLE_SLEEP = "simpleSleep";
-   public static final String PROCESS_NAME_SIMPLE_THROW = "simpleThrow";
+   public static final String PROCESS_NAME_SIMPLE_SLEEP      = "simpleSleep";
+   public static final String PROCESS_NAME_SIMPLE_THROW      = "simpleThrow";
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
 
-   public static final String TABLE_NAME_PERSON = "person";
+   public static final String TABLE_NAME_PERSON  = "person";
    public static final String TABLE_NAME_CARRIER = "carrier";
-   public static final String TABLE_NAME_CITY = "city";
+   public static final String TABLE_NAME_CITY    = "city";
 
    public static final String STEP_NAME_SLEEPER = "sleeper";
    public static final String STEP_NAME_THROWER = "thrower";
@@ -135,15 +135,17 @@ public class SampleMetaDataProvider
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
          .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
 
-      Dotenv dotenv = Dotenv.configure()
-         .ignoreIfMissing()
-         .systemProperties()
-         .load();
+      Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+      String accountId = (dotenv.get("QUICKSIGHT_ACCOUNT_ID") != null) ? dotenv.get("QUICKSIGHT_ACCOUNT_ID") : System.getenv("QUICKSIGHT_ACCOUNT_ID");
+      String accessKey = (dotenv.get("QUICKSIGHT_ACCESS_KEY") != null) ? dotenv.get("QUICKSIGHT_ACCESS_KEY") : System.getenv("QUICKSIGHT_ACCESS_KEY");
+      String secretKey = (dotenv.get("QUICKSIGHT_SECRET_KEY") != null) ? dotenv.get("QUICKSIGHT_SECRET_KEY") : System.getenv("QUICKSIGHT_SECRET_KEY");
+      String userArn = (dotenv.get("QUICKSIGHT_USER_ARN") != null) ? dotenv.get("QUICKSIGHT_USER_ARN") : System.getenv("QUICKSIGHT_USER_ARN");
+
       QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
-         .withAccountId(System.getProperty("QUICKSIGHT_ACCCOUNT_ID"))
-         .withAccessKey(System.getProperty("QUICKSIGHT_ACCESS_KEY"))
-         .withSecretKey(System.getProperty("QUICKSIGHT_SECRET_KEY"))
-         .withUserArn(System.getProperty("QUICKSIGHT_USER_ARN"))
+         .withAccountId(accountId)
+         .withAccessKey(accessKey)
+         .withSecretKey(secretKey)
+         .withUserArn(userArn)
          .withDashboardId("9e452e78-8509-4c81-bb7f-967abfc356da")
          .withRegion(Regions.US_EAST_2.getName())
          .withName(QuickSightChartRenderer.class.getSimpleName())
@@ -171,11 +173,7 @@ public class SampleMetaDataProvider
             .withIcon(new QIcon().withName("location_city")))
          .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE))
          .withIcon(new QIcon().withName("waving_hand"))
-         .withWidgets(List.of
-            (
-               PersonsByCreateDateBarChart.class.getSimpleName(),
-               QuickSightChartRenderer.class.getSimpleName()
-            ))
+         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName(), QuickSightChartRenderer.class.getSimpleName()))
       );
 
       qInstance.addApp(new QAppMetaData()
@@ -213,18 +211,22 @@ public class SampleMetaDataProvider
    {
       if(USE_MYSQL)
       {
-         Dotenv dotenv = Dotenv.configure()
-            .ignoreIfMissing()
-            .systemProperties()
-            .load();
+         Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+         String vendor = (dotenv.get("RDBMS_VENDOR") != null) ? dotenv.get("RDBMS_VENDOR") : System.getenv("RDBMS_VENDOR");
+         String hostname = (dotenv.get("RDBMS_HOSTNAME") != null) ? dotenv.get("RDBMS_HOSTNAME") : System.getenv("RDBMS_HOSTNAME");
+         Integer port = (dotenv.get("RDBMS_PORT") != null) ? Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))) : Integer.valueOf(System.getenv("RDBMS_PORT"));
+         String databaseName = (dotenv.get("RDBMS_DATABASE_NAME") != null) ? dotenv.get("RDBMS_DATABASE_NAME") : System.getenv("RDBMS_DATABASE_NAME");
+         String userName = (dotenv.get("RDBMS_USERNAME") != null) ? dotenv.get("RDBMS_USERNAME") : System.getenv("RDBMS_USERNAME");
+         String password = (dotenv.get("RDBMS_PASSWORD") != null) ? dotenv.get("RDBMS_PASSWORD") : System.getenv("RDBMS_PASSWORD");
+
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)
-            .withVendor(System.getProperty("RDBMS_VENDOR"))
-            .withHostName(System.getProperty("RDBMS_HOSTNAME"))
-            .withPort(Integer.valueOf(Objects.requireNonNull(System.getProperty("RDBMS_PORT"))))
-            .withDatabaseName(System.getProperty("RDBMS_DATABASE_NAME"))
-            .withUsername(System.getProperty("RDBMS_USERNAME"))
-            .withPassword(System.getProperty("RDBMS_PASSWORD"));
+            .withVendor(vendor)
+            .withHostName(hostname)
+            .withPort(port)
+            .withDatabaseName(databaseName)
+            .withUsername(userName)
+            .withPassword(password);
       }
       else
       {
