@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 import java.util.Optional;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -31,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,6 +135,42 @@ public class QCodeLoader
          // if it finds an invalid code reference                                                                //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          return (null);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static RecordAutomationHandler getRecordAutomationHandler(TableAutomationAction action) throws QException
+   {
+      try
+      {
+         QCodeReference codeReference = action.getCodeReference();
+         if(!codeReference.getCodeType().equals(QCodeType.JAVA))
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // todo - 1) support more languages, 2) wrap them w/ java Functions here, 3) profit! //
+            ///////////////////////////////////////////////////////////////////////////////////////
+            throw (new IllegalArgumentException("Only JAVA customizers are supported at this time."));
+         }
+
+         Class<?> codeClass  = Class.forName(codeReference.getName());
+         Object   codeObject = codeClass.getConstructor().newInstance();
+         if(!(codeObject instanceof RecordAutomationHandler recordAutomationHandler))
+         {
+            throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of RecordAutomationHandler"));
+         }
+         return (recordAutomationHandler);
+      }
+      catch(QException qe)
+      {
+         throw (qe);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error getting record automation handler for action [" + action.getName() + "]", e));
       }
    }
 

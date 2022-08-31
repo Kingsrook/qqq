@@ -19,18 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.automation;
 
 
 /*******************************************************************************
- ** Enum to define the possible authentication types
+ ** Enum to define the possible automation provider types
  **
  *******************************************************************************/
-public enum QAuthenticationType
+public enum QAutomationProviderType
 {
-   AUTH_0("auth0"),
-   FULLY_ANONYMOUS("fullyAnonymous"),
-   MOCK("mock");
+   POLLING("polling"),
+   SYNCHRONOUS("synchronous"),
+   ASYNCHRONOUS("asynchronous"),
+   MQ("mq"),
+   AMAZON_SQS("sqs");
 
    private final String name;
 
@@ -39,7 +41,7 @@ public enum QAuthenticationType
    /*******************************************************************************
     ** enum constructor
     *******************************************************************************/
-   QAuthenticationType(String name)
+   QAutomationProviderType(String name)
    {
       this.name = name;
    }

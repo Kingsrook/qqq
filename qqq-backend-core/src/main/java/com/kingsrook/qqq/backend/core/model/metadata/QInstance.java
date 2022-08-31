@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -50,7 +51,8 @@ public class QInstance
    @JsonIgnore
    private Map<String, QBackendMetaData> backends = new HashMap<>();
 
-   private QAuthenticationMetaData authentication = null;
+   private QAuthenticationMetaData                  authentication      = null;
+   private Map<String, QAutomationProviderMetaData> automationProviders = new HashMap<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
@@ -105,17 +107,6 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Setter for hasBeenValidated
-    **
-    *******************************************************************************/
-   public void setHasBeenValidated(QInstanceValidationKey key)
-   {
-      this.hasBeenValidated = true;
-   }
-
-
-
-   /*******************************************************************************
     **
     *******************************************************************************/
    public void addBackend(QBackendMetaData backend)
@@ -149,6 +140,28 @@ public class QInstance
    public QBackendMetaData getBackend(String name)
    {
       return (this.backends.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backends
+    **
+    *******************************************************************************/
+   public Map<String, QBackendMetaData> getBackends()
+   {
+      return backends;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backends
+    **
+    *******************************************************************************/
+   public void setBackends(Map<String, QBackendMetaData> backends)
+   {
+      this.backends = backends;
    }
 
 
@@ -197,6 +210,28 @@ public class QInstance
 
 
    /*******************************************************************************
+    ** Getter for tables
+    **
+    *******************************************************************************/
+   public Map<String, QTableMetaData> getTables()
+   {
+      return tables;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tables
+    **
+    *******************************************************************************/
+   public void setTables(Map<String, QTableMetaData> tables)
+   {
+      this.tables = tables;
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void addPossibleValueSource(QPossibleValueSource possibleValueSource)
@@ -230,6 +265,28 @@ public class QInstance
    public QPossibleValueSource getPossibleValueSource(String name)
    {
       return (this.possibleValueSources.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleValueSources
+    **
+    *******************************************************************************/
+   public Map<String, QPossibleValueSource> getPossibleValueSources()
+   {
+      return possibleValueSources;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for possibleValueSources
+    **
+    *******************************************************************************/
+   public void setPossibleValueSources(Map<String, QPossibleValueSource> possibleValueSources)
+   {
+      this.possibleValueSources = possibleValueSources;
    }
 
 
@@ -289,6 +346,28 @@ public class QInstance
 
 
    /*******************************************************************************
+    ** Getter for processes
+    **
+    *******************************************************************************/
+   public Map<String, QProcessMetaData> getProcesses()
+   {
+      return processes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processes
+    **
+    *******************************************************************************/
+   public void setProcesses(Map<String, QProcessMetaData> processes)
+   {
+      this.processes = processes;
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void addApp(QAppMetaData app)
@@ -327,94 +406,6 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Getter for backends
-    **
-    *******************************************************************************/
-   public Map<String, QBackendMetaData> getBackends()
-   {
-      return backends;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for backends
-    **
-    *******************************************************************************/
-   public void setBackends(Map<String, QBackendMetaData> backends)
-   {
-      this.backends = backends;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for tables
-    **
-    *******************************************************************************/
-   public Map<String, QTableMetaData> getTables()
-   {
-      return tables;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tables
-    **
-    *******************************************************************************/
-   public void setTables(Map<String, QTableMetaData> tables)
-   {
-      this.tables = tables;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for possibleValueSources
-    **
-    *******************************************************************************/
-   public Map<String, QPossibleValueSource> getPossibleValueSources()
-   {
-      return possibleValueSources;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for possibleValueSources
-    **
-    *******************************************************************************/
-   public void setPossibleValueSources(Map<String, QPossibleValueSource> possibleValueSources)
-   {
-      this.possibleValueSources = possibleValueSources;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for processes
-    **
-    *******************************************************************************/
-   public Map<String, QProcessMetaData> getProcesses()
-   {
-      return processes;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for processes
-    **
-    *******************************************************************************/
-   public void setProcesses(Map<String, QProcessMetaData> processes)
-   {
-      this.processes = processes;
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for apps
     **
     *******************************************************************************/
@@ -437,12 +428,79 @@ public class QInstance
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addAutomationProvider(QAutomationProviderMetaData automationProvider)
+   {
+      this.addAutomationProvider(automationProvider.getName(), automationProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addAutomationProvider(String name, QAutomationProviderMetaData automationProvider)
+   {
+      if(this.automationProviders.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second automationProvider with name: " + name));
+      }
+      this.automationProviders.put(name, automationProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAutomationProviderMetaData getAutomationProvider(String name)
+   {
+      return (this.automationProviders.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for automationProviders
+    **
+    *******************************************************************************/
+   public Map<String, QAutomationProviderMetaData> getAutomationProviders()
+   {
+      return automationProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for automationProviders
+    **
+    *******************************************************************************/
+   public void setAutomationProviders(Map<String, QAutomationProviderMetaData> automationProviders)
+   {
+      this.automationProviders = automationProviders;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for hasBeenValidated
     **
     *******************************************************************************/
    public boolean getHasBeenValidated()
    {
       return hasBeenValidated;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasBeenValidated
+    **
+    *******************************************************************************/
+   public void setHasBeenValidated(QInstanceValidationKey key)
+   {
+      this.hasBeenValidated = true;
    }
 
 
