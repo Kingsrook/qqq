@@ -23,13 +23,13 @@ package com.kingsrook.sampleapp;
 
 
 import java.util.List;
-import java.util.Objects;
 import com.amazonaws.regions.Regions;
 import com.kingsrook.qqq.backend.core.actions.dashboard.QuickSightChartRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.Filesyst
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.sampleapp.dashboard.widgets.PersonsByCreateDateBarChart;
-import io.github.cdimascio.dotenv.Dotenv;
 
 
 /*******************************************************************************
@@ -135,11 +134,11 @@ public class SampleMetaDataProvider
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
          .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
 
-      Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-      String accountId = (dotenv.get("QUICKSIGHT_ACCOUNT_ID") != null) ? dotenv.get("QUICKSIGHT_ACCOUNT_ID") : System.getenv("QUICKSIGHT_ACCOUNT_ID");
-      String accessKey = (dotenv.get("QUICKSIGHT_ACCESS_KEY") != null) ? dotenv.get("QUICKSIGHT_ACCESS_KEY") : System.getenv("QUICKSIGHT_ACCESS_KEY");
-      String secretKey = (dotenv.get("QUICKSIGHT_SECRET_KEY") != null) ? dotenv.get("QUICKSIGHT_SECRET_KEY") : System.getenv("QUICKSIGHT_SECRET_KEY");
-      String userArn = (dotenv.get("QUICKSIGHT_USER_ARN") != null) ? dotenv.get("QUICKSIGHT_USER_ARN") : System.getenv("QUICKSIGHT_USER_ARN");
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      String accountId = interpreter.interpret("${env.QUICKSIGHT_ACCOUNT_ID}");
+      String accessKey = interpreter.interpret("${env.QUICKSIGHT_ACCESS_KEY}");
+      String secretKey = interpreter.interpret("${env.QUICKSIGHT_SECRET_KEY}");
+      String userArn = interpreter.interpret("${env.QUICKSIGHT_USER_ARN}");
 
       QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
          .withAccountId(accountId)
@@ -211,13 +210,13 @@ public class SampleMetaDataProvider
    {
       if(USE_MYSQL)
       {
-         Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-         String vendor = (dotenv.get("RDBMS_VENDOR") != null) ? dotenv.get("RDBMS_VENDOR") : System.getenv("RDBMS_VENDOR");
-         String hostname = (dotenv.get("RDBMS_HOSTNAME") != null) ? dotenv.get("RDBMS_HOSTNAME") : System.getenv("RDBMS_HOSTNAME");
-         Integer port = (dotenv.get("RDBMS_PORT") != null) ? Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))) : Integer.valueOf(System.getenv("RDBMS_PORT"));
-         String databaseName = (dotenv.get("RDBMS_DATABASE_NAME") != null) ? dotenv.get("RDBMS_DATABASE_NAME") : System.getenv("RDBMS_DATABASE_NAME");
-         String userName = (dotenv.get("RDBMS_USERNAME") != null) ? dotenv.get("RDBMS_USERNAME") : System.getenv("RDBMS_USERNAME");
-         String password = (dotenv.get("RDBMS_PASSWORD") != null) ? dotenv.get("RDBMS_PASSWORD") : System.getenv("RDBMS_PASSWORD");
+         QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+         String vendor = interpreter.interpret("${env.RDBMS_VENDOR}");
+         String hostname = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+         Integer port = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+         String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+         String username = interpreter.interpret("${env.RDBMS_USERNAME}");
+         String password= interpreter.interpret("${env.RDBMS_PASSWORD}");
 
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)
@@ -225,7 +224,7 @@ public class SampleMetaDataProvider
             .withHostName(hostname)
             .withPort(port)
             .withDatabaseName(databaseName)
-            .withUsername(userName)
+            .withUsername(username)
             .withPassword(password);
       }
       else

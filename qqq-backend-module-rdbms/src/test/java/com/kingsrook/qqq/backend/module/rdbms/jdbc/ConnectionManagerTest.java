@@ -25,9 +25,8 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.Objects;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -103,13 +102,13 @@ class ConnectionManagerTest
 
    private RDBMSBackendMetaData getAuroraBacked()
    {
-      Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-      String vendor = (dotenv.get("RDBMS_VENDOR") != null) ? dotenv.get("RDBMS_VENDOR") : System.getenv("RDBMS_VENDOR");
-      String hostname = (dotenv.get("RDBMS_HOSTNAME") != null) ? dotenv.get("RDBMS_HOSTNAME") : System.getenv("RDBMS_HOSTNAME");
-      Integer port = (dotenv.get("RDBMS_PORT") != null) ? Integer.valueOf(Objects.requireNonNull(dotenv.get("RDBMS_PORT"))) : Integer.valueOf(System.getenv("RDBMS_PORT"));
-      String databaseName = (dotenv.get("RDBMS_DATABASE_NAME") != null) ? dotenv.get("RDBMS_DATABASE_NAME") : System.getenv("RDBMS_DATABASE_NAME");
-      String userName = (dotenv.get("RDBMS_USERNAME") != null) ? dotenv.get("RDBMS_USERNAME") : System.getenv("RDBMS_USERNAME");
-      String password = (dotenv.get("RDBMS_PASSWORD") != null) ? dotenv.get("RDBMS_PASSWORD") : System.getenv("RDBMS_PASSWORD");
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      String vendor = interpreter.interpret("${env.RDBMS_VENDOR}");
+      String hostname = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+      Integer port = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+      String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+      String username = interpreter.interpret("${env.RDBMS_USERNAME}");
+      String password= interpreter.interpret("${env.RDBMS_PASSWORD}");
 
       return new RDBMSBackendMetaData()
          .withName("aurora-test")
@@ -117,7 +116,7 @@ class ConnectionManagerTest
          .withHostName(hostname)
          .withPort(port)
          .withDatabaseName(databaseName)
-         .withUsername(userName)
+         .withUsername(username)
          .withPassword(password);
    }
 }
