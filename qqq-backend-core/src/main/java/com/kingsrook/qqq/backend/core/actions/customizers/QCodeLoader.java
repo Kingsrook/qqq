@@ -103,6 +103,7 @@ public class QCodeLoader
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public static <T extends BackendStep> T getBackendStep(Class<T> expectedType, QCodeReference codeReference)
    {
       if(codeReference == null)
@@ -121,9 +122,46 @@ public class QCodeLoader
       try
       {
          Class<?> customizerClass = Class.forName(codeReference.getName());
-         @SuppressWarnings("unchecked")
-         T t = (T) customizerClass.getConstructor().newInstance();
-         return t;
+         return ((T) customizerClass.getConstructor().newInstance());
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error initializing customizer: " + codeReference);
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // return null here - under the assumption that during normal run-time operations, we'll never hit here //
+         // as we'll want to validate all functions in the instance validator at startup time (and IT will throw //
+         // if it finds an invalid code reference                                                                //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (null);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public static <T> T getAdHoc(Class<T> expectedType, QCodeReference codeReference)
+   {
+      if(codeReference == null)
+      {
+         return (null);
+      }
+
+      if(!codeReference.getCodeType().equals(QCodeType.JAVA))
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////
+         // todo - 1) support more languages, 2) wrap them w/ java Functions here, 3) profit! //
+         ///////////////////////////////////////////////////////////////////////////////////////
+         throw (new IllegalArgumentException("Only JAVA code references are supported at this time."));
+      }
+
+      try
+      {
+         Class<?> customizerClass = Class.forName(codeReference.getName());
+         return ((T) customizerClass.getConstructor().newInstance());
       }
       catch(Exception e)
       {

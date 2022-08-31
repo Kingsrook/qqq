@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -52,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProvi
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -147,9 +149,23 @@ public class TestUtils
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
 
+      defineWidgets(qInstance);
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineWidgets(QInstance qInstance)
+   {
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName(PersonsByCreateDateBarChart.class.getSimpleName())
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
    }
 
 
@@ -180,7 +196,8 @@ public class TestUtils
          .withName(APP_NAME_PEOPLE)
          .withChild(qInstance.getTable(TABLE_NAME_PERSON))
          .withChild(qInstance.getTable(TABLE_NAME_PERSON_FILE))
-         .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
+         .withChild(qInstance.getApp(APP_NAME_GREETINGS))
+         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName())));
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_MISCELLANEOUS)

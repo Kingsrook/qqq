@@ -102,7 +102,7 @@ class QMetaDataVariableInterpreterTest
       QMetaDataVariableInterpreter secretReader = new QMetaDataVariableInterpreter();
       String                       key          = "CUSTOM_PROPERTY";
       String                       value        = "ABCD-9876";
-      secretReader.setCustomEnvironment(Map.of(key, value));
+      secretReader.setEnvironmentOverrides(Map.of(key, value));
 
       assertNull(secretReader.interpret(null));
       assertEquals("foo", secretReader.interpret("foo"));

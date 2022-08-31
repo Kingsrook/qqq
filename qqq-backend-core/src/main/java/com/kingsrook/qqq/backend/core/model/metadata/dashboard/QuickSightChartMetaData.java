@@ -1,76 +1,22 @@
-/*
- * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
- * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
- * contact@kingsrook.com
- * https://github.com/Kingsrook/
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-package com.kingsrook.qqq.backend.core.model.metadata.layout;
+package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 
 /*******************************************************************************
- ** MetaData definition of an App - an entity that organizes tables & processes
- ** and can be arranged hierarchically (e.g, apps can contain other apps).
+ **
  *******************************************************************************/
-public class QAppMetaData implements QAppChildMetaData
+public class QuickSightChartMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
 {
-   private String name;
-   private String label;
-
-   private List<QAppChildMetaData> children;
-
-   private String parentAppName;
-   private QIcon  icon;
-
-   private List<String> widgets;
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QAppMetaData()
-   {
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for name
-    **
-    *******************************************************************************/
-   public String getName()
-   {
-      return name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    **
-    *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
-   }
+   private String             label;
+   private String             accessKey;
+   private String             secretKey;
+   private String             dashboardId;
+   private String             accountId;
+   private String             userArn;
+   private String             region;
+   private Collection<String> allowedDomains;
 
 
 
@@ -78,9 +24,43 @@ public class QAppMetaData implements QAppChildMetaData
     ** Fluent setter for name
     **
     *******************************************************************************/
-   public QAppMetaData withName(String name)
+   public QuickSightChartMetaData withName(String name)
    {
       this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for accessKey
+    **
+    *******************************************************************************/
+   public String getAccessKey()
+   {
+      return accessKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for accessKey
+    **
+    *******************************************************************************/
+   public void setAccessKey(String accessKey)
+   {
+      this.accessKey = accessKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for accessKey
+    **
+    *******************************************************************************/
+   public QuickSightChartMetaData withAccessKey(String accessKey)
+   {
+      this.accessKey = accessKey;
       return (this);
    }
 
@@ -92,6 +72,7 @@ public class QAppMetaData implements QAppChildMetaData
     *******************************************************************************/
    public String getLabel()
    {
+
       return label;
    }
 
@@ -112,7 +93,7 @@ public class QAppMetaData implements QAppChildMetaData
     ** Fluent setter for label
     **
     *******************************************************************************/
-   public QAppMetaData withLabel(String label)
+   public QuickSightChartMetaData withLabel(String label)
    {
       this.label = label;
       return (this);
@@ -121,153 +102,204 @@ public class QAppMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Getter for children
+    ** Getter for secretKey
     **
     *******************************************************************************/
-   public List<QAppChildMetaData> getChildren()
+   public String getSecretKey()
    {
-      return children;
+      return secretKey;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for children
+    ** Setter for secretKey
     **
     *******************************************************************************/
-   public void setChildren(List<QAppChildMetaData> children)
+   public void setSecretKey(String secretKey)
    {
-      this.children = children;
+      this.secretKey = secretKey;
    }
 
 
 
    /*******************************************************************************
-    ** Add a child to this app.
+    ** Fluent setter for secretKey
     **
     *******************************************************************************/
-   public void addChild(QAppChildMetaData child)
+   public QuickSightChartMetaData withSecretKey(String secretKey)
    {
-      if(this.children == null)
-      {
-         this.children = new ArrayList<>();
-      }
-      this.children.add(child);
-      child.setParentAppName(this.getName());
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluently add a child to this app.
-    **
-    *******************************************************************************/
-   public QAppMetaData withChild(QAppChildMetaData child)
-   {
-      addChild(child);
+      this.secretKey = secretKey;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for children
+    ** Getter for dashboardId
     **
     *******************************************************************************/
-   public QAppMetaData withChildren(List<QAppChildMetaData> children)
+   public String getDashboardId()
    {
-      this.children = children;
+      return dashboardId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dashboardId
+    **
+    *******************************************************************************/
+   public void setDashboardId(String dashboardId)
+   {
+      this.dashboardId = dashboardId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dashboardId
+    **
+    *******************************************************************************/
+   public QuickSightChartMetaData withDashboardId(String dashboardId)
+   {
+      this.dashboardId = dashboardId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for parentAppName
+    ** Getter for accountId
     **
     *******************************************************************************/
-   @Override
-   public String getParentAppName()
+   public String getAccountId()
    {
-      return parentAppName;
+      return accountId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for parentAppName
+    ** Setter for accountId
     **
     *******************************************************************************/
-   @Override
-   public void setParentAppName(String parentAppName)
+   public void setAccountId(String accountId)
    {
-      this.parentAppName = parentAppName;
-   }
-
-
-   /*******************************************************************************
-    ** Getter for icon
-    **
-    *******************************************************************************/
-   public QIcon getIcon()
-   {
-      return icon;
+      this.accountId = accountId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for icon
+    ** Fluent setter for accountId
     **
     *******************************************************************************/
-   public void setIcon(QIcon icon)
+   public QuickSightChartMetaData withAccountId(String accountId)
    {
-      this.icon = icon;
-   }
-
-
-   /*******************************************************************************
-    ** Fluent setter for icon
-    **
-    *******************************************************************************/
-   public QAppMetaData withIcon(QIcon icon)
-   {
-      this.icon = icon;
-      return (this);
-   }
-
-
-
-
-   /*******************************************************************************
-    ** Getter for widgets
-    **
-    *******************************************************************************/
-   public List<String> getWidgets()
-   {
-      return widgets;
+      this.accountId = accountId;
+      return this;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for widgets
+    ** Getter for userArn
     **
     *******************************************************************************/
-   public void setWidgets(List<String> widgets)
+   public String getUserArn()
    {
-      this.widgets = widgets;
+      return userArn;
    }
+
 
 
    /*******************************************************************************
-    ** Fluent setter for widgets
+    ** Setter for userArn
     **
     *******************************************************************************/
-   public QAppMetaData withWidgets(List<String> widgets)
+   public void setUserArn(String userArn)
    {
-      this.widgets = widgets;
-      return (this);
+      this.userArn = userArn;
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for userArn
+    **
+    *******************************************************************************/
+   public QuickSightChartMetaData withUserArn(String userArn)
+   {
+      this.userArn = userArn;
+      return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for region
+    **
+    *******************************************************************************/
+   public String getRegion()
+   {
+      return region;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for region
+    **
+    *******************************************************************************/
+   public void setRegion(String region)
+   {
+      this.region = region;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for region
+    **
+    *******************************************************************************/
+   public QuickSightChartMetaData withRegion(String region)
+   {
+      this.region = region;
+      return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for allowedDomains
+    **
+    *******************************************************************************/
+   public Collection<String> getAllowedDomains()
+   {
+      return allowedDomains;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for allowedDomains
+    **
+    *******************************************************************************/
+   public void setAllowedDomains(Collection<String> allowedDomains)
+   {
+      this.allowedDomains = allowedDomains;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for allowedDomains
+    **
+    *******************************************************************************/
+   public QuickSightChartMetaData withAllowedDomains(Collection<String> allowedDomains)
+   {
+      this.allowedDomains = allowedDomains;
+      return this;
+   }
 }

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -101,13 +102,21 @@ class ConnectionManagerTest
 
    private RDBMSBackendMetaData getAuroraBacked()
    {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      String vendor = interpreter.interpret("${env.RDBMS_VENDOR}");
+      String hostname = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+      Integer port = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+      String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+      String username = interpreter.interpret("${env.RDBMS_USERNAME}");
+      String password= interpreter.interpret("${env.RDBMS_PASSWORD}");
+
       return new RDBMSBackendMetaData()
          .withName("aurora-test")
-         .withVendor("aurora")
-         .withHostName("nf-one-development-aurora.cwuhqcx1inwx.us-east-2.rds.amazonaws.com")
-         .withPort(3306)
-         .withDatabaseName("nutrifresh_one")
-         .withUsername("nf_admin")
-         .withPassword("%!2rwcH+fb#WgPg");
+         .withVendor(vendor)
+         .withHostName(hostname)
+         .withPort(port)
+         .withDatabaseName(databaseName)
+         .withUsername(username)
+         .withPassword(password);
    }
 }

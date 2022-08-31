@@ -298,8 +298,6 @@ public class QueryManager
     *******************************************************************************/
    public static List<Map<String, Object>> executeStatementForRows(Connection connection, String sql, Object... params) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       List<Map<String, Object>> rs = new ArrayList<>();
 
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
@@ -318,7 +316,6 @@ public class QueryManager
       }
 
       return (rs);
-      */
    }
 
 
