@@ -51,6 +51,19 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
 
 
    /*******************************************************************************
+    ** Fluent setter for backendType
+    **
+    *******************************************************************************/
+   @Override
+   public S3BackendMetaData withBackendType(String backendType)
+   {
+      setBackendType(backendType);
+      return this;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for bucketName
     **
     *******************************************************************************/

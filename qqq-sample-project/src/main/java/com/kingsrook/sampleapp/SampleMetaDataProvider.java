@@ -26,10 +26,13 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.amazonaws.regions.Regions;
+import com.kingsrook.qqq.backend.core.actions.dashboard.QuickSightChartRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
@@ -37,6 +40,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -64,6 +70,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFor
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.sampleapp.dashboard.widgets.PersonsByCreateDateBarChart;
 import com.kingsrook.sampleapp.processes.clonepeople.ClonePeopleTransformStep;
 import io.github.cdimascio.dotenv.Dotenv;
 
@@ -77,10 +84,6 @@ public class SampleMetaDataProvider
 
    public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
-
-   public static final String AUTH0_AUTHENTICATION_MODULE_NAME = "auth0";
-   // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
-   public static final String AUTH0_BASE_URL                   = "https://nutrifresh-one-development.us.auth0.com/";
 
    public static final String APP_NAME_GREETINGS     = "greetingsApp";
    public static final String APP_NAME_PEOPLE        = "peopleApp";
@@ -125,9 +128,42 @@ public class SampleMetaDataProvider
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
+      defineWidgets(qInstance);
+
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineWidgets(QInstance qInstance)
+   {
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName(PersonsByCreateDateBarChart.class.getSimpleName())
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      String accountId = interpreter.interpret("${env.QUICKSIGHT_ACCOUNT_ID}");
+      String accessKey = interpreter.interpret("${env.QUICKSIGHT_ACCESS_KEY}");
+      String secretKey = interpreter.interpret("${env.QUICKSIGHT_SECRET_KEY}");
+      String userArn = interpreter.interpret("${env.QUICKSIGHT_USER_ARN}");
+
+      QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
+         .withAccountId(accountId)
+         .withAccessKey(accessKey)
+         .withSecretKey(secretKey)
+         .withUserArn(userArn)
+         .withDashboardId("9e452e78-8509-4c81-bb7f-967abfc356da")
+         .withRegion(Regions.US_EAST_2.getName())
+         .withName(QuickSightChartRenderer.class.getSimpleName())
+         .withLabel("Example Quicksight Chart")
+         .withCodeReference(new QCodeReference(QuickSightChartRenderer.class, null));
+
+      qInstance.addWidget(quickSightChartMetaData);
    }
 
 
@@ -144,6 +180,7 @@ public class SampleMetaDataProvider
          .withChild(qInstance.getTable(TABLE_NAME_PERSON).withIcon(new QIcon().withName("person")))
          .withChild(qInstance.getTable(TABLE_NAME_CITY).withIcon(new QIcon().withName("location_city")))
          .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE).withIcon(new QIcon().withName("waving_hand")))
+         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName(), QuickSightChartRenderer.class.getSimpleName()))
       );
 
       qInstance.addApp(new QAppMetaData()
@@ -183,15 +220,22 @@ public class SampleMetaDataProvider
    {
       if(USE_MYSQL)
       {
-         Dotenv dotenv = Dotenv.configure().load();
+         QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+         String vendor = interpreter.interpret("${env.RDBMS_VENDOR}");
+         String hostname = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+         Integer port = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+         String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+         String username = interpreter.interpret("${env.RDBMS_USERNAME}");
+         String password= interpreter.interpret("${env.RDBMS_PASSWORD}");
+
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)
-            .withVendor("mysql")
-            .withHostName("127.0.0.1")
-            .withPort(3306)
-            .withDatabaseName("qqq")
-            .withUsername("root")
-            .withPassword(dotenv.get("RDBMS_PASSWORD"));
+            .withVendor(vendor)
+            .withHostName(hostname)
+            .withPort(port)
+            .withDatabaseName(databaseName)
+            .withUsername(username)
+            .withPassword(password);
       }
       else
       {

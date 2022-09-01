@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -122,7 +123,20 @@ public class TestUtils
       qInstance.addProcess(defineProcessSimpleSleep());
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
+      defineWidgets(qInstance);
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineWidgets(QInstance qInstance)
+   {
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName(PersonsByCreateDateBarChart.class.getSimpleName())
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
    }
 
 
