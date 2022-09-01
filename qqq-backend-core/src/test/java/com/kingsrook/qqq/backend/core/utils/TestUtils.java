@@ -24,10 +24,12 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -35,6 +37,8 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -65,10 +69,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -103,6 +107,7 @@ public class TestUtils
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
+   public static final String PROCESS_NAME_INCREASE_BIRTHDATE       = "increaseBirthdate";
    public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_PERSON_MEMORY              = "personMemory";
@@ -144,12 +149,79 @@ public class TestUtils
       qInstance.addProcess(defineProcessAddToPeoplesAge());
       qInstance.addProcess(new BasicETLProcess().defineProcessMetaData());
       qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
+      qInstance.addProcess(defineProcessIncreasePersonBirthdate());
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
 
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessIncreasePersonBirthdate()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_INCREASE_BIRTHDATE)
+         .withTableName(TABLE_NAME_PERSON_MEMORY)
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("preview")
+         )
+
+         .addStep(new QBackendStepMetaData()
+            .withName("doWork")
+            .withCode(new QCodeReference(IncreaseBirthdateStep.class))
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON_MEMORY)))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING).withDefaultValue("Success!"))))
+         )
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("results")
+            .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class IncreaseBirthdateStep implements BackendStep
+   {
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         List<QRecord> recordsToUpdate = new ArrayList<>();
+         for(QRecord record : runBackendStepInput.getRecords())
+         {
+            LocalDate birthDate = record.getValueLocalDate("birthDate");
+
+            if(birthDate != null && birthDate.getYear() < 1900)
+            {
+               recordsToUpdate.add(new QRecord()
+                  .withValue("id", record.getValue("id"))
+                  .withValue("birthDate", birthDate.withYear(1900))
+               );
+            }
+         }
+
+         UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
+         updateInput.setSession(runBackendStepInput.getSession());
+         updateInput.setTableName(TABLE_NAME_PERSON_MEMORY);
+         updateInput.setRecords(recordsToUpdate);
+         new UpdateAction().execute(updateInput);
+      }
    }
 
 
@@ -375,6 +447,16 @@ public class TestUtils
     *******************************************************************************/
    public static QTableMetaData definePersonMemoryTable()
    {
+      /////////////////////////////////////////////////////////////////////////////
+      // the checkAge automation will only run on persons younger than this date //
+      /////////////////////////////////////////////////////////////////////////////
+      LocalDate youngPersonLimitDate = LocalDate.now().minusYears(18);
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // the increaseBirthdate automation will only run on persons born before this date //
+      /////////////////////////////////////////////////////////////////////////////////////
+      LocalDate increaseBirthdateLimitDate = LocalDate.of(1900, Month.JANUARY, 1);
+
       return (new QTableMetaData()
          .withName(TABLE_NAME_PERSON_MEMORY)
          .withBackendName(MEMORY_BACKEND_NAME)
@@ -386,12 +468,19 @@ public class TestUtils
             .withAction(new TableAutomationAction()
                .withName("checkAgeOnInsert")
                .withTriggerEvent(TriggerEvent.POST_INSERT)
+               .withFilter(new QQueryFilter().withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, List.of(youngPersonLimitDate))))
                .withCodeReference(new QCodeReference(CheckAge.class))
+            )
+            .withAction(new TableAutomationAction()
+               .withName("increaseBirthdate")
+               .withTriggerEvent(TriggerEvent.POST_INSERT)
+               .withFilter(new QQueryFilter().withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, List.of(increaseBirthdateLimitDate))))
+               .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE)
             )
             .withAction(new TableAutomationAction()
                .withName("logOnUpdatePerFilter")
                .withTriggerEvent(TriggerEvent.POST_UPDATE)
-               .withFilter(new QQueryFilter().withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("Darin"))))
+               .withFilter(new QQueryFilter().withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.CONTAINS, List.of("Darin"))))
                .withCodeReference(new QCodeReference(LogPersonUpdate.class))
             )
          );
@@ -420,7 +509,6 @@ public class TestUtils
             LocalDate birthDate = record.getValueLocalDate("birthDate");
             if(birthDate != null && birthDate.isAfter(limitDate))
             {
-               LOG.info("Person [" + record.getValueInteger("id") + "] is a minor - updating their firstName to state such.");
                recordsToUpdate.add(new QRecord()
                   .withValue("id", record.getValue("id"))
                   .withValue("firstName", record.getValueString("firstName") + SUFFIX_FOR_MINORS)

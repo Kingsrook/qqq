@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -54,6 +56,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -189,6 +192,101 @@ class MemoryBackendModuleTest
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(1)));
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(2)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryOperators() throws QException
+   {
+      QInstance      qInstance = TestUtils.defineInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+      QSession       session   = new QSession();
+
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(session);
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "Square").withValue("date", LocalDate.of(1980, Month.MAY, 31)),
+         new QRecord().withValue("id", 2).withValue("name", "Triangle").withValue("date", LocalDate.of(1999, Month.DECEMBER, 31))
+      ));
+      new InsertAction().execute(insertInput);
+
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(2, 3))).size());
+
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.NOT_IN, List.of(3, 4))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.NOT_IN, List.of(2, 3))).size());
+
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).size());
+      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).get(0).getValue("name"));
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))).size());
+
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("notFound"))).size());
+      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("Triangle"))).get(0).getValue("name"));
+
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of("ria"))).size());
+      assertEquals("Triangle", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of("ria"))).get(0).getValue("name"));
+
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_CONTAINS, List.of("notFound"))).size());
+      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_CONTAINS, List.of("ria"))).get(0).getValue("name"));
+
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.CONTAINS, List.of("ria"))));
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of(1))));
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of())));
+
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(2))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(1))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(0))).size());
+
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1980, Month.MAY, 31)))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(3))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(2))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(1))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(0))).size());
+
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN, List.of(3))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN, List.of(2))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN, List.of(1))).size());
+
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(1980, Month.MAY, 31)))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(3))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(2))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(1))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(0))).size());
+
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of())));
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of())));
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN, List.of())));
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of())));
+      assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of("Bob"))));
+   }
+
+
+
+   private List<QRecord> queryShapes(QInstance qInstance, QTableMetaData table, QSession session, QFilterCriteria criteria) throws QException
+   {
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setSession(session);
+      queryInput.setTableName(table.getName());
+      queryInput.setFilter(new QQueryFilter().withCriteria(criteria));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      return queryOutput.getRecords();
    }
 
 

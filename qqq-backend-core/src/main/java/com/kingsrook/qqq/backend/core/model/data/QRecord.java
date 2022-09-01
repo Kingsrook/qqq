@@ -107,6 +107,17 @@ public class QRecord implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "QRecord{tableName='" + tableName + "',id='" + getValue("id") + "'}";
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @SuppressWarnings({ "rawtypes", "unchecked" })
    private Map doDeepCopy(Map map)
    {

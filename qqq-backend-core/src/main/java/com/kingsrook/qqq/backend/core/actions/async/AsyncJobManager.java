@@ -135,11 +135,11 @@ public class AsyncJobManager
       Thread.currentThread().setName("Job:" + jobName + ":" + uuidAndTypeStateKey.getUuid().toString().substring(0, 8));
       try
       {
-         LOG.info("Starting job " + uuidAndTypeStateKey.getUuid());
+         LOG.debug("Starting job " + uuidAndTypeStateKey.getUuid());
          T result = asyncJob.run(new AsyncJobCallback(uuidAndTypeStateKey.getUuid(), asyncJobStatus));
          asyncJobStatus.setState(AsyncJobState.COMPLETE);
          getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
-         LOG.info("Completed job " + uuidAndTypeStateKey.getUuid());
+         LOG.debug("Completed job " + uuidAndTypeStateKey.getUuid());
          return (result);
       }
       catch(Exception e)

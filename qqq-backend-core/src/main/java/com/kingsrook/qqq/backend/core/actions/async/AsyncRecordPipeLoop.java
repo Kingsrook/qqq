@@ -48,7 +48,7 @@ public class AsyncRecordPipeLoop
       ///////////////////////////////////////////////////
       AsyncJobManager asyncJobManager = new AsyncJobManager();
       String          jobUUID         = asyncJobManager.startJob(jobName, supplier::apply);
-      LOG.info("Started supplier job [" + jobUUID + "] for record pipe.");
+      LOG.debug("Started supplier job [" + jobUUID + "] for record pipe.");
 
       AsyncJobState  jobState       = AsyncJobState.RUNNING;
       AsyncJobStatus asyncJobStatus = null;
@@ -66,7 +66,7 @@ public class AsyncRecordPipeLoop
             // if the pipe is too empty, sleep to let the producer work. //
             // todo - smarter sleep?  like get notified vs. sleep?       //
             ///////////////////////////////////////////////////////////////
-            LOG.debug("Too few records are available in the pipe. Sleeping [" + nextSleepMillis + "] ms to give producer a chance to work");
+            LOG.trace("Too few records are available in the pipe. Sleeping [" + nextSleepMillis + "] ms to give producer a chance to work");
             SleepUtils.sleep(nextSleepMillis, TimeUnit.MILLISECONDS);
             nextSleepMillis = Math.min(nextSleepMillis * 2, MAX_SLEEP_MS);
 
@@ -85,7 +85,7 @@ public class AsyncRecordPipeLoop
             nextSleepMillis = INIT_SLEEP_MS;
 
             recordCount += consumer.get();
-            LOG.info(String.format("Processed %,d records so far", recordCount));
+            LOG.debug(String.format("Processed %,d records so far", recordCount));
 
             if(recordLimit != null && recordCount >= recordLimit)
             {
@@ -117,7 +117,7 @@ public class AsyncRecordPipeLoop
          jobState = asyncJobStatus.getState();
       }
 
-      LOG.info("Job [" + jobUUID + "] completed with status: " + asyncJobStatus);
+      LOG.debug("Job [" + jobUUID + "][" + jobName + "] completed with status: " + asyncJobStatus);
 
       ///////////////////////////////////
       // propagate errors from the job //
@@ -133,8 +133,12 @@ public class AsyncRecordPipeLoop
       recordCount += consumer.get();
 
       long endTime = System.currentTimeMillis();
-      LOG.info(String.format("Processed %,d records", recordCount)
-         + String.format(" at end of job in %,d ms (%.2f records/second).", (endTime - jobStartTime), 1000d * (recordCount / (.001d + (endTime - jobStartTime)))));
+
+      if(recordCount > 0)
+      {
+         LOG.info(String.format("Processed %,d records", recordCount)
+            + String.format(" at end of job [%s] in %,d ms (%.2f records/second).", jobName, (endTime - jobStartTime), 1000d * (recordCount / (.001d + (endTime - jobStartTime)))));
+      }
 
       return (recordCount);
    }
