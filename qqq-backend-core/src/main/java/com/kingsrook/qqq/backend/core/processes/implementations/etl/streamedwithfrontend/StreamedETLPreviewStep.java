@@ -65,6 +65,15 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
+      /////////////////////////////////////////////////////////////////
+      // if we're running inside an automation, then skip this step. //
+      /////////////////////////////////////////////////////////////////
+      if(runningWithinAutomation())
+      {
+         LOG.info("Skipping preview step when [" + runBackendStepInput.getProcessName() + "] is running as part of an automation.");
+         return;
+      }
+
       ///////////////////////////////////////////
       // request a count from the extract step //
       ///////////////////////////////////////////
@@ -105,6 +114,25 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       runBackendStepOutput.setRecords(previewRecordList);
 
       transformStep.postRun(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean runningWithinAutomation()
+   {
+      Exception e = new Exception();
+      for(StackTraceElement stackTraceElement : e.getStackTrace())
+      {
+         String className = stackTraceElement.getClassName();
+         if(className.contains("com.kingsrook.qqq.backend.core.actions.automation"))
+         {
+            return (true);
+         }
+      }
+      return false;
    }
 
 

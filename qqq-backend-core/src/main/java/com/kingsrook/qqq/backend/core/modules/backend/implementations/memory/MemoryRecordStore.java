@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,12 +33,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -121,42 +124,7 @@ public class MemoryRecordStore
 
       for(QRecord qRecord : tableData.values())
       {
-         boolean recordMatches = true;
-         if(input.getFilter() != null && input.getFilter().getCriteria() != null)
-         {
-            for(QFilterCriteria criterion : input.getFilter().getCriteria())
-            {
-               String       fieldName = criterion.getFieldName();
-               Serializable value     = qRecord.getValue(fieldName);
-               switch(criterion.getOperator())
-               {
-                  case EQUALS:
-                  {
-                     if(!value.equals(criterion.getValues().get(0)))
-                     {
-                        recordMatches = false;
-                     }
-                     break;
-                  }
-                  case IN:
-                  {
-                     if(!criterion.getValues().contains(value))
-                     {
-                        recordMatches = false;
-                     }
-                     break;
-                  }
-                  default:
-                  {
-                     throw new NotImplementedException("Operator [" + criterion.getOperator() + "] is not yet implemented in the Memory backend.");
-                  }
-               }
-               if(!recordMatches)
-               {
-                  break;
-               }
-            }
-         }
+         boolean recordMatches = doesRecordMatch(input.getFilter(), qRecord);
 
          if(recordMatches)
          {
@@ -165,6 +133,217 @@ public class MemoryRecordStore
       }
 
       return (records);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean doesRecordMatch(QQueryFilter filter, QRecord qRecord)
+   {
+      boolean recordMatches = true;
+      if(filter != null && filter.getCriteria() != null)
+      {
+         for(QFilterCriteria criterion : filter.getCriteria())
+         {
+            String       fieldName = criterion.getFieldName();
+            Serializable value     = qRecord.getValue(fieldName);
+
+            switch(criterion.getOperator())
+            {
+               case EQUALS:
+               {
+                  recordMatches = testEquals(criterion, value);
+                  break;
+               }
+               case NOT_EQUALS:
+               {
+                  recordMatches = !testEquals(criterion, value);
+                  break;
+               }
+               case IN:
+               {
+                  recordMatches = testIn(criterion, value);
+                  break;
+               }
+               case NOT_IN:
+               {
+                  recordMatches = !testIn(criterion, value);
+                  break;
+               }
+               case CONTAINS:
+               {
+                  recordMatches = testContains(criterion, fieldName, value);
+                  break;
+               }
+               case NOT_CONTAINS:
+               {
+                  recordMatches = !testContains(criterion, fieldName, value);
+                  break;
+               }
+               case GREATER_THAN:
+               {
+                  recordMatches = testGreaterThan(criterion, value);
+                  break;
+               }
+               case GREATER_THAN_OR_EQUALS:
+               {
+                  recordMatches = testGreaterThan(criterion, value) || testEquals(criterion, value);
+                  break;
+               }
+               case LESS_THAN:
+               {
+                  recordMatches = !testGreaterThan(criterion, value) && !testEquals(criterion, value);
+                  break;
+               }
+               case LESS_THAN_OR_EQUALS:
+               {
+                  recordMatches = !testGreaterThan(criterion, value);
+                  break;
+               }
+               default:
+               {
+                  throw new NotImplementedException("Operator [" + criterion.getOperator() + "] is not yet implemented in the Memory backend.");
+               }
+            }
+            if(!recordMatches)
+            {
+               break;
+            }
+         }
+      }
+      return recordMatches;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean testGreaterThan(QFilterCriteria criterion, Serializable value)
+   {
+      Serializable criterionValue = criterion.getValues().get(0);
+      if(criterionValue == null)
+      {
+         throw (new IllegalArgumentException("Missing criterion value in query"));
+      }
+
+      if (value == null)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////
+         // a database would say 'false' for if a null column is > a value, so do the same. //
+         /////////////////////////////////////////////////////////////////////////////////////
+         return (false);
+      }
+
+      if(value instanceof LocalDate valueDate && criterionValue instanceof LocalDate criterionValueDate)
+      {
+         return (valueDate.isAfter(criterionValueDate));
+      }
+
+      if(value instanceof Number valueNumber && criterionValue instanceof Number criterionValueNumber)
+      {
+         return (valueNumber.doubleValue() > criterionValueNumber.doubleValue());
+      }
+
+      throw (new NotImplementedException("Greater/Less Than comparisons are not (yet?) implemented for the supplied types [" + value.getClass().getSimpleName() + "][" + criterionValue.getClass().getSimpleName() + "]"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean testIn(QFilterCriteria criterion, Serializable value)
+   {
+      if(!criterion.getValues().contains(value))
+      {
+         return (false);
+      }
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean testEquals(QFilterCriteria criterion, Serializable value)
+   {
+      if(value == null)
+      {
+         return (false);
+      }
+
+      if(!value.equals(criterion.getValues().get(0)))
+      {
+         return (false);
+      }
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean testContains(QFilterCriteria criterion, String fieldName, Serializable value)
+   {
+      String stringValue    = getStringFieldValue(value, fieldName, criterion);
+      String criterionValue = getFirstStringCriterionValue(criterion);
+
+      if(!stringValue.contains(criterionValue))
+      {
+         return (false);
+      }
+
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFirstStringCriterionValue(QFilterCriteria criteria)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(criteria.getValues()))
+      {
+         throw new IllegalArgumentException("Missing value for [" + criteria.getOperator() + "] criteria on field [" + criteria.getFieldName() + "]");
+      }
+      Serializable value = criteria.getValues().get(0);
+      if(value == null)
+      {
+         return "";
+      }
+
+      if(!(value instanceof String stringValue))
+      {
+         throw new ClassCastException("Value [" + value + "] for criteria [" + criteria.getFieldName() + "] is not a String, which is required for the [" + criteria.getOperator() + "] operator.");
+      }
+
+      return (stringValue);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getStringFieldValue(Serializable value, String fieldName, QFilterCriteria criterion)
+   {
+      if(value == null)
+      {
+         return "";
+      }
+
+      if(!(value instanceof String stringValue))
+      {
+         throw new ClassCastException("Value [" + value + "] in field [" + fieldName + "] is not a String, which is required for the [" + criterion.getOperator() + "] operator.");
+      }
+
+      return (stringValue);
    }
 
 

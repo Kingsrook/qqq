@@ -81,7 +81,7 @@ class ReportActionTest
    public void testBigger() throws Exception
    {
       // int    recordCount = 2_000_000; // to really stress locally, use this.
-      int    recordCount = 50_000;
+      int    recordCount = 10_000;
       String filename    = "/tmp/ReportActionTest.csv";
 
       runReport(recordCount, filename, ReportFormat.CSV, false);

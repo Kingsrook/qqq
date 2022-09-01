@@ -24,8 +24,10 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
@@ -273,17 +275,25 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Get a list of all of the input fields used by all the steps in this process.
+    ** Get a list of all the *unique* input fields used by all the steps in this process.
     *******************************************************************************/
    @JsonIgnore
    public List<QFieldMetaData> getInputFields()
    {
-      List<QFieldMetaData> rs = new ArrayList<>();
+      Set<String>          usedFieldNames = new HashSet<>();
+      List<QFieldMetaData> rs             = new ArrayList<>();
       if(steps != null)
       {
          for(QStepMetaData step : steps.values())
          {
-            rs.addAll(step.getInputFields());
+            for(QFieldMetaData field : step.getInputFields())
+            {
+               if(!usedFieldNames.contains(field.getName()))
+               {
+                  rs.add(field);
+                  usedFieldNames.add(field.getName());
+               }
+            }
          }
       }
       return (rs);
@@ -292,17 +302,25 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Get a list of all of the output fields used by all the steps in this process.
+    ** Get a list of all the *unique* output fields used by all the steps in this process.
     *******************************************************************************/
    @JsonIgnore
    public List<QFieldMetaData> getOutputFields()
    {
-      List<QFieldMetaData> rs = new ArrayList<>();
+      Set<String>          usedFieldNames = new HashSet<>();
+      List<QFieldMetaData> rs             = new ArrayList<>();
       if(steps != null)
       {
          for(QStepMetaData step : steps.values())
          {
-            rs.addAll(step.getOutputFields());
+            for(QFieldMetaData field : step.getOutputFields())
+            {
+               if(!usedFieldNames.contains(field.getName()))
+               {
+                  rs.add(field);
+                  usedFieldNames.add(field.getName());
+               }
+            }
          }
       }
       return (rs);

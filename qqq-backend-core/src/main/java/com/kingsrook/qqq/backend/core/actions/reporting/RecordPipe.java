@@ -118,7 +118,7 @@ public class RecordPipe
                LOG.warn("Giving up adding record to pipe, due to pipe being full for more than {} millis", MAX_SLEEP_LOOP_MILLIS);
                throw (new IllegalStateException("Giving up adding record to pipe, due to pipe staying full too long."));
             }
-            LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
+            LOG.trace("Record pipe.add failed (due to full pipe).  Blocking.");
             SleepUtils.sleep(BLOCKING_SLEEP_MILLIS, TimeUnit.MILLISECONDS);
             offerResult = queue.offer(record);
             now = System.currentTimeMillis();

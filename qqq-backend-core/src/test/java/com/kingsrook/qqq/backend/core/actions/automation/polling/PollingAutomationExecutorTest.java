@@ -11,12 +11,10 @@ import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -99,56 +97,6 @@ class PollingAutomationExecutorTest
 
 
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testUpdate() throws QException
-   {
-      QInstance qInstance = TestUtils.defineInstance();
-
-      ///////////////////////////////////////////////////////////////////////////////
-      // insert 2 people - one who should be logged by logger-on-update automation //
-      ///////////////////////////////////////////////////////////////////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
-      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-      insertInput.setRecords(List.of(
-         new QRecord().withValue("id", 1).withValue("firstName", "Tim"),
-         new QRecord().withValue("id", 2).withValue("firstName", "Darin")
-      ));
-      new InsertAction().execute(insertInput);
-
-      ////////////////////////////////////////////////
-      // have the polling executor run "for awhile" //
-      ////////////////////////////////////////////////
-      runPollingAutomationExecutorForAwhile(qInstance);
-
-      //////////////////////////////////////////////////
-      // assert that the update-automation didn't run //
-      //////////////////////////////////////////////////
-      assertThat(TestUtils.LogPersonUpdate.updatedIds).isNullOrEmpty();
-
-      UpdateInput updateInput = new UpdateInput(qInstance);
-      updateInput.setSession(new QSession());
-      updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-      updateInput.setRecords(List.of(
-         new QRecord().withValue("id", 1).withValue("lastName", "now with a LastName"),
-         new QRecord().withValue("id", 2).withValue("lastName", "now with a LastName")
-      ));
-      new UpdateAction().execute(updateInput);
-
-      ////////////////////////////////////////////////
-      // have the polling executor run "for awhile" //
-      ////////////////////////////////////////////////
-      runPollingAutomationExecutorForAwhile(qInstance);
-
-      ///////////////////////////////////////////////////
-      // assert that the update-automation DID run now //
-      ///////////////////////////////////////////////////
-      assertThat(TestUtils.LogPersonUpdate.updatedIds).contains(2);
-   }
-
 
 
    /*******************************************************************************
@@ -166,14 +114,14 @@ class PollingAutomationExecutorTest
          .getAutomationDetails().getActions().get(0)
          .setCodeReference(new QCodeReference(CaptureSessionIdAutomationHandler.class));
 
-      /////////////////////
-      // insert a person //
-      /////////////////////
+      ////////////////////////////////////////////////////////////
+      // insert a person that will trigger the on-insert action //
+      ////////////////////////////////////////////////////////////
       InsertInput insertInput = new InsertInput(qInstance);
       insertInput.setSession(new QSession());
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
-         new QRecord().withValue("id", 1).withValue("firstName", "Tim")
+         new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.now())
       ));
       new InsertAction().execute(insertInput);
 

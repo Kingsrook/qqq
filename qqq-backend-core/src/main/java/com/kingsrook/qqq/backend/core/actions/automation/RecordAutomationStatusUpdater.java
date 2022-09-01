@@ -1,7 +1,9 @@
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -10,6 +12,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -37,7 +41,12 @@ public class RecordAutomationStatusUpdater
          return (false);
       }
 
-      if(automationStatus.equals(AutomationStatus.PENDING_INSERT_AUTOMATIONS) || automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
+      if(canWeSkipPendingAndGoToOkay(table, automationStatus))
+      {
+         automationStatus = AutomationStatus.OK;
+      }
+
+      if(automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
       {
          Exception e = new Exception();
          for(StackTraceElement stackTraceElement : e.getStackTrace())
@@ -45,7 +54,7 @@ public class RecordAutomationStatusUpdater
             String className = stackTraceElement.getClassName();
             if(className.contains("com.kingsrook.qqq.backend.core.actions.automation") && !className.equals(RecordAutomationStatusUpdater.class.getName()) && !className.endsWith("Test"))
             {
-               LOG.info("Avoiding re-setting automation status to PENDING while running an automation");
+               LOG.debug("Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
                return (false);
             }
          }
@@ -67,6 +76,35 @@ public class RecordAutomationStatusUpdater
 
 
    /*******************************************************************************
+    ** If a table has no automation actions defined for Insert (or Update), and we're
+    ** being asked to set status to PENDING_INSERT (or PENDING_UPDATE), then just
+    ** move the status straight to OK.
+    *******************************************************************************/
+   private static boolean canWeSkipPendingAndGoToOkay(QTableMetaData table, AutomationStatus automationStatus)
+   {
+      List<TableAutomationAction> tableActions = Objects.requireNonNullElse(table.getAutomationDetails().getActions(), new ArrayList<>());
+
+      if(automationStatus.equals(AutomationStatus.PENDING_INSERT_AUTOMATIONS))
+      {
+         if(tableActions.stream().noneMatch(a -> TriggerEvent.POST_INSERT.equals(a.getTriggerEvent())))
+         {
+            return (true);
+         }
+      }
+      else if(automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
+      {
+         if(tableActions.stream().noneMatch(a -> TriggerEvent.POST_UPDATE.equals(a.getTriggerEvent())))
+         {
+            return (true);
+         }
+      }
+
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
     ** for a list of records, update their automation status and actually Update the
     ** backend as well.
     *******************************************************************************/
@@ -81,7 +119,17 @@ public class RecordAutomationStatusUpdater
             UpdateInput updateInput = new UpdateInput(instance);
             updateInput.setSession(session);
             updateInput.setTableName(table.getName());
-            updateInput.setRecords(records);
+
+            /////////////////////////////////////////////////////////////////////////////////////
+            // build records with just their pkey & status field for this update, to avoid     //
+            // changing other values (relies on assumption of Patch semantics in UpdateAction) //
+            /////////////////////////////////////////////////////////////////////////////////////
+            updateInput.setRecords(records.stream().map(r -> new QRecord()
+               .withTableName(r.getTableName())
+               .withValue(table.getPrimaryKeyField(), r.getValue(table.getPrimaryKeyField()))
+               .withValue(automationDetails.getStatusTracking().getFieldName(), r.getValue(automationDetails.getStatusTracking().getFieldName()))).toList());
+            updateInput.setAreAllValuesBeingUpdatedTheSame(true);
+
             new UpdateAction().execute(updateInput);
          }
       }
