@@ -57,11 +57,12 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the do-full-validation flag has already been set, then do the validation step instead of this one //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
-      boolean supportsFullValidation = runBackendStepInput.getValue_boolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
-      boolean doFullValidation       = runBackendStepInput.getValue_boolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
+      boolean supportsFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
+      boolean doFullValidation       = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
       if(supportsFullValidation && doFullValidation)
       {
-         skipToValidateStep(runBackendStepOutput);
+         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
+         moveReviewStepAfterValidateStep(runBackendStepOutput);
          return;
       }
 
@@ -87,7 +88,8 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       // todo - maybe some future version we do this - maybe based on a user-preference
       // if(supportsFullValidation && recordCount <= limit)
       // {
-      //    skipToValidateStep(runBackendStepOutput);
+      //    runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
+      //    moveReviewStepAfterValidateStep(runBackendStepOutput);
       //    return;
       // }
 
@@ -104,6 +106,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       List<QRecord> previewRecordList = new ArrayList<>();
       new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
          {
+            runBackendStepInput.setAsyncJobCallback(status);
             extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);
          },
@@ -135,22 +138,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       return false;
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void skipToValidateStep(RunBackendStepOutput runBackendStepOutput)
-   {
-      LOG.info("Skipping to validation step");
-      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
-      ArrayList<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
-      System.out.println("Step list pre: " + stepList);
-      stepList.removeIf(s -> s.equals(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW));
-      stepList.add(stepList.indexOf(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) + 1, StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
-      runBackendStepOutput.getProcessState().setStepList(stepList);
-      System.out.println("Step list post: " + stepList);
-   }
 
 
 

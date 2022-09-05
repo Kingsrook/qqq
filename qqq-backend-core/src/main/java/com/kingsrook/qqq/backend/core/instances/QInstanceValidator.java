@@ -291,7 +291,10 @@ public class QInstanceValidator
          {
             if(statusTracking.getType().equals(AutomationStatusTrackingType.FIELD_IN_TABLE))
             {
-               assertCondition(StringUtils.hasContent(statusTracking.getFieldName()), prefix + "statusTracking of type fieldInTable is missing its fieldName");
+               if(assertCondition(StringUtils.hasContent(statusTracking.getFieldName()), prefix + "statusTracking of type fieldInTable is missing its fieldName"))
+               {
+                  assertNoException(() -> table.getField(statusTracking.getFieldName()), prefix + "statusTracking field is not a defined field on this table.");
+               }
             }
          }
       }

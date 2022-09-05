@@ -68,6 +68,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
 
          transformStep.preRun(runBackendStepInput, runBackendStepOutput);
+         loadStep.preRun(runBackendStepInput, runBackendStepOutput);
 
          transaction = loadStep.openTransaction(runBackendStepInput);
          loadStep.setTransaction(transaction);
@@ -86,14 +87,10 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          updateRecordsWithDisplayValuesAndPossibleValues(runBackendStepInput, loadedRecordList);
          runBackendStepOutput.setRecords(loadedRecordList);
 
-         if(transformStep instanceof ProcessSummaryProviderInterface processSummaryProvider)
-         {
-            //////////////////////////////////////////////////////////////////////////////////////////////
-            // get the process summary from the ... transform step?  the load step?  each knows some... //
-            // TODO!!                                                                                   //
-            //////////////////////////////////////////////////////////////////////////////////////////////
-            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryProvider.getProcessSummary(true));
-         }
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // get the process summary from the ... transform step?  the load step?  each knows some... todo? //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.getProcessSummary(true));
 
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);

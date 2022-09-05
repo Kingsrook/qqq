@@ -1,3 +1,24 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.kingsrook.qqq.backend.core.actions.automation.polling;
 
 
@@ -14,8 +35,20 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcessTest;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,15 +84,15 @@ class PollingAutomationRunnerTest
       QInstance               qInstance               = TestUtils.defineInstance();
       PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, null);
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // insert 2 person records, one who should be both updated by the insert action, and should be logged by logger-on-update automation //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // insert 2 person records, both updated by the insert action, and 1 logged by logger-on-update automation //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       InsertInput insertInput = new InsertInput(qInstance);
       insertInput.setSession(new QSession());
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.now()),
-         new QRecord().withValue("id", 2).withValue("firstName", "Darin")
+         new QRecord().withValue("id", 2).withValue("firstName", "Darin").withValue("birthDate", LocalDate.now())
       ));
       new InsertAction().execute(insertInput);
       assertAllRecordsAutomationStatus(AutomationStatus.PENDING_INSERT_AUTOMATIONS);
@@ -72,15 +105,11 @@ class PollingAutomationRunnerTest
       assertThat(TestUtils.LogPersonUpdate.updatedIds).isNullOrEmpty();
       assertAllRecordsAutomationStatus(AutomationStatus.OK);
 
-      ////////////////////////////////////////////
-      // make sure the minor person was updated //
-      ////////////////////////////////////////////
-      Optional<QRecord> updatedMinorRecord = TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY).stream().filter(r -> r.getValueInteger("id").equals(1)).findFirst();
-      assertThat(updatedMinorRecord)
-         .isPresent()
-         .get()
-         .extracting(r -> r.getValueString("firstName"))
-         .isEqualTo("Tim" + TestUtils.CheckAge.SUFFIX_FOR_MINORS);
+      /////////////////////////////////////////
+      // make sure both persons were updated //
+      /////////////////////////////////////////
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY))
+         .allMatch(r -> r.getValueString("firstName").endsWith(TestUtils.CheckAge.SUFFIX_FOR_MINORS));
 
       /////////////////////////////////////////////////////////////////////////////////////////
       // run automations again - make sure that there haven't been any updates triggered yet //
@@ -179,7 +208,7 @@ class PollingAutomationRunnerTest
 
 
    /*******************************************************************************
-    ** Test a cycle that does an insert, some automations, then and an update, and more automations.
+    ** Test running a process for automation, instead of a code ref.
     *******************************************************************************/
    @Test
    void testRunningProcess() throws QException
@@ -187,9 +216,9 @@ class PollingAutomationRunnerTest
       QInstance               qInstance               = TestUtils.defineInstance();
       PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, null);
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // insert 2 person records, one who should be both updated by the insert action, and should be logged by logger-on-update automation //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////
+      // insert 2 person records, 1 to trigger the "increaseAge" action //
+      ////////////////////////////////////////////////////////////////////
       InsertInput insertInput = new InsertInput(qInstance);
       insertInput.setSession(new QSession());
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -212,6 +241,62 @@ class PollingAutomationRunnerTest
          .isEqualTo(1900);
 
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRunningEtlWithFrontendProcess() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+
+      ////////////////////////////////////////////////////////
+      // define the process - an ELT from Shapes to Persons //
+      ////////////////////////////////////////////////////////
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         TestUtils.TABLE_NAME_SHAPE,
+         TestUtils.TABLE_NAME_PERSON,
+         ExtractViaQueryStep.class,
+         StreamedETLWithFrontendProcessTest.TestTransformShapeToPersonStep.class,
+         LoadViaInsertStep.class);
+      process.setName("shapeToPersonETLProcess");
+      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      instance.addProcess(process);
+
+      ///////////////////////////////////////////////////////
+      // switch the person table to use the memory backend //
+      ///////////////////////////////////////////////////////
+      instance.getTable(TestUtils.TABLE_NAME_PERSON).setBackendName(TestUtils.MEMORY_BACKEND_NAME);
+
+      ///////////////////////////////////////////////////////////////////////
+      // add a post-insert process to the shape table, to run this ELT job //
+      ///////////////////////////////////////////////////////////////////////
+      instance.getTable(TestUtils.TABLE_NAME_SHAPE)
+         .withField(new QFieldMetaData("automationStatus", QFieldType.INTEGER))
+         .setAutomationDetails(new QTableAutomationDetails()
+         .withProviderName(TestUtils.POLLING_AUTOMATION)
+         .withStatusTracking(new AutomationStatusTracking().withType(AutomationStatusTrackingType.FIELD_IN_TABLE).withFieldName("automationStatus"))
+         .withAction(new TableAutomationAction()
+            .withName("shapeToPerson")
+            .withTriggerEvent(TriggerEvent.POST_INSERT)
+            .withProcessName("shapeToPersonETLProcess")
+         )
+      );
+
+      TestUtils.insertDefaultShapes(instance);
+
+      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(instance, TestUtils.POLLING_AUTOMATION, null);
+      pollingAutomationRunner.run();
+
+      List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON);
+      assertThat(postList)
+         .as("Should have inserted Circle").anyMatch(qr -> qr.getValue("lastName").equals("Circle"))
+         .as("Should have inserted Triangle").anyMatch(qr -> qr.getValue("lastName").equals("Triangle"))
+         .as("Should have inserted Square").anyMatch(qr -> qr.getValue("lastName").equals("Square"));
+   }
+
 
 
    /*******************************************************************************

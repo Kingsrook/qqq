@@ -1,3 +1,24 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.kingsrook.qqq.backend.core.actions.automation.polling;
 
 
@@ -10,11 +31,8 @@ import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -76,19 +94,16 @@ class PollingAutomationExecutorTest
       /////////////////////////////////////////////////
       // query for the records - assert their status //
       /////////////////////////////////////////////////
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(new QSession());
-      queryInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      assertEquals(2, queryOutput.getRecords().size());
+      List<QRecord> records = TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      assertEquals(2, records.size());
 
-      Optional<QRecord> optionalPerson1 = queryOutput.getRecords().stream().filter(r -> r.getValueInteger("id") == 1).findFirst();
+      Optional<QRecord> optionalPerson1 = records.stream().filter(r -> r.getValueInteger("id") == 1).findFirst();
       assertThat(optionalPerson1).isPresent();
       QRecord person1 = optionalPerson1.get();
       assertThat(person1.getValueString("firstName")).isEqualTo("John");
       assertThat(person1.getValueInteger(TestUtils.standardQqqAutomationStatusField().getName())).isEqualTo(AutomationStatus.OK.getId());
 
-      Optional<QRecord> optionalPerson2 = queryOutput.getRecords().stream().filter(r -> r.getValueInteger("id") == 2).findFirst();
+      Optional<QRecord> optionalPerson2 = records.stream().filter(r -> r.getValueInteger("id") == 2).findFirst();
       assertThat(optionalPerson2).isPresent();
       QRecord person2 = optionalPerson2.get();
       assertThat(person2.getValueString("firstName")).isEqualTo("Jim" + TestUtils.CheckAge.SUFFIX_FOR_MINORS);

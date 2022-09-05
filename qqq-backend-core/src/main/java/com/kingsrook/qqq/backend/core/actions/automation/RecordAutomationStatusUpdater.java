@@ -1,3 +1,24 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
@@ -46,6 +67,13 @@ public class RecordAutomationStatusUpdater
          automationStatus = AutomationStatus.OK;
       }
 
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // In case an automation is running, and it updates records - don't let those records be marked  //
+      // as PENDING_UPDATE_AUTOMATIONS... this is meant to avoid having a record's automation update   //
+      // itself, and then continue to do so in a loop (infinitely).                                    //
+      // BUT - shouldn't this be allowed to update OTHER records to be pending updates?  It seems like //
+      // yes - so -that'll probably be a bug to fix at some point in the future todo                   //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
       if(automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
       {
          Exception e = new Exception();
@@ -86,17 +114,11 @@ public class RecordAutomationStatusUpdater
 
       if(automationStatus.equals(AutomationStatus.PENDING_INSERT_AUTOMATIONS))
       {
-         if(tableActions.stream().noneMatch(a -> TriggerEvent.POST_INSERT.equals(a.getTriggerEvent())))
-         {
-            return (true);
-         }
+         return tableActions.stream().noneMatch(a -> TriggerEvent.POST_INSERT.equals(a.getTriggerEvent()));
       }
       else if(automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
       {
-         if(tableActions.stream().noneMatch(a -> TriggerEvent.POST_UPDATE.equals(a.getTriggerEvent())))
-         {
-            return (true);
-         }
+         return tableActions.stream().noneMatch(a -> TriggerEvent.POST_UPDATE.equals(a.getTriggerEvent()));
       }
 
       return (false);

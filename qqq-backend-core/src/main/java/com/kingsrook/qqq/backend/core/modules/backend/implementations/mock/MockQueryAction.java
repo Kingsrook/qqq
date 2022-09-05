@@ -35,6 +35,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -43,6 +45,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  *******************************************************************************/
 public class MockQueryAction implements QueryInterface
 {
+   private static final Logger LOG = LogManager.getLogger(MockQueryAction.class);
+
+
 
    /*******************************************************************************
     **
@@ -68,6 +73,12 @@ public class MockQueryAction implements QueryInterface
             }
 
             queryOutput.addRecord(record);
+
+            if(queryInput.getAsyncJobCallback().wasCancelRequested())
+            {
+               LOG.info("Breaking query job, as requested.");
+               break;
+            }
          }
 
          return (queryOutput);

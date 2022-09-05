@@ -41,10 +41,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 /*******************************************************************************
  ** Definition for Streamed ETL process that includes a frontend.
  **
- ** This process uses 2 backend steps, and 2 frontend steps, as follows:
+ ** This process uses 3 backend steps, and 2 frontend steps, as follows:
  ** - preview (backend) - does just a little work (limited # of rows), to give the
  **      user a preview of what the final result will be - e.g., some data to seed the review screen
  ** - review (frontend) - a review screen
+ ** - validate (backend) - optionally (per input on review screen), does like the preview step,
+ **      but on all records from the extract step.
  ** - execute (backend) - processes all the rows, does all the work.
  ** - result (frontend) - a result screen
  **
@@ -54,7 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
  ** - Transform - do whatever transformation is needed to the rows.  Done on preview
  **      and execute.  Always works with a "page" of records at a time.
  ** - Load - store the records into the backend, as appropriate.  Always works
- **      with a "page" of records at a time.
+ **      with a "page" of records at a time.  Only called by execute step.
  *******************************************************************************/
 public class StreamedETLWithFrontendProcess
 {

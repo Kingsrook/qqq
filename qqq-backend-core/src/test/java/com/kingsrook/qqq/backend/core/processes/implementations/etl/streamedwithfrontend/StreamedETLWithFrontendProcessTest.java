@@ -1,3 +1,24 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
@@ -36,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for StreamedETLWithFrontendProcess
  *******************************************************************************/
-class StreamedETLWithFrontendProcessTest
+public class StreamedETLWithFrontendProcessTest
 {
 
    /*******************************************************************************
@@ -64,18 +85,13 @@ class StreamedETLWithFrontendProcessTest
       ////////////////////////////////////////////////////////
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
          TestUtils.TABLE_NAME_SHAPE,
-         TestUtils.TABLE_NAME_PERSON,
+         TestUtils.TABLE_NAME_PERSON_MEMORY,
          ExtractViaQueryStep.class,
          TestTransformShapeToPersonStep.class,
          LoadViaInsertStep.class);
       process.setName("test");
       process.setTableName(TestUtils.TABLE_NAME_SHAPE);
       instance.addProcess(process);
-
-      ///////////////////////////////////////////////////////
-      // switch the person table to use the memory backend //
-      ///////////////////////////////////////////////////////
-      instance.getTable(TestUtils.TABLE_NAME_PERSON).setBackendName(TestUtils.MEMORY_BACKEND_NAME);
 
       TestUtils.insertDefaultShapes(instance);
 
@@ -84,7 +100,7 @@ class StreamedETLWithFrontendProcessTest
       /////////////////////
       runProcess(instance, process);
 
-      List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON);
+      List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON_MEMORY);
       assertThat(postList)
          .as("Should have inserted Circle").anyMatch(qr -> qr.getValue("lastName").equals("Circle"))
          .as("Should have inserted Triangle").anyMatch(qr -> qr.getValue("lastName").equals("Triangle"))
@@ -277,7 +293,7 @@ class StreamedETLWithFrontendProcessTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private RunProcessOutput runProcess(QInstance instance, QProcessMetaData process) throws QException
+   public RunProcessOutput runProcess(QInstance instance, QProcessMetaData process) throws QException
    {
       return (runProcess(instance, process, new HashMap<>(), new Callback()));
    }
@@ -337,6 +353,14 @@ class StreamedETLWithFrontendProcessTest
             newQRecord.setValue("lastName", qRecord.getValueString("name"));
             getOutputRecordPage().add(newQRecord);
          }
+      }
+
+
+
+      @Override
+      public ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen)
+      {
+         return null;
       }
    }
 
@@ -419,6 +443,14 @@ class StreamedETLWithFrontendProcessTest
             updatedQRecord.setValue("name", "Transformed:" + qRecord.getValueString("name"));
             getOutputRecordPage().add(updatedQRecord);
          }
+      }
+
+
+
+      @Override
+      public ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen)
+      {
+         return null;
       }
    }
 

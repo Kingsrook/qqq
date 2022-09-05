@@ -1,7 +1,27 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.kingsrook.qqq.backend.core.model.automation;
 
 
-import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -15,13 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAuto
 public class RecordAutomationInput extends AbstractTableActionInput
 {
    private TableAutomationAction action;
-
-   ////////////////////////////////////////////
-   // todo - why both?  pick one?  or don't? //
-   // maybe - if recordList is null and primaryKeyList isn't, then do the record query in here?
-   ////////////////////////////////////////////
-   private List<QRecord>      recordList;
-   private List<Serializable> primaryKeyList;
+   private List<QRecord> recordList;
 
 
 
@@ -98,40 +112,6 @@ public class RecordAutomationInput extends AbstractTableActionInput
    public RecordAutomationInput withRecordList(List<QRecord> recordList)
    {
       this.recordList = recordList;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for primaryKeyList
-    **
-    *******************************************************************************/
-   public List<Serializable> getPrimaryKeyList()
-   {
-      return primaryKeyList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for primaryKeyList
-    **
-    *******************************************************************************/
-   public void setPrimaryKeyList(List<Serializable> primaryKeyList)
-   {
-      this.primaryKeyList = primaryKeyList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for primaryKeyList
-    **
-    *******************************************************************************/
-   public RecordAutomationInput withPrimaryKeyList(List<Serializable> primaryKeyList)
-   {
-      this.primaryKeyList = primaryKeyList;
       return (this);
    }
 

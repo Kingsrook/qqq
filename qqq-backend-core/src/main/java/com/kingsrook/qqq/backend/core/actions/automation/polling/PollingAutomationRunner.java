@@ -1,8 +1,30 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.kingsrook.qqq.backend.core.actions.automation.polling;
 
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +36,7 @@ import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -28,14 +51,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +79,23 @@ class PollingAutomationRunner implements Runnable
 
    private Map<String, List<TableAutomationAction>> tableInsertActions = new HashMap<>();
    private Map<String, List<TableAutomationAction>> tableUpdateActions = new HashMap<>();
+
+   private Map<String, Map<AutomationStatus, List<TableAutomationAction>>> tableActions = new HashMap<>();
+
+   private static Map<TriggerEvent, AutomationStatus> triggerEventAutomationStatusMap = Map.of(
+      TriggerEvent.POST_INSERT, AutomationStatus.PENDING_INSERT_AUTOMATIONS,
+      TriggerEvent.POST_UPDATE, AutomationStatus.PENDING_UPDATE_AUTOMATIONS
+   );
+
+   private static Map<AutomationStatus, AutomationStatus> pendingToRunningStatusMap = Map.of(
+      AutomationStatus.PENDING_INSERT_AUTOMATIONS, AutomationStatus.RUNNING_INSERT_AUTOMATIONS,
+      AutomationStatus.PENDING_UPDATE_AUTOMATIONS, AutomationStatus.RUNNING_UPDATE_AUTOMATIONS
+   );
+
+   private static Map<AutomationStatus, AutomationStatus> pendingToFailedStatusMap = Map.of(
+      AutomationStatus.PENDING_INSERT_AUTOMATIONS, AutomationStatus.FAILED_INSERT_AUTOMATIONS,
+      AutomationStatus.PENDING_UPDATE_AUTOMATIONS, AutomationStatus.FAILED_UPDATE_AUTOMATIONS
+   );
 
 
 
@@ -83,16 +123,10 @@ class PollingAutomationRunner implements Runnable
             ///////////////////////////////////////////////////////////////////////////
             for(TableAutomationAction action : table.getAutomationDetails().getActions())
             {
-               if(TriggerEvent.POST_INSERT.equals(action.getTriggerEvent()))
-               {
-                  tableInsertActions.putIfAbsent(table.getName(), new ArrayList<>());
-                  tableInsertActions.get(table.getName()).add(action);
-               }
-               else if(TriggerEvent.POST_UPDATE.equals(action.getTriggerEvent()))
-               {
-                  tableUpdateActions.putIfAbsent(table.getName(), new ArrayList<>());
-                  tableUpdateActions.get(table.getName()).add(action);
-               }
+               AutomationStatus automationStatus = triggerEventAutomationStatusMap.get(action.getTriggerEvent());
+               tableActions.putIfAbsent(table.getName(), new HashMap<>());
+               tableActions.get(table.getName()).putIfAbsent(automationStatus, new ArrayList<>());
+               tableActions.get(table.getName()).get(automationStatus).add(action);
             }
 
             //////////////////////////////
@@ -143,8 +177,8 @@ class PollingAutomationRunner implements Runnable
    private void processTable(QTableMetaData table) throws QException
    {
       QSession session = sessionSupplier != null ? sessionSupplier.get() : new QSession();
-      processTableInsertOrUpdate(table, session, true);
-      processTableInsertOrUpdate(table, session, false);
+      processTableInsertOrUpdate(table, session, AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+      processTableInsertOrUpdate(table, session, AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
    }
 
 
@@ -152,10 +186,11 @@ class PollingAutomationRunner implements Runnable
    /*******************************************************************************
     ** Query for and process records that have a PENDING_INSERT or PENDING_UPDATE status on a given table.
     *******************************************************************************/
-   private void processTableInsertOrUpdate(QTableMetaData table, QSession session, boolean isInsert) throws QException
+   private void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus) throws QException
    {
-      AutomationStatus            automationStatus = isInsert ? AutomationStatus.PENDING_INSERT_AUTOMATIONS : AutomationStatus.PENDING_UPDATE_AUTOMATIONS;
-      List<TableAutomationAction> actions          = (isInsert ? tableInsertActions : tableUpdateActions).get(table.getName());
+      List<TableAutomationAction> actions = tableActions
+         .getOrDefault(table.getName(), Collections.emptyMap())
+         .getOrDefault(automationStatus, Collections.emptyList());
       if(CollectionUtils.nullSafeIsEmpty(actions))
       {
          return;
@@ -166,20 +201,30 @@ class PollingAutomationRunner implements Runnable
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // run an async-pipe loop - that will query for records in PENDING - put them in a pipe - then apply actions to them //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      RecordPipe recordPipe = new RecordPipe();
+      RecordPipe          recordPipe          = new RecordPipe();
       AsyncRecordPipeLoop asyncRecordPipeLoop = new AsyncRecordPipeLoop();
-      asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + (isInsert ? "insert" : "update"), null, recordPipe, (status) ->
+      asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + automationStatus, null, recordPipe, (status) ->
          {
             QueryInput queryInput = new QueryInput(instance);
             queryInput.setSession(session);
             queryInput.setTableName(table.getName());
-            queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(table.getAutomationDetails().getStatusTracking().getFieldName(), QCriteriaOperator.IN, List.of(automationStatus.getId()))));
+
+            AutomationStatusTrackingType statusTrackingType = table.getAutomationDetails().getStatusTracking().getType();
+            if(AutomationStatusTrackingType.FIELD_IN_TABLE.equals(statusTrackingType))
+            {
+               queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(table.getAutomationDetails().getStatusTracking().getFieldName(), QCriteriaOperator.EQUALS, List.of(automationStatus.getId()))));
+            }
+            else
+            {
+               throw (new NotImplementedException("Automation Status Tracking type [" + statusTrackingType + "] is not yet implemented in here."));
+            }
+
             queryInput.setRecordPipe(recordPipe);
             return (new QueryAction().execute(queryInput));
          }, () ->
          {
             List<QRecord> records = recordPipe.consumeAvailableRecords();
-            applyActionsToRecords(session, table, records, actions, isInsert);
+            applyActionsToRecords(session, table, records, actions, automationStatus);
             return (records.size());
          }
       );
@@ -189,9 +234,10 @@ class PollingAutomationRunner implements Runnable
 
    /*******************************************************************************
     ** For a set of records that were found to be in a PENDING state - run all the
-    ** table's actions against them.
+    ** table's actions against them - IF they are found to match the action's filter
+    ** (assuming it has one - if it doesn't, then all records match).
     *******************************************************************************/
-   private void applyActionsToRecords(QSession session, QTableMetaData table, List<QRecord> records, List<TableAutomationAction> actions, boolean isInsert) throws QException
+   private void applyActionsToRecords(QSession session, QTableMetaData table, List<QRecord> records, List<TableAutomationAction> actions, AutomationStatus automationStatus) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(records))
       {
@@ -201,7 +247,7 @@ class PollingAutomationRunner implements Runnable
       ///////////////////////////////////////////////////
       // mark the records as RUNNING their automations //
       ///////////////////////////////////////////////////
-      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, isInsert ? AutomationStatus.RUNNING_INSERT_AUTOMATIONS : AutomationStatus.RUNNING_UPDATE_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, pendingToRunningStatusMap.get(automationStatus));
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // foreach action - run it against the records (but only if they match the action's filter, if there is one) //
@@ -215,7 +261,7 @@ class PollingAutomationRunner implements Runnable
             // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////
             List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(session, table, records, action);
-            LOG.debug("Of the {} records that  were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
+            LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
             if(CollectionUtils.nullSafeHasContents(matchingQRecords))
             {
                LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
@@ -234,7 +280,7 @@ class PollingAutomationRunner implements Runnable
       ////////////////////////////////////////
       if(anyActionsFailed)
       {
-         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, AutomationStatus.FAILED_UPDATE_AUTOMATIONS);
+         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, pendingToFailedStatusMap.get(automationStatus));
       }
       else
       {
@@ -302,25 +348,24 @@ class PollingAutomationRunner implements Runnable
    {
       if(StringUtils.hasContent(action.getProcessName()))
       {
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // if the action has a process associated with it - run that process.                  //
+         // tell it to SKIP frontend steps.                                                     //
+         // give the process a callback w/ a query filter that has the p-keys of these records. //
+         /////////////////////////////////////////////////////////////////////////////////////////
          RunProcessInput runProcessInput = new RunProcessInput(instance);
          runProcessInput.setSession(session);
          runProcessInput.setProcessName(action.getProcessName());
          runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
-
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // kinda hacky - if we see that this process has an input field of a given name, then put a filter in there to find these records... //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         QProcessMetaData process = instance.getProcess(action.getProcessName());
-         if(process.getInputFields().stream().anyMatch(f -> f.getName().equals(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER)))
+         runProcessInput.setCallback(new QProcessCallback()
          {
-            List<Serializable> recordIds   = records.stream().map(r -> r.getValueInteger(table.getPrimaryKeyField())).collect(Collectors.toList());
-            QQueryFilter       queryFilter = new QQueryFilter().withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordIds));
-            runProcessInput.addValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER, queryFilter);
-         }
-         else
-         {
-            runProcessInput.setRecords(records);
-         }
+            @Override
+            public QQueryFilter getQueryFilter()
+            {
+               List<Serializable> recordIds = records.stream().map(r -> r.getValueInteger(table.getPrimaryKeyField())).collect(Collectors.toList());
+               return (new QQueryFilter().withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordIds)));
+            }
+         });
 
          RunProcessAction runProcessAction = new RunProcessAction();
          RunProcessOutput runProcessOutput = runProcessAction.execute(runProcessInput);

@@ -371,10 +371,10 @@ public class RunBackendStepInput extends AbstractActionInput
 
 
    /*******************************************************************************
-    ** Getter for a single field's value as a primitive boolean
+    ** Getter for a single field's value as a primitive boolean - with null => false.
     **
     *******************************************************************************/
-   public boolean getValue_boolean(String fieldName)
+   public boolean getValuePrimitiveBoolean(String fieldName)
    {
       Boolean valueAsBoolean = ValueUtils.getValueAsBoolean(getValue(fieldName));
       return (valueAsBoolean != null && valueAsBoolean);

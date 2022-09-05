@@ -72,7 +72,7 @@ public class RecordPipe
 
 
    /*******************************************************************************
-    ** Add a record to the pipe
+    ** Add a record to the pipe.  Will block if the pipe is full.  Will noop if pipe is terminated.
     *******************************************************************************/
    public void addRecord(QRecord record)
    {
@@ -129,7 +129,7 @@ public class RecordPipe
 
 
    /*******************************************************************************
-    ** Add a list of records to the pipe
+    ** Add a list of records to the pipe.  Will block if the pipe is full.  Will noop if pipe is terminated.
     *******************************************************************************/
    public void addRecords(List<QRecord> records)
    {

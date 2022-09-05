@@ -721,9 +721,8 @@ class QInstanceValidatorTest
       assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getStatusTracking().setFieldName(""),
          "missing its fieldName");
 
-      //////////////////////////////////////////////////
-      // todo - make sure it's a field in the table?? //
-      //////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getStatusTracking().setFieldName("notARealField"),
+         "not a defined field");
    }
 
 
@@ -791,14 +790,6 @@ class QInstanceValidatorTest
          },
          "unrecognized processName");
 
-      assertValidationSuccess((qInstance) ->
-      {
-         qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-         TableAutomationAction action = getAction0(qInstance);
-         action.setCodeReference(null);
-         action.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE);
-      });
-
       assertValidationFailureReasons((qInstance) ->
          {
             TableAutomationAction action = getAction0(qInstance);
@@ -826,9 +817,9 @@ class QInstanceValidatorTest
 
       assertValidationFailureReasons((qInstance) ->
          {
-            qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
             TableAutomationAction action = getAction0(qInstance);
-            action.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+            action.setCodeReference(new QCodeReference(TestUtils.CheckAge.class));
+            action.setProcessName(TestUtils.PROCESS_NAME_INCREASE_BIRTHDATE);
          },
          "has both");
    }
@@ -857,14 +848,6 @@ class QInstanceValidatorTest
             );
          },
          "unrecognized field");
-
-      assertValidationSuccess((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setFilter(new QQueryFilter()
-               .withCriteria(new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(1701)))
-            );
-         });
    }
 
 

@@ -140,7 +140,7 @@ public class RunProcessAction
                ///////////////////////
                // Run backend steps //
                ///////////////////////
-               LOG.info("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
+               LOG.debug("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
                runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
             }
             else
@@ -191,7 +191,8 @@ public class RunProcessAction
          if(runProcessInput.getStartAfterStep() == null)
          {
             ///////////////////////////////////////////////////////////////////////////////////
-            // this is fine - it means it's our first time running in the backend.           //
+            // This condition (no state in state-provider, and no start-after-step) means    //
+            // that we're starting a new process!  Init the process state here, then         //
             // Go ahead and store the state that we have (e.g., w/ initial records & values) //
             ///////////////////////////////////////////////////////////////////////////////////
             ProcessState processState = runProcessInput.getProcessState();

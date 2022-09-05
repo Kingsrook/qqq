@@ -90,7 +90,6 @@ public class QRecord implements Serializable
     ** Copy constructor.
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
    public QRecord(QRecord record)
    {
       this.tableName = record.tableName;
@@ -118,8 +117,8 @@ public class QRecord implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   private Map doDeepCopy(Map map)
+   @SuppressWarnings({ "unchecked" })
+   private <K, V> Map<K, V> doDeepCopy(Map<K, V> map)
    {
       if(map == null)
       {
@@ -128,10 +127,10 @@ public class QRecord implements Serializable
 
       if(map instanceof Serializable serializableMap)
       {
-         return (Map) SerializationUtils.clone(serializableMap);
+         return (Map<K, V>) SerializationUtils.clone(serializableMap);
       }
 
-      return (new LinkedHashMap(map));
+      return (new LinkedHashMap<>(map));
    }
 
 
@@ -139,8 +138,8 @@ public class QRecord implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   private List doDeepCopy(List list)
+   @SuppressWarnings({ "unchecked" })
+   private <T> List<T> doDeepCopy(List<T> list)
    {
       if(list == null)
       {
@@ -149,10 +148,10 @@ public class QRecord implements Serializable
 
       if(list instanceof Serializable serializableList)
       {
-         return (List) SerializationUtils.clone(serializableList);
+         return (List<T>) SerializationUtils.clone(serializableList);
       }
 
-      return (new ArrayList(list));
+      return (new ArrayList<>(list));
    }
 
 

@@ -56,7 +56,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       /////////////////////////////////////////////////////////////////////
       // check if we are supported in this process - if not, return noop //
       /////////////////////////////////////////////////////////////////////
-      boolean supportsFullValidation = runBackendStepInput.getValue_boolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
+      boolean supportsFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
       if(!supportsFullValidation)
       {
          LOG.info("Process does not support validation, so skipping validation step");
@@ -66,22 +66,17 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       ////////////////////////////////////////////////////////////////////////////////
       // check if we've been requested to run in this process - if not, return noop //
       ////////////////////////////////////////////////////////////////////////////////
-      boolean doFullValidation = runBackendStepInput.getValue_boolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
+      boolean doFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
       if(!doFullValidation)
       {
          LOG.info("Not requested to do full validation, so skipping validation step");
          return;
       }
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // if we're proceeding with full validation, move the review step to be after validation in the step list //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ArrayList<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
-      System.out.println("Step list pre: " + stepList);
-      stepList.removeIf(s -> s.equals(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW));
-      stepList.add(stepList.indexOf(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) + 1, StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
-      runBackendStepOutput.getProcessState().setStepList(stepList);
-      System.out.println("Step list post: " + stepList);
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if we're proceeding with full validation, make sure the review step is after validation in the step list //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      moveReviewStepAfterValidateStep(runBackendStepOutput);
 
       //////////////////////////////////////////////////////////
       // basically repeat the preview step, but with no limit //
@@ -92,11 +87,6 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       extractStep.setRecordPipe(recordPipe);
 
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
-      if(!(transformStep instanceof ProcessSummaryProviderInterface processSummaryProvider))
-      {
-         // todo - really?  if this is required, then put it on the AbstractTransformStep class
-         throw (new QException("Transform Step " + transformStep.getClass().getName() + " does not implement ProcessSummaryProviderInterface."));
-      }
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
@@ -115,7 +105,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////
       // get the process summary from the validation step //
       //////////////////////////////////////////////////////
-      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, processSummaryProvider.getProcessSummary(false));
+      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.getProcessSummary(false));
 
       transformStep.postRun(runBackendStepInput, runBackendStepOutput);
    }

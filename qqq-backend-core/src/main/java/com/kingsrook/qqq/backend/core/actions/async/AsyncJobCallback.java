@@ -51,6 +51,17 @@ public class AsyncJobCallback
 
 
    /*******************************************************************************
+    ** Setter for asyncJobStatus
+    **
+    *******************************************************************************/
+   public void setAsyncJobStatus(AsyncJobStatus asyncJobStatus)
+   {
+      this.asyncJobStatus = asyncJobStatus;
+   }
+
+
+
+   /*******************************************************************************
     ** Update the message
     *******************************************************************************/
    public void updateStatus(String message)

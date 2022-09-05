@@ -18,28 +18,3 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-package com.kingsrook.sampleapp;
-
-
-import org.junit.jupiter.api.Test;
-
-
-/*******************************************************************************
- ** Unit test for SampleJavalinServer
- *******************************************************************************/
-class SampleJavalinServerTest
-{
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testStartStop()
-   {
-      SampleJavalinServer sampleJavalinServer = new SampleJavalinServer();
-      sampleJavalinServer.startJavalinServer();
-      sampleJavalinServer.stopJavalinServer();
-   }
-
-}
