@@ -199,11 +199,29 @@ public class QProcessMetaData implements QAppChildMetaData
     *******************************************************************************/
    public QProcessMetaData addStep(QStepMetaData step)
    {
+      int index = 0;
+      if(this.stepList != null)
+      {
+         index = this.stepList.size();
+      }
+      addStep(index, step);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** add a step to the stepList (at the specified index) and the step map
+    **
+    *******************************************************************************/
+   public QProcessMetaData addStep(int index, QStepMetaData step)
+   {
       if(this.stepList == null)
       {
          this.stepList = new ArrayList<>();
       }
-      this.stepList.add(step);
+      this.stepList.add(index, step);
 
       if(this.steps == null)
       {

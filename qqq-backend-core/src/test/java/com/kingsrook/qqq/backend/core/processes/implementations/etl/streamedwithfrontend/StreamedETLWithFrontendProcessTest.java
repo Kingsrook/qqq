@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -246,7 +247,7 @@ public class StreamedETLWithFrontendProcessTest
       ///////////////////////////////////////////////////////////////////////////
       // run the process - breaking on the first instance of the Review screen //
       ///////////////////////////////////////////////////////////////////////////
-      RunProcessOutput runProcessOutput = runProcess(instance, process, Map.of(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION, true), new Callback(), RunProcessInput.FrontendStepBehavior.BREAK);
+      RunProcessOutput runProcessOutput = runProcess(instance, process, Collections.emptyMap(), new Callback(), RunProcessInput.FrontendStepBehavior.BREAK);
       assertThat(runProcessOutput.getProcessState().getNextStepName()).hasValue("review");
 
       ////////////////////////////////////////////////////////
