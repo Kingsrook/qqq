@@ -39,10 +39,12 @@ import software.amazon.awssdk.services.quicksight.model.RegisteredUserEmbeddingE
 
 
 /*******************************************************************************
+ ** Widget implementation for amazon QuickSight charts
  **
  *******************************************************************************/
 public class QuickSightChartRenderer extends AbstractWidgetRenderer
 {
+
    /*******************************************************************************
     **
     *******************************************************************************/

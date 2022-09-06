@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
+ ** Class for loading widget implementation code and rendering of widgets
  **
  *******************************************************************************/
 public class WidgetDataLoader

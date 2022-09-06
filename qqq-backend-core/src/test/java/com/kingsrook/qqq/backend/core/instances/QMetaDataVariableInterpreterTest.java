@@ -117,6 +117,21 @@ class QMetaDataVariableInterpreterTest
     **
     *******************************************************************************/
    @Test
+   void testDotEnvFile()
+   {
+      QMetaDataVariableInterpreter secretReader = new QMetaDataVariableInterpreter();
+      String                       key          = "CUSTOM_PROPERTY";
+      String                       value        = "ABCD-9876";
+      assertNull(secretReader.interpret("${env.NOT-" + key + "}"));
+      assertEquals(value, secretReader.interpret("${env." + key + "}"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testInterpretFromProperties()
    {
       QMetaDataVariableInterpreter secretReader = new QMetaDataVariableInterpreter();

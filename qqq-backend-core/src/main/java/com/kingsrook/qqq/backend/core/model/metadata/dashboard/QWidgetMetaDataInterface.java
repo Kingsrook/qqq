@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
+ ** Interface for qqq widget meta data
  **
  *******************************************************************************/
 public interface QWidgetMetaDataInterface

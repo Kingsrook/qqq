@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 /*******************************************************************************
+ ** Model containing datastructure expected by frontend material dashboard
+ ** AWS quick sight widget
  **
  *******************************************************************************/
 public class QuickSightChart implements QWidget

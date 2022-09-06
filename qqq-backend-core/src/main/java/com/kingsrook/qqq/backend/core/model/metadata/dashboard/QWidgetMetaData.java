@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
+ ** Base metadata for frontend material dashboard widgets
  **
  *******************************************************************************/
 public class QWidgetMetaData implements QWidgetMetaDataInterface

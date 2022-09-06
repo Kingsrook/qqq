@@ -26,6 +26,7 @@ import java.util.List;
 
 
 /*******************************************************************************
+ ** Model containing datastructure expected by frontend material dashboard bar chart widget
  **
  *******************************************************************************/
 public class BarChart implements QWidget

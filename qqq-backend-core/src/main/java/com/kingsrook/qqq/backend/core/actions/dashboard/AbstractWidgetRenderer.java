@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
+ ** Base class for rendering qqq dashboard widgets
  **
  *******************************************************************************/
 public abstract class AbstractWidgetRenderer
