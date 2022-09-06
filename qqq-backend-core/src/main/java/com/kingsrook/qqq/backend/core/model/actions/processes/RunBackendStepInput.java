@@ -51,6 +51,10 @@ public class RunBackendStepInput extends AbstractActionInput
    private QProcessCallback callback;
    private AsyncJobCallback asyncJobCallback;
 
+   ////////////////////////////////////////////////////////////////////////////
+   // note - new fields should generally be added in method: cloneFieldsInto //
+   ////////////////////////////////////////////////////////////////////////////
+
 
 
    /*******************************************************************************
@@ -81,6 +85,25 @@ public class RunBackendStepInput extends AbstractActionInput
    {
       super(instance);
       this.processState = processState;
+   }
+
+
+
+   /*******************************************************************************
+    ** Kinda like a reverse copy-constructor -- for a subclass that wants all the
+    ** field values from this object.  Keep this in sync with the fields in this class!
+    **
+    ** Of note - the processState does NOT get cloned - because...  well, in our first
+    ** use-case (a subclass that doesn't WANT the same/full state), that's what we needed.
+    *******************************************************************************/
+   public void cloneFieldsInto(RunBackendStepInput target)
+   {
+      target.setStepName(getStepName());
+      target.setSession(getSession());
+      target.setTableName(getTableName());
+      target.setProcessName(getProcessName());
+      target.setAsyncJobCallback(getAsyncJobCallback());
+      target.setValues(getValues());
    }
 
 
@@ -429,4 +452,5 @@ public class RunBackendStepInput extends AbstractActionInput
       }
       return (asyncJobCallback);
    }
+
 }

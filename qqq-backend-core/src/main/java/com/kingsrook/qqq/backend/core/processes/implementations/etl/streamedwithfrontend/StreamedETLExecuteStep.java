@@ -144,27 +144,32 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       ///////////////////////////////////
       List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
 
+      ///////////////////////////////////////////////////////////////////////
+      // make streamed input & output objects from the run input & outputs //
+      ///////////////////////////////////////////////////////////////////////
+      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
+
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.setInputRecordPage(qRecords);
-      transformStep.setOutputRecordPage(new ArrayList<>());
-      transformStep.run(runBackendStepInput, runBackendStepOutput);
+      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
 
       ////////////////////////////////////////////////
       // pass the records through the load function //
       ////////////////////////////////////////////////
-      loadStep.setInputRecordPage(transformStep.getOutputRecordPage());
-      loadStep.setOutputRecordPage(new ArrayList<>());
-      loadStep.run(runBackendStepInput, runBackendStepOutput);
+      streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, streamedBackendStepOutput.getRecords());
+      streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
+
+      loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
 
       ///////////////////////////////////////////////////////
       // copy a small number of records to the output list //
       ///////////////////////////////////////////////////////
       int i = 0;
-      while(loadedRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < loadStep.getOutputRecordPage().size())
+      while(loadedRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < streamedBackendStepOutput.getRecords().size())
       {
-         loadedRecordList.add(loadStep.getOutputRecordPage().get(i++));
+         loadedRecordList.add(streamedBackendStepOutput.getRecords().get(i++));
       }
 
       currentRowCount += qRecords.size();

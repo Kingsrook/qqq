@@ -76,7 +76,7 @@ public class ClonePeopleTransformStep extends AbstractTransformStep implements P
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      for(QRecord inputPerson : getInputRecordPage())
+      for(QRecord inputPerson : runBackendStepInput.getRecords())
       {
          Serializable id = inputPerson.getValue("id");
          if("Garret".equals(inputPerson.getValueString("firstName")))
@@ -92,7 +92,7 @@ public class ClonePeopleTransformStep extends AbstractTransformStep implements P
             QRecord outputPerson = new QRecord(inputPerson);
             outputPerson.setValue("id", null);
             outputPerson.setValue("firstName", "Clone of: " + inputPerson.getValueString("firstName"));
-            getOutputRecordPage().add(outputPerson);
+            runBackendStepOutput.getRecords().add(outputPerson);
 
             if(inputPerson.getValueString("firstName").matches("Clone of.*"))
             {

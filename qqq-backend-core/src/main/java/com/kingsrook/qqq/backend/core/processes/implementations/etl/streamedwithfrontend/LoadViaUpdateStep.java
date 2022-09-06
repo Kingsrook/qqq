@@ -54,10 +54,10 @@ public class LoadViaUpdateStep extends AbstractLoadStep
       UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
       updateInput.setSession(runBackendStepInput.getSession());
       updateInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-      updateInput.setRecords(getInputRecordPage());
+      updateInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(updateInput::setTransaction);
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-      getOutputRecordPage().addAll(updateOutput.getRecords());
+      runBackendStepOutput.getRecords().addAll(updateOutput.getRecords());
    }
 
 

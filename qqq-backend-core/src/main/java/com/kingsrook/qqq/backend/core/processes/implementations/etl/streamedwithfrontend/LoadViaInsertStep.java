@@ -52,10 +52,10 @@ public class LoadViaInsertStep extends AbstractLoadStep
       InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
       insertInput.setSession(runBackendStepInput.getSession());
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-      insertInput.setRecords(getInputRecordPage());
+      insertInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(insertInput::setTransaction);
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
-      getOutputRecordPage().addAll(insertOutput.getRecords());
+      runBackendStepOutput.getRecords().addAll(insertOutput.getRecords());
    }
 
 

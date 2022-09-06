@@ -128,19 +128,24 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       ///////////////////////////////////
       List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
 
+      ///////////////////////////////////////////////////////////////////////
+      // make streamed input & output objects from the run input & outputs //
+      ///////////////////////////////////////////////////////////////////////
+      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
+
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.setInputRecordPage(qRecords);
-      transformStep.run(runBackendStepInput, runBackendStepOutput);
+      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
 
       ///////////////////////////////////////////////////////
       // copy a small number of records to the output list //
       ///////////////////////////////////////////////////////
       int i = 0;
-      while(previewRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < transformStep.getOutputRecordPage().size())
+      while(previewRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < streamedBackendStepOutput.getRecords().size())
       {
-         previewRecordList.add(transformStep.getOutputRecordPage().get(i++));
+         previewRecordList.add(streamedBackendStepOutput.getRecords().get(i++));
       }
 
       currentRowCount += qRecords.size();

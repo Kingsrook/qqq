@@ -22,48 +22,56 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- ** Base class for the Transform logic of Streamed ETL processes.
+ ** Subclass of RunBackendStepInput, meant for use in the pseudo-steps used by
+ ** the Streamed-ETL-with-frontend processes - where the Record list is not the
+ ** full process's record list - rather - is just a page at a time -- so this class
+ ** overrides the getRecords and setRecords method, to just work with that page.
  **
- ** Records are to be read out of the input object's Records field, and after storing,
- ** should be written to the output object's Records, noting that when running
- ** as a streamed-ETL process, those input & output objects will be instances of
- ** the StreamedBackendStep{Input,Output} classes, that will be associated with
- ** a page of records flowing through a pipe.
- **
+ ** Note - of importance over time may be the RunBackendStepInput::cloneFieldsInto
+ ** method - e.g., if new fields are added to that class!
  *******************************************************************************/
-public abstract class AbstractTransformStep implements BackendStep, ProcessSummaryProviderInterface
+public class StreamedBackendStepInput extends RunBackendStepInput
 {
+   private List<QRecord> inputRecords;
+
 
 
    /*******************************************************************************
-    ** Allow subclasses to do an action before the run is complete - before any
-    ** pages of records are passed in.
+    **
     *******************************************************************************/
-   public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public StreamedBackendStepInput(RunBackendStepInput runBackendStepInput, List<QRecord> inputRecords)
    {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
+      super(runBackendStepInput.getInstance());
+      runBackendStepInput.cloneFieldsInto(this);
+      this.inputRecords = inputRecords;
    }
 
 
 
    /*******************************************************************************
-    ** Allow subclasses to do an action after the run is complete - after the last
-    ** page of records is passed in.
+    **
     *******************************************************************************/
-   public void postRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   @Override
+   public void setRecords(List<QRecord> records)
    {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
+      this.inputRecords = records;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> getRecords()
+   {
+      return (inputRecords);
    }
 
 }

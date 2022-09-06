@@ -347,12 +347,12 @@ public class StreamedETLWithFrontendProcessTest
       @Override
       public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
-         for(QRecord qRecord : getInputRecordPage())
+         for(QRecord qRecord : runBackendStepInput.getRecords())
          {
             QRecord newQRecord = new QRecord();
             newQRecord.setValue("firstName", "Johnny");
             newQRecord.setValue("lastName", qRecord.getValueString("name"));
-            getOutputRecordPage().add(newQRecord);
+            runBackendStepOutput.getRecords().add(newQRecord);
          }
       }
 
@@ -403,7 +403,7 @@ public class StreamedETLWithFrontendProcessTest
       @Override
       public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
-         for(QRecord qRecord : getInputRecordPage())
+         for(QRecord qRecord : runBackendStepInput.getRecords())
          {
             if(qRecord.getValueString("name").equals("Circle"))
             {
@@ -414,7 +414,7 @@ public class StreamedETLWithFrontendProcessTest
                QRecord newQRecord = new QRecord();
                newQRecord.setValue("firstName", "Johnny");
                newQRecord.setValue("lastName", qRecord.getValueString("name"));
-               getOutputRecordPage().add(newQRecord);
+               runBackendStepOutput.getRecords().add(newQRecord);
 
                okSummary.incrementCountAndAddPrimaryKey(qRecord.getValue("id"));
             }
@@ -437,12 +437,12 @@ public class StreamedETLWithFrontendProcessTest
       @Override
       public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
-         for(QRecord qRecord : getInputRecordPage())
+         for(QRecord qRecord : runBackendStepInput.getRecords())
          {
             QRecord updatedQRecord = new QRecord();
             updatedQRecord.setValue("id", qRecord.getValue("id"));
             updatedQRecord.setValue("name", "Transformed:" + qRecord.getValueString("name"));
-            getOutputRecordPage().add(updatedQRecord);
+            runBackendStepOutput.getRecords().add(updatedQRecord);
          }
       }
 

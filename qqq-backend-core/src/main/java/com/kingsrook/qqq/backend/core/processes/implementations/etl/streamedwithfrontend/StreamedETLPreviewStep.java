@@ -151,16 +151,21 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       ///////////////////////////////////
       List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
 
+      ///////////////////////////////////////////////////////////////////////
+      // make streamed input & output objects from the run input & outputs //
+      ///////////////////////////////////////////////////////////////////////
+      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
+
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.setInputRecordPage(qRecords);
-      transformStep.run(runBackendStepInput, runBackendStepOutput);
+      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
 
       ////////////////////////////////////////////////////
       // add the transformed records to the output list //
       ////////////////////////////////////////////////////
-      transformedRecordList.addAll(transformStep.getOutputRecordPage());
+      transformedRecordList.addAll(streamedBackendStepOutput.getRecords());
 
       return (qRecords.size());
    }
