@@ -30,6 +30,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
@@ -53,6 +54,7 @@ public class QInstance
    private Map<String, QBackendMetaData> backends = new HashMap<>();
 
    private QAuthenticationMetaData                  authentication      = null;
+   private QBrandingMetaData                        branding            = null;
    private Map<String, QAutomationProviderMetaData> automationProviders = new HashMap<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////
@@ -509,6 +511,28 @@ public class QInstance
 
 
    /*******************************************************************************
+    ** Getter for branding
+    **
+    *******************************************************************************/
+   public QBrandingMetaData getBranding()
+   {
+      return branding;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for branding
+    **
+    *******************************************************************************/
+   public void setBranding(QBrandingMetaData branding)
+   {
+      this.branding = branding;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for authentication
     **
     *******************************************************************************/
@@ -549,6 +573,7 @@ public class QInstance
    {
       this.widgets = widgets;
    }
+
 
 
    /*******************************************************************************

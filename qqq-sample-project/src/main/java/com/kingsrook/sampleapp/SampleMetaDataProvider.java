@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
@@ -128,10 +129,22 @@ public class SampleMetaDataProvider
       qInstance.addProcess(defineProcessSimpleThrow());
 
       defineWidgets(qInstance);
-
+      defineBranding(qInstance);
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineBranding(QInstance qInstance)
+   {
+      qInstance.setBranding(new QBrandingMetaData()
+         .withLogo("/kr-logo.png")
+         .withIcon("/kr-icon.png"));
    }
 
 
@@ -146,10 +159,10 @@ public class SampleMetaDataProvider
          .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
 
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
-      String accountId = interpreter.interpret("${env.QUICKSIGHT_ACCOUNT_ID}");
-      String accessKey = interpreter.interpret("${env.QUICKSIGHT_ACCESS_KEY}");
-      String secretKey = interpreter.interpret("${env.QUICKSIGHT_SECRET_KEY}");
-      String userArn = interpreter.interpret("${env.QUICKSIGHT_USER_ARN}");
+      String                       accountId   = interpreter.interpret("${env.QUICKSIGHT_ACCOUNT_ID}");
+      String                       accessKey   = interpreter.interpret("${env.QUICKSIGHT_ACCESS_KEY}");
+      String                       secretKey   = interpreter.interpret("${env.QUICKSIGHT_SECRET_KEY}");
+      String                       userArn     = interpreter.interpret("${env.QUICKSIGHT_USER_ARN}");
 
       QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
          .withAccountId(accountId)
@@ -219,13 +232,13 @@ public class SampleMetaDataProvider
    {
       if(USE_MYSQL)
       {
-         QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
-         String vendor = interpreter.interpret("${env.RDBMS_VENDOR}");
-         String hostname = interpreter.interpret("${env.RDBMS_HOSTNAME}");
-         Integer port = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
-         String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
-         String username = interpreter.interpret("${env.RDBMS_USERNAME}");
-         String password= interpreter.interpret("${env.RDBMS_PASSWORD}");
+         QMetaDataVariableInterpreter interpreter  = new QMetaDataVariableInterpreter();
+         String                       vendor       = interpreter.interpret("${env.RDBMS_VENDOR}");
+         String                       hostname     = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+         Integer                      port         = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+         String                       databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+         String                       username     = interpreter.interpret("${env.RDBMS_USERNAME}");
+         String                       password     = interpreter.interpret("${env.RDBMS_PASSWORD}");
 
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)

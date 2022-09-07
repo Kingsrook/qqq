@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 /*******************************************************************************
- ** Interface for frontend material dashboard widget's datastructures
+ ** Interface for frontend widget's datastructures
  **
  *******************************************************************************/
 public interface QWidget

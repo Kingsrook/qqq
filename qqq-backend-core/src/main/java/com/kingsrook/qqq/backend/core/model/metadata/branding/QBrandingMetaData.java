@@ -19,144 +19,130 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.metadata.branding;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend AWS quick sight widget
- ** TODO: this might just be an IFrameChart widget in the future
+ ** Meta-Data to define branding in a QQQ instance.
  **
  *******************************************************************************/
-public class QuickSightChart implements QWidget
+public class QBrandingMetaData
 {
-   private String label;
-   private String name;
-   private String url;
+   private String companyName;
+   private String logo;
+   private String icon;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QuickSightChart(String name, String label, String url)
+   @Override
+   public String toString()
    {
-      this.url = url;
-      this.name = name;
-      this.label = label;
+      return ("QBrandingMetaData[" + companyName + "]");
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Getter for companyName
     **
     *******************************************************************************/
-   public String getType()
+   public String getCompanyName()
    {
-      return "quickSightChart";
+      return companyName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for url
+    ** Setter for companyName
     **
     *******************************************************************************/
-   public String getUrl()
+   public void setCompanyName(String companyName)
    {
-      return url;
+      this.companyName = companyName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for url
+    ** Fluent setter for companyName
     **
     *******************************************************************************/
-   public void setUrl(String url)
+   public QBrandingMetaData withCompanyName(String companyName)
    {
-      this.url = url;
+      this.companyName = companyName;
+      return this;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for url
+    ** Getter for logo
     **
     *******************************************************************************/
-   public QuickSightChart withUrl(String url)
+   public String getLogo()
    {
-      this.url = url;
-      return (this);
+      return logo;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for name
+    ** Setter for logo
     **
     *******************************************************************************/
-   public String getName()
+   public void setLogo(String logo)
    {
-      return name;
+      this.logo = logo;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Fluent setter for logo
     **
     *******************************************************************************/
-   public void setName(String name)
+   public QBrandingMetaData withLogo(String logo)
    {
-      this.name = name;
+      this.logo = logo;
+      return this;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
+    ** Getter for icon
     **
     *******************************************************************************/
-   public QuickSightChart withName(String name)
+   public String getIcon()
    {
-      this.name = name;
-      return (this);
+      return icon;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Setter for icon
     **
     *******************************************************************************/
-   public String getLabel()
+   public void setIcon(String icon)
    {
-
-      return label;
+      this.icon = icon;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Fluent setter for icon
     **
     *******************************************************************************/
-   public void setLabel(String label)
+   public QBrandingMetaData withIcon(String icon)
    {
-      this.label = label;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for label
-    **
-    *******************************************************************************/
-   public QuickSightChart withLabel(String label)
-   {
-      this.label = label;
-      return (this);
+      this.icon = icon;
+      return this;
    }
 
 }

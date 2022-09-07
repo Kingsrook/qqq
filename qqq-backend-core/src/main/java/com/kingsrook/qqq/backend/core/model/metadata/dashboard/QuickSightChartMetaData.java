@@ -26,7 +26,7 @@ import java.util.Collection;
 
 
 /*******************************************************************************
- ** AWS Quicksite specific meta data for frontend material dashboard widget
+ ** AWS Quicksite specific meta data for frontend dashboard widget
  **
  *******************************************************************************/
 public class QuickSightChartMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
