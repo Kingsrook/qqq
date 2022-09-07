@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
@@ -164,7 +163,6 @@ public class TestUtils
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -203,6 +201,20 @@ public class TestUtils
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
+   {
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(records);
+      new InsertAction().execute(insertInput);
    }
 
 

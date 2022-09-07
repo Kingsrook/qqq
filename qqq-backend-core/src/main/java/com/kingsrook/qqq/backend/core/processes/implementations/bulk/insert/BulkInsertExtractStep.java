@@ -31,23 +31,22 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractExtractStep;
 import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
 import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
 
 
 /*******************************************************************************
- ** Utility methods used by bulk insert steps
+ ** Extract step for generic table bulk-insert ETL process
  *******************************************************************************/
-public class BulkInsertUtils
+public class BulkInsertExtractStep extends AbstractExtractStep
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   static List<QRecord> getQRecordsFromFile(RunBackendStepInput runBackendStepInput) throws QException
+   @Override
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       AbstractStateKey        stateKey             = (AbstractStateKey) runBackendStepInput.getValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME);
       Optional<QUploadedFile> optionalUploadedFile = TempFileStateProvider.getInstance().get(QUploadedFile.class, stateKey);
@@ -70,33 +69,35 @@ public class BulkInsertUtils
          mapping.addMapping(entry.getKey(), entry.getValue().getLabel());
       }
 
-      List<QRecord> qRecords;
+      //////////////////////////////////////////////////////////////////////////
+      // get the non-editable fields - they'll be blanked out in a customizer //
+      //////////////////////////////////////////////////////////////////////////
+      List<QFieldMetaData> nonEditableFields = table.getFields().values().stream()
+         .filter(f -> !f.getIsEditable())
+         .toList();
+
       if(fileName.toLowerCase(Locale.ROOT).endsWith(".csv"))
       {
-         qRecords = new CsvToQRecordAdapter().buildRecordsFromCsv(new String(bytes), runBackendStepInput.getInstance().getTable(tableName), mapping);
+         new CsvToQRecordAdapter().buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+            .withRecordPipe(getRecordPipe())
+            .withLimit(getLimit())
+            .withCsv(new String(bytes))
+            .withTable(runBackendStepInput.getInstance().getTable(tableName))
+            .withMapping(mapping)
+            .withRecordCustomizer((record) ->
+            {
+               ////////////////////////////////////////////
+               // remove values from non-editable fields //
+               ////////////////////////////////////////////
+               for(QFieldMetaData nonEditableField : nonEditableFields)
+               {
+                  record.setValue(nonEditableField.getName(), null);
+               }
+            }));
       }
       else
       {
          throw (new QUserFacingException("Unsupported file type."));
       }
-
-      ////////////////////////////////////////////////
-      // remove values from any non-editable fields //
-      ////////////////////////////////////////////////
-      List<QFieldMetaData> nonEditableFields = table.getFields().values().stream()
-         .filter(f -> !f.getIsEditable())
-         .toList();
-      if(!nonEditableFields.isEmpty())
-      {
-         for(QRecord qRecord : qRecords)
-         {
-            for(QFieldMetaData nonEditableField : nonEditableFields)
-            {
-               qRecord.setValue(nonEditableField.getName(), null);
-            }
-         }
-      }
-
-      return (qRecords);
    }
 }

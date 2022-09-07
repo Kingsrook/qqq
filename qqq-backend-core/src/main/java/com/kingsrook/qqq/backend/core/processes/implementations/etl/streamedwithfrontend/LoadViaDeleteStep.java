@@ -19,41 +19,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
+package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** Backend step to store the records from a bulk insert file
+ ** Generic implementation of a LoadStep - that runs a Delete action for a
+ ** specified table.
  *******************************************************************************/
-public class BulkInsertStoreRecordsStep implements BackendStep
+public class LoadViaDeleteStep extends AbstractLoadStep
 {
+   public static final String FIELD_DESTINATION_TABLE = "destinationTable";
+
+
+
    /*******************************************************************************
+    ** Execute the backend step - using the request as input, and the result as output.
     **
     *******************************************************************************/
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      List<QRecord> qRecords = BulkInsertUtils.getQRecordsFromFile(runBackendStepInput);
+      QTableMetaData table = runBackendStepInput.getTable();
 
+      DeleteInput deleteInput = new DeleteInput(runBackendStepInput.getInstance());
+      deleteInput.setSession(runBackendStepInput.getSession());
+      deleteInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      deleteInput.setPrimaryKeys(runBackendStepInput.getRecords().stream().map(r -> r.getValue(table.getPrimaryKeyField())).collect(Collectors.toList()));
+      // todo?  can make more efficient deletes, maybe? deleteInput.setQueryFilter();
+      getTransaction().ifPresent(deleteInput::setTransaction);
+      new DeleteAction().execute(deleteInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
+   {
       InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
       insertInput.setSession(runBackendStepInput.getSession());
-      insertInput.setTableName(runBackendStepInput.getTableName());
-      insertInput.setRecords(qRecords);
+      insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
 
-      InsertAction insertAction = new InsertAction();
-      InsertOutput insertOutput = insertAction.execute(insertInput);
-
-      runBackendStepOutput.setRecords(insertOutput.getRecords());
+      return (Optional.of(new InsertAction().openTransaction(insertInput)));
    }
 }

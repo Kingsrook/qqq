@@ -35,7 +35,7 @@ import java.util.List;
 public class ProcessSummaryLine implements Serializable
 {
    private Status  status;
-   private Integer count;
+   private Integer count = 0;
    private String  message;
 
    //////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,16 @@ public class ProcessSummaryLine implements Serializable
    {
       this.status = status;
       this.message = message;
-      this.count = 0;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine(Status status)
+   {
+      this.status = status;
    }
 
 
@@ -186,11 +195,21 @@ public class ProcessSummaryLine implements Serializable
     *******************************************************************************/
    public void incrementCount()
    {
+      incrementCount(1);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void incrementCount(int amount)
+   {
       if(count == null)
       {
          count = 0;
       }
-      count++;
+      count += amount;
    }
 
 

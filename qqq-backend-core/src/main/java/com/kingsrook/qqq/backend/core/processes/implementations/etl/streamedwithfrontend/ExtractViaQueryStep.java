@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -31,9 +33,13 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -94,10 +100,12 @@ public class ExtractViaQueryStep extends AbstractExtractStep
     *******************************************************************************/
    protected QQueryFilter getQueryFilter(RunBackendStepInput runBackendStepInput) throws QException
    {
+      String       queryFilterJson    = runBackendStepInput.getValueString("queryFilterJson");
+      Serializable defaultQueryFilter = runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER);
+
       //////////////////////////////////////////////////////////////////////////////////////
       // if the queryFilterJson field is populated, read the filter from it and return it //
       //////////////////////////////////////////////////////////////////////////////////////
-      String queryFilterJson = runBackendStepInput.getValueString("queryFilterJson");
       if(queryFilterJson != null)
       {
          return getQueryFilterFromJson(queryFilterJson, "Error loading query filter from json field");
@@ -111,20 +119,41 @@ public class ExtractViaQueryStep extends AbstractExtractStep
          runBackendStepInput.addValue("queryFilterJson", JsonUtils.toJson(queryFilter));
          return (queryFilter);
       }
-      else
+      else if(defaultQueryFilter instanceof QQueryFilter filter)
       {
-         /////////////////////////////////////////////////////
-         // else, see if a defaultQueryFilter was specified //
-         /////////////////////////////////////////////////////
-         Serializable defaultQueryFilter = runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER);
-         if(defaultQueryFilter instanceof QQueryFilter filter)
+         /////////////////////////////////////////////////////////////////////////////
+         // else, see if a defaultQueryFilter was specified as a QueryFilter object //
+         /////////////////////////////////////////////////////////////////////////////
+         return (filter);
+      }
+      else if(defaultQueryFilter instanceof String string)
+      {
+         /////////////////////////////////////////////////////////////////////////////
+         // else, see if a defaultQueryFilter was specified as a JSON string
+         /////////////////////////////////////////////////////////////////////////////
+         return getQueryFilterFromJson(string, "Error loading default query filter from json");
+      }
+      else if(StringUtils.hasContent(runBackendStepInput.getValueString("filterJSON")))
+      {
+         ///////////////////////////////////////////////////////////////////////
+         // else, check for filterJSON from a frontend launching of a process //
+         ///////////////////////////////////////////////////////////////////////
+         return getQueryFilterFromJson(runBackendStepInput.getValueString("filterJSON"), "Error loading default query filter from json");
+      }
+      else if(StringUtils.hasContent(runBackendStepInput.getValueString("recordIds")))
+      {
+         //////////////////////////////////////////////////////////////////////
+         // else, check for recordIds from a frontend launching of a process //
+         //////////////////////////////////////////////////////////////////////
+         QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
+         if(table == null)
          {
-            return (filter);
+            throw (new QException("source table name was not set - could not load records by id"));
          }
-         else if(defaultQueryFilter instanceof String string)
-         {
-            return getQueryFilterFromJson(string, "Error loading default query filter from json");
-         }
+         String             recordIds = runBackendStepInput.getValueString("recordIds");
+         Serializable[]     split     = recordIds.split(",");
+         List<Serializable> idStrings = Arrays.stream(split).toList();
+         return (new QQueryFilter().withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, idStrings)));
       }
 
       throw (new QException("Could not find query filter for Extract step."));
