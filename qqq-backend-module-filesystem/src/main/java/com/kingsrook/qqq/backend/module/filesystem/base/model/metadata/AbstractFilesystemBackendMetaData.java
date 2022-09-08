@@ -70,11 +70,10 @@ public class AbstractFilesystemBackendMetaData extends QBackendMetaData
     ** Fluent setter for basePath
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends AbstractFilesystemBackendMetaData> T withBasePath(String basePath)
+   public AbstractFilesystemBackendMetaData withBasePath(String basePath)
    {
       this.basePath = basePath;
-      return (T) this;
+      return (this);
    }
 
 }

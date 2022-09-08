@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -40,13 +43,18 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
  ** Base class for all core actions in the RDBMS module.
  *******************************************************************************/
-public abstract class AbstractRDBMSAction
+public abstract class AbstractRDBMSAction implements QActionInterface
 {
+   private static final Logger LOG = LogManager.getLogger(AbstractRDBMSAction.class);
+
+
 
    /*******************************************************************************
     ** Get the table name to use in the RDBMS from a QTableMetaData.
@@ -319,4 +327,26 @@ public abstract class AbstractRDBMSAction
    {
       return fieldType == QFieldType.STRING || fieldType == QFieldType.TEXT || fieldType == QFieldType.HTML || fieldType == QFieldType.PASSWORD;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QBackendTransaction openTransaction(AbstractTableActionInput input) throws QException
+   {
+      try
+      {
+         LOG.info("Opening transaction");
+         Connection connection = getConnection(input);
+
+         return (new RDBMSTransaction(connection));
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error opening transaction: " + e.getMessage(), e);
+      }
+   }
+
 }

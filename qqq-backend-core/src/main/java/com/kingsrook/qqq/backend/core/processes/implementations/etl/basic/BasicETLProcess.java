@@ -83,7 +83,7 @@ public class BasicETLProcess
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)))
          .withOutputMetaData(new QFunctionOutputMetaData()
-            .addField(new QFieldMetaData(FIELD_RECORD_COUNT, QFieldType.INTEGER)));
+            .withField(new QFieldMetaData(FIELD_RECORD_COUNT, QFieldType.INTEGER)));
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)

@@ -102,13 +102,28 @@ class QMetaDataVariableInterpreterTest
       QMetaDataVariableInterpreter secretReader = new QMetaDataVariableInterpreter();
       String                       key          = "CUSTOM_PROPERTY";
       String                       value        = "ABCD-9876";
-      secretReader.setCustomEnvironment(Map.of(key, value));
+      secretReader.setEnvironmentOverrides(Map.of(key, value));
 
       assertNull(secretReader.interpret(null));
       assertEquals("foo", secretReader.interpret("foo"));
       assertNull(secretReader.interpret("${env.NOT-" + key + "}"));
       assertEquals(value, secretReader.interpret("${env." + key + "}"));
       assertEquals("${env.NOT-" + key, secretReader.interpret("${env.NOT-" + key));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDotEnvFile()
+   {
+      QMetaDataVariableInterpreter secretReader = new QMetaDataVariableInterpreter();
+      String                       key          = "CUSTOM_PROPERTY";
+      String                       value        = "ABCD-9876";
+      assertNull(secretReader.interpret("${env.NOT-" + key + "}"));
+      assertEquals(value, secretReader.interpret("${env." + key + "}"));
    }
 
 

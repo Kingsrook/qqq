@@ -77,6 +77,17 @@ public class QFieldMetaData
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return ("QFieldMetaData[" + name + "]");
+   }
+
+
+
+   /*******************************************************************************
     ** Initialize a fieldMetaData from a reference to a getter on an entity.
     ** e.g., new QFieldMetaData(Order::getOrderNo).
     *******************************************************************************/

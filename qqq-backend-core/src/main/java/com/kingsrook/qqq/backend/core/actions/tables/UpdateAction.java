@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
@@ -42,6 +44,7 @@ public class UpdateAction
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       ActionHelper.validateSession(updateInput);
+      setAutomationStatusField(updateInput);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
@@ -50,4 +53,15 @@ public class UpdateAction
       // todo post-customization - can do whatever w/ the result if you want
       return updateResult;
    }
+
+
+
+   /*******************************************************************************
+    ** If the table being updated uses an automation-status field, populate it now.
+    *******************************************************************************/
+   private void setAutomationStatusField(UpdateInput updateInput)
+   {
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
+   }
+
 }

@@ -37,6 +37,8 @@ public class AsyncJobStatus implements Serializable
    private Integer       total;
    private Exception     caughtException;
 
+   private boolean cancelRequested;
+
 
 
    /*******************************************************************************
@@ -162,5 +164,27 @@ public class AsyncJobStatus implements Serializable
    public void setCaughtException(Exception caughtException)
    {
       this.caughtException = caughtException;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for cancelRequested
+    **
+    *******************************************************************************/
+   public boolean getCancelRequested()
+   {
+      return cancelRequested;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cancelRequested
+    **
+    *******************************************************************************/
+   public void setCancelRequested(boolean cancelRequested)
+   {
+      this.cancelRequested = cancelRequested;
    }
 }

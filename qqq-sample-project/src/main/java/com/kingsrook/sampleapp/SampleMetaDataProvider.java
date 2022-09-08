@@ -22,24 +22,36 @@
 package com.kingsrook.sampleapp;
 
 
+import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import com.amazonaws.regions.Regions;
+import com.kingsrook.qqq.backend.core.actions.dashboard.QuickSightChartRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
@@ -49,6 +61,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
@@ -56,7 +71,8 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFor
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.kingsrook.sampleapp.dashboard.widgets.PersonsByCreateDateBarChart;
+import com.kingsrook.sampleapp.processes.clonepeople.ClonePeopleTransformStep;
 
 
 /*******************************************************************************
@@ -69,16 +85,13 @@ public class SampleMetaDataProvider
    public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
 
-   public static final String AUTH0_AUTHENTICATION_MODULE_NAME = "auth0";
-   // public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
-   public static final String AUTH0_BASE_URL                   = "https://nutrifresh-one-development.us.auth0.com/";
-
    public static final String APP_NAME_GREETINGS     = "greetingsApp";
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
    public static final String PROCESS_NAME_GREET             = "greet";
    public static final String PROCESS_NAME_GREET_INTERACTIVE = "greetInteractive";
+   public static final String PROCESS_NAME_CLONE_PEOPLE      = "clonePeople";
    public static final String PROCESS_NAME_SIMPLE_SLEEP      = "simpleSleep";
    public static final String PROCESS_NAME_SIMPLE_THROW      = "simpleThrow";
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
@@ -110,13 +123,59 @@ public class SampleMetaDataProvider
       qInstance.addTable(defineTableCityFile());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
+      qInstance.addProcess(defineProcessClonePeople());
       qInstance.addProcess(defineProcessSimpleSleep());
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
+      defineWidgets(qInstance);
+      defineBranding(qInstance);
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineBranding(QInstance qInstance)
+   {
+      qInstance.setBranding(new QBrandingMetaData()
+         .withLogo("/kr-logo.png")
+         .withIcon("/kr-icon.png"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineWidgets(QInstance qInstance)
+   {
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName(PersonsByCreateDateBarChart.class.getSimpleName())
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      String                       accountId   = interpreter.interpret("${env.QUICKSIGHT_ACCOUNT_ID}");
+      String                       accessKey   = interpreter.interpret("${env.QUICKSIGHT_ACCESS_KEY}");
+      String                       secretKey   = interpreter.interpret("${env.QUICKSIGHT_SECRET_KEY}");
+      String                       userArn     = interpreter.interpret("${env.QUICKSIGHT_USER_ARN}");
+
+      QWidgetMetaDataInterface quickSightChartMetaData = new QuickSightChartMetaData()
+         .withAccountId(accountId)
+         .withAccessKey(accessKey)
+         .withSecretKey(secretKey)
+         .withUserArn(userArn)
+         .withDashboardId("9e452e78-8509-4c81-bb7f-967abfc356da")
+         .withRegion(Regions.US_EAST_2.getName())
+         .withName(QuickSightChartRenderer.class.getSimpleName())
+         .withLabel("Example Quicksight Chart")
+         .withCodeReference(new QCodeReference(QuickSightChartRenderer.class, null));
+
+      qInstance.addWidget(quickSightChartMetaData);
    }
 
 
@@ -129,19 +188,19 @@ public class SampleMetaDataProvider
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_GREETINGS)
          .withIcon(new QIcon().withName("emoji_people"))
-         .withChild(qInstance.getProcess(PROCESS_NAME_GREET)
-            .withIcon(new QIcon().withName("emoji_people")))
-         .withChild(qInstance.getTable(TABLE_NAME_PERSON)
-            .withIcon(new QIcon().withName("person")))
-         .withChild(qInstance.getTable(TABLE_NAME_CITY)
-            .withIcon(new QIcon().withName("location_city")))
-         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE))
-         .withIcon(new QIcon().withName("waving_hand")));
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET).withIcon(new QIcon().withName("emoji_people")))
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON).withIcon(new QIcon().withName("person")))
+         .withChild(qInstance.getTable(TABLE_NAME_CITY).withIcon(new QIcon().withName("location_city")))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE).withIcon(new QIcon().withName("waving_hand")))
+         .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName(), QuickSightChartRenderer.class.getSimpleName()))
+      );
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_PEOPLE)
          .withIcon(new QIcon().withName("person"))
-         .withChild(qInstance.getApp(APP_NAME_GREETINGS)));
+         .withChild(qInstance.getApp(APP_NAME_GREETINGS))
+         .withChild(qInstance.getProcess(PROCESS_NAME_CLONE_PEOPLE).withIcon(new QIcon().withName("content_copy")))
+      );
 
       qInstance.addApp(new QAppMetaData()
          .withName(APP_NAME_MISCELLANEOUS)
@@ -173,15 +232,22 @@ public class SampleMetaDataProvider
    {
       if(USE_MYSQL)
       {
-         Dotenv dotenv = Dotenv.configure().load();
+         QMetaDataVariableInterpreter interpreter  = new QMetaDataVariableInterpreter();
+         String                       vendor       = interpreter.interpret("${env.RDBMS_VENDOR}");
+         String                       hostname     = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+         Integer                      port         = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+         String                       databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+         String                       username     = interpreter.interpret("${env.RDBMS_USERNAME}");
+         String                       password     = interpreter.interpret("${env.RDBMS_PASSWORD}");
+
          return new RDBMSBackendMetaData()
             .withName(RDBMS_BACKEND_NAME)
-            .withVendor("mysql")
-            .withHostName("127.0.0.1")
-            .withPort(3306)
-            .withDatabaseName("qqq")
-            .withUsername("root")
-            .withPassword(dotenv.get("RDBMS_PASSWORD"));
+            .withVendor(vendor)
+            .withHostName(hostname)
+            .withPort(port)
+            .withDatabaseName(databaseName)
+            .withUsername(username)
+            .withPassword(password);
       }
       else
       {
@@ -231,8 +297,8 @@ public class SampleMetaDataProvider
          .withBackendName("company_code"));
 
       table.addField(new QFieldMetaData("service_level", QFieldType.STRING) // todo PVS
-            .withLabel("Service Level")
-            .withIsRequired(true));
+         .withLabel("Service Level")
+         .withIsRequired(true));
 
       table.addSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "name")));
       table.addSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("company_code", "service_level")));
@@ -312,10 +378,7 @@ public class SampleMetaDataProvider
          .withIsHidden(true)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
-            .withCode(new QCodeReference()
-               .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+            .withCode(new QCodeReference(MockBackendStep.class))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -325,7 +388,7 @@ public class SampleMetaDataProvider
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          );
@@ -346,6 +409,7 @@ public class SampleMetaDataProvider
 
          .addStep(new QFrontendStepMetaData()
             .withName("setup")
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
             .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
             .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
          )
@@ -365,13 +429,15 @@ public class SampleMetaDataProvider
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
 
          .addStep(new QFrontendStepMetaData()
             .withName("results")
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST))
             .withViewField(new QFieldMetaData("noOfPeopleGreeted", QFieldType.INTEGER))
             .withViewField(new QFieldMetaData("outputMessage", QFieldType.STRING))
             .withRecordListField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -379,6 +445,35 @@ public class SampleMetaDataProvider
             // .withRecordListField(new QFieldMetaData(MockBackendStep.FIELD_MOCK_VALUE, QFieldType.STRING))
             .withRecordListField(new QFieldMetaData("greetingMessage", QFieldType.STRING))
          );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessClonePeople()
+   {
+      Map<String, Serializable> values = new HashMap<>();
+      values.put(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE, TABLE_NAME_PERSON);
+      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, TABLE_NAME_PERSON);
+      values.put(StreamedETLWithFrontendProcess.FIELD_PREVIEW_MESSAGE, "This is a preview of what the clones will look like.");
+
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         ExtractViaQueryStep.class,
+         ClonePeopleTransformStep.class,
+         LoadViaInsertStep.class,
+         values
+      );
+      process.setName(PROCESS_NAME_CLONE_PEOPLE);
+      process.setTableName(TABLE_NAME_PERSON);
+
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW)
+         .withRecordListField(new QFieldMetaData("firstName", QFieldType.STRING))
+         .withRecordListField(new QFieldMetaData("lastName", QFieldType.STRING))
+      ;
+
+      return (process);
    }
 
 
@@ -405,10 +500,12 @@ public class SampleMetaDataProvider
          .withName(PROCESS_NAME_SLEEP_INTERACTIVE)
          .addStep(new QFrontendStepMetaData()
             .withName(SCREEN_0)
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)))
          .addStep(SleeperStep.getMetaData())
          .addStep(new QFrontendStepMetaData()
             .withName(SCREEN_1)
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)));
    }
 
@@ -467,7 +564,7 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP))
             .withInputData(new QFunctionInputMetaData()
-               .addField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+               .withField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
    }
 

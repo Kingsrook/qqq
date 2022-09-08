@@ -122,7 +122,8 @@
                   <id>validate</id>
                   <phase>validate</phase>
                   <configuration>
-                     <configLocation>checkstyle.xml</configLocation>
+                     <configLocation>checkstyle/config.xml</configLocation>
+                     <headerLocation>checkstyle/license.txt</headerLocation>
                      <!-- <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation> -->
                      <encoding>UTF-8</encoding>
                      <consoleOutput>true</consoleOutput>

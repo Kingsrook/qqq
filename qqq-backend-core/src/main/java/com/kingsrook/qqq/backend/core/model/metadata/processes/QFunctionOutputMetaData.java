@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
  *******************************************************************************/
 public class QFunctionOutputMetaData
 {
-   private QRecordListMetaData recordListMetaData;
+   private QRecordListMetaData  recordListMetaData;
    private List<QFieldMetaData> fieldList;
 
 
@@ -106,11 +106,12 @@ public class QFunctionOutputMetaData
 
 
 
+
    /*******************************************************************************
-    ** Setter for fieldList
+    ** Fluently add a field to the list
     **
     *******************************************************************************/
-   public QFunctionOutputMetaData addField(QFieldMetaData field)
+   public QFunctionOutputMetaData withField(QFieldMetaData field)
    {
       if(this.fieldList == null)
       {

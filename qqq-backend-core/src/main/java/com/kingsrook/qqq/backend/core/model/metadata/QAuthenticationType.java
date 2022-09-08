@@ -26,7 +26,6 @@ package com.kingsrook.qqq.backend.core.model.metadata;
  ** Enum to define the possible authentication types
  **
  *******************************************************************************/
-@SuppressWarnings("rawtypes")
 public enum QAuthenticationType
 {
    AUTH_0("auth0"),

@@ -41,7 +41,12 @@ public class RecordPipe
 {
    private static final Logger LOG = LogManager.getLogger(RecordPipe.class);
 
+   private static final long BLOCKING_SLEEP_MILLIS = 100;
+   private static final long MAX_SLEEP_LOOP_MILLIS = 300_000; // 5 minutes
+
    private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
+
+   private boolean isTerminated = false;
 
    private Consumer<List<QRecord>> postRecordActions = null;
 
@@ -51,11 +56,31 @@ public class RecordPipe
    private List<QRecord> singleRecordListForPostRecordActions = new ArrayList<>();
 
 
+
    /*******************************************************************************
-    ** Add a record to the pipe.  Will block if the pipe is full.
+    ** Turn off the pipe.  Stop accepting new records (just ignore them in the add
+    ** method).  Clear the existing queue.  Don't return any more records.  Note that
+    ** if consumeAvailableRecords was running in another thread, it may still return
+    ** some records that it read before this call.
+    *******************************************************************************/
+   public void terminate()
+   {
+      isTerminated = true;
+      queue.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Add a record to the pipe.  Will block if the pipe is full.  Will noop if pipe is terminated.
     *******************************************************************************/
    public void addRecord(QRecord record)
    {
+      if(isTerminated)
+      {
+         return;
+      }
+
       if(postRecordActions != null)
       {
          ////////////////////////////////////////////////////////////////////////////////////
@@ -82,18 +107,29 @@ public class RecordPipe
    {
       boolean offerResult = queue.offer(record);
 
-      while(!offerResult)
+      if(!offerResult && !isTerminated)
       {
-         LOG.debug("Record pipe.add failed (due to full pipe).  Blocking.");
-         SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
-         offerResult = queue.offer(record);
+         long sleepLoopStartTime = System.currentTimeMillis();
+         long now                = System.currentTimeMillis();
+         while(!offerResult && !isTerminated)
+         {
+            if(now - sleepLoopStartTime > MAX_SLEEP_LOOP_MILLIS)
+            {
+               LOG.warn("Giving up adding record to pipe, due to pipe being full for more than {} millis", MAX_SLEEP_LOOP_MILLIS);
+               throw (new IllegalStateException("Giving up adding record to pipe, due to pipe staying full too long."));
+            }
+            LOG.trace("Record pipe.add failed (due to full pipe).  Blocking.");
+            SleepUtils.sleep(BLOCKING_SLEEP_MILLIS, TimeUnit.MILLISECONDS);
+            offerResult = queue.offer(record);
+            now = System.currentTimeMillis();
+         }
       }
    }
 
 
 
    /*******************************************************************************
-    ** Add a list of records to the pipe
+    ** Add a list of records to the pipe.  Will block if the pipe is full.  Will noop if pipe is terminated.
     *******************************************************************************/
    public void addRecords(List<QRecord> records)
    {
@@ -117,7 +153,7 @@ public class RecordPipe
    {
       List<QRecord> rs = new ArrayList<>();
 
-      while(true)
+      while(!isTerminated)
       {
          QRecord record = queue.poll();
          if(record == null)
@@ -137,6 +173,11 @@ public class RecordPipe
     *******************************************************************************/
    public int countAvailableRecords()
    {
+      if(isTerminated)
+      {
+         return (0);
+      }
+
       return (queue.size());
    }
 

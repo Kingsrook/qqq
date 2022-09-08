@@ -75,11 +75,10 @@ public class QBackendMetaData
    /*******************************************************************************
     ** Fluent setter, returning generically, to help sub-class fluent flows
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends QBackendMetaData> T withName(String name)
+   public QBackendMetaData withName(String name)
    {
       this.name = name;
-      return (T) this;
+      return this;
    }
 
 

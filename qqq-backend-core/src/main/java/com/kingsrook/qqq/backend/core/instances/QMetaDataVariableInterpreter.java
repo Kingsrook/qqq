@@ -23,9 +23,12 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import io.github.cdimascio.dotenv.Dotenv;
+import io.github.cdimascio.dotenv.DotenvEntry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +48,22 @@ public class QMetaDataVariableInterpreter
 {
    private static final Logger LOG = LogManager.getLogger(QMetaDataVariableInterpreter.class);
 
-   private Map<String, String> customEnvironment;
+   private Map<String, String> environmentOverrides;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QMetaDataVariableInterpreter()
+   {
+      environmentOverrides = new HashMap<>();
+      Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+      for(DotenvEntry e : dotenv.entries())
+      {
+         environmentOverrides.put(e.getKey(), e.getValue());
+      }
+   }
 
 
 
@@ -86,7 +104,7 @@ public class QMetaDataVariableInterpreter
             //////////////////////////////////////////////////////////////////////////////////////////////
             // get the value - if it's null, move on, else, interpret it, and put it back in the object //
             //////////////////////////////////////////////////////////////////////////////////////////////
-            Object value  = getter.invoke(o);
+            Object value = getter.invoke(o);
             if(value == null)
             {
                continue;
@@ -124,7 +142,7 @@ public class QMetaDataVariableInterpreter
       if(value.startsWith(envPrefix) && value.endsWith("}"))
       {
          String envVarName = value.substring(envPrefix.length()).replaceFirst("}$", "");
-         String envValue   = getEnvironment().get(envVarName);
+         String envValue   = getEnvironmentVariable(envVarName);
          return (envValue);
       }
 
@@ -149,13 +167,13 @@ public class QMetaDataVariableInterpreter
 
 
    /*******************************************************************************
-    ** Setter for customEnvironment - protected - meant to be called (at least at this
+    ** Setter for environmentOverrides - protected - meant to be called (at least at this
     ** time), only in unit test
     **
     *******************************************************************************/
-   protected void setCustomEnvironment(Map<String, String> customEnvironment)
+   protected void setEnvironmentOverrides(Map<String, String> environmentOverrides)
    {
-      this.customEnvironment = customEnvironment;
+      this.environmentOverrides = environmentOverrides;
    }
 
 
@@ -163,13 +181,13 @@ public class QMetaDataVariableInterpreter
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<String, String> getEnvironment()
+   private String getEnvironmentVariable(String key)
    {
-      if(this.customEnvironment != null)
+      if(this.environmentOverrides.containsKey(key))
       {
-         return (this.customEnvironment);
+         return (this.environmentOverrides.get(key));
       }
 
-      return System.getenv();
+      return System.getenv(key);
    }
 }

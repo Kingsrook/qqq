@@ -22,38 +22,39 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteStoreStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditReceiveValuesStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditStoreRecordsStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertStoreRecordsStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.general.LoadInitialRecordsStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -293,6 +294,20 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void defineTableBulkInsert(QInstance qInstance, QTableMetaData table, String processName)
    {
+      Map<String, Serializable> values = new HashMap<>();
+      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
+
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+            BulkInsertExtractStep.class,
+            BulkInsertTransformStep.class,
+            LoadViaInsertStep.class,
+            values
+         )
+         .withName(processName)
+         .withLabel(table.getLabel() + " Bulk Insert")
+         .withTableName(table.getName())
+         .withIsHidden(true);
+
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
          .toList();
@@ -307,50 +322,13 @@ public class QInstanceEnricher
          .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withIsRequired(true))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
-            // .withValue("text", "Upload a CSV or XLSX file with the following columns: " + fieldsForHelpText));
-            .withValue("text", "Upload a CSV file with the following columns: " + fieldsForHelpText));
+            .withValue("previewText", "file upload instructions")
+            .withValue("text", "Upload a CSV file with the following columns:\n" + fieldsForHelpText))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
 
-      QBackendStepMetaData receiveFileStep = new QBackendStepMetaData()
-         .withName("receiveFile")
-         .withCode(new QCodeReference(BulkInsertReceiveFileStep.class))
-         .withOutputMetaData(new QFunctionOutputMetaData()
-            .withFieldList(List.of(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER))));
-
-      QFrontendStepMetaData reviewScreen = new QFrontendStepMetaData()
-         .withName("review")
-         .withRecordListFields(editableFields)
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below were parsed from your file, and will be inserted if you click Submit."))
-         .withViewField(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER).withLabel("# of file rows"));
-
-      QBackendStepMetaData storeStep = new QBackendStepMetaData()
-         .withName("storeRecords")
-         .withCode(new QCodeReference(BulkInsertStoreRecordsStep.class))
-         .withOutputMetaData(new QFunctionOutputMetaData()
-            .withFieldList(List.of(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER))));
-
-      QFrontendStepMetaData resultsScreen = new QFrontendStepMetaData()
-         .withName("results")
-         .withRecordListFields(new ArrayList<>(table.getFields().values()))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below have been inserted."))
-         .withViewField(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER).withLabel("# of file rows"));
-
-      qInstance.addProcess(
-         new QProcessMetaData()
-            .withName(processName)
-            .withLabel(table.getLabel() + " Bulk Insert")
-            .withTableName(table.getName())
-            .withIsHidden(true)
-            .withStepList(List.of(
-               uploadScreen,
-               receiveFileStep,
-               reviewScreen,
-               storeStep,
-               resultsScreen
-            )));
+      process.addStep(0, uploadScreen);
+      process.getFrontendStep("review").setRecordListFields(editableFields);
+      qInstance.addProcess(process);
    }
 
 
@@ -360,6 +338,22 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void defineTableBulkEdit(QInstance qInstance, QTableMetaData table, String processName)
    {
+      Map<String, Serializable> values = new HashMap<>();
+      values.put(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE, table.getName());
+      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
+      values.put(StreamedETLWithFrontendProcess.FIELD_PREVIEW_MESSAGE, StreamedETLWithFrontendProcess.DEFAULT_PREVIEW_MESSAGE_FOR_UPDATE);
+
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+            ExtractViaQueryStep.class,
+            BulkEditTransformStep.class,
+            LoadViaUpdateStep.class,
+            values
+         )
+         .withName(processName)
+         .withLabel(table.getLabel() + " Bulk Edit")
+         .withTableName(table.getName())
+         .withIsHidden(true);
+
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
          .toList();
@@ -375,54 +369,11 @@ public class QInstanceEnricher
                The values you supply here will be updated in all of the records you are bulk editing.
                You can clear out the value in a field by flipping the switch on for that field and leaving the input field blank.
                Fields whose switches are off will not be updated."""))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.BULK_EDIT_FORM)
-         );
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_EDIT_FORM));
 
-      QBackendStepMetaData receiveValuesStep = new QBackendStepMetaData()
-         .withName("receiveValues")
-         .withCode(new QCodeReference(BulkEditReceiveValuesStep.class))
-         .withInputData(new QFunctionInputMetaData()
-            .withRecordListMetaData(new QRecordListMetaData().withTableName(table.getName()))
-            .withField(new QFieldMetaData(BulkEditReceiveValuesStep.FIELD_ENABLED_FIELDS, QFieldType.STRING))
-            .withFields(editableFields));
-
-      QFrontendStepMetaData reviewScreen = new QFrontendStepMetaData()
-         .withName("review")
-         .withRecordListFields(editableFields)
-         .withViewField(new QFieldMetaData(BulkEditReceiveValuesStep.FIELD_VALUES_BEING_UPDATED, QFieldType.STRING))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below will be updated if you click Submit."));
-
-      QBackendStepMetaData storeStep = new QBackendStepMetaData()
-         .withName("storeRecords")
-         .withCode(new QCodeReference(BulkEditStoreRecordsStep.class))
-         .withOutputMetaData(new QFunctionOutputMetaData()
-            .withFieldList(List.of(new QFieldMetaData("noOfFileRows", QFieldType.INTEGER))));
-
-      QFrontendStepMetaData resultsScreen = new QFrontendStepMetaData()
-         .withName("results")
-         .withRecordListFields(new ArrayList<>(table.getFields().values()))
-         .withViewField(new QFieldMetaData(BulkEditReceiveValuesStep.FIELD_VALUES_BEING_UPDATED, QFieldType.STRING))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below have been updated."));
-
-      qInstance.addProcess(
-         new QProcessMetaData()
-            .withName(processName)
-            .withLabel(table.getLabel() + " Bulk Edit")
-            .withTableName(table.getName())
-            .withIsHidden(true)
-            .withStepList(List.of(
-               LoadInitialRecordsStep.defineMetaData(table.getName()),
-               editScreen,
-               receiveValuesStep,
-               reviewScreen,
-               storeStep,
-               resultsScreen
-            )));
+      process.addStep(0, editScreen);
+      process.getFrontendStep("review").setRecordListFields(editableFields);
+      qInstance.addProcess(process);
    }
 
 
@@ -432,36 +383,26 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void defineTableBulkDelete(QInstance qInstance, QTableMetaData table, String processName)
    {
-      QFrontendStepMetaData reviewScreen = new QFrontendStepMetaData()
-         .withName("review")
-         .withRecordListFields(new ArrayList<>(table.getFields().values()))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below will be deleted if you click Submit."));
+      Map<String, Serializable> values = new HashMap<>();
+      values.put(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE, table.getName());
+      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
+      values.put(StreamedETLWithFrontendProcess.FIELD_PREVIEW_MESSAGE, StreamedETLWithFrontendProcess.DEFAULT_PREVIEW_MESSAGE_FOR_DELETE);
 
-      QBackendStepMetaData storeStep = new QBackendStepMetaData()
-         .withName("delete")
-         .withCode(new QCodeReference(BulkDeleteStoreStep.class));
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+            ExtractViaQueryStep.class,
+            BulkDeleteTransformStep.class,
+            LoadViaDeleteStep.class,
+            values
+         )
+         .withName(processName)
+         .withLabel(table.getLabel() + " Bulk Delete")
+         .withTableName(table.getName())
+         .withIsHidden(true);
 
-      QFrontendStepMetaData resultsScreen = new QFrontendStepMetaData()
-         .withName("results")
-         .withRecordListFields(new ArrayList<>(table.getFields().values()))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("text", "The records below have been deleted."));
+      List<QFieldMetaData> tableFields = table.getFields().values().stream().toList();
+      process.getFrontendStep("review").setRecordListFields(tableFields);
 
-      qInstance.addProcess(
-         new QProcessMetaData()
-            .withName(processName)
-            .withLabel(table.getLabel() + " Bulk Delete")
-            .withTableName(table.getName())
-            .withIsHidden(true)
-            .withStepList(List.of(
-               LoadInitialRecordsStep.defineMetaData(table.getName()),
-               reviewScreen,
-               storeStep,
-               resultsScreen
-            )));
+      qInstance.addProcess(process);
    }
 
 
@@ -567,6 +508,7 @@ public class QInstanceEnricher
 
       return (String.join("_", words).toLowerCase(Locale.ROOT));
    }
+
 
 
    /*******************************************************************************

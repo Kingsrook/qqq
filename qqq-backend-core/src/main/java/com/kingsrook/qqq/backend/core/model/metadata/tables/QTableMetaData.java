@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 
 
 /*******************************************************************************
@@ -63,7 +64,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private Map<String, QFieldMetaData> fields;
 
-   private QTableBackendDetails backendDetails;
+   private QTableBackendDetails    backendDetails;
+   private QTableAutomationDetails automationDetails;
 
    private Map<String, QCodeReference> customizers;
 
@@ -405,6 +407,40 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withBackendDetails(QTableBackendDetails backendDetails)
    {
       this.backendDetails = backendDetails;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for automationDetails
+    **
+    *******************************************************************************/
+   public QTableAutomationDetails getAutomationDetails()
+   {
+      return automationDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for automationDetails
+    **
+    *******************************************************************************/
+   public void setAutomationDetails(QTableAutomationDetails automationDetails)
+   {
+      this.automationDetails = automationDetails;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for automationDetails
+    **
+    *******************************************************************************/
+   public QTableMetaData withAutomationDetails(QTableAutomationDetails automationDetails)
+   {
+      this.automationDetails = automationDetails;
       return (this);
    }
 

@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
+import com.kingsrook.qqq.backend.core.actions.dashboard.WidgetDataLoader;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
@@ -283,6 +284,8 @@ public class QJavalinImplementation
                delete("", QJavalinImplementation::dataDelete);
             });
          });
+
+         get("/widget/{name}", QJavalinImplementation::widget);
 
          ////////////////////
          // process routes //
@@ -666,6 +669,27 @@ public class QJavalinImplementation
       }
    }
 
+
+
+
+   /*******************************************************************************
+    ** Load the data for a widget of a given name.
+    *******************************************************************************/
+   private static void widget(Context context)
+   {
+      try
+      {
+         InsertInput insertInput = new InsertInput(qInstance);
+         setupSession(context, insertInput);
+
+         Object widgetData = new WidgetDataLoader().execute(qInstance, insertInput.getSession(), context.pathParam("name"));
+         context.result(JsonUtils.toJson(widgetData));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
 
 
    /*******************************************************************************

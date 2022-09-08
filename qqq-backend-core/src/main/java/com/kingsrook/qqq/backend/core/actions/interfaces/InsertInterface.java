@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.actions.interfaces;
 
 
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
@@ -32,19 +31,11 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
  ** Interface for the Insert action.
  **
  *******************************************************************************/
-public interface InsertInterface
+public interface InsertInterface extends QActionInterface
 {
    /*******************************************************************************
     **
     *******************************************************************************/
    InsertOutput execute(InsertInput insertInput) throws QException;
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QBackendTransaction openTransaction(InsertInput insertInput) throws QException
-   {
-      return (new QBackendTransaction());
-   }
 
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -443,16 +444,21 @@ public class QJavalinProcessHandler
          }
          ProcessState processState = optionalProcessState.get();
 
-         List<QRecord> records = processState.getRecords();
-         if(CollectionUtils.nullSafeIsEmpty(records))
+         List<QRecord>       records         = processState.getRecords();
+         Map<String, Object> resultForCaller = new HashMap<>();
+
+         if(records == null)
          {
-            throw (new Exception("No records were found for the process."));
+            resultForCaller.put("records", new ArrayList<>());
+            resultForCaller.put("totalRecords", 0);
+         }
+         else
+         {
+            List<QRecord> recordPage = CollectionUtils.safelyGetPage(records, skip, limit);
+            resultForCaller.put("records", recordPage);
+            resultForCaller.put("totalRecords", records.size());
          }
 
-         Map<String, Object> resultForCaller = new HashMap<>();
-         List<QRecord>       recordPage      = CollectionUtils.safelyGetPage(records, skip, limit);
-         resultForCaller.put("records", recordPage);
-         resultForCaller.put("totalRecords", records.size());
          context.result(JsonUtils.toJson(resultForCaller));
       }
       catch(Exception e)

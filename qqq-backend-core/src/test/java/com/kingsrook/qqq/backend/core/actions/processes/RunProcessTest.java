@@ -23,24 +23,34 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -56,6 +66,9 @@ import static org.junit.jupiter.api.Assertions.fail;
  *******************************************************************************/
 public class RunProcessTest
 {
+   private static final Logger LOG = LogManager.getLogger(RunProcessTest.class);
+
+
 
    /*******************************************************************************
     **
@@ -85,7 +98,7 @@ public class RunProcessTest
    @Test
    public void testBreakOnFrontendSteps() throws QException
    {
-      TestCallback      callback    = new TestCallback();
+      TestCallback    callback    = new TestCallback();
       QInstance       instance    = TestUtils.defineInstance();
       RunProcessInput request     = new RunProcessInput(instance);
       String          processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
@@ -130,7 +143,7 @@ public class RunProcessTest
    @Test
    public void testSkipFrontendSteps() throws QException
    {
-      TestCallback      callback    = new TestCallback();
+      TestCallback    callback    = new TestCallback();
       QInstance       instance    = TestUtils.defineInstance();
       RunProcessInput request     = new RunProcessInput(instance);
       String          processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
@@ -154,7 +167,7 @@ public class RunProcessTest
    @Test
    public void testFailOnFrontendSteps()
    {
-      TestCallback      callback    = new TestCallback();
+      TestCallback    callback    = new TestCallback();
       QInstance       instance    = TestUtils.defineInstance();
       RunProcessInput request     = new RunProcessInput(instance);
       String          processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
@@ -188,7 +201,8 @@ public class RunProcessTest
       ////////////////////////////////////////////////////////////////////////////////
       RunProcessInput     runProcessInput = new RunProcessInput();
       UUIDAndTypeStateKey stateKey        = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS);
-      ProcessState        processState    = new RunProcessAction().primeProcessState(runProcessInput, stateKey);
+      QProcessMetaData    process         = TestUtils.defineInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+      ProcessState        processState    = new RunProcessAction().primeProcessState(runProcessInput, stateKey, process);
       assertNotNull(processState);
    }
 
@@ -206,10 +220,11 @@ public class RunProcessTest
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setStartAfterStep("setupStep");
       UUIDAndTypeStateKey stateKey = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS);
+      QProcessMetaData    process  = TestUtils.defineInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
 
       assertThrows(QException.class, () ->
       {
-         new RunProcessAction().primeProcessState(runProcessInput, stateKey);
+         new RunProcessAction().primeProcessState(runProcessInput, stateKey, process);
       });
    }
 
@@ -238,7 +253,8 @@ public class RunProcessTest
       oldProcessState.getValues().put("foo", "fubu");
       RunProcessAction.getStateProvider().put(stateKey, oldProcessState);
 
-      ProcessState primedProcessState = new RunProcessAction().primeProcessState(runProcessInput, stateKey);
+      QProcessMetaData process            = TestUtils.defineInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+      ProcessState     primedProcessState = new RunProcessAction().primeProcessState(runProcessInput, stateKey, process);
       assertEquals("myValue", primedProcessState.getValues().get("key"));
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -246,6 +262,163 @@ public class RunProcessTest
       /////////////////////////////////////////////////////////////////////////////////////////////
       assertEquals("bar", primedProcessState.getValues().get("foo"));
       assertEquals("beta", primedProcessState.getValues().get("alpha"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Test a simple version of custom routing, where we just add a frontend step.
+    *******************************************************************************/
+   @Test
+   void testCustomRoutingAddFrontendStep() throws QException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+
+      QStepMetaData back1 = new QBackendStepMetaData()
+         .withName("back1")
+         .withCode(new QCodeReference(BackendStepThatMayAddFrontendStep.class));
+
+      QStepMetaData front1 = new QFrontendStepMetaData()
+         .withName("front1");
+
+      String processName = "customRouting";
+      qInstance.addProcess(new QProcessMetaData()
+         .withName(processName)
+         .withStepList(List.of(
+            back1
+            //////////////////////////////////////
+            // only put back1 in the step list. //
+            //////////////////////////////////////
+         ))
+         .addOptionalStep(front1)
+      );
+
+      ////////////////////////////////////////////////////////////
+      // make sure that if we run by default, we get to the end //
+      ////////////////////////////////////////////////////////////
+      RunProcessInput request = new RunProcessInput(qInstance);
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(processName);
+      request.setCallback(new TestCallback());
+      request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
+      RunProcessOutput result = new RunProcessAction().execute(request);
+      assertThat(result.getProcessState().getNextStepName()).isEmpty();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // now run again, with the field set to cause the front1 step to be added to the step list //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      request.addValue("shouldAddFrontendStep", true);
+      result = new RunProcessAction().execute(request);
+      assertThat(result.getProcessState().getNextStepName()).hasValue("front1");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class BackendStepThatMayAddFrontendStep implements BackendStep
+   {
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         LOG.info("Running " + getClass().getSimpleName());
+         if(runBackendStepInput.getValue("shouldAddFrontendStep") != null)
+         {
+            List<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
+            stepList.add("front1");
+            runBackendStepOutput.getProcessState().setStepList(stepList);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Test a version of custom routing, where we remove steps
+    *******************************************************************************/
+   @Test
+   void testCustomRoutingRemoveSteps() throws QException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+
+      QStepMetaData back1 = new QBackendStepMetaData()
+         .withName("back1")
+         .withCode(new QCodeReference(BackendStepThatMayRemoveFrontendStep.class));
+
+      QStepMetaData front1 = new QFrontendStepMetaData()
+         .withName("front1");
+
+      QStepMetaData back2 = new QBackendStepMetaData()
+         .withName("back2")
+         .withCode(new QCodeReference(NoopBackendStep.class));
+
+      QStepMetaData front2 = new QFrontendStepMetaData()
+         .withName("front2");
+
+      String processName = "customRouting";
+      qInstance.addProcess(new QProcessMetaData()
+         .withName(processName)
+         .withStepList(List.of(
+            back1,
+            front1,
+            back2,
+            front2
+         ))
+      );
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // make sure that if we run by default, we get stopped on both frontend steps //
+      ////////////////////////////////////////////////////////////////////////////////
+      RunProcessInput request = new RunProcessInput(qInstance);
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(processName);
+      request.setCallback(new TestCallback());
+      request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
+      RunProcessOutput result = new RunProcessAction().execute(request);
+      assertThat(result.getProcessState().getNextStepName()).hasValue("front1");
+
+      request.setStartAfterStep("front1");
+      result = new RunProcessAction().execute(request);
+      assertThat(result.getProcessState().getNextStepName()).hasValue("front2");
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // now run again, with the field set to cause the front1 step to be removed from the step list //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      request.setStartAfterStep(null);
+      request.addValue("shouldRemoveFrontendStep", true);
+      result = new RunProcessAction().execute(request);
+      assertThat(result.getProcessState().getNextStepName()).hasValue("front2");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class BackendStepThatMayRemoveFrontendStep implements BackendStep
+   {
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         LOG.info("Running " + getClass().getSimpleName());
+         if(runBackendStepInput.getValue("shouldRemoveFrontendStep") != null)
+         {
+            List<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
+            stepList.removeIf(s -> s.equals("front1"));
+            runBackendStepOutput.getProcessState().setStepList(stepList);
+         }
+      }
    }
 
 
@@ -287,4 +460,24 @@ public class RunProcessTest
          return (rs);
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class NoopBackendStep implements BackendStep
+   {
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         LOG.info("Running " + getClass().getSimpleName());
+      }
+   }
+
 }

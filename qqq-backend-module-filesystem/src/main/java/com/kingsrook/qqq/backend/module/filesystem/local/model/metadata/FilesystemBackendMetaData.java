@@ -42,4 +42,28 @@ public class FilesystemBackendMetaData extends AbstractFilesystemBackendMetaData
       setBackendType(FilesystemBackendModule.class);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for basePath
+    **
+    *******************************************************************************/
+   public FilesystemBackendMetaData withBasePath(String basePath)
+   {
+      setBasePath(basePath);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    **
+    *******************************************************************************/
+   public FilesystemBackendMetaData withName(String name)
+   {
+      setName(name);
+      return this;
+   }
+
 }

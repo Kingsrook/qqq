@@ -89,7 +89,7 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    public void translatePossibleValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
-      if(records == null)
+      if(records == null || table == null)
       {
          return;
       }

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.update;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -34,7 +35,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  *******************************************************************************/
 public class UpdateInput extends AbstractTableActionInput
 {
-   private List<QRecord> records;
+   private QBackendTransaction transaction;
+   private List<QRecord>       records;
 
    ////////////////////////////////////////////////////////////////////////////////////////////
    // allow a caller to specify that they KNOW this optimization (e.g., in SQL) can be made. //
@@ -63,6 +65,40 @@ public class UpdateInput extends AbstractTableActionInput
       super(instance);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for transaction
+    **
+    *******************************************************************************/
+   public QBackendTransaction getTransaction()
+   {
+      return transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for transaction
+    **
+    *******************************************************************************/
+   public UpdateInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+      return (this);
+   }
+   
 
 
    /*******************************************************************************

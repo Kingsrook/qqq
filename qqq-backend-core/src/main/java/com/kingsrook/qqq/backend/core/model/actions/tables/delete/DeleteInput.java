@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.delete;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -35,8 +36,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  *******************************************************************************/
 public class DeleteInput extends AbstractTableActionInput
 {
-   private List<Serializable> primaryKeys;
-   private QQueryFilter queryFilter;
+   private QBackendTransaction transaction;
+   private List<Serializable>  primaryKeys;
+   private QQueryFilter        queryFilter;
 
 
 
@@ -55,6 +57,40 @@ public class DeleteInput extends AbstractTableActionInput
    public DeleteInput(QInstance instance)
    {
       super(instance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for transaction
+    **
+    *******************************************************************************/
+   public QBackendTransaction getTransaction()
+   {
+      return transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for transaction
+    **
+    *******************************************************************************/
+   public DeleteInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
+      return (this);
    }
 
 
@@ -92,6 +128,7 @@ public class DeleteInput extends AbstractTableActionInput
    }
 
 
+
    /*******************************************************************************
     ** Getter for queryFilter
     **
@@ -111,6 +148,7 @@ public class DeleteInput extends AbstractTableActionInput
    {
       this.queryFilter = queryFilter;
    }
+
 
 
    /*******************************************************************************

@@ -74,6 +74,10 @@ public class QValueFormatter
                {
                   return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
                }
+               else if(e.getMessage().equals("f != java.lang.String"))
+               {
+                  return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
+               }
                else if(e.getMessage().equals("d != java.math.BigDecimal"))
                {
                   return formatValue(field, ValueUtils.getValueAsInteger(value));
