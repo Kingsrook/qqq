@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -62,8 +63,7 @@ public class CsvToQRecordAdapter
     *******************************************************************************/
    public void buildRecordsFromCsv(RecordPipe recordPipe, String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping, Consumer<QRecord> recordCustomizer)
    {
-      this.recordPipe = recordPipe;
-      doBuildRecordsFromCsv(csv, table, mapping, recordCustomizer);
+      buildRecordsFromCsv(new InputWrapper().withRecordPipe(recordPipe).withCsv(csv).withTable(table).withMapping(mapping).withRecordCustomizer(recordCustomizer));
    }
 
 
@@ -75,8 +75,7 @@ public class CsvToQRecordAdapter
     *******************************************************************************/
    public List<QRecord> buildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping)
    {
-      this.recordList = new ArrayList<>();
-      doBuildRecordsFromCsv(csv, table, mapping, null);
+      buildRecordsFromCsv(new InputWrapper().withCsv(csv).withTable(table).withMapping(mapping));
       return (recordList);
    }
 
@@ -88,11 +87,27 @@ public class CsvToQRecordAdapter
     **
     ** todo - meta-data validation, type handling
     *******************************************************************************/
-   public void doBuildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping, Consumer<QRecord> recordCustomizer)
+   public void buildRecordsFromCsv(InputWrapper inputWrapper)
    {
+      String csv = inputWrapper.getCsv();
+      AbstractQFieldMapping<?> mapping = inputWrapper.getMapping();
+      Consumer<QRecord> recordCustomizer = inputWrapper.getRecordCustomizer();
+      QTableMetaData table = inputWrapper.getTable();
+      Integer limit = inputWrapper.getLimit();
+
       if(!StringUtils.hasContent(csv))
       {
          throw (new IllegalArgumentException("Empty csv value was provided."));
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if caller supplied a record pipe, use it -- but if it's null, then create a recordList to populate. //
+      // see addRecord method for usage.                                                                     //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      this.recordPipe = inputWrapper.getRecordPipe();
+      if(this.recordPipe == null)
+      {
+         this.recordList = new ArrayList<>();
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,9 +135,12 @@ public class CsvToQRecordAdapter
             List<String> headers = csvParser.getHeaderNames();
             headers = makeHeadersUnique(headers);
 
-            List<CSVRecord> csvRecords = csvParser.getRecords();
-            for(CSVRecord csvRecord : csvRecords)
+            Iterator<CSVRecord> csvIterator = csvParser.iterator();
+            int recordCount = 0;
+            while(csvIterator.hasNext())
             {
+               CSVRecord csvRecord = csvIterator.next();
+
                //////////////////////////////////////////////////////////////////
                // put values from the CSV record into a map of header -> value //
                //////////////////////////////////////////////////////////////////
@@ -144,6 +162,12 @@ public class CsvToQRecordAdapter
 
                runRecordCustomizer(recordCustomizer, qRecord);
                addRecord(qRecord);
+
+               recordCount++;
+               if(limit != null && recordCount > limit)
+               {
+                  break;
+               }
             }
          }
          else if(AbstractQFieldMapping.SourceType.INDEX.equals(mapping.getSourceType()))
@@ -155,9 +179,12 @@ public class CsvToQRecordAdapter
                CSVFormat.DEFAULT
                   .withTrim());
 
-            List<CSVRecord> csvRecords = csvParser.getRecords();
-            for(CSVRecord csvRecord : csvRecords)
+            Iterator<CSVRecord> csvIterator = csvParser.iterator();
+            int recordCount = 0;
+            while(csvIterator.hasNext())
             {
+               CSVRecord csvRecord = csvIterator.next();
+
                /////////////////////////////////////////////////////////////////
                // put values from the CSV record into a map of index -> value //
                /////////////////////////////////////////////////////////////////
@@ -180,6 +207,12 @@ public class CsvToQRecordAdapter
 
                runRecordCustomizer(recordCustomizer, qRecord);
                addRecord(qRecord);
+
+               recordCount++;
+               if(limit != null && recordCount > limit)
+               {
+                  break;
+               }
             }
          }
          else
@@ -259,6 +292,243 @@ public class CsvToQRecordAdapter
       {
          recordList.add(record);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordList - note - only is valid if you don't supply a pipe in
+    ** the input.  If you do supply a pipe, then you get an exception if you call here!
+    **
+    *******************************************************************************/
+   public List<QRecord> getRecordList()
+   {
+      if(recordPipe != null)
+      {
+         throw (new IllegalStateException("getRecordList called on a CSVToQRecordAdapter that ran with a recordPipe."));
+      }
+
+      return recordList;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class InputWrapper
+   {
+      private RecordPipe               recordPipe;
+      private String                   csv;
+      private QTableMetaData           table;
+      private AbstractQFieldMapping<?> mapping;
+      private Consumer<QRecord>        recordCustomizer;
+      private Integer                  limit;
+
+
+
+      /*******************************************************************************
+       ** Getter for recordPipe
+       **
+       *******************************************************************************/
+      public RecordPipe getRecordPipe()
+      {
+         return recordPipe;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for recordPipe
+       **
+       *******************************************************************************/
+      public void setRecordPipe(RecordPipe recordPipe)
+      {
+         this.recordPipe = recordPipe;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for recordPipe
+       **
+       *******************************************************************************/
+      public InputWrapper withRecordPipe(RecordPipe recordPipe)
+      {
+         this.recordPipe = recordPipe;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for csv
+       **
+       *******************************************************************************/
+      public String getCsv()
+      {
+         return csv;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for csv
+       **
+       *******************************************************************************/
+      public void setCsv(String csv)
+      {
+         this.csv = csv;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for csv
+       **
+       *******************************************************************************/
+      public InputWrapper withCsv(String csv)
+      {
+         this.csv = csv;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for table
+       **
+       *******************************************************************************/
+      public QTableMetaData getTable()
+      {
+         return table;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for table
+       **
+       *******************************************************************************/
+      public void setTable(QTableMetaData table)
+      {
+         this.table = table;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for table
+       **
+       *******************************************************************************/
+      public InputWrapper withTable(QTableMetaData table)
+      {
+         this.table = table;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for mapping
+       **
+       *******************************************************************************/
+      public AbstractQFieldMapping<?> getMapping()
+      {
+         return mapping;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for mapping
+       **
+       *******************************************************************************/
+      public void setMapping(AbstractQFieldMapping<?> mapping)
+      {
+         this.mapping = mapping;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for mapping
+       **
+       *******************************************************************************/
+      public InputWrapper withMapping(AbstractQFieldMapping<?> mapping)
+      {
+         this.mapping = mapping;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for recordCustomizer
+       **
+       *******************************************************************************/
+      public Consumer<QRecord> getRecordCustomizer()
+      {
+         return recordCustomizer;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for recordCustomizer
+       **
+       *******************************************************************************/
+      public void setRecordCustomizer(Consumer<QRecord> recordCustomizer)
+      {
+         this.recordCustomizer = recordCustomizer;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for recordCustomizer
+       **
+       *******************************************************************************/
+      public InputWrapper withRecordCustomizer(Consumer<QRecord> recordCustomizer)
+      {
+         this.recordCustomizer = recordCustomizer;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for limit
+       **
+       *******************************************************************************/
+      public Integer getLimit()
+      {
+         return limit;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for limit
+       **
+       *******************************************************************************/
+      public void setLimit(Integer limit)
+      {
+         this.limit = limit;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for limit
+       **
+       *******************************************************************************/
+      public InputWrapper withLimit(Integer limit)
+      {
+         this.limit = limit;
+         return (this);
+      }
+
    }
 
 }

@@ -35,6 +35,10 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  ** A simple (probably only valid for testing?) implementation of the QModuleInterface,
  ** that just stores its records in-memory.
  **
+ ** In general, this class is intended to behave, as much as possible, like an RDBMS.
+ **
+ ** TODO - in future, if we need to - make configs for things like "case-insensitive",
+ **  and "allow loose typing".
  *******************************************************************************/
 public class MemoryBackendModule implements QBackendModuleInterface
 {

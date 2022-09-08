@@ -38,7 +38,7 @@
    </modules>
 
    <properties>
-      <revision>0.4.0</revision>
+      <revision>0.5.0</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -122,7 +122,8 @@
                   <id>validate</id>
                   <phase>validate</phase>
                   <configuration>
-                     <configLocation>checkstyle.xml</configLocation>
+                     <configLocation>checkstyle/config.xml</configLocation>
+                     <headerLocation>checkstyle/license.txt</headerLocation>
                      <!-- <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation> -->
                      <encoding>UTF-8</encoding>
                      <consoleOutput>true</consoleOutput>

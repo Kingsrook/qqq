@@ -29,12 +29,16 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -49,7 +53,9 @@ public class QInstance
    @JsonIgnore
    private Map<String, QBackendMetaData> backends = new HashMap<>();
 
-   private QAuthenticationMetaData authentication = null;
+   private QAuthenticationMetaData                  authentication      = null;
+   private QBrandingMetaData                        branding            = null;
+   private Map<String, QAutomationProviderMetaData> automationProviders = new HashMap<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
@@ -58,6 +64,8 @@ public class QInstance
    private Map<String, QPossibleValueSource> possibleValueSources = new LinkedHashMap<>();
    private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
    private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
+
+   private Map<String, QWidgetMetaDataInterface> widgets = new LinkedHashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -104,17 +112,6 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Setter for hasBeenValidated
-    **
-    *******************************************************************************/
-   public void setHasBeenValidated(QInstanceValidationKey key)
-   {
-      this.hasBeenValidated = true;
-   }
-
-
-
-   /*******************************************************************************
     **
     *******************************************************************************/
    public void addBackend(QBackendMetaData backend)
@@ -129,6 +126,10 @@ public class QInstance
     *******************************************************************************/
    public void addBackend(String name, QBackendMetaData backend)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a backend without a name."));
+      }
       if(this.backends.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second backend with name: " + name));
@@ -149,6 +150,28 @@ public class QInstance
 
 
    /*******************************************************************************
+    ** Getter for backends
+    **
+    *******************************************************************************/
+   public Map<String, QBackendMetaData> getBackends()
+   {
+      return backends;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backends
+    **
+    *******************************************************************************/
+   public void setBackends(Map<String, QBackendMetaData> backends)
+   {
+      this.backends = backends;
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void addTable(QTableMetaData table)
@@ -163,6 +186,10 @@ public class QInstance
     *******************************************************************************/
    public void addTable(String name, QTableMetaData table)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a table without a name."));
+      }
       if(this.tables.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second table with name: " + name));
@@ -188,6 +215,28 @@ public class QInstance
 
 
    /*******************************************************************************
+    ** Getter for tables
+    **
+    *******************************************************************************/
+   public Map<String, QTableMetaData> getTables()
+   {
+      return tables;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tables
+    **
+    *******************************************************************************/
+   public void setTables(Map<String, QTableMetaData> tables)
+   {
+      this.tables = tables;
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void addPossibleValueSource(QPossibleValueSource possibleValueSource)
@@ -202,6 +251,10 @@ public class QInstance
     *******************************************************************************/
    public void addPossibleValueSource(String name, QPossibleValueSource possibleValueSource)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a possibleValueSource without a name."));
+      }
       if(this.possibleValueSources.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second possibleValueSource with name: " + name));
@@ -217,6 +270,28 @@ public class QInstance
    public QPossibleValueSource getPossibleValueSource(String name)
    {
       return (this.possibleValueSources.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleValueSources
+    **
+    *******************************************************************************/
+   public Map<String, QPossibleValueSource> getPossibleValueSources()
+   {
+      return possibleValueSources;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for possibleValueSources
+    **
+    *******************************************************************************/
+   public void setPossibleValueSources(Map<String, QPossibleValueSource> possibleValueSources)
+   {
+      this.possibleValueSources = possibleValueSources;
    }
 
 
@@ -252,6 +327,10 @@ public class QInstance
     *******************************************************************************/
    public void addProcess(String name, QProcessMetaData process)
    {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a process without a name."));
+      }
       if(this.processes.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second process with name: " + name));
@@ -267,106 +346,6 @@ public class QInstance
    public QProcessMetaData getProcess(String name)
    {
       return (this.processes.get(name));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addApp(QAppMetaData app)
-   {
-      this.addApp(app.getName(), app);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addApp(String name, QAppMetaData app)
-   {
-      if(this.apps.containsKey(name))
-      {
-         throw (new IllegalArgumentException("Attempted to add a second app with name: " + name));
-      }
-      this.apps.put(name, app);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QAppMetaData getApp(String name)
-   {
-      return (this.apps.get(name));
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for backends
-    **
-    *******************************************************************************/
-   public Map<String, QBackendMetaData> getBackends()
-   {
-      return backends;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for backends
-    **
-    *******************************************************************************/
-   public void setBackends(Map<String, QBackendMetaData> backends)
-   {
-      this.backends = backends;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for tables
-    **
-    *******************************************************************************/
-   public Map<String, QTableMetaData> getTables()
-   {
-      return tables;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tables
-    **
-    *******************************************************************************/
-   public void setTables(Map<String, QTableMetaData> tables)
-   {
-      this.tables = tables;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for possibleValueSources
-    **
-    *******************************************************************************/
-   public Map<String, QPossibleValueSource> getPossibleValueSources()
-   {
-      return possibleValueSources;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for possibleValueSources
-    **
-    *******************************************************************************/
-   public void setPossibleValueSources(Map<String, QPossibleValueSource> possibleValueSources)
-   {
-      this.possibleValueSources = possibleValueSources;
    }
 
 
@@ -394,6 +373,44 @@ public class QInstance
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addApp(QAppMetaData app)
+   {
+      this.addApp(app.getName(), app);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addApp(String name, QAppMetaData app)
+   {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add an app without a name."));
+      }
+      if(this.apps.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second app with name: " + name));
+      }
+      this.apps.put(name, app);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAppMetaData getApp(String name)
+   {
+      return (this.apps.get(name));
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for apps
     **
     *******************************************************************************/
@@ -416,12 +433,101 @@ public class QInstance
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addAutomationProvider(QAutomationProviderMetaData automationProvider)
+   {
+      this.addAutomationProvider(automationProvider.getName(), automationProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addAutomationProvider(String name, QAutomationProviderMetaData automationProvider)
+   {
+      if(this.automationProviders.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second automationProvider with name: " + name));
+      }
+      this.automationProviders.put(name, automationProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAutomationProviderMetaData getAutomationProvider(String name)
+   {
+      return (this.automationProviders.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for automationProviders
+    **
+    *******************************************************************************/
+   public Map<String, QAutomationProviderMetaData> getAutomationProviders()
+   {
+      return automationProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for automationProviders
+    **
+    *******************************************************************************/
+   public void setAutomationProviders(Map<String, QAutomationProviderMetaData> automationProviders)
+   {
+      this.automationProviders = automationProviders;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for hasBeenValidated
     **
     *******************************************************************************/
    public boolean getHasBeenValidated()
    {
       return hasBeenValidated;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasBeenValidated
+    **
+    *******************************************************************************/
+   public void setHasBeenValidated(QInstanceValidationKey key)
+   {
+      this.hasBeenValidated = true;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for branding
+    **
+    *******************************************************************************/
+   public QBrandingMetaData getBranding()
+   {
+      return branding;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for branding
+    **
+    *******************************************************************************/
+   public void setBranding(QBrandingMetaData branding)
+   {
+      this.branding = branding;
    }
 
 
@@ -445,4 +551,61 @@ public class QInstance
    {
       this.authentication = authentication;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public Map<String, QWidgetMetaDataInterface> getWidgets()
+   {
+      return widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for widgets
+    **
+    *******************************************************************************/
+   public void setWidgets(Map<String, QWidgetMetaDataInterface> widgets)
+   {
+      this.widgets = widgets;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addWidget(QWidgetMetaDataInterface widget)
+   {
+      this.addWidget(widget.getName(), widget);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addWidget(String name, QWidgetMetaDataInterface widget)
+   {
+      if(this.widgets.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second widget with name: " + name));
+      }
+      this.widgets.put(name, widget);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QWidgetMetaDataInterface getWidget(String name)
+   {
+      return (this.widgets.get(name));
+   }
+
 }

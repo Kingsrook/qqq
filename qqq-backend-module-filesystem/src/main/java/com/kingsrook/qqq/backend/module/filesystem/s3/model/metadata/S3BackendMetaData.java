@@ -51,6 +51,19 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
 
 
    /*******************************************************************************
+    ** Fluent setter for backendType
+    **
+    *******************************************************************************/
+   @Override
+   public S3BackendMetaData withBackendType(String backendType)
+   {
+      setBackendType(backendType);
+      return this;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for bucketName
     **
     *******************************************************************************/
@@ -76,11 +89,10 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
     ** Fluent setter for bucketName
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends S3BackendMetaData> T withBucketName(String bucketName)
+   public S3BackendMetaData withBucketName(String bucketName)
    {
       this.bucketName = bucketName;
-      return (T) this;
+      return (this);
    }
 
 
@@ -111,11 +123,10 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
     ** Fluent setter for accessKey
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends S3BackendMetaData> T withAccessKey(String accessKey)
+   public S3BackendMetaData withAccessKey(String accessKey)
    {
       this.accessKey = accessKey;
-      return (T) this;
+      return (this);
    }
 
 
@@ -146,11 +157,10 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
     ** Fluent setter for secretKey
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends S3BackendMetaData> T withSecretKey(String secretKey)
+   public S3BackendMetaData withSecretKey(String secretKey)
    {
       this.secretKey = secretKey;
-      return (T) this;
+      return (this);
    }
 
 
@@ -181,11 +191,10 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
     ** Fluent setter for region
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends S3BackendMetaData> T withRegion(String region)
+   public S3BackendMetaData withRegion(String region)
    {
       this.region = region;
-      return (T) this;
+      return (this);
    }
 
 
@@ -202,6 +211,30 @@ public class S3BackendMetaData extends AbstractFilesystemBackendMetaData
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
       accessKey = interpreter.interpret(accessKey);
       secretKey = interpreter.interpret(secretKey);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for basePath
+    **
+    *******************************************************************************/
+   public S3BackendMetaData withBasePath(String basePath)
+   {
+      setBasePath(basePath);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    **
+    *******************************************************************************/
+   public S3BackendMetaData withName(String name)
+   {
+      setName(name);
+      return this;
    }
 
 }

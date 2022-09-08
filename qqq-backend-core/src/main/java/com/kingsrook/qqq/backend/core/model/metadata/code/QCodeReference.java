@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 
@@ -30,7 +32,7 @@ import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvide
  ** Pointer to code to be ran by the qqq framework, e.g., for custom behavior -
  ** maybe process steps, maybe customization to a table, etc.
  *******************************************************************************/
-public class QCodeReference
+public class QCodeReference implements Serializable
 {
    private String     name;
    private QCodeType  codeType;
@@ -60,6 +62,17 @@ public class QCodeReference
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "QCodeReference{name='" + name + "'}";
+   }
+
+
+
+   /*******************************************************************************
     ** Constructor that just takes a java class, and infers the other fields.
     *******************************************************************************/
    public QCodeReference(Class<?> javaClass)
@@ -74,6 +87,10 @@ public class QCodeReference
       else if(QCustomPossibleValueProvider.class.isAssignableFrom(javaClass))
       {
          this.codeUsage = QCodeUsage.POSSIBLE_VALUE_PROVIDER;
+      }
+      else if(RecordAutomationHandler.class.isAssignableFrom(javaClass))
+      {
+         this.codeUsage = QCodeUsage.RECORD_AUTOMATION_HANDLER;
       }
       else
       {

@@ -2,11 +2,11 @@
 <Configuration>
    <Appenders>
       <Console name="SystemOutAppender" target="SYSTEM_OUT">
-         <LevelRangeFilter minLevel="ERROR" maxLevel="all" onMatch="ACCEPT" onMismatch="DENY"/>
+         <LevelRangeFilter minLevel="ERROR" maxLevel="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
          <PatternLayout pattern="%highlight{%date{ISO8601} | %relative | %level | %threadName | %logger{1} | %message%n}"/>
       </Console>
       <Syslog name="SyslogAppender" format="RFC5424" host="localhost" port="514" protocol="UDP" appName="qqq" facility="LOCAL0">
-         <LevelRangeFilter minLevel="ERROR" maxLevel="all" onMatch="ACCEPT" onMismatch="DENY"/>
+         <LevelRangeFilter minLevel="ERROR" maxLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
          <PatternLayout pattern="%date{ISO8601} | %relative | %level | %threadName | %logger{1} | %message%n"/>
       </Syslog>
       <File name="LogFileAppender" fileName="log/qqq.log">

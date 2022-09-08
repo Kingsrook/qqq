@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.metadata;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
@@ -42,6 +43,8 @@ public class MetaDataOutput extends AbstractActionOutput
    private Map<String, QFrontendAppMetaData>     apps;
 
    private List<AppTreeNode> appTree;
+
+   private QBrandingMetaData branding;
 
 
 
@@ -89,7 +92,6 @@ public class MetaDataOutput extends AbstractActionOutput
 
 
 
-
    /*******************************************************************************
     ** Getter for appTree
     **
@@ -130,5 +132,27 @@ public class MetaDataOutput extends AbstractActionOutput
    public void setApps(Map<String, QFrontendAppMetaData> apps)
    {
       this.apps = apps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for branding
+    **
+    *******************************************************************************/
+   public QBrandingMetaData getBranding()
+   {
+      return branding;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for branding
+    **
+    *******************************************************************************/
+   public void setBranding(QBrandingMetaData branding)
+   {
+      this.branding = branding;
    }
 }

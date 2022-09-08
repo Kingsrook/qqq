@@ -28,7 +28,12 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 public enum QComponentType
 {
    HELP_TEXT,
-   BULK_EDIT_FORM;
+   BULK_EDIT_FORM,
+   VALIDATION_REVIEW_SCREEN,
+   EDIT_FORM,
+   VIEW_FORM,
+   RECORD_LIST,
+   PROCESS_SUMMARY_RESULTS;
    ///////////////////////////////////////////////////////////////////////////
    // keep these values in sync with QComponentType.ts in qqq-frontend-core //
    ///////////////////////////////////////////////////////////////////////////

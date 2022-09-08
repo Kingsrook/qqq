@@ -30,6 +30,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -43,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -162,11 +166,13 @@ class QInstanceValidatorTest
             qInstance.getBackend("default").setName("notDefault");
             qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setName("notGreetPeople");
             qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setName("notStates");
+            qInstance.getAutomationProvider(TestUtils.POLLING_AUTOMATION).setName("notPolling");
          },
          "Inconsistent naming for table",
          "Inconsistent naming for backend",
          "Inconsistent naming for process",
-         "Inconsistent naming for possibleValueSource"
+         "Inconsistent naming for possibleValueSource",
+         "Inconsistent naming for automationProvider"
       );
    }
 
@@ -296,7 +302,7 @@ class QInstanceValidatorTest
          "Instance of CodeReference could not be created");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotAFunction.class, QCodeUsage.CUSTOMIZER)),
-         "CodeReference could not be casted");
+         "CodeReference is not of the expected type");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameters.class, QCodeUsage.CUSTOMIZER)),
          "Error validating customizer type parameters");
@@ -650,6 +656,213 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAutomationProviderType()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getAutomationProvider(TestUtils.POLLING_AUTOMATION).setType(null),
+         "Missing type for automationProvider");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationProviderName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().setProviderName(null),
+         "is missing a providerName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().setProviderName(""),
+         "is missing a providerName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().setProviderName("notARealProvider"),
+         "unrecognized providerName");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationStatusTracking()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().setStatusTracking(null),
+         "do not have statusTracking");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationStatusTrackingType()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getStatusTracking().setType(null),
+         "statusTracking is missing a type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationStatusTrackingFieldName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getStatusTracking().setFieldName(null),
+         "missing its fieldName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getStatusTracking().setFieldName(""),
+         "missing its fieldName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getStatusTracking().setFieldName("notARealField"),
+         "not a defined field");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationActionsNames()
+   {
+      assertValidationFailureReasons((qInstance) -> getAction0(qInstance).setName(null),
+         "action missing a name");
+
+      assertValidationFailureReasons((qInstance) -> getAction0(qInstance).setName(""),
+         "action missing a name");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            List<TableAutomationAction> actions = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getActions();
+            actions.add(actions.get(0));
+         },
+         "more than one action named");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationActionTriggerEvent()
+   {
+      assertValidationFailureReasons((qInstance) -> getAction0(qInstance).setTriggerEvent(null),
+         "missing a triggerEvent");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationActionCodeReference()
+   {
+      assertValidationFailureReasons((qInstance) -> getAction0(qInstance).setCodeReference(new QCodeReference()),
+         "missing a code reference name", "missing a code type");
+
+      assertValidationFailureReasons((qInstance) -> getAction0(qInstance).setCodeReference(new QCodeReference(TestUtils.CustomPossibleValueSource.class)),
+         "is not of the expected type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationActionProcessName()
+   {
+      assertValidationFailureReasons((qInstance) ->
+         {
+            TableAutomationAction action = getAction0(qInstance);
+            action.setCodeReference(null);
+            action.setProcessName("notAProcess");
+         },
+         "unrecognized processName");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            TableAutomationAction action = getAction0(qInstance);
+            action.setCodeReference(null);
+            action.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+         },
+         "different table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationActionCodeReferenceAndProcessName()
+   {
+      assertValidationFailureReasons((qInstance) ->
+         {
+            TableAutomationAction action = getAction0(qInstance);
+            action.setCodeReference(null);
+            action.setProcessName(null);
+         },
+         "missing both");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            TableAutomationAction action = getAction0(qInstance);
+            action.setCodeReference(new QCodeReference(TestUtils.CheckAge.class));
+            action.setProcessName(TestUtils.PROCESS_NAME_INCREASE_BIRTHDATE);
+         },
+         "has both");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableAutomationActionFilter()
+   {
+      assertValidationFailureReasons((qInstance) ->
+         {
+            TableAutomationAction action = getAction0(qInstance);
+            action.setFilter(new QQueryFilter()
+               .withCriteria(new QFilterCriteria())
+            );
+         },
+         "without a field name", "without an operator");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            TableAutomationAction action = getAction0(qInstance);
+            action.setFilter(new QQueryFilter()
+               .withCriteria(new QFilterCriteria("notAField", QCriteriaOperator.EQUALS, Collections.emptyList()))
+            );
+         },
+         "unrecognized field");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private TableAutomationAction getAction0(QInstance qInstance)
+   {
+      return qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getActions().get(0);
+   }
+
+
+
+   /*******************************************************************************
     ** Run a little setup code on a qInstance; then validate it, and assert that it
     ** failed validation with reasons that match the supplied vararg-reasons (but allow
     ** more reasons - e.g., helpful when one thing we're testing causes other errors).
@@ -690,7 +903,8 @@ class QInstanceValidatorTest
          if(!allowExtraReasons)
          {
             int noOfReasons = e.getReasons() == null ? 0 : e.getReasons().size();
-            assertEquals(reasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", reasons) + "\nActual reasons: " + e.getReasons());
+            assertEquals(reasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", reasons)
+               + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", e.getReasons()) : "--"));
          }
 
          for(String reason : reasons)

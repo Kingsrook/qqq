@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.SerializationUtils;
 
 
 /*******************************************************************************
@@ -87,16 +88,70 @@ public class QRecord implements Serializable
 
    /*******************************************************************************
     ** Copy constructor.
-    ** TODO ... should this do deep copies?
+    **
     *******************************************************************************/
    public QRecord(QRecord record)
    {
       this.tableName = record.tableName;
       this.recordLabel = record.recordLabel;
-      this.values = record.values;
-      this.displayValues = record.displayValues;
-      this.backendDetails = record.backendDetails;
-      this.errors = record.errors;
+
+      this.values = doDeepCopy(record.values);
+      this.displayValues = doDeepCopy(record.displayValues);
+      this.backendDetails = doDeepCopy(record.backendDetails);
+      this.errors = doDeepCopy(record.errors);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "QRecord{tableName='" + tableName + "',id='" + getValue("id") + "'}";
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings({ "unchecked" })
+   private <K, V> Map<K, V> doDeepCopy(Map<K, V> map)
+   {
+      if(map == null)
+      {
+         return (null);
+      }
+
+      if(map instanceof Serializable serializableMap)
+      {
+         return (Map<K, V>) SerializationUtils.clone(serializableMap);
+      }
+
+      return (new LinkedHashMap<>(map));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings({ "unchecked" })
+   private <T> List<T> doDeepCopy(List<T> list)
+   {
+      if(list == null)
+      {
+         return (null);
+      }
+
+      if(list instanceof Serializable serializableList)
+      {
+         return (List<T>) SerializationUtils.clone(serializableList);
+      }
+
+      return (new ArrayList<>(list));
    }
 
 
@@ -139,7 +194,6 @@ public class QRecord implements Serializable
    {
       displayValues.put(fieldName, displayValue);
    }
-
 
 
 
@@ -207,6 +261,7 @@ public class QRecord implements Serializable
    {
       this.recordLabel = recordLabel;
    }
+
 
 
    /*******************************************************************************

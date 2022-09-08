@@ -26,7 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -40,6 +41,7 @@ public class QFrontendAppMetaData
    private String label;
 
    private List<AppTreeNode> children = new ArrayList<>();
+   private List<String>      widgets  = new ArrayList<>();
 
    private String iconName;
 
@@ -48,14 +50,19 @@ public class QFrontendAppMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendAppMetaData(QAppChildMetaData appChildMetaData)
+   public QFrontendAppMetaData(QAppMetaData appMetaData)
    {
-      this.name = appChildMetaData.getName();
-      this.label = appChildMetaData.getLabel();
+      this.name = appMetaData.getName();
+      this.label = appMetaData.getLabel();
 
-      if(appChildMetaData.getIcon() != null)
+      if(appMetaData.getIcon() != null)
       {
-         this.iconName = appChildMetaData.getIcon().getName();
+         this.iconName = appMetaData.getIcon().getName();
+      }
+
+      if(CollectionUtils.nullSafeHasContents(appMetaData.getWidgets()))
+      {
+         this.widgets = appMetaData.getWidgets();
       }
    }
 
@@ -126,5 +133,16 @@ public class QFrontendAppMetaData
          children = new ArrayList<>();
       }
       children.add(childAppTreeNode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public List<String> getWidgets()
+   {
+      return widgets;
    }
 }

@@ -298,8 +298,6 @@ public class QueryManager
     *******************************************************************************/
    public static List<Map<String, Object>> executeStatementForRows(Connection connection, String sql, Object... params) throws SQLException
    {
-      throw (new NotImplementedException());
-      /*
       List<Map<String, Object>> rs = new ArrayList<>();
 
       PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
@@ -318,7 +316,6 @@ public class QueryManager
       }
 
       return (rs);
-      */
    }
 
 
@@ -746,12 +743,14 @@ public class QueryManager
       }
       else if(value instanceof LocalDate ld)
       {
+         @SuppressWarnings("deprecation")
          java.sql.Date date = new java.sql.Date(ld.getYear() - 1900, ld.getMonthValue() - 1, ld.getDayOfMonth());
          statement.setDate(index, date);
          return (1);
       }
       else if(value instanceof LocalTime lt)
       {
+         @SuppressWarnings("deprecation")
          java.sql.Time time = new java.sql.Time(lt.getHour(), lt.getMinute(), lt.getSecond());
          statement.setTime(index, time);
          return (1);

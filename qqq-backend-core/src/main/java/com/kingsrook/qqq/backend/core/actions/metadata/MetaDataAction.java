@@ -109,6 +109,14 @@ public class MetaDataAction
       }
       metaDataOutput.setAppTree(appTree);
 
+      ////////////////////////////////////
+      // add branding metadata if found //
+      ////////////////////////////////////
+      if(metaDataInput.getInstance().getBranding() != null)
+      {
+         metaDataOutput.setBranding(metaDataInput.getInstance().getBranding());
+      }
+
       // todo post-customization - can do whatever w/ the result if you want?
 
       return metaDataOutput;

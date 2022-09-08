@@ -23,7 +23,11 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
@@ -41,10 +45,22 @@ public class QProcessMetaData implements QAppChildMetaData
    private String  tableName;
    private boolean isHidden = false;
 
-   private List<QStepMetaData> stepList;
+   private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
+   private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
    private String parentAppName;
    private QIcon  icon;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return ("QProcessMetaData[" + name + "]");
+   }
 
 
 
@@ -167,23 +183,69 @@ public class QProcessMetaData implements QAppChildMetaData
     *******************************************************************************/
    public QProcessMetaData withStepList(List<QStepMetaData> stepList)
    {
-      this.stepList = stepList;
+      if(stepList != null)
+      {
+         stepList.forEach(this::addStep);
+      }
+
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for stepList
+    ** add a step to the stepList and map
     **
     *******************************************************************************/
    public QProcessMetaData addStep(QStepMetaData step)
+   {
+      int index = 0;
+      if(this.stepList != null)
+      {
+         index = this.stepList.size();
+      }
+      addStep(index, step);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** add a step to the stepList (at the specified index) and the step map
+    **
+    *******************************************************************************/
+   public QProcessMetaData addStep(int index, QStepMetaData step)
    {
       if(this.stepList == null)
       {
          this.stepList = new ArrayList<>();
       }
-      this.stepList.add(step);
+      this.stepList.add(index, step);
+
+      if(this.steps == null)
+      {
+         this.steps = new HashMap<>();
+      }
+      this.steps.put(step.getName(), step);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** add a step ONLY to the step map - NOT the list w/ default execution order.
+    **
+    *******************************************************************************/
+   public QProcessMetaData addOptionalStep(QStepMetaData step)
+   {
+      if(this.steps == null)
+      {
+         this.steps = new HashMap<>();
+      }
+      this.steps.put(step.getName(), step);
+
       return (this);
    }
 
@@ -205,15 +267,7 @@ public class QProcessMetaData implements QAppChildMetaData
     *******************************************************************************/
    public QStepMetaData getStep(String stepName)
    {
-      for(QStepMetaData step : stepList)
-      {
-         if(step.getName().equals(stepName))
-         {
-            return (step);
-         }
-      }
-
-      return (null);
+      return (steps.get(stepName));
    }
 
 
@@ -229,17 +283,35 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Get a list of all of the input fields used by all the steps in this process.
+    ** Wrapper to getStep, that internally casts to FrontendStepMetaData
+    *******************************************************************************/
+   public QFrontendStepMetaData getFrontendStep(String name)
+   {
+      return (QFrontendStepMetaData) getStep(name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all the *unique* input fields used by all the steps in this process.
     *******************************************************************************/
    @JsonIgnore
    public List<QFieldMetaData> getInputFields()
    {
-      List<QFieldMetaData> rs = new ArrayList<>();
-      if(stepList != null)
+      Set<String>          usedFieldNames = new HashSet<>();
+      List<QFieldMetaData> rs             = new ArrayList<>();
+      if(steps != null)
       {
-         for(QStepMetaData step : stepList)
+         for(QStepMetaData step : steps.values())
          {
-            rs.addAll(step.getInputFields());
+            for(QFieldMetaData field : step.getInputFields())
+            {
+               if(!usedFieldNames.contains(field.getName()))
+               {
+                  rs.add(field);
+                  usedFieldNames.add(field.getName());
+               }
+            }
          }
       }
       return (rs);
@@ -248,17 +320,25 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Get a list of all of the output fields used by all the steps in this process.
+    ** Get a list of all the *unique* output fields used by all the steps in this process.
     *******************************************************************************/
    @JsonIgnore
    public List<QFieldMetaData> getOutputFields()
    {
-      List<QFieldMetaData> rs = new ArrayList<>();
-      if(stepList != null)
+      Set<String>          usedFieldNames = new HashSet<>();
+      List<QFieldMetaData> rs             = new ArrayList<>();
+      if(steps != null)
       {
-         for(QStepMetaData step : stepList)
+         for(QStepMetaData step : steps.values())
          {
-            rs.addAll(step.getOutputFields());
+            for(QFieldMetaData field : step.getOutputFields())
+            {
+               if(!usedFieldNames.contains(field.getName()))
+               {
+                  rs.add(field);
+                  usedFieldNames.add(field.getName());
+               }
+            }
          }
       }
       return (rs);

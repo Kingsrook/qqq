@@ -114,14 +114,37 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          outputRecords.add(outputRecord);
       }
 
-      try(Connection connection = getConnection(updateInput))
+      try
       {
-         /////////////////////////////////////////////////////////////////////////////////////////////
-         // process each distinct list of fields being updated (e.g., each different SQL statement) //
-         /////////////////////////////////////////////////////////////////////////////////////////////
-         for(List<String> fieldsBeingUpdated : recordsByFieldBeingUpdated.keySet())
+         Connection connection;
+         boolean    needToCloseConnection = false;
+         if(updateInput.getTransaction() != null && updateInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
-            updateRecordsWithMatchingListOfFields(updateInput, connection, table, recordsByFieldBeingUpdated.get(fieldsBeingUpdated), fieldsBeingUpdated);
+            LOG.debug("Using connection from updateInput [" + rdbmsTransaction.getConnection() + "]");
+            connection = rdbmsTransaction.getConnection();
+         }
+         else
+         {
+            connection = getConnection(updateInput);
+            needToCloseConnection = true;
+         }
+
+         try
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////
+            // process each distinct list of fields being updated (e.g., each different SQL statement) //
+            /////////////////////////////////////////////////////////////////////////////////////////////
+            for(List<String> fieldsBeingUpdated : recordsByFieldBeingUpdated.keySet())
+            {
+               updateRecordsWithMatchingListOfFields(updateInput, connection, table, recordsByFieldBeingUpdated.get(fieldsBeingUpdated), fieldsBeingUpdated);
+            }
+         }
+         finally
+         {
+            if(needToCloseConnection)
+            {
+               connection.close();
+            }
          }
 
          return rs;
@@ -188,7 +211,6 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       QueryManager.executeBatchUpdate(connection, sql, values);
       incrementStatus(updateInput, recordList.size());
    }
-
 
 
 
@@ -276,6 +298,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       return (true);
    }
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -284,6 +308,5 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       statusCounter += amount;
       updateInput.getAsyncJobCallback().updateStatus(statusCounter, updateInput.getRecords().size());
    }
-
 
 }

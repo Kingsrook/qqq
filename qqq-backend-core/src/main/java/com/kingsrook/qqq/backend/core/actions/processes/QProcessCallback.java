@@ -39,10 +39,16 @@ public interface QProcessCallback
    /*******************************************************************************
     ** Get the filter query for this callback.
     *******************************************************************************/
-   QQueryFilter getQueryFilter();
+   default QQueryFilter getQueryFilter()
+   {
+      return (null);
+   }
 
    /*******************************************************************************
     ** Get the field values for this callback.
     *******************************************************************************/
-   Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields);
+   default Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields)
+   {
+      return (null);
+   }
 }

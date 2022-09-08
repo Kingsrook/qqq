@@ -45,11 +45,11 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,9 +58,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
-@DisabledOnOs(OS.LINUX) // uses database; not available in CI at this time...
-class SampleMetaDataProviderTest
+public class SampleMetaDataProviderTest
 {
+   private static boolean originalUseMysqlValue = false;
+
+
 
    /*******************************************************************************
     **
@@ -76,8 +78,32 @@ class SampleMetaDataProviderTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @BeforeAll
+   static void beforeAll() throws Exception
+   {
+      originalUseMysqlValue = SampleMetaDataProvider.USE_MYSQL;
+      SampleMetaDataProvider.USE_MYSQL = false;
+      SampleMetaDataProviderTest.primeTestDatabase("prime-test-database.sql");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterAll
+   static void afterAll()
+   {
+      SampleMetaDataProvider.USE_MYSQL = originalUseMysqlValue;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @SuppressWarnings("unchecked")
-   private void primeTestDatabase(String sqlFileName) throws Exception
+   public static void primeTestDatabase(String sqlFileName) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
       try(Connection connection = connectionManager.getConnection(SampleMetaDataProvider.defineRdbmsBackend()))
