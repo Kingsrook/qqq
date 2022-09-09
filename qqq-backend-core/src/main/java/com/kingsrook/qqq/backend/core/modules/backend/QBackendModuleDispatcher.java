@@ -65,7 +65,7 @@ public class QBackendModuleDispatcher
          return;
       }
 
-      backendTypeToModuleClassNameMap = new HashMap<>();
+      Map<String, String> newMap = new HashMap<>();
 
       String[] moduleClassNames = new String[]
          {
@@ -84,13 +84,15 @@ public class QBackendModuleDispatcher
          {
             Class<?>                moduleClass = Class.forName(moduleClassName);
             QBackendModuleInterface module      = (QBackendModuleInterface) moduleClass.getConstructor().newInstance();
-            backendTypeToModuleClassNameMap.put(module.getBackendType(), moduleClassName);
+            newMap.put(module.getBackendType(), moduleClassName);
          }
          catch(Exception e)
          {
             LOG.debug("Backend module [{}] could not be loaded: {}", moduleClassName, e.getMessage());
          }
       }
+
+      backendTypeToModuleClassNameMap = newMap;
    }
 
 

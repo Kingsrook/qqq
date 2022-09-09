@@ -130,6 +130,10 @@ public class QInstanceEnricher
       {
          generateTableFieldSections(table);
       }
+      else
+      {
+         table.getSections().forEach(this::enrich);
+      }
 
       if(CollectionUtils.nullSafeHasContents(table.getRecordLabelFields()) && !StringUtils.hasContent(table.getRecordLabelFormat()))
       {
@@ -210,6 +214,19 @@ public class QInstanceEnricher
       if(!StringUtils.hasContent(app.getLabel()))
       {
          app.setLabel(nameToLabel(app.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QFieldSection section)
+   {
+      if(!StringUtils.hasContent(section.getLabel()))
+      {
+         section.setLabel(nameToLabel(section.getName()));
       }
    }
 
