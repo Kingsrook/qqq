@@ -1,0 +1,34 @@
+#!/bin/bash
+
+############################################################################
+## git-tag
+## Add (deleting, if it already exists) a git tag to a repo (both local & remote)
+############################################################################
+
+TAG=$1
+if [ -z "$TAG" ]; then
+   echo "Usage: $0 tagname"
+   exit 1;
+fi
+
+if [ "$TAG" == "-l" ]; then
+   git tag -l;
+   exit 0;
+fi
+
+echo
+echo "== Deleting $TAG on local"
+git tag -d $TAG
+
+echo
+echo "== Deleting $TAG on remote"
+git push origin :refs/tags/$TAG
+
+echo
+echo "== Creating $TAG on local"
+git tag $TAG
+
+echo
+echo "== Pushing $TAG on remote"
+git push origin $TAG
+
