@@ -24,10 +24,13 @@ package com.kingsrook.qqq.backend.core.instances;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,6 +95,27 @@ class QInstanceEnricherTest
       assertNull(idField.getLabel());
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("Id", idField.getLabel());
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that a fieldSection missing a label gets the default label applied (name w/ UC-first).
+    **
+    *******************************************************************************/
+   @Test
+   public void test_nullFieldSectionLabelComesFromName()
+   {
+      QInstance      qInstance   = TestUtils.defineInstance();
+      QTableMetaData personTable = qInstance.getTable("person");
+      personTable.setSections(List.of(new QFieldSection()
+         .withName("test")
+         .withTier(Tier.T1)
+         .withFieldNames(new ArrayList<>(personTable.getFields().keySet()))
+      ));
+
+      new QInstanceEnricher().enrich(qInstance);
+      assertEquals("Test", personTable.getSections().get(0).getLabel());
    }
 
 
@@ -175,12 +199,12 @@ class QInstanceEnricherTest
       assertNull(table.getRecordLabelFormat());
 
       qInstance = TestUtils.defineInstance();
-      table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName");
+      table = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName");
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("%s", table.getRecordLabelFormat());
 
       qInstance = TestUtils.defineInstance();
-      table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName", "lastName");
+      table = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName", "lastName");
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("%s %s", table.getRecordLabelFormat());
    }

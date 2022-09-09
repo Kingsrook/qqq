@@ -46,8 +46,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -479,7 +479,7 @@ class QInstanceValidatorTest
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
          .withSection(new QFieldSection("section1", null, new QIcon("person"), Tier.T1, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
-      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "Missing a label");
+      assertValidationSuccess((qInstance) -> qInstance.addTable(table));
    }
 
 
@@ -823,6 +823,7 @@ class QInstanceValidatorTest
          },
          "has both");
    }
+
 
 
    /*******************************************************************************
