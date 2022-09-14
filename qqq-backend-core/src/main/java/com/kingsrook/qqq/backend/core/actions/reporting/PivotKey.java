@@ -19,118 +19,93 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
 /*******************************************************************************
- ** Bean representing an element of a query order-by clause.
  **
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public class PivotKey
 {
-   private String  fieldName;
-   private boolean isAscending = true;
+   private List<Pair<String, Serializable>> keys = new ArrayList<>();
 
 
 
    /*******************************************************************************
-    ** Default no-arg constructor
-    *******************************************************************************/
-   public QFilterOrderBy()
-   {
-
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that sets field name, but leaves default for isAscending (true)
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName)
-   {
-      this.fieldName = fieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that takes field name and isAscending.
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName, boolean isAscending)
-   {
-      this.fieldName = fieldName;
-      this.isAscending = isAscending;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldName
     **
     *******************************************************************************/
-   public String getFieldName()
+   public PivotKey()
    {
-      return fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
     **
     *******************************************************************************/
-   public void setFieldName(String fieldName)
+   @Override
+   public String toString()
    {
-      this.fieldName = fieldName;
+      return "PivotKey{keys=" + keys + '}';
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for fieldName
     **
     *******************************************************************************/
-   public QFilterOrderBy withFieldName(String fieldName)
+   public void add(String field, Serializable value)
    {
-      this.fieldName = fieldName;
-      return (this);
+      keys.add(new Pair<>(field, value));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isAscending
+    ** Getter for keys
     **
     *******************************************************************************/
-   public boolean getIsAscending()
+   public List<Pair<String, Serializable>> getKeys()
    {
-      return isAscending;
+      return keys;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isAscending
     **
     *******************************************************************************/
-   public void setIsAscending(boolean ascending)
+   @Override
+   public boolean equals(Object o)
    {
-      isAscending = ascending;
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      PivotKey pivotKey = (PivotKey) o;
+      return Objects.equals(keys, pivotKey.keys);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for isAscending
     **
     *******************************************************************************/
-   public QFilterOrderBy withIsAscending(boolean ascending)
+   @Override
+   public int hashCode()
    {
-      this.isAscending = ascending;
-      return (this);
+      return Objects.hash(keys);
    }
 
 }

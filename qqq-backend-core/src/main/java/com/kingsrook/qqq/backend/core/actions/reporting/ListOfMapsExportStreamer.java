@@ -19,118 +19,127 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Bean representing an element of a query order-by clause.
- **
+ ** Report streamer implementation that just builds up a STATIC list of lists of strings.
+ ** Meant only for use in unit tests at this time...  would need refactored for
+ ** multi-thread/multi-use if wanted for real usage.
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public class ListOfMapsExportStreamer implements ExportStreamerInterface
 {
-   private String  fieldName;
-   private boolean isAscending = true;
+   private static final Logger LOG = LogManager.getLogger(ListOfMapsExportStreamer.class);
+
+   private ExportInput          exportInput;
+   private List<QFieldMetaData> fields;
+
+   private static List<Map<String, String>> list    = new ArrayList<>();
+   private static List<String>              headers = new ArrayList<>();
 
 
 
    /*******************************************************************************
-    ** Default no-arg constructor
-    *******************************************************************************/
-   public QFilterOrderBy()
-   {
-
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that sets field name, but leaves default for isAscending (true)
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName)
-   {
-      this.fieldName = fieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that takes field name and isAscending.
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName, boolean isAscending)
-   {
-      this.fieldName = fieldName;
-      this.isAscending = isAscending;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldName
     **
     *******************************************************************************/
-   public String getFieldName()
+   public ListOfMapsExportStreamer()
    {
-      return fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
+    ** Getter for list
     **
     *******************************************************************************/
-   public void setFieldName(String fieldName)
+   public static List<Map<String, String>> getList()
    {
-      this.fieldName = fieldName;
+      return (list);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for fieldName
     **
     *******************************************************************************/
-   public QFilterOrderBy withFieldName(String fieldName)
+   @Override
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields) throws QReportingException
    {
-      this.fieldName = fieldName;
-      return (this);
+      this.exportInput = exportInput;
+      this.fields = fields;
+
+      headers = new ArrayList<>();
+      for(QFieldMetaData field : fields)
+      {
+         headers.add(field.getLabel());
+      }
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isAscending
     **
     *******************************************************************************/
-   public boolean getIsAscending()
+   @Override
+   public int takeRecordsFromPipe(RecordPipe recordPipe) throws QReportingException
    {
-      return isAscending;
+      List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
+      LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
+
+      for(QRecord qRecord : qRecords)
+      {
+         addRecord(qRecord);
+      }
+      return (qRecords.size());
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isAscending
     **
     *******************************************************************************/
-   public void setIsAscending(boolean ascending)
+   private void addRecord(QRecord qRecord)
    {
-      isAscending = ascending;
+      Map<String, String> row = new LinkedHashMap<>();
+      list.add(row);
+      for(int i = 0; i < fields.size(); i++)
+      {
+         row.put(headers.get(i), qRecord.getValueString(fields.get(i).getName()));
+      }
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for isAscending
     **
     *******************************************************************************/
-   public QFilterOrderBy withIsAscending(boolean ascending)
+   @Override
+   public void addTotalsRow(QRecord record) throws QReportingException
    {
-      this.isAscending = ascending;
-      return (this);
+      addRecord(record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void finish()
+   {
+
    }
 
 }

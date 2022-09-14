@@ -35,9 +35,9 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Action to generate a report.
+ ** Action to generate an export from a table
  **
  ** At this time (future may change?), this action starts a new thread to run
  ** the query in the backend module.  As records are produced by the query,
@@ -63,9 +63,9 @@ import org.apache.logging.log4j.Logger;
  ** time the report outputStream can be closed.
  **
  *******************************************************************************/
-public class ReportAction
+public class ExportAction
 {
-   private static final Logger LOG = LogManager.getLogger(ReportAction.class);
+   private static final Logger LOG = LogManager.getLogger(ExportAction.class);
 
    private boolean preExecuteRan       = false;
    private Integer countFromPreExecute = null;
@@ -82,21 +82,21 @@ public class ReportAction
     ** first, in their thread, to catch any validation errors before they start
     ** the thread (which they may abandon).
     *******************************************************************************/
-   public void preExecute(ReportInput reportInput) throws QException
+   public void preExecute(ExportInput exportInput) throws QException
    {
-      ActionHelper.validateSession(reportInput);
+      ActionHelper.validateSession(exportInput);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  backendModule            = qBackendModuleDispatcher.getQBackendModule(reportInput.getBackend());
+      QBackendModuleInterface  backendModule            = qBackendModuleDispatcher.getQBackendModule(exportInput.getBackend());
 
       ///////////////////////////////////
       // verify field names (if given) //
       ///////////////////////////////////
-      if(CollectionUtils.nullSafeHasContents(reportInput.getFieldNames()))
+      if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
       {
-         QTableMetaData table         = reportInput.getTable();
+         QTableMetaData table         = exportInput.getTable();
          List<String>   badFieldNames = new ArrayList<>();
-         for(String fieldName : reportInput.getFieldNames())
+         for(String fieldName : exportInput.getFieldNames())
          {
             try
             {
@@ -119,8 +119,8 @@ public class ReportAction
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check if this report format has a max-rows limit -- if so, do a count to verify we're under the limit //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ReportFormat reportFormat = reportInput.getReportFormat();
-      verifyCountUnderMax(reportInput, backendModule, reportFormat);
+      ReportFormat reportFormat = exportInput.getReportFormat();
+      verifyCountUnderMax(exportInput, backendModule, reportFormat);
 
       preExecuteRan = true;
    }
@@ -130,28 +130,28 @@ public class ReportAction
    /*******************************************************************************
     ** Run the report.
     *******************************************************************************/
-   public ReportOutput execute(ReportInput reportInput) throws QException
+   public ExportOutput execute(ExportInput exportInput) throws QException
    {
       if(!preExecuteRan)
       {
          /////////////////////////////////////
          // ensure that pre-execute has ran //
          /////////////////////////////////////
-         preExecute(reportInput);
+         preExecute(exportInput);
       }
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  backendModule            = qBackendModuleDispatcher.getQBackendModule(reportInput.getBackend());
+      QBackendModuleInterface  backendModule            = qBackendModuleDispatcher.getQBackendModule(exportInput.getBackend());
 
       //////////////////////////
       // set up a query input //
       //////////////////////////
       QueryInterface queryInterface = backendModule.getQueryInterface();
-      QueryInput     queryInput     = new QueryInput(reportInput.getInstance());
-      queryInput.setSession(reportInput.getSession());
-      queryInput.setTableName(reportInput.getTableName());
-      queryInput.setFilter(reportInput.getQueryFilter());
-      queryInput.setLimit(reportInput.getLimit());
+      QueryInput     queryInput     = new QueryInput(exportInput.getInstance());
+      queryInput.setSession(exportInput.getSession());
+      queryInput.setTableName(exportInput.getTableName());
+      queryInput.setFilter(exportInput.getQueryFilter());
+      queryInput.setLimit(exportInput.getLimit());
 
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //
@@ -162,9 +162,9 @@ public class ReportAction
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up a report streamer, which will read rows from the pipe, and write formatted report rows to the output stream //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ReportFormat            reportFormat   = reportInput.getReportFormat();
-      ReportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
-      reportStreamer.start(reportInput, getFields(reportInput));
+      ReportFormat            reportFormat   = exportInput.getReportFormat();
+      ExportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
+      reportStreamer.start(exportInput, getFields(exportInput));
 
       //////////////////////////////////////////
       // run the query action as an async job //
@@ -251,17 +251,17 @@ public class ReportAction
 
       try
       {
-         reportInput.getReportOutputStream().close();
+         exportInput.getReportOutputStream().close();
       }
       catch(Exception e)
       {
          throw (new QReportingException("Error completing report", e));
       }
 
-      ReportOutput reportOutput = new ReportOutput();
-      reportOutput.setRecordCount(recordCount);
+      ExportOutput exportOutput = new ExportOutput();
+      exportOutput.setRecordCount(recordCount);
 
-      return (reportOutput);
+      return (exportOutput);
    }
 
 
@@ -269,12 +269,12 @@ public class ReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QFieldMetaData> getFields(ReportInput reportInput)
+   private List<QFieldMetaData> getFields(ExportInput exportInput)
    {
-      QTableMetaData table = reportInput.getTable();
-      if(reportInput.getFieldNames() != null)
+      QTableMetaData table = exportInput.getTable();
+      if(exportInput.getFieldNames() != null)
       {
-         return (reportInput.getFieldNames().stream().map(table::getField).toList());
+         return (exportInput.getFieldNames().stream().map(table::getField).toList());
       }
       else
       {
@@ -287,12 +287,12 @@ public class ReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void verifyCountUnderMax(ReportInput reportInput, QBackendModuleInterface backendModule, ReportFormat reportFormat) throws QException
+   private void verifyCountUnderMax(ExportInput exportInput, QBackendModuleInterface backendModule, ReportFormat reportFormat) throws QException
    {
       if(reportFormat.getMaxCols() != null)
       {
-         List<QFieldMetaData> fields = getFields(reportInput);
-         if (fields.size() > reportFormat.getMaxCols())
+         List<QFieldMetaData> fields = getFields(exportInput);
+         if(fields.size() > reportFormat.getMaxCols())
          {
             throw (new QUserFacingException("The requested report would include more columns ("
                + String.format("%,d", fields.size()) + ") than the maximum allowed ("
@@ -302,13 +302,13 @@ public class ReportAction
 
       if(reportFormat.getMaxRows() != null)
       {
-         if(reportInput.getLimit() == null || reportInput.getLimit() > reportFormat.getMaxRows())
+         if(exportInput.getLimit() == null || exportInput.getLimit() > reportFormat.getMaxRows())
          {
             CountInterface countInterface = backendModule.getCountInterface();
-            CountInput     countInput     = new CountInput(reportInput.getInstance());
-            countInput.setSession(reportInput.getSession());
-            countInput.setTableName(reportInput.getTableName());
-            countInput.setFilter(reportInput.getQueryFilter());
+            CountInput     countInput     = new CountInput(exportInput.getInstance());
+            countInput.setSession(exportInput.getSession());
+            countInput.setTableName(exportInput.getTableName());
+            countInput.setFilter(exportInput.getQueryFilter());
             CountOutput countOutput = countInterface.execute(countInput);
             countFromPreExecute = countOutput.getCount();
             if(countFromPreExecute > reportFormat.getMaxRows())

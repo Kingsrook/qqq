@@ -23,9 +23,9 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
 import java.io.OutputStream;
-import java.io.Serializable;
-import java.util.Map;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
@@ -33,21 +33,23 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 /*******************************************************************************
  ** Input for an Export action
  *******************************************************************************/
-public class ReportInput extends AbstractTableActionInput
+public class ExportInput extends AbstractTableActionInput
 {
-   private String                    reportName;
-   private Map<String, Serializable> inputValues;
+   private QQueryFilter queryFilter;
+   private Integer      limit;
+   private List<String> fieldNames;
 
    private String       filename;
    private ReportFormat reportFormat;
    private OutputStream reportOutputStream;
+   private String       titleRow;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ReportInput()
+   public ExportInput()
    {
    }
 
@@ -56,7 +58,7 @@ public class ReportInput extends AbstractTableActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ReportInput(QInstance instance)
+   public ExportInput(QInstance instance)
    {
       super(instance);
    }
@@ -66,7 +68,7 @@ public class ReportInput extends AbstractTableActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ReportInput(QInstance instance, QSession session)
+   public ExportInput(QInstance instance, QSession session)
    {
       super(instance);
       setSession(session);
@@ -75,45 +77,67 @@ public class ReportInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for reportName
+    ** Getter for queryFilter
     **
     *******************************************************************************/
-   public String getReportName()
+   public QQueryFilter getQueryFilter()
    {
-      return reportName;
+      return queryFilter;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportName
+    ** Setter for queryFilter
     **
     *******************************************************************************/
-   public void setReportName(String reportName)
+   public void setQueryFilter(QQueryFilter queryFilter)
    {
-      this.reportName = reportName;
+      this.queryFilter = queryFilter;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for inputValues
+    ** Getter for limit
     **
     *******************************************************************************/
-   public Map<String, Serializable> getInputValues()
+   public Integer getLimit()
    {
-      return inputValues;
+      return limit;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for inputValues
+    ** Setter for limit
     **
     *******************************************************************************/
-   public void setInputValues(Map<String, Serializable> inputValues)
+   public void setLimit(Integer limit)
    {
-      this.inputValues = inputValues;
+      this.limit = limit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldNames
+    **
+    *******************************************************************************/
+   public List<String> getFieldNames()
+   {
+      return fieldNames;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldNames
+    **
+    *******************************************************************************/
+   public void setFieldNames(List<String> fieldNames)
+   {
+      this.fieldNames = fieldNames;
    }
 
 
@@ -180,5 +204,25 @@ public class ReportInput extends AbstractTableActionInput
    public void setReportOutputStream(OutputStream reportOutputStream)
    {
       this.reportOutputStream = reportOutputStream;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getTitleRow()
+   {
+      return titleRow;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setTitleRow(String titleRow)
+   {
+      this.titleRow = titleRow;
    }
 }

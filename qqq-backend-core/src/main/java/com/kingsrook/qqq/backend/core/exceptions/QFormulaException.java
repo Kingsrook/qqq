@@ -19,33 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting;
-
-
-import java.util.List;
-import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- ** Interface for various report formats to implement.
+ * Exception thrown while generating reports
+ *
  *******************************************************************************/
-public interface ReportStreamerInterface
+public class QFormulaException extends QException
 {
+
    /*******************************************************************************
-    ** Called once, before any rows are available.  Meant to write a header, for example.
+    ** Constructor of message
+    **
     *******************************************************************************/
-   void start(ReportInput reportInput, List<QFieldMetaData> fields) throws QReportingException;
+   public QFormulaException(String message)
+   {
+      super(message);
+   }
+
+
 
    /*******************************************************************************
-    ** Called as records flow into the pipe.
-    ******************************************************************************/
-   int takeRecordsFromPipe(RecordPipe recordPipe) throws QReportingException;
-
-   /*******************************************************************************
-    ** Called once, after all rows are available.  Meant to write a footer, or close resources, for example.
+    ** Constructor of message & cause
+    **
     *******************************************************************************/
-   void finish() throws QReportingException;
-
+   public QFormulaException(String message, Throwable cause)
+   {
+      super(message, cause);
+   }
 }

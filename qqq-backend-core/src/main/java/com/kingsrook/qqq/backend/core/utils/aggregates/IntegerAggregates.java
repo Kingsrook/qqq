@@ -19,118 +19,117 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.utils.aggregates;
 
 
-import java.io.Serializable;
+import java.math.BigDecimal;
 
 
 /*******************************************************************************
- ** Bean representing an element of a query order-by clause.
  **
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public class IntegerAggregates implements AggregatesInterface<Integer>
 {
-   private String  fieldName;
-   private boolean isAscending = true;
+   private int     count = 0;
+   // private Integer countDistinct;
+   private Integer sum;
+   private Integer min;
+   private Integer max;
 
 
 
    /*******************************************************************************
-    ** Default no-arg constructor
+    ** Add a new value to this aggregate set
     *******************************************************************************/
-   public QFilterOrderBy()
+   public void add(Integer input)
    {
+      if(input == null)
+      {
+         return;
+      }
 
+      count++;
+
+      if(sum == null)
+      {
+         sum = input;
+      }
+      else
+      {
+         sum = sum + input;
+      }
+
+      if(min == null || input < min)
+      {
+         min = input;
+      }
+
+      if(max == null || input > max)
+      {
+         max = input;
+      }
    }
 
 
 
    /*******************************************************************************
-    ** Constructor that sets field name, but leaves default for isAscending (true)
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName)
-   {
-      this.fieldName = fieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that takes field name and isAscending.
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName, boolean isAscending)
-   {
-      this.fieldName = fieldName;
-      this.isAscending = isAscending;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldName
     **
     *******************************************************************************/
-   public String getFieldName()
+   @Override
+   public int getCount()
    {
-      return fieldName;
+      return (count);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
     **
     *******************************************************************************/
-   public void setFieldName(String fieldName)
+   @Override
+   public Integer getSum()
    {
-      this.fieldName = fieldName;
+      return (sum);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for fieldName
     **
     *******************************************************************************/
-   public QFilterOrderBy withFieldName(String fieldName)
+   @Override
+   public Integer getMin()
    {
-      this.fieldName = fieldName;
-      return (this);
+      return (min);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isAscending
     **
     *******************************************************************************/
-   public boolean getIsAscending()
+   @Override
+   public Integer getMax()
    {
-      return isAscending;
+      return (max);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isAscending
     **
     *******************************************************************************/
-   public void setIsAscending(boolean ascending)
+   @Override
+   public BigDecimal getAverage()
    {
-      isAscending = ascending;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent Setter for isAscending
-    **
-    *******************************************************************************/
-   public QFilterOrderBy withIsAscending(boolean ascending)
-   {
-      this.isAscending = ascending;
-      return (this);
+      if(this.count > 0)
+      {
+         return (BigDecimal.valueOf(this.sum.doubleValue() / (double) this.count));
+      }
+      else
+      {
+         return (null);
+      }
    }
 
 }

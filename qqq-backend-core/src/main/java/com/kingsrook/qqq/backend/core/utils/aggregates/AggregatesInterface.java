@@ -19,118 +19,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.utils.aggregates;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 
 /*******************************************************************************
- ** Bean representing an element of a query order-by clause.
  **
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public interface AggregatesInterface<T extends Serializable>
 {
-   private String  fieldName;
-   private boolean isAscending = true;
-
-
-
    /*******************************************************************************
-    ** Default no-arg constructor
-    *******************************************************************************/
-   public QFilterOrderBy()
-   {
-
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that sets field name, but leaves default for isAscending (true)
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName)
-   {
-      this.fieldName = fieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that takes field name and isAscending.
-    *******************************************************************************/
-   public QFilterOrderBy(String fieldName, boolean isAscending)
-   {
-      this.fieldName = fieldName;
-      this.isAscending = isAscending;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldName
     **
     *******************************************************************************/
-   public String getFieldName()
-   {
-      return fieldName;
-   }
-
-
+   void add(T t);
 
    /*******************************************************************************
-    ** Setter for fieldName
     **
     *******************************************************************************/
-   public void setFieldName(String fieldName)
-   {
-      this.fieldName = fieldName;
-   }
-
-
+   int getCount();
 
    /*******************************************************************************
-    ** Fluent Setter for fieldName
     **
     *******************************************************************************/
-   public QFilterOrderBy withFieldName(String fieldName)
-   {
-      this.fieldName = fieldName;
-      return (this);
-   }
-
-
+   T getSum();
 
    /*******************************************************************************
-    ** Getter for isAscending
     **
     *******************************************************************************/
-   public boolean getIsAscending()
-   {
-      return isAscending;
-   }
-
-
+   T getMin();
 
    /*******************************************************************************
-    ** Setter for isAscending
     **
     *******************************************************************************/
-   public void setIsAscending(boolean ascending)
-   {
-      isAscending = ascending;
-   }
-
-
+   T getMax();
 
    /*******************************************************************************
-    ** Fluent Setter for isAscending
     **
     *******************************************************************************/
-   public QFilterOrderBy withIsAscending(boolean ascending)
-   {
-      this.isAscending = ascending;
-      return (this);
-   }
-
+   BigDecimal getAverage();
 }

@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -64,6 +65,7 @@ public class QInstance
    private Map<String, QPossibleValueSource> possibleValueSources = new LinkedHashMap<>();
    private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
    private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
+   private Map<String, QReportMetaData>      reports              = new LinkedHashMap<>();
 
    private Map<String, QWidgetMetaDataInterface> widgets = new LinkedHashMap<>();
 
@@ -428,6 +430,66 @@ public class QInstance
    public void setApps(Map<String, QAppMetaData> apps)
    {
       this.apps = apps;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addReport(QReportMetaData report)
+   {
+      this.addReport(report.getName(), report);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addReport(String name, QReportMetaData report)
+   {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add an report without a name."));
+      }
+      if(this.reports.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second report with name: " + name));
+      }
+      this.reports.put(name, report);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QReportMetaData getReport(String name)
+   {
+      return (this.reports.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for reports
+    **
+    *******************************************************************************/
+   public Map<String, QReportMetaData> getReports()
+   {
+      return reports;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reports
+    **
+    *******************************************************************************/
+   public void setReports(Map<String, QReportMetaData> reports)
+   {
+      this.reports = reports;
    }
 
 
