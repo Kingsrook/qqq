@@ -27,24 +27,25 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.adapters.QRecordToCsvAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** CSV report format implementation
+ ** CSV export format implementation
  *******************************************************************************/
-public class CsvReportStreamer implements ReportStreamerInterface
+public class CsvExportStreamer implements ExportStreamerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(CsvReportStreamer.class);
+   private static final Logger LOG = LogManager.getLogger(CsvExportStreamer.class);
 
    private final QRecordToCsvAdapter qRecordToCsvAdapter;
 
-   private ReportInput          reportInput;
+   private ExportInput          exportInput;
    private QTableMetaData       table;
    private List<QFieldMetaData> fields;
    private OutputStream         outputStream;
@@ -54,7 +55,7 @@ public class CsvReportStreamer implements ReportStreamerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   public CsvReportStreamer()
+   public CsvExportStreamer()
    {
       qRecordToCsvAdapter = new QRecordToCsvAdapter();
    }
@@ -65,12 +66,12 @@ public class CsvReportStreamer implements ReportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ReportInput reportInput, List<QFieldMetaData> fields) throws QReportingException
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields) throws QReportingException
    {
-      this.reportInput = reportInput;
+      this.exportInput = exportInput;
       this.fields = fields;
-      table = reportInput.getTable();
-      outputStream = this.reportInput.getReportOutputStream();
+      table = exportInput.getTable();
+      outputStream = this.exportInput.getReportOutputStream();
 
       writeReportHeaderRow();
    }
@@ -84,6 +85,11 @@ public class CsvReportStreamer implements ReportStreamerInterface
    {
       try
       {
+         if(StringUtils.hasContent(exportInput.getTitleRow()))
+         {
+            outputStream.write(exportInput.getTitleRow().getBytes(StandardCharsets.UTF_8));
+         }
+
          int col = 0;
          for(QFieldMetaData column : fields)
          {
@@ -113,20 +119,41 @@ public class CsvReportStreamer implements ReportStreamerInterface
       List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
 
+      for(QRecord qRecord : qRecords)
+      {
+         writeRecord(qRecord);
+      }
+      return (qRecords.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void writeRecord(QRecord qRecord) throws QReportingException
+   {
       try
       {
-         for(QRecord qRecord : qRecords)
-         {
-            String csv = qRecordToCsvAdapter.recordToCsv(table, qRecord, fields);
-            outputStream.write(csv.getBytes(StandardCharsets.UTF_8));
-            outputStream.flush(); // todo - less often?
-         }
-         return (qRecords.size());
+         String csv = qRecordToCsvAdapter.recordToCsv(table, qRecord, fields);
+         outputStream.write(csv.getBytes(StandardCharsets.UTF_8));
+         outputStream.flush(); // todo - less often?
       }
       catch(Exception e)
       {
          throw (new QReportingException("Error writing CSV report", e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addTotalsRow(QRecord record) throws QReportingException
+   {
+      writeRecord(record);
    }
 
 

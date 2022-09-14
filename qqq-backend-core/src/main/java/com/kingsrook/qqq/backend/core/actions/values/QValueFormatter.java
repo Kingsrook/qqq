@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -48,6 +49,26 @@ public class QValueFormatter
     *******************************************************************************/
    public String formatValue(QFieldMetaData field, Serializable value)
    {
+      return (formatValue(field.getDisplayFormat(), field.getName(), value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatValue(String displayFormat, Serializable value)
+   {
+      return (formatValue(displayFormat, "", value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String formatValue(String displayFormat, String fieldName, Serializable value)
+   {
       //////////////////////////////////
       // null values get null results //
       //////////////////////////////////
@@ -59,11 +80,11 @@ public class QValueFormatter
       ////////////////////////////////////////////////////////
       // if the field has a display format, try to apply it //
       ////////////////////////////////////////////////////////
-      if(StringUtils.hasContent(field.getDisplayFormat()))
+      if(StringUtils.hasContent(displayFormat))
       {
          try
          {
-            return (field.getDisplayFormat().formatted(value));
+            return (displayFormat.formatted(value));
          }
          catch(Exception e)
          {
@@ -72,24 +93,24 @@ public class QValueFormatter
                // todo - revisit if we actually want this - or - if you should get an error if you mis-configure your table this way (ideally during validation!)
                if(e.getMessage().equals("f != java.lang.Integer"))
                {
-                  return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
+                  return formatValue(displayFormat, ValueUtils.getValueAsBigDecimal(value));
                }
                else if(e.getMessage().equals("f != java.lang.String"))
                {
-                  return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
+                  return formatValue(displayFormat, ValueUtils.getValueAsBigDecimal(value));
                }
                else if(e.getMessage().equals("d != java.math.BigDecimal"))
                {
-                  return formatValue(field, ValueUtils.getValueAsInteger(value));
+                  return formatValue(displayFormat, ValueUtils.getValueAsInteger(value));
                }
                else
                {
-                  LOG.warn("Error formatting value [" + value + "] for field [" + field.getName() + "] with format [" + field.getDisplayFormat() + "]: " + e.getMessage());
+                  LOG.warn("Error formatting value [" + value + "] for field [" + fieldName + "] with format [" + displayFormat + "]: " + e.getMessage());
                }
             }
             catch(Exception e2)
             {
-               LOG.warn("Caught secondary exception trying to convert type on field [" + field.getName() + "] for formatting", e);
+               LOG.warn("Caught secondary exception trying to convert type on field [" + fieldName + "] for formatting", e);
             }
          }
       }
@@ -117,16 +138,39 @@ public class QValueFormatter
       ///////////////////////////////////////////////////////////////////////
       try
       {
-         List<Serializable> values = table.getRecordLabelFields().stream()
-            .map(record::getValue)
-            .map(v -> v == null ? "" : v)
-            .toList();
-         return (table.getRecordLabelFormat().formatted(values.toArray()));
+         return formatStringWithFields(table.getRecordLabelFormat(), table.getRecordLabelFields(), record.getValues());
       }
       catch(Exception e)
       {
          return (formatRecordLabelExceptionalCases(table, record));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatStringWithFields(String formatString, List<String> formatFields, Map<String, Serializable> valueMap)
+   {
+      List<Serializable> values = formatFields.stream()
+         .map(valueMap::get)
+         .map(v -> v == null ? "" : v)
+         .toList();
+      return (formatString.formatted(values.toArray()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatStringWithValues(String formatString, List<String> formatValues)
+   {
+      List<String> values = formatValues.stream()
+         .map(v -> v == null ? "" : v)
+         .toList();
+      return (formatString.formatted(values.toArray()));
    }
 
 

@@ -19,38 +19,89 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.reporting;
+package com.kingsrook.qqq.backend.core.utils;
 
 
-import java.io.Serializable;
+import java.util.Objects;
 
 
 /*******************************************************************************
- ** Output for a Report action
+ ** Simple container for two objects
  *******************************************************************************/
-public class ReportOutput implements Serializable
+public class Pair<A, B>
 {
-   public long recordCount;
+   private A a;
+   private B b;
 
 
 
    /*******************************************************************************
-    ** Getter for recordCount
     **
     *******************************************************************************/
-   public long getRecordCount()
+   public Pair(A a, B b)
    {
-      return recordCount;
+      this.a = a;
+      this.b = b;
+   }
+
+
+
+   @Override
+   public String toString()
+   {
+      return (a + ":" + b);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordCount
+    ** Getter for a
     **
     *******************************************************************************/
-   public void setRecordCount(long recordCount)
+   public A getA()
    {
-      this.recordCount = recordCount;
+      return a;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for b
+    **
+    *******************************************************************************/
+   public B getB()
+   {
+      return b;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      Pair<?, ?> pair = (Pair<?, ?>) o;
+      return Objects.equals(a, pair.a) && Objects.equals(b, pair.b);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(a, b);
    }
 }

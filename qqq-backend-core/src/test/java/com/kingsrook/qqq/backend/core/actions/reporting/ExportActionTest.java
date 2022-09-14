@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for the ReportAction
  *******************************************************************************/
-class ReportActionTest
+class ExportActionTest
 {
 
    /*******************************************************************************
@@ -120,22 +120,22 @@ class ReportActionTest
    {
       try(FileOutputStream outputStream = new FileOutputStream(filename))
       {
-         ReportInput reportInput = new ReportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
-         reportInput.setTableName("person");
-         QTableMetaData table = reportInput.getTable();
+         ExportInput exportInput = new ExportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
+         exportInput.setTableName("person");
+         QTableMetaData table = exportInput.getTable();
 
-         reportInput.setReportFormat(reportFormat);
-         reportInput.setReportOutputStream(outputStream);
-         reportInput.setQueryFilter(new QQueryFilter());
-         reportInput.setLimit(recordCount);
+         exportInput.setReportFormat(reportFormat);
+         exportInput.setReportOutputStream(outputStream);
+         exportInput.setQueryFilter(new QQueryFilter());
+         exportInput.setLimit(recordCount);
 
          if(specifyFields)
          {
-            reportInput.setFieldNames(table.getFields().values().stream().map(QFieldMetaData::getName).collect(Collectors.toList()));
+            exportInput.setFieldNames(table.getFields().values().stream().map(QFieldMetaData::getName).collect(Collectors.toList()));
          }
-         ReportOutput reportOutput = new ReportAction().execute(reportInput);
-         assertNotNull(reportOutput);
-         assertEquals(recordCount, reportOutput.getRecordCount());
+         ExportOutput exportOutput = new ExportAction().execute(exportInput);
+         assertNotNull(exportOutput);
+         assertEquals(recordCount, exportOutput.getRecordCount());
       }
    }
 
@@ -147,12 +147,12 @@ class ReportActionTest
    @Test
    void testBadFieldNames()
    {
-      ReportInput reportInput = new ReportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
-      reportInput.setTableName("person");
-      reportInput.setFieldNames(List.of("Foo", "Bar", "Baz"));
+      ExportInput exportInput = new ExportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
+      exportInput.setTableName("person");
+      exportInput.setFieldNames(List.of("Foo", "Bar", "Baz"));
       assertThrows(QUserFacingException.class, () ->
       {
-         new ReportAction().execute(reportInput);
+         new ExportAction().execute(exportInput);
       });
    }
 
@@ -164,15 +164,15 @@ class ReportActionTest
    @Test
    void testPreExecuteCount() throws QException
    {
-      ReportInput reportInput = new ReportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
-      reportInput.setTableName("person");
+      ExportInput exportInput = new ExportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
+      exportInput.setTableName("person");
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // use xlsx, which has a max-rows limit, to verify that code runs, but doesn't throw when there aren't too many rows //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      reportInput.setReportFormat(ReportFormat.XLSX);
+      exportInput.setReportFormat(ReportFormat.XLSX);
 
-      new ReportAction().preExecute(reportInput);
+      new ExportAction().preExecute(exportInput);
 
       ////////////////////////////////////////////////////////////////////////////
       // nothing to assert - but if preExecute throws, then the test will fail. //
@@ -198,17 +198,17 @@ class ReportActionTest
       QInstance qInstance = TestUtils.defineInstance();
       qInstance.addTable(wideTable);
 
-      ReportInput reportInput = new ReportInput(qInstance, TestUtils.getMockSession());
-      reportInput.setTableName("wide");
+      ExportInput exportInput = new ExportInput(qInstance, TestUtils.getMockSession());
+      exportInput.setTableName("wide");
 
       ////////////////////////////////////////////////////////////////
       // use xlsx, which has a max-cols limit, to verify that code. //
       ////////////////////////////////////////////////////////////////
-      reportInput.setReportFormat(ReportFormat.XLSX);
+      exportInput.setReportFormat(ReportFormat.XLSX);
 
       assertThrows(QUserFacingException.class, () ->
       {
-         new ReportAction().preExecute(reportInput);
+         new ExportAction().preExecute(exportInput);
       });
    }
 

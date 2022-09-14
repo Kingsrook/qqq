@@ -19,50 +19,87 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
-
-
-import java.io.Serializable;
+package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
 /*******************************************************************************
- ** Bean representing an element of a query order-by clause.
- **
+ ** Field within a report
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public class QReportField
 {
-   private String  fieldName;
-   private boolean isAscending = true;
+   private String name;
+   private String label;
+   private String fieldName;
+   private String formula;
+   private String displayFormat;
+   // todo - type?
 
 
 
    /*******************************************************************************
-    ** Default no-arg constructor
+    ** Getter for name
+    **
     *******************************************************************************/
-   public QFilterOrderBy()
+   public String getName()
    {
-
+      return name;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor that sets field name, but leaves default for isAscending (true)
+    ** Setter for name
+    **
     *******************************************************************************/
-   public QFilterOrderBy(String fieldName)
+   public void setName(String name)
    {
-      this.fieldName = fieldName;
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor that takes field name and isAscending.
+    ** Fluent setter for name
+    **
     *******************************************************************************/
-   public QFilterOrderBy(String fieldName, boolean isAscending)
+   public QReportField withName(String name)
    {
-      this.fieldName = fieldName;
-      this.isAscending = isAscending;
+      this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public QReportField withLabel(String label)
+   {
+      this.label = label;
+      return (this);
    }
 
 
@@ -90,10 +127,10 @@ public class QFilterOrderBy implements Serializable
 
 
    /*******************************************************************************
-    ** Fluent Setter for fieldName
+    ** Fluent setter for fieldName
     **
     *******************************************************************************/
-   public QFilterOrderBy withFieldName(String fieldName)
+   public QReportField withFieldName(String fieldName)
    {
       this.fieldName = fieldName;
       return (this);
@@ -102,34 +139,68 @@ public class QFilterOrderBy implements Serializable
 
 
    /*******************************************************************************
-    ** Getter for isAscending
+    ** Getter for formula
     **
     *******************************************************************************/
-   public boolean getIsAscending()
+   public String getFormula()
    {
-      return isAscending;
+      return formula;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isAscending
+    ** Setter for formula
     **
     *******************************************************************************/
-   public void setIsAscending(boolean ascending)
+   public void setFormula(String formula)
    {
-      isAscending = ascending;
+      this.formula = formula;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for isAscending
+    ** Fluent setter for formula
     **
     *******************************************************************************/
-   public QFilterOrderBy withIsAscending(boolean ascending)
+   public QReportField withFormula(String formula)
    {
-      this.isAscending = ascending;
+      this.formula = formula;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for displayFormat
+    **
+    *******************************************************************************/
+   public String getDisplayFormat()
+   {
+      return displayFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for displayFormat
+    **
+    *******************************************************************************/
+   public void setDisplayFormat(String displayFormat)
+   {
+      this.displayFormat = displayFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for displayFormat
+    **
+    *******************************************************************************/
+   public QReportField withDisplayFormat(String displayFormat)
+   {
+      this.displayFormat = displayFormat;
       return (this);
    }
 

@@ -40,7 +40,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.WidgetDataLoader;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
-import com.kingsrook.qqq.backend.core.actions.reporting.ReportAction;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -61,8 +61,8 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -671,7 +671,6 @@ public class QJavalinImplementation
 
 
 
-
    /*******************************************************************************
     ** Load the data for a widget of a given name.
     *******************************************************************************/
@@ -690,6 +689,7 @@ public class QJavalinImplementation
          handleException(context, e);
       }
    }
+
 
 
    /*******************************************************************************
@@ -756,22 +756,22 @@ public class QJavalinImplementation
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ReportInput reportInput = new ReportInput(qInstance);
-         setupSession(context, reportInput);
-         reportInput.setTableName(tableName);
-         reportInput.setReportFormat(reportFormat);
-         reportInput.setFilename(filename);
-         reportInput.setLimit(limit);
+         ExportInput exportInput = new ExportInput(qInstance);
+         setupSession(context, exportInput);
+         exportInput.setTableName(tableName);
+         exportInput.setReportFormat(reportFormat);
+         exportInput.setFilename(filename);
+         exportInput.setLimit(limit);
 
          String fields = stringQueryParam(context, "fields");
          if(StringUtils.hasContent(fields))
          {
-            reportInput.setFieldNames(List.of(fields.split(",")));
+            exportInput.setFieldNames(List.of(fields.split(",")));
          }
 
          if(filter != null)
          {
-            reportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -782,10 +782,10 @@ public class QJavalinImplementation
          PipedOutputStream pipedOutputStream = new PipedOutputStream();
          PipedInputStream  pipedInputStream  = new PipedInputStream();
          pipedOutputStream.connect(pipedInputStream);
-         reportInput.setReportOutputStream(pipedOutputStream);
+         exportInput.setReportOutputStream(pipedOutputStream);
 
-         ReportAction reportAction = new ReportAction();
-         reportAction.preExecute(reportInput);
+         ExportAction exportAction = new ExportAction();
+         exportAction.preExecute(exportInput);
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // start the async job.                                                                            //
@@ -795,7 +795,7 @@ public class QJavalinImplementation
          {
             try
             {
-               reportAction.execute(reportInput);
+               exportAction.execute(exportInput);
                return (true);
             }
             catch(Exception e)
