@@ -1,0 +1,191 @@
+<template name="addX" value="/*******************************************************************************&#10; **&#10; *******************************************************************************/&#10;public void add$TYPE$($TYPE$ $var$)&#10;{&#10;   if(this.$list$ == null)&#10;   {&#10;      this.$list$ = new ArrayList&lt;&gt;();&#10;   }&#10;   this.$list$.add($var$);&#10;}" description="write a method to add an X to a list" toReformat="false" toShortenFQNames="true">
+  <variable name="TYPE" expression="className()" defaultValue="" alwaysStopAt="true" />
+  <variable name="var" expression="suggestVariableName()" defaultValue="" alwaysStopAt="true" />
+  <variable name="list" expression="suggestVariableName()" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="afterAllMethod" value="/*******************************************************************************&#10;** &#10;*******************************************************************************/&#10;@AfterAll&#10;static void afterAll()&#10;{&#10;   $END$&#10;}&#10;" description="Write a junt afterAll method" toReformat="true" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="afterEachMethod" value="/*******************************************************************************&#10;** &#10;*******************************************************************************/&#10;@AfterEach&#10;void afterEach()&#10;{&#10;   $END$&#10;}&#10;" description="Write a junt afterEach method" toReformat="true" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="beforeAllMethod" value="/*******************************************************************************&#10;** &#10;*******************************************************************************/&#10;@BeforeAll&#10;static void beforeAll()&#10;{&#10;   $END$&#10;}&#10;" description="Write a junt beforeAll method" toReformat="true" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="beforeAndAfterEachMethod" value="/*******************************************************************************&#10;** &#10;*******************************************************************************/&#10;@BeforeEach&#10;@AfterEach&#10;void beforeAndAfterEach()&#10;{&#10;   $END$&#10;}&#10;" description="Write a junt beforeAndAfterEach method" toReformat="true" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="beforeEachMethod" value="/*******************************************************************************&#10;** &#10;*******************************************************************************/&#10;@BeforeEach&#10;void beforeEach()&#10;{&#10;   $END$&#10;}&#10;" description="Write a junt beforeEach method" toReformat="true" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="gs" value="&#10;/*******************************************************************************&#10; ** Getter for $field$&#10; **&#10; *******************************************************************************/&#10;public $fieldType$ get$fieldUcFirst$()&#10;{&#10;   return $field$;&#10;}&#10;&#10;&#10;&#10;/*******************************************************************************&#10; ** Setter for $field$&#10; **&#10; *******************************************************************************/&#10;public void set$fieldUcFirst$($fieldType$ $field$)&#10;{&#10;   this.$field$ = $field$;&#10;}&#10;&#10;&#10;" description="Write a getter and setter" toReformat="false" toShortenFQNames="true">
+  <variable name="field" expression="completeSmart()" defaultValue="" alwaysStopAt="true" />
+  <variable name="fieldUcFirst" expression="capitalize(field)" defaultValue="" alwaysStopAt="false" />
+  <variable name="fieldType" expression="typeOfVariable(field)" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="gsw" value="&#10;/*******************************************************************************&#10; ** Getter for $field$&#10; **&#10; *******************************************************************************/&#10;public $fieldType$ get$fieldUcFirst$()&#10;{&#10;   return $field$;&#10;}&#10;&#10;&#10;&#10;/*******************************************************************************&#10; ** Setter for $field$&#10; **&#10; *******************************************************************************/&#10;public void set$fieldUcFirst$($fieldType$ $field$)&#10;{&#10;   this.$field$ = $field$;&#10;}&#10;&#10;&#10;/*******************************************************************************&#10; ** Fluent setter for $field$&#10; **&#10; *******************************************************************************/&#10;public $thisClass$ with$fieldUcFirst$($fieldType$ $field$)&#10;{&#10;   this.$field$ = $field$;&#10;   return (this);&#10;}&#10;&#10;" description="Write a getter, setter, and fluent setter" toReformat="false" toShortenFQNames="true">
+  <variable name="field" expression="completeSmart()" defaultValue="" alwaysStopAt="true" />
+  <variable name="thisClass" expression="className()" defaultValue="" alwaysStopAt="false" />
+  <variable name="fieldUcFirst" expression="capitalize(field)" defaultValue="" alwaysStopAt="false" />
+  <variable name="fieldType" expression="typeOfVariable(field)" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="innerclass" value="/*******************************************************************************&#10; **&#10; *******************************************************************************/&#10;$ACCESS$ static class $NAME$&#10;{&#10;   $END$&#10;}" description="Write an inner class" toReformat="true" toShortenFQNames="true">
+  <variable name="ACCESS" expression="enum(&quot;public&quot;, &quot;private&quot;, &quot;protected&quot;)" defaultValue="" alwaysStopAt="true" />
+  <variable name="NAME" expression="" defaultValue="&quot;Foo&quot;" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="javadoc" value="/*******************************************************************************&#10; ** $END$&#10; *******************************************************************************/" description="Write a method or class header javadoc comment" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="list" value="List&lt;$TYPE$&gt; $var$ = new ArrayList&lt;&gt;();" description="List&lt;T&gt; list = new ArrayList&lt;&gt;();" toReformat="false" toShortenFQNames="true">
+  <variable name="TYPE" expression="className()" defaultValue="" alwaysStopAt="true" />
+  <variable name="var" expression="completeSmart()" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="main" value="/*******************************************************************************&#10; **&#10; *******************************************************************************/&#10;public static void main(String[] args)&#10;{&#10;   $CLASS$ instance = new $CLASS$();&#10;   instance.run();&#10;}&#10;&#10;&#10;&#10;/*******************************************************************************&#10; **&#10; *******************************************************************************/&#10;public void run()&#10;{&#10;   try&#10;   {&#10;      $END$&#10;   }&#10;   catch(Exception e)&#10;   {&#10;      e.printStackTrace();&#10;   }&#10;}" description="Write a main method (which will instantiate the current class and call a new run() method)" toReformat="true" toShortenFQNames="true">
+  <variable name="CLASS" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="COMPLETION" value="false" />
+    <option name="JAVA_CODE" value="true" />
+    <option name="JAVA_COMMENT" value="false" />
+    <option name="JAVA_EXPRESSION" value="false" />
+    <option name="JAVA_STATEMENT" value="false" />
+    <option name="JAVA_STRING" value="false" />
+  </context>
+</template>
+<template name="map" value="Map&lt;$KEY$, $VALUE$&gt; $var$ = new HashMap&lt;&gt;();" description="Map&lt;K,V&gt; m = new HashMap&lt;&gt;();" toReformat="false" toShortenFQNames="true">
+  <variable name="KEY" expression="className()" defaultValue="" alwaysStopAt="true" />
+  <variable name="VALUE" expression="className()" defaultValue="" alwaysStopAt="true" />
+  <variable name="var" expression="completeSmart()" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="method" value="/*******************************************************************************&#10; **&#10; *******************************************************************************/&#10;$ACCESS$ $TYPE$ $NAME$($ARGS$)&#10;{&#10;   $TYPE$ rs = new $TYPE$();&#10;   $END$&#10;   return(rs);&#10;}" description="Write a method (that returns something)" toReformat="true" toShortenFQNames="true">
+  <variable name="ACCESS" expression="enum(&quot;public&quot;, &quot;private&quot;, &quot;protected&quot;)" defaultValue="" alwaysStopAt="true" />
+  <variable name="TYPE" expression="" defaultValue="&quot;Object&quot;" alwaysStopAt="true" />
+  <variable name="NAME" expression="" defaultValue="&quot;foo&quot;" alwaysStopAt="true" />
+  <variable name="ARGS" expression="" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="methodVoid" value="/*******************************************************************************&#10; **&#10; *******************************************************************************/&#10;$ACCESS$ void $NAME$($ARGS$)&#10;{&#10;   $END$&#10;}" description="Write a method (that returns void)" toReformat="false" toShortenFQNames="true">
+  <variable name="ACCESS" expression="enum(&quot;public&quot;, &quot;private&quot;, &quot;protected&quot;)" defaultValue="" alwaysStopAt="true" />
+  <variable name="NAME" expression="" defaultValue="&quot;foo&quot;" alwaysStopAt="true" />
+  <variable name="ARGS" expression="" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="new" value="$TYPE$ $INSTANCE$ = new $TYPE$($END$);" description="Create new instance" toReformat="false" toShortenFQNames="true">
+  <variable name="TYPE" expression="" defaultValue="&quot;Object&quot;" alwaysStopAt="true" />
+  <variable name="INSTANCE" expression="camelCase(TYPE)" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="newal" value="new ArrayList&lt;&gt;()" description="new ArrayList&lt;&gt;()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="newhm" value="new HashMap&lt;&gt;()" description="new HashMap&lt;&gt;()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="newhs" value="new HashSet&lt;&gt;()" description="new LinkedList&lt;&gt;()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="newlh" value="new ListingHash&lt;&gt;()" description="new ListingHash&lt;&gt;()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="newlhm" value="new LinkedHashMap&lt;&gt;()" description="new LinkedHashMap&lt;&gt;()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="newll" value="new LinkedList&lt;&gt;()" description="new LinkedList&lt;&gt;()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="set" value="Set&lt;$TYPE$&gt; $var$ = new HashSet&lt;&gt;();" description="Set&lt;T&gt; s = new HashSet&lt;&gt;();" toReformat="false" toShortenFQNames="true">
+  <variable name="TYPE" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="var" expression="completeSmart()" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="singleton" value="private static $CLASS_NAME$ $INSTANCE$ = null;&#10;&#10;&#10;/*******************************************************************************&#10; ** Singleton constructor&#10; *******************************************************************************/&#10;private $CLASS_NAME$()&#10;{&#10;      &#10;}&#10;&#10;&#10;&#10;/*******************************************************************************&#10; ** Singleton accessor&#10; *******************************************************************************/&#10;public static $CLASS_NAME$ getInstance()&#10;{&#10;   if($INSTANCE$ == null)&#10;   {&#10;      $INSTANCE$ = new $CLASS_NAME$();&#10;   }&#10;   return ($INSTANCE$);&#10;}&#10;&#10;" description="Create a singleton field, constructor, and accessor" toReformat="false" toShortenFQNames="true">
+  <variable name="CLASS_NAME" expression="className()" defaultValue="" alwaysStopAt="false" />
+  <variable name="INSTANCE" expression="decapitalize(className())" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="tcp" value="try&#10;{&#10;   $END$&#10;}&#10;catch(Exception e)&#10;{&#10;   e.printStackTrace();&#10;}" description="try { } catch(Exception e) { e.printStackTrace() }" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="tcpr" value="try&#10;{&#10;   $END$&#10;}&#10;catch(Exception e)&#10;{&#10;   e.printStackTrace();&#10;   throw(e);&#10;}" description="try { } catch(Exception e) { e.printStackTrace(); throw(e); }" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="tct" value="try&#10;{&#10;   $END$&#10;}&#10;catch(Exception e)&#10;{&#10;   throw(new $THROW$(&quot;$MESSAGE$&quot;, e));&#10;}" description="try { } catch(Exception e) { throw(new Exception(&quot;&quot;, e); }" toReformat="false" toShortenFQNames="true">
+  <variable name="THROW" expression="expectedType()" defaultValue="&quot;Exception&quot;" alwaysStopAt="true" />
+  <variable name="MESSAGE" expression="" defaultValue="&quot;Error&quot;" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="testMethod" value="/*******************************************************************************&#10;** &#10;*******************************************************************************/&#10;@Test&#10;void test$NAME_SUFFIX$()&#10;{&#10;   $END$&#10;}&#10;" description="Write a test method" toReformat="true" toShortenFQNames="true">
+  <variable name="NAME_SUFFIX" expression="" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="with" value="/*******************************************************************************&#10; ** Fluent setter for $field$&#10; **&#10; *******************************************************************************/&#10;public $thisClass$ with$fieldUcFirst$($fieldType$ $field$)&#10;{&#10;   set$fieldUcFirst$($field$);&#10;   return (this);&#10;}&#10;" description="Write a fluent setter" toReformat="false" toShortenFQNames="true">
+  <variable name="field" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="thisClass" expression="className()" defaultValue="" alwaysStopAt="false" />
+  <variable name="fieldUcFirst" expression="capitalize(field)" defaultValue="" alwaysStopAt="false" />
+  <variable name="fieldType" expression="typeOfVariable(field)" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
