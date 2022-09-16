@@ -45,7 +45,7 @@ class WidgetDataLoaderTest
       Object widgetData = new WidgetDataLoader().execute(TestUtils.defineInstance(), TestUtils.getMockSession(), PersonsByCreateDateBarChart.class.getSimpleName());
       assertThat(widgetData).isInstanceOf(ChartData.class);
       ChartData chartData = (ChartData) widgetData;
-      assertEquals("chartData", chartData.getType());
+      assertEquals("barChart", chartData.getType());
       assertThat(chartData.getTitle()).isNotBlank();
       assertNotNull(chartData.getChartData());
    }
