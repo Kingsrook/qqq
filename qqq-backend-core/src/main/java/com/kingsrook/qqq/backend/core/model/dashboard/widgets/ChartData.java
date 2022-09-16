@@ -29,32 +29,34 @@ import java.util.List;
  ** Model containing datastructure expected by frontend bar chart widget
  **
  *******************************************************************************/
-public class BarChart implements QWidget
+public class ChartData implements QWidget
 {
-
    /*
-      type: "barChart",
-         title: "Parcel Invoice Lines per Month",
-         barChartData: {
-            labels: ["Feb 22", "Mar 22", "Apr 22", "May 22", "Jun 22", "Jul 22", "Aug 22"],
-            datasets: {label: "Parcel Invoice Lines", data: [50000, 22000, 11111, 22333, 40404, 9876, 2355]},
-         },
+      interface BarChartData{
+         labels: string[];
+         datasets: {
+            label: string;
+            data: number[];
+         }[];
+      }
     */
 
    private String title;
-   private Data barChartData;
+   private String description;
+   private Data   chartData;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public BarChart(String title, String seriesLabel, List<String> labels, List<Number> data)
+   public ChartData(String title, String description, String seriesLabel, List<String> labels, List<Number> data)
    {
       setTitle(title);
-      setBarChartData(new BarChart.Data()
+      setDescription(description);
+      setChartData(new ChartData.Data()
          .withLabels(labels)
-         .withDatasets(new BarChart.Data.DataSet()
+         .withDatasets(new ChartData.Data.Dataset()
             .withLabel(seriesLabel)
             .withData(data)));
    }
@@ -98,7 +100,7 @@ public class BarChart implements QWidget
     ** Fluent setter for title
     **
     *******************************************************************************/
-   public BarChart withTitle(String title)
+   public ChartData withTitle(String title)
    {
       this.title = title;
       return (this);
@@ -107,34 +109,68 @@ public class BarChart implements QWidget
 
 
    /*******************************************************************************
-    ** Getter for barChartData
+    ** Getter for description
     **
     *******************************************************************************/
-   public Data getBarChartData()
+   public String getDescription()
    {
-      return barChartData;
+      return description;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for barChartData
+    ** Setter for description
     **
     *******************************************************************************/
-   public void setBarChartData(Data barChartData)
+   public void setDescription(String description)
    {
-      this.barChartData = barChartData;
+      this.description = description;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for barChartData
+    ** Fluent setter for description
     **
     *******************************************************************************/
-   public BarChart withBarChartData(Data barChartData)
+   public ChartData withDescription(String description)
    {
-      this.barChartData = barChartData;
+      this.description = description;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for chartData
+    **
+    *******************************************************************************/
+   public Data getChartData()
+   {
+      return chartData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for chartData
+    **
+    *******************************************************************************/
+   public void setChartData(Data chartData)
+   {
+      this.chartData = chartData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for chartData
+    **
+    *******************************************************************************/
+   public ChartData withChartData(Data chartData)
+   {
+      this.chartData = chartData;
       return (this);
    }
 
@@ -146,7 +182,7 @@ public class BarChart implements QWidget
    public static class Data
    {
       private List<String> labels;
-      private DataSet datasets;
+      private Dataset      dataset;
 
 
 
@@ -188,9 +224,9 @@ public class BarChart implements QWidget
        ** Getter for datasets
        **
        *******************************************************************************/
-      public DataSet getDatasets()
+      public Dataset getDataset()
       {
-         return datasets;
+         return dataset;
       }
 
 
@@ -199,9 +235,9 @@ public class BarChart implements QWidget
        ** Setter for datasets
        **
        *******************************************************************************/
-      public void setDatasets(DataSet datasets)
+      public void setDataset(Dataset dataset)
       {
-         this.datasets = datasets;
+         this.dataset = dataset;
       }
 
 
@@ -210,9 +246,9 @@ public class BarChart implements QWidget
        ** Fluent setter for datasets
        **
        *******************************************************************************/
-      public Data withDatasets(DataSet datasets)
+      public Data withDatasets(Dataset datasets)
       {
-         this.datasets = datasets;
+         this.dataset = datasets;
          return (this);
       }
 
@@ -221,9 +257,9 @@ public class BarChart implements QWidget
       /*******************************************************************************
        **
        *******************************************************************************/
-      public static class DataSet
+      public static class Dataset
       {
-         private String label;
+         private String       label;
          private List<Number> data;
 
 
@@ -254,7 +290,7 @@ public class BarChart implements QWidget
           ** Fluent setter for label
           **
           *******************************************************************************/
-         public DataSet withLabel(String label)
+         public Dataset withLabel(String label)
          {
             this.label = label;
             return (this);
@@ -288,7 +324,7 @@ public class BarChart implements QWidget
           ** Fluent setter for data
           **
           *******************************************************************************/
-         public DataSet withData(List<Number> data)
+         public Dataset withData(List<Number> data)
          {
             this.data = data;
             return (this);

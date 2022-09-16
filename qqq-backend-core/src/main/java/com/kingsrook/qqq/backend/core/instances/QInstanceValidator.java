@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -213,7 +214,7 @@ public class QInstanceValidator
             {
                for(QFieldSection section : table.getSections())
                {
-                  validateSection(table, section, fieldNamesInSections);
+                  validateFieldSection(table, section, fieldNamesInSections);
                   if(section.getTier().equals(Tier.T1))
                   {
                      assertCondition(tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
@@ -479,7 +480,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateSection(QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
+   private void validateFieldSection(QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
    {
       assertCondition(StringUtils.hasContent(section.getName()), "Missing a name for field section in table " + table.getName() + ".");
       assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for field section in table " + table.getLabel() + ".");
@@ -493,6 +494,42 @@ public class QInstanceValidator
                assertCondition(!fieldNamesInSections.contains(fieldName), "Table " + table.getName() + " has field " + fieldName + " listed more than once in its field sections.");
 
                fieldNamesInSections.add(fieldName);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateAppSection(QAppMetaData app, QAppSection section, Set<String> childNamesInSections)
+   {
+      assertCondition(StringUtils.hasContent(section.getName()), "Missing a name for a section in app " + app.getName() + ".");
+      assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for a section in app " + app.getLabel() + ".");
+      boolean hasTables    = CollectionUtils.nullSafeHasContents(section.getTables());
+      boolean hasProcesses = CollectionUtils.nullSafeHasContents(section.getProcesses());
+      if(assertCondition(hasTables || hasProcesses, "App " + app.getName() + " section " + section.getName() + " does not have any children."))
+      {
+         if(hasTables)
+         {
+            for(String tableName : section.getTables())
+            {
+               assertCondition(app.getChildren().stream().anyMatch(c -> c.getName().equals(tableName)), "App " + app.getName() + " section " + section.getName() + " specifies table " + tableName + ", which is not a child of this app.");
+               assertCondition(!childNamesInSections.contains(tableName), "App " + app.getName() + " has table " + tableName + " listed more than once in its sections.");
+
+               childNamesInSections.add(tableName);
+            }
+         }
+         if(hasProcesses)
+         {
+            for(String processName : section.getProcesses())
+            {
+               assertCondition(app.getChildren().stream().anyMatch(c -> c.getName().equals(processName)), "App " + app.getName() + " section " + section.getName() + " specifies process " + processName + ", which is not a child of this app.");
+               assertCondition(!childNamesInSections.contains(processName), "App " + app.getName() + " has process " + processName + " listed more than once in its sections.");
+
+               childNamesInSections.add(processName);
             }
          }
       }
@@ -563,6 +600,29 @@ public class QInstanceValidator
                   assertCondition(Objects.equals(appName, child.getParentAppName()), "Child " + child.getName() + " of app " + appName + " does not have its parent app properly set.");
                   assertCondition(!childNames.contains(child.getName()), "App " + appName + " contains more than one child named " + child.getName());
                   childNames.add(child.getName());
+               }
+            }
+
+            //////////////////////////////////////////
+            // validate field sections in the table //
+            //////////////////////////////////////////
+            Set<String> childNamesInSections = new HashSet<>();
+            if(app.getSections() != null)
+            {
+               for(QAppSection section : app.getSections())
+               {
+                  validateAppSection(app, section, childNamesInSections);
+               }
+            }
+
+            if(CollectionUtils.nullSafeHasContents(app.getChildren()))
+            {
+               for(QAppChildMetaData child : app.getChildren())
+               {
+                  if(!child.getClass().equals(QAppMetaData.class))
+                  {
+                     assertCondition(childNamesInSections.contains(child.getName()), "App " + appName + " child " + child.getName() + " is not listed in any app sections.");
+                  }
                }
             }
          });

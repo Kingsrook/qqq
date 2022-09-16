@@ -40,4 +40,14 @@ public abstract class AbstractWidgetRenderer
     *******************************************************************************/
    public abstract Object render(QInstance qInstance, QSession session, QWidgetMetaDataInterface qWidgetMetaData) throws QException;
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getWidgetName()
+   {
+      return this.getClass().getSimpleName();
+   }
+
 }
