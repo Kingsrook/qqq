@@ -1,0 +1,46 @@
+<template name="declog" value="private static final Logger LOG = LogManager.getLogger($THIS_CLASS$.class);" description="Declare a logger object (LOG) for a class without one" toReformat="false" toShortenFQNames="true">
+  <variable name="THIS_CLASS" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="JAVA_DECLARATION" value="true" />
+  </context>
+</template>
+<template name="qcount" value="CountInput countInput = new CountInput(qInstance);&#10;countInput.setSession(new QSession());&#10;countInput.setTableName(tableName);&#10;CountOutput countOutput = new CountAction().execute(countInput);&#10;" description="Write code to execute a QQQ CountAction" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="qdf" value=".withDisplayFormat(DisplayFormat.$END$)" description="QQQ field - .withDisplayFormat()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="qdfcom" value=".withDisplayFormat(DisplayFormat.COMMAS)" description="QQQ field - .withDisplayFormat(COMMAS)" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="qdfcur" value=".withDisplayFormat(DisplayFormat.CURRENCY)" description="QQQ field - .withDisplayFormat(CURRENCY)" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="qinsert" value="InsertInput insertInput = new InsertInput(qInstance);&#10;insertInput.setSession(new QSession());&#10;insertInput.setTableName(tableName);&#10;insertInput.setRecords($END$);&#10;InsertOutput insertOutput = new InsertAction().execute(insertInput);&#10;" description="Write code to execute a QQQ InsertAction" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="qlab" value=".withLabel(&quot;$END$&quot;)" description="QQQ meta data objects - .withLabel()" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_EXPRESSION" value="true" />
+  </context>
+</template>
+<template name="qquery" value="QueryInput queryInput = new QueryInput(qInstance);&#10;queryInput.setSession(new QSession());&#10;queryInput.setTableName(tableName);&#10;QueryOutput queryOutput = new QueryAction().execute(queryInput);&#10;" description="Write code to execute a QQQ QueryAction" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>
+<template name="qupdate" value="UpdateInput updateInput = new UpdateInput($END$);&#10;updateInput.setSession();&#10;updateInput.setTableName();&#10;updateInput.setRecords();&#10;UpdateOutput updateOutput = new UpdateAction().execute(updateInput);&#10;" description="Write code to execute a QQQ UpdateAction" toReformat="false" toShortenFQNames="true">
+  <context>
+    <option name="JAVA_STATEMENT" value="true" />
+  </context>
+</template>

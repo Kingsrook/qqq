@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
@@ -571,6 +572,123 @@ class QInstanceValidatorTest
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section listed as Tier 1");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppSectionsMissingName()
+   {
+      QAppMetaData app = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection(null, "Section 1", new QIcon("person"), List.of("test"), null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "Missing a name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppSectionsMissingLabel()
+   {
+      QAppMetaData app = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("Section 1", null, new QIcon("person"), List.of("test"), null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "Missing a label");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppSectionsNoFields()
+   {
+      QAppMetaData app1 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of(), List.of()));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app1), "section1 does not have any children", "child test is not listed in any app sections");
+
+      QAppMetaData app2 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), null, null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app2), "section1 does not have any children", "child test is not listed in any app sections");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppSectionsUnrecognizedFieldName()
+   {
+      QAppMetaData app1 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test", "tset"), null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app1), "not a child of this app");
+      QAppMetaData app2 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), List.of("tset")));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app2), "not a child of this app");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppSectionsDuplicatedFieldName()
+   {
+      QAppMetaData app1 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test", "test"), null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app1), "more than once");
+
+      QAppMetaData app2 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null))
+         .withSection(new QAppSection("section2", "Section 2", new QIcon("person"), List.of("test"), null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app2), "more than once");
+
+      QAppMetaData app3 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), List.of("test")));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app3), "more than once");
+
+      QAppMetaData app4 = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), null, List.of("test", "test")));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app4), "more than once");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testChildNotInAnySections()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "not listed in any field sections");
+
+      QAppMetaData app = new QAppMetaData().withName("test")
+         .withChild(new QTableMetaData().withName("tset"))
+         .withChild(new QTableMetaData().withName("test"))
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "not listed in any app sections");
    }
 
 

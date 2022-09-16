@@ -36,7 +36,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -214,6 +216,11 @@ public class QInstanceEnricher
       if(!StringUtils.hasContent(app.getLabel()))
       {
          app.setLabel(nameToLabel(app.getName()));
+      }
+
+      if(CollectionUtils.nullSafeIsEmpty(app.getSections()))
+      {
+         generateAppSections(app);
       }
    }
 
@@ -524,6 +531,54 @@ public class QInstanceEnricher
       }
 
       return (String.join("_", words).toLowerCase(Locale.ROOT));
+   }
+
+
+
+   /*******************************************************************************
+    ** If a app didn't have any sections, generate "sensible defaults"
+    *******************************************************************************/
+   private void generateAppSections(QAppMetaData app)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(app.getChildren()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // assume this app is valid if it has no children, but surely it doesn't need any sections then. //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         return;
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // create an identity section for the id and any fields in the record label //
+      //////////////////////////////////////////////////////////////////////////////
+      QAppSection defaultSection = new QAppSection(app.getName(), app.getLabel(), new QIcon("badge"), new ArrayList<>(), new ArrayList<>());
+
+      boolean foundNonAppChild = false;
+      if(CollectionUtils.nullSafeHasContents(app.getChildren()))
+      {
+         for(QAppChildMetaData child : app.getChildren())
+         {
+            ////////////////////////////////////////////////////////////////////////////////
+            // only tables and processes are allowed to be in sections at this time, apps //
+            // might be children but not in sections so keep track if we find any non-app //
+            ////////////////////////////////////////////////////////////////////////////////
+            if(child.getClass().equals(QTableMetaData.class))
+            {
+               defaultSection.getTables().add(child.getName());
+               foundNonAppChild = true;
+            }
+            else if(child.getClass().equals(QProcessMetaData.class))
+            {
+               defaultSection.getProcesses().add(child.getName());
+               foundNonAppChild = true;
+            }
+         }
+      }
+
+      if(foundNonAppChild)
+      {
+         app.addSection(defaultSection);
+      }
    }
 
 
