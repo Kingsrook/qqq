@@ -30,7 +30,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_GREETINGS;
+import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_MISCELLANEOUS;
+import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_PEOPLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 
@@ -167,6 +171,35 @@ class QInstanceEnricherTest
     **
     *******************************************************************************/
    @Test
+   void testGenerateAppSections()
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      new QInstanceEnricher().enrich(qInstance);
+      assertNotNull(qInstance.getApp(APP_NAME_GREETINGS).getSections());
+      assertEquals(1, qInstance.getApp(APP_NAME_GREETINGS).getSections().size(), "App should automatically have one section");
+      assertEquals(0, qInstance.getApp(APP_NAME_GREETINGS).getSections().get(0).getTables().size(), "Section should not have tables");
+      assertEquals(2, qInstance.getApp(APP_NAME_GREETINGS).getSections().get(0).getProcesses().size(), "Section should have two processes");
+      assertEquals(qInstance.getApp(APP_NAME_GREETINGS).getName(), qInstance.getApp(APP_NAME_GREETINGS).getSections().get(0).getName(), "Section name should default to app's");
+
+      assertNotNull(qInstance.getApp(APP_NAME_PEOPLE).getSections());
+      assertEquals(1, qInstance.getApp(APP_NAME_PEOPLE).getSections().size(), "App should automatically have one section");
+      assertEquals(2, qInstance.getApp(APP_NAME_PEOPLE).getSections().get(0).getTables().size(), "Section should have two tables");
+      assertEquals(0, qInstance.getApp(APP_NAME_PEOPLE).getSections().get(0).getProcesses().size(), "Section should not have processes");
+      assertEquals(qInstance.getApp(APP_NAME_PEOPLE).getName(), qInstance.getApp(APP_NAME_PEOPLE).getSections().get(0).getName(), "Section name should default to app's");
+
+      assertNotNull(qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections());
+      assertEquals(1, qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().size(), "App should automatically have one section");
+      assertEquals(1, qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().get(0).getTables().size(), "Section should have one table");
+      assertEquals(1, qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().get(0).getProcesses().size(), "Section should have one process");
+      assertEquals(qInstance.getApp(APP_NAME_MISCELLANEOUS).getName(), qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().get(0).getName(), "Section name should default to app's");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testInferredRecordLabelFormat()
    {
       QInstance      qInstance = TestUtils.defineInstance();
@@ -175,12 +208,12 @@ class QInstanceEnricherTest
       assertNull(table.getRecordLabelFormat());
 
       qInstance = TestUtils.defineInstance();
-      table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName");
+      table = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName");
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("%s", table.getRecordLabelFormat());
 
       qInstance = TestUtils.defineInstance();
-      table     = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName", "lastName");
+      table = qInstance.getTable("person").withRecordLabelFormat(null).withRecordLabelFields("firstName", "lastName");
       new QInstanceEnricher().enrich(qInstance);
       assertEquals("%s %s", table.getRecordLabelFormat());
    }

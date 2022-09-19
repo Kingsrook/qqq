@@ -22,35 +22,42 @@
 package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
-import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
- ** MetaData definition of an App - an entity that organizes tables & processes
- ** and can be arranged hierarchically (e.g, apps can contain other apps).
+ ** A section of apps/tables/processes - a logical grouping.
  *******************************************************************************/
-public class QAppMetaData implements QAppChildMetaData
+public class QAppSection
 {
    private String name;
    private String label;
-
-   private List<QAppChildMetaData> children;
-
-   private String parentAppName;
    private QIcon  icon;
 
-   private List<String>      widgets;
-   private List<QAppSection> sections;
+   private List<String> tables;
+   private List<String> processes;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QAppMetaData()
+   public QAppSection()
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAppSection(String name, String label, QIcon icon, List<String> tables, List<String> processes)
+   {
+      this.name = name;
+      this.label = label;
+      this.icon = icon;
+      this.tables = tables;
+      this.processes = processes;
    }
 
 
@@ -81,7 +88,7 @@ public class QAppMetaData implements QAppChildMetaData
     ** Fluent setter for name
     **
     *******************************************************************************/
-   public QAppMetaData withName(String name)
+   public QAppSection withName(String name)
    {
       this.name = name;
       return (this);
@@ -115,7 +122,7 @@ public class QAppMetaData implements QAppChildMetaData
     ** Fluent setter for label
     **
     *******************************************************************************/
-   public QAppMetaData withLabel(String label)
+   public QAppSection withLabel(String label)
    {
       this.label = label;
       return (this);
@@ -124,93 +131,69 @@ public class QAppMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Getter for children
+    ** Getter for tables
     **
     *******************************************************************************/
-   public List<QAppChildMetaData> getChildren()
+   public List<String> getTables()
    {
-      return children;
+      return tables;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for children
+    ** Setter for tables
     **
     *******************************************************************************/
-   public void setChildren(List<QAppChildMetaData> children)
+   public void setTables(List<String> tables)
    {
-      if(CollectionUtils.nullSafeHasContents(children))
-      {
-         for(QAppChildMetaData child : children)
-         {
-            addChild(child);
-         }
-      }
+      this.tables = tables;
    }
 
 
 
    /*******************************************************************************
-    ** Add a child to this app.
+    ** Fluent setter for tables
     **
     *******************************************************************************/
-   public void addChild(QAppChildMetaData child)
+   public QAppSection withTables(List<String> tables)
    {
-      if(this.children == null)
-      {
-         this.children = new ArrayList<>();
-      }
-      this.children.add(child);
-      child.setParentAppName(this.getName());
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluently add a child to this app.
-    **
-    *******************************************************************************/
-   public QAppMetaData withChild(QAppChildMetaData child)
-   {
-      addChild(child);
+      this.tables = tables;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for children
+    ** Getter for processes
     **
     *******************************************************************************/
-   public QAppMetaData withChildren(List<QAppChildMetaData> children)
+   public List<String> getProcesses()
    {
-      setChildren(children);
+      return processes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processes
+    **
+    *******************************************************************************/
+   public void setProcesses(List<String> processes)
+   {
+      this.processes = processes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processes
+    **
+    *******************************************************************************/
+   public QAppSection withProcesses(List<String> processes)
+   {
+      this.processes = processes;
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public String getParentAppName()
-   {
-      return parentAppName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public void setParentAppName(String parentAppName)
-   {
-      this.parentAppName = parentAppName;
    }
 
 
@@ -241,103 +224,10 @@ public class QAppMetaData implements QAppChildMetaData
     ** Fluent setter for icon
     **
     *******************************************************************************/
-   public QAppMetaData withIcon(QIcon icon)
+   public QAppSection withIcon(QIcon icon)
    {
       this.icon = icon;
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for widgets
-    **
-    *******************************************************************************/
-   public List<String> getWidgets()
-   {
-      return widgets;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for widgets
-    **
-    *******************************************************************************/
-   public void setWidgets(List<String> widgets)
-   {
-      this.widgets = widgets;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for widgets
-    **
-    *******************************************************************************/
-   public QAppMetaData withWidgets(List<String> widgets)
-   {
-      this.widgets = widgets;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for sections
-    **
-    *******************************************************************************/
-   public List<QAppSection> getSections()
-   {
-      return sections;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for sections
-    **
-    *******************************************************************************/
-   public void setSections(List<QAppSection> sections)
-   {
-      this.sections = sections;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for sections
-    **
-    *******************************************************************************/
-   public QAppMetaData withSections(List<QAppSection> sections)
-   {
-      this.sections = sections;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addSection(QAppSection section)
-   {
-      if(this.sections == null)
-      {
-         this.sections = new ArrayList<>();
-      }
-      this.sections.add(section);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for sections
-    **
-    *******************************************************************************/
-   public QAppMetaData withSection(QAppSection section)
-   {
-      this.addSection(section);
-      return (this);
-   }
 }

@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.BarChart;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,11 +43,11 @@ class WidgetDataLoaderTest
    void test() throws QException
    {
       Object widgetData = new WidgetDataLoader().execute(TestUtils.defineInstance(), TestUtils.getMockSession(), PersonsByCreateDateBarChart.class.getSimpleName());
-      assertThat(widgetData).isInstanceOf(BarChart.class);
-      BarChart barChart = (BarChart) widgetData;
-      assertEquals("barChart", barChart.getType());
-      assertThat(barChart.getTitle()).isNotBlank();
-      assertNotNull(barChart.getBarChartData());
+      assertThat(widgetData).isInstanceOf(ChartData.class);
+      ChartData chartData = (ChartData) widgetData;
+      assertEquals("barChart", chartData.getType());
+      assertThat(chartData.getTitle()).isNotBlank();
+      assertNotNull(chartData.getChartData());
    }
 
 }

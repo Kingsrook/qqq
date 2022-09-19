@@ -19,163 +19,188 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.frontend;
-
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 /*******************************************************************************
- * Version of QAppMetaData that's meant for transmitting to a frontend.
- *
+ ** Model containing datastructure expected by frontend bar chart widget
+ **
  *******************************************************************************/
-@JsonInclude(Include.NON_NULL)
-public class QFrontendAppMetaData
+public class StatisticsData implements QWidget
 {
-   private String name;
-   private String label;
-   private String iconName;
-
-   private List<String>             widgets  = new ArrayList<>();
-   private List<AppTreeNode>        children = new ArrayList<>();
-   private Map<String, AppTreeNode> childMap = new HashMap<>();
-
-   private List<QAppSection> sections;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFrontendAppMetaData(QAppMetaData appMetaData)
-   {
-      this.name = appMetaData.getName();
-      this.label = appMetaData.getLabel();
-
-      if(appMetaData.getIcon() != null)
-      {
-         this.iconName = appMetaData.getIcon().getName();
+   /*
+      interface BarChartData{
+         labels: string[];
+         datasets: {
+            label: string;
+            data: number[];
+         }[];
       }
+    */
 
-      if(CollectionUtils.nullSafeHasContents(appMetaData.getWidgets()))
-      {
-         this.widgets = appMetaData.getWidgets();
-      }
-
-      if(CollectionUtils.nullSafeHasContents(appMetaData.getSections()))
-      {
-         this.sections = appMetaData.getSections();
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for name
-    **
-    *******************************************************************************/
-   public String getName()
-   {
-      return name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for label
-    **
-    *******************************************************************************/
-   public String getLabel()
-   {
-      return label;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for children
-    **
-    *******************************************************************************/
-   public List<AppTreeNode> getChildren()
-   {
-      return children;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for childMap
-    **
-    *******************************************************************************/
-   public Map<String, AppTreeNode> getChildMap()
-   {
-      return childMap;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for iconName
-    **
-    *******************************************************************************/
-   public String getIconName()
-   {
-      return iconName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for iconName
-    **
-    *******************************************************************************/
-   public void setIconName(String iconName)
-   {
-      this.iconName = iconName;
-   }
+   private String title;
+   private int    count;
+   private Number percentageAmount;
+   private String percentageLabel;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addChild(AppTreeNode childAppTreeNode)
+   public StatisticsData(String title, int count, Number percentageAmount, String percentageLabel)
    {
-      if(children == null)
-      {
-         children = new ArrayList<>();
-      }
-      childMap.put(childAppTreeNode.getName(), childAppTreeNode);
-      children.add(childAppTreeNode);
+      this.title = title;
+      this.count = count;
+      this.percentageLabel = percentageLabel;
+      this.percentageAmount = percentageAmount;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for widgets
+    ** Getter for type
     **
     *******************************************************************************/
-   public List<String> getWidgets()
+   public String getType()
    {
-      return widgets;
+      return "statistics";
    }
 
 
 
    /*******************************************************************************
-    ** Getter for sections
+    ** Getter for title
     **
     *******************************************************************************/
-   public List<QAppSection> getSections()
+   public String getTitle()
    {
-      return sections;
+      return title;
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for title
+    **
+    *******************************************************************************/
+   public void setTitle(String title)
+   {
+      this.title = title;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for title
+    **
+    *******************************************************************************/
+   public StatisticsData withTitle(String title)
+   {
+      this.title = title;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for count
+    **
+    *******************************************************************************/
+   public int getCount()
+   {
+      return count;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for count
+    **
+    *******************************************************************************/
+   public void setCount(int count)
+   {
+      this.count = count;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for count
+    **
+    *******************************************************************************/
+   public StatisticsData withCount(int count)
+   {
+      this.count = count;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for percentageAmount
+    **
+    *******************************************************************************/
+   public Number getPercentageAmount()
+   {
+      return percentageAmount;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for percentageAmount
+    **
+    *******************************************************************************/
+   public void setPercentageAmount(Number percentageAmount)
+   {
+      this.percentageAmount = percentageAmount;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for percentageAmount
+    **
+    *******************************************************************************/
+   public StatisticsData withPercentageAmount(Number percentageAmount)
+   {
+      this.percentageAmount = percentageAmount;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for percentageLabel
+    **
+    *******************************************************************************/
+   public String getPercentageLabel()
+   {
+      return percentageLabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for percentageLabel
+    **
+    *******************************************************************************/
+   public void setPercentageLabel(String percentageLabel)
+   {
+      this.percentageLabel = percentageLabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for percentageLabel
+    **
+    *******************************************************************************/
+   public StatisticsData withPercentageLabel(String percentageLabel)
+   {
+      this.percentageLabel = percentageLabel;
+      return (this);
+   }
+
 }

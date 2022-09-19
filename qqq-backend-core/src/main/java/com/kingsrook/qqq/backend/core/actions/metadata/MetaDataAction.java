@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -102,9 +103,12 @@ public class MetaDataAction
          apps.put(entry.getKey(), new QFrontendAppMetaData(entry.getValue()));
          treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
 
-         for(QAppChildMetaData child : entry.getValue().getChildren())
+         if(CollectionUtils.nullSafeHasContents(entry.getValue().getChildren()))
          {
-            apps.get(entry.getKey()).addChild(new AppTreeNode(child));
+            for(QAppChildMetaData child : entry.getValue().getChildren())
+            {
+               apps.get(entry.getKey()).addChild(new AppTreeNode(child));
+            }
          }
       }
       metaDataOutput.setApps(apps);
