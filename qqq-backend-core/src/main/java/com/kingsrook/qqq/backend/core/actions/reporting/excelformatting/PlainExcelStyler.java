@@ -19,14 +19,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.reporting;
+package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
 
 
 /*******************************************************************************
- ** Types of reports that QQQ can generate
+ **
  *******************************************************************************/
-public enum ReportType
+public class PlainExcelStyler implements ExcelStylerInterface
 {
-   PIVOT,
-   TABLE
+
 }

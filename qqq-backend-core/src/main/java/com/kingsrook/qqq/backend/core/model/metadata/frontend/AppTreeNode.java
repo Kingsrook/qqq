@@ -27,6 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
@@ -63,6 +64,10 @@ public class AppTreeNode
       else if(appChildMetaData.getClass().equals(QProcessMetaData.class))
       {
          this.type = AppTreeNodeType.PROCESS;
+      }
+      else if(appChildMetaData.getClass().equals(QReportMetaData.class))
+      {
+         this.type = AppTreeNodeType.REPORT;
       }
       else if(appChildMetaData.getClass().equals(QAppMetaData.class))
       {

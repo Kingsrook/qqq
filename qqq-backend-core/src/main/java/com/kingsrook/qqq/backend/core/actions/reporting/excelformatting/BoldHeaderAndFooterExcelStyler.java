@@ -19,48 +19,53 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
+package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
 
 
-import java.util.ArrayList;
-import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.dhatim.fastexcel.BorderSide;
+import org.dhatim.fastexcel.BorderStyle;
+import org.dhatim.fastexcel.StyleSetter;
 
 
 /*******************************************************************************
- ** Interface for a class that can provide a ProcessSummary - a list of Process Summary Lines
+ **
  *******************************************************************************/
-public interface ProcessSummaryProviderInterface
+public class BoldHeaderAndFooterExcelStyler implements ExcelStylerInterface
 {
 
    /*******************************************************************************
-    ** Note - object needs to be serializable, and List isn't... so, use ArrayList?
+    **
     *******************************************************************************/
-   ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen);
+   @Override
+   public void styleTitleRow(StyleSetter titleRowStyle)
+   {
+      titleRowStyle
+         .bold()
+         .fontSize(14)
+         .horizontalAlignment("center");
+   }
+
 
 
    /*******************************************************************************
-    ** not meant to be overridden - meant to be called by framework - to make sure that
-    ** all lines have their proper message picked (e.g., if they have singular/plural
-    ** and past/future variants).
+    **
     *******************************************************************************/
-   default ArrayList<ProcessSummaryLine> doGetProcessSummary(boolean isForResultScreen)
+   @Override
+   public void styleHeaderRow(StyleSetter headerRowStyle)
    {
-      ArrayList<ProcessSummaryLine> processSummary = getProcessSummary(isForResultScreen);
-      if(processSummary == null)
-      {
-         return (null);
-      }
-
-      for(ProcessSummaryLine processSummaryLine : processSummary)
-      {
-         if(!StringUtils.hasContent(processSummaryLine.getMessage()))
-         {
-            processSummaryLine.pickMessage(isForResultScreen);
-         }
-      }
-
-      return (processSummary);
+      headerRowStyle
+         .bold()
+         .borderStyle(BorderSide.BOTTOM, BorderStyle.THIN);
    }
 
+
+
+   @Override
+   public void styleTotalsRow(StyleSetter totalsRowStyle)
+   {
+      totalsRowStyle
+         .bold()
+         .borderStyle(BorderSide.TOP, BorderStyle.THIN)
+         .borderStyle(BorderSide.BOTTOM, BorderStyle.DOUBLE);
+   }
 }

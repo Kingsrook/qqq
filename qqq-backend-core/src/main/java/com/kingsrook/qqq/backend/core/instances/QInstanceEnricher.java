@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponen
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -96,6 +97,11 @@ public class QInstanceEnricher
       if(qInstance.getApps() != null)
       {
          qInstance.getApps().values().forEach(this::enrich);
+      }
+
+      if(qInstance.getReports() != null)
+      {
+         qInstance.getReports().values().forEach(this::enrich);
       }
    }
 
@@ -210,6 +216,24 @@ public class QInstanceEnricher
       if(!StringUtils.hasContent(app.getLabel()))
       {
          app.setLabel(nameToLabel(app.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrich(QReportMetaData report)
+   {
+      if(!StringUtils.hasContent(report.getLabel()))
+      {
+         report.setLabel(nameToLabel(report.getName()));
+      }
+
+      if(report.getInputFields() != null)
+      {
+         report.getInputFields().forEach(this::enrich);
       }
    }
 

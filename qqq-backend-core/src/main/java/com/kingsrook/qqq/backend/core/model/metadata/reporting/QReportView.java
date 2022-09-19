@@ -37,7 +37,8 @@ public class QReportView
    private String               titleFormat;
    private List<String>         titleFields;
    private List<String>         pivotFields;
-   private boolean              totalRow = false;
+   private boolean              totalRow       = false;
+   private boolean              pivotSubTotals = false;
    private List<QReportField>   columns;
    private List<QFilterOrderBy> orderByFields;
 
@@ -276,6 +277,40 @@ public class QReportView
    public QReportView withTotalRow(boolean totalRow)
    {
       this.totalRow = totalRow;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pivotSubTotals
+    **
+    *******************************************************************************/
+   public boolean getPivotSubTotals()
+   {
+      return pivotSubTotals;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pivotSubTotals
+    **
+    *******************************************************************************/
+   public void setPivotSubTotals(boolean pivotSubTotals)
+   {
+      this.pivotSubTotals = pivotSubTotals;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pivotSubTotals
+    **
+    *******************************************************************************/
+   public QReportView withPivotSubTotals(boolean pivotSubTotals)
+   {
+      this.pivotSubTotals = pivotSubTotals;
       return (this);
    }
 

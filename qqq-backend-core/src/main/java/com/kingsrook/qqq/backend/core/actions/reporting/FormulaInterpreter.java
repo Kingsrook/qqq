@@ -194,6 +194,11 @@ public class FormulaInterpreter
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
             return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).setScale(numbers.get(1).intValue(), RoundingMode.HALF_UP));
          }
+         case "NVL":
+         {
+            List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
+            return Objects.requireNonNullElse(numbers.get(0), numbers.get(1));
+         }
          default:
          {
             ////////////////////////////////////////////////////////////////////////////////////////
@@ -259,7 +264,7 @@ public class FormulaInterpreter
       {
          try
          {
-            Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg));
+            Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg), null);
             rs.add(ValueUtils.getValueAsBigDecimal(interpretedArg));
          }
          catch(QValueException e)

@@ -38,12 +38,12 @@ public interface ExportStreamerInterface
    /*******************************************************************************
     ** Called once, before any rows are available.  Meant to write a header, for example.
     *******************************************************************************/
-   void start(ExportInput exportInput, List<QFieldMetaData> fields) throws QReportingException;
+   void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException;
 
    /*******************************************************************************
     ** Called as records flow into the pipe.
     ******************************************************************************/
-   int takeRecordsFromPipe(RecordPipe recordPipe) throws QReportingException;
+   int addRecords(List<QRecord> recordList) throws QReportingException;
 
    /*******************************************************************************
     ** Called once, after all rows are available.  Meant to write a footer, or close resources, for example.
@@ -63,8 +63,6 @@ public interface ExportStreamerInterface
     *******************************************************************************/
    default void addTotalsRow(QRecord record) throws QReportingException
    {
-      RecordPipe recordPipe = new RecordPipe();
-      recordPipe.addRecord(record);
-      takeRecordsFromPipe(recordPipe);
+      addRecords(List.of(record));
    }
 }

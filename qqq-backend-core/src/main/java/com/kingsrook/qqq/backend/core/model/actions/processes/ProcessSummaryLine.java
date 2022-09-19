@@ -38,6 +38,11 @@ public class ProcessSummaryLine implements Serializable
    private Integer count = 0;
    private String  message;
 
+   private String singularFutureMessage;
+   private String pluralFutureMessage;
+   private String singularPastMessage;
+   private String pluralPastMessage;
+
    //////////////////////////////////////////////////////////////////////////
    // using ArrayList, because we need to be Serializable, and List is not //
    //////////////////////////////////////////////////////////////////////////
@@ -238,6 +243,162 @@ public class ProcessSummaryLine implements Serializable
       if(count != null && count > 0)
       {
          rs.add(this);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for singularFutureMessage
+    **
+    *******************************************************************************/
+   public String getSingularFutureMessage()
+   {
+      return singularFutureMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for singularFutureMessage
+    **
+    *******************************************************************************/
+   public void setSingularFutureMessage(String singularFutureMessage)
+   {
+      this.singularFutureMessage = singularFutureMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for singularFutureMessage
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withSingularFutureMessage(String singularFutureMessage)
+   {
+      this.singularFutureMessage = singularFutureMessage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pluralFutureMessage
+    **
+    *******************************************************************************/
+   public String getPluralFutureMessage()
+   {
+      return pluralFutureMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pluralFutureMessage
+    **
+    *******************************************************************************/
+   public void setPluralFutureMessage(String pluralFutureMessage)
+   {
+      this.pluralFutureMessage = pluralFutureMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pluralFutureMessage
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withPluralFutureMessage(String pluralFutureMessage)
+   {
+      this.pluralFutureMessage = pluralFutureMessage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for singularPastMessage
+    **
+    *******************************************************************************/
+   public String getSingularPastMessage()
+   {
+      return singularPastMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for singularPastMessage
+    **
+    *******************************************************************************/
+   public void setSingularPastMessage(String singularPastMessage)
+   {
+      this.singularPastMessage = singularPastMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for singularPastMessage
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withSingularPastMessage(String singularPastMessage)
+   {
+      this.singularPastMessage = singularPastMessage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pluralPastMessage
+    **
+    *******************************************************************************/
+   public String getPluralPastMessage()
+   {
+      return pluralPastMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pluralPastMessage
+    **
+    *******************************************************************************/
+   public void setPluralPastMessage(String pluralPastMessage)
+   {
+      this.pluralPastMessage = pluralPastMessage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pluralPastMessage
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withPluralPastMessage(String pluralPastMessage)
+   {
+      this.pluralPastMessage = pluralPastMessage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void pickMessage(boolean isPast)
+   {
+      if(count != null)
+      {
+         if(count.equals(1))
+         {
+            setMessage(isPast ? getSingularPastMessage() : getSingularFutureMessage());
+         }
+         else
+         {
+            setMessage(isPast ? getPluralPastMessage() : getPluralFutureMessage());
+         }
       }
    }
 }

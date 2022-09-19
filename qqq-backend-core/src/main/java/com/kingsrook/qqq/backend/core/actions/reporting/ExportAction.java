@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -164,7 +165,7 @@ public class ExportAction
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ReportFormat            reportFormat   = exportInput.getReportFormat();
       ExportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
-      reportStreamer.start(exportInput, getFields(exportInput));
+      reportStreamer.start(exportInput, getFields(exportInput), "Sheet 1");
 
       //////////////////////////////////////////
       // run the query action as an async job //
@@ -207,7 +208,8 @@ public class ExportAction
             lastReceivedRecordsAt = System.currentTimeMillis();
             nextSleepMillis = INIT_SLEEP_MS;
 
-            int recordsConsumed = reportStreamer.takeRecordsFromPipe(recordPipe);
+            List<QRecord> records         = recordPipe.consumeAvailableRecords();
+            int           recordsConsumed = reportStreamer.addRecords(records);
             recordCount += recordsConsumed;
 
             LOG.info(countFromPreExecute != null
@@ -235,7 +237,8 @@ public class ExportAction
       ///////////////////////////////////////////////////
       // send the final records to the report streamer //
       ///////////////////////////////////////////////////
-      int recordsConsumed = reportStreamer.takeRecordsFromPipe(recordPipe);
+      List<QRecord> records         = recordPipe.consumeAvailableRecords();
+      int           recordsConsumed = reportStreamer.addRecords(records);
       recordCount += recordsConsumed;
 
       long reportEndTime = System.currentTimeMillis();

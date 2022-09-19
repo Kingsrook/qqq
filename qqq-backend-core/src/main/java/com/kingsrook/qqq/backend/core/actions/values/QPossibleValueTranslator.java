@@ -294,11 +294,26 @@ public class QPossibleValueTranslator
          {
             for(QFieldMetaData field : fieldsByPvsTable.get(tableName))
             {
-               values.add(record.getValue(field.getName()));
+               Serializable fieldValue = record.getValue(field.getName());
+
+               //////////////////////////////////////
+               // check if value is already cached //
+               //////////////////////////////////////
+               QPossibleValueSource possibleValueSource = pvsesByTable.get(tableName).get(0);
+               possibleValueCache.putIfAbsent(possibleValueSource.getName(), new HashMap<>());
+               Map<Serializable, String> cacheForPvs = possibleValueCache.get(possibleValueSource.getName());
+
+               if(!cacheForPvs.containsKey(fieldValue))
+               {
+                  values.add(fieldValue);
+               }
             }
          }
 
-         primePvsCache(tableName, pvsesByTable.get(tableName), values);
+         if(!values.isEmpty())
+         {
+            primePvsCache(tableName, pvsesByTable.get(tableName), values);
+         }
       }
    }
 

@@ -149,6 +149,23 @@ public class QMetaDataVariableInterpreter
     *******************************************************************************/
    public Serializable interpretForObject(String value)
    {
+      return (interpretForObject(value, value));
+   }
+
+
+
+   /*******************************************************************************
+    ** Interpret a value string, which may be a variable, into its run-time value.
+    **
+    ** If input is null, output is null.
+    ** If input looks like ${env.X}, then the return value is the value of the env variable 'X'
+    ** If input looks like ${prop.X}, then the return value is the value of the system property 'X'
+    ** If input looks like ${literal.X}, then the return value is the literal 'X'
+    **  - used if you really want to get back the literal value, ${env.X}, for example.
+    ** Else the output is the input.
+    *******************************************************************************/
+   public Serializable interpretForObject(String value, Serializable defaultIfLooksLikeVariableButNotFound)
+   {
       if(value == null)
       {
          return (null);
@@ -176,6 +193,7 @@ public class QMetaDataVariableInterpreter
 
       if(valueMaps != null)
       {
+         boolean looksLikeVariable = false;
          for(Map.Entry<String, Map<String, Serializable>> entry : valueMaps.entrySet())
          {
             String                    name     = entry.getKey();
@@ -184,12 +202,18 @@ public class QMetaDataVariableInterpreter
             String prefix = "${" + name + ".";
             if(value.startsWith(prefix) && value.endsWith("}"))
             {
+               looksLikeVariable = true;
                String lookupName = value.substring(prefix.length()).replaceFirst("}$", "");
                if(valueMap != null && valueMap.containsKey(lookupName))
                {
                   return (valueMap.get(lookupName));
                }
             }
+         }
+
+         if(looksLikeVariable)
+         {
+            return (defaultIfLooksLikeVariableButNotFound);
          }
       }
 
