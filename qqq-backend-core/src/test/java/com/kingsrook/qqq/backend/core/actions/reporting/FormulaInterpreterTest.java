@@ -32,7 +32,9 @@ import static com.kingsrook.qqq.backend.core.actions.reporting.FormulaInterprete
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -138,6 +140,57 @@ class FormulaInterpreterTest
       vi.addValueMap("total", Map.of("sum.noOfShoes", 18));
 
       assertEquals(new BigDecimal("27.78"), interpretFormula(vi, "SCALE(MULTIPLY(100,DIVIDE_SCALE(${pivot.sum.noOfShoes},${total.sum.noOfShoes},6)),2)"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testComparisons() throws QFormulaException
+   {
+      QMetaDataVariableInterpreter vi = new QMetaDataVariableInterpreter();
+      vi.addValueMap("input", Map.of("one", 1, "two", 2, "foo", "bar"));
+
+      assertTrue((Boolean) interpretFormula(vi, "LT(${input.one},${input.two})"));
+      assertFalse((Boolean) interpretFormula(vi, "LT(${input.two},${input.one})"));
+
+      assertFalse((Boolean) interpretFormula(vi, "GT(${input.one},${input.two})"));
+      assertTrue((Boolean) interpretFormula(vi, "GT(${input.two},${input.one})"));
+
+      assertTrue((Boolean) interpretFormula(vi, "LTE(${input.one},${input.two})"));
+      assertTrue((Boolean) interpretFormula(vi, "LTE(${input.one},${input.one})"));
+      assertFalse((Boolean) interpretFormula(vi, "LTE(${input.two},${input.one})"));
+
+      assertFalse((Boolean) interpretFormula(vi, "GTE(${input.one},${input.two})"));
+      assertTrue((Boolean) interpretFormula(vi, "GTE(${input.one},${input.one})"));
+      assertTrue((Boolean) interpretFormula(vi, "GTE(${input.two},${input.one})"));
+
+      // todo - google sheets compares strings differently...
+      assertThatThrownBy(() -> interpretFormula(vi, "LT(${input.foo},${input.one})")).hasMessageContaining("[bar] as a number");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testConditionals() throws QFormulaException
+   {
+      QMetaDataVariableInterpreter vi = new QMetaDataVariableInterpreter();
+      vi.addValueMap("input", Map.of("one", 1, "two", 2, "three", 3, "foo", "bar"));
+
+      assertEquals("A", interpretFormula(vi, "IF(LT(${input.one},${input.two}),A,B)"));
+      assertEquals("B", interpretFormula(vi, "IF(GT(${input.one},${input.two}),A,B)"));
+
+      assertEquals("C", interpretFormula(vi, "IF(GT(${input.one},${input.two}),A,IF(GT(${input.two},${input.three}),B,C))"));
+      assertEquals("B", interpretFormula(vi, "IF(GT(${input.one},${input.two}),A,IF(LT(${input.two},${input.three}),B,C))"));
+      assertEquals("A", interpretFormula(vi, "IF(GT(${input.two},${input.one}),A,IF(LT(${input.two},${input.three}),B,C))"));
+
+      assertEquals("Yes", interpretFormula(vi, "IF(GT(${input.one},0),Yes,No)"));
+      assertEquals("No", interpretFormula(vi, "IF(LT(${input.one},0),Yes,No)"));
    }
 
 }

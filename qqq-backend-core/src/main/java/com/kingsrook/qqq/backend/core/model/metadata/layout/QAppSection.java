@@ -36,6 +36,7 @@ public class QAppSection
 
    private List<String> tables;
    private List<String> processes;
+   private List<String> reports;
 
 
 
@@ -51,13 +52,14 @@ public class QAppSection
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QAppSection(String name, String label, QIcon icon, List<String> tables, List<String> processes)
+   public QAppSection(String name, String label, QIcon icon, List<String> tables, List<String> processes, List<String> reports)
    {
       this.name = name;
       this.label = label;
       this.icon = icon;
       this.tables = tables;
       this.processes = processes;
+      this.reports = reports;
    }
 
 
@@ -193,6 +195,40 @@ public class QAppSection
    public QAppSection withProcesses(List<String> processes)
    {
       this.processes = processes;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for reports
+    **
+    *******************************************************************************/
+   public List<String> getReports()
+   {
+      return reports;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reports
+    **
+    *******************************************************************************/
+   public void setReports(List<String> reports)
+   {
+      this.reports = reports;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for reports
+    **
+    *******************************************************************************/
+   public QAppSection withReports(List<String> reports)
+   {
+      this.reports = reports;
       return (this);
    }
 

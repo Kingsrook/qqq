@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for GenerateReportAction
  *******************************************************************************/
-class GenerateReportActionTest
+public class GenerateReportActionTest
 {
    private static final String REPORT_NAME = "personReport1";
 
@@ -243,32 +243,32 @@ class GenerateReportActionTest
       Map<String, String>           row      = iterator.next();
       assertEquals(6, list.size());
 
-      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Id")).isEqualTo("IL");
       assertThat(row.get("Last Name")).isEqualTo("Jonson");
       assertThat(row.get("Quantity")).isNull();
 
       row = iterator.next();
-      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Id")).isEqualTo("IL");
       assertThat(row.get("Last Name")).isEqualTo("Jones");
       assertThat(row.get("Quantity")).isEqualTo("3");
 
       row = iterator.next();
-      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Id")).isEqualTo("IL");
       assertThat(row.get("Last Name")).isEqualTo("Kelly");
       assertThat(row.get("Quantity")).isEqualTo("4");
 
       row = iterator.next();
-      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Id")).isEqualTo("IL");
       assertThat(row.get("Last Name")).isEqualTo("Keller");
       assertThat(row.get("Quantity")).isEqualTo("5");
 
       row = iterator.next();
-      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Id")).isEqualTo("IL");
       assertThat(row.get("Last Name")).isEqualTo("Kelkhoff");
       assertThat(row.get("Quantity")).isEqualTo("6");
 
       row = iterator.next();
-      assertThat(row.get("Home State Id")).isEqualTo("2");
+      assertThat(row.get("Home State Id")).isEqualTo("MO");
       assertThat(row.get("Last Name")).isEqualTo("Kelkhoff");
       assertThat(row.get("Quantity")).isEqualTo("7");
    }
@@ -297,15 +297,14 @@ class GenerateReportActionTest
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(2, list.size());
-      assertThat(row.get("Home State Id")).isEqualTo("2");
+      assertThat(row.get("Home State Id")).isEqualTo("MO");
       assertThat(row.get("Last Name")).isNull();
       assertThat(row.get("Quantity")).isEqualTo("7");
 
       row = iterator.next();
-      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Id")).isEqualTo("IL");
       assertThat(row.get("Last Name")).isNull();
       assertThat(row.get("Quantity")).isEqualTo("18");
-
    }
 
 
@@ -398,7 +397,7 @@ class GenerateReportActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QReportMetaData defineReport(boolean includeTotalRow)
+   public static QReportMetaData defineReport(boolean includeTotalRow)
    {
       return new QReportMetaData()
          .withName(REPORT_NAME)

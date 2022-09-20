@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -106,7 +108,20 @@ public class QJavalinProcessHandler
                });
             });
          });
+         get("/download/{file}", QJavalinProcessHandler::downloadFile);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void downloadFile(Context context) throws FileNotFoundException
+   {
+      // todo context.contentType(reportFormat.getMimeType());
+      context.header("Content-Disposition", "filename=" + context.pathParam("file"));
+      context.result(new FileInputStream(context.queryParam("filePath")));
    }
 
 

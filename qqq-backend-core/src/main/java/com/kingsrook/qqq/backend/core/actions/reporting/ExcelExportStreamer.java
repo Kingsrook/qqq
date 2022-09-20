@@ -31,6 +31,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.ExcelStylerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.PlainExcelStyler;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -41,8 +44,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dhatim.fastexcel.BorderSide;
-import org.dhatim.fastexcel.BorderStyle;
+import org.dhatim.fastexcel.StyleSetter;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
 
@@ -59,11 +61,13 @@ public class ExcelExportStreamer implements ExportStreamerInterface
    private List<QFieldMetaData> fields;
    private OutputStream         outputStream;
 
-   private Map<String, String> excelCellFormats;
+   private ExcelStylerInterface excelStylerInterface = new PlainExcelStyler();
+   private Map<String, String>  excelCellFormats;
 
    private Workbook  workbook;
    private Worksheet worksheet;
-   private int       row = 0;
+   private int       row        = 0;
+   private int       sheetCount = 0;
 
 
 
@@ -99,17 +103,39 @@ public class ExcelExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ExportInput exportInput, List<QFieldMetaData> fields) throws QReportingException
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException
    {
-      this.exportInput = exportInput;
-      this.fields = fields;
-      table = exportInput.getTable();
-      outputStream = this.exportInput.getReportOutputStream();
+      try
+      {
+         this.exportInput = exportInput;
+         this.fields = fields;
+         table = exportInput.getTable();
+         outputStream = this.exportInput.getReportOutputStream();
+         this.row = 0;
+         this.sheetCount++;
 
-      workbook = new Workbook(outputStream, "QQQ", null);
-      worksheet = workbook.newWorksheet("Sheet 1");
+         if(workbook == null)
+         {
+            workbook = new Workbook(outputStream, "QQQ", null);
+         }
 
-      writeReportHeaderRow();
+         /////////////////////////////////////////////////////////////////////////////////////
+         // if start is called a second time (e.g., and there's already an open worksheet), //
+         // finish that sheet, before a new one is created.                                 //
+         /////////////////////////////////////////////////////////////////////////////////////
+         if(worksheet != null)
+         {
+            worksheet.finish();
+         }
+
+         worksheet = workbook.newWorksheet(Objects.requireNonNullElse(label, "Sheet " + sheetCount));
+
+         writeReportHeaderRow();
+      }
+      catch(Exception e)
+      {
+         throw (new QReportingException("Error starting worksheet", e));
+      }
    }
 
 
@@ -121,18 +147,24 @@ public class ExcelExportStreamer implements ExportStreamerInterface
    {
       try
       {
+         ///////////////
+         // title row //
+         ///////////////
          if(StringUtils.hasContent(exportInput.getTitleRow()))
          {
             worksheet.value(row, 0, exportInput.getTitleRow());
             worksheet.range(row, 0, row, fields.size() - 1).merge();
-            worksheet.range(row, 0, row, fields.size() - 1).style()
-               .bold()
-               .fontSize(14)
-               .horizontalAlignment("center")
-               .set();
+
+            StyleSetter titleStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
+            excelStylerInterface.styleTitleRow(titleStyle);
+            titleStyle.set();
+
             row++;
          }
 
+         ////////////////
+         // header row //
+         ////////////////
          int col = 0;
          for(QFieldMetaData column : fields)
          {
@@ -140,10 +172,9 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             col++;
          }
 
-         worksheet.range(row, 0, row, fields.size() - 1).style()
-            .bold()
-            .borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
-            .set();
+         StyleSetter headerStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
+         excelStylerInterface.styleHeaderRow(headerStyle);
+         headerStyle.set();
 
          row++;
 
@@ -161,9 +192,8 @@ public class ExcelExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int takeRecordsFromPipe(RecordPipe recordPipe) throws QReportingException
+   public int addRecords(List<QRecord> qRecords) throws QReportingException
    {
-      List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
 
       try
@@ -203,6 +233,11 @@ public class ExcelExportStreamer implements ExportStreamerInterface
       for(QFieldMetaData field : fields)
       {
          Serializable value = qRecord.getValue(field.getName());
+         if(field.getPossibleValueSourceName() != null)
+         {
+            value = Objects.requireNonNullElse(qRecord.getDisplayValue(field.getName()), value);
+         }
+
          if(value != null)
          {
             if(value instanceof String s)
@@ -264,11 +299,9 @@ public class ExcelExportStreamer implements ExportStreamerInterface
    {
       writeRecord(record);
 
-      worksheet.range(row, 0, row, fields.size() - 1).style()
-         .bold()
-         .borderStyle(BorderSide.TOP, BorderStyle.THIN)
-         .borderStyle(BorderSide.BOTTOM, BorderStyle.DOUBLE)
-         .set();
+      StyleSetter totalsRowStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
+      excelStylerInterface.styleTotalsRow(totalsRowStyle);
+      totalsRowStyle.set();
    }
 
 

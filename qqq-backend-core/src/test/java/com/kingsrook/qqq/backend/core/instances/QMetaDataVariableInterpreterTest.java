@@ -203,6 +203,29 @@ class QMetaDataVariableInterpreterTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testLooksLikeVariableButNotFound()
+   {
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", Map.of("x", 1, "y", 2));
+      variableInterpreter.addValueMap("others", Map.of("foo", "bar"));
+
+      assertNull(variableInterpreter.interpretForObject("${input.notFound}", null));
+      assertEquals(0, variableInterpreter.interpretForObject("${input.notFound}", 0));
+      assertEquals("--", variableInterpreter.interpretForObject("${input.notFound}", "--"));
+      assertEquals("--", variableInterpreter.interpretForObject("${others.notFound}", "--"));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // this one doesn't count as "looking like a variable" - because the "prefix" (notValid) isn't a value map... //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals("${notValid.notFound}", variableInterpreter.interpretForObject("${notValid.notFound}", "--"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @InterpretableFields(fieldNames = { "username", "password" })
    public static class GoodTestClass
    {

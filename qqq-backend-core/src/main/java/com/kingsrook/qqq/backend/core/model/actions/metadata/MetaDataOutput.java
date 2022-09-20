@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 
 
@@ -40,6 +41,7 @@ public class MetaDataOutput extends AbstractActionOutput
 {
    private Map<String, QFrontendTableMetaData>   tables;
    private Map<String, QFrontendProcessMetaData> processes;
+   private Map<String, QFrontendReportMetaData>  reports;
    private Map<String, QFrontendAppMetaData>     apps;
 
    private List<AppTreeNode> appTree;
@@ -88,6 +90,28 @@ public class MetaDataOutput extends AbstractActionOutput
    public void setProcesses(Map<String, QFrontendProcessMetaData> processes)
    {
       this.processes = processes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for reports
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendReportMetaData> getReports()
+   {
+      return reports;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reports
+    **
+    *******************************************************************************/
+   public void setReports(Map<String, QFrontendReportMetaData> reports)
+   {
+      this.reports = reports;
    }
 
 

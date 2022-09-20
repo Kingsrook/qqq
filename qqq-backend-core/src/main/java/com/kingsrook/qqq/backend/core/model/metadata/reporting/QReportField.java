@@ -29,7 +29,6 @@ public class QReportField
 {
    private String name;
    private String label;
-   private String fieldName;
    private String formula;
    private String displayFormat;
    // todo - type?
@@ -99,40 +98,6 @@ public class QReportField
    public QReportField withLabel(String label)
    {
       this.label = label;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldName
-    **
-    *******************************************************************************/
-   public String getFieldName()
-   {
-      return fieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for fieldName
-    **
-    *******************************************************************************/
-   public void setFieldName(String fieldName)
-   {
-      this.fieldName = fieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for fieldName
-    **
-    *******************************************************************************/
-   public QReportField withFieldName(String fieldName)
-   {
-      this.fieldName = fieldName;
       return (this);
    }
 

@@ -105,7 +105,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////
       // get the process summary from the validation step //
       //////////////////////////////////////////////////////
-      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.getProcessSummary(false));
+      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.doGetProcessSummary(false));
 
       transformStep.postRun(runBackendStepInput, runBackendStepOutput);
    }
@@ -131,7 +131,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       ///////////////////////////////////////////////////////////////////////
       // make streamed input & output objects from the run input & outputs //
       ///////////////////////////////////////////////////////////////////////
-      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
       StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
       /////////////////////////////////////////////////////

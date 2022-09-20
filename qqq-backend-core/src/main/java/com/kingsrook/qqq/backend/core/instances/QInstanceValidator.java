@@ -510,7 +510,8 @@ public class QInstanceValidator
       assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for a section in app " + app.getLabel() + ".");
       boolean hasTables    = CollectionUtils.nullSafeHasContents(section.getTables());
       boolean hasProcesses = CollectionUtils.nullSafeHasContents(section.getProcesses());
-      if(assertCondition(hasTables || hasProcesses, "App " + app.getName() + " section " + section.getName() + " does not have any children."))
+      boolean hasReports   = CollectionUtils.nullSafeHasContents(section.getReports());
+      if(assertCondition(hasTables || hasProcesses || hasReports, "App " + app.getName() + " section " + section.getName() + " does not have any children."))
       {
          if(hasTables)
          {
@@ -530,6 +531,16 @@ public class QInstanceValidator
                assertCondition(!childNamesInSections.contains(processName), "App " + app.getName() + " has process " + processName + " listed more than once in its sections.");
 
                childNamesInSections.add(processName);
+            }
+         }
+         if(hasReports)
+         {
+            for(String reportName : section.getReports())
+            {
+               assertCondition(app.getChildren().stream().anyMatch(c -> c.getName().equals(reportName)), "App " + app.getName() + " section " + section.getName() + " specifies report " + reportName + ", which is not a child of this app.");
+               assertCondition(!childNamesInSections.contains(reportName), "App " + app.getName() + " has report " + reportName + " listed more than once in its sections.");
+
+               childNamesInSections.add(reportName);
             }
          }
       }

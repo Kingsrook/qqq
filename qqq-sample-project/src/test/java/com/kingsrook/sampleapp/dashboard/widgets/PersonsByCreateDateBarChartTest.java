@@ -19,12 +19,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.sampleapp.dashboard.widgets;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.sampleapp.SampleMetaDataProvider;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,17 +33,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 /*******************************************************************************
- ** Unit test for WidgetDataLoader
+ ** Unit test for PersonsByCreateDateBarChart
  *******************************************************************************/
-class WidgetDataLoaderTest
+class PersonsByCreateDateBarChartTest
 {
+
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
    void test() throws QException
    {
-      Object widgetData = new WidgetDataLoader().execute(TestUtils.defineInstance(), TestUtils.getMockSession(), PersonsByCreateDateBarChart.class.getSimpleName());
+      Object widgetData = new PersonsByCreateDateBarChart().render(SampleMetaDataProvider.defineInstance(), new QSession(), null);
       assertThat(widgetData).isInstanceOf(ChartData.class);
       ChartData chartData = (ChartData) widgetData;
       assertEquals("barChart", chartData.getType());

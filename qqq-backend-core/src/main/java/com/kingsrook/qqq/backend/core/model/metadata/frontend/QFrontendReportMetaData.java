@@ -19,111 +19,104 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.utils;
+package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
 /*******************************************************************************
- ** Simple container for two objects
+ * Version of QReportMetaData that's meant for transmitting to a frontend.
+ * e.g., it excludes backend-only details.
+ *
  *******************************************************************************/
-public class Pair<A, B> implements Cloneable
+@JsonInclude(Include.NON_NULL)
+public class QFrontendReportMetaData
 {
-   private A a;
-   private B b;
+   private String name;
+   private String label;
+   private String tableName;
+   private String processName;
+
+   private String iconName;
+
+   //////////////////////////////////////////////////////////////////////////////////
+   // do not add setters.  take values from the source-object in the constructor!! //
+   //////////////////////////////////////////////////////////////////////////////////
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Pair(A a, B b)
+   public QFrontendReportMetaData(QReportMetaData reportMetaData, boolean includeSteps)
    {
-      this.a = a;
-      this.b = b;
-   }
+      this.name = reportMetaData.getName();
+      this.label = reportMetaData.getLabel();
+      this.tableName = reportMetaData.getSourceTable();
+      this.processName = reportMetaData.getProcessName();
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String toString()
-   {
-      return (a + ":" + b);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for a
-    **
-    *******************************************************************************/
-   public A getA()
-   {
-      return a;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for b
-    **
-    *******************************************************************************/
-   public B getB()
-   {
-      return b;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public boolean equals(Object o)
-   {
-      if(this == o)
+      if(reportMetaData.getIcon() != null)
       {
-         return true;
-      }
-      if(o == null || getClass() != o.getClass())
-      {
-         return false;
-      }
-      Pair<?, ?> pair = (Pair<?, ?>) o;
-      return Objects.equals(a, pair.a) && Objects.equals(b, pair.b);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public int hashCode()
-   {
-      return Objects.hash(a, b);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   @Override
-   public Pair<A, B> clone()
-   {
-      try
-      {
-         return (Pair<A, B>) super.clone();
-      }
-      catch(CloneNotSupportedException e)
-      {
-         throw new AssertionError();
+         this.iconName = reportMetaData.getIcon().getName();
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for name
+    **
+    *******************************************************************************/
+   public String getName()
+   {
+      return name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for primaryKeyField
+    **
+    *******************************************************************************/
+   public String getTableName()
+   {
+      return tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processName
+    **
+    *******************************************************************************/
+   public String getProcessName()
+   {
+      return processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for iconName
+    **
+    *******************************************************************************/
+   public String getIconName()
+   {
+      return iconName;
+   }
+
 }

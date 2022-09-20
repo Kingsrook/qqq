@@ -19,14 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.reporting;
+package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
+
+
+import org.dhatim.fastexcel.StyleSetter;
 
 
 /*******************************************************************************
- ** Types of reports that QQQ can generate
+ **
  *******************************************************************************/
-public enum ReportType
+public interface ExcelStylerInterface
 {
-   PIVOT,
-   TABLE
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void styleTitleRow(StyleSetter titleRowStyle)
+   {
+
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void styleHeaderRow(StyleSetter headerRowStyle)
+   {
+
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void styleTotalsRow(StyleSetter totalsRowStyle)
+   {
+
+   }
+
 }

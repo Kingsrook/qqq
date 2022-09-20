@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -154,17 +155,17 @@ public class FormulaInterpreter
          case "ADD":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).add(numbers.get(1)));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).add(numbers.get(1)));
          }
          case "MINUS":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).subtract(numbers.get(1)));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).subtract(numbers.get(1)));
          }
          case "MULTIPLY":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).multiply(numbers.get(1)));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).multiply(numbers.get(1)));
          }
          case "DIVIDE":
          {
@@ -173,7 +174,7 @@ public class FormulaInterpreter
             {
                return null;
             }
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).divide(numbers.get(1), 4, RoundingMode.HALF_UP));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).divide(numbers.get(1), 4, RoundingMode.HALF_UP));
          }
          case "DIVIDE_SCALE":
          {
@@ -182,17 +183,82 @@ public class FormulaInterpreter
             {
                return null;
             }
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).divide(numbers.get(1), numbers.get(2).intValue(), RoundingMode.HALF_UP));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).divide(numbers.get(1), numbers.get(2).intValue(), RoundingMode.HALF_UP));
          }
          case "ROUND":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).round(new MathContext(numbers.get(1).intValue())));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).round(new MathContext(numbers.get(1).intValue())));
          }
          case "SCALE":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
-            return nullIfAnyNullArgsElse(numbers, () -> numbers.get(0).setScale(numbers.get(1).intValue(), RoundingMode.HALF_UP));
+            return nullIfAnyNullArgsElseBigDecimal(numbers, () -> numbers.get(0).setScale(numbers.get(1).intValue(), RoundingMode.HALF_UP));
+         }
+         case "NVL":
+         {
+            List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
+            return Objects.requireNonNullElse(numbers.get(0), numbers.get(1));
+         }
+         case "IF":
+         {
+            // IF(CONDITION,TRUE,ELSE)
+            List<Serializable> actualArgs = getArgumentList(args, 3, variableInterpreter);
+            Serializable       condition  = actualArgs.get(0);
+            boolean            conditionBoolean;
+            if(condition == null)
+            {
+               conditionBoolean = false;
+            }
+            else if(condition instanceof Boolean b)
+            {
+               conditionBoolean = b;
+            }
+            else if(condition instanceof BigDecimal bd)
+            {
+               conditionBoolean = (bd.compareTo(BigDecimal.ZERO) != 0);
+            }
+            else if(condition instanceof String s)
+            {
+               if("true".equalsIgnoreCase(s))
+               {
+                  conditionBoolean = true;
+               }
+               else if("false".equalsIgnoreCase(s))
+               {
+                  conditionBoolean = false;
+               }
+               else
+               {
+                  conditionBoolean = StringUtils.hasContent(s);
+               }
+            }
+            else
+            {
+               conditionBoolean = false;
+            }
+
+            return conditionBoolean ? actualArgs.get(1) : actualArgs.get(2);
+         }
+         case "LT":
+         {
+            List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
+            return nullIfAnyNullArgsElseBoolean(numbers, () -> numbers.get(0).compareTo(numbers.get(1)) < 0);
+         }
+         case "LTE":
+         {
+            List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
+            return nullIfAnyNullArgsElseBoolean(numbers, () -> numbers.get(0).compareTo(numbers.get(1)) <= 0);
+         }
+         case "GT":
+         {
+            List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
+            return nullIfAnyNullArgsElseBoolean(numbers, () -> numbers.get(0).compareTo(numbers.get(1)) > 0);
+         }
+         case "GTE":
+         {
+            List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
+            return nullIfAnyNullArgsElseBoolean(numbers, () -> numbers.get(0).compareTo(numbers.get(1)) >= 0);
          }
          default:
          {
@@ -230,7 +296,21 @@ public class FormulaInterpreter
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Serializable nullIfAnyNullArgsElse(List<BigDecimal> numbers, Supplier<BigDecimal> supplier)
+   private static Serializable nullIfAnyNullArgsElseBigDecimal(List<BigDecimal> numbers, Supplier<BigDecimal> supplier)
+   {
+      if(numbers.stream().anyMatch(Objects::isNull))
+      {
+         return (null);
+      }
+      return supplier.get();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Serializable nullIfAnyNullArgsElseBoolean(List<BigDecimal> numbers, Supplier<Boolean> supplier)
    {
       if(numbers.stream().anyMatch(Objects::isNull))
       {
@@ -259,8 +339,39 @@ public class FormulaInterpreter
       {
          try
          {
-            Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg));
+            Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg), null);
             rs.add(ValueUtils.getValueAsBigDecimal(interpretedArg));
+         }
+         catch(QValueException e)
+         {
+            throw (new QFormulaException("Could not process [" + originalArg + "] as a number"));
+         }
+      }
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<Serializable> getArgumentList(List<Serializable> originalArgs, Integer howMany, QMetaDataVariableInterpreter variableInterpreter) throws QFormulaException
+   {
+      if(howMany != null)
+      {
+         if(!howMany.equals(originalArgs.size()))
+         {
+            throw (new QFormulaException("Wrong number of arguments (required: " + howMany + ", received: " + originalArgs.size() + ")"));
+         }
+      }
+
+      List<Serializable> rs = new ArrayList<>();
+      for(Serializable originalArg : originalArgs)
+      {
+         try
+         {
+            Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg), null);
+            rs.add(interpretedArg);
          }
          catch(QValueException e)
          {

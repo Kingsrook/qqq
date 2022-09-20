@@ -19,37 +19,53 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.sampleapp.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.sampleapp.SampleMetaDataProvider;
-import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.dhatim.fastexcel.BorderSide;
+import org.dhatim.fastexcel.BorderStyle;
+import org.dhatim.fastexcel.StyleSetter;
 
 
 /*******************************************************************************
- ** Unit test for PersonsByCreateDateBarChart
+ **
  *******************************************************************************/
-class PersonsByCreateDateChartTestData
+public class BoldHeaderAndFooterExcelStyler implements ExcelStylerInterface
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Test
-   void test() throws QException
+   @Override
+   public void styleTitleRow(StyleSetter titleRowStyle)
    {
-      Object widgetData = new PersonsByCreateDateBarChart().render(SampleMetaDataProvider.defineInstance(), new QSession(), null);
-      assertThat(widgetData).isInstanceOf(ChartData.class);
-      ChartData chartData = (ChartData) widgetData;
-      assertEquals("chartData", chartData.getType());
-      assertThat(chartData.getTitle()).isNotBlank();
-      assertNotNull(chartData.getChartData());
+      titleRowStyle
+         .bold()
+         .fontSize(14)
+         .horizontalAlignment("center");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void styleHeaderRow(StyleSetter headerRowStyle)
+   {
+      headerRowStyle
+         .bold()
+         .borderStyle(BorderSide.BOTTOM, BorderStyle.THIN);
+   }
+
+
+
+   @Override
+   public void styleTotalsRow(StyleSetter totalsRowStyle)
+   {
+      totalsRowStyle
+         .bold()
+         .borderStyle(BorderSide.TOP, BorderStyle.THIN)
+         .borderStyle(BorderSide.BOTTOM, BorderStyle.DOUBLE);
+   }
 }

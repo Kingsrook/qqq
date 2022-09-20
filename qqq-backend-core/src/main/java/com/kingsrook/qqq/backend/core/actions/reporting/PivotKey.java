@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.utils.Pair;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class PivotKey
+public class PivotKey implements Cloneable
 {
    private List<Pair<String, Serializable>> keys = new ArrayList<>();
 
@@ -108,4 +108,21 @@ public class PivotKey
       return Objects.hash(keys);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public PivotKey clone()
+   {
+      PivotKey clone = new PivotKey();
+
+      for(Pair<String, Serializable> key : keys)
+      {
+         clone.add(key.getA(), key.getB());
+      }
+
+      return (clone);
+   }
 }

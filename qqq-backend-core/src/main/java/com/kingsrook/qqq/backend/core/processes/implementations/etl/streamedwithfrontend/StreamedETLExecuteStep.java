@@ -90,7 +90,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          ////////////////////////////////////////////////////////////////////////////////////////////////////
          // get the process summary from the ... transform step?  the load step?  each knows some... todo? //
          ////////////////////////////////////////////////////////////////////////////////////////////////////
-         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.getProcessSummary(true));
+         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(true));
 
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);
@@ -147,7 +147,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       ///////////////////////////////////////////////////////////////////////
       // make streamed input & output objects from the run input & outputs //
       ///////////////////////////////////////////////////////////////////////
-      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
       StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
       /////////////////////////////////////////////////////

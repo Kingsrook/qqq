@@ -75,7 +75,7 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ExportInput exportInput, List<QFieldMetaData> fields) throws QReportingException
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException
    {
       this.exportInput = exportInput;
       this.fields = fields;
@@ -93,9 +93,8 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int takeRecordsFromPipe(RecordPipe recordPipe) throws QReportingException
+   public int addRecords(List<QRecord> qRecords) throws QReportingException
    {
-      List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
 
       for(QRecord qRecord : qRecords)
