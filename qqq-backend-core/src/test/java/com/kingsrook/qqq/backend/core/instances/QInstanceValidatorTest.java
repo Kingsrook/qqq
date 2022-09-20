@@ -584,7 +584,7 @@ class QInstanceValidatorTest
    {
       QAppMetaData app = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection(null, "Section 1", new QIcon("person"), List.of("test"), null));
+         .withSection(new QAppSection(null, "Section 1", new QIcon("person"), List.of("test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "Missing a name");
    }
 
@@ -598,7 +598,7 @@ class QInstanceValidatorTest
    {
       QAppMetaData app = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("Section 1", null, new QIcon("person"), List.of("test"), null));
+         .withSection(new QAppSection("Section 1", null, new QIcon("person"), List.of("test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "Missing a label");
    }
 
@@ -612,12 +612,12 @@ class QInstanceValidatorTest
    {
       QAppMetaData app1 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of(), List.of()));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of(), List.of(), null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app1), "section1 does not have any children", "child test is not listed in any app sections");
 
       QAppMetaData app2 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), null, null));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), null, null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app2), "section1 does not have any children", "child test is not listed in any app sections");
    }
 
@@ -631,11 +631,11 @@ class QInstanceValidatorTest
    {
       QAppMetaData app1 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test", "tset"), null));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test", "tset"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app1), "not a child of this app");
       QAppMetaData app2 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), List.of("tset")));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), List.of("tset"), null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app2), "not a child of this app");
    }
 
@@ -649,23 +649,23 @@ class QInstanceValidatorTest
    {
       QAppMetaData app1 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test", "test"), null));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test", "test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app1), "more than once");
 
       QAppMetaData app2 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null))
-         .withSection(new QAppSection("section2", "Section 2", new QIcon("person"), List.of("test"), null));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null, null))
+         .withSection(new QAppSection("section2", "Section 2", new QIcon("person"), List.of("test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app2), "more than once");
 
       QAppMetaData app3 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), List.of("test")));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), List.of("test"), null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app3), "more than once");
 
       QAppMetaData app4 = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), null, List.of("test", "test")));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), null, List.of("test", "test"), null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app4), "more than once");
    }
 
@@ -687,7 +687,7 @@ class QInstanceValidatorTest
       QAppMetaData app = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("tset"))
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null));
+         .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "not listed in any app sections");
    }
 

@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
 /*******************************************************************************
@@ -50,8 +51,9 @@ public class ExecuteReportStep implements BackendStep
    {
       try
       {
-         String reportName = runBackendStepInput.getValueString("reportName");
-         File   tmpFile    = File.createTempFile(reportName, ".xlsx", new File("/tmp/"));
+         String          reportName = runBackendStepInput.getValueString("reportName");
+         QReportMetaData report     = runBackendStepInput.getInstance().getReport(reportName);
+         File            tmpFile    = File.createTempFile(reportName, ".xlsx", new File("/tmp/"));
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
@@ -71,7 +73,7 @@ public class ExecuteReportStep implements BackendStep
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm").withZone(ZoneId.systemDefault());
             String            datePart  = formatter.format(Instant.now());
 
-            runBackendStepOutput.addValue("downloadFileName", reportName + "-" + datePart + ".xlsx");
+            runBackendStepOutput.addValue("downloadFileName", report.getLabel() + " " + datePart + ".xlsx");
             runBackendStepOutput.addValue("serverFilePath", tmpFile.getCanonicalPath());
          }
       }

@@ -469,6 +469,9 @@ public class GenerateReportAction
          Map<String, AggregatesInterface<?>> fieldAggregates = entry.getValue();
          variableInterpreter.addValueMap("pivot", getPivotValuesForInterpreter(fieldAggregates));
 
+         HashMap<String, Serializable> thisRowValues = new HashMap<>();
+         variableInterpreter.addValueMap("thisRow", thisRowValues);
+
          if(!variancePivotAggregates.isEmpty())
          {
             Map<PivotKey, Map<String, AggregatesInterface<?>>> varianceMap    = variancePivotAggregates.getOrDefault(view.getName(), Collections.emptyMap());
@@ -503,6 +506,7 @@ public class GenerateReportAction
          {
             Serializable serializable = getValueForColumn(variableInterpreter, column);
             pivotRow.setValue(column.getName(), serializable);
+            thisRowValues.put(column.getName(), serializable);
          }
       }
 
@@ -583,14 +587,17 @@ public class GenerateReportAction
     *******************************************************************************/
    private Serializable getValueForColumn(QMetaDataVariableInterpreter variableInterpreter, QReportField column) throws QFormulaException
    {
-      String       formula      = column.getFormula();
-      Serializable serializable = variableInterpreter.interpretForObject(formula);
+      String       formula = column.getFormula();
+      Serializable result;
       if(formula.startsWith("=") && formula.length() > 1)
       {
-         // serializable = interpretFormula(variableInterpreter, formula);
-         serializable = FormulaInterpreter.interpretFormula(variableInterpreter, formula.substring(1));
+         result = FormulaInterpreter.interpretFormula(variableInterpreter, formula.substring(1));
       }
-      return serializable;
+      else
+      {
+         result = variableInterpreter.interpretForObject(formula, null);
+      }
+      return (result);
    }
 
 

@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /*******************************************************************************
  ** Unit test for PersonsByCreateDateBarChart
  *******************************************************************************/
-class PersonsByCreateDateChartTestData
+class PersonsByCreateDateBarChartTest
 {
 
    /*******************************************************************************
@@ -47,7 +47,7 @@ class PersonsByCreateDateChartTestData
       Object widgetData = new PersonsByCreateDateBarChart().render(SampleMetaDataProvider.defineInstance(), new QSession(), null);
       assertThat(widgetData).isInstanceOf(ChartData.class);
       ChartData chartData = (ChartData) widgetData;
-      assertEquals("chartData", chartData.getType());
+      assertEquals("barChart", chartData.getType());
       assertThat(chartData.getTitle()).isNotBlank();
       assertNotNull(chartData.getChartData());
    }

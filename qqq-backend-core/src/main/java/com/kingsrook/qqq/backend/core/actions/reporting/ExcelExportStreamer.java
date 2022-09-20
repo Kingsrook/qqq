@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -67,7 +66,8 @@ public class ExcelExportStreamer implements ExportStreamerInterface
 
    private Workbook  workbook;
    private Worksheet worksheet;
-   private int       row = 0;
+   private int       row        = 0;
+   private int       sheetCount = 0;
 
 
 
@@ -112,6 +112,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
          table = exportInput.getTable();
          outputStream = this.exportInput.getReportOutputStream();
          this.row = 0;
+         this.sheetCount++;
 
          if(workbook == null)
          {
@@ -127,11 +128,11 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             worksheet.finish();
          }
 
-         worksheet = workbook.newWorksheet(label);
+         worksheet = workbook.newWorksheet(Objects.requireNonNullElse(label, "Sheet " + sheetCount));
 
          writeReportHeaderRow();
       }
-      catch(IOException e)
+      catch(Exception e)
       {
          throw (new QReportingException("Error starting worksheet", e));
       }

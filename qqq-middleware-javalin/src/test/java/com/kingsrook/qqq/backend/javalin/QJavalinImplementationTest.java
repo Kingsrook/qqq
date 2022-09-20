@@ -451,8 +451,8 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    void testExportFieldsQueryParam()
    {
-      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/People.csv?fields=id,birthDate").asString();
-      String[] csvLines = response.getBody().split("\n");
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/People.csv?fields=id,birthDate").asString();
+      String[]             csvLines = response.getBody().split("\n");
       assertEquals("""
          "Id","Birth Date\"""", csvLines[0]);
    }
@@ -484,7 +484,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertNotNull(jsonObject);
       assertEquals("barChart", jsonObject.getString("type"));
       assertNotNull(jsonObject.getString("title"));
-      assertNotNull(jsonObject.getJSONObject("barChartData"));
+      assertNotNull(jsonObject.getJSONObject("chartData"));
    }
 
 }

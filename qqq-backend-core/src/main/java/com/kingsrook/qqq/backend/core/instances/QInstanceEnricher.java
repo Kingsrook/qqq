@@ -558,17 +558,17 @@ public class QInstanceEnricher
       //////////////////////////////////////////////////////////////////////////////
       // create an identity section for the id and any fields in the record label //
       //////////////////////////////////////////////////////////////////////////////
-      QAppSection defaultSection = new QAppSection(app.getName(), app.getLabel(), new QIcon("badge"), new ArrayList<>(), new ArrayList<>());
+      QAppSection defaultSection = new QAppSection(app.getName(), app.getLabel(), new QIcon("badge"), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
 
       boolean foundNonAppChild = false;
       if(CollectionUtils.nullSafeHasContents(app.getChildren()))
       {
          for(QAppChildMetaData child : app.getChildren())
          {
-            ////////////////////////////////////////////////////////////////////////////////
-            // only tables and processes are allowed to be in sections at this time, apps //
-            // might be children but not in sections so keep track if we find any non-app //
-            ////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // only tables, processes, and reports are allowed to be in sections at this time, apps //
+            // might be children but not in sections so keep track if we find any non-app           //
+            //////////////////////////////////////////////////////////////////////////////////////////
             if(child.getClass().equals(QTableMetaData.class))
             {
                defaultSection.getTables().add(child.getName());
@@ -577,6 +577,11 @@ public class QInstanceEnricher
             else if(child.getClass().equals(QProcessMetaData.class))
             {
                defaultSection.getProcesses().add(child.getName());
+               foundNonAppChild = true;
+            }
+            else if(child.getClass().equals(QReportMetaData.class))
+            {
+               defaultSection.getReports().add(child.getName());
                foundNonAppChild = true;
             }
          }
