@@ -55,14 +55,14 @@ public class TableData implements QWidget
    private String                    title;
    private List<Column>              columns;
    private List<Map<String, Object>> rows;
-   private List<String>              dropdownOptions;
+   private List<Map<String, String>> dropdownOptions;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public TableData(String title, List<Column> columns, List<Map<String, Object>> rows, List<String> dropdownOptions)
+   public TableData(String title, List<Column> columns, List<Map<String, Object>> rows, List<Map<String, String>> dropdownOptions)
    {
       setTitle(title);
       setColumns(columns);
@@ -189,7 +189,7 @@ public class TableData implements QWidget
     ** Getter for dropdownOptions
     **
     *******************************************************************************/
-   public List<String> getDropdownOptions()
+   public List<Map<String, String>> getDropdownOptions()
    {
       return dropdownOptions;
    }
@@ -200,7 +200,7 @@ public class TableData implements QWidget
     ** Setter for dropdownOptions
     **
     *******************************************************************************/
-   public void setDropdownOptions(List<String> dropdownOptions)
+   public void setDropdownOptions(List<Map<String, String>> dropdownOptions)
    {
       this.dropdownOptions = dropdownOptions;
    }
@@ -211,7 +211,7 @@ public class TableData implements QWidget
     ** Fluent setter for dropdownOptions
     **
     *******************************************************************************/
-   public TableData withDropdownOptions(List<String> dropdownOptions)
+   public TableData withDropdownOptions(List<Map<String, String>> dropdownOptions)
    {
       this.dropdownOptions = dropdownOptions;
       return (this);
