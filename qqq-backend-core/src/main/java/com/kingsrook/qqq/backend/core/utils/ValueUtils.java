@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -114,6 +115,10 @@ public class ValueUtils
          else if(value instanceof Integer i)
          {
             return (i);
+         }
+         else if(value instanceof BigInteger b)
+         {
+            return (b.intValue());
          }
          else if(value instanceof Long l)
          {
