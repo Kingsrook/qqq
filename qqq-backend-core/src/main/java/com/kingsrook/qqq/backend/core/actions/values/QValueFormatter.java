@@ -73,26 +73,6 @@ public class QValueFormatter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String formatDate(LocalDate date)
-   {
-      return (dateFormatter.format(date));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String formatDateTime(LocalDateTime dateTime)
-   {
-      return (dateTimeFormatter.format(dateTime));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    private String formatValue(String displayFormat, String fieldName, Serializable value)
    {
       //////////////////////////////////
@@ -145,6 +125,26 @@ public class QValueFormatter
       // by default, just get back a string //
       ////////////////////////////////////////
       return (ValueUtils.getValueAsString(value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatDate(LocalDate date)
+   {
+      return (dateFormatter.format(date));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatDateTime(LocalDateTime dateTime)
+   {
+      return (dateTimeFormatter.format(dateTime));
    }
 
 
