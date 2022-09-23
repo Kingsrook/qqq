@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,9 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 /*******************************************************************************
- ** Unit test for WidgetDataLoader
+ ** Unit test for RenderWidgetAction
  *******************************************************************************/
-class WidgetDataLoaderTest
+class RenderWidgetActionTest
 {
    /*******************************************************************************
     **
@@ -42,9 +45,14 @@ class WidgetDataLoaderTest
    @Test
    void test() throws QException
    {
-      Object widgetData = new WidgetDataLoader().execute(TestUtils.defineInstance(), TestUtils.getMockSession(), PersonsByCreateDateBarChart.class.getSimpleName());
-      assertThat(widgetData).isInstanceOf(ChartData.class);
-      ChartData chartData = (ChartData) widgetData;
+      QInstance testQInstance = TestUtils.defineInstance();
+      RenderWidgetInput input = new RenderWidgetInput(testQInstance)
+         .withSession(TestUtils.getMockSession())
+         .withWidgetMetaData(testQInstance.getWidget(PersonsByCreateDateBarChart.class.getSimpleName()));
+
+      RenderWidgetOutput output = new RenderWidgetAction().execute(input);
+      assertThat(output.getWidgetData()).isInstanceOf(ChartData.class);
+      ChartData chartData = (ChartData) output.getWidgetData();
       assertEquals("barChart", chartData.getType());
       assertThat(chartData.getTitle()).isNotBlank();
       assertNotNull(chartData.getChartData());

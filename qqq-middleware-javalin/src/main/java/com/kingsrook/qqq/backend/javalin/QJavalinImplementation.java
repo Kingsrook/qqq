@@ -36,7 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
-import com.kingsrook.qqq.backend.core.actions.dashboard.WidgetDataLoader;
+import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
@@ -76,6 +76,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -83,6 +85,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -681,8 +684,25 @@ public class QJavalinImplementation
          InsertInput insertInput = new InsertInput(qInstance);
          setupSession(context, insertInput);
 
-         Object widgetData = new WidgetDataLoader().execute(qInstance, insertInput.getSession(), context.pathParam("name"));
-         context.result(JsonUtils.toJson(widgetData));
+         RenderWidgetInput input = new RenderWidgetInput(qInstance)
+            .withSession(insertInput.getSession())
+            .withWidgetMetaData(qInstance.getWidget(context.pathParam("name")));
+
+         //////////////////////////
+         // process query string //
+         //////////////////////////
+         for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
+         {
+            String       fieldName = queryParam.getKey();
+            List<String> values    = queryParam.getValue();
+            if(CollectionUtils.nullSafeHasContents(values))
+            {
+               input.addQueryParam(fieldName, values.get(0));
+            }
+         }
+
+         RenderWidgetOutput output = new RenderWidgetAction().execute(input);
+         context.result(JsonUtils.toJson(output.getWidgetData()));
       }
       catch(Exception e)
       {

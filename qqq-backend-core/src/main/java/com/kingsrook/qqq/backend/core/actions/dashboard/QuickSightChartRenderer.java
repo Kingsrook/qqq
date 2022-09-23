@@ -23,11 +23,11 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidget;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QuickSightChart;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -49,11 +49,11 @@ public class QuickSightChartRenderer extends AbstractWidgetRenderer
     **
     *******************************************************************************/
    @Override
-   public Object render(QInstance qInstance, QSession session, QWidgetMetaDataInterface metaData) throws QException
+   public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
       try
       {
-         QuickSightChartMetaData quickSightMetaData = (QuickSightChartMetaData) metaData;
+         QuickSightChartMetaData quickSightMetaData = (QuickSightChartMetaData) input.getWidgetMetaData();
          QuickSightClient        quickSightClient   = getQuickSightClient(quickSightMetaData);
 
          final RegisteredUserEmbeddingExperienceConfiguration experienceConfiguration = RegisteredUserEmbeddingExperienceConfiguration.builder()
@@ -71,8 +71,9 @@ public class QuickSightChartRenderer extends AbstractWidgetRenderer
 
          final GenerateEmbedUrlForRegisteredUserResponse generateEmbedUrlForRegisteredUserResponse = quickSightClient.generateEmbedUrlForRegisteredUser(generateEmbedUrlForRegisteredUserRequest);
 
-         String embedUrl = generateEmbedUrlForRegisteredUserResponse.embedUrl();
-         return (new QuickSightChart(metaData.getName(), quickSightMetaData.getLabel(), embedUrl));
+         String  embedUrl = generateEmbedUrlForRegisteredUserResponse.embedUrl();
+         QWidget widget   = new QuickSightChart(input.getWidgetMetaData().getName(), quickSightMetaData.getLabel(), embedUrl);
+         return (new RenderWidgetOutput(widget));
       }
       catch(Exception e)
       {

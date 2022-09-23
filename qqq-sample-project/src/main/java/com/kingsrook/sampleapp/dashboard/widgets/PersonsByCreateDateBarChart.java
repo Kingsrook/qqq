@@ -26,10 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -41,7 +39,7 @@ public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
     **
     *******************************************************************************/
    @Override
-   public Object render(QInstance qInstance, QSession session, QWidgetMetaDataInterface metaData) throws QException
+   public Object render(RenderWidgetInput input) throws QException
    {
       try
       {

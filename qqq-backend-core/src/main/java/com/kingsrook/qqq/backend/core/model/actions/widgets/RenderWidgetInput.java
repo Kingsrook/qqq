@@ -19,122 +19,153 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
+package com.kingsrook.qqq.backend.core.model.actions.widgets;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import java.util.HashMap;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
- ** Base metadata for frontend dashboard widgets
+ ** Input data container for the RenderWidget action
  **
  *******************************************************************************/
-public class QWidgetMetaData implements QWidgetMetaDataInterface
+public class RenderWidgetInput extends AbstractActionInput
 {
-   private   String         id;
-   protected String         name;
-   protected QCodeReference codeReference;
+   private QSession                 session;
+   private QWidgetMetaDataInterface widgetMetaData;
+   private Map<String, String>      queryParams;
 
 
 
    /*******************************************************************************
-    ** Getter for name
     **
     *******************************************************************************/
-   public String getName()
+   public RenderWidgetInput(QInstance instance)
    {
-      return name;
+      super(instance);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Getter for session
     **
     *******************************************************************************/
-   public void setName(String name)
+   public QSession getSession()
    {
-      this.name = name;
+      return session;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
+    ** Setter for session
     **
     *******************************************************************************/
-   public QWidgetMetaData withName(String name)
+   public void setSession(QSession session)
    {
-      this.name = name;
+      this.session = session;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for session
+    **
+    *******************************************************************************/
+   public RenderWidgetInput withSession(QSession session)
+   {
+      this.session = session;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for codeReference
+    ** Getter for widgetMetaData
     **
     *******************************************************************************/
-   public QCodeReference getCodeReference()
+   public QWidgetMetaDataInterface getWidgetMetaData()
    {
-      return codeReference;
+      return widgetMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeReference
+    ** Setter for widgetMetaData
     **
     *******************************************************************************/
-   public void setCodeReference(QCodeReference codeReference)
+   public void setWidgetMetaData(QWidgetMetaDataInterface widgetMetaData)
    {
-      this.codeReference = codeReference;
+      this.widgetMetaData = widgetMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for codeReference
+    ** Fluent setter for widgetMetaData
     **
     *******************************************************************************/
-   public QWidgetMetaData withCodeReference(QCodeReference codeReference)
+   public RenderWidgetInput withWidgetMetaData(QWidgetMetaDataInterface widgetMetaData)
    {
-      this.codeReference = codeReference;
+      this.widgetMetaData = widgetMetaData;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for id
+    ** Getter for urlParams
     **
     *******************************************************************************/
-   public String getId()
+   public Map<String, String> getQueryParams()
    {
-      return id;
+      return queryParams;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for id
+    ** Setter for urlParams
     **
     *******************************************************************************/
-   public void setId(String id)
+   public void setQueryParams(Map<String, String> queryParams)
    {
-      this.id = id;
+      this.queryParams = queryParams;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for id
+    ** Fluent setter for urlParams
     **
     *******************************************************************************/
-   public QWidgetMetaData withId(String id)
+   public RenderWidgetInput withUrlParams(Map<String, String> urlParams)
    {
-      this.id = id;
+      this.queryParams = urlParams;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** adds a query param value
+    **
+    *******************************************************************************/
+   public void addQueryParam(String name, String value)
+   {
+      if(this.queryParams == null)
+      {
+         this.queryParams = new HashMap<>();
+      }
+
+      this.queryParams.put(name, value);
    }
 
 }

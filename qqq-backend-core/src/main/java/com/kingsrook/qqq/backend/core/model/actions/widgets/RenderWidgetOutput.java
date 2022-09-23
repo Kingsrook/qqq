@@ -19,53 +19,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.model.actions.widgets;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Sample bar chart widget
+ ** Output for an Export action
  *******************************************************************************/
-public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
+public class RenderWidgetOutput implements Serializable
 {
+   public Object widgetData;
+
+
+
    /*******************************************************************************
+    ** constructor taking in widget data
     **
     *******************************************************************************/
-   @Override
-   public RenderWidgetOutput render(RenderWidgetInput input) throws QException
+   public RenderWidgetOutput(Object widgetData)
    {
-      try
-      {
-         List<String> labels = new ArrayList<>();
-         List<Number> data   = new ArrayList<>();
-
-         labels.add("Jan. 2022");
-         data.add(17);
-
-         labels.add("Feb. 2022");
-         data.add(42);
-
-         labels.add("Mar. 2022");
-         data.add(47);
-
-         labels.add("Apr. 2022");
-         data.add(0);
-
-         labels.add("May 2022");
-         data.add(64);
-
-         return (new RenderWidgetOutput(new ChartData("Persons created per Month", null, "Person records", labels, data)));
-      }
-      catch(Exception e)
-      {
-         throw (new QException("Error rendering widget", e));
-      }
+      this.widgetData = widgetData;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgetData
+    **
+    *******************************************************************************/
+   public Object getWidgetData()
+   {
+      return widgetData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for widgetData
+    **
+    *******************************************************************************/
+   public void setWidgetData(Object widgetData)
+   {
+      this.widgetData = widgetData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for widgetData
+    **
+    *******************************************************************************/
+   public RenderWidgetOutput withWidgetData(Object widgetData)
+   {
+      this.widgetData = widgetData;
+      return (this);
+   }
+
 }

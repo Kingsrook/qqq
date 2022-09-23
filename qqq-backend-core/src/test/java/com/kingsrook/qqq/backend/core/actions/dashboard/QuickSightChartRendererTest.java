@@ -24,8 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 import java.net.UnknownHostException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,7 +42,7 @@ class QuickSightChartRendererTest
    @Test
    void testWrongMetaDataClass() throws QException
    {
-      assertThatThrownBy(() -> new QuickSightChartRenderer().render(TestUtils.defineInstance(), TestUtils.getMockSession(), new QWidgetMetaData()))
+      assertThatThrownBy(() -> new QuickSightChartRenderer().render(new RenderWidgetInput(TestUtils.defineInstance())))
          .hasRootCauseInstanceOf(ClassCastException.class);
    }
 
@@ -55,7 +54,7 @@ class QuickSightChartRendererTest
    @Test
    void testNoCredentials() throws QException
    {
-      assertThatThrownBy(() -> new QuickSightChartRenderer().render(TestUtils.defineInstance(), TestUtils.getMockSession(), new QuickSightChartMetaData()))
+      assertThatThrownBy(() -> new QuickSightChartRenderer().render(new RenderWidgetInput(TestUtils.defineInstance())))
          .hasRootCauseInstanceOf(NullPointerException.class);
    }
 
@@ -67,13 +66,7 @@ class QuickSightChartRendererTest
    @Test
    void testBadCredentials() throws QException
    {
-      assertThatThrownBy(() -> new QuickSightChartRenderer().render(TestUtils.defineInstance(), TestUtils.getMockSession(),
-         new QuickSightChartMetaData()
-            .withName("test")
-            .withAccessKey("FAIL")
-            .withSecretKey("FAIL")
-            .withRegion("FAIL")
-            .withAccountId("FAIL")
+      assertThatThrownBy(() -> new QuickSightChartRenderer().render(new RenderWidgetInput(TestUtils.defineInstance())
       )).hasRootCauseInstanceOf(UnknownHostException.class);
    }
 

@@ -24,26 +24,23 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 
 
 /*******************************************************************************
  ** Class for loading widget implementation code and rendering of widgets
  **
  *******************************************************************************/
-public class WidgetDataLoader
+public class RenderWidgetAction
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Object execute(QInstance qInstance, QSession session, String name) throws QException
+   public RenderWidgetOutput execute(RenderWidgetInput input) throws QException
    {
-      QWidgetMetaDataInterface widget         = qInstance.getWidget(name);
-      AbstractWidgetRenderer   widgetRenderer = QCodeLoader.getAdHoc(AbstractWidgetRenderer.class, widget.getCodeReference());
-      Object w = widgetRenderer.render(qInstance, session, widget);
-      return (widgetRenderer.render(qInstance, session, widget));
+      AbstractWidgetRenderer widgetRenderer = QCodeLoader.getAdHoc(AbstractWidgetRenderer.class, input.getWidgetMetaData().getCodeReference());
+      return (widgetRenderer.render(input));
    }
 }

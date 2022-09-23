@@ -229,6 +229,7 @@ public class TableData implements QWidget
       private String accessor;
       private String width;
       private String align;
+      private String verticalAlign;
 
 
 
@@ -413,5 +414,40 @@ public class TableData implements QWidget
          this.type = type;
          return this;
       }
+
+
+
+      /*******************************************************************************
+       ** Getter for verticalAlign
+       **
+       *******************************************************************************/
+      public String getVerticalAlign()
+      {
+         return verticalAlign;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for verticalAlign
+       **
+       *******************************************************************************/
+      public void setVerticalAlign(String verticalAlign)
+      {
+         this.verticalAlign = verticalAlign;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for verticalAlign
+       **
+       *******************************************************************************/
+      public Column withVerticalAlign(String verticalAlign)
+      {
+         this.verticalAlign = verticalAlign;
+         return (this);
+      }
+
    }
 }
