@@ -19,76 +19,54 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.frontend;
+package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
-import java.util.List;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
 /*******************************************************************************
- * Version of QFieldMetaData that's meant for transmitting to a frontend.
- * e.g., it excludes backend-only details.
- *
+ ** Special fancy things that fields might do in UIs.
  *******************************************************************************/
-@JsonInclude(Include.NON_NULL)
-public class QFrontendFieldMetaData
+public class FieldAdornment
 {
-   private String     name;
-   private String     label;
-   private QFieldType type;
-   private boolean    isRequired;
-   private boolean    isEditable;
-   private String     possibleValueSourceName;
-   private String     displayFormat;
-
-   private List<FieldAdornment> adornments;
-
-   //////////////////////////////////////////////////////////////////////////////////
-   // do not add setters.  take values from the source-object in the constructor!! //
-   //////////////////////////////////////////////////////////////////////////////////
+   private AdornmentType             type;
+   private Map<String, Serializable> values = new HashMap<>();
 
 
 
    /*******************************************************************************
     ** Constructor
+    **
     *******************************************************************************/
-   public QFrontendFieldMetaData(QFieldMetaData fieldMetaData)
+   public FieldAdornment()
    {
-      this.name = fieldMetaData.getName();
-      this.label = fieldMetaData.getLabel();
-      this.type = fieldMetaData.getType();
-      this.isRequired = fieldMetaData.getIsRequired();
-      this.isEditable = fieldMetaData.getIsEditable();
-      this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
-      this.displayFormat = fieldMetaData.getDisplayFormat();
-      this.adornments = fieldMetaData.getAdornments();
    }
 
 
 
    /*******************************************************************************
-    ** Getter for name
+    ** Constructor
     **
     *******************************************************************************/
-   public String getName()
+   public FieldAdornment(AdornmentType type)
    {
-      return name;
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Constructor
     **
     *******************************************************************************/
-   public String getLabel()
+   public FieldAdornment(AdornmentType type, Map<String, Serializable> values)
    {
-      return label;
+      this.type = type;
+      this.values = values;
    }
 
 
@@ -97,7 +75,7 @@ public class QFrontendFieldMetaData
     ** Getter for type
     **
     *******************************************************************************/
-   public QFieldType getType()
+   public AdornmentType getType()
    {
       return type;
    }
@@ -105,56 +83,85 @@ public class QFrontendFieldMetaData
 
 
    /*******************************************************************************
-    ** Getter for isRequired
+    ** Setter for type
     **
     *******************************************************************************/
-   public boolean getIsRequired()
+   public void setType(AdornmentType type)
    {
-      return isRequired;
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isEditable
+    ** Fluent setter for type
     **
     *******************************************************************************/
-   public boolean getIsEditable()
+   public FieldAdornment withType(AdornmentType type)
    {
-      return isEditable;
+      this.type = type;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for displayFormat
+    ** Getter for values
     **
     *******************************************************************************/
-   public String getDisplayFormat()
+   public Map<String, Serializable> getValues()
    {
-      return displayFormat;
+      return values;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for adornments
+    ** Setter for values
     **
     *******************************************************************************/
-   public List<FieldAdornment> getAdornments()
+   public void setValues(Map<String, Serializable> values)
    {
-      return adornments;
+      this.values = values;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for possibleValueSourceName
+    ** Fluent setter for values
     **
     *******************************************************************************/
-   public String getPossibleValueSourceName()
+   public FieldAdornment withValues(Map<String, Serializable> values)
    {
-      return possibleValueSourceName;
+      this.values = values;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for values
+    **
+    *******************************************************************************/
+   public FieldAdornment withValue(String key, Serializable value)
+   {
+      if(this.values == null)
+      {
+         this.values = new HashMap<>();
+      }
+      this.values.put(key, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for values
+    **
+    *******************************************************************************/
+   public FieldAdornment withValue(Pair<String, Serializable> value)
+   {
+      return (withValue(value.getA(), value.getB()));
    }
 
 }
