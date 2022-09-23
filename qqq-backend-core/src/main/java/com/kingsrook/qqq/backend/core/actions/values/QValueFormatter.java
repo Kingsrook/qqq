@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -42,6 +45,9 @@ public class QValueFormatter
 {
    private static final Logger LOG = LogManager.getLogger(QValueFormatter.class);
 
+   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a");
+   private static DateTimeFormatter dateFormatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
 
    /*******************************************************************************
@@ -60,6 +66,26 @@ public class QValueFormatter
    public String formatValue(String displayFormat, Serializable value)
    {
       return (formatValue(displayFormat, "", value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatDate(LocalDate date)
+   {
+      return (dateFormatter.format(date));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatDateTime(LocalDateTime dateTime)
+   {
+      return (dateTimeFormatter.format(dateTime));
    }
 
 
