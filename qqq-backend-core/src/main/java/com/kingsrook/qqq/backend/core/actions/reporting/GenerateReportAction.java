@@ -29,15 +29,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportViewCustomizer;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
@@ -48,11 +52,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -63,7 +69,16 @@ import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
 
 
 /*******************************************************************************
- ** Action to generate a report!!
+ ** Action to generate a report.
+ **
+ ** A report can contain 1 or more Data Sources - e.g., tables + filters that define
+ ** data that goes into the report.
+ **
+ ** A report can also contain 1 or more Views - e.g., sheets in a spreadsheet workbook.
+ ** (how do those work in non-XLSX formats??).  Views can either be plain tables,
+ ** summaries (like pivot tables, but called summary to avoid confusion with "native"
+ ** pivot tables), or native pivot tables (not initially supported, due to lack of
+ ** support in fastexcel...).
  *******************************************************************************/
 public class GenerateReportAction
 {
@@ -76,7 +91,6 @@ public class GenerateReportAction
    Map<String, AggregatesInterface<?>> totalAggregates         = new HashMap<>();
    Map<String, AggregatesInterface<?>> varianceTotalAggregates = new HashMap<>();
 
-   private boolean                 includeTableView = false;
    private QReportMetaData         report;
    private ReportFormat            reportFormat;
    private ExportStreamerInterface reportStreamer;
@@ -89,19 +103,52 @@ public class GenerateReportAction
    public void execute(ReportInput reportInput) throws QException
    {
       report = reportInput.getInstance().getReport(reportInput.getReportName());
-      Optional<QReportView> tableView = report.getViews().stream().filter(v -> v.getType().equals(ReportType.TABLE)).findFirst();
-
       reportFormat = reportInput.getReportFormat();
       reportStreamer = reportFormat.newReportStreamer();
 
-      if(tableView.isPresent())
+      for(QReportDataSource dataSource : report.getDataSources())
       {
-         includeTableView = true;
-         startTableView(reportInput, tableView.get());
-      }
+         List<QReportView> dataSourceTableViews = report.getViews().stream()
+            .filter(v -> v.getType().equals(ReportType.TABLE))
+            .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
+            .toList();
 
-      gatherData(reportInput);
-      gatherVarianceData(reportInput);
+         List<QReportView> dataSourcePivotViews = report.getViews().stream()
+            .filter(v -> v.getType().equals(ReportType.SUMMARY))
+            .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
+            .toList();
+
+         List<QReportView> dataSourceVariantViews = report.getViews().stream()
+            .filter(v -> v.getType().equals(ReportType.SUMMARY))
+            .filter(v -> v.getVarianceDataSourceName() != null && v.getVarianceDataSourceName().equals(dataSource.getName()))
+            .toList();
+
+         if(dataSourceTableViews.isEmpty())
+         {
+            if(!dataSourcePivotViews.isEmpty() || !dataSourceVariantViews.isEmpty())
+            {
+               gatherData(reportInput, dataSource, null, dataSourcePivotViews, dataSourceVariantViews);
+            }
+         }
+         else
+         {
+            for(QReportView dataSourceTableView : dataSourceTableViews)
+            {
+               if(dataSourceTableView.getViewCustomizer() != null)
+               {
+                  Function<QReportView, QReportView> viewCustomizerFunction = QCodeLoader.getFunction(dataSourceTableView.getViewCustomizer());
+                  if(viewCustomizerFunction instanceof ReportViewCustomizer reportViewCustomizer)
+                  {
+                     reportViewCustomizer.setReportInput(reportInput);
+                  }
+                  dataSourceTableView = viewCustomizerFunction.apply(dataSourceTableView.clone()); // todo - will this throw concurrent mod exception??
+               }
+
+               startTableView(reportInput, dataSource, dataSourceTableView);
+               gatherData(reportInput, dataSource, dataSourceTableView, dataSourcePivotViews, dataSourceVariantViews);
+            }
+         }
+      }
 
       outputPivots(reportInput);
    }
@@ -111,9 +158,9 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startTableView(ReportInput reportInput, QReportView reportView) throws QReportingException
+   private void startTableView(ReportInput reportInput, QReportDataSource dataSource, QReportView reportView) throws QReportingException
    {
-      QTableMetaData table = reportInput.getInstance().getTable(report.getSourceTable());
+      QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
 
       ExportInput exportInput = new ExportInput(reportInput.getInstance());
       exportInput.setSession(reportInput.getSession());
@@ -129,7 +176,14 @@ public class GenerateReportAction
          fields = new ArrayList<>();
          for(QReportField column : reportView.getColumns())
          {
-            fields.add(table.getField(column.getName()));
+            if(column.getIsVirtual())
+            {
+               fields.add(column.toField());
+            }
+            else
+            {
+               fields.add(table.getField(column.getName()));
+            }
          }
       }
       else
@@ -145,50 +199,70 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void gatherData(ReportInput reportInput) throws QException
+   private void gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> pivotViews, List<QReportView> variantViews) throws QException
    {
-      QQueryFilter queryFilter = report.getQueryFilter();
+      QQueryFilter queryFilter = dataSource.getQueryFilter();
       setInputValuesInQueryFilter(reportInput, queryFilter);
 
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // check if this view has a transform step - if so, set it up now and run its pre-run //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      AbstractTransformStep transformStep       = null;
+      RunBackendStepInput   transformStepInput  = null;
+      RunBackendStepOutput  transformStepOutput = null;
+      if(tableView != null && tableView.getRecordTransformStep() != null)
+      {
+         transformStep = QCodeLoader.getBackendStep(AbstractTransformStep.class, tableView.getRecordTransformStep());
+
+         transformStepInput = new RunBackendStepInput(reportInput.getInstance());
+         transformStepInput.setSession(reportInput.getSession());
+         transformStepInput.setValues(reportInput.getInputValues());
+
+         transformStepOutput = new RunBackendStepOutput();
+
+         transformStep.preRun(transformStepInput, transformStepOutput);
+      }
+
+      ////////////////////////////////////////////////////////////////////
+      // create effectively-final versions of these vars for the lambda //
+      ////////////////////////////////////////////////////////////////////
+      AbstractTransformStep finalTransformStep       = transformStep;
+      RunBackendStepInput   finalTransformStepInput  = transformStepInput;
+      RunBackendStepOutput  finalTransformStepOutput = transformStepOutput;
+
+      /////////////////////////////////////////////////////////////////
+      // run a record pipe loop, over the query for this data source //
+      /////////////////////////////////////////////////////////////////
       RecordPipe recordPipe = new RecordPipe();
       new AsyncRecordPipeLoop().run("Report[" + reportInput.getReportName() + "]", null, recordPipe, (callback) ->
       {
          QueryInput queryInput = new QueryInput(reportInput.getInstance());
          queryInput.setSession(reportInput.getSession());
          queryInput.setRecordPipe(recordPipe);
-         queryInput.setTableName(report.getSourceTable());
+         queryInput.setTableName(dataSource.getSourceTable());
          queryInput.setFilter(queryFilter);
          queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
          return (new QueryAction().execute(queryInput));
-      }, () -> consumeRecords(reportInput, recordPipe, false));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void gatherVarianceData(ReportInput reportInput) throws QException
-   {
-      QQueryFilter varianceQueryFilter = report.getVarianceQueryFilter();
-      if(varianceQueryFilter == null)
+      }, () ->
       {
-         return;
+         List<QRecord> records = recordPipe.consumeAvailableRecords();
+         if(finalTransformStep != null)
+         {
+            finalTransformStepInput.setRecords(records);
+            finalTransformStep.run(finalTransformStepInput, finalTransformStepOutput);
+            records = finalTransformStepOutput.getRecords();
+         }
+
+         return (consumeRecords(reportInput, dataSource, records, tableView, pivotViews, variantViews));
+      });
+
+      ////////////////////////////////////////////////
+      // if there's a transformer, run its post-run //
+      ////////////////////////////////////////////////
+      if(transformStep != null)
+      {
+         transformStep.postRun(transformStepInput, transformStepOutput);
       }
-
-      setInputValuesInQueryFilter(reportInput, varianceQueryFilter);
-
-      RecordPipe recordPipe = new RecordPipe();
-      new AsyncRecordPipeLoop().run("Report[" + reportInput.getReportName() + "]", null, recordPipe, (callback) ->
-      {
-         QueryInput queryInput = new QueryInput(reportInput.getInstance());
-         queryInput.setSession(reportInput.getSession());
-         queryInput.setRecordPipe(recordPipe);
-         queryInput.setTableName(report.getSourceTable());
-         queryInput.setFilter(varianceQueryFilter);
-         queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
-         return (new QueryAction().execute(queryInput));
-      }, () -> consumeRecords(reportInput, recordPipe, true));
    }
 
 
@@ -227,11 +301,14 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Integer consumeRecords(ReportInput reportInput, RecordPipe recordPipe, boolean isForVariance) throws QReportingException
+   private Integer consumeRecords(ReportInput reportInput, QReportDataSource dataSource, List<QRecord> records, QReportView tableView, List<QReportView> pivotViews, List<QReportView> variantViews) throws QException
    {
-      List<QRecord> records = recordPipe.consumeAvailableRecords();
+      QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
 
-      if(includeTableView && !isForVariance)
+      ////////////////////////////////////////////////////////////////////////////
+      // if this record goes on a table view, add it to the report streamer now //
+      ////////////////////////////////////////////////////////////////////////////
+      if(tableView != null)
       {
          reportStreamer.addRecords(records);
       }
@@ -239,20 +316,38 @@ public class GenerateReportAction
       //////////////////////////////
       // do aggregates for pivots //
       //////////////////////////////
-      QTableMetaData table = reportInput.getInstance().getTable(report.getSourceTable());
-      report.getViews().stream().filter(v -> v.getType().equals(ReportType.PIVOT)).forEach((view) ->
+      if(pivotViews != null)
       {
-         addRecordsToPivotAggregates(view, table, records, isForVariance ? variancePivotAggregates : pivotAggregates);
-      });
+         for(QReportView pivotView : pivotViews)
+         {
+            addRecordsToPivotAggregates(pivotView, table, records, pivotAggregates);
+         }
+      }
+
+      if(variantViews != null)
+      {
+         for(QReportView variantView : variantViews)
+         {
+            addRecordsToPivotAggregates(variantView, table, records, variancePivotAggregates);
+         }
+      }
 
       ///////////////////////////////////////////
       // do totals too, if any views want them //
       ///////////////////////////////////////////
-      if(report.getViews().stream().filter(v -> v.getType().equals(ReportType.PIVOT)).anyMatch(QReportView::getTotalRow))
+      if(pivotViews != null && pivotViews.stream().anyMatch(QReportView::getTotalRow))
       {
          for(QRecord record : records)
          {
-            addRecordToAggregatesMap(table, record, isForVariance ? varianceTotalAggregates : totalAggregates);
+            addRecordToAggregatesMap(table, record, totalAggregates);
+         }
+      }
+
+      if(variantViews != null && variantViews.stream().anyMatch(QReportView::getTotalRow))
+      {
+         for(QRecord record : records)
+         {
+            addRecordToAggregatesMap(table, record, varianceTotalAggregates);
          }
       }
 
@@ -337,12 +432,12 @@ public class GenerateReportAction
     *******************************************************************************/
    private void outputPivots(ReportInput reportInput) throws QReportingException, QFormulaException
    {
-      QTableMetaData table = reportInput.getInstance().getTable(report.getSourceTable());
-
-      List<QReportView> reportViews = report.getViews().stream().filter(v -> v.getType().equals(ReportType.PIVOT)).toList();
+      List<QReportView> reportViews = report.getViews().stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
       for(QReportView view : reportViews)
       {
-         PivotOutput pivotOutput = computePivotRowsForView(reportInput, view, table);
+         QReportDataSource dataSource  = report.getDataSource(view.getDataSourceName());
+         QTableMetaData    table       = reportInput.getInstance().getTable(dataSource.getSourceTable());
+         PivotOutput       pivotOutput = computePivotRowsForView(reportInput, view, table);
 
          ExportInput exportInput = new ExportInput(reportInput.getInstance());
          exportInput.setSession(reportInput.getSession());
@@ -564,11 +659,14 @@ public class GenerateReportAction
 
          variableInterpreter.addValueMap("pivot", getPivotValuesForInterpreter(totalAggregates));
          variableInterpreter.addValueMap("variancePivot", getPivotValuesForInterpreter(varianceTotalAggregates));
+         HashMap<String, Serializable> thisRowValues = new HashMap<>();
+         variableInterpreter.addValueMap("thisRow", thisRowValues);
 
          for(QReportField column : view.getColumns())
          {
             Serializable serializable = getValueForColumn(variableInterpreter, column);
             totalRow.setValue(column.getName(), serializable);
+            thisRowValues.put(column.getName(), serializable);
 
             String formatted = valueFormatter.formatValue(column.getDisplayFormat(), serializable);
             System.out.printf("%25s", formatted);

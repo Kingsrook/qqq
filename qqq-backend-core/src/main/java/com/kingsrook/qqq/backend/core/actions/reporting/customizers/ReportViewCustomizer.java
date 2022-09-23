@@ -19,24 +19,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.processes;
+package com.kingsrook.qqq.backend.core.actions.reporting.customizers;
+
+
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 
 
 /*******************************************************************************
- ** Types of UI Components that can be specified in frontend process steps.
+ **
  *******************************************************************************/
-public enum QComponentType
+public interface ReportViewCustomizer extends Function<QReportView, QReportView>
 {
-   HELP_TEXT,
-   BULK_EDIT_FORM,
-   VALIDATION_REVIEW_SCREEN,
-   EDIT_FORM,
-   VIEW_FORM,
-   DOWNLOAD_FORM,
-   RECORD_LIST,
-   PROCESS_SUMMARY_RESULTS,
-   GOOGLE_DRIVE_SELECT_FOLDER;
-   ///////////////////////////////////////////////////////////////////////////
-   // keep these values in sync with QComponentType.ts in qqq-frontend-core //
-   ///////////////////////////////////////////////////////////////////////////
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void setReportInput(ReportInput reportInput);
+
 }

@@ -266,7 +266,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   static String nameToLabel(String name)
+   public static String nameToLabel(String name)
    {
       if(!StringUtils.hasContent(name))
       {

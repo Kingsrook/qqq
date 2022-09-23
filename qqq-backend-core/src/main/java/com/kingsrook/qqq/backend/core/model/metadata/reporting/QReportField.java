@@ -22,16 +22,40 @@
 package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+
+
 /*******************************************************************************
  ** Field within a report
  *******************************************************************************/
 public class QReportField
 {
-   private String name;
-   private String label;
-   private String formula;
-   private String displayFormat;
-   // todo - type?
+   private String     name;
+   private String     label;
+   private QFieldType type;
+   private String     formula;
+   private String     displayFormat;
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Noew: new attributes added here probably belong in the toField method //
+   ///////////////////////////////////////////////////////////////////////////
+
+   private boolean isVirtual = false;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData toField()
+   {
+      return new QFieldMetaData()
+         .withName(name)
+         .withLabel(label)
+         .withType(type)
+         .withDisplayFormat(displayFormat);
+   }
 
 
 
@@ -104,6 +128,40 @@ public class QReportField
 
 
    /*******************************************************************************
+    ** Getter for type
+    **
+    *******************************************************************************/
+   public QFieldType getType()
+   {
+      return type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for type
+    **
+    *******************************************************************************/
+   public void setType(QFieldType type)
+   {
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    **
+    *******************************************************************************/
+   public QReportField withType(QFieldType type)
+   {
+      this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for formula
     **
     *******************************************************************************/
@@ -169,4 +227,37 @@ public class QReportField
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for isVirtual
+    **
+    *******************************************************************************/
+   public boolean getIsVirtual()
+   {
+      return isVirtual;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isVirtual
+    **
+    *******************************************************************************/
+   public void setIsVirtual(boolean isVirtual)
+   {
+      this.isVirtual = isVirtual;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isVirtual
+    **
+    *******************************************************************************/
+   public QReportField withIsVirtual(boolean isVirtual)
+   {
+      this.isVirtual = isVirtual;
+      return (this);
+   }
 }

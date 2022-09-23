@@ -50,18 +50,25 @@ public class FormulaInterpreter
     *******************************************************************************/
    public static Serializable interpretFormula(QMetaDataVariableInterpreter variableInterpreter, String formula) throws QFormulaException
    {
-      List<Serializable> results = interpretFormula(variableInterpreter, formula, new AtomicInteger(0));
-      if(results.size() == 1)
+      try
       {
-         return (results.get(0));
+         List<Serializable> results = interpretFormula(variableInterpreter, formula, new AtomicInteger(0));
+         if(results.size() == 1)
+         {
+            return (results.get(0));
+         }
+         else if(results.isEmpty())
+         {
+            throw (new QFormulaException("No results from formula"));
+         }
+         else
+         {
+            throw (new QFormulaException("More than 1 result from formula"));
+         }
       }
-      else if(results.isEmpty())
+      catch(Exception e)
       {
-         throw (new QFormulaException("No results from formula"));
-      }
-      else
-      {
-         throw (new QFormulaException("More than 1 result from formula"));
+         throw (new QFormulaException("Error interpreting formula [" + formula + "]", e));
       }
    }
 

@@ -49,7 +49,7 @@ class BasicRunReportProcessTest
    void testRunReport() throws QException
    {
       QInstance        instance         = TestUtils.defineInstance();
-      QReportMetaData  report           = GenerateReportActionTest.defineReport(true);
+      QReportMetaData  report           = GenerateReportActionTest.definePersonShoesPivotReport(true);
       QProcessMetaData runReportProcess = BasicRunReportProcess.defineProcessMetaData();
 
       instance.addReport(report);

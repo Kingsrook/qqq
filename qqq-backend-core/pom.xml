@@ -98,6 +98,23 @@
          <version>5.2.2</version>
       </dependency>
 
+      <!-- the next 3 deps are being added for google drive support -->
+      <dependency>
+         <groupId>com.google.api-client</groupId>
+         <artifactId>google-api-client</artifactId>
+         <version>1.35.2</version>
+      </dependency>
+      <dependency>
+         <groupId>com.google.auth</groupId>
+         <artifactId>google-auth-library-oauth2-http</artifactId>
+         <version>1.11.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.google.apis</groupId>
+         <artifactId>google-api-services-drive</artifactId>
+         <version>v3-rev20220815-2.0.0</version>
+      </dependency>
+
       <!-- Common deps for all qqq modules -->
       <dependency>
          <groupId>org.apache.maven.plugins</groupId>

@@ -398,12 +398,28 @@ public class CollectionUtils
       else
       {
          endAt = startAt + limit;
-         if (endAt > list.size())
+         if(endAt > list.size())
          {
             endAt = list.size();
          }
       }
 
       return list.subList(startAt, endAt);
+   }
+
+
+
+   /*******************************************************************************
+    ** Returns the input list, unless it was null - in which case a new array list is returned.
+    **
+    ** Meant to help avoid null checks on foreach loops.
+    *******************************************************************************/
+   public static <T> List<T> nonNullList(List<T> list)
+   {
+      if(list == null)
+      {
+         return (new ArrayList<>());
+      }
+      return (list);
    }
 }

@@ -37,7 +37,6 @@ public class QFrontendReportMetaData
 {
    private String name;
    private String label;
-   private String tableName;
    private String processName;
 
    private String iconName;
@@ -55,7 +54,6 @@ public class QFrontendReportMetaData
    {
       this.name = reportMetaData.getName();
       this.label = reportMetaData.getLabel();
-      this.tableName = reportMetaData.getSourceTable();
       this.processName = reportMetaData.getProcessName();
 
       if(reportMetaData.getIcon() != null)
@@ -84,17 +82,6 @@ public class QFrontendReportMetaData
    public String getLabel()
    {
       return label;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for primaryKeyField
-    **
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return tableName;
    }
 
 

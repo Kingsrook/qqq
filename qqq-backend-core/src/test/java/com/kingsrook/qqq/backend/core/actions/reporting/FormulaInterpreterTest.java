@@ -93,12 +93,12 @@ class FormulaInterpreterTest
       QMetaDataVariableInterpreter vi = new QMetaDataVariableInterpreter();
       vi.addValueMap("input", Map.of("i", 5, "c", 'c'));
 
-      assertThatThrownBy(() -> interpretFormula(vi, "")).hasMessageContaining("No results");
-      assertThatThrownBy(() -> interpretFormula(vi, "NOT-A-FUN(1,2)")).hasMessageContaining("unrecognized expression");
-      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1)")).hasMessageContaining("Wrong number of arguments");
-      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1,2,3)")).hasMessageContaining("Wrong number of arguments");
-      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1,A)")).hasMessageContaining("[A] as a number");
-      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1,${input.c})")).hasMessageContaining("[c] as a number");
+      assertThatThrownBy(() -> interpretFormula(vi, "")).hasRootCauseMessage("No results from formula");
+      assertThatThrownBy(() -> interpretFormula(vi, "NOT-A-FUN(1,2)")).hasRootCauseMessage("Unable to evaluate unrecognized expression: NOT-A-FUN");
+      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1)")).hasRootCauseMessage("Wrong number of arguments (required: 2, received: 1)");
+      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1,2,3)")).hasRootCauseMessage("Wrong number of arguments (required: 2, received: 3)");
+      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1,A)")).hasRootCauseMessage("Could not process [A] as a number");
+      assertThatThrownBy(() -> interpretFormula(vi, "ADD(1,${input.c})")).hasRootCauseMessage("Could not process [c] as a number");
       // todo - bad syntax (e.g., missing ')'
    }
 
@@ -168,7 +168,7 @@ class FormulaInterpreterTest
       assertTrue((Boolean) interpretFormula(vi, "GTE(${input.two},${input.one})"));
 
       // todo - google sheets compares strings differently...
-      assertThatThrownBy(() -> interpretFormula(vi, "LT(${input.foo},${input.one})")).hasMessageContaining("[bar] as a number");
+      assertThatThrownBy(() -> interpretFormula(vi, "LT(${input.foo},${input.one})")).hasRootCauseMessage("Could not process [bar] as a number");
    }
 
 

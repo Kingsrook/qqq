@@ -46,8 +46,9 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
    private ExportInput          exportInput;
    private List<QFieldMetaData> fields;
 
-   private static List<Map<String, String>> list    = new ArrayList<>();
-   private static List<String>              headers = new ArrayList<>();
+   private static Map<String, List<Map<String, String>>> rows    = new LinkedHashMap<>();
+   private static Map<String, List<String>>              headers = new LinkedHashMap<>();
+   private static String                                 currentSheetLabel;
 
 
 
@@ -61,12 +62,24 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void reset()
+   {
+      rows.clear();
+      headers.clear();
+      currentSheetLabel = null;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for list
     **
     *******************************************************************************/
-   public static List<Map<String, String>> getList()
+   public static List<Map<String, String>> getList(String name)
    {
-      return (list);
+      return (rows.get(name));
    }
 
 
@@ -80,10 +93,13 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
       this.exportInput = exportInput;
       this.fields = fields;
 
-      headers = new ArrayList<>();
+      currentSheetLabel = label;
+
+      rows.put(label, new ArrayList<>());
+      headers.put(label, new ArrayList<>());
       for(QFieldMetaData field : fields)
       {
-         headers.add(field.getLabel());
+         headers.get(label).add(field.getLabel());
       }
    }
 
@@ -112,10 +128,10 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
    private void addRecord(QRecord qRecord)
    {
       Map<String, String> row = new LinkedHashMap<>();
-      list.add(row);
+      rows.get(currentSheetLabel).add(row);
       for(int i = 0; i < fields.size(); i++)
       {
-         row.put(headers.get(i), qRecord.getValueString(fields.get(i).getName()));
+         row.put(headers.get(currentSheetLabel).get(i), qRecord.getValueString(fields.get(i).getName()));
       }
    }
 
@@ -125,7 +141,7 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void addTotalsRow(QRecord record) throws QReportingException
+   public void addTotalsRow(QRecord record)
    {
       addRecord(record);
    }

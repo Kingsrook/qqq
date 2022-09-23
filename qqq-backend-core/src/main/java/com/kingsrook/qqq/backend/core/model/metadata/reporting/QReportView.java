@@ -22,17 +22,21 @@
 package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QReportView
+public class QReportView implements Cloneable
 {
    private String               name;
    private String               label;
+   private String               dataSourceName;
+   private String               varianceDataSourceName;
    private ReportType           type;
    private String               titleFormat;
    private List<String>         titleFields;
@@ -41,6 +45,13 @@ public class QReportView
    private boolean              pivotSubTotals = false;
    private List<QReportField>   columns;
    private List<QFilterOrderBy> orderByFields;
+
+   private QCodeReference recordTransformStep;
+   private QCodeReference viewCustomizer;
+
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // Note:  This class is Cloneable - think about if new fields added here need deep-copied in the clone method! //
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -107,6 +118,74 @@ public class QReportView
    public QReportView withLabel(String label)
    {
       this.label = label;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for dataSourceName
+    **
+    *******************************************************************************/
+   public String getDataSourceName()
+   {
+      return dataSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dataSourceName
+    **
+    *******************************************************************************/
+   public void setDataSourceName(String dataSourceName)
+   {
+      this.dataSourceName = dataSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dataSourceName
+    **
+    *******************************************************************************/
+   public QReportView withDataSourceName(String dataSourceName)
+   {
+      this.dataSourceName = dataSourceName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for varianceDataSourceName
+    **
+    *******************************************************************************/
+   public String getVarianceDataSourceName()
+   {
+      return varianceDataSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for varianceDataSourceName
+    **
+    *******************************************************************************/
+   public void setVarianceDataSourceName(String varianceDataSourceName)
+   {
+      this.varianceDataSourceName = varianceDataSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for varianceDataSourceName
+    **
+    *******************************************************************************/
+   public QReportView withVarianceDataSourceName(String varianceDataSourceName)
+   {
+      this.varianceDataSourceName = varianceDataSourceName;
       return (this);
    }
 
@@ -382,4 +461,114 @@ public class QReportView
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for recordTransformerStep
+    **
+    *******************************************************************************/
+   public QCodeReference getRecordTransformStep()
+   {
+      return recordTransformStep;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordTransformerStep
+    **
+    *******************************************************************************/
+   public void setRecordTransformStep(QCodeReference recordTransformStep)
+   {
+      this.recordTransformStep = recordTransformStep;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordTransformerStep
+    **
+    *******************************************************************************/
+   public QReportView withRecordTransformStep(QCodeReference recordTransformerStep)
+   {
+      this.recordTransformStep = recordTransformerStep;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for viewCustomizer
+    **
+    *******************************************************************************/
+   public QCodeReference getViewCustomizer()
+   {
+      return viewCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for viewCustomizer
+    **
+    *******************************************************************************/
+   public void setViewCustomizer(QCodeReference viewCustomizer)
+   {
+      this.viewCustomizer = viewCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for viewCustomizer
+    **
+    *******************************************************************************/
+   public QReportView withViewCustomizer(QCodeReference viewCustomizer)
+   {
+      this.viewCustomizer = viewCustomizer;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QReportView clone()
+   {
+      try
+      {
+         QReportView clone = (QReportView) super.clone();
+
+         /////////////////////////
+         // copy any lists, etc //
+         /////////////////////////
+         if(titleFields != null)
+         {
+            clone.setTitleFields(new ArrayList<>(titleFields));
+         }
+
+         if(pivotFields != null)
+         {
+            clone.setPivotFields(new ArrayList<>(pivotFields));
+         }
+
+         if(columns != null)
+         {
+            clone.setColumns(new ArrayList<>(columns));
+         }
+
+         if(orderByFields != null)
+         {
+            clone.setOrderByFields(new ArrayList<>(orderByFields));
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }

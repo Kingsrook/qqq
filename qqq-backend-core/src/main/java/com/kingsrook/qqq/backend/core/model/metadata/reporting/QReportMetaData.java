@@ -23,10 +23,10 @@ package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -34,14 +34,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
  *******************************************************************************/
 public class QReportMetaData implements QAppChildMetaData
 {
-   private String               name;
-   private String               label;
-   private List<QFieldMetaData> inputFields;
-   private String               sourceTable;
+   private String name;
+   private String label;
+
    private String               processName;
-   private QQueryFilter         queryFilter;
-   private QQueryFilter         varianceQueryFilter;
-   private List<QReportView>    views;
+   private List<QFieldMetaData> inputFields;
+
+   private List<QReportDataSource> dataSources;
+   private List<QReportView>       views;
 
    private String parentAppName;
    private QIcon  icon;
@@ -151,40 +151,6 @@ public class QReportMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Getter for sourceTable
-    **
-    *******************************************************************************/
-   public String getSourceTable()
-   {
-      return sourceTable;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for sourceTable
-    **
-    *******************************************************************************/
-   public void setSourceTable(String sourceTable)
-   {
-      this.sourceTable = sourceTable;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for sourceTable
-    **
-    *******************************************************************************/
-   public QReportMetaData withSourceTable(String sourceTable)
-   {
-      this.sourceTable = sourceTable;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for processName
     **
     *******************************************************************************/
@@ -215,72 +181,38 @@ public class QReportMetaData implements QAppChildMetaData
       this.processName = processName;
       return (this);
    }
-  
+
 
 
    /*******************************************************************************
-    ** Getter for queryFilter
+    ** Getter for dataSources
     **
     *******************************************************************************/
-   public QQueryFilter getQueryFilter()
+   public List<QReportDataSource> getDataSources()
    {
-      return queryFilter;
+      return dataSources;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryFilter
+    ** Setter for dataSources
     **
     *******************************************************************************/
-   public void setQueryFilter(QQueryFilter queryFilter)
+   public void setDataSources(List<QReportDataSource> dataSources)
    {
-      this.queryFilter = queryFilter;
+      this.dataSources = dataSources;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryFilter
+    ** Fluent setter for dataSources
     **
     *******************************************************************************/
-   public QReportMetaData withQueryFilter(QQueryFilter queryFilter)
+   public QReportMetaData withDataSources(List<QReportDataSource> dataSources)
    {
-      this.queryFilter = queryFilter;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for varianceQueryFilter
-    **
-    *******************************************************************************/
-   public QQueryFilter getVarianceQueryFilter()
-   {
-      return varianceQueryFilter;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for varianceQueryFilter
-    **
-    *******************************************************************************/
-   public void setVarianceQueryFilter(QQueryFilter varianceQueryFilter)
-   {
-      this.varianceQueryFilter = varianceQueryFilter;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for varianceQueryFilter
-    **
-    *******************************************************************************/
-   public QReportMetaData withVarianceQueryFilter(QQueryFilter varianceQueryFilter)
-   {
-      this.varianceQueryFilter = varianceQueryFilter;
+      this.dataSources = dataSources;
       return (this);
    }
 
@@ -372,6 +304,24 @@ public class QReportMetaData implements QAppChildMetaData
    {
       this.icon = icon;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QReportDataSource getDataSource(String dataSourceName)
+   {
+      for(QReportDataSource dataSource : CollectionUtils.nonNullList(dataSources))
+      {
+         if(dataSource.getName().equals(dataSourceName))
+         {
+            return (dataSource);
+         }
+      }
+
+      return (null);
    }
 
 }
