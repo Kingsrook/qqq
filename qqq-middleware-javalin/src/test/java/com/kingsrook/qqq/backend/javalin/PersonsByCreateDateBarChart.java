@@ -27,6 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
 
 
@@ -39,7 +40,7 @@ public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
     **
     *******************************************************************************/
    @Override
-   public Object render(RenderWidgetInput input) throws QException
+   public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
       try
       {
@@ -61,7 +62,7 @@ public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
          labels.add("May 2022");
          data.add(64);
 
-         return (new ChartData("Persons created per Month", null, "Person records", labels, data));
+         return (new RenderWidgetOutput(new ChartData("Persons created per Month", null, "Person records", labels, data)));
       }
       catch(Exception e)
       {
