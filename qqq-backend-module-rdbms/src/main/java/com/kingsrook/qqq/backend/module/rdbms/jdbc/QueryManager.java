@@ -311,7 +311,7 @@ public class QueryManager
          ResultSetMetaData metaData = resultSet.getMetaData();
          for(int i = 1; i <= metaData.getColumnCount(); i++)
          {
-            row.put(metaData.getColumnName(i), getObject(resultSet, i));
+            row.put(metaData.getColumnLabel(i), getObject(resultSet, i));
          }
       }
 
