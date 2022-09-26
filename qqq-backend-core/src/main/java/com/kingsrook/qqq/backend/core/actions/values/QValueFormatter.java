@@ -164,7 +164,7 @@ public class QValueFormatter
       ///////////////////////////////////////////////////////////////////////
       try
       {
-         return formatStringWithFields(table.getRecordLabelFormat(), table.getRecordLabelFields(), record.getValues());
+         return formatStringWithFields(table.getRecordLabelFormat(), table.getRecordLabelFields(), record.getDisplayValues(), record.getValues());
       }
       catch(Exception e)
       {
@@ -177,10 +177,21 @@ public class QValueFormatter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String formatStringWithFields(String formatString, List<String> formatFields, Map<String, Serializable> valueMap)
+   public String formatStringWithFields(String formatString, List<String> formatFields, Map<String, String> displayValueMap, Map<String, Serializable> rawValueMap)
    {
       List<Serializable> values = formatFields.stream()
-         .map(valueMap::get)
+         .map(fieldName ->
+         {
+            ///////////////////////////////////////////////////////////////////////////
+            // if there's a display value set, then use it.  Else, use the raw value //
+            ///////////////////////////////////////////////////////////////////////////
+            String displayValue = displayValueMap.get(fieldName);
+            if(displayValue != null)
+            {
+               return (displayValue);
+            }
+            return rawValueMap.get(fieldName);
+         })
          .map(v -> v == null ? "" : v)
          .toList();
       return (formatString.formatted(values.toArray()));
@@ -243,8 +254,11 @@ public class QValueFormatter
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            String formattedValue = formatValue(field, record.getValue(field.getName()));
-            record.setDisplayValue(field.getName(), formattedValue);
+            if(record.getDisplayValue(field.getName()) == null)
+            {
+               String formattedValue = formatValue(field, record.getValue(field.getName()));
+               record.setDisplayValue(field.getName(), formattedValue);
+            }
          }
 
          record.setRecordLabel(formatRecordLabel(table, record));
