@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Meta-data to represent a single field in a table.
  **
  *******************************************************************************/
-public class QFieldMetaData
+public class QFieldMetaData implements Cloneable
 {
    private String     name;
    private String     label;
@@ -57,6 +57,29 @@ public class QFieldMetaData
    private String       possibleValueSourceName;
 
    private List<FieldAdornment> adornments;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QFieldMetaData clone()
+   {
+      try
+      {
+         QFieldMetaData clone = (QFieldMetaData) super.clone();
+         if(adornments != null)
+         {
+            clone.setAdornments(new ArrayList<>(adornments));
+         }
+         return (clone);
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new RuntimeException(e);
+      }
+   }
 
 
 

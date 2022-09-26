@@ -106,8 +106,14 @@ public class GenerateReportAction
       reportFormat = reportInput.getReportFormat();
       reportStreamer = reportFormat.newReportStreamer();
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // foreach data source, do a query (possibly more than 1, if it goes to multiple table views) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
       for(QReportDataSource dataSource : report.getDataSources())
       {
+         //////////////////////////////////////////////////////////////////////////////
+         // make a list of the views that use this data source for various purposes. //
+         //////////////////////////////////////////////////////////////////////////////
          List<QReportView> dataSourceTableViews = report.getViews().stream()
             .filter(v -> v.getType().equals(ReportType.TABLE))
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
@@ -123,6 +129,9 @@ public class GenerateReportAction
             .filter(v -> v.getVarianceDataSourceName() != null && v.getVarianceDataSourceName().equals(dataSource.getName()))
             .toList();
 
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if this data source isn't used for any table views, but it is used for one or more pivot views (possibly as a variant), then run the query, gathering pivot data. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(dataSourceTableViews.isEmpty())
          {
             if(!dataSourcePivotViews.isEmpty() || !dataSourceVariantViews.isEmpty())
@@ -132,8 +141,14 @@ public class GenerateReportAction
          }
          else
          {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // else, foreach table view this data source is used for, run the data source's query //
+            ////////////////////////////////////////////////////////////////////////////////////////
             for(QReportView dataSourceTableView : dataSourceTableViews)
             {
+               /////////////////////////////////////////////////////////////////////////////////////////
+               // if there's a view customizer, run it (e.g., to customize the columns in the report) //
+               /////////////////////////////////////////////////////////////////////////////////////////
                if(dataSourceTableView.getViewCustomizer() != null)
                {
                   Function<QReportView, QReportView> viewCustomizerFunction = QCodeLoader.getFunction(dataSourceTableView.getViewCustomizer());
@@ -141,9 +156,12 @@ public class GenerateReportAction
                   {
                      reportViewCustomizer.setReportInput(reportInput);
                   }
-                  dataSourceTableView = viewCustomizerFunction.apply(dataSourceTableView.clone()); // todo - will this throw concurrent mod exception??
+                  dataSourceTableView = viewCustomizerFunction.apply(dataSourceTableView.clone());
                }
 
+               ////////////////////////////////////////////////////////////////////////////////////
+               // start the table-view (e.g., open this tab in xlsx) and then run the query-loop //
+               ////////////////////////////////////////////////////////////////////////////////////
                startTableView(reportInput, dataSource, dataSourceTableView);
                gatherData(reportInput, dataSource, dataSourceTableView, dataSourcePivotViews, dataSourceVariantViews);
             }
@@ -168,8 +186,6 @@ public class GenerateReportAction
       exportInput.setFilename(reportInput.getFilename());
       exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
-      // todo! reportStreamer.setDisplayFormats(getDisplayFormatMap(view));
-
       List<QFieldMetaData> fields;
       if(CollectionUtils.nullSafeHasContents(reportView.getColumns()))
       {
@@ -182,7 +198,12 @@ public class GenerateReportAction
             }
             else
             {
-               fields.add(table.getField(column.getName()));
+               QFieldMetaData field = table.getField(column.getName()).clone();
+               if(StringUtils.hasContent(column.getLabel()))
+               {
+                  field.setLabel(column.getLabel());
+               }
+               fields.add(field);
             }
          }
       }
