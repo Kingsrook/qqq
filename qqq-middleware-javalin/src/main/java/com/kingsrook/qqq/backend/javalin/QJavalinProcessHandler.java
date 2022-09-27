@@ -231,7 +231,8 @@ public class QJavalinProcessHandler
       if(userFacingException != null)
       {
          LOG.info("User-facing exception in process", userFacingException);
-         resultForCaller.put("error", userFacingException.getMessage()); // todo - put this somewhere else (make error an object w/ user-facing and/or other error?)
+         resultForCaller.put("error", userFacingException.getMessage());
+         resultForCaller.put("userFacingError", userFacingException.getMessage());
       }
       else
       {

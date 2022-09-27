@@ -34,12 +34,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
@@ -73,12 +77,24 @@ public class QInstanceEnricher
 {
    private static final Logger LOG = LogManager.getLogger(QInstanceEnricher.class);
 
+   private final QInstance qInstance;
+
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void enrich(QInstance qInstance)
+   public QInstanceEnricher(QInstance qInstance)
+   {
+      this.qInstance = qInstance;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void enrich()
    {
       if(qInstance.getTables() != null)
       {
@@ -210,6 +226,61 @@ public class QInstanceEnricher
       {
          field.setLabel(nameToLabel(field.getName()));
       }
+
+      /////////////////////////////////////////////////////////////////////////
+      // if this field has a possibleValueSource                             //
+      // and that PVS exists in the instance                                 //
+      // and it's a table-type PVS and the table name is set                 //
+      // and it's a valid table in the instant, and the table is in some app //
+      // and the field doesn't have a LINK adornment                         //
+      // then add a link-to-record-from-table adornment to the field.        //
+      /////////////////////////////////////////////////////////////////////////
+      if(StringUtils.hasContent(field.getPossibleValueSourceName()))
+      {
+         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+         if(possibleValueSource != null)
+         {
+            String tableName = possibleValueSource.getTableName();
+            if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()) && StringUtils.hasContent(tableName))
+            {
+               if(qInstance.getTable(tableName) != null && doesAnyAppHaveTable(tableName))
+               {
+                  if(field.getAdornments() == null || field.getAdornments().stream().noneMatch(a -> AdornmentType.LINK.equals(a.getType())))
+                  {
+                     field.withFieldAdornment(new FieldAdornment().withType(AdornmentType.LINK)
+                        .withValue(AdornmentType.LinkValues.TO_RECORD_FROM_TABLE, tableName));
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean doesAnyAppHaveTable(String tableName)
+   {
+      if(qInstance.getApps() != null)
+      {
+         for(QAppMetaData app : qInstance.getApps().values())
+         {
+            if(app.getChildren() != null)
+            {
+               for(QAppChildMetaData child : app.getChildren())
+               {
+                  if(child instanceof QTableMetaData && tableName.equals(child.getName()))
+                  {
+                     return (true);
+                  }
+               }
+            }
+         }
+      }
+
+      return (false);
    }
 
 

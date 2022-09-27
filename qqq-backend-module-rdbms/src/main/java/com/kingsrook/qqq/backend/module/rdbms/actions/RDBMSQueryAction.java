@@ -204,7 +204,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          }
          case DATE_TIME:
          {
-            return (QueryManager.getLocalDateTime(resultSet, i));
+            return (QueryManager.getInstant(resultSet, i));
          }
          case BOOLEAN:
          {

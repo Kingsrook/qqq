@@ -94,7 +94,7 @@ public class QInstanceValidator
          // before validation, enrich the object (e.g., to fill in values that the user doesn't have to //
          /////////////////////////////////////////////////////////////////////////////////////////////////
          // TODO - possible point of customization (use a different enricher, or none, or pass it options).
-         new QInstanceEnricher().enrich(qInstance);
+         new QInstanceEnricher(qInstance).enrich();
       }
       catch(Exception e)
       {

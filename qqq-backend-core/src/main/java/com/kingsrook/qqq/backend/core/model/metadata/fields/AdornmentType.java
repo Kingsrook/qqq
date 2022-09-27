@@ -43,7 +43,8 @@ public enum AdornmentType
     *******************************************************************************/
    public interface LinkValues
    {
-      String TARGET = "target";
+      String TARGET               = "target";
+      String TO_RECORD_FROM_TABLE = "toRecordFromTable";
    }
 
 
