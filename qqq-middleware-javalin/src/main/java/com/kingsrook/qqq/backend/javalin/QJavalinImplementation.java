@@ -403,9 +403,21 @@ public class QJavalinImplementation
          Map<?, ?> map = context.bodyAsClass(Map.class);
          for(Map.Entry<?, ?> entry : map.entrySet())
          {
-            if(StringUtils.hasContent(String.valueOf(entry.getValue())))
+            String fieldName = ValueUtils.getValueAsString(entry.getKey());
+            Object value     = entry.getValue();
+
+            if(StringUtils.hasContent(String.valueOf(value)))
             {
-               record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
+               record.setValue(fieldName, (Serializable) value);
+            }
+            else if("".equals(value))
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // if frontend sent us an empty string - put a null in the record's value map.                   //
+               // this could potentially be changed to be type-specific (e.g., store an empty-string for STRING //
+               // fields, but null for INTEGER, etc) - but, who really wants empty-string in database anyway?   //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               record.setValue(fieldName, null);
             }
          }
 

@@ -338,7 +338,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    {
       Map<String, Serializable> body = new HashMap<>();
       body.put("firstName", "Free");
-      //? body.put("id", 4);
+      body.put("birthDate", "");
 
       HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
          .header("Content-Type", "application/json")
@@ -356,7 +356,16 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject values0 = record0.getJSONObject("values");
       assertEquals(4, values0.getInt("id"));
       assertEquals("Free", values0.getString("firstName"));
-      // mmm, whole record isn't loaded.  should it be? assertEquals("Samples", values0.getString("lastName"));
+
+      ///////////////////////////////////////////////////////////////////
+      // re-GET the record, and validate that birthDate was nulled out //
+      ///////////////////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/4").asString();
+      assertEquals(200, response.getStatus());
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("values"));
+      JSONObject values = jsonObject.getJSONObject("values");
+      assertFalse(values.has("birthDate"));
    }
 
 
