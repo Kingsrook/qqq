@@ -23,32 +23,35 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 import java.util.List;
-import java.util.Map;
 
 
 /*******************************************************************************
  ** Model containing datastructure expected by frontend bar chart widget
  **
  *******************************************************************************/
-public class TableData implements QWidget
+public class MultiStatisticsData implements QWidget
 {
    private String                    title;
-   private String                    noRowsFoundHTML;
-   private List<Column>              columns;
-   private List<Map<String, Object>> rows;
-   private List<Map<String, String>> dropdownOptions;
+   private List<StatisticsGroupData> statisticsGroupData;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public TableData(String title, List<Column> columns, List<Map<String, Object>> rows, List<Map<String, String>> dropdownOptions)
+   public MultiStatisticsData()
    {
-      setTitle(title);
-      setColumns(columns);
-      setRows(rows);
-      setDropdownOptions(dropdownOptions);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public MultiStatisticsData(String title, List<StatisticsGroupData> statisticsGroupData)
+   {
+      this.title = title;
+      this.statisticsGroupData = statisticsGroupData;
    }
 
 
@@ -59,7 +62,7 @@ public class TableData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "table";
+      return "multiStatistics";
    }
 
 
@@ -90,7 +93,7 @@ public class TableData implements QWidget
     ** Fluent setter for title
     **
     *******************************************************************************/
-   public TableData withTitle(String title)
+   public MultiStatisticsData withTitle(String title)
    {
       this.title = title;
       return (this);
@@ -99,136 +102,34 @@ public class TableData implements QWidget
 
 
    /*******************************************************************************
-    ** Getter for columns
+    ** Getter for statisticsGroupData
     **
     *******************************************************************************/
-   public List<Column> getColumns()
+   public List<StatisticsGroupData> getStatisticsGroupData()
    {
-      return columns;
+      return statisticsGroupData;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for columns
+    ** Setter for statisticsGroupData
     **
     *******************************************************************************/
-   public void setColumns(List<Column> columns)
+   public void setStatisticsGroupData(List<StatisticsGroupData> statisticsGroupData)
    {
-      this.columns = columns;
+      this.statisticsGroupData = statisticsGroupData;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for columns
+    ** Fluent setter for statisticsGroupData
     **
     *******************************************************************************/
-   public TableData withColumns(List<Column> columns)
+   public MultiStatisticsData withStatisticsGroupData(List<StatisticsGroupData> statisticsGroupData)
    {
-      this.columns = columns;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for rows
-    **
-    *******************************************************************************/
-   public List<Map<String, Object>> getRows()
-   {
-      return rows;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for rows
-    **
-    *******************************************************************************/
-   public void setRows(List<Map<String, Object>> rows)
-   {
-      this.rows = rows;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for rows
-    **
-    *******************************************************************************/
-   public TableData withRows(List<Map<String, Object>> rows)
-   {
-      this.rows = rows;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for dropdownOptions
-    **
-    *******************************************************************************/
-   public List<Map<String, String>> getDropdownOptions()
-   {
-      return dropdownOptions;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for dropdownOptions
-    **
-    *******************************************************************************/
-   public void setDropdownOptions(List<Map<String, String>> dropdownOptions)
-   {
-      this.dropdownOptions = dropdownOptions;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for dropdownOptions
-    **
-    *******************************************************************************/
-   public TableData withDropdownOptions(List<Map<String, String>> dropdownOptions)
-   {
-      this.dropdownOptions = dropdownOptions;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for noRowsFoundHTML
-    **
-    *******************************************************************************/
-   public String getNoRowsFoundHTML()
-   {
-      return noRowsFoundHTML;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for noRowsFoundHTML
-    **
-    *******************************************************************************/
-   public void setNoRowsFoundHTML(String noRowsFoundHTML)
-   {
-      this.noRowsFoundHTML = noRowsFoundHTML;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for noRowsFoundHTML
-    **
-    *******************************************************************************/
-   public TableData withNoRowsFoundHTML(String noRowsFoundHTML)
-   {
-      this.noRowsFoundHTML = noRowsFoundHTML;
+      this.statisticsGroupData = statisticsGroupData;
       return (this);
    }
 
@@ -237,49 +138,35 @@ public class TableData implements QWidget
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class Column
+   public static class StatisticsGroupData
    {
-      private String type;
+      private String icon;
+      private String iconColor;
       private String header;
-      private String accessor;
-      private String width;
-      private String align;
-      private String verticalAlign;
+      private String subheader;
+      List<Statistic> statisticList;
 
 
 
       /*******************************************************************************
        **
        *******************************************************************************/
-      public Column(String type, String header, String accessor, String width, String align)
+      public StatisticsGroupData()
       {
-         this.type = type;
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public StatisticsGroupData(String icon, String iconColor, String header, String subheader, List<Statistic> statisticList)
+      {
+         this.icon = icon;
+         this.iconColor = iconColor;
          this.header = header;
-         this.accessor = accessor;
-         this.width = width;
-         this.align = align;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for type
-       **
-       *******************************************************************************/
-      public String getType()
-      {
-         return type;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for type
-       **
-       *******************************************************************************/
-      public void setType(String type)
-      {
-         this.type = type;
+         this.subheader = subheader;
+         this.statisticList = statisticList;
       }
 
 
@@ -307,161 +194,276 @@ public class TableData implements QWidget
 
 
       /*******************************************************************************
-       ** Getter for accessor
+       ** Fluent setter for header
        **
        *******************************************************************************/
-      public String getAccessor()
-      {
-         return accessor;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for accessor
-       **
-       *******************************************************************************/
-      public void setAccessor(String accessor)
-      {
-         this.accessor = accessor;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for width
-       **
-       *******************************************************************************/
-      public String getWidth()
-      {
-         return width;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for width
-       **
-       *******************************************************************************/
-      public void setWidth(String width)
-      {
-         this.width = width;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for align
-       **
-       *******************************************************************************/
-      public String getAlign()
-      {
-         return align;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for align
-       **
-       *******************************************************************************/
-      public void setAlign(String align)
-      {
-         this.align = align;
-      }
-
-
-
-      /*******************************************************************************
-       ** fluent setter for header
-       **
-       *******************************************************************************/
-      public Column withHeader(String header)
+      public StatisticsGroupData withHeader(String header)
       {
          this.header = header;
-         return this;
-      }
-
-
-
-      /*******************************************************************************
-       ** fluent setter for accessor
-       **
-       *******************************************************************************/
-      public Column withAccessor(String accessor)
-      {
-         this.accessor = accessor;
-         return this;
-      }
-
-
-
-      /*******************************************************************************
-       ** fluent setter for width
-       **
-       *******************************************************************************/
-      public Column withWidth(String width)
-      {
-         this.width = width;
-         return this;
-      }
-
-
-
-      /*******************************************************************************
-       ** fluent setter for align
-       **
-       *******************************************************************************/
-      public Column withAlign(String align)
-      {
-         this.align = align;
-         return this;
-      }
-
-
-
-      /*******************************************************************************
-       ** fluent setter for type
-       **
-       *******************************************************************************/
-      public Column withType(String type)
-      {
-         this.type = type;
-         return this;
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for verticalAlign
-       **
-       *******************************************************************************/
-      public String getVerticalAlign()
-      {
-         return verticalAlign;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for verticalAlign
-       **
-       *******************************************************************************/
-      public void setVerticalAlign(String verticalAlign)
-      {
-         this.verticalAlign = verticalAlign;
-      }
-
-
-
-      /*******************************************************************************
-       ** Fluent setter for verticalAlign
-       **
-       *******************************************************************************/
-      public Column withVerticalAlign(String verticalAlign)
-      {
-         this.verticalAlign = verticalAlign;
          return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for subheader
+       **
+       *******************************************************************************/
+      public String getSubheader()
+      {
+         return subheader;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for subheader
+       **
+       *******************************************************************************/
+      public void setSubheader(String subheader)
+      {
+         this.subheader = subheader;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for subheader
+       **
+       *******************************************************************************/
+      public StatisticsGroupData withSubheader(String subheader)
+      {
+         this.subheader = subheader;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for statisticList
+       **
+       *******************************************************************************/
+      public List<Statistic> getStatisticList()
+      {
+         return statisticList;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for statisticList
+       **
+       *******************************************************************************/
+      public void setStatisticList(List<Statistic> statisticList)
+      {
+         this.statisticList = statisticList;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for statisticList
+       **
+       *******************************************************************************/
+      public StatisticsGroupData withStatisticList(List<Statistic> statisticList)
+      {
+         this.statisticList = statisticList;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for icon
+       **
+       *******************************************************************************/
+      public String getIcon()
+      {
+         return icon;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for icon
+       **
+       *******************************************************************************/
+      public void setIcon(String icon)
+      {
+         this.icon = icon;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for icon
+       **
+       *******************************************************************************/
+      public StatisticsGroupData withIcon(String icon)
+      {
+         this.icon = icon;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for iconColor
+       **
+       *******************************************************************************/
+      public String getIconColor()
+      {
+         return iconColor;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for iconColor
+       **
+       *******************************************************************************/
+      public void setIconColor(String iconColor)
+      {
+         this.iconColor = iconColor;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for iconColor
+       **
+       *******************************************************************************/
+      public StatisticsGroupData withIconColor(String iconColor)
+      {
+         this.iconColor = iconColor;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public static class Statistic
+      {
+         private String  label;
+         private Integer value;
+         private String  url;
+
+
+
+         /*******************************************************************************
+          **
+          *******************************************************************************/
+         public Statistic(String label, Integer value, String url)
+         {
+            this.label = label;
+            this.value = value;
+            this.url = url;
+         }
+
+
+
+         /*******************************************************************************
+          ** Getter for label
+          **
+          *******************************************************************************/
+         public String getLabel()
+         {
+            return label;
+         }
+
+
+
+         /*******************************************************************************
+          ** Setter for label
+          **
+          *******************************************************************************/
+         public void setLabel(String label)
+         {
+            this.label = label;
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for label
+          **
+          *******************************************************************************/
+         public Statistic withLabel(String label)
+         {
+            this.label = label;
+            return (this);
+         }
+
+
+
+         /*******************************************************************************
+          ** Getter for value
+          **
+          *******************************************************************************/
+         public Integer getValue()
+         {
+            return value;
+         }
+
+
+
+         /*******************************************************************************
+          ** Setter for value
+          **
+          *******************************************************************************/
+         public void setValue(Integer value)
+         {
+            this.value = value;
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for value
+          **
+          *******************************************************************************/
+         public Statistic withValue(Integer value)
+         {
+            this.value = value;
+            return (this);
+         }
+
+
+
+         /*******************************************************************************
+          ** Getter for url
+          **
+          *******************************************************************************/
+         public String getUrl()
+         {
+            return url;
+         }
+
+
+
+         /*******************************************************************************
+          ** Setter for url
+          **
+          *******************************************************************************/
+         public void setUrl(String url)
+         {
+            this.url = url;
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for url
+          **
+          *******************************************************************************/
+         public Statistic withUrl(String url)
+         {
+            this.url = url;
+            return (this);
+         }
+
       }
 
    }
