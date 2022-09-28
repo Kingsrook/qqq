@@ -98,28 +98,28 @@ public class QInstanceEnricher
    {
       if(qInstance.getTables() != null)
       {
-         qInstance.getTables().values().forEach(this::enrich);
+         qInstance.getTables().values().forEach(this::enrichTable);
          defineTableBulkProcesses(qInstance);
       }
 
       if(qInstance.getProcesses() != null)
       {
-         qInstance.getProcesses().values().forEach(this::enrich);
+         qInstance.getProcesses().values().forEach(this::enrichProcess);
       }
 
       if(qInstance.getBackends() != null)
       {
-         qInstance.getBackends().values().forEach(this::enrich);
+         qInstance.getBackends().values().forEach(this::enrichBackend);
       }
 
       if(qInstance.getApps() != null)
       {
-         qInstance.getApps().values().forEach(this::enrich);
+         qInstance.getApps().values().forEach(this::enrichApp);
       }
 
       if(qInstance.getReports() != null)
       {
-         qInstance.getReports().values().forEach(this::enrich);
+         qInstance.getReports().values().forEach(this::enrichReport);
       }
    }
 
@@ -128,7 +128,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QBackendMetaData qBackendMetaData)
+   private void enrichBackend(QBackendMetaData qBackendMetaData)
    {
       qBackendMetaData.enrich();
    }
@@ -138,7 +138,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QTableMetaData table)
+   private void enrichTable(QTableMetaData table)
    {
       if(!StringUtils.hasContent(table.getLabel()))
       {
@@ -147,7 +147,7 @@ public class QInstanceEnricher
 
       if(table.getFields() != null)
       {
-         table.getFields().values().forEach(this::enrich);
+         table.getFields().values().forEach(this::enrichField);
       }
 
       if(CollectionUtils.nullSafeIsEmpty(table.getSections()))
@@ -156,7 +156,7 @@ public class QInstanceEnricher
       }
       else
       {
-         table.getSections().forEach(this::enrich);
+         table.getSections().forEach(this::enrichFieldSection);
       }
 
       if(CollectionUtils.nullSafeHasContents(table.getRecordLabelFields()) && !StringUtils.hasContent(table.getRecordLabelFormat()))
@@ -170,7 +170,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QProcessMetaData process)
+   private void enrichProcess(QProcessMetaData process)
    {
       if(!StringUtils.hasContent(process.getLabel()))
       {
@@ -179,7 +179,7 @@ public class QInstanceEnricher
 
       if(process.getStepList() != null)
       {
-         process.getStepList().forEach(this::enrich);
+         process.getStepList().forEach(this::enrichStep);
       }
    }
 
@@ -188,29 +188,29 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QStepMetaData step)
+   private void enrichStep(QStepMetaData step)
    {
       if(!StringUtils.hasContent(step.getLabel()))
       {
          step.setLabel(nameToLabel(step.getName()));
       }
 
-      step.getInputFields().forEach(this::enrich);
-      step.getOutputFields().forEach(this::enrich);
+      step.getInputFields().forEach(this::enrichField);
+      step.getOutputFields().forEach(this::enrichField);
 
       if(step instanceof QFrontendStepMetaData frontendStepMetaData)
       {
          if(frontendStepMetaData.getFormFields() != null)
          {
-            frontendStepMetaData.getFormFields().forEach(this::enrich);
+            frontendStepMetaData.getFormFields().forEach(this::enrichField);
          }
          if(frontendStepMetaData.getViewFields() != null)
          {
-            frontendStepMetaData.getViewFields().forEach(this::enrich);
+            frontendStepMetaData.getViewFields().forEach(this::enrichField);
          }
          if(frontendStepMetaData.getRecordListFields() != null)
          {
-            frontendStepMetaData.getRecordListFields().forEach(this::enrich);
+            frontendStepMetaData.getRecordListFields().forEach(this::enrichField);
          }
       }
    }
@@ -220,7 +220,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QFieldMetaData field)
+   private void enrichField(QFieldMetaData field)
    {
       if(!StringUtils.hasContent(field.getLabel()))
       {
@@ -288,7 +288,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QAppMetaData app)
+   private void enrichApp(QAppMetaData app)
    {
       if(!StringUtils.hasContent(app.getLabel()))
       {
@@ -306,7 +306,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QFieldSection section)
+   private void enrichFieldSection(QFieldSection section)
    {
       if(!StringUtils.hasContent(section.getLabel()))
       {
@@ -319,7 +319,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QReportMetaData report)
+   private void enrichReport(QReportMetaData report)
    {
       if(!StringUtils.hasContent(report.getLabel()))
       {
@@ -328,7 +328,7 @@ public class QInstanceEnricher
 
       if(report.getInputFields() != null)
       {
-         report.getInputFields().forEach(this::enrich);
+         report.getInputFields().forEach(this::enrichField);
       }
    }
 
