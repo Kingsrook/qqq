@@ -222,7 +222,7 @@ public class GenerateReportAction
     *******************************************************************************/
    private void gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> pivotViews, List<QReportView> variantViews) throws QException
    {
-      QQueryFilter queryFilter = dataSource.getQueryFilter();
+      QQueryFilter queryFilter = dataSource.getQueryFilter().clone();
       setInputValuesInQueryFilter(reportInput, queryFilter);
 
       ////////////////////////////////////////////////////////////////////////////////////////

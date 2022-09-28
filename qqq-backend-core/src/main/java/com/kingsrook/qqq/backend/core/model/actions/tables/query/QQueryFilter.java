@@ -31,10 +31,48 @@ import java.util.List;
  * Full "filter" for a query - a list of criteria and order-bys
  *
  *******************************************************************************/
-public class QQueryFilter implements Serializable
+public class QQueryFilter implements Serializable, Cloneable
 {
    private List<QFilterCriteria> criteria = new ArrayList<>();
-   private List<QFilterOrderBy> orderBys = new ArrayList<>();
+   private List<QFilterOrderBy>  orderBys = new ArrayList<>();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QQueryFilter clone()
+   {
+      try
+      {
+         QQueryFilter clone = (QQueryFilter) super.clone();
+
+         if(criteria != null)
+         {
+            clone.criteria = new ArrayList<>();
+            for(QFilterCriteria criterion : criteria)
+            {
+               clone.criteria.add(criterion.clone());
+            }
+         }
+
+         if(orderBys != null)
+         {
+            clone.orderBys = new ArrayList<>();
+            for(QFilterOrderBy orderBy : orderBys)
+            {
+               clone.orderBys.add(orderBy.clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 
 
 
