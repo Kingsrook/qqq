@@ -232,6 +232,10 @@ public class ValueUtils
             ZoneId   zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
             return LocalDateTime.ofInstant(c.toInstant(), zid).toLocalDate();
          }
+         else if(value instanceof Instant i)
+         {
+            return LocalDate.ofInstant(i, ZoneId.systemDefault()); // todo - where should the zone come from?
+         }
          else if(value instanceof LocalDateTime ldt)
          {
             return ldt.toLocalDate();
