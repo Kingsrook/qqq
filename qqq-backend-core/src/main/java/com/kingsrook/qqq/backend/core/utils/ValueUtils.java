@@ -202,6 +202,50 @@ public class ValueUtils
 
 
    /*******************************************************************************
+    ** Type-safely make a LocalDateTime from any Object.
+    ** null and empty-string inputs return null.
+    ** We may throw if the input can't be converted to a LocalDateTime
+    *******************************************************************************/
+   public static LocalDateTime getValueAsLocalDateTime(Object value) throws QValueException
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof LocalDateTime ldt)
+         {
+            return (ldt);
+         }
+         else if(value instanceof java.sql.Timestamp ts)
+         {
+            return ts.toLocalDateTime();
+         }
+         else if(value instanceof Calendar c)
+         {
+            TimeZone tz  = c.getTimeZone();
+            ZoneId   zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
+            return LocalDateTime.ofInstant(c.toInstant(), zid);
+         }
+         else
+         {
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to LocalDateTime."));
+         }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to a LocalDateTime.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Type-safely make a LocalDate from any Object.
     ** null and empty-string inputs return null.
     ** We may throw if the input can't be converted to a LocalDate

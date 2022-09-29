@@ -33,6 +33,8 @@ import java.util.Map;
 public class TableData implements QWidget
 {
    private String                    title;
+   private String                    linkText;
+   private String                    linkURL;
    private String                    noRowsFoundHTML;
    private List<Column>              columns;
    private List<Map<String, Object>> rows;
@@ -229,6 +231,74 @@ public class TableData implements QWidget
    public TableData withNoRowsFoundHTML(String noRowsFoundHTML)
    {
       this.noRowsFoundHTML = noRowsFoundHTML;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for linkText
+    **
+    *******************************************************************************/
+   public String getLinkText()
+   {
+      return linkText;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for linkText
+    **
+    *******************************************************************************/
+   public void setLinkText(String linkText)
+   {
+      this.linkText = linkText;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for linkText
+    **
+    *******************************************************************************/
+   public TableData withLinkText(String linkText)
+   {
+      this.linkText = linkText;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for linkURL
+    **
+    *******************************************************************************/
+   public String getLinkURL()
+   {
+      return linkURL;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for linkURL
+    **
+    *******************************************************************************/
+   public void setLinkURL(String linkURL)
+   {
+      this.linkURL = linkURL;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for linkURL
+    **
+    *******************************************************************************/
+   public TableData withLinkURL(String linkURL)
+   {
+      this.linkURL = linkURL;
       return (this);
    }
 
