@@ -480,6 +480,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       queryInput.setTransaction(transaction);
       queryOutput = new QueryAction().execute(queryInput);
       Assertions.assertEquals(6, queryOutput.getRecords().size(), "Query with the transaction should see the new row.");
+
+      transaction.rollback();
    }
 
 }
