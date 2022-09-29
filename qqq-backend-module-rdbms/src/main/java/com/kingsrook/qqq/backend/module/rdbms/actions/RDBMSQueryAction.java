@@ -99,11 +99,23 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
-         QueryOutput queryOutput = new QueryOutput(queryInput);
-
-         try(Connection connection = getConnection(queryInput))
+         Connection connection;
+         boolean    needToCloseConnection = false;
+         if(queryInput.getTransaction() != null && queryInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
-            PreparedStatement statement = createStatement(connection, sql, queryInput);
+            LOG.debug("Using connection from queryInput [" + rdbmsTransaction.getConnection() + "]");
+            connection = rdbmsTransaction.getConnection();
+         }
+         else
+         {
+            connection = getConnection(queryInput);
+            needToCloseConnection = true;
+         }
+
+         try
+         {
+            QueryOutput       queryOutput = new QueryOutput(queryInput);
+            PreparedStatement statement   = createStatement(connection, sql, queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
                ResultSetMetaData metaData = resultSet.getMetaData();
@@ -132,9 +144,16 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                }
 
             }), params);
-         }
 
-         return queryOutput;
+            return queryOutput;
+         }
+         finally
+         {
+            if(needToCloseConnection)
+            {
+               connection.close();
+            }
+         }
       }
       catch(Exception e)
       {

@@ -23,8 +23,11 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -434,7 +437,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    public void testThatDisplayValuesGetSetGoingThroughQueryAction() throws QException
    {
-      QueryInput  queryInput  = initQueryRequest();
+      QueryInput queryInput = initQueryRequest();
       queryInput.setShouldGenerateDisplayValues(true);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       Assertions.assertEquals(5, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
@@ -445,6 +448,38 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          assertThat(record.getDisplayValues()).isNotEmpty();
          assertThat(record.getErrors()).isEmpty();
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLookInsideTransaction() throws QException
+   {
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(TestUtils.defineTablePerson().getName());
+
+      InsertAction        insertAction = new InsertAction();
+      QBackendTransaction transaction  = insertAction.openTransaction(insertInput);
+
+      insertInput.setTransaction(transaction);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("firstName", "George").withValue("lastName", "Washington").withValue("email", "gw@kingsrook.com")
+      ));
+
+      insertAction.execute(insertInput);
+
+      QueryInput  queryInput  = initQueryRequest();
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "Query without the transaction should not see the new row.");
+
+      queryInput = initQueryRequest();
+      queryInput.setTransaction(transaction);
+      queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(6, queryOutput.getRecords().size(), "Query with the transaction should see the new row.");
    }
 
 }

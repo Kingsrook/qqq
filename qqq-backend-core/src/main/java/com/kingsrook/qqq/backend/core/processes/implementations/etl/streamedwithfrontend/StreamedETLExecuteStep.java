@@ -72,6 +72,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          transaction = loadStep.openTransaction(runBackendStepInput);
          loadStep.setTransaction(transaction);
+         transformStep.setTransaction(transaction);
 
          List<QRecord> loadedRecordList = new ArrayList<>();
          int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
