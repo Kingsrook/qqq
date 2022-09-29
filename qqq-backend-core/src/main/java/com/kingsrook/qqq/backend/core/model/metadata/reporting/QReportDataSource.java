@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -33,6 +34,8 @@ public class QReportDataSource
    private String       name;
    private String       sourceTable;
    private QQueryFilter queryFilter;
+
+   private QCodeReference staticDataSupplier;
 
 
 
@@ -133,6 +136,40 @@ public class QReportDataSource
    public QReportDataSource withQueryFilter(QQueryFilter queryFilter)
    {
       this.queryFilter = queryFilter;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for staticDataSupplier
+    **
+    *******************************************************************************/
+   public QCodeReference getStaticDataSupplier()
+   {
+      return staticDataSupplier;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for staticDataSupplier
+    **
+    *******************************************************************************/
+   public void setStaticDataSupplier(QCodeReference staticDataSupplier)
+   {
+      this.staticDataSupplier = staticDataSupplier;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for staticDataSupplier
+    **
+    *******************************************************************************/
+   public QReportDataSource withStaticDataSupplier(QCodeReference staticDataSupplier)
+   {
+      this.staticDataSupplier = staticDataSupplier;
       return (this);
    }
 

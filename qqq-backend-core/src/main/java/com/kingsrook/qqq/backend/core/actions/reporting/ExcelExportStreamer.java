@@ -130,7 +130,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
 
          worksheet = workbook.newWorksheet(Objects.requireNonNullElse(label, "Sheet " + sheetCount));
 
-         writeReportHeaderRow();
+         writeTitleAndHeader();
       }
       catch(Exception e)
       {
@@ -143,7 +143,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void writeReportHeaderRow() throws QReportingException
+   private void writeTitleAndHeader() throws QReportingException
    {
       try
       {
@@ -160,25 +160,28 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             titleStyle.set();
 
             row++;
+            worksheet.flush();
          }
 
          ////////////////
          // header row //
          ////////////////
-         int col = 0;
-         for(QFieldMetaData column : fields)
+         if(exportInput.getIncludeHeaderRow())
          {
-            worksheet.value(row, col, column.getLabel());
-            col++;
+            int col = 0;
+            for(QFieldMetaData column : fields)
+            {
+               worksheet.value(row, col, column.getLabel());
+               col++;
+            }
+
+            StyleSetter headerStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
+            excelStylerInterface.styleHeaderRow(headerStyle);
+            headerStyle.set();
+
+            row++;
+            worksheet.flush();
          }
-
-         StyleSetter headerStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
-         excelStylerInterface.styleHeaderRow(headerStyle);
-         headerStyle.set();
-
-         row++;
-
-         worksheet.flush();
       }
       catch(Exception e)
       {

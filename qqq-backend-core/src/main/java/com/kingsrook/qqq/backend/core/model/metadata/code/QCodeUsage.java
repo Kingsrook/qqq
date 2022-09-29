@@ -31,5 +31,6 @@ public enum QCodeUsage
    BACKEND_STEP, // a backend-step in a process
    CUSTOMIZER, // a function to customize part of a QQQ table's behavior
    POSSIBLE_VALUE_PROVIDER, // code that drives a custom possibleValueSource
-   RECORD_AUTOMATION_HANDLER // code that executes record automations
+   RECORD_AUTOMATION_HANDLER, // code that executes record automations
+   REPORT_STATIC_DATA_SUPPLIER // code that supplies static data to a report
 }

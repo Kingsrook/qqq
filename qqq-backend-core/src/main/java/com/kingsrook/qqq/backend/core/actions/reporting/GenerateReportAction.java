@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -180,10 +181,15 @@ public class GenerateReportAction
    {
       QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
 
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", reportInput.getInputValues());
+
       ExportInput exportInput = new ExportInput(reportInput.getInstance());
       exportInput.setSession(reportInput.getSession());
       exportInput.setReportFormat(reportFormat);
       exportInput.setFilename(reportInput.getFilename());
+      exportInput.setTitleRow(getTitle(reportView, variableInterpreter));
+      exportInput.setIncludeHeaderRow(reportView.getHeaderRow());
       exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
       List<QFieldMetaData> fields;
@@ -222,9 +228,6 @@ public class GenerateReportAction
     *******************************************************************************/
    private void gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> pivotViews, List<QReportView> variantViews) throws QException
    {
-      QQueryFilter queryFilter = dataSource.getQueryFilter().clone();
-      setInputValuesInQueryFilter(reportInput, queryFilter);
-
       ////////////////////////////////////////////////////////////////////////////////////////
       // check if this view has a transform step - if so, set it up now and run its pre-run //
       ////////////////////////////////////////////////////////////////////////////////////////
@@ -257,13 +260,40 @@ public class GenerateReportAction
       RecordPipe recordPipe = new RecordPipe();
       new AsyncRecordPipeLoop().run("Report[" + reportInput.getReportName() + "]", null, recordPipe, (callback) ->
       {
-         QueryInput queryInput = new QueryInput(reportInput.getInstance());
-         queryInput.setSession(reportInput.getSession());
-         queryInput.setRecordPipe(recordPipe);
-         queryInput.setTableName(dataSource.getSourceTable());
-         queryInput.setFilter(queryFilter);
-         queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
-         return (new QueryAction().execute(queryInput));
+         if(dataSource.getSourceTable() != null)
+         {
+            QQueryFilter queryFilter = dataSource.getQueryFilter().clone();
+            setInputValuesInQueryFilter(reportInput, queryFilter);
+
+            QueryInput queryInput = new QueryInput(reportInput.getInstance());
+            queryInput.setSession(reportInput.getSession());
+            queryInput.setRecordPipe(recordPipe);
+            queryInput.setTableName(dataSource.getSourceTable());
+            queryInput.setFilter(queryFilter);
+            queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
+            return (new QueryAction().execute(queryInput));
+         }
+         else if(dataSource.getStaticDataSupplier() != null)
+         {
+            @SuppressWarnings("unchecked")
+            Supplier<List<List<Serializable>>> supplier = QCodeLoader.getAdHoc(Supplier.class, dataSource.getStaticDataSupplier());
+            List<List<Serializable>> lists = supplier.get();
+            for(List<Serializable> list : lists)
+            {
+               QRecord record = new QRecord();
+               int     index  = 0;
+               for(Serializable value : list)
+               {
+                  record.setValue("column" + (index++), value);
+               }
+               recordPipe.addRecord(record);
+            }
+            return (true);
+         }
+         else
+         {
+            throw (new IllegalStateException("Misconfigured data source [" + dataSource.getName() + "]."));
+         }
       }, () ->
       {
          List<QRecord> records = recordPipe.consumeAvailableRecords();
@@ -465,6 +495,7 @@ public class GenerateReportAction
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(reportInput.getFilename());
          exportInput.setTitleRow(pivotOutput.titleRow);
+         exportInput.setIncludeHeaderRow(view.getHeaderRow());
          exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
          reportStreamer.setDisplayFormats(getDisplayFormatMap(view));
@@ -540,26 +571,7 @@ public class GenerateReportAction
       ///////////
       // title //
       ///////////
-      String title = null;
-      if(view.getTitleFields() != null && StringUtils.hasContent(view.getTitleFormat()))
-      {
-         List<String> titleValues = new ArrayList<>();
-         for(String titleField : view.getTitleFields())
-         {
-            titleValues.add(variableInterpreter.interpret(titleField));
-         }
-
-         title = valueFormatter.formatStringWithValues(view.getTitleFormat(), titleValues);
-      }
-      else if(StringUtils.hasContent(view.getTitleFormat()))
-      {
-         title = view.getTitleFormat();
-      }
-
-      if(StringUtils.hasContent(title))
-      {
-         System.out.println(title);
-      }
+      String title = getTitle(view, variableInterpreter);
 
       /////////////
       // headers //
@@ -697,6 +709,36 @@ public class GenerateReportAction
       }
 
       return (new PivotOutput(pivotRows, title, totalRow));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getTitle(QReportView view, QMetaDataVariableInterpreter variableInterpreter)
+   {
+      String title = null;
+      if(view.getTitleFields() != null && StringUtils.hasContent(view.getTitleFormat()))
+      {
+         List<String> titleValues = new ArrayList<>();
+         for(String titleField : view.getTitleFields())
+         {
+            titleValues.add(variableInterpreter.interpret(titleField));
+         }
+
+         title = new QValueFormatter().formatStringWithValues(view.getTitleFormat(), titleValues);
+      }
+      else if(StringUtils.hasContent(view.getTitleFormat()))
+      {
+         title = view.getTitleFormat();
+      }
+
+      if(StringUtils.hasContent(title))
+      {
+         System.out.println(title);
+      }
+      return title;
    }
 
 

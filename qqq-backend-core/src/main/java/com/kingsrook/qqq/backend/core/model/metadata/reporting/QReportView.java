@@ -41,6 +41,7 @@ public class QReportView implements Cloneable
    private String               titleFormat;
    private List<String>         titleFields;
    private List<String>         pivotFields;
+   private boolean              headerRow      = true;
    private boolean              totalRow       = false;
    private boolean              pivotSubTotals = false;
    private List<QReportField>   columns;
@@ -322,6 +323,40 @@ public class QReportView implements Cloneable
    public QReportView withPivotFields(List<String> pivotFields)
    {
       this.pivotFields = pivotFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for headerRow
+    **
+    *******************************************************************************/
+   public boolean getHeaderRow()
+   {
+      return headerRow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for headerRow
+    **
+    *******************************************************************************/
+   public void setHeaderRow(boolean headerRow)
+   {
+      this.headerRow = headerRow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for headerRow
+    **
+    *******************************************************************************/
+   public QReportView withHeaderRow(boolean headerRow)
+   {
+      this.headerRow = headerRow;
       return (this);
    }
 

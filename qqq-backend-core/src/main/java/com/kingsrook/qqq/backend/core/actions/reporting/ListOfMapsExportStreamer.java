@@ -96,10 +96,14 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
       currentSheetLabel = label;
 
       rows.put(label, new ArrayList<>());
-      headers.put(label, new ArrayList<>());
-      for(QFieldMetaData field : fields)
+
+      if(exportInput.getIncludeHeaderRow())
       {
-         headers.get(label).add(field.getLabel());
+         headers.put(label, new ArrayList<>());
+         for(QFieldMetaData field : fields)
+         {
+            headers.get(label).add(field.getLabel());
+         }
       }
    }
 
