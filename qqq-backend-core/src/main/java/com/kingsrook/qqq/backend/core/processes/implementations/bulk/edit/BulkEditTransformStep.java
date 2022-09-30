@@ -28,6 +28,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
@@ -196,7 +197,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
     **
     *******************************************************************************/
    @Override
-   public ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen)
+   public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
       if(isForResultScreen)
       {
@@ -207,7 +208,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
          okSummary.setMessage(tableLabel + " records will be edited.");
       }
 
-      ArrayList<ProcessSummaryLine> rs = new ArrayList<>();
+      ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
       rs.add(okSummary);
       rs.addAll(infoSummaries);
       return (rs);

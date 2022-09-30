@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 import java.util.ArrayList;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
@@ -101,7 +102,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
     **
     *******************************************************************************/
    @Override
-   public ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen)
+   public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
       if(isForResultScreen)
       {
@@ -112,7 +113,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          okSummary.setMessage(tableLabel + " records will be inserted.");
       }
 
-      ArrayList<ProcessSummaryLine> rs = new ArrayList<>();
+      ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
       rs.add(okSummary);
       return (rs);
    }

@@ -19,45 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
+package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
-import java.util.ArrayList;
-import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Interface for a class that can provide a ProcessSummary - a list of Process Summary Lines
+ **
  *******************************************************************************/
-public interface ProcessSummaryProviderInterface
+public interface ProcessSummaryLineInterface extends Serializable
 {
 
    /*******************************************************************************
-    ** Note - object needs to be serializable, and List isn't... so, use ArrayList?
+    ** Getter for status
+    **
     *******************************************************************************/
-   ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen);
+   Status getStatus();
 
 
    /*******************************************************************************
-    ** not meant to be overridden - meant to be called by framework - to make sure that
-    ** all lines have their proper message picked (e.g., if they have singular/plural
-    ** and past/future variants).
+    **
     *******************************************************************************/
-   default ArrayList<ProcessSummaryLineInterface> doGetProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+   default void prepareForFrontend(boolean isForResultScreen)
    {
-      ArrayList<ProcessSummaryLineInterface> processSummary = getProcessSummary(runBackendStepOutput, isForResultScreen);
-      if(processSummary == null)
-      {
-         return (null);
-      }
 
-      for(ProcessSummaryLineInterface processSummaryLine : processSummary)
-      {
-         processSummaryLine.prepareForFrontend(isForResultScreen);
-      }
-
-      return (processSummary);
    }
 
 }

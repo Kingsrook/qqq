@@ -105,7 +105,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////
       // get the process summary from the validation step //
       //////////////////////////////////////////////////////
-      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.doGetProcessSummary(false));
+      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, false));
 
       transformStep.postRun(runBackendStepInput, runBackendStepOutput);
    }

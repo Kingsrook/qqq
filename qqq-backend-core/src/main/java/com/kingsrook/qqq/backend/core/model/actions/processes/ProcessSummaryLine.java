@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -32,7 +33,7 @@ import java.util.List;
  ** standard way to summarize information about the records in the process.
  **
  *******************************************************************************/
-public class ProcessSummaryLine implements Serializable
+public class ProcessSummaryLine implements ProcessSummaryLineInterface
 {
    private Status  status;
    private Integer count = 0;
@@ -238,7 +239,7 @@ public class ProcessSummaryLine implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addSelfToListIfAnyCount(ArrayList<ProcessSummaryLine> rs)
+   public void addSelfToListIfAnyCount(ArrayList<ProcessSummaryLineInterface> rs)
    {
       if(count != null && count > 0)
       {
@@ -401,4 +402,19 @@ public class ProcessSummaryLine implements Serializable
          }
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void prepareForFrontend(boolean isForResultScreen)
+   {
+      if(!StringUtils.hasContent(getMessage()))
+      {
+         pickMessage(isForResultScreen);
+      }
+   }
+
 }
