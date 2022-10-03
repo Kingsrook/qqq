@@ -78,7 +78,7 @@ public class LineChartData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "lineChart";
+      return WidgetType.LINE_CHART.getType();
    }
 
 

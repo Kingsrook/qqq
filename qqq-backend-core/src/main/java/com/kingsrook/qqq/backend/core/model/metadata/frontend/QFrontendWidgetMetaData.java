@@ -19,36 +19,66 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.metadata.frontend;
+
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend bar raw html widget
- **
+ * Version of QWidgetMetaData that's meant for transmitting to a frontend.
+ * e.g., it excludes backend-only details (when/if we have them)
+ *
  *******************************************************************************/
-public class RawHTML implements QWidget
+@JsonInclude(Include.NON_NULL)
+public class QFrontendWidgetMetaData
 {
-   private String title;
-   private String html;
+   private final String  name;
+   private final String  label;
+   private final String  type;
+   private final String  icon;
+   private final Integer gridColumns;
+
+   //////////////////////////////////////////////////////////////////////////////////
+   // do not add setters.  take values from the source-object in the constructor!! //
+   //////////////////////////////////////////////////////////////////////////////////
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RawHTML()
+   public QFrontendWidgetMetaData(QWidgetMetaDataInterface widgetMetaData)
    {
+      this.name = widgetMetaData.getName();
+      this.label = widgetMetaData.getLabel();
+      this.type = widgetMetaData.getType();
+      this.icon = widgetMetaData.getIcon();
+      this.gridColumns = widgetMetaData.getGridColumns();
    }
 
 
 
    /*******************************************************************************
+    ** Getter for name
     **
     *******************************************************************************/
-   public RawHTML(String title, String html)
+   public String getName()
    {
-      setTitle(title);
-      setHtml(html);
+      return name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
    }
 
 
@@ -59,75 +89,29 @@ public class RawHTML implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return WidgetType.HTML.getType();
+      return type;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for title
+    ** Getter for gridColumns
     **
     *******************************************************************************/
-   public String getTitle()
+   public Integer getGridColumns()
    {
-      return title;
+      return gridColumns;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for title
+    ** Getter for icon
     **
     *******************************************************************************/
-   public void setTitle(String title)
+   public String getIcon()
    {
-      this.title = title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for title
-    **
-    *******************************************************************************/
-   public RawHTML withTitle(String title)
-   {
-      this.title = title;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for html
-    **
-    *******************************************************************************/
-   public String getHtml()
-   {
-      return html;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for html
-    **
-    *******************************************************************************/
-   public void setHtml(String html)
-   {
-      this.html = html;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for html
-    **
-    *******************************************************************************/
-   public RawHTML withHtml(String html)
-   {
-      this.html = html;
-      return (this);
+      return icon;
    }
 
 }

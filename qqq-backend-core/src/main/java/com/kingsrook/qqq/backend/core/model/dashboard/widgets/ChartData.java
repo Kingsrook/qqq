@@ -69,7 +69,7 @@ public class ChartData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "barChart";
+      return WidgetType.CHART.getType();
    }
 
 

@@ -56,7 +56,7 @@ public class LocationData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "location";
+      return WidgetType.LOCATION.getType();
    }
 
 

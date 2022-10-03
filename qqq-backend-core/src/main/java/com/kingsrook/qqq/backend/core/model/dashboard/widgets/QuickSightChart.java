@@ -53,7 +53,7 @@ public class QuickSightChart implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "quickSightChart";
+      return WidgetType.QUICK_SIGHT_CHART.getType();
    }
 
 

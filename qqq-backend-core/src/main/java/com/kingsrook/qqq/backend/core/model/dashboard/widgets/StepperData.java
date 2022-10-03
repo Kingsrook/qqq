@@ -55,7 +55,7 @@ public class StepperData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "stepper";
+      return WidgetType.STEPPER.getType();
    }
 
 

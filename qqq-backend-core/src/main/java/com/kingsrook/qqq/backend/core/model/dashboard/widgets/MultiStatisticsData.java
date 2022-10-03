@@ -62,7 +62,7 @@ public class MultiStatisticsData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "multiStatistics";
+      return WidgetType.MULTI_STATISTICS.getType();
    }
 
 
