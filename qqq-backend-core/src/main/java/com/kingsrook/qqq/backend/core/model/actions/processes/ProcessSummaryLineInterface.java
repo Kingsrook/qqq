@@ -26,7 +26,7 @@ import java.io.Serializable;
 
 
 /*******************************************************************************
- **
+ ** Interface for objects that can be output from a process to summarize its results.
  *******************************************************************************/
 public interface ProcessSummaryLineInterface extends Serializable
 {
@@ -39,7 +39,8 @@ public interface ProcessSummaryLineInterface extends Serializable
 
 
    /*******************************************************************************
-    **
+    ** meant to be called by framework, after process is complete, give the
+    ** summary object a chance to finalize itself before it's sent to a frontend.
     *******************************************************************************/
    default void prepareForFrontend(boolean isForResultScreen)
    {

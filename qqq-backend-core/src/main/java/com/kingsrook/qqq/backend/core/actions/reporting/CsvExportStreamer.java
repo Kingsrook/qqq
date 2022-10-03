@@ -118,7 +118,7 @@ public class CsvExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int addRecords(List<QRecord> qRecords) throws QReportingException
+   public void addRecords(List<QRecord> qRecords) throws QReportingException
    {
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
 
@@ -126,7 +126,6 @@ public class CsvExportStreamer implements ExportStreamerInterface
       {
          writeRecord(qRecord);
       }
-      return (qRecords.size());
    }
 
 

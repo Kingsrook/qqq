@@ -174,7 +174,7 @@ class QMetaDataVariableInterpreterTest
 
       assertEquals("bar", variableInterpreter.interpretForObject("${input.foo}"));
       assertEquals(new BigDecimal("3.50"), variableInterpreter.interpretForObject("${input.amount}"));
-      assertEquals("${input.x}", variableInterpreter.interpretForObject("${input.x}"));
+      assertNull(variableInterpreter.interpretForObject("${input.x}"));
    }
 
 
@@ -189,13 +189,13 @@ class QMetaDataVariableInterpreterTest
       variableInterpreter.addValueMap("input", Map.of("amount", new BigDecimal("3.50"), "x", "y"));
       variableInterpreter.addValueMap("others", Map.of("foo", "fu", "amount", new BigDecimal("1.75")));
 
-      assertEquals("${input.foo}", variableInterpreter.interpretForObject("${input.foo}"));
+      assertNull(variableInterpreter.interpretForObject("${input.foo}"));
       assertEquals("fu", variableInterpreter.interpretForObject("${others.foo}"));
       assertEquals(new BigDecimal("3.50"), variableInterpreter.interpretForObject("${input.amount}"));
       assertEquals(new BigDecimal("1.75"), variableInterpreter.interpretForObject("${others.amount}"));
       assertEquals("y", variableInterpreter.interpretForObject("${input.x}"));
-      assertEquals("${others.x}", variableInterpreter.interpretForObject("${others.x}"));
-      assertEquals("${input.nil}", variableInterpreter.interpretForObject("${input.nil}"));
+      assertNull(variableInterpreter.interpretForObject("${others.x}"));
+      assertNull(variableInterpreter.interpretForObject("${input.nil}"));
    }
 
 

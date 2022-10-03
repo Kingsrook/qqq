@@ -149,13 +149,17 @@ public class QMetaDataVariableInterpreter
     *******************************************************************************/
    public Serializable interpretForObject(String value)
    {
-      return (interpretForObject(value, value));
+      return (interpretForObject(value, null));
    }
 
 
 
    /*******************************************************************************
-    ** Interpret a value string, which may be a variable, into its run-time value.
+    ** Interpret a value string, which may be a variable, into its run-time value,
+    ** getting back the specified default if the string looks like a variable, but can't
+    ** be found.  Where "looks like" means, for example, started with "${env." and ended
+    ** with "}", but wasn't set in the environment, or, more interestingly, based on the
+    ** valueMaps - only if the name to the left of the dot is an actual valueMap name.
     **
     ** If input is null, output is null.
     ** If input looks like ${env.X}, then the return value is the value of the env variable 'X'
@@ -175,14 +179,16 @@ public class QMetaDataVariableInterpreter
       if(value.startsWith(envPrefix) && value.endsWith("}"))
       {
          String envVarName = value.substring(envPrefix.length()).replaceFirst("}$", "");
-         return (getEnvironmentVariable(envVarName));
+         String result     = getEnvironmentVariable(envVarName);
+         return (result == null ? defaultIfLooksLikeVariableButNotFound : result);
       }
 
       String propPrefix = "${prop.";
       if(value.startsWith(propPrefix) && value.endsWith("}"))
       {
          String propertyName = value.substring(propPrefix.length()).replaceFirst("}$", "");
-         return (System.getProperty(propertyName));
+         String result       = System.getProperty(propertyName);
+         return (result == null ? defaultIfLooksLikeVariableButNotFound : result);
       }
 
       String literalPrefix = "${literal.";

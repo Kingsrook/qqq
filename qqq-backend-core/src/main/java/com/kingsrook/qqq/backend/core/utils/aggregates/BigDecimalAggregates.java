@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 
 
 /*******************************************************************************
- **
+ ** BigDecimal version of data aggregator
  *******************************************************************************/
 public class BigDecimalAggregates implements AggregatesInterface<BigDecimal>
 {

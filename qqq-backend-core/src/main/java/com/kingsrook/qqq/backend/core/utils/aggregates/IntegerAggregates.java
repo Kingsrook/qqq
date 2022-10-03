@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 
 
 /*******************************************************************************
- **
+ ** Integer version of data aggregator
  *******************************************************************************/
 public class IntegerAggregates implements AggregatesInterface<Integer>
 {

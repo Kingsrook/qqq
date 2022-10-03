@@ -26,7 +26,8 @@ import java.io.Serializable;
 
 
 /*******************************************************************************
- **
+ ** Simple process summary result object, that lets you give a link to a record
+ ** in a table.  e.g., if your process built such a record, give a link to it.
  *******************************************************************************/
 public class ProcessSummaryRecordLink implements ProcessSummaryLineInterface
 {
@@ -105,7 +106,7 @@ public class ProcessSummaryRecordLink implements ProcessSummaryLineInterface
       this.status = status;
       return (this);
    }
-  
+
 
 
    /*******************************************************************************

@@ -27,7 +27,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- **
+ ** Meta-data definition of a source of data for a report (e.g., a table and query
+ ** filter or custom-code reference).
  *******************************************************************************/
 public class QReportDataSource
 {

@@ -227,14 +227,14 @@ public class QInstanceEnricher
          field.setLabel(nameToLabel(field.getName()));
       }
 
-      /////////////////////////////////////////////////////////////////////////
-      // if this field has a possibleValueSource                             //
-      // and that PVS exists in the instance                                 //
-      // and it's a table-type PVS and the table name is set                 //
-      // and it's a valid table in the instant, and the table is in some app //
-      // and the field doesn't have a LINK adornment                         //
-      // then add a link-to-record-from-table adornment to the field.        //
-      /////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////
+      // if this field has a possibleValueSource                              //
+      // and that PVS exists in the instance                                  //
+      // and it's a table-type PVS and the table name is set                  //
+      // and it's a valid table in the instance, and the table is in some app //
+      // and the field doesn't have a LINK adornment                          //
+      // then add a link-to-record-from-table adornment to the field.         //
+      //////////////////////////////////////////////////////////////////////////
       if(StringUtils.hasContent(field.getPossibleValueSourceName()))
       {
          QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());

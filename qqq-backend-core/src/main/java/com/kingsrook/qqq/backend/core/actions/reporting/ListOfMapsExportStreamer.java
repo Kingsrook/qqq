@@ -113,15 +113,13 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int addRecords(List<QRecord> qRecords) throws QReportingException
+   public void addRecords(List<QRecord> qRecords) throws QReportingException
    {
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
-
       for(QRecord qRecord : qRecords)
       {
          addRecord(qRecord);
       }
-      return (qRecords.size());
    }
 
 

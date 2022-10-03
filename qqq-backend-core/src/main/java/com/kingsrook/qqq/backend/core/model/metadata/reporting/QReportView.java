@@ -33,17 +33,19 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  *******************************************************************************/
 public class QReportView implements Cloneable
 {
-   private String               name;
-   private String               label;
-   private String               dataSourceName;
-   private String               varianceDataSourceName;
-   private ReportType           type;
-   private String               titleFormat;
-   private List<String>         titleFields;
-   private List<String>         pivotFields;
-   private boolean              headerRow      = true;
-   private boolean              totalRow       = false;
-   private boolean              pivotSubTotals = false;
+   private String       name;
+   private String       label;
+   private String       dataSourceName;
+   private String       varianceDataSourceName;
+   private ReportType   type;
+   private String       titleFormat;
+   private List<String> titleFields;
+   private List<String> pivotFields;
+
+   private boolean includeHeaderRow      = true;
+   private boolean includeTotalRow       = false;
+   private boolean includePivotSubTotals = false;
+
    private List<QReportField>   columns;
    private List<QFilterOrderBy> orderByFields;
 
@@ -332,9 +334,9 @@ public class QReportView implements Cloneable
     ** Getter for headerRow
     **
     *******************************************************************************/
-   public boolean getHeaderRow()
+   public boolean getIncludeHeaderRow()
    {
-      return headerRow;
+      return includeHeaderRow;
    }
 
 
@@ -343,9 +345,9 @@ public class QReportView implements Cloneable
     ** Setter for headerRow
     **
     *******************************************************************************/
-   public void setHeaderRow(boolean headerRow)
+   public void setIncludeHeaderRow(boolean includeHeaderRow)
    {
-      this.headerRow = headerRow;
+      this.includeHeaderRow = includeHeaderRow;
    }
 
 
@@ -354,9 +356,9 @@ public class QReportView implements Cloneable
     ** Fluent setter for headerRow
     **
     *******************************************************************************/
-   public QReportView withHeaderRow(boolean headerRow)
+   public QReportView withIncludeHeaderRow(boolean headerRow)
    {
-      this.headerRow = headerRow;
+      this.includeHeaderRow = headerRow;
       return (this);
    }
 
@@ -366,9 +368,9 @@ public class QReportView implements Cloneable
     ** Getter for totalRow
     **
     *******************************************************************************/
-   public boolean getTotalRow()
+   public boolean getIncludeTotalRow()
    {
-      return totalRow;
+      return includeTotalRow;
    }
 
 
@@ -377,9 +379,9 @@ public class QReportView implements Cloneable
     ** Setter for totalRow
     **
     *******************************************************************************/
-   public void setTotalRow(boolean totalRow)
+   public void setIncludeTotalRow(boolean includeTotalRow)
    {
-      this.totalRow = totalRow;
+      this.includeTotalRow = includeTotalRow;
    }
 
 
@@ -388,9 +390,9 @@ public class QReportView implements Cloneable
     ** Fluent setter for totalRow
     **
     *******************************************************************************/
-   public QReportView withTotalRow(boolean totalRow)
+   public QReportView withIncludeTotalRow(boolean totalRow)
    {
-      this.totalRow = totalRow;
+      this.includeTotalRow = totalRow;
       return (this);
    }
 
@@ -400,9 +402,9 @@ public class QReportView implements Cloneable
     ** Getter for pivotSubTotals
     **
     *******************************************************************************/
-   public boolean getPivotSubTotals()
+   public boolean getIncludePivotSubTotals()
    {
-      return pivotSubTotals;
+      return includePivotSubTotals;
    }
 
 
@@ -411,9 +413,9 @@ public class QReportView implements Cloneable
     ** Setter for pivotSubTotals
     **
     *******************************************************************************/
-   public void setPivotSubTotals(boolean pivotSubTotals)
+   public void setIncludePivotSubTotals(boolean includePivotSubTotals)
    {
-      this.pivotSubTotals = pivotSubTotals;
+      this.includePivotSubTotals = includePivotSubTotals;
    }
 
 
@@ -422,9 +424,9 @@ public class QReportView implements Cloneable
     ** Fluent setter for pivotSubTotals
     **
     *******************************************************************************/
-   public QReportView withPivotSubTotals(boolean pivotSubTotals)
+   public QReportView withIncludePivotSubTotals(boolean pivotSubTotals)
    {
-      this.pivotSubTotals = pivotSubTotals;
+      this.includePivotSubTotals = pivotSubTotals;
       return (this);
    }
 

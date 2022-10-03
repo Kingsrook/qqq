@@ -423,7 +423,7 @@ public class GenerateReportActionTest
                .withDataSourceName("persons")
                .withType(ReportType.SUMMARY)
                .withPivotFields(List.of("lastName"))
-               .withTotalRow(includeTotalRow)
+               .withIncludeTotalRow(includeTotalRow)
                .withTitleFormat("Number of shoes - people born between %s and %s - pivot on LastName, sort by Quantity, Revenue DESC")
                .withTitleFields(List.of("${input.startDate}", "${input.endDate}"))
                .withOrderByFields(List.of(new QFilterOrderBy("shoeCount"), new QFilterOrderBy("sumPrice", false)))

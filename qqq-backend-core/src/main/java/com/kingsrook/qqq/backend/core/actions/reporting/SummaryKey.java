@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.utils.Pair;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class PivotKey implements Cloneable
+public class SummaryKey implements Cloneable
 {
    private List<Pair<String, Serializable>> keys = new ArrayList<>();
 
@@ -41,7 +41,7 @@ public class PivotKey implements Cloneable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public PivotKey()
+   public SummaryKey()
    {
    }
 
@@ -93,8 +93,8 @@ public class PivotKey implements Cloneable
       {
          return false;
       }
-      PivotKey pivotKey = (PivotKey) o;
-      return Objects.equals(keys, pivotKey.keys);
+      SummaryKey summaryKey = (SummaryKey) o;
+      return Objects.equals(keys, summaryKey.keys);
    }
 
 
@@ -114,9 +114,9 @@ public class PivotKey implements Cloneable
     **
     *******************************************************************************/
    @Override
-   public PivotKey clone()
+   public SummaryKey clone()
    {
-      PivotKey clone = new PivotKey();
+      SummaryKey clone = new SummaryKey();
 
       for(Pair<String, Serializable> key : keys)
       {
