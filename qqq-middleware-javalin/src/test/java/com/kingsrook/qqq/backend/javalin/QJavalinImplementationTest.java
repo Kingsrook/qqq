@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -491,7 +492,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
-      assertEquals("barChart", jsonObject.getString("type"));
+      assertEquals(WidgetType.CHART.getType(), jsonObject.getString("type"));
       assertNotNull(jsonObject.getString("title"));
       assertNotNull(jsonObject.getJSONObject("chartData"));
    }
