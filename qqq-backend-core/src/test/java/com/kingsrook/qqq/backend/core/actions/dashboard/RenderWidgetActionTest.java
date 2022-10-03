@@ -53,7 +53,7 @@ class RenderWidgetActionTest
       RenderWidgetOutput output = new RenderWidgetAction().execute(input);
       assertThat(output.getWidgetData()).isInstanceOf(ChartData.class);
       ChartData chartData = (ChartData) output.getWidgetData();
-      assertEquals("barChart", chartData.getType());
+      assertEquals("chart", chartData.getType());
       assertThat(chartData.getTitle()).isNotBlank();
       assertNotNull(chartData.getChartData());
    }
