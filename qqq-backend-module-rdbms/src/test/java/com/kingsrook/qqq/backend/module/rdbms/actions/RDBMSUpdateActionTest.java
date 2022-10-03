@@ -328,6 +328,25 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
 
    /*******************************************************************************
+    ** This situation - fails in a real mysql, but not in h2... anyway, because mysql
+    ** didn't want to convert the date-time string format to a date-time.
+    *******************************************************************************/
+   @Test
+   void testDateTimesCanBeModifiedFromIsoStrings() throws Exception
+   {
+      UpdateInput   updateInput = initUpdateRequest();
+      List<QRecord> records     = new ArrayList<>();
+      records.add(new QRecord().withTableName("person")
+         .withValue("id", 1)
+         .withValue("createDate", "2022-10-03T10:29:35Z")
+         .withValue("firstName", "Johnny Updated"));
+      updateInput.setRecords(records);
+      new RDBMSUpdateAction().execute(updateInput);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private String selectModifyDate(Integer id) throws Exception

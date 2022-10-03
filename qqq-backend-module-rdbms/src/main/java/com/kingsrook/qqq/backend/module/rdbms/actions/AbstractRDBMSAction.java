@@ -125,6 +125,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       {
          value = ValueUtils.getValueAsLocalDate(value);
       }
+      else if(field.getType().equals(QFieldType.DATE_TIME) && value instanceof String)
+      {
+         value = ValueUtils.getValueAsInstant(value);
+      }
       else if(field.getType().equals(QFieldType.DECIMAL) && value instanceof String)
       {
          value = ValueUtils.getValueAsBigDecimal(value);
