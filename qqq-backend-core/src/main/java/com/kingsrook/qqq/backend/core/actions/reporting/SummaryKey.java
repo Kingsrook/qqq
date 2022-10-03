@@ -30,7 +30,10 @@ import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
 /*******************************************************************************
+ ** For a summary report, a list of field/value pairs that make up a "key".
  **
+ ** For example, in a report doing summaries by State > City > ZipCode, a SummaryKey
+ ** would look like:  [(state:MO),(city:St.Louis),(zipCode:63101)].
  *******************************************************************************/
 public class SummaryKey implements Cloneable
 {

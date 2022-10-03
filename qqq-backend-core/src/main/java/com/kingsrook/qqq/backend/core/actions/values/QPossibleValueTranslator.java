@@ -346,6 +346,7 @@ public class QPossibleValueTranslator
             /////////////////////////////////////////////////////////////////////////////////////////
             // this is needed to get record labels, which are what we use here... unclear if best! //
             /////////////////////////////////////////////////////////////////////////////////////////
+            queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setShouldGenerateDisplayValues(true);
 
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
