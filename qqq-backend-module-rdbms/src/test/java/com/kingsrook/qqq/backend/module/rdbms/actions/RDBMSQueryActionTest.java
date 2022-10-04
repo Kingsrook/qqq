@@ -379,6 +379,25 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   public void testIsNotBlankQuery() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("firstName")
+            .withOperator(QCriteriaOperator.IS_NOT_BLANK)
+         ));
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("firstName") != null), "Should find expected rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testBetweenQuery() throws QException
    {
       QueryInput queryInput = initQueryRequest();
@@ -482,6 +501,25 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       Assertions.assertEquals(6, queryOutput.getRecords().size(), "Query with the transaction should see the new row.");
 
       transaction.rollback();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testEmptyInList() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.IN, List.of())));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(0, queryOutput.getRecords().size(), "IN empty list should find nothing.");
+
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.NOT_IN, List.of())));
+      queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "NOT_IN empty list should find everything.");
+
    }
 
 }

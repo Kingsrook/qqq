@@ -183,12 +183,32 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             }
             case IN:
             {
-               clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               if(values.isEmpty())
+               {
+                  //////////////////////////////////////////////////////////////////////////////////
+                  // if there are no values, then we want a false here - so say column != column. //
+                  //////////////////////////////////////////////////////////////////////////////////
+                  clause += " != " + column;
+               }
+               else
+               {
+                  clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               }
                break;
             }
             case NOT_IN:
             {
-               clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               if(values.isEmpty())
+               {
+                  /////////////////////////////////////////////////////////////////////////////////
+                  // if there are no values, then we want a true here - so say column == column. //
+                  /////////////////////////////////////////////////////////////////////////////////
+                  clause += " = " + column;
+               }
+               else
+               {
+                  clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               }
                break;
             }
             case STARTS_WITH:
@@ -272,7 +292,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                clause += " IS NOT NULL ";
                if(isString(field.getType()))
                {
-                  clause += " AND " + column + " !+ '' ";
+                  clause += " AND " + column + " != '' ";
                }
                expectedNoOfParams = 0;
                break;

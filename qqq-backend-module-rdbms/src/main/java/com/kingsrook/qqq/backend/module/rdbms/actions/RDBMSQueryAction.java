@@ -121,7 +121,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
-                  // todo - Add display values (String labels for possibleValues, formatted #'s, etc)
                   QRecord record = new QRecord();
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -55,6 +56,23 @@ public class QValueFormatter
     *******************************************************************************/
    public String formatValue(QFieldMetaData field, Serializable value)
    {
+      if(QFieldType.BOOLEAN.equals(field.getType()))
+      {
+         Boolean b = ValueUtils.getValueAsBoolean(value);
+         if(b == null)
+         {
+            return (null);
+         }
+         else if(b)
+         {
+            return ("Yes");
+         }
+         else
+         {
+            return ("No");
+         }
+      }
+
       return (formatValue(field.getDisplayFormat(), field.getName(), value));
    }
 
