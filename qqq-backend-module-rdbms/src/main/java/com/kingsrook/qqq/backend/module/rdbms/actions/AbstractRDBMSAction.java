@@ -112,7 +112,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       if("".equals(value))
       {
          QFieldType type = field.getType();
-         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME))
+         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
          {
             value = null;
          }
@@ -132,6 +132,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       else if(field.getType().equals(QFieldType.DECIMAL) && value instanceof String)
       {
          value = ValueUtils.getValueAsBigDecimal(value);
+      }
+      else if(field.getType().equals(QFieldType.BOOLEAN) && value instanceof String)
+      {
+         value = ValueUtils.getValueAsBoolean(value);
       }
 
       return (value);
