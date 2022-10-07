@@ -223,6 +223,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
       }
       catch(Exception e)
       {
+         LOG.error("Exception generating excel file", e);
          try
          {
             workbook.finish();
@@ -248,7 +249,11 @@ public class ExcelExportStreamer implements ExportStreamerInterface
          Serializable value = qRecord.getValue(field.getName());
          if(field.getPossibleValueSourceName() != null)
          {
-            value = Objects.requireNonNullElse(qRecord.getDisplayValue(field.getName()), value);
+            String displayValue = qRecord.getDisplayValue(field.getName());
+            if(displayValue != null)
+            {
+               value = displayValue;
+            }
          }
 
          if(value != null)
