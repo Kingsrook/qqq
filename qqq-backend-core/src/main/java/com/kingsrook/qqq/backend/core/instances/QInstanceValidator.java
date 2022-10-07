@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,17 +31,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -461,18 +466,48 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Object getInstanceOfCodeReference(String prefix, Class<?> customizerClass)
+   private Object getInstanceOfCodeReference(String prefix, Class<?> clazz)
    {
-      Object customizerInstance = null;
+      Object instance = null;
       try
       {
-         customizerInstance = customizerClass.getConstructor().newInstance();
+         instance = clazz.getConstructor().newInstance();
       }
       catch(InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e)
       {
-         errors.add(prefix + "Instance of CodeReference could not be created: " + e);
+         prefix += "Instance of " + clazz.getSimpleName() + " could not be created";
+         if(Modifier.isAbstract(clazz.getModifiers()))
+         {
+            errors.add(prefix + " because it is abstract");
+         }
+         else if(Modifier.isInterface(clazz.getModifiers()))
+         {
+            errors.add(prefix + " because it is an interface");
+         }
+         else if(!Modifier.isPublic(clazz.getModifiers()))
+         {
+            errors.add(prefix + " because it is not public");
+         }
+         else
+         {
+            //////////////////////////////////
+            // check for no-arg constructor //
+            //////////////////////////////////
+            boolean hasNoArgConstructor = Stream.of(clazz.getConstructors()).anyMatch(c -> c.getParameterCount() == 0);
+            if(!hasNoArgConstructor)
+            {
+               errors.add(prefix + " because it does not have a parameterless constructor");
+            }
+            else
+            {
+               //////////////////////////////////////////
+               // otherwise, just append the exception //
+               //////////////////////////////////////////
+               errors.add(prefix + ": " + e);
+            }
+         }
       }
-      return customizerInstance;
+      return instance;
    }
 
 
@@ -579,6 +614,23 @@ public class QInstanceValidator
                {
                   assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName);
                   index++;
+
+                  ////////////////////////////////////////////
+                  // validate instantiation of step classes //
+                  ////////////////////////////////////////////
+                  if(step instanceof QBackendStepMetaData backendStepMetaData)
+                  {
+                     if(backendStepMetaData.getInputMetaData() != null && CollectionUtils.nullSafeHasContents(backendStepMetaData.getInputMetaData().getFieldList()))
+                     {
+                        for(QFieldMetaData fieldMetaData : backendStepMetaData.getInputMetaData().getFieldList())
+                        {
+                           if(fieldMetaData.getDefaultValue() != null && fieldMetaData.getDefaultValue() instanceof QCodeReference codeReference)
+                           {
+                              validateSimpleCodeReference("Process " + processName + " backend step code reference: ", codeReference, BackendStep.class);
+                           }
+                        }
+                     }
+                  }
                }
             }
          });
@@ -715,20 +767,20 @@ public class QInstanceValidator
          ///////////////////////////////////////
          // make sure the class can be loaded //
          ///////////////////////////////////////
-         Class<?> customizerClass = getClassForCodeReference(codeReference, prefix);
-         if(customizerClass != null)
+         Class<?> clazz = getClassForCodeReference(codeReference, prefix);
+         if(clazz != null)
          {
             //////////////////////////////////////////////////
             // make sure the customizer can be instantiated //
             //////////////////////////////////////////////////
-            Object customizerInstance = getInstanceOfCodeReference(prefix, customizerClass);
+            Object classInstance = getInstanceOfCodeReference(prefix, clazz);
 
             ////////////////////////////////////////////////////////////////////////
             // make sure the customizer instance can be cast to the expected type //
             ////////////////////////////////////////////////////////////////////////
-            if(customizerInstance != null)
+            if(classInstance != null)
             {
-               getCastedObject(prefix, expectedClass, customizerInstance);
+               getCastedObject(prefix, expectedClass, classInstance);
             }
          }
       }
@@ -741,16 +793,16 @@ public class QInstanceValidator
     *******************************************************************************/
    private Class<?> getClassForCodeReference(QCodeReference codeReference, String prefix)
    {
-      Class<?> customizerClass = null;
+      Class<?> clazz = null;
       try
       {
-         customizerClass = Class.forName(codeReference.getName());
+         clazz = Class.forName(codeReference.getName());
       }
       catch(ClassNotFoundException e)
       {
-         errors.add(prefix + "Class for CodeReference could not be found.");
+         errors.add(prefix + "Class for " + codeReference.getName() + " could not be found.");
       }
-      return customizerClass;
+      return clazz;
    }
 
 

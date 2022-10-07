@@ -29,7 +29,12 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -45,10 +50,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -231,6 +241,75 @@ class QInstanceValidatorTest
 
 
    /*******************************************************************************
+    ** Test that a process with a step that is a private class fails
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessWithPrivateStep()
+   {
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         ExtractViaQueryStep.class,
+         TestPrivateClass.class,
+         LoadViaDeleteStep.class,
+         new HashMap<>()
+      );
+      process.setName("testProcess");
+      process.setLabel("Test Process");
+      process.setTableName(TestUtils.defineTablePerson().getName());
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addProcess(process),
+         "is not public");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that a process with a step that does not have a no-args constructor fails
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessWithNoArgsConstructorStep()
+   {
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         ExtractViaQueryStep.class,
+         TestNoArgsConstructorClass.class,
+         LoadViaDeleteStep.class,
+         new HashMap<>()
+      );
+      process.setName("testProcess");
+      process.setLabel("Test Process");
+      process.setTableName(TestUtils.defineTablePerson().getName());
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addProcess(process),
+         "parameterless constructor");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that a process with a step that is an abstract class fails
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessWithAbstractStep()
+   {
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         ExtractViaQueryStep.class,
+         TestAbstractClass.class,
+         LoadViaDeleteStep.class,
+         new HashMap<>()
+      );
+      process.setName("testProcess");
+      process.setLabel("Test Process");
+      process.setTableName(TestUtils.defineTablePerson().getName());
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addProcess(process),
+         "because it is abstract");
+   }
+
+
+
+   /*******************************************************************************
     ** Test that a process with no steps fails
     **
     *******************************************************************************/
@@ -297,10 +376,10 @@ class QInstanceValidatorTest
          "missing a code type");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", QCodeType.JAVA, QCodeUsage.CUSTOMIZER)),
-         "Class for CodeReference could not be found");
+         "Class for Test could not be found");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithNoVoidConstructor.class, QCodeUsage.CUSTOMIZER)),
-         "Instance of CodeReference could not be created");
+         "Instance of " + CustomizerWithNoVoidConstructor.class.getSimpleName() + " could not be created");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotAFunction.class, QCodeUsage.CUSTOMIZER)),
          "CodeReference is not of the expected type");
@@ -1066,4 +1145,64 @@ class QInstanceValidatorTest
          .withFailMessage("Expected any of:\n%s\nTo match: [%s]", e.getReasons(), reason)
          .anyMatch(s -> s.contains(reason));
    }
+
+
+
+   ///////////////////////////////////////////////
+   // test classes for validating process steps //
+   ///////////////////////////////////////////////
+   public abstract class TestAbstractClass extends AbstractTransformStep implements BackendStep
+   {
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+      }
+   }
+
+
+
+   ///////////////////////////////////////////////
+   //                                           //
+   ///////////////////////////////////////////////
+   private class TestPrivateClass extends AbstractTransformStep implements BackendStep
+   {
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+      }
+
+
+
+      @Override
+      public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+      {
+         return null;
+      }
+   }
+
+
+
+   ///////////////////////////////////////////////
+   //                                           //
+   ///////////////////////////////////////////////
+   public class TestNoArgsConstructorClass extends AbstractTransformStep implements BackendStep
+   {
+      public TestNoArgsConstructorClass(int i)
+      {
+
+      }
+
+
+
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+      }
+
+
+
+      @Override
+      public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+      {
+         return null;
+      }
+   }
 }
+
