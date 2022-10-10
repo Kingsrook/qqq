@@ -76,9 +76,9 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
-         if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
+         if(filter != null && filter.hasAnyCriteria())
          {
-            sql += " WHERE " + makeWhereClause(table, filter.getCriteria(), params);
+            sql += " WHERE " + makeWhereClause(table, filter, params);
          }
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))

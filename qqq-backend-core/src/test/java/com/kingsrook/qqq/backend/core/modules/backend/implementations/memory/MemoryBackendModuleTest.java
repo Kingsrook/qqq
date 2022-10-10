@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -211,48 +212,49 @@ class MemoryBackendModuleTest
       insertInput.setTableName(table.getName());
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("name", "Square").withValue("date", LocalDate.of(1980, Month.MAY, 31)),
-         new QRecord().withValue("id", 2).withValue("name", "Triangle").withValue("date", LocalDate.of(1999, Month.DECEMBER, 31))
+         new QRecord().withValue("id", 2).withValue("name", "Triangle").withValue("date", LocalDate.of(1999, Month.DECEMBER, 31)),
+         new QRecord().withValue("id", 3).withValue("name", "Circle").withValue("date", LocalDate.of(2022, Month.OCTOBER, 10))
       ));
       new InsertAction().execute(insertInput);
 
       assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2))).size());
-      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(2, 3))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(3, 4))).size());
 
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.NOT_IN, List.of(3, 4))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.NOT_IN, List.of(4, 5))).size());
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.NOT_IN, List.of(2, 3))).size());
 
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).size());
       assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square"))).get(0).getValue("name"));
       assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("notAFieldSoNull", QCriteriaOperator.EQUALS, List.of("Square"))).size());
 
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("notFound"))).size());
-      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("Triangle"))).get(0).getValue("name"));
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("notFound"))).size());
+      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_EQUALS, List.of("Triangle", "Circle"))).get(0).getValue("name"));
 
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of("ria"))).size());
       assertEquals("Triangle", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of("ria"))).get(0).getValue("name"));
 
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_CONTAINS, List.of("notFound"))).size());
-      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_CONTAINS, List.of("ria"))).get(0).getValue("name"));
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_CONTAINS, List.of("notFound"))).size());
+      assertEquals("Square", queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.NOT_CONTAINS, List.of("le"))).get(0).getValue("name"));
 
       assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.CONTAINS, List.of("ria"))));
       assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of(1))));
       assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.CONTAINS, List.of())));
 
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
-      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(2))).size());
-      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(1))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(0))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(2035, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(3))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(1))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN, List.of(0))).size());
 
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
-      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1980, Month.MAY, 31)))).size());
-      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(3))).size());
-      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(2))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(1))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(0))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(2035, Month.JANUARY, 1)))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(LocalDate.of(1980, Month.MAY, 31)))).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(4))).size());
+      assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(3))).size());
+      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(2))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, List.of(1))).size());
 
       assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN, List.of(LocalDate.of(2022, Month.SEPTEMBER, 1)))).size());
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
@@ -265,7 +267,7 @@ class MemoryBackendModuleTest
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(1990, Month.JANUARY, 1)))).size());
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(1980, Month.MAY, 31)))).size());
       assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("date", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(LocalDate.of(1970, Month.JANUARY, 1)))).size());
-      assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(3))).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(3))).size());
       assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(2))).size());
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(1))).size());
       assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of(0))).size());
@@ -275,16 +277,88 @@ class MemoryBackendModuleTest
       assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN, List.of())));
       assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of())));
       assertThrows(QException.class, () -> queryShapes(qInstance, table, session, new QFilterCriteria("name", QCriteriaOperator.LESS_THAN_OR_EQUALS, List.of("Bob"))));
+
+      {
+         ////////////////////////////
+         // test a simple OR query //
+         ////////////////////////////
+         QQueryFilter filter = new QQueryFilter()
+            .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+            .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square")))
+            .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Triangle")));
+         assertEquals(2, queryShapes(qInstance, table, session, filter).size());
+         assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Square"));
+         assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Triangle"));
+      }
+
+      ///////////////////////////////////////////////////
+      // null or empty query - should find all records //
+      ///////////////////////////////////////////////////
+      assertEquals(3, queryShapes(qInstance, table, session, (QQueryFilter) null).size());
+      assertEquals(3, queryShapes(qInstance, table, session, new QQueryFilter()).size());
+
+      {
+         /////////////////////////////////
+         // test a complex nested query //
+         /////////////////////////////////
+         QQueryFilter filter = new QQueryFilter()
+            .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+            .withSubFilters(List.of(
+               new QQueryFilter()
+                  .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+                  .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square")))
+                  .withCriteria(new QFilterCriteria("id", QCriteriaOperator.EQUALS, List.of(1))),
+               new QQueryFilter()
+                  .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+                  .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Circle")))
+                  .withCriteria(new QFilterCriteria("id", QCriteriaOperator.EQUALS, List.of(3)))
+            ));
+         assertEquals(2, queryShapes(qInstance, table, session, filter).size());
+         assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Square") && r.getValueInteger("id").equals(1));
+         assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Circle") && r.getValueInteger("id").equals(3));
+      }
+
+      {
+         /////////////////////////////////
+         // test a complex nested query //
+         /////////////////////////////////
+         QQueryFilter filter = new QQueryFilter()
+            .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+            .withSubFilters(List.of(
+               new QQueryFilter()
+                  .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+                  .withCriteria(new QFilterCriteria("id", QCriteriaOperator.EQUALS, List.of(1)))
+                  .withCriteria(new QFilterCriteria("id", QCriteriaOperator.EQUALS, List.of(3))),
+               new QQueryFilter()
+                  .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+                  .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Square")))
+                  .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, List.of("Circle")))
+            ));
+         assertEquals(2, queryShapes(qInstance, table, session, filter).size());
+         assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Square") && r.getValueInteger("id").equals(1));
+         assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Circle") && r.getValueInteger("id").equals(3));
+      }
+
    }
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private List<QRecord> queryShapes(QInstance qInstance, QTableMetaData table, QSession session, QFilterCriteria criteria) throws QException
+   {
+      return queryShapes(qInstance, table, session, new QQueryFilter().withCriteria(criteria));
+   }
+
+
+
+   private List<QRecord> queryShapes(QInstance qInstance, QTableMetaData table, QSession session, QQueryFilter filter) throws QException
    {
       QueryInput queryInput = new QueryInput(qInstance);
       queryInput.setSession(session);
       queryInput.setTableName(table.getName());
-      queryInput.setFilter(new QQueryFilter().withCriteria(criteria));
+      queryInput.setFilter(filter);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return queryOutput.getRecords();
    }
