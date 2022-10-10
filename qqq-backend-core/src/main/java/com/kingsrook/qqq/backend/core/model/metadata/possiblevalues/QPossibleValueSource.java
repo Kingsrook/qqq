@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
@@ -48,8 +49,9 @@ public class QPossibleValueSource
    //////////////////////
    // for type = TABLE //
    //////////////////////
-   private String tableName;
-   // todo - override labelFormat & labelFields?
+   private String               tableName;
+   private List<String>         searchFields;
+   private List<QFilterOrderBy> orderByFields;
 
    /////////////////////
    // for type = ENUM //
@@ -300,6 +302,128 @@ public class QPossibleValueSource
    {
       this.tableName = tableName;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for searchFields
+    **
+    *******************************************************************************/
+   public List<String> getSearchFields()
+   {
+      return searchFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for searchFields
+    **
+    *******************************************************************************/
+   public void setSearchFields(List<String> searchFields)
+   {
+      this.searchFields = searchFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for searchFields
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withSearchFields(List<String> searchFields)
+   {
+      this.searchFields = searchFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for searchFields
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withSearchField(String searchField)
+   {
+      if(this.searchFields == null)
+      {
+         this.searchFields = new ArrayList<>();
+      }
+      this.searchFields.add(searchField);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for orderByFields
+    **
+    *******************************************************************************/
+   public List<QFilterOrderBy> getOrderByFields()
+   {
+      return orderByFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for orderByFields
+    **
+    *******************************************************************************/
+   public void setOrderByFields(List<QFilterOrderBy> orderByFields)
+   {
+      this.orderByFields = orderByFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for orderByFields
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withOrderByFields(List<QFilterOrderBy> orderByFields)
+   {
+      this.orderByFields = orderByFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for orderByFields
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withOrderByField(QFilterOrderBy orderByField)
+   {
+      if(this.orderByFields == null)
+      {
+         this.orderByFields = new ArrayList<>();
+      }
+      this.orderByFields.add(orderByField);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for orderByFields - default to ASCENDING
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withOrderByField(String fieldName)
+   {
+      return (withOrderByField(new QFilterOrderBy(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for orderByFields
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withOrderByField(String fieldName, boolean isAscending)
+   {
+      return (withOrderByField(new QFilterOrderBy(fieldName, isAscending)));
    }
 
 

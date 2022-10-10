@@ -28,6 +28,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +47,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -76,10 +78,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
@@ -277,6 +282,7 @@ public class QJavalinImplementation
             get("/count", QJavalinImplementation::dataCount);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
+            get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
 
             // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
             path("/{primaryKey}", () ->
@@ -855,6 +861,64 @@ public class QJavalinImplementation
          //    System.out.println("Well, here we are...");
          //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
          // }
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void possibleValues(Context context)
+   {
+      try
+      {
+         String tableName  = context.pathParam("table");
+         String fieldName  = context.pathParam("fieldName");
+         String searchTerm = context.queryParam("searchTerm");
+         String ids        = context.queryParam("ids");
+
+         QTableMetaData table = qInstance.getTable(tableName);
+         if(table == null)
+         {
+            throw (new QNotFoundException("Could not find table named " + tableName + " in this instance."));
+         }
+
+         QFieldMetaData field;
+         try
+         {
+            field = table.getField(fieldName);
+         }
+         catch(Exception e)
+         {
+            throw (new QNotFoundException("Could not find field named " + fieldName + " in table " + tableName + "."));
+         }
+
+         if(!StringUtils.hasContent(field.getPossibleValueSourceName()))
+         {
+            throw (new QNotFoundException("Field " + fieldName + " in table " + tableName + " is not associated with a possible value source."));
+         }
+
+         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(qInstance);
+         setupSession(context, input);
+         input.setPossibleValueSourceName(field.getPossibleValueSourceName());
+         input.setSearchTerm(searchTerm);
+
+         if(StringUtils.hasContent(ids))
+         {
+            List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
+            input.setIdList(idList);
+         }
+
+         SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
+
+         Map<String, Object> result = new HashMap<>();
+         result.put("options", output.getResults());
+         context.result(JsonUtils.toJson(result));
       }
       catch(Exception e)
       {

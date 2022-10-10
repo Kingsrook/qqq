@@ -364,7 +364,17 @@ public class MemoryRecordStore
          return (false);
       }
 
-      if(!value.equals(criterion.getValues().get(0)))
+      Serializable criteriaValue = criterion.getValues().get(0);
+      if(value instanceof String && criteriaValue instanceof Number)
+      {
+         criteriaValue = String.valueOf(criteriaValue);
+      }
+      else if(criteriaValue instanceof String && value instanceof Number)
+      {
+         value = String.valueOf(value);
+      }
+
+      if(!value.equals(criteriaValue))
       {
          return (false);
       }

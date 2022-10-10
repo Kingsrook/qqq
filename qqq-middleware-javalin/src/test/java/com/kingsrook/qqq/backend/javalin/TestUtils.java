@@ -25,28 +25,31 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
@@ -123,6 +126,7 @@ public class TestUtils
       qInstance.addProcess(defineProcessSimpleSleep());
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
+      qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
       defineWidgets(qInstance);
       return (qInstance);
    }
@@ -181,6 +185,8 @@ public class TestUtils
       return new QTableMetaData()
          .withName("person")
          .withLabel("Person")
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("firstName", "lastName")
          .withBackendName(defineBackend().getName())
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -189,6 +195,7 @@ public class TestUtils
          .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
+         .withField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withBackendName("partner_person_id").withPossibleValueSourceName("person"))
          .withField(new QFieldMetaData("email", QFieldType.STRING));
    }
 
@@ -264,6 +271,22 @@ public class TestUtils
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource definePossibleValueSourcePerson()
+   {
+      return (new QPossibleValueSource()
+         .withName("person")
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName("person")
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_PARENS_ID)
+         .withOrderByField("id")
+      );
    }
 
 

@@ -497,4 +497,57 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertNotNull(jsonObject.getJSONObject("chartData"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueUnfiltered()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(5, jsonObject.getJSONArray("options").length());
+      assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
+      assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueWithSearchTerm()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId?searchTerm=Chamber").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(1, jsonObject.getJSONArray("options").length());
+      assertEquals("Tim Chamberlain (3)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueWithIds()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId?ids=4,5").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(2, jsonObject.getJSONArray("options").length());
+      assertEquals(4, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
+      assertEquals(5, jsonObject.getJSONArray("options").getJSONObject(1).getInt("id"));
+   }
+
 }

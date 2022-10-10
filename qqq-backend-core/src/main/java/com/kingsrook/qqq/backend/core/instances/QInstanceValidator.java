@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -715,6 +716,8 @@ public class QInstanceValidator
                   case ENUM ->
                   {
                      assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "enum-type possibleValueSource " + pvsName + " should not have a tableName.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "enum-type possibleValueSource " + pvsName + " should not have searchFields.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "enum-type possibleValueSource " + pvsName + " should not have orderByFields.");
                      assertCondition(possibleValueSource.getCustomCodeReference() == null, "enum-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
 
                      assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()), "enum-type possibleValueSource " + pvsName + " is missing enum values");
@@ -724,15 +727,44 @@ public class QInstanceValidator
                      assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "table-type possibleValueSource " + pvsName + " should not have enum values.");
                      assertCondition(possibleValueSource.getCustomCodeReference() == null, "table-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
 
+                     QTableMetaData tableMetaData = null;
                      if(assertCondition(StringUtils.hasContent(possibleValueSource.getTableName()), "table-type possibleValueSource " + pvsName + " is missing a tableName."))
                      {
-                        assertCondition(qInstance.getTable(possibleValueSource.getTableName()) != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + pvsName + ".");
+                        tableMetaData = qInstance.getTable(possibleValueSource.getTableName());
+                        assertCondition(tableMetaData != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + pvsName + ".");
+                     }
+
+                     if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "table-type possibleValueSource " + pvsName + " is missing searchFields."))
+                     {
+                        if(tableMetaData != null)
+                        {
+                           QTableMetaData finalTableMetaData = tableMetaData;
+                           for(String searchField : possibleValueSource.getSearchFields())
+                           {
+                              assertNoException(() -> finalTableMetaData.getField(searchField), "possibleValueSource " + pvsName + " has an unrecognized searchField: " + searchField);
+                           }
+                        }
+                     }
+
+                     if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "table-type possibleValueSource " + pvsName + " is missing orderByFields."))
+                     {
+                        if(tableMetaData != null)
+                        {
+                           QTableMetaData finalTableMetaData = tableMetaData;
+
+                           for(QFilterOrderBy orderByField : possibleValueSource.getOrderByFields())
+                           {
+                              assertNoException(() -> finalTableMetaData.getField(orderByField.getFieldName()), "possibleValueSource " + pvsName + " has an unrecognized orderByField: " + orderByField.getFieldName());
+                           }
+                        }
                      }
                   }
                   case CUSTOM ->
                   {
                      assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "custom-type possibleValueSource " + pvsName + " should not have enum values.");
                      assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "custom-type possibleValueSource " + pvsName + " should not have a tableName.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "custom-type possibleValueSource " + pvsName + " should not have searchFields.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "custom-type possibleValueSource " + pvsName + " should not have orderByFields.");
 
                      if(assertCondition(possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
                      {

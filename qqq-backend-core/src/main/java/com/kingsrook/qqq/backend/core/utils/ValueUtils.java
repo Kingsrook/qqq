@@ -454,7 +454,14 @@ public class ValueUtils
                return (null);
             }
 
-            return Instant.parse(s);
+            try
+            {
+               return Instant.parse(s);
+            }
+            catch(DateTimeParseException e)
+            {
+               return tryAlternativeInstantParsing(s, e);
+            }
          }
          else
          {
@@ -468,6 +475,26 @@ public class ValueUtils
       catch(Exception e)
       {
          throw (new QValueException("Value [" + value + "] could not be converted to a Instant.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Instant tryAlternativeInstantParsing(String s, DateTimeParseException e)
+   {
+      if(s.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$"))
+      {
+         //////////////////////////
+         // todo ... time zone?? //
+         //////////////////////////
+         return Instant.parse(s + ":00Z");
+      }
+      else
+      {
+         throw (e);
       }
    }
 

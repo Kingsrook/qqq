@@ -121,6 +121,11 @@ public class QInstanceEnricher
       {
          qInstance.getReports().values().forEach(this::enrichReport);
       }
+
+      if(qInstance.getPossibleValueSources() != null)
+      {
+         qInstance.getPossibleValueSources().values().forEach(this::enrichPossibleValueSource);
+      }
    }
 
 
@@ -745,6 +750,52 @@ public class QInstanceEnricher
       if(!otherSection.getFieldNames().isEmpty())
       {
          table.addSection(otherSection);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichPossibleValueSource(QPossibleValueSource possibleValueSource)
+   {
+      if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
+      {
+         if(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getSearchFields()))
+         {
+            QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+            if(table != null)
+            {
+               if(table.getPrimaryKeyField() != null)
+               {
+                  possibleValueSource.withSearchField(table.getPrimaryKeyField());
+               }
+
+               for(String recordLabelField : CollectionUtils.nonNullList(table.getRecordLabelFields()))
+               {
+                  possibleValueSource.withSearchField(recordLabelField);
+               }
+            }
+         }
+
+         if(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getOrderByFields()))
+         {
+            QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+            if(table != null)
+            {
+               for(String recordLabelField : CollectionUtils.nonNullList(table.getRecordLabelFields()))
+               {
+                  possibleValueSource.withOrderByField(recordLabelField);
+               }
+
+               if(table.getPrimaryKeyField() != null)
+               {
+                  possibleValueSource.withOrderByField(table.getPrimaryKeyField());
+               }
+            }
+         }
+
       }
    }
 

@@ -111,7 +111,35 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** Translate a list of ids to a list of possible values (e.g., w/ rendered values)
+    *******************************************************************************/
+   public List<QPossibleValue<?>> buildTranslatedPossibleValueList(QPossibleValueSource possibleValueSource, List<Serializable> ids)
+   {
+      if(ids == null)
+      {
+         return (null);
+      }
+
+      if(ids.isEmpty())
+      {
+         return (new ArrayList<>());
+      }
+
+      List<QPossibleValue<?>> rs = new ArrayList<>();
+      primePvsCache(possibleValueSource.getTableName(), List.of(possibleValueSource), ids);
+      for(Serializable id : ids)
+      {
+         String translated = translatePossibleValue(possibleValueSource, id);
+         rs.add(new QPossibleValue<>(id, translated));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given field and (raw/id) value, get the translated (string) value.
     *******************************************************************************/
    String translatePossibleValue(QFieldMetaData field, Serializable value)
    {
@@ -122,6 +150,16 @@ public class QPossibleValueTranslator
          return (null);
       }
 
+      return translatePossibleValue(possibleValueSource, value);
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given PossibleValueSource and (raw/id) value, get the translated (string) value.
+    *******************************************************************************/
+   String translatePossibleValue(QPossibleValueSource possibleValueSource, Serializable value)
+   {
       String resultValue = null;
       if(possibleValueSource.getType().equals(QPossibleValueSourceType.ENUM))
       {
@@ -129,15 +167,15 @@ public class QPossibleValueTranslator
       }
       else if(possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
       {
-         resultValue = translatePossibleValueTable(field, value, possibleValueSource);
+         resultValue = translatePossibleValueTable(value, possibleValueSource);
       }
       else if(possibleValueSource.getType().equals(QPossibleValueSourceType.CUSTOM))
       {
-         resultValue = translatePossibleValueCustom(field, value, possibleValueSource);
+         resultValue = translatePossibleValueCustom(value, possibleValueSource);
       }
       else
       {
-         LOG.error("Unrecognized possibleValueSourceType [" + possibleValueSource.getType() + "] in PVS named [" + possibleValueSource.getName() + "] on field [" + field.getName() + "]");
+         LOG.error("Unrecognized possibleValueSourceType [" + possibleValueSource.getType() + "] in PVS named [" + possibleValueSource.getName() + "]");
       }
 
       if(resultValue == null)
@@ -151,7 +189,7 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** do translation for an enum-type PVS
     *******************************************************************************/
    private String translatePossibleValueEnum(Serializable value, QPossibleValueSource possibleValueSource)
    {
@@ -169,9 +207,9 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** do translation for a table-type PVS
     *******************************************************************************/
-   private String translatePossibleValueTable(QFieldMetaData field, Serializable value, QPossibleValueSource possibleValueSource)
+   String translatePossibleValueTable(Serializable value, QPossibleValueSource possibleValueSource)
    {
       /////////////////////////////////
       // null input gets null output //
@@ -197,9 +235,9 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** do translation for a custom-type PVS
     *******************************************************************************/
-   private String translatePossibleValueCustom(QFieldMetaData field, Serializable value, QPossibleValueSource possibleValueSource)
+   private String translatePossibleValueCustom(Serializable value, QPossibleValueSource possibleValueSource)
    {
       try
       {
@@ -208,7 +246,7 @@ public class QPossibleValueTranslator
       }
       catch(Exception e)
       {
-         LOG.warn("Error sending [" + value + "] for field [" + field + "] through custom code for PVS [" + field.getPossibleValueSourceName() + "]", e);
+         LOG.warn("Error sending [" + value + "] for through custom code for PVS [" + possibleValueSource.getName() + "]", e);
       }
 
       return (null);

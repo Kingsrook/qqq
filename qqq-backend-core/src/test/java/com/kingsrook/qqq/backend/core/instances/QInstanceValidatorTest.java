@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -793,10 +794,14 @@ class QInstanceValidatorTest
       assertValidationFailureReasons((qInstance) -> {
             QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
             possibleValueSource.setTableName("person");
+            possibleValueSource.setSearchFields(List.of("id"));
+            possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
             possibleValueSource.setCustomCodeReference(new QCodeReference());
             possibleValueSource.setEnumValues(null);
          },
          "should not have a tableName",
+         "should not have searchFields",
+         "should not have orderByFields",
          "should not have a customCodeReference",
          "is missing enum values");
 
@@ -815,15 +820,22 @@ class QInstanceValidatorTest
       assertValidationFailureReasons((qInstance) -> {
             QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
             possibleValueSource.setTableName(null);
+            possibleValueSource.setSearchFields(null);
+            possibleValueSource.setOrderByFields(new ArrayList<>());
             possibleValueSource.setCustomCodeReference(new QCodeReference());
             possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
          },
          "should not have enum values",
          "should not have a customCodeReference",
-         "is missing a tableName");
+         "is missing a tableName",
+         "is missing searchFields",
+         "is missing orderByFields");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setTableName("Not a table"),
          "Unrecognized table");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setSearchFields(List.of("id", "notAField", "name")),
+         "unrecognized searchField: notAField");
    }
 
 
@@ -837,11 +849,15 @@ class QInstanceValidatorTest
       assertValidationFailureReasons((qInstance) -> {
             QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
             possibleValueSource.setTableName("person");
+            possibleValueSource.setSearchFields(List.of("id"));
+            possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
             possibleValueSource.setCustomCodeReference(null);
             possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
          },
          "should not have enum values",
          "should not have a tableName",
+         "should not have searchFields",
+         "should not have orderByFields",
          "is missing a customCodeReference");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM).setCustomCodeReference(new QCodeReference()),

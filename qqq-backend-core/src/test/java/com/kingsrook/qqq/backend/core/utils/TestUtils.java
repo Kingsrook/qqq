@@ -331,7 +331,9 @@ public class TestUtils
       return new QPossibleValueSource()
          .withName(POSSIBLE_VALUE_SOURCE_SHAPE)
          .withType(QPossibleValueSourceType.TABLE)
-         .withTableName(TABLE_NAME_SHAPE);
+         .withTableName(TABLE_NAME_SHAPE)
+         .withSearchFields(List.of("id", "name"))
+         .withOrderByField("name");
    }
 
 
