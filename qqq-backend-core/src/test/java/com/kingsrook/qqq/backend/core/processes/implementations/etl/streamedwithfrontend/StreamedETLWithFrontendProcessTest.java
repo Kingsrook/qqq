@@ -115,6 +115,45 @@ public class StreamedETLWithFrontendProcessTest
     **
     *******************************************************************************/
    @Test
+   void testLoadViaInsertOrUpdate() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // define the process - an ELT from Shapes to Shapes - inserting 1, updating 2 //
+      /////////////////////////////////////////////////////////////////////////////////
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         TestUtils.TABLE_NAME_SHAPE,
+         TestUtils.TABLE_NAME_SHAPE,
+         ExtractViaQueryStep.class,
+         TestTransformShapeToMaybeNewShape.class,
+         LoadViaInsertOrUpdateStep.class);
+      process.setName("test");
+      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      instance.addProcess(process);
+
+      TestUtils.insertDefaultShapes(instance);
+
+      /////////////////////
+      // run the process //
+      /////////////////////
+      runProcess(instance, process);
+
+      List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_SHAPE);
+      assertEquals(4, postList.size());
+      assertThat(postList)
+         .as("Should have inserted a new Square").anyMatch(qr -> qr.getValue("name").equals("a new Square"))
+         .as("Should have left old Square alone").anyMatch(qr -> qr.getValue("name").equals("Square"))
+         .as("Should have updated Triangle").anyMatch(qr -> qr.getValue("name").equals("an updated Triangle"))
+         .as("Should have updated Circle").anyMatch(qr -> qr.getValue("name").equals("an updated Circle"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testSimpleSmallQueryTransformUpdate() throws QException
    {
       QInstance instance = TestUtils.defineInstance();
@@ -354,6 +393,49 @@ public class StreamedETLWithFrontendProcessTest
             newQRecord.setValue("firstName", "Johnny");
             newQRecord.setValue("lastName", qRecord.getValueString("name"));
             runBackendStepOutput.getRecords().add(newQRecord);
+         }
+      }
+
+
+
+      @Override
+      public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+      {
+         return null;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestTransformShapeToMaybeNewShape extends AbstractTransformStep
+   {
+
+      /*******************************************************************************
+       ** Execute the backend step - using the request as input, and the result as output.
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         for(QRecord qRecord : runBackendStepInput.getRecords())
+         {
+            String name = qRecord.getValueString("name");
+            if(name.equals("Square"))
+            {
+               QRecord toInsertRecord = new QRecord();
+               toInsertRecord.setValue("name", "a new Square");
+               runBackendStepOutput.getRecords().add(toInsertRecord);
+            }
+            else
+            {
+               QRecord toUpdateRecord = new QRecord();
+               toUpdateRecord.setValue("id", qRecord.getValueInteger("id"));
+               toUpdateRecord.setValue("name", "an updated " + name);
+               runBackendStepOutput.getRecords().add(toUpdateRecord);
+            }
          }
       }
 

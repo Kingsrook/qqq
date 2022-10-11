@@ -79,6 +79,11 @@ public class QInstanceEnricher
 
    private final QInstance qInstance;
 
+   //////////////////////////////////////////////////////////
+   // todo - come up w/ a way for app devs to set configs! //
+   //////////////////////////////////////////////////////////
+   private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = true;
+
 
 
    /*******************************************************************************
@@ -229,7 +234,14 @@ public class QInstanceEnricher
    {
       if(!StringUtils.hasContent(field.getLabel()))
       {
-         field.setLabel(nameToLabel(field.getName()));
+         if(configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels && StringUtils.hasContent(field.getPossibleValueSourceName()) && field.getName() != null && field.getName().endsWith("Id"))
+         {
+            field.setLabel(nameToLabel(field.getName().substring(0, field.getName().length() - 2)));
+         }
+         else
+         {
+            field.setLabel(nameToLabel(field.getName()));
+         }
       }
 
       //////////////////////////////////////////////////////////////////////////

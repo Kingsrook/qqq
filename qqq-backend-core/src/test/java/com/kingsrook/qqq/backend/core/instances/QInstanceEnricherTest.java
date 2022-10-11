@@ -109,6 +109,23 @@ class QInstanceEnricherTest
 
 
    /*******************************************************************************
+    ** Test that a field missing a label gets the default label applied (name w/ UC-first)
+    ** w/ Id stripped from the end, because it's a PVS
+    **
+    *******************************************************************************/
+   @Test
+   public void test_nullFieldLabelComesFromNameWithoutIdForPossibleValues()
+   {
+      QInstance      qInstance        = TestUtils.defineInstance();
+      QFieldMetaData homeStateIdField = qInstance.getTable("person").getField("homeStateId");
+      assertNull(homeStateIdField.getLabel());
+      new QInstanceEnricher(qInstance).enrich();
+      assertEquals("Home State", homeStateIdField.getLabel());
+   }
+
+
+
+   /*******************************************************************************
     ** Test that a fieldSection missing a label gets the default label applied (name w/ UC-first).
     **
     *******************************************************************************/

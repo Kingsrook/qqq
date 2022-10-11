@@ -80,10 +80,11 @@ public class StreamedETLWithFrontendProcess
    public static final String FIELD_VALIDATION_SUMMARY       = "validationSummary"; // List<ProcessSummaryLine>
    public static final String FIELD_PROCESS_SUMMARY          = "processResults"; // List<ProcessSummaryLine>
 
-   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_INSERT = "This is a preview of the records that will be created.";
-   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_UPDATE = "This is a preview of the records that will be updated.";
-   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_DELETE = "This is a preview of the records that will be deleted.";
-   public static final String FIELD_PREVIEW_MESSAGE              = "previewMessage";
+   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_INSERT           = "This is a preview of the records that will be created.";
+   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_UPDATE           = "This is a preview of the records that will be updated.";
+   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_INSERT_OR_UPDATE = "This is a preview of the records that will be inserted or updated.";
+   public static final String DEFAULT_PREVIEW_MESSAGE_FOR_DELETE           = "This is a preview of the records that will be deleted.";
+   public static final String FIELD_PREVIEW_MESSAGE                        = "previewMessage";
 
 
 
