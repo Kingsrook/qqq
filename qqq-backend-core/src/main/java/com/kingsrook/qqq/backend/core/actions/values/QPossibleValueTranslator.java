@@ -126,7 +126,11 @@ public class QPossibleValueTranslator
       }
 
       List<QPossibleValue<?>> rs = new ArrayList<>();
-      primePvsCache(possibleValueSource.getTableName(), List.of(possibleValueSource), ids);
+      if(possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
+      {
+         primePvsCache(possibleValueSource.getTableName(), List.of(possibleValueSource), ids);
+      }
+
       for(Serializable id : ids)
       {
          String translated = translatePossibleValue(possibleValueSource, id);
