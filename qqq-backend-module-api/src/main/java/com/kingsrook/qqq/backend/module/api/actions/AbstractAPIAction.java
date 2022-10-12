@@ -19,55 +19,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
+package com.kingsrook.qqq.backend.module.api.actions;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 
 
 /*******************************************************************************
- * Output for an insert action
- *
+ ** Base class for all Backend-module-API Actions
  *******************************************************************************/
-public class InsertOutput extends AbstractActionOutput
+public abstract class AbstractAPIAction
 {
-   private List<QRecord> records;
+   protected APIBackendMetaData backendMetaData;
+   protected BaseAPIActionUtil  apiActionUtil;
 
 
 
    /*******************************************************************************
-    **
+    ** Setup the s3 utils object to be used for this action.
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public void preAction(AbstractTableActionInput actionInput)
    {
-      return records;
-   }
+      QBackendMetaData baseBackendMetaData = actionInput.getInstance().getBackendForTable(actionInput.getTableName());
+      this.backendMetaData = (APIBackendMetaData) baseBackendMetaData;
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setRecords(List<QRecord> records)
-   {
-      this.records = records;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addRecord(QRecord record)
-   {
-      if(this.records == null)
+      if(backendMetaData.getActionUtil() != null)
       {
-         this.records = new ArrayList<>();
+         apiActionUtil = QCodeLoader.getAdHoc(BaseAPIActionUtil.class, backendMetaData.getActionUtil());
       }
-      this.records.add(record);
+      else
+      {
+         apiActionUtil = new BaseAPIActionUtil();
+      }
+
+      apiActionUtil.setBackendMetaData(this.backendMetaData);
+      apiActionUtil.setActionInput(actionInput);
    }
 
 }
+

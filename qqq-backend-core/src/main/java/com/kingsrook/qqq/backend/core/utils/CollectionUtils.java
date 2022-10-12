@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
@@ -422,4 +424,57 @@ public class CollectionUtils
       }
       return (list);
    }
+
+
+
+   /*******************************************************************************
+    ** Returns the input collection, unless it was null - in which case a new array list is returned.
+    **
+    ** Meant to help avoid null checks on foreach loops.
+    *******************************************************************************/
+   public static <T> Collection<T> nonNullCollection(Collection<T> list)
+   {
+      if(list == null)
+      {
+         return (new ArrayList<>());
+      }
+      return (list);
+   }
+
+
+
+   /*******************************************************************************
+    ** Convert a collection of QRecords to a map, from one field's values out of
+    ** those records, to another field's value from those records
+    *******************************************************************************/
+   public static Map<Serializable, Serializable> recordsToMap(Collection<QRecord> records, String keyFieldName, String valueFieldName)
+   {
+      Map<Serializable, Serializable> rs = new HashMap<>();
+
+      for(QRecord record : nonNullCollection(records))
+      {
+         rs.put(record.getValue(keyFieldName), record.getValue(valueFieldName));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Convert a collection of QRecords to a map, from one field's values out of
+    ** those records, to the records themselves.
+    *******************************************************************************/
+   public static Map<Serializable, QRecord> recordsToMap(Collection<QRecord> records, String keyFieldName)
+   {
+      Map<Serializable, QRecord> rs = new HashMap<>();
+
+      for(QRecord record : nonNullCollection(records))
+      {
+         rs.put(record.getValue(keyFieldName), record);
+      }
+
+      return (rs);
+   }
+
 }

@@ -43,6 +43,7 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
    private String pluralFutureMessage;
    private String singularPastMessage;
    private String pluralPastMessage;
+   private String messageSuffix;
 
    //////////////////////////////////////////////////////////////////////////
    // using ArrayList, because we need to be Serializable, and List is not //
@@ -394,11 +395,13 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
       {
          if(count.equals(1))
          {
-            setMessage(isPast ? getSingularPastMessage() : getSingularFutureMessage());
+            setMessage((isPast ? getSingularPastMessage() : getSingularFutureMessage())
+               + (messageSuffix == null ? "" : messageSuffix));
          }
          else
          {
-            setMessage(isPast ? getPluralPastMessage() : getPluralFutureMessage());
+            setMessage((isPast ? getPluralPastMessage() : getPluralFutureMessage())
+               + (messageSuffix == null ? "" : messageSuffix));
          }
       }
    }
@@ -415,6 +418,40 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
       {
          pickMessage(isForResultScreen);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for messageSuffix
+    **
+    *******************************************************************************/
+   public String getMessageSuffix()
+   {
+      return messageSuffix;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for messageSuffix
+    **
+    *******************************************************************************/
+   public void setMessageSuffix(String messageSuffix)
+   {
+      this.messageSuffix = messageSuffix;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for messageSuffix
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withMessageSuffix(String messageSuffix)
+   {
+      this.messageSuffix = messageSuffix;
+      return (this);
    }
 
 }

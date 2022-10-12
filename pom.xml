@@ -30,8 +30,9 @@
 
    <modules>
       <module>qqq-backend-core</module>
-      <module>qqq-backend-module-rdbms</module>
+      <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
+      <module>qqq-backend-module-rdbms</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
       <module>qqq-sample-project</module>
