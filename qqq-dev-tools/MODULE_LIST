@@ -1,4 +1,5 @@
 qqq-backend-core
+qqq-backend-module-api
 qqq-backend-module-rdbms
 qqq-backend-module-filesystem
 qqq-middleware-javalin
