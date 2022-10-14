@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ QQQ - Low-code Application Framework for Engineers.
+  ~ Copyright (C) 2021-2022.  Kingsrook, LLC
+  ~ 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+  ~ contact@kingsrook.com
+  ~ https://github.com/Kingsrook/
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+
+   <artifactId>qqq-middleware-lambda</artifactId>
+
+   <parent>
+      <groupId>com.kingsrook.qqq</groupId>
+      <artifactId>qqq-parent-project</artifactId>
+      <version>${revision}</version>
+   </parent>
+
+   <properties>
+      <!-- props specifically to this module -->
+      <!-- <maven.compiler.release>11</maven.compiler.release> -->
+   </properties>
+
+   <dependencies>
+      <!-- other qqq modules deps -->
+      <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-backend-core</artifactId>
+         <version>${revision}</version>
+      </dependency>
+      <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-backend-module-rdbms</artifactId>
+         <version>${revision}</version>
+         <scope>test</scope>
+      </dependency>
+
+      <!-- 3rd party deps specifically for this module -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+        <dependency>
+          <groupId>com.amazonaws</groupId>
+          <artifactId>aws-lambda-java-events</artifactId>
+          <version>3.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-runtime-interface-client</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+
+      <!-- Common deps for all qqq modules -->
+      <dependency>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-checkstyle-plugin</artifactId>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-api</artifactId>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-core</artifactId>
+      </dependency>
+      <dependency>
+         <groupId>org.junit.jupiter</groupId>
+         <artifactId>junit-jupiter-engine</artifactId>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.assertj</groupId>
+         <artifactId>assertj-core</artifactId>
+         <scope>test</scope>
+      </dependency>
+   </dependencies>
+
+   <build>
+      <plugins>
+         <!-- plugins specifically for this module -->
+         <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <configuration>
+               <excludes>
+                  <exclude>com/kingsrook/qqq/lambda/model/**/*.class</exclude>
+               </excludes>
+            </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>2.4.3</version>
+            <configuration>
+               <createDependencyReducedPom>false</createDependencyReducedPom>
+               <filters>
+                  <filter>
+                     <artifact>*:*</artifact>
+                     <excludes>
+                        <exclude>META-INF/*</exclude>
+                        <!--
+                        <exclude>META-INF/*.SF</exclude>
+                        <exclude>META-INF/*.DSA</exclude>
+                        <exclude>META-INF/*.RSA</exclude>
+                        -->
+                     </excludes>
+                  </filter>
+               </filters>
+            </configuration>
+            <executions>
+               <execution>
+                  <phase>package</phase>
+                  <goals>
+                     <goal>shade</goal>
+                  </goals>
+               </execution>
+            </executions>
+         </plugin>
+
+         <plugin>
+            <groupId>com.github.seanroy</groupId>
+            <artifactId>lambda-maven-plugin</artifactId>
+            <version>2.3.4</version>
+            <configuration>
+               <functionCode>qqq-middleware-lambda/target/qqq-middleware-lambda-0.6.0-SNAPSHOT.jar</functionCode>
+               <version>LATEST</version>
+               <!-- <functionNameSuffix>-${deploymentMode}</functionNameSuffix> -->
+               <!-- <lambdaRoleArn>arn:aws:iam::554535133883:role/infoplus-lambda-execution-role</lambdaRoleArn> -->
+               <region>us-east-1</region> <!-- todo - nf in 2 -->
+               <!-- <vpcSecurityGroupIds>sg-1073a47f,sg-ba1290df</vpcSecurityGroupIds> -->
+               <!-- <vpcSubnetIds>subnet-9b8d0ef4</vpcSubnetIds> -->
+               <s3Bucket>nutrifresh-dkelkhoff-test-bucket</s3Bucket>
+               <publish>true</publish>
+               <forceUpdate>true</forceUpdate>
+               <lambdaFunctionsJSON>
+                  [
+                     {
+                        "functionName": "anotherLambda-from-pom",
+                        "description": "TODO",
+                        "handler": "com.kingsrook.qqq.lambda.AnotherHandler::handleRequest",
+                        "timeout": 1000,
+                        "memorySize": 512,
+                        "keepAlive": 5,
+                        "environmentVariables": { "DEPLOYMENT_MODE": "test" }
+                     }
+                  ]
+               </lambdaFunctionsJSON>
+            </configuration>
+            <dependencies>
+               <dependency>
+                  <groupId>javax.xml.bind</groupId>
+                  <artifactId>jaxb-api</artifactId>
+                  <version>2.3.0</version>
+               </dependency>
+               <dependency>
+                  <groupId>com.sun.xml.bind</groupId>
+                  <artifactId>jaxb-core</artifactId>
+                  <version>2.3.0</version>
+               </dependency>
+               <dependency>
+                  <groupId>com.sun.xml.bind</groupId>
+                  <artifactId>jaxb-impl</artifactId>
+                  <version>2.3.0</version>
+               </dependency>
+               <dependency>
+                  <groupId>javax.activation</groupId>
+                  <artifactId>javax.activation-api</artifactId>
+                  <version>1.2.0</version>
+               </dependency>
+               <dependency>
+                  <groupId>commons-codec</groupId>
+                  <artifactId>commons-codec</artifactId>
+                  <version>1.11</version>
+               </dependency>
+            </dependencies>
+         </plugin>
+
+      </plugins>
+   </build>
+
+
+</project>

@@ -35,6 +35,7 @@
       <module>qqq-backend-module-rdbms</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
+      <module>qqq-middleware-lambda</module>
       <module>qqq-sample-project</module>
    </modules>
 
