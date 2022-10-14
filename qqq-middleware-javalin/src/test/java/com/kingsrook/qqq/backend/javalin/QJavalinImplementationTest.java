@@ -286,6 +286,30 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test a table query using an actual filter via POST.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataQueryWithFilterPOST()
+   {
+      String filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/query")
+         .field("filter", filterJson)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals("Tim", values0.getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private String getFirstNameEqualsTimFilterJSON()

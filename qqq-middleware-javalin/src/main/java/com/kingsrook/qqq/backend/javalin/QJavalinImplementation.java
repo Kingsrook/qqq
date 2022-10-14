@@ -278,6 +278,7 @@ public class QJavalinImplementation
          path("/data/{table}", () ->
          {
             get("/", QJavalinImplementation::dataQuery);
+            post("/query", QJavalinImplementation::dataQuery);
             post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
             get("/count", QJavalinImplementation::dataCount);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
@@ -606,6 +607,10 @@ public class QJavalinImplementation
          queryInput.setLimit(integerQueryParam(context, "limit"));
 
          String filter = stringQueryParam(context, "filter");
+         if(!StringUtils.hasContent(filter))
+         {
+            filter = context.formParam("filter");
+         }
          if(filter != null)
          {
             queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
