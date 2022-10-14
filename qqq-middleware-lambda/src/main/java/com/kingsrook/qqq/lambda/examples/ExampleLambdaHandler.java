@@ -23,22 +23,23 @@ package com.kingsrook.qqq.lambda.examples;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.lambda.QBasicLambdaHandler;
+import com.kingsrook.qqq.lambda.QBaseCustomLambdaHandler;
 import com.kingsrook.qqq.lambda.model.QLambdaRequest;
 import com.kingsrook.qqq.lambda.model.QLambdaResponse;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExampleLambdaHandler extends QBasicLambdaHandler
+public class ExampleLambdaHandler extends QBaseCustomLambdaHandler
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @Override
-   protected QLambdaResponse handleJsonRequest(QLambdaRequest request) throws QException
+   protected QLambdaResponse handleJsonRequest(QLambdaRequest request, JSONObject bodyJsonObject) throws QException
    {
       log("In subclass: " + getClass().getSimpleName());
       return (OK);

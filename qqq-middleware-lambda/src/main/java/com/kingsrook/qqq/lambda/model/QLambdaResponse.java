@@ -132,8 +132,9 @@ public class QLambdaResponse
     *******************************************************************************/
    public static class Body
    {
-      private String requestId;
-      private String errorMessage;
+      private String              requestId;
+      private String              errorMessage;
+      private Map<String, Object> body;
 
 
 
@@ -196,6 +197,28 @@ public class QLambdaResponse
       public String getErrorMessage()
       {
          return errorMessage;
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for body
+       **
+       *******************************************************************************/
+      public Map<String, Object> getBody()
+      {
+         return body;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for body
+       **
+       *******************************************************************************/
+      public void setBody(Map<String, Object> body)
+      {
+         this.body = body;
       }
    }
 

@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.lambda.AnotherHandler
  *******************************************************************************/
-class QBasicLambdaHandlerTest
+class QBaseCustomLambdaHandlerTest
 {
 
    /*******************************************************************************
@@ -112,16 +112,31 @@ class QBasicLambdaHandlerTest
     **
     *******************************************************************************/
    @Test
+   void testNoBodyInputStringNonJsonContentType() throws IOException
+   {
+      String     inputString  = getNoBodyInputString();
+      String     outputString = runHandleRequest(inputString);
+      JSONObject outputJson   = JsonUtils.toJSONObject(outputString);
+      assertTrue(outputJson.has("errorMessage"));
+      assertThat(outputJson.getString("errorMessage")).contains("Unsupported content-type:");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testLogException() throws IOException
    {
       InputStream           inputStream  = new ByteArrayInputStream(getSuccessInputString().getBytes());
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
       Context               context      = new MockContext();
 
-      new QBasicLambdaHandler()
+      new QBaseCustomLambdaHandler()
       {
          @Override
-         protected QLambdaResponse handleJsonRequest(QLambdaRequest request) throws QException
+         protected QLambdaResponse handleJsonRequest(QLambdaRequest request, JSONObject bodyJsonObject) throws QException
          {
             log(new QException("Test Exception"));
             return (OK);
@@ -139,7 +154,7 @@ class QBasicLambdaHandlerTest
       InputStream           inputStream  = new ByteArrayInputStream(inputString.getBytes());
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
       Context               context      = new MockContext();
-      new QBasicLambdaHandler().handleRequest(inputStream, outputStream, context);
+      new QBaseCustomLambdaHandler().handleRequest(inputStream, outputStream, context);
       String outputString = outputStream.toString(StandardCharsets.UTF_8);
       System.out.println(outputString);
       return outputString;
@@ -174,7 +189,7 @@ class QBasicLambdaHandlerTest
    @Test
    void testHandleRequest() throws QException
    {
-      QLambdaResponse response = new QBasicLambdaHandler().handleJsonRequest(new QLambdaRequest(new JSONObject(), "/", "", new JSONObject()));
+      QLambdaResponse response = new QBaseCustomLambdaHandler().handleJsonRequest(new QLambdaRequest(new JSONObject(), "/", "", ""), new JSONObject());
       assertEquals(200, response.getStatusCode());
    }
 
@@ -351,4 +366,47 @@ class QBasicLambdaHandlerTest
          """);
    }
 
+
+
+   private String getNoBodyInputString()
+   {
+      return ("""
+         {
+             "version": "2.0",
+             "routeKey": "$default",
+             "rawPath": "/",
+             "rawQueryString": "",
+             "headers": {
+                 "x-amzn-tls-cipher-suite": "ECDHE-RSA-AES128-GCM-SHA256",
+                 "x-amzn-tls-version": "TLSv1.2",
+                 "x-amzn-trace-id": "Root=1-6349b9a1-4d3785872159571e302a3015",
+                 "x-forwarded-proto": "https",
+                 "host": "p6kox4fzsfajxvsmyc222cu5ta0dlpwp.lambda-url.us-east-1.on.aws",
+                 "x-forwarded-port": "443",
+                 "x-forwarded-for": "24.217.225.229",
+                 "accept": "*/*",
+                 "user-agent": "curl/7.79.1"
+             },
+             "requestContext": {
+                 "accountId": "anonymous",
+                 "apiId": "p6kox4fzsfajxvsmyc222cu5ta0dlpwp",
+                 "domainName": "p6kox4fzsfajxvsmyc222cu5ta0dlpwp.lambda-url.us-east-1.on.aws",
+                 "domainPrefix": "p6kox4fzsfajxvsmyc222cu5ta0dlpwp",
+                 "http": {
+                     "method": "GET",
+                     "path": "/",
+                     "protocol": "HTTP/1.1",
+                     "sourceIp": "24.217.225.229",
+                     "userAgent": "curl/7.79.1"
+                 },
+                 "requestId": "82b80656-5f05-46eb-bc2a-7b8328d095d4",
+                 "routeKey": "$default",
+                 "stage": "$default",
+                 "time": "14/Oct/2022:19:33:53 +0000",
+                 "timeEpoch": 1665776033574
+             },
+             "isBase64Encoded": false
+         }
+         """);
+   }
 }

@@ -44,22 +44,39 @@ import org.json.JSONObject;
 
 
 /*******************************************************************************
- ** QQQ base class for lambda handlers. Meant to be sub-classed, where QQQ apps
- ** can just override `handleJsonRequest`, and avoid seeing the lambda-ness of
- ** lambda.
+ ** Abstract base class for any and all QQQ lambda handlers.
  **
- ** Such subclasses can then have easy standalone unit tests - just testing their
- ** logic, and not the lambda-ness.
+ ** This class provides the method `handleRequest(InputStream, OutputStream, Context)`,
+ ** which is what gets invoked by AWS Lambda.  In there, we parse the data from
+ ** the inputStream to build a QLambdaRequest - which is then passed to:
+ **
+ ** `handleRequest(QLambdaRequest)` - which would be meant for implementing in a
+ ** subclass.
+ **
  *******************************************************************************/
-public class QBasicLambdaHandler implements RequestStreamHandler
+public abstract class QAbstractLambdaHandler implements RequestStreamHandler
 {
    private static Logger LOG; // = LogManager.getLogger(QBasicLambdaHandler.class);
 
-   private Context context;
+   protected Context context;
 
    @SuppressWarnings("checkstyle:MemberName")
-   protected final QLambdaResponse GENERIC_SERVER_ERROR = new QLambdaResponse(500, "Internal Server Error");
-   protected final QLambdaResponse OK                   = new QLambdaResponse(200);
+   public static final QLambdaResponse GENERIC_SERVER_ERROR = new QLambdaResponse(500, "Internal Server Error");
+   public static final QLambdaResponse OK                   = new QLambdaResponse(200);
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public QAbstractLambdaHandler()
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // tell log4j to use a config that won't fail when running in lambda //
+      ///////////////////////////////////////////////////////////////////////
+      Configurator.initialize(null, "qqq-lambda-log4j2.xml");
+   }
 
 
 
@@ -70,20 +87,15 @@ public class QBasicLambdaHandler implements RequestStreamHandler
    {
       this.context = context;
 
-      ///////////////////////////////////////////////////////////////////////
-      // tell log4j to use a config that won't fail when running in lambda //
-      ///////////////////////////////////////////////////////////////////////
-      Configurator.initialize(null, "qqq-lambda-log4j2.xml");
-
       String requestId = "unknown";
       try
       {
          String input = IOUtils.toString(inputStream, "UTF-8");
          log("Full Input: " + input);
 
-         //////////////////////////////////////////////////////////////////////////////////
-         // parse the input as json - then pull parts out of it that we know to look for //
-         //////////////////////////////////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // parse the Lambda input as json - then pull parts out of it that we know to look for //
+         /////////////////////////////////////////////////////////////////////////////////////////
          JSONObject inputJsonObject;
          try
          {
@@ -95,35 +107,14 @@ public class QBasicLambdaHandler implements RequestStreamHandler
             return;
          }
 
-         JSONObject headers        = inputJsonObject.optJSONObject("headers");
-         String     contentType    = headers != null ? headers.optString("content-type") : null;
-         String     path           = inputJsonObject.optString("rawPath");
-         String     queryString    = inputJsonObject.optString("rawQueryString");
-         JSONObject requestContext = inputJsonObject.optJSONObject("requestContext");
-         requestId = requestContext.optString("requestId");
+         QLambdaRequest request = new QLambdaRequest(inputJsonObject);
+         requestId = request.getRequestContext().optString("requestId");
 
-         if("application/json".equals(contentType))
-         {
-            String body = inputJsonObject.optString("body");
-
-            JSONObject bodyJsonObject;
-            try
-            {
-               bodyJsonObject = JsonUtils.toJSONObject(body);
-            }
-            catch(JSONException je)
-            {
-               writeResponse(outputStream, requestId, new QLambdaResponse(400, "Unable to parse request body as JSON: " + je.getMessage()));
-               return;
-            }
-
-            QLambdaResponse response = handleJsonRequest(new QLambdaRequest(headers, path, queryString, bodyJsonObject));
-            writeResponse(outputStream, requestId, response);
-         }
-         else
-         {
-            writeResponse(outputStream, requestId, new QLambdaResponse(400, "Unsupported content-type: " + contentType));
-         }
+         /////////////////////////////////////////////////////////////////////////////////////
+         // pass the request downstream, to get back a response we can write back to Lambda //
+         /////////////////////////////////////////////////////////////////////////////////////
+         QLambdaResponse response = handleRequest(request);
+         writeResponse(outputStream, requestId, response);
       }
       catch(QUserFacingException ufe)
       {
@@ -138,9 +129,16 @@ public class QBasicLambdaHandler implements RequestStreamHandler
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected abstract QLambdaResponse handleRequest(QLambdaRequest request) throws QException;
+
+
+
+   /*******************************************************************************
     ** Meant to be overridden by subclasses, to provide functionality, if needed.
     *******************************************************************************/
-   protected QLambdaResponse handleJsonRequest(QLambdaRequest request) throws QException
+   protected QLambdaResponse handleJsonRequest(QLambdaRequest request, JSONObject bodyJsonObject) throws QException
    {
       log(this.getClass().getSimpleName() + " did not override handleJsonRequest - so noop and return 200.");
       return (OK);
@@ -172,11 +170,22 @@ public class QBasicLambdaHandler implements RequestStreamHandler
 
 
    /*******************************************************************************
+    ** Write to the cloudwatch logs.
+    *******************************************************************************/
+   protected void log(String message, Throwable t)
+   {
+      log(message);
+      log(t);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
-   protected void log(Throwable e)
+   protected void log(Throwable t)
    {
-      if(e == null)
+      if(t == null)
       {
          return;
       }
@@ -185,13 +194,13 @@ public class QBasicLambdaHandler implements RequestStreamHandler
       {
          StringWriter sw = new StringWriter();
          PrintWriter  pw = new PrintWriter(sw);
-         e.printStackTrace(pw);
+         t.printStackTrace(pw);
          log(sw + "\n");
       }
       else
       {
          initLOG();
-         LOG.warn("Exception", e);
+         LOG.warn("Exception", t);
       }
    }
 
@@ -204,7 +213,7 @@ public class QBasicLambdaHandler implements RequestStreamHandler
    {
       if(LOG == null)
       {
-         LOG = LogManager.getLogger(QBasicLambdaHandler.class);
+         LOG = LogManager.getLogger(QAbstractLambdaHandler.class);
       }
    }
 
@@ -213,7 +222,7 @@ public class QBasicLambdaHandler implements RequestStreamHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void writeResponse(OutputStream outputStream, String requestId, QLambdaResponse response) throws IOException
+   protected void writeResponse(OutputStream outputStream, String requestId, QLambdaResponse response) throws IOException
    {
       QLambdaResponse.Body body = response.getBody();
       body.setRequestId(requestId);

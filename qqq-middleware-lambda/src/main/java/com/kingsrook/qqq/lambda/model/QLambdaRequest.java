@@ -33,14 +33,29 @@ public class QLambdaRequest
    private JSONObject headers;
    private String     path;
    private String     queryString;
-   private JSONObject body;
+   private String     body;
+   private JSONObject requestContext;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QLambdaRequest(JSONObject headers, String path, String queryString, JSONObject body)
+   public QLambdaRequest(JSONObject inputJsonObject)
+   {
+      this.headers = inputJsonObject.optJSONObject("headers");
+      this.path = inputJsonObject.optString("rawPath");
+      this.queryString = inputJsonObject.optString("rawQueryString");
+      this.body = inputJsonObject.optString("body");
+      this.requestContext = inputJsonObject.optJSONObject("requestContext");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QLambdaRequest(JSONObject headers, String path, String queryString, String body)
    {
       this.headers = headers;
       this.path = path;
@@ -87,8 +102,19 @@ public class QLambdaRequest
     ** Getter for body
     **
     *******************************************************************************/
-   public JSONObject getBody()
+   public String getBody()
    {
       return body;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for requestContext
+    **
+    *******************************************************************************/
+   public JSONObject getRequestContext()
+   {
+      return requestContext;
    }
 }

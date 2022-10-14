@@ -42,7 +42,7 @@ class ExampleLambdaHandlerTest
    @Test
    void test() throws QException
    {
-      QLambdaResponse qLambdaResponse = new ExampleLambdaHandler().handleJsonRequest(new QLambdaRequest(new JSONObject(), "", "", new JSONObject()));
+      QLambdaResponse qLambdaResponse = new ExampleLambdaHandler().handleJsonRequest(new QLambdaRequest(new JSONObject(), "", "", ""), new JSONObject());
       assertEquals(200, qLambdaResponse.getStatusCode());
    }
 
