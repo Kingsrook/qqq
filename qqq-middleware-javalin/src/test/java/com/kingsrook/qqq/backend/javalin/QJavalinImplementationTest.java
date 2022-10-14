@@ -240,6 +240,48 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test a table count with a filter.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataCountWithFilter()
+   {
+      String               filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/count?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+
+      assertTrue(jsonObject.has("count"));
+      int count = jsonObject.getInt("count");
+      assertEquals(1, count);
+   }
+
+
+
+   /*******************************************************************************
+    ** test a table count POST.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataCountPOST()
+   {
+      String filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/count")
+         .field("filter", filterJson)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+
+      assertTrue(jsonObject.has("count"));
+      int count = jsonObject.getInt("count");
+      assertEquals(1, count);
+   }
+
+
+
+   /*******************************************************************************
     ** test a table query
     **
     *******************************************************************************/

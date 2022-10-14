@@ -281,6 +281,7 @@ public class QJavalinImplementation
             post("/query", QJavalinImplementation::dataQuery);
             post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
             get("/count", QJavalinImplementation::dataCount);
+            post("/count", QJavalinImplementation::dataCount);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
             get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
@@ -562,6 +563,10 @@ public class QJavalinImplementation
          countInput.setTableName(context.pathParam("table"));
 
          String filter = stringQueryParam(context, "filter");
+         if(!StringUtils.hasContent(filter))
+         {
+            filter = context.formParam("filter");
+         }
          if(filter != null)
          {
             countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
