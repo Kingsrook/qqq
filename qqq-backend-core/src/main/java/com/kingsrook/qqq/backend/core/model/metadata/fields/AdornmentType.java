@@ -54,6 +54,14 @@ public enum AdornmentType
     *******************************************************************************/
    public interface ChipValues
    {
+      String COLOR_DEFAULT   = "default";
+      String COLOR_INFO      = "info";
+      String COLOR_PRIMARY   = "primary";
+      String COLOR_SECONDARY = "secondary";
+      String COLOR_SUCCESS   = "success";
+      String COLOR_WARNING   = "warning";
+      String COLOR_ERROR     = "error";
+
       /*******************************************************************************
        **
        *******************************************************************************/
