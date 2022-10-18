@@ -41,6 +41,8 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 
@@ -50,8 +52,40 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class BaseAPIActionUtil
 {
+   private static final Logger LOG = LogManager.getLogger(BaseAPIActionUtil.class);
+
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public long getMillisToSleepAfterEveryCall()
+   {
+      return 0;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public int getInitialRateLimitBackoffMillis()
+   {
+      return 0;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public int getMaxAllowedRateLimitErrors()
+   {
+      return 0;
+   }
 
 
 
@@ -146,8 +180,8 @@ public class BaseAPIActionUtil
    protected AbstractHttpEntity recordToEntity(QTableMetaData table, QRecord record) throws IOException
    {
       JSONObject body = recordToJsonObject(table, record);
-      String     json = body.toString(3);
-      System.out.println(json);
+      String     json = body.toString();
+      LOG.debug(json);
       return (new StringEntity(json));
    }
 
@@ -191,11 +225,11 @@ public class BaseAPIActionUtil
    protected QRecord processPostResponse(QTableMetaData table, QRecord record, HttpResponse response) throws IOException
    {
       int statusCode = response.getStatusLine().getStatusCode();
-      System.out.println(statusCode);
+      LOG.debug(statusCode);
 
       HttpEntity entity       = response.getEntity();
       String     resultString = EntityUtils.toString(entity);
-      System.out.println(resultString);
+      LOG.debug(resultString);
 
       JSONObject jsonObject = JsonUtils.toJSONObject(resultString);
 
