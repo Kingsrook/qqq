@@ -115,6 +115,12 @@
          <version>v3-rev20220815-2.0.0</version>
       </dependency>
 
+      <dependency>
+         <groupId>com.amazonaws</groupId>
+         <artifactId>aws-java-sdk-sqs</artifactId>
+         <version>1.12.321</version>
+      </dependency>
+
       <!-- Common deps for all qqq modules -->
       <dependency>
          <groupId>org.apache.maven.plugins</groupId>
@@ -175,7 +181,7 @@
             </configuration>
             <executions>
                <execution>
-                  <phase>package</phase>
+                  <phase>${plugin.shade.phase}</phase>
                   <goals>
                      <goal>shade</goal>
                   </goals>

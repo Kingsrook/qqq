@@ -19,21 +19,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.automation;
-
-
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+package com.kingsrook.qqq.backend.core.model.metadata.queues;
 
 
 /*******************************************************************************
- ** Meta-data definition of a qqq service to drive record automations.
+ ** Define a provider of queues (e.g., an MQ system, or SQS)
  *******************************************************************************/
-public class QAutomationProviderMetaData
+public class QQueueProviderMetaData
 {
-   private String                  name;
-   private QAutomationProviderType type;
-
-   private QScheduleMetaData schedule;
+   private String    name;
+   private QueueType type;
 
 
 
@@ -63,7 +58,7 @@ public class QAutomationProviderMetaData
     ** Fluent setter for name
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withName(String name)
+   public QQueueProviderMetaData withName(String name)
    {
       this.name = name;
       return (this);
@@ -75,7 +70,7 @@ public class QAutomationProviderMetaData
     ** Getter for type
     **
     *******************************************************************************/
-   public QAutomationProviderType getType()
+   public QueueType getType()
    {
       return type;
    }
@@ -86,7 +81,7 @@ public class QAutomationProviderMetaData
     ** Setter for type
     **
     *******************************************************************************/
-   public void setType(QAutomationProviderType type)
+   public void setType(QueueType type)
    {
       this.type = type;
    }
@@ -97,43 +92,9 @@ public class QAutomationProviderMetaData
     ** Fluent setter for type
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withType(QAutomationProviderType type)
+   public QQueueProviderMetaData withType(QueueType type)
    {
       this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for schedule
-    **
-    *******************************************************************************/
-   public QScheduleMetaData getSchedule()
-   {
-      return schedule;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for schedule
-    **
-    *******************************************************************************/
-   public void setSchedule(QScheduleMetaData schedule)
-   {
-      this.schedule = schedule;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for schedule
-    **
-    *******************************************************************************/
-   public QAutomationProviderMetaData withSchedule(QScheduleMetaData schedule)
-   {
-      this.schedule = schedule;
       return (this);
    }
 

@@ -67,7 +67,7 @@ import org.apache.logging.log4j.Logger;
  ** Runnable for the Polling Automation Provider, that looks for records that
  ** need automations, and executes them.
  *******************************************************************************/
-class PollingAutomationRunner implements Runnable
+public class PollingAutomationRunner implements Runnable
 {
    private static final Logger LOG = LogManager.getLogger(PollingAutomationRunner.class);
 

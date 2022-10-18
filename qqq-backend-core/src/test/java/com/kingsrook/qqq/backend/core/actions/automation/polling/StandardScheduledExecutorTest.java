@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -39,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
+import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -49,9 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Unit test for PollingAutomationExecutor
+ ** Unit test for StandardScheduledExecutor
  *******************************************************************************/
-class PollingAutomationExecutorTest
+class StandardScheduledExecutorTest
 {
 
    /*******************************************************************************
@@ -89,7 +91,7 @@ class PollingAutomationExecutorTest
       ////////////////////////////////////////////////
       // have the polling executor run "for awhile" //
       ////////////////////////////////////////////////
-      runPollingAutomationExecutorForAwhile(qInstance);
+      runPollingAutomationExecutorForAwhile(qInstance, QSession::new);
 
       /////////////////////////////////////////////////
       // query for the records - assert their status //
@@ -109,8 +111,6 @@ class PollingAutomationExecutorTest
       assertThat(person2.getValueString("firstName")).isEqualTo("Jim" + TestUtils.CheckAge.SUFFIX_FOR_MINORS);
       assertThat(person2.getValueInteger(TestUtils.standardQqqAutomationStatusField().getName())).isEqualTo(AutomationStatus.OK.getId());
    }
-
-
 
 
 
@@ -140,15 +140,14 @@ class PollingAutomationExecutorTest
       ));
       new InsertAction().execute(insertInput);
 
-      String uuid = UUID.randomUUID().toString();
+      String   uuid    = UUID.randomUUID().toString();
       QSession session = new QSession();
       session.setIdReference(uuid);
-      PollingAutomationExecutor.getInstance().setSessionSupplier(() -> session);
 
       ////////////////////////////////////////////////
       // have the polling executor run "for awhile" //
       ////////////////////////////////////////////////
-      runPollingAutomationExecutorForAwhile(qInstance);
+      runPollingAutomationExecutorForAwhile(qInstance, () -> session);
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       // assert that the uuid we put in our session was present in the CaptureSessionIdAutomationHandler //
@@ -183,12 +182,17 @@ class PollingAutomationExecutorTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runPollingAutomationExecutorForAwhile(QInstance qInstance)
+   private void runPollingAutomationExecutorForAwhile(QInstance qInstance, Supplier<QSession> sessionSupplier)
    {
-      PollingAutomationExecutor pollingAutomationExecutor = PollingAutomationExecutor.getInstance();
+      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, sessionSupplier);
+
+      StandardScheduledExecutor pollingAutomationExecutor = new StandardScheduledExecutor(pollingAutomationRunner);
       pollingAutomationExecutor.setInitialDelayMillis(0);
       pollingAutomationExecutor.setDelayMillis(100);
-      pollingAutomationExecutor.start(qInstance, TestUtils.POLLING_AUTOMATION);
+      pollingAutomationExecutor.setQInstance(qInstance);
+      pollingAutomationExecutor.setName(TestUtils.POLLING_AUTOMATION);
+      pollingAutomationExecutor.setSessionSupplier(sessionSupplier);
+      pollingAutomationExecutor.start();
       SleepUtils.sleep(1, TimeUnit.SECONDS);
       pollingAutomationExecutor.stop();
    }

@@ -102,7 +102,7 @@
             </configuration>
             <executions>
                <execution>
-                  <phase>package</phase>
+                  <phase>${plugin.shade.phase}</phase>
                   <goals>
                      <goal>shade</goal>
                   </goals>

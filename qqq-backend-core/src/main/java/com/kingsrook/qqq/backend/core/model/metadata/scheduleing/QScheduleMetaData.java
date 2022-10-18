@@ -19,121 +19,158 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.automation;
-
-
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
 
 
 /*******************************************************************************
- ** Meta-data definition of a qqq service to drive record automations.
+ ** Meta-data to define scheduled actions within QQQ.
+ **
+ ** Initially, only supports repeating jobs, either on a given # of seconds or millis.
+ ** Can also specify an initialDelay - e.g., to avoid all jobs starting up at the
+ ** same moment.
+ **
+ ** In the future we most likely would want to allow cron strings to be added here.
  *******************************************************************************/
-public class QAutomationProviderMetaData
+public class QScheduleMetaData
 {
-   private String                  name;
-   private QAutomationProviderType type;
-
-   private QScheduleMetaData schedule;
+   private Integer repeatSeconds;
+   private Integer repeatMillis;
+   private Integer initialDelaySeconds;
+   private Integer initialDelayMillis;
 
 
 
    /*******************************************************************************
-    ** Getter for name
+    ** Getter for repeatSeconds
     **
     *******************************************************************************/
-   public String getName()
+   public Integer getRepeatSeconds()
    {
-      return name;
+      return repeatSeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Setter for repeatSeconds
     **
     *******************************************************************************/
-   public void setName(String name)
+   public void setRepeatSeconds(Integer repeatSeconds)
    {
-      this.name = name;
+      this.repeatSeconds = repeatSeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
+    ** Fluent setter for repeatSeconds
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withName(String name)
+   public QScheduleMetaData withRepeatSeconds(Integer repeatSeconds)
    {
-      this.name = name;
+      this.repeatSeconds = repeatSeconds;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Getter for initialDelaySeconds
     **
     *******************************************************************************/
-   public QAutomationProviderType getType()
+   public Integer getInitialDelaySeconds()
    {
-      return type;
+      return initialDelaySeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for type
+    ** Setter for initialDelaySeconds
     **
     *******************************************************************************/
-   public void setType(QAutomationProviderType type)
+   public void setInitialDelaySeconds(Integer initialDelaySeconds)
    {
-      this.type = type;
+      this.initialDelaySeconds = initialDelaySeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for type
+    ** Fluent setter for initialDelaySeconds
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withType(QAutomationProviderType type)
+   public QScheduleMetaData withInitialDelaySeconds(Integer initialDelaySeconds)
    {
-      this.type = type;
+      this.initialDelaySeconds = initialDelaySeconds;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for schedule
+    ** Getter for repeatMillis
     **
     *******************************************************************************/
-   public QScheduleMetaData getSchedule()
+   public Integer getRepeatMillis()
    {
-      return schedule;
+      return repeatMillis;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for schedule
+    ** Setter for repeatMillis
     **
     *******************************************************************************/
-   public void setSchedule(QScheduleMetaData schedule)
+   public void setRepeatMillis(Integer repeatMillis)
    {
-      this.schedule = schedule;
+      this.repeatMillis = repeatMillis;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for schedule
+    ** Fluent setter for repeatMillis
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withSchedule(QScheduleMetaData schedule)
+   public QScheduleMetaData withRepeatMillis(Integer repeatMillis)
    {
-      this.schedule = schedule;
+      this.repeatMillis = repeatMillis;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for initialDelayMillis
+    **
+    *******************************************************************************/
+   public Integer getInitialDelayMillis()
+   {
+      return initialDelayMillis;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for initialDelayMillis
+    **
+    *******************************************************************************/
+   public void setInitialDelayMillis(Integer initialDelayMillis)
+   {
+      this.initialDelayMillis = initialDelayMillis;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for initialDelayMillis
+    **
+    *******************************************************************************/
+   public QScheduleMetaData withInitialDelayMillis(Integer initialDelayMillis)
+   {
+      this.initialDelayMillis = initialDelayMillis;
       return (this);
    }
 

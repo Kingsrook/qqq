@@ -19,19 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.automation;
+package com.kingsrook.qqq.backend.core.model.metadata.queues;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
 /*******************************************************************************
- ** Meta-data definition of a qqq service to drive record automations.
+ ** MetaData to define a message queue, which must exist within a QueueProvider.
+ **
+ ** The name attribute is a globally unique name within the QInstance
+ ** The providerName is the connection to the queue system.
+ ** The queueName uniquely identifies the queue within the context of the provider.
+ ** The processName is the code that runs for messages found on the queue.
+ ** The schedule may not be used by all provider types, but defines when the queue is polled.
  *******************************************************************************/
-public class QAutomationProviderMetaData
+public class QQueueMetaData
 {
-   private String                  name;
-   private QAutomationProviderType type;
+   private String name;
+   private String providerName;
+   private String queueName;
+   private String processName;
 
    private QScheduleMetaData schedule;
 
@@ -63,7 +71,7 @@ public class QAutomationProviderMetaData
     ** Fluent setter for name
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withName(String name)
+   public QQueueMetaData withName(String name)
    {
       this.name = name;
       return (this);
@@ -72,34 +80,102 @@ public class QAutomationProviderMetaData
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Getter for providerName
     **
     *******************************************************************************/
-   public QAutomationProviderType getType()
+   public String getProviderName()
    {
-      return type;
+      return providerName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for type
+    ** Setter for providerName
     **
     *******************************************************************************/
-   public void setType(QAutomationProviderType type)
+   public void setProviderName(String providerName)
    {
-      this.type = type;
+      this.providerName = providerName;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for type
+    ** Fluent setter for providerName
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withType(QAutomationProviderType type)
+   public QQueueMetaData withProviderName(String providerName)
    {
-      this.type = type;
+      this.providerName = providerName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queueName
+    **
+    *******************************************************************************/
+   public String getQueueName()
+   {
+      return queueName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queueName
+    **
+    *******************************************************************************/
+   public void setQueueName(String queueName)
+   {
+      this.queueName = queueName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queueName
+    **
+    *******************************************************************************/
+   public QQueueMetaData withQueueName(String queueName)
+   {
+      this.queueName = queueName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processName
+    **
+    *******************************************************************************/
+   public String getProcessName()
+   {
+      return processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processName
+    **
+    *******************************************************************************/
+   public void setProcessName(String processName)
+   {
+      this.processName = processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processName
+    **
+    *******************************************************************************/
+   public QQueueMetaData withProcessName(String processName)
+   {
+      this.processName = processName;
       return (this);
    }
 
@@ -131,7 +207,7 @@ public class QAutomationProviderMetaData
     ** Fluent setter for schedule
     **
     *******************************************************************************/
-   public QAutomationProviderMetaData withSchedule(QScheduleMetaData schedule)
+   public QQueueMetaData withSchedule(QScheduleMetaData schedule)
    {
       this.schedule = schedule;
       return (this);

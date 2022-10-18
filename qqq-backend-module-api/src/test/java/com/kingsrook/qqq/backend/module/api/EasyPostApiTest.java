@@ -45,6 +45,15 @@ public class EasyPostApiTest
 {
 
    /*******************************************************************************
+    ** Supported Tracking Numbers (and their statuses)
+    **
+    ** EZ1000000001 : pre-transit
+    ** EZ2000000002 : in transit
+    ** EZ3000000003 : out for delivery
+    ** EZ4000000004 : delivered
+    ** EZ5000000005 : return to sender
+    ** EZ6000000006 : failure
+    ** EZ7000000007 : unknown
     **
     *******************************************************************************/
    @Test
@@ -53,7 +62,7 @@ public class EasyPostApiTest
       QRecord record = new QRecord()
          .withValue("__ignoreMe", "123")
          .withValue("carrierCode", "USPS")
-         .withValue("trackingNo", "EZ1000000001");
+         .withValue("trackingNo", "EZ4000000004");
 
       InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
       insertInput.setSession(new QSession());
