@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -48,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -145,13 +147,18 @@ public class QPossibleValueTranslator
    /*******************************************************************************
     ** For a given field and (raw/id) value, get the translated (string) value.
     *******************************************************************************/
-   String translatePossibleValue(QFieldMetaData field, Serializable value)
+   public String translatePossibleValue(QFieldMetaData field, Serializable value)
    {
       QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
       if(possibleValueSource == null)
       {
          LOG.error("Missing possible value source named [" + field.getPossibleValueSourceName() + "] when formatting value for field [" + field.getName() + "]");
          return (null);
+      }
+
+      if(field.getType().equals(QFieldType.INTEGER) && !(value instanceof Integer))
+      {
+         value = ValueUtils.getValueAsInteger(value);
       }
 
       return translatePossibleValue(possibleValueSource, value);

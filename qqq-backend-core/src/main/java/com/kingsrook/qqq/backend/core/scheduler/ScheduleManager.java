@@ -104,6 +104,7 @@ public class ScheduleManager
       if(propertyValue.equals("false"))
       {
          LOG.warn("Not starting ScheduleManager (per system property [" + propertyName + "=" + propertyValue + "]).");
+         return;
       }
 
       for(QQueueProviderMetaData queueProvider : qInstance.getQueueProviders().values())

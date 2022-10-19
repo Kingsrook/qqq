@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
@@ -167,7 +168,18 @@ public class BulkEditTransformStep extends AbstractTransformStep
          String verb = isExecuteStep ? "was" : "will be";
          if(StringUtils.hasContent(ValueUtils.getValueAsString(value)))
          {
-            String formattedValue = qValueFormatter.formatValue(field, value); // todo - PVS!
+            String formattedValue = qValueFormatter.formatValue(field, value);
+
+            if(field.getPossibleValueSourceName() != null)
+            {
+               QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(runBackendStepInput.getInstance(), runBackendStepInput.getSession());
+               String                   translatedValue          = qPossibleValueTranslator.translatePossibleValue(field, value);
+               if(StringUtils.hasContent(translatedValue))
+               {
+                  formattedValue = translatedValue;
+               }
+            }
+
             summaryLine.setMessage(label + " " + verb + " set to: " + formattedValue);
          }
          else

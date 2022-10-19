@@ -59,7 +59,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       boolean supportsFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
       if(!supportsFullValidation)
       {
-         LOG.info("Process does not support validation, so skipping validation step");
+         LOG.debug("Process does not support validation, so skipping validation step");
          return;
       }
 
@@ -69,7 +69,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       boolean doFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
       if(!doFullValidation)
       {
-         LOG.info("Not requested to do full validation, so skipping validation step");
+         LOG.trace("Not requested to do full validation, so skipping validation step");
          return;
       }
 
