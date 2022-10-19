@@ -129,6 +129,7 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
             {
                LOG.warn("Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + apiActionUtil.getMaxAllowedRateLimitErrors() + ")");
                record.addError("Error: " + rle.getMessage());
+               insertOutput.addRecord(record);
                return;
             }
 
