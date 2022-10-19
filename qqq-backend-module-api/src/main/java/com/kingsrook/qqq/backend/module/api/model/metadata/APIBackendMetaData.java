@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.module.api.model.metadata;
 
 
+import java.io.Serializable;
+import java.util.HashMap;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.module.api.APIBackendModule;
@@ -42,6 +44,8 @@ public class APIBackendMetaData extends QBackendMetaData
    private String            contentType; // todo enum?
 
    private QCodeReference actionUtil;
+
+   private HashMap<String, Serializable> customValues = new HashMap<>();
 
 
 
@@ -315,6 +319,63 @@ public class APIBackendMetaData extends QBackendMetaData
    public APIBackendMetaData withActionUtil(QCodeReference actionUtil)
    {
       this.actionUtil = actionUtil;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for customValues
+    **
+    *******************************************************************************/
+   public HashMap<String, Serializable> getCustomValues()
+   {
+      return customValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single customValue
+    **
+    *******************************************************************************/
+   public Serializable getCustomValue(String key)
+   {
+      return customValues.get(key);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customValues
+    **
+    *******************************************************************************/
+   public void setCustomValues(HashMap<String, Serializable> customValues)
+   {
+      this.customValues = customValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for customValues
+    **
+    *******************************************************************************/
+   public APIBackendMetaData withCustomValues(HashMap<String, Serializable> customValues)
+   {
+      this.customValues = customValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for a single customValue
+    **
+    *******************************************************************************/
+   public APIBackendMetaData withCustomValue(String key, Serializable value)
+   {
+      this.customValues.put(key, value);
       return (this);
    }
 
