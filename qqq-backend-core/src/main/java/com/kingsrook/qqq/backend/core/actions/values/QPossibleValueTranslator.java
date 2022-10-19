@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -156,9 +157,19 @@ public class QPossibleValueTranslator
          return (null);
       }
 
-      if(field.getType().equals(QFieldType.INTEGER) && !(value instanceof Integer))
+      try
       {
-         value = ValueUtils.getValueAsInteger(value);
+         if(field.getType().equals(QFieldType.INTEGER) && !(value instanceof Integer))
+         {
+            value = ValueUtils.getValueAsInteger(value);
+         }
+      }
+      catch(QValueException e)
+      {
+         LOG.info("Error translating possible value raw value...");
+         ///////////////////////////
+         // leave value as it was //
+         ///////////////////////////
       }
 
       return translatePossibleValue(possibleValueSource, value);
