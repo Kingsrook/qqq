@@ -30,15 +30,9 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.module.api.actions.APICountAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIInsertAction;
-// import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
-// import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
-// import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
-// import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
-// import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
-// import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-// import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
-
+import com.kingsrook.qqq.backend.module.api.actions.APIQueryAction;
 
 
 /*******************************************************************************
@@ -84,7 +78,7 @@ public class APIBackendModule implements QBackendModuleInterface
    @Override
    public CountInterface getCountInterface()
    {
-      return (null); //return (new RDBMSCountAction());
+      return (new APICountAction());
    }
 
 
@@ -95,7 +89,7 @@ public class APIBackendModule implements QBackendModuleInterface
    @Override
    public QueryInterface getQueryInterface()
    {
-      return (null); //return (new RDBMSQueryAction());
+      return (new APIQueryAction());
    }
 
 

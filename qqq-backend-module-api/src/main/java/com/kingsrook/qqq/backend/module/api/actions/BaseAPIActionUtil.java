@@ -24,10 +24,17 @@ package com.kingsrook.qqq.backend.module.api.actions;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -43,6 +50,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -90,6 +98,18 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** method to build up a query string based on a given QFilter object
+    **
+    *******************************************************************************/
+   protected String buildQueryString(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
+   {
+      // todo: reasonable default action
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
     ** As part of making a request - set up its authorization header (not just
     ** strictly "Authorization", but whatever is needed for auth).
     **
@@ -105,6 +125,10 @@ public class BaseAPIActionUtil
 
          case BASIC_AUTH_USERNAME_PASSWORD:
             request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+            break;
+
+         case API_KEY_HEADER:
+            request.addHeader("API-Key", backendMetaData.getApiKey());
             break;
 
          default:
@@ -141,7 +165,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public void setupAdditionalHeaders(HttpRequestBase request)
    {
-
+      request.addHeader("Accept", "application/json");
    }
 
 
@@ -215,6 +239,66 @@ public class BaseAPIActionUtil
          body.put(getFieldBackendName(field), value);
       }
       return body;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected QRecord jsonObjectToRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields) throws IOException
+   {
+      QRecord record = JsonUtils.parseQRecord(jsonObject, fields);
+      return (record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected List<QRecord> processGetResponse(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      int statusCode = response.getStatusLine().getStatusCode();
+      System.out.println(statusCode);
+
+      HttpEntity entity       = response.getEntity();
+      String     resultString = EntityUtils.toString(entity);
+
+      List<QRecord> recordList = new ArrayList<>();
+      if(StringUtils.hasContent(resultString))
+      {
+         JSONArray  resultList = null;
+         JSONObject jsonObject = null;
+
+         if(resultString.startsWith("["))
+         {
+            resultList = JsonUtils.toJSONArray(resultString);
+         }
+         else
+         {
+            String tablePath = getBackendDetails(table).getTablePath();
+            jsonObject = JsonUtils.toJSONObject(resultString);
+            if(jsonObject.has(tablePath))
+            {
+               resultList = jsonObject.getJSONArray(getBackendDetails(table).getTablePath());
+            }
+         }
+
+         if(resultList != null)
+         {
+            for(int i = 0; i < resultList.length(); i++)
+            {
+               recordList.add(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
+            }
+         }
+         else
+         {
+            recordList.add(jsonObjectToRecord(jsonObject, table.getFields()));
+         }
+      }
+
+      return (recordList);
    }
 
 
@@ -327,5 +411,15 @@ public class BaseAPIActionUtil
    public void setActionInput(AbstractTableActionInput actionInput)
    {
       this.actionInput = actionInput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String urlEncode(String s)
+   {
+      return (URLEncoder.encode(s, StandardCharsets.UTF_8));
    }
 }

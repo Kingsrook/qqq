@@ -27,8 +27,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -255,42 +255,42 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             case STARTS_WITH:
             {
                clause += " LIKE ?";
-               editFirstValue(values, (s -> s + "%"));
+               ActionHelper.editFirstValue(values, (s -> s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case ENDS_WITH:
             {
                clause += " LIKE ?";
-               editFirstValue(values, (s -> "%" + s));
+               ActionHelper.editFirstValue(values, (s -> "%" + s));
                expectedNoOfParams = 1;
                break;
             }
             case CONTAINS:
             {
                clause += " LIKE ?";
-               editFirstValue(values, (s -> "%" + s + "%"));
+               ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case NOT_STARTS_WITH:
             {
                clause += " NOT LIKE ?";
-               editFirstValue(values, (s -> s + "%"));
+               ActionHelper.editFirstValue(values, (s -> s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case NOT_ENDS_WITH:
             {
                clause += " NOT LIKE ?";
-               editFirstValue(values, (s -> "%" + s));
+               ActionHelper.editFirstValue(values, (s -> "%" + s));
                expectedNoOfParams = 1;
                break;
             }
             case NOT_CONTAINS:
             {
                clause += " NOT LIKE ?";
-               editFirstValue(values, (s -> "%" + s + "%"));
+               ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
                expectedNoOfParams = 1;
                break;
             }
@@ -368,19 +368,6 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
 
       return (String.join(" " + booleanOperator.toString() + " ", clauses));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void editFirstValue(List<Serializable> values, Function<String, String> editFunction)
-   {
-      if(values.size() > 0)
-      {
-         values.set(0, editFunction.apply(String.valueOf(values.get(0))));
-      }
    }
 
 

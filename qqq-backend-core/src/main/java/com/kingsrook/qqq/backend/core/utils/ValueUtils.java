@@ -228,6 +228,10 @@ public class ValueUtils
             ZoneId   zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
             return LocalDateTime.ofInstant(c.toInstant(), zid);
          }
+         else if(value instanceof String s)
+         {
+            return LocalDateTime.parse(s);
+         }
          else
          {
             throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to LocalDateTime."));

@@ -27,7 +27,8 @@ package com.kingsrook.qqq.backend.module.api.model;
  *******************************************************************************/
 public enum AuthorizationType
 {
+   API_KEY_HEADER,
    BASIC_AUTH_API_KEY,
-   BASIC_AUTH_USERNAME_PASSWORD
+   BASIC_AUTH_USERNAME_PASSWORD,
 
 }

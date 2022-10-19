@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,6 +34,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -217,6 +222,46 @@ public class JsonUtils
    public static boolean looksLikeArray(String json)
    {
       return (json != null && json.matches("(?s)\\s*\\[.*"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Convert a json object into a QRecord
+    **
+    *******************************************************************************/
+   public static QRecord parseQRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields)
+   {
+      QRecord record = new QRecord();
+      for(String fieldName : fields.keySet())
+      {
+         QFieldMetaData metaData    = fields.get(fieldName);
+         String         backendName = metaData.getBackendName() != null ? metaData.getBackendName() : fieldName;
+         switch(metaData.getType())
+         {
+            case INTEGER -> record.setValue(fieldName, jsonObject.optInt(backendName));
+            case DECIMAL -> record.setValue(fieldName, jsonObject.optBigDecimal(backendName, null));
+            case BOOLEAN -> record.setValue(fieldName, jsonObject.optBoolean(backendName));
+            case DATE_TIME ->
+            {
+               String dateTimeString = jsonObject.optString(backendName);
+               if(StringUtils.hasContent(dateTimeString))
+               {
+                  try
+                  {
+                     record.setValue(fieldName, LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME));
+                  }
+                  catch(DateTimeParseException dtpe1)
+                  {
+                     record.setValue(fieldName, LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_DATE_TIME));
+                  }
+               }
+            }
+            default -> record.setValue(fieldName, jsonObject.optString(backendName));
+         }
+      }
+
+      return (record);
    }
 
 }
