@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.actions.automation.polling;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -66,21 +65,21 @@ import org.apache.logging.log4j.Logger;
 /*******************************************************************************
  ** Runnable for the Polling Automation Provider, that looks for records that
  ** need automations, and executes them.
+ **
+ ** An instance of this class should be created for each table/automation-status
+ ** - see the TableActions inner record for that definition, and the static
+ ** getTableActions method that helps someone who wants to start these threads
+ ** figure out which ones are needed.
  *******************************************************************************/
-public class PollingAutomationRunner implements Runnable
+public class PollingAutomationPerTableRunner implements Runnable
 {
-   private static final Logger LOG = LogManager.getLogger(PollingAutomationRunner.class);
+   private static final Logger LOG = LogManager.getLogger(PollingAutomationPerTableRunner.class);
+
+   private final TableActions tableActions;
+   private final String       name;
 
    private QInstance          instance;
-   private String             providerName;
    private Supplier<QSession> sessionSupplier;
-
-   private List<QTableMetaData> managedTables = new ArrayList<>();
-
-   private Map<String, List<TableAutomationAction>> tableInsertActions = new HashMap<>();
-   private Map<String, List<TableAutomationAction>> tableUpdateActions = new HashMap<>();
-
-   private Map<String, Map<AutomationStatus, List<TableAutomationAction>>> tableActions = new HashMap<>();
 
    private static Map<TriggerEvent, AutomationStatus> triggerEventAutomationStatusMap = Map.of(
       TriggerEvent.POST_INSERT, AutomationStatus.PENDING_INSERT_AUTOMATIONS,
@@ -102,21 +101,27 @@ public class PollingAutomationRunner implements Runnable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public PollingAutomationRunner(QInstance instance, String providerName, Supplier<QSession> sessionSupplier)
+   public record TableActions(String tableName, AutomationStatus status, List<TableAutomationAction> actions)
    {
-      this.instance = instance;
-      this.providerName = providerName;
-      this.sessionSupplier = sessionSupplier;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<TableActions> getTableActions(QInstance instance, String providerName)
+   {
+      Map<String, Map<AutomationStatus, List<TableAutomationAction>>> workingTableActionMap = new HashMap<>();
+      List<TableActions>                                              tableActionList       = new ArrayList<>();
 
       //////////////////////////////////////////////////////////////////////
       // todo - share logic like this among any automation implementation //
       //////////////////////////////////////////////////////////////////////
       for(QTableMetaData table : instance.getTables().values())
       {
-         if(table.getAutomationDetails() != null && this.providerName.equals(table.getAutomationDetails().getProviderName()))
+         if(table.getAutomationDetails() != null && providerName.equals(table.getAutomationDetails().getProviderName()))
          {
-            managedTables.add(table);
-
             ///////////////////////////////////////////////////////////////////////////
             // organize the table's actions by type                                  //
             // todo - in future, need user-defined actions here too (and refreshed!) //
@@ -124,25 +129,40 @@ public class PollingAutomationRunner implements Runnable
             for(TableAutomationAction action : table.getAutomationDetails().getActions())
             {
                AutomationStatus automationStatus = triggerEventAutomationStatusMap.get(action.getTriggerEvent());
-               tableActions.putIfAbsent(table.getName(), new HashMap<>());
-               tableActions.get(table.getName()).putIfAbsent(automationStatus, new ArrayList<>());
-               tableActions.get(table.getName()).get(automationStatus).add(action);
+               workingTableActionMap.putIfAbsent(table.getName(), new HashMap<>());
+               workingTableActionMap.get(table.getName()).putIfAbsent(automationStatus, new ArrayList<>());
+               workingTableActionMap.get(table.getName()).get(automationStatus).add(action);
             }
 
-            //////////////////////////////
-            // sort actions by priority //
-            //////////////////////////////
-            if(tableInsertActions.containsKey(table.getName()))
+            ////////////////////////////////////////////
+            // convert the map to tableAction records //
+            ////////////////////////////////////////////
+            for(Map.Entry<AutomationStatus, List<TableAutomationAction>> entry : workingTableActionMap.get(table.getName()).entrySet())
             {
-               tableInsertActions.get(table.getName()).sort(Comparator.comparing(TableAutomationAction::getPriority));
-            }
+               AutomationStatus            automationStatus = entry.getKey();
+               List<TableAutomationAction> actionList       = entry.getValue();
 
-            if(tableUpdateActions.containsKey(table.getName()))
-            {
-               tableUpdateActions.get(table.getName()).sort(Comparator.comparing(TableAutomationAction::getPriority));
+               actionList.sort(Comparator.comparing(TableAutomationAction::getPriority));
+
+               tableActionList.add(new TableActions(table.getName(), automationStatus, actionList));
             }
          }
       }
+
+      return (tableActionList);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public PollingAutomationPerTableRunner(QInstance instance, String providerName, Supplier<QSession> sessionSupplier, TableActions tableActions)
+   {
+      this.instance = instance;
+      this.sessionSupplier = sessionSupplier;
+      this.tableActions = tableActions;
+      this.name = providerName + ">" + tableActions.tableName() + ">" + tableActions.status().getInsertOrUpdate();
    }
 
 
@@ -153,32 +173,18 @@ public class PollingAutomationRunner implements Runnable
    @Override
    public void run()
    {
-      Thread.currentThread().setName(getClass().getSimpleName() + ">" + providerName);
-      LOG.info("Running " + this.getClass().getSimpleName() + "[providerName=" + providerName + "]");
+      Thread.currentThread().setName(name);
+      LOG.info("Running " + this.getClass().getSimpleName() + "[" + name + "]");
 
-      for(QTableMetaData table : managedTables)
+      try
       {
-         try
-         {
-            processTable(table);
-         }
-         catch(Exception e)
-         {
-            LOG.error("Error processing automations on table: " + table, e);
-         }
+         QSession session = sessionSupplier != null ? sessionSupplier.get() : new QSession();
+         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), session, tableActions.status(), tableActions.actions());
       }
-   }
-
-
-
-   /*******************************************************************************
-    ** Query for and process records that have a PENDING status on a given table.
-    *******************************************************************************/
-   private void processTable(QTableMetaData table) throws QException
-   {
-      QSession session = sessionSupplier != null ? sessionSupplier.get() : new QSession();
-      processTableInsertOrUpdate(table, session, AutomationStatus.PENDING_INSERT_AUTOMATIONS);
-      processTableInsertOrUpdate(table, session, AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
+      catch(Exception e)
+      {
+         LOG.warn("Error running automations", e);
+      }
    }
 
 
@@ -186,11 +192,8 @@ public class PollingAutomationRunner implements Runnable
    /*******************************************************************************
     ** Query for and process records that have a PENDING_INSERT or PENDING_UPDATE status on a given table.
     *******************************************************************************/
-   private void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus) throws QException
+   private void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus, List<TableAutomationAction> actions) throws QException
    {
-      List<TableAutomationAction> actions = tableActions
-         .getOrDefault(table.getName(), Collections.emptyMap())
-         .getOrDefault(automationStatus, Collections.emptyList());
       if(CollectionUtils.nullSafeIsEmpty(actions))
       {
          return;
@@ -387,4 +390,14 @@ public class PollingAutomationRunner implements Runnable
       }
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for name
+    **
+    *******************************************************************************/
+   public String getName()
+   {
+      return name;
+   }
 }

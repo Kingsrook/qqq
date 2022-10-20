@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.automation.polling;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,7 +128,8 @@ class StandardScheduledExecutorTest
       //////////////////////////////////////////////////////////////////////
       qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
          .getAutomationDetails().getActions().get(0)
-         .setCodeReference(new QCodeReference(CaptureSessionIdAutomationHandler.class));
+         .withCodeReference(new QCodeReference(CaptureSessionIdAutomationHandler.class))
+         .withName("captureSessionId");
 
       ////////////////////////////////////////////////////////////
       // insert a person that will trigger the on-insert action //
@@ -184,17 +186,24 @@ class StandardScheduledExecutorTest
     *******************************************************************************/
    private void runPollingAutomationExecutorForAwhile(QInstance qInstance, Supplier<QSession> sessionSupplier)
    {
-      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, sessionSupplier);
+      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+      List<StandardScheduledExecutor>                    executors    = new ArrayList<>();
+      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      {
+         PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, sessionSupplier, tableAction);
+         StandardScheduledExecutor       pollingAutomationExecutor       = new StandardScheduledExecutor(pollingAutomationPerTableRunner);
+         pollingAutomationExecutor.setInitialDelayMillis(0);
+         pollingAutomationExecutor.setDelayMillis(100);
+         pollingAutomationExecutor.setQInstance(qInstance);
+         pollingAutomationExecutor.setName(TestUtils.POLLING_AUTOMATION);
+         pollingAutomationExecutor.setSessionSupplier(sessionSupplier);
+         pollingAutomationExecutor.start();
+         executors.add(pollingAutomationExecutor);
+      }
 
-      StandardScheduledExecutor pollingAutomationExecutor = new StandardScheduledExecutor(pollingAutomationRunner);
-      pollingAutomationExecutor.setInitialDelayMillis(0);
-      pollingAutomationExecutor.setDelayMillis(100);
-      pollingAutomationExecutor.setQInstance(qInstance);
-      pollingAutomationExecutor.setName(TestUtils.POLLING_AUTOMATION);
-      pollingAutomationExecutor.setSessionSupplier(sessionSupplier);
-      pollingAutomationExecutor.start();
       SleepUtils.sleep(1, TimeUnit.SECONDS);
-      pollingAutomationExecutor.stop();
+
+      executors.forEach(StandardScheduledExecutor::stop);
    }
 
 }

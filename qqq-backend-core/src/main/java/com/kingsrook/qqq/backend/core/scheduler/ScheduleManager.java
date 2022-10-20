@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationRunner;
+import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
@@ -114,7 +114,7 @@ public class ScheduleManager
 
       for(QAutomationProviderMetaData automationProvider : qInstance.getAutomationProviders().values())
       {
-         startAutomationProvider(automationProvider);
+         startAutomationProviderPerTable(automationProvider);
       }
 
       for(QProcessMetaData process : qInstance.getProcesses().values())
@@ -131,18 +131,26 @@ public class ScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startAutomationProvider(QAutomationProviderMetaData automationProvider)
+   private void startAutomationProviderPerTable(QAutomationProviderMetaData automationProvider)
    {
-      PollingAutomationRunner   pollingAutomationRunner = new PollingAutomationRunner(qInstance, automationProvider.getName(), sessionSupplier);
-      StandardScheduledExecutor executor                = new StandardScheduledExecutor(pollingAutomationRunner);
+      ///////////////////////////////////////////////////////////////////////////////////
+      // ask the PollingAutomationPerTableRunner how many threads of itself need setup //
+      // then start a scheduled executor foreach one                                   //
+      ///////////////////////////////////////////////////////////////////////////////////
+      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
+      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      {
+         PollingAutomationPerTableRunner runner   = new PollingAutomationPerTableRunner(qInstance, automationProvider.getName(), sessionSupplier, tableAction);
+         StandardScheduledExecutor       executor = new StandardScheduledExecutor(runner);
 
-      QScheduleMetaData schedule = Objects.requireNonNullElseGet(automationProvider.getSchedule(), this::getDefaultSchedule);
+         QScheduleMetaData schedule = Objects.requireNonNullElseGet(automationProvider.getSchedule(), this::getDefaultSchedule);
 
-      executor.setName(automationProvider.getName());
-      setScheduleInExecutor(schedule, executor);
-      executor.start();
+         executor.setName(runner.getName());
+         setScheduleInExecutor(schedule, executor);
+         executor.start();
 
-      executors.add(executor);
+         executors.add(executor);
+      }
    }
 
 

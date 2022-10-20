@@ -96,4 +96,20 @@ public enum AutomationStatus implements PossibleValueEnum<Integer>
    {
       return (getLabel());
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   public String getInsertOrUpdate()
+   {
+      return switch(this)
+         {
+            case PENDING_INSERT_AUTOMATIONS, RUNNING_INSERT_AUTOMATIONS, FAILED_INSERT_AUTOMATIONS -> "Insert";
+            case PENDING_UPDATE_AUTOMATIONS, RUNNING_UPDATE_AUTOMATIONS, FAILED_UPDATE_AUTOMATIONS -> "Update";
+            case OK -> "";
+         };
+   }
 }

@@ -62,11 +62,6 @@ public class RecordAutomationStatusUpdater
          return (false);
       }
 
-      if(canWeSkipPendingAndGoToOkay(table, automationStatus))
-      {
-         automationStatus = AutomationStatus.OK;
-      }
-
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // In case an automation is running, and it updates records - don't let those records be marked  //
       // as PENDING_UPDATE_AUTOMATIONS... this is meant to avoid having a record's automation update   //
@@ -86,6 +81,11 @@ public class RecordAutomationStatusUpdater
                return (false);
             }
          }
+      }
+
+      if(canWeSkipPendingAndGoToOkay(table, automationStatus))
+      {
+         automationStatus = AutomationStatus.OK;
       }
 
       QTableAutomationDetails automationDetails = table.getAutomationDetails();
