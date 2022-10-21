@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.api;
 
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
@@ -31,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.api.actions.APICountAction;
+import com.kingsrook.qqq.backend.module.api.actions.APIGetAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIInsertAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIQueryAction;
 
@@ -90,6 +92,17 @@ public class APIBackendModule implements QBackendModuleInterface
    public QueryInterface getQueryInterface()
    {
       return (new APIQueryAction());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public GetInterface getGetInterface()
+   {
+      return (new APIGetAction());
    }
 
 

@@ -32,14 +32,16 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
 import org.apache.http.HttpEntity;
@@ -101,10 +103,23 @@ public class BaseAPIActionUtil
     ** method to build up a query string based on a given QFilter object
     **
     *******************************************************************************/
-   protected String buildQueryString(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
+   protected String buildQueryStringForGet(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
    {
       // todo: reasonable default action
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a default query string for a single-record GET - e.g., a query for just 1 record.
+    *******************************************************************************/
+   public String buildUrlSuffixForSingleRecordGet(Serializable primaryKey) throws QException
+   {
+      QTableMetaData table = actionInput.getTable();
+      QQueryFilter filter = new QQueryFilter()
+         .withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.EQUALS, List.of(primaryKey)));
+      return (buildQueryStringForGet(filter, 1, 0, table.getFields()));
    }
 
 
@@ -308,14 +323,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected QRecord processPostResponse(QTableMetaData table, QRecord record, HttpResponse response) throws IOException
    {
-      int statusCode = response.getStatusLine().getStatusCode();
-      LOG.debug(statusCode);
-
-      HttpEntity entity       = response.getEntity();
-      String     resultString = EntityUtils.toString(entity);
-      LOG.debug(resultString);
-
-      JSONObject jsonObject = JsonUtils.toJSONObject(resultString);
+      JSONObject jsonObject = getJsonObject(response);
 
       String primaryKeyFieldName   = table.getPrimaryKeyField();
       String primaryKeyBackendName = getFieldBackendName(table.getField(primaryKeyFieldName));
@@ -342,6 +350,24 @@ public class BaseAPIActionUtil
       }
 
       return (record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private JSONObject getJsonObject(HttpResponse response) throws IOException
+   {
+      int statusCode = response.getStatusLine().getStatusCode();
+      LOG.debug(statusCode);
+
+      HttpEntity entity       = response.getEntity();
+      String     resultString = EntityUtils.toString(entity);
+      LOG.debug(resultString);
+
+      JSONObject jsonObject = JsonUtils.toJSONObject(resultString);
+      return jsonObject;
    }
 
 
@@ -418,8 +444,18 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String urlEncode(String s)
+   protected String urlEncode(Serializable s)
    {
-      return (URLEncoder.encode(s, StandardCharsets.UTF_8));
+      return (URLEncoder.encode(ValueUtils.getValueAsString(s), StandardCharsets.UTF_8));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord processSingleRecordGetResponse(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      return (jsonObjectToRecord(getJsonObject(response), table.getFields()));
    }
 }

@@ -22,12 +22,10 @@
 package com.kingsrook.qqq.backend.module.api.actions;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.apache.http.HttpResponse;
@@ -41,46 +39,45 @@ import org.apache.logging.log4j.Logger;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class APICountAction extends AbstractAPIAction implements CountInterface
+public class APIGetAction extends AbstractAPIAction implements GetInterface
 {
-   private static final Logger LOG = LogManager.getLogger(APICountAction.class);
+   private static final Logger LOG = LogManager.getLogger(APIGetAction.class);
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public CountOutput execute(CountInput countInput) throws QException
+   public GetOutput execute(GetInput getInput) throws QException
    {
-      QTableMetaData table = countInput.getTable();
-      preAction(countInput);
+      QTableMetaData table = getInput.getTable();
+      preAction(getInput);
 
       try
       {
-         QQueryFilter filter      = countInput.getFilter();
-         String       paramString = apiActionUtil.buildQueryStringForGet(filter, null, null, table.getFields());
+         String urlSuffix = apiActionUtil.buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey());
 
          HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
          HttpClient        client            = httpClientBuilder.build();
 
          String  url     = apiActionUtil.buildTableUrl(table);
-         HttpGet request = new HttpGet(url + paramString);
+         HttpGet request = new HttpGet(url + urlSuffix);
 
          apiActionUtil.setupAuthorizationInRequest(request);
          apiActionUtil.setupContentTypeInRequest(request);
          apiActionUtil.setupAdditionalHeaders(request);
 
-         HttpResponse  response     = client.execute(request);
-         List<QRecord> queryResults = apiActionUtil.processGetResponse(table, response);
+         HttpResponse response = client.execute(request);
+         QRecord      record   = apiActionUtil.processSingleRecordGetResponse(table, response);
 
-         CountOutput rs = new CountOutput();
-         rs.setCount(queryResults.size());
+         GetOutput rs = new GetOutput();
+         rs.setRecord(record);
          return rs;
       }
       catch(Exception e)
       {
-         LOG.warn("Error in API count", e);
-         throw new QException("Error executing count: " + e.getMessage(), e);
+         LOG.warn("Error in API get", e);
+         throw new QException("Error executing get: " + e.getMessage(), e);
       }
    }
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.modules.backend;
 
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
@@ -73,6 +74,15 @@ public interface QBackendModuleInterface
    default QueryInterface getQueryInterface()
    {
       throwNotImplemented("Query");
+      return null;
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default GetInterface getGetInterface()
+   {
+      throwNotImplemented("Get");
       return null;
    }
 

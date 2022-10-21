@@ -58,7 +58,7 @@ public class APIQueryAction extends AbstractAPIAction implements QueryInterface
       try
       {
          QQueryFilter filter      = queryInput.getFilter();
-         String       paramString = apiActionUtil.buildQueryString(filter, queryInput.getLimit(), queryInput.getSkip(), table.getFields());
+         String       paramString = apiActionUtil.buildQueryStringForGet(filter, queryInput.getLimit(), queryInput.getSkip(), table.getFields());
 
          HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
          HttpClient        client            = httpClientBuilder.build();

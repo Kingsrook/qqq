@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
@@ -69,10 +70,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -501,38 +502,31 @@ public class QJavalinImplementation
          String         tableName  = context.pathParam("table");
          QTableMetaData table      = qInstance.getTable(tableName);
          String         primaryKey = context.pathParam("primaryKey");
-         QueryInput     queryInput = new QueryInput(qInstance);
+         GetInput       getInput   = new GetInput(qInstance);
 
-         setupSession(context, queryInput);
-         queryInput.setTableName(tableName);
-         queryInput.setShouldGenerateDisplayValues(true);
-         queryInput.setShouldTranslatePossibleValues(true);
+         setupSession(context, getInput);
+         getInput.setTableName(tableName);
+         getInput.setShouldGenerateDisplayValues(true);
+         getInput.setShouldTranslatePossibleValues(true);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
 
-         ///////////////////////////////////////////////////////
-         // setup a filter for the primaryKey = the path-pram //
-         ///////////////////////////////////////////////////////
-         queryInput.setFilter(new QQueryFilter()
-            .withCriteria(new QFilterCriteria()
-               .withFieldName(table.getPrimaryKeyField())
-               .withOperator(QCriteriaOperator.EQUALS)
-               .withValues(List.of(primaryKey))));
+         getInput.setPrimaryKey(primaryKey);
 
-         QueryAction queryAction = new QueryAction();
-         QueryOutput queryOutput = queryAction.execute(queryInput);
+         GetAction getAction = new GetAction();
+         GetOutput getOutput = getAction.execute(getInput);
 
          ///////////////////////////////////////////////////////
          // throw a not found error if the record isn't found //
          ///////////////////////////////////////////////////////
-         if(queryOutput.getRecords().isEmpty())
+         if(getOutput.getRecord() == null)
          {
             throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         context.result(JsonUtils.toJson(queryOutput.getRecords().get(0)));
+         context.result(JsonUtils.toJson(getOutput.getRecord()));
       }
       catch(Exception e)
       {
