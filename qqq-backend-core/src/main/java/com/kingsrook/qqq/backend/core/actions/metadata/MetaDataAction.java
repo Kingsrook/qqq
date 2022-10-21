@@ -30,14 +30,19 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -80,6 +85,27 @@ public class MetaDataAction
       }
       metaDataOutput.setProcesses(processes);
 
+      //////////////////////////////////////
+      // map reports to frontend metadata //
+      //////////////////////////////////////
+      Map<String, QFrontendReportMetaData> reports = new LinkedHashMap<>();
+      for(Map.Entry<String, QReportMetaData> entry : metaDataInput.getInstance().getReports().entrySet())
+      {
+         reports.put(entry.getKey(), new QFrontendReportMetaData(entry.getValue(), false));
+         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
+      }
+      metaDataOutput.setReports(reports);
+
+      //////////////////////////////////////
+      // map widgets to frontend metadata //
+      //////////////////////////////////////
+      Map<String, QFrontendWidgetMetaData> widgets = new LinkedHashMap<>();
+      for(Map.Entry<String, QWidgetMetaDataInterface> entry : metaDataInput.getInstance().getWidgets().entrySet())
+      {
+         widgets.put(entry.getKey(), new QFrontendWidgetMetaData(entry.getValue()));
+      }
+      metaDataOutput.setWidgets(widgets);
+
       ///////////////////////////////////
       // map apps to frontend metadata //
       ///////////////////////////////////
@@ -89,9 +115,12 @@ public class MetaDataAction
          apps.put(entry.getKey(), new QFrontendAppMetaData(entry.getValue()));
          treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
 
-         for(QAppChildMetaData child : entry.getValue().getChildren())
+         if(CollectionUtils.nullSafeHasContents(entry.getValue().getChildren()))
          {
-            apps.get(entry.getKey()).addChild(new AppTreeNode(child));
+            for(QAppChildMetaData child : entry.getValue().getChildren())
+            {
+               apps.get(entry.getKey()).addChild(new AppTreeNode(child));
+            }
          }
       }
       metaDataOutput.setApps(apps);

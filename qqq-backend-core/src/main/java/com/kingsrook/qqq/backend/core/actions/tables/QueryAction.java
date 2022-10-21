@@ -95,15 +95,6 @@ public class QueryAction
          records.replaceAll(t -> postQueryRecordCustomizer.get().apply(t));
       }
 
-      if(queryInput.getShouldGenerateDisplayValues())
-      {
-         if(qValueFormatter == null)
-         {
-            qValueFormatter = new QValueFormatter();
-         }
-         qValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
-      }
-
       if(queryInput.getShouldTranslatePossibleValues())
       {
          if(qPossibleValueTranslator == null)
@@ -111,6 +102,15 @@ public class QueryAction
             qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
          }
          qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records);
+      }
+
+      if(queryInput.getShouldGenerateDisplayValues())
+      {
+         if(qValueFormatter == null)
+         {
+            qValueFormatter = new QValueFormatter();
+         }
+         qValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
       }
    }
 }

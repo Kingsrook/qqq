@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -41,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -48,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -111,9 +114,41 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** Translate a list of ids to a list of possible values (e.g., w/ rendered values)
     *******************************************************************************/
-   String translatePossibleValue(QFieldMetaData field, Serializable value)
+   public List<QPossibleValue<?>> buildTranslatedPossibleValueList(QPossibleValueSource possibleValueSource, List<Serializable> ids)
+   {
+      if(ids == null)
+      {
+         return (null);
+      }
+
+      if(ids.isEmpty())
+      {
+         return (new ArrayList<>());
+      }
+
+      List<QPossibleValue<?>> rs = new ArrayList<>();
+      if(possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
+      {
+         primePvsCache(possibleValueSource.getTableName(), List.of(possibleValueSource), ids);
+      }
+
+      for(Serializable id : ids)
+      {
+         String translated = translatePossibleValue(possibleValueSource, id);
+         rs.add(new QPossibleValue<>(id, translated));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given field and (raw/id) value, get the translated (string) value.
+    *******************************************************************************/
+   public String translatePossibleValue(QFieldMetaData field, Serializable value)
    {
       QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
       if(possibleValueSource == null)
@@ -122,6 +157,31 @@ public class QPossibleValueTranslator
          return (null);
       }
 
+      try
+      {
+         if(field.getType().equals(QFieldType.INTEGER) && !(value instanceof Integer))
+         {
+            value = ValueUtils.getValueAsInteger(value);
+         }
+      }
+      catch(QValueException e)
+      {
+         LOG.info("Error translating possible value raw value...");
+         ///////////////////////////
+         // leave value as it was //
+         ///////////////////////////
+      }
+
+      return translatePossibleValue(possibleValueSource, value);
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given PossibleValueSource and (raw/id) value, get the translated (string) value.
+    *******************************************************************************/
+   String translatePossibleValue(QPossibleValueSource possibleValueSource, Serializable value)
+   {
       String resultValue = null;
       if(possibleValueSource.getType().equals(QPossibleValueSourceType.ENUM))
       {
@@ -129,15 +189,15 @@ public class QPossibleValueTranslator
       }
       else if(possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
       {
-         resultValue = translatePossibleValueTable(field, value, possibleValueSource);
+         resultValue = translatePossibleValueTable(value, possibleValueSource);
       }
       else if(possibleValueSource.getType().equals(QPossibleValueSourceType.CUSTOM))
       {
-         resultValue = translatePossibleValueCustom(field, value, possibleValueSource);
+         resultValue = translatePossibleValueCustom(value, possibleValueSource);
       }
       else
       {
-         LOG.error("Unrecognized possibleValueSourceType [" + possibleValueSource.getType() + "] in PVS named [" + possibleValueSource.getName() + "] on field [" + field.getName() + "]");
+         LOG.error("Unrecognized possibleValueSourceType [" + possibleValueSource.getType() + "] in PVS named [" + possibleValueSource.getName() + "]");
       }
 
       if(resultValue == null)
@@ -151,7 +211,7 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** do translation for an enum-type PVS
     *******************************************************************************/
    private String translatePossibleValueEnum(Serializable value, QPossibleValueSource possibleValueSource)
    {
@@ -169,9 +229,9 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** do translation for a table-type PVS
     *******************************************************************************/
-   private String translatePossibleValueTable(QFieldMetaData field, Serializable value, QPossibleValueSource possibleValueSource)
+   String translatePossibleValueTable(Serializable value, QPossibleValueSource possibleValueSource)
    {
       /////////////////////////////////
       // null input gets null output //
@@ -197,9 +257,9 @@ public class QPossibleValueTranslator
 
 
    /*******************************************************************************
-    **
+    ** do translation for a custom-type PVS
     *******************************************************************************/
-   private String translatePossibleValueCustom(QFieldMetaData field, Serializable value, QPossibleValueSource possibleValueSource)
+   private String translatePossibleValueCustom(Serializable value, QPossibleValueSource possibleValueSource)
    {
       try
       {
@@ -208,7 +268,7 @@ public class QPossibleValueTranslator
       }
       catch(Exception e)
       {
-         LOG.warn("Error sending [" + value + "] for field [" + field + "] through custom code for PVS [" + field.getPossibleValueSourceName() + "]", e);
+         LOG.warn("Error sending [" + value + "] for through custom code for PVS [" + possibleValueSource.getName() + "]", e);
       }
 
       return (null);
@@ -294,11 +354,26 @@ public class QPossibleValueTranslator
          {
             for(QFieldMetaData field : fieldsByPvsTable.get(tableName))
             {
-               values.add(record.getValue(field.getName()));
+               Serializable fieldValue = record.getValue(field.getName());
+
+               //////////////////////////////////////
+               // check if value is already cached //
+               //////////////////////////////////////
+               QPossibleValueSource possibleValueSource = pvsesByTable.get(tableName).get(0);
+               possibleValueCache.putIfAbsent(possibleValueSource.getName(), new HashMap<>());
+               Map<Serializable, String> cacheForPvs = possibleValueCache.get(possibleValueSource.getName());
+
+               if(!cacheForPvs.containsKey(fieldValue))
+               {
+                  values.add(fieldValue);
+               }
             }
          }
 
-         primePvsCache(tableName, pvsesByTable.get(tableName), values);
+         if(!values.isEmpty())
+         {
+            primePvsCache(tableName, pvsesByTable.get(tableName), values);
+         }
       }
    }
 
@@ -331,6 +406,7 @@ public class QPossibleValueTranslator
             /////////////////////////////////////////////////////////////////////////////////////////
             // this is needed to get record labels, which are what we use here... unclear if best! //
             /////////////////////////////////////////////////////////////////////////////////////////
+            queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setShouldGenerateDisplayValues(true);
 
             QueryOutput queryOutput = new QueryAction().execute(queryInput);

@@ -59,7 +59,7 @@
       <dependency>
          <groupId>com.fasterxml.jackson.core</groupId>
          <artifactId>jackson-databind</artifactId>
-         <version>2.13.2.1</version>
+         <version>2.14.0-rc1</version>
       </dependency>
       <dependency>
          <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -98,6 +98,29 @@
          <version>5.2.2</version>
       </dependency>
 
+      <!-- the next 3 deps are being added for google drive support -->
+      <dependency>
+         <groupId>com.google.api-client</groupId>
+         <artifactId>google-api-client</artifactId>
+         <version>1.35.2</version>
+      </dependency>
+      <dependency>
+         <groupId>com.google.auth</groupId>
+         <artifactId>google-auth-library-oauth2-http</artifactId>
+         <version>1.11.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.google.apis</groupId>
+         <artifactId>google-api-services-drive</artifactId>
+         <version>v3-rev20220815-2.0.0</version>
+      </dependency>
+
+      <dependency>
+         <groupId>com.amazonaws</groupId>
+         <artifactId>aws-java-sdk-sqs</artifactId>
+         <version>1.12.321</version>
+      </dependency>
+
       <!-- Common deps for all qqq modules -->
       <dependency>
          <groupId>org.apache.maven.plugins</groupId>
@@ -114,6 +137,11 @@
       <dependency>
          <groupId>org.junit.jupiter</groupId>
          <artifactId>junit-jupiter-engine</artifactId>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.junit.jupiter</groupId>
+         <artifactId>junit-jupiter-params</artifactId>
          <scope>test</scope>
       </dependency>
       <dependency>
@@ -135,6 +163,30 @@
                   <exclude>com/kingsrook/qqq/backend/core/exceptions/**/*.class</exclude>
                </excludes>
             </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>2.4.3</version>
+            <configuration>
+               <createDependencyReducedPom>false</createDependencyReducedPom>
+               <filters>
+                  <filter>
+                     <artifact>*:*</artifact>
+                     <excludes>
+                        <exclude>META-INF/*</exclude>
+                     </excludes>
+                  </filter>
+               </filters>
+            </configuration>
+            <executions>
+               <execution>
+                  <phase>${plugin.shade.phase}</phase>
+                  <goals>
+                     <goal>shade</goal>
+                  </goals>
+               </execution>
+            </executions>
          </plugin>
       </plugins>
    </build>

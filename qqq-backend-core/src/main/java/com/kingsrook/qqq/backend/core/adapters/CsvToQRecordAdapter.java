@@ -89,11 +89,11 @@ public class CsvToQRecordAdapter
     *******************************************************************************/
    public void buildRecordsFromCsv(InputWrapper inputWrapper)
    {
-      String csv = inputWrapper.getCsv();
-      AbstractQFieldMapping<?> mapping = inputWrapper.getMapping();
-      Consumer<QRecord> recordCustomizer = inputWrapper.getRecordCustomizer();
-      QTableMetaData table = inputWrapper.getTable();
-      Integer limit = inputWrapper.getLimit();
+      String                   csv              = inputWrapper.getCsv();
+      AbstractQFieldMapping<?> mapping          = inputWrapper.getMapping();
+      Consumer<QRecord>        recordCustomizer = inputWrapper.getRecordCustomizer();
+      QTableMetaData           table            = inputWrapper.getTable();
+      Integer                  limit            = inputWrapper.getLimit();
 
       if(!StringUtils.hasContent(csv))
       {
@@ -136,7 +136,7 @@ public class CsvToQRecordAdapter
             headers = makeHeadersUnique(headers);
 
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
-            int recordCount = 0;
+            int                 recordCount = 0;
             while(csvIterator.hasNext())
             {
                CSVRecord csvRecord = csvIterator.next();
@@ -147,7 +147,8 @@ public class CsvToQRecordAdapter
                Map<String, String> csvValues = new HashMap<>();
                for(int i = 0; i < headers.size() && i < csvRecord.size(); i++)
                {
-                  csvValues.put(headers.get(i), csvRecord.get(i));
+                  String header = adjustHeaderCase(headers.get(i), inputWrapper);
+                  csvValues.put(header, csvRecord.get(i));
                }
 
                //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,6 +158,7 @@ public class CsvToQRecordAdapter
                for(QFieldMetaData field : table.getFields().values())
                {
                   String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
+                  fieldSource = adjustHeaderCase(fieldSource, inputWrapper);
                   qRecord.setValue(field.getName(), csvValues.get(fieldSource));
                }
 
@@ -180,7 +182,7 @@ public class CsvToQRecordAdapter
                   .withTrim());
 
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
-            int recordCount = 0;
+            int                 recordCount = 0;
             while(csvIterator.hasNext())
             {
                CSVRecord csvRecord = csvIterator.next();
@@ -224,6 +226,20 @@ public class CsvToQRecordAdapter
       {
          throw (new IllegalArgumentException("Error parsing CSV: " + e.getMessage(), e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String adjustHeaderCase(String s, InputWrapper inputWrapper)
+   {
+      if(inputWrapper.caseSensitiveHeaders)
+      {
+         return (s);
+      }
+      return (s.toLowerCase());
    }
 
 
@@ -324,6 +340,8 @@ public class CsvToQRecordAdapter
       private AbstractQFieldMapping<?> mapping;
       private Consumer<QRecord>        recordCustomizer;
       private Integer                  limit;
+
+      private boolean caseSensitiveHeaders = false;
 
 
 
@@ -526,6 +544,40 @@ public class CsvToQRecordAdapter
       public InputWrapper withLimit(Integer limit)
       {
          this.limit = limit;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for caseSensitiveHeaders
+       **
+       *******************************************************************************/
+      public boolean getCaseSensitiveHeaders()
+      {
+         return caseSensitiveHeaders;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for caseSensitiveHeaders
+       **
+       *******************************************************************************/
+      public void setCaseSensitiveHeaders(boolean caseSensitiveHeaders)
+      {
+         this.caseSensitiveHeaders = caseSensitiveHeaders;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for caseSensitiveHeaders
+       **
+       *******************************************************************************/
+      public InputWrapper withCaseSensitiveHeaders(boolean caseSensitiveHeaders)
+      {
+         this.caseSensitiveHeaders = caseSensitiveHeaders;
          return (this);
       }
 

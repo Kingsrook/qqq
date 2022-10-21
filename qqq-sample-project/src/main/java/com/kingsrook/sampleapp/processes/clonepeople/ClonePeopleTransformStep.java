@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
@@ -50,7 +51,7 @@ public class ClonePeopleTransformStep extends AbstractTransformStep implements P
     **
     *******************************************************************************/
    @Override
-   public ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen)
+   public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
       if(isForResultScreen)
       {
@@ -59,7 +60,7 @@ public class ClonePeopleTransformStep extends AbstractTransformStep implements P
          nestedCloneSummary.setMessage("are already a clone of a clone, so they weren't cloned again.");
       }
 
-      ArrayList<ProcessSummaryLine> rs = new ArrayList<>();
+      ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
       okSummary.addSelfToListIfAnyCount(rs);
       warningCloneSummary.addSelfToListIfAnyCount(rs);
       refuseCloningSummary.addSelfToListIfAnyCount(rs);

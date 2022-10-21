@@ -59,7 +59,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       boolean supportsFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_SUPPORTS_FULL_VALIDATION);
       if(!supportsFullValidation)
       {
-         LOG.info("Process does not support validation, so skipping validation step");
+         LOG.debug("Process does not support validation, so skipping validation step");
          return;
       }
 
@@ -69,7 +69,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       boolean doFullValidation = runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION);
       if(!doFullValidation)
       {
-         LOG.info("Not requested to do full validation, so skipping validation step");
+         LOG.trace("Not requested to do full validation, so skipping validation step");
          return;
       }
 
@@ -105,7 +105,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////
       // get the process summary from the validation step //
       //////////////////////////////////////////////////////
-      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.getProcessSummary(false));
+      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, false));
 
       transformStep.postRun(runBackendStepInput, runBackendStepOutput);
    }
@@ -131,7 +131,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       ///////////////////////////////////////////////////////////////////////
       // make streamed input & output objects from the run input & outputs //
       ///////////////////////////////////////////////////////////////////////
-      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
       StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
       /////////////////////////////////////////////////////

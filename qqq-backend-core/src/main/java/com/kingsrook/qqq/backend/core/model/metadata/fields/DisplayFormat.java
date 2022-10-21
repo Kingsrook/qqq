@@ -28,13 +28,51 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 public interface DisplayFormat
 {
    String DEFAULT = "%s";
-   String STRING = "%s";
-   String COMMAS = "%,d";
+   String STRING  = "%s";
+   String COMMAS  = "%,d";
+
    String DECIMAL1_COMMAS = "%,.1f";
    String DECIMAL2_COMMAS = "%,.2f";
    String DECIMAL3_COMMAS = "%,.3f";
+
    String DECIMAL1 = "%.1f";
    String DECIMAL2 = "%.2f";
    String DECIMAL3 = "%.3f";
+
    String CURRENCY = "$%,.2f";
+
+   String PERCENT        = "%.0f%%";
+   String PERCENT_POINT1 = "%.1f%%";
+   String PERCENT_POINT2 = "%.2f%%";
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:Indentation")
+   static String getExcelFormat(String javaDisplayFormat)
+   {
+      if(javaDisplayFormat == null)
+      {
+         return (null);
+      }
+
+      return switch(javaDisplayFormat)
+         {
+            case DisplayFormat.DEFAULT -> null;
+            case DisplayFormat.COMMAS -> "#,##0";
+            case DisplayFormat.DECIMAL1 -> "0.0";
+            case DisplayFormat.DECIMAL2 -> "0.00";
+            case DisplayFormat.DECIMAL3 -> "0.000";
+            case DisplayFormat.DECIMAL1_COMMAS -> "#,##0.0";
+            case DisplayFormat.DECIMAL2_COMMAS -> "#,##0.00";
+            case DisplayFormat.DECIMAL3_COMMAS -> "#,##0.000";
+            case DisplayFormat.CURRENCY -> "$#,##0.00";
+            case DisplayFormat.PERCENT -> "0%";
+            case DisplayFormat.PERCENT_POINT1 -> "0.0%";
+            case DisplayFormat.PERCENT_POINT2 -> "0.00%";
+            default -> null;
+         };
+
+   }
 }

@@ -63,6 +63,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    private boolean isHidden = false;
 
    private Map<String, QFieldMetaData> fields;
+   private List<UniqueKey>             uniqueKeys;
 
    private QTableBackendDetails    backendDetails;
    private QTableAutomationDetails automationDetails;
@@ -76,6 +77,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    private List<String> recordLabelFields;
 
    private List<QFieldSection> sections;
+
+   private List<String> widgets;
 
 
 
@@ -712,6 +715,90 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withSection(QFieldSection fieldSection)
    {
       addSection(fieldSection);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public List<String> getWidgets()
+   {
+      return widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for widgets
+    **
+    *******************************************************************************/
+   public void setWidgets(List<String> widgets)
+   {
+      this.widgets = widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for widgets
+    **
+    *******************************************************************************/
+   public QTableMetaData withWidgets(List<String> widgets)
+   {
+      this.widgets = widgets;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for uniqueKeys
+    **
+    *******************************************************************************/
+   public List<UniqueKey> getUniqueKeys()
+   {
+      return uniqueKeys;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for uniqueKeys
+    **
+    *******************************************************************************/
+   public void setUniqueKeys(List<UniqueKey> uniqueKeys)
+   {
+      this.uniqueKeys = uniqueKeys;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for uniqueKeys
+    **
+    *******************************************************************************/
+   public QTableMetaData withUniqueKeys(List<UniqueKey> uniqueKeys)
+   {
+      this.uniqueKeys = uniqueKeys;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for uniqueKeys
+    **
+    *******************************************************************************/
+   public QTableMetaData withUniqueKey(UniqueKey uniqueKey)
+   {
+      if(this.uniqueKeys == null)
+      {
+         this.uniqueKeys = new ArrayList<>();
+      }
+      this.uniqueKeys.add(uniqueKey);
       return (this);
    }
 

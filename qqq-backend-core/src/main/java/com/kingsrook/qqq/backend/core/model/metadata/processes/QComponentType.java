@@ -32,8 +32,10 @@ public enum QComponentType
    VALIDATION_REVIEW_SCREEN,
    EDIT_FORM,
    VIEW_FORM,
+   DOWNLOAD_FORM,
    RECORD_LIST,
-   PROCESS_SUMMARY_RESULTS;
+   PROCESS_SUMMARY_RESULTS,
+   GOOGLE_DRIVE_SELECT_FOLDER;
    ///////////////////////////////////////////////////////////////////////////
    // keep these values in sync with QComponentType.ts in qqq-frontend-core //
    ///////////////////////////////////////////////////////////////////////////

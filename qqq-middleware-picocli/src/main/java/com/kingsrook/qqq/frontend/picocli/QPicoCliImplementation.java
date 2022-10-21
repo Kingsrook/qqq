@@ -38,7 +38,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
-import com.kingsrook.qqq.backend.core.actions.reporting.ReportAction;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -58,9 +58,9 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -633,25 +633,25 @@ public class QPicoCliImplementation
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ReportInput reportInput = new ReportInput(qInstance);
-         reportInput.setSession(session);
-         reportInput.setTableName(tableName);
-         reportInput.setReportFormat(reportFormat);
-         reportInput.setFilename(filename);
-         reportInput.setReportOutputStream(outputStream);
-         reportInput.setLimit(subParseResult.matchedOptionValue("limit", null));
+         ExportInput exportInput = new ExportInput(qInstance);
+         exportInput.setSession(session);
+         exportInput.setTableName(tableName);
+         exportInput.setReportFormat(reportFormat);
+         exportInput.setFilename(filename);
+         exportInput.setReportOutputStream(outputStream);
+         exportInput.setLimit(subParseResult.matchedOptionValue("limit", null));
 
-         reportInput.setQueryFilter(generateQueryFilter(subParseResult));
+         exportInput.setQueryFilter(generateQueryFilter(subParseResult));
 
          String fieldNames = subParseResult.matchedOptionValue("--fieldNames", "");
          if(StringUtils.hasContent(fieldNames))
          {
-            reportInput.setFieldNames(Arrays.asList(fieldNames.split(",")));
+            exportInput.setFieldNames(Arrays.asList(fieldNames.split(",")));
          }
 
-         ReportOutput reportOutput = new ReportAction().execute(reportInput);
+         ExportOutput exportOutput = new ExportAction().execute(exportInput);
 
-         commandLine.getOut().println("Wrote " + reportOutput.getRecordCount() + " records to file " + filename);
+         commandLine.getOut().println("Wrote " + exportOutput.getRecordCount() + " records to file " + filename);
          return commandLine.getCommandSpec().exitCodeOnSuccess();
       }
       finally

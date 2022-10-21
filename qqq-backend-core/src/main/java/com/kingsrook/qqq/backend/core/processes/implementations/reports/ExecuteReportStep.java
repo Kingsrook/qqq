@@ -1,0 +1,85 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.core.processes.implementations.reports;
+
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+
+
+/*******************************************************************************
+ ** Process step to execute a report.
+ **
+ ** Writes it to a temp file...  Returns that file name in process output.
+ *******************************************************************************/
+public class ExecuteReportStep implements BackendStep
+{
+   @Override
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      try
+      {
+         String          reportName = runBackendStepInput.getValueString("reportName");
+         QReportMetaData report     = runBackendStepInput.getInstance().getReport(reportName);
+         File            tmpFile    = File.createTempFile(reportName, ".xlsx", new File("/tmp/"));
+
+         runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
+
+         try(FileOutputStream reportOutputStream = new FileOutputStream(tmpFile))
+         {
+            ReportInput reportInput = new ReportInput(runBackendStepInput.getInstance());
+            reportInput.setSession(runBackendStepInput.getSession());
+            reportInput.setReportName(reportName);
+            reportInput.setReportFormat(ReportFormat.XLSX); // todo - variable
+            reportInput.setReportOutputStream(reportOutputStream);
+
+            Map<String, Serializable> values = runBackendStepInput.getValues();
+            reportInput.setInputValues(values);
+
+            new GenerateReportAction().execute(reportInput);
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm").withZone(ZoneId.systemDefault());
+            String            datePart  = formatter.format(Instant.now());
+
+            runBackendStepOutput.addValue("downloadFileName", report.getLabel() + " " + datePart + ".xlsx");
+            runBackendStepOutput.addValue("serverFilePath", tmpFile.getCanonicalPath());
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error running report", e));
+      }
+   }
+}

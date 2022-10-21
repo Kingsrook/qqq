@@ -1,0 +1,54 @@
+<template name="alterAddColumn" value="ALTER TABLE $TABLE$ ADD $COLUMN$ $TYPE$;" description="Write an ALTER TABLE SQL statement to add a column" toReformat="false" toShortenFQNames="true">
+  <variable name="TABLE" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="COLUMN" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="TYPE" expression="enum(&quot;INTEGER&quot;,&quot;VARCHAR(250)&quot;,&quot;BOOLEAN&quot;,&quot;DECIMAL(12,2)&quot;,&quot;DATE&quot;,&quot;TIMESTAMP&quot;)" defaultValue="INTEGER" alwaysStopAt="true" />
+  <context>
+    <option name="SQL" value="true" />
+    <option name="XML_TEXT" value="true" />
+  </context>
+</template>
+<template name="alterAddIndex" value="ALTER TABLE $TABLE$ ADD INDEX $INDEX_NAME$ ($COLUMN$);" description="Write an ALTER TABLE SQL statement to add an index" toReformat="false" toShortenFQNames="true">
+  <variable name="TABLE" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="COLUMN" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="INDEX_NAME" expression="concat(&quot;i_&quot;, regularExpression(regularExpression(COLUMN, &quot;,&quot;, &quot;_&quot;), &quot; &quot;, &quot;&quot;)" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="SQL" value="true" />
+    <option name="XML_TEXT" value="true" />
+  </context>
+</template>
+<template name="changeSetCreateTable" value="&lt;changeSet author=&quot;$USER$&quot; id=&quot;$STORY$-$INDEX$&quot;&gt;&#10;   &lt;createTable tableName=&quot;$TABLE$&quot;&gt;&#10;      &lt;column autoIncrement=&quot;true&quot; name=&quot;id&quot; type=&quot;INTEGER&quot;&gt;&#10;         &lt;constraints nullable=&quot;false&quot; primaryKey=&quot;true&quot; primaryKeyName=&quot;$TABLE$_pkey&quot;/&gt;&#10;      &lt;/column&gt;&#10;&#10;      &lt;column defaultValueComputed=&quot;CURRENT_TIMESTAMP&quot; name=&quot;create_date&quot; type=&quot;TIMESTAMP&quot;/&gt;&#10;      &lt;column defaultValueComputed=&quot;CURRENT_TIMESTAMP&quot; name=&quot;modify_date&quot; type=&quot;TIMESTAMP&quot;/&gt;&#10;&#10;      &lt;column name=&quot;$END$&quot; type=&quot;&quot;/&gt;&#10;   &lt;/createTable&gt;&#10;&lt;/changeSet&gt;" description="Write a Liquibase createTable changeset" toReformat="false" toShortenFQNames="true">
+  <variable name="USER" expression="user()" defaultValue="" alwaysStopAt="true" />
+  <variable name="STORY" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="true" />
+  <variable name="INDEX" expression="" defaultValue="&quot;1&quot;" alwaysStopAt="true" />
+  <variable name="TABLE" expression="" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="XML_TEXT" value="true" />
+  </context>
+</template>
+<template name="changeSetCreateTableAndLoadData" value="&lt;changeSet author=&quot;$USER$&quot; id=&quot;$STORY$-$INDEX$&quot;&gt;&#10;   &lt;createTable tableName=&quot;$TABLE$&quot;&gt;&#10;      &lt;column autoIncrement=&quot;true&quot; name=&quot;id&quot; type=&quot;INTEGER&quot;&gt;&#10;         &lt;constraints nullable=&quot;false&quot; primaryKey=&quot;true&quot; primaryKeyName=&quot;$TABLE$_pkey&quot;/&gt;&#10;      &lt;/column&gt;&#10;&#10;      &lt;column defaultValueComputed=&quot;CURRENT_TIMESTAMP&quot; name=&quot;create_date&quot; type=&quot;TIMESTAMP&quot;/&gt;&#10;      &lt;column defaultValueComputed=&quot;CURRENT_TIMESTAMP&quot; name=&quot;modify_date&quot; type=&quot;TIMESTAMP&quot;/&gt;&#10;&#10;      &lt;column name=&quot;$END$&quot; type=&quot;&quot;/&gt;&#10;   &lt;/createTable&gt;&#10;&lt;/changeSet&gt;&#10;&#10;&lt;changeSet author=&quot;$USER$&quot; id=&quot;$STORY$-$NEXT_INDEX$&quot;&gt;&#10;   &lt;loadData file=&quot;src/main/resources/liquibase/data/$TABLE$.csv&quot; tableName=&quot;$TABLE$&quot; /&gt;&#10;&lt;/changeSet&gt;" description="Write 2 Liquibase changesets, to create a table and load its data" toReformat="false" toShortenFQNames="true">
+  <variable name="USER" expression="user()" defaultValue="" alwaysStopAt="true" />
+  <variable name="STORY" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="true" />
+  <variable name="INDEX" expression="" defaultValue="&quot;1&quot;" alwaysStopAt="true" />
+  <variable name="TABLE" expression="" defaultValue="" alwaysStopAt="true" />
+  <variable name="NEXT_INDEX" expression="groovyScript(&quot;try { return(Integer.parseInt(_1) + 1) } catch(Exception e) { return ''; }&quot;, INDEX)" defaultValue="" alwaysStopAt="false" />
+  <context>
+    <option name="XML_TEXT" value="true" />
+  </context>
+</template>
+<template name="changeSetLoadData" value="&lt;changeSet author=&quot;$USER$&quot; id=&quot;$STORY$-$INDEX$&quot;&gt;&#10;   &lt;loadData file=&quot;src/main/resources/liquibase/data/$TABLE$.csv&quot; tableName=&quot;$TABLE$&quot; /&gt;&#10;&lt;/changeSet&gt;" description="Write a Liquibase loadData changeset" toReformat="false" toShortenFQNames="true">
+  <variable name="USER" expression="user()" defaultValue="" alwaysStopAt="true" />
+  <variable name="STORY" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="true" />
+  <variable name="INDEX" expression="" defaultValue="&quot;1&quot;" alwaysStopAt="true" />
+  <variable name="TABLE" expression="" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="XML_TEXT" value="true" />
+  </context>
+</template>
+<template name="changeSetSQL" value="&lt;changeSet author=&quot;$USER$&quot; id=&quot;$STORY$-$INDEX$&quot;&gt;&#10;   &lt;sql&gt;&#10;      $END$&#10;   &lt;/sql&gt;&#10;&lt;/changeSet&gt;" description="Write a Liquibase SQL changeset" toReformat="false" toShortenFQNames="true">
+  <variable name="USER" expression="user()" defaultValue="" alwaysStopAt="true" />
+  <variable name="STORY" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="true" />
+  <variable name="INDEX" expression="" defaultValue="" alwaysStopAt="true" />
+  <context>
+    <option name="XML_TEXT" value="true" />
+  </context>
+</template>

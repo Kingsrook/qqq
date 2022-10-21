@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -49,6 +50,8 @@ public class QFrontendTableMetaData
 
    private Map<String, QFrontendFieldMetaData> fields;
    private List<QFieldSection>                 sections;
+
+   private List<String> widgets;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -80,6 +83,11 @@ public class QFrontendTableMetaData
       if(tableMetaData.getIcon() != null)
       {
          this.iconName = tableMetaData.getIcon().getName();
+      }
+
+      if(CollectionUtils.nullSafeHasContents(tableMetaData.getWidgets()))
+      {
+         this.widgets = tableMetaData.getWidgets();
       }
    }
 
@@ -158,5 +166,16 @@ public class QFrontendTableMetaData
    public String getIconName()
    {
       return iconName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public List<String> getWidgets()
+   {
+      return widgets;
    }
 }

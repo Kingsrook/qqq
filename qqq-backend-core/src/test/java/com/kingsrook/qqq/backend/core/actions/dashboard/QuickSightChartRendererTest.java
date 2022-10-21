@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 import java.net.UnknownHostException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -43,7 +44,8 @@ class QuickSightChartRendererTest
    @Test
    void testWrongMetaDataClass() throws QException
    {
-      assertThatThrownBy(() -> new QuickSightChartRenderer().render(TestUtils.defineInstance(), TestUtils.getMockSession(), new QWidgetMetaData()))
+      RenderWidgetInput input = getInput().withWidgetMetaData(new QWidgetMetaData());
+      assertThatThrownBy(() -> new QuickSightChartRenderer().render(input))
          .hasRootCauseInstanceOf(ClassCastException.class);
    }
 
@@ -55,7 +57,8 @@ class QuickSightChartRendererTest
    @Test
    void testNoCredentials() throws QException
    {
-      assertThatThrownBy(() -> new QuickSightChartRenderer().render(TestUtils.defineInstance(), TestUtils.getMockSession(), new QuickSightChartMetaData()))
+      RenderWidgetInput input = getInput().withWidgetMetaData(new QuickSightChartMetaData());
+      assertThatThrownBy(() -> new QuickSightChartRenderer().render(input))
          .hasRootCauseInstanceOf(NullPointerException.class);
    }
 
@@ -67,14 +70,28 @@ class QuickSightChartRendererTest
    @Test
    void testBadCredentials() throws QException
    {
-      assertThatThrownBy(() -> new QuickSightChartRenderer().render(TestUtils.defineInstance(), TestUtils.getMockSession(),
+      RenderWidgetInput input = getInput().withWidgetMetaData(
          new QuickSightChartMetaData()
             .withName("test")
             .withAccessKey("FAIL")
             .withSecretKey("FAIL")
             .withRegion("FAIL")
             .withAccountId("FAIL")
-      )).hasRootCauseInstanceOf(UnknownHostException.class);
+      );
+      assertThatThrownBy(() -> new QuickSightChartRenderer().render(input))
+         .hasRootCauseInstanceOf(UnknownHostException.class);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+
+   private RenderWidgetInput getInput()
+   {
+      return (new RenderWidgetInput(TestUtils.defineInstance()).withSession(TestUtils.getMockSession()));
+
    }
 
 }

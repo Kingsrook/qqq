@@ -23,10 +23,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -39,11 +42,13 @@ public class QFrontendAppMetaData
 {
    private String name;
    private String label;
-
-   private List<AppTreeNode> children = new ArrayList<>();
-   private List<String>      widgets  = new ArrayList<>();
-
    private String iconName;
+
+   private List<String>             widgets  = new ArrayList<>();
+   private List<AppTreeNode>        children = new ArrayList<>();
+   private Map<String, AppTreeNode> childMap = new HashMap<>();
+
+   private List<QAppSection> sections;
 
 
 
@@ -63,6 +68,11 @@ public class QFrontendAppMetaData
       if(CollectionUtils.nullSafeHasContents(appMetaData.getWidgets()))
       {
          this.widgets = appMetaData.getWidgets();
+      }
+
+      if(CollectionUtils.nullSafeHasContents(appMetaData.getSections()))
+      {
+         this.sections = appMetaData.getSections();
       }
    }
 
@@ -102,6 +112,17 @@ public class QFrontendAppMetaData
 
 
    /*******************************************************************************
+    ** Getter for childMap
+    **
+    *******************************************************************************/
+   public Map<String, AppTreeNode> getChildMap()
+   {
+      return childMap;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for iconName
     **
     *******************************************************************************/
@@ -132,6 +153,7 @@ public class QFrontendAppMetaData
       {
          children = new ArrayList<>();
       }
+      childMap.put(childAppTreeNode.getName(), childAppTreeNode);
       children.add(childAppTreeNode);
    }
 
@@ -144,5 +166,16 @@ public class QFrontendAppMetaData
    public List<String> getWidgets()
    {
       return widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sections
+    **
+    *******************************************************************************/
+   public List<QAppSection> getSections()
+   {
+      return sections;
    }
 }

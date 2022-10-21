@@ -29,7 +29,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
 
 
 /*******************************************************************************
@@ -40,10 +42,11 @@ public class MetaDataOutput extends AbstractActionOutput
 {
    private Map<String, QFrontendTableMetaData>   tables;
    private Map<String, QFrontendProcessMetaData> processes;
+   private Map<String, QFrontendReportMetaData>  reports;
    private Map<String, QFrontendAppMetaData>     apps;
+   private Map<String, QFrontendWidgetMetaData>  widgets;
 
    private List<AppTreeNode> appTree;
-
    private QBrandingMetaData branding;
 
 
@@ -93,6 +96,28 @@ public class MetaDataOutput extends AbstractActionOutput
 
 
    /*******************************************************************************
+    ** Getter for reports
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendReportMetaData> getReports()
+   {
+      return reports;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reports
+    **
+    *******************************************************************************/
+   public void setReports(Map<String, QFrontendReportMetaData> reports)
+   {
+      this.reports = reports;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for appTree
     **
     *******************************************************************************/
@@ -132,6 +157,28 @@ public class MetaDataOutput extends AbstractActionOutput
    public void setApps(Map<String, QFrontendAppMetaData> apps)
    {
       this.apps = apps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public Map<String, QFrontendWidgetMetaData> getWidgets()
+   {
+      return widgets;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for widgets
+    **
+    *******************************************************************************/
+   public void setWidgets(Map<String, QFrontendWidgetMetaData> widgets)
+   {
+      this.widgets = widgets;
    }
 
 

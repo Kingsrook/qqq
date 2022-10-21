@@ -65,7 +65,7 @@ public class QBackendModuleDispatcher
          return;
       }
 
-      backendTypeToModuleClassNameMap = new HashMap<>();
+      Map<String, String> newMap = new HashMap<>();
 
       String[] moduleClassNames = new String[]
          {
@@ -75,7 +75,8 @@ public class QBackendModuleDispatcher
             "com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule",
             "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule",
             "com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule",
-            "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule"
+            "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule",
+            "com.kingsrook.qqq.backend.module.api.APIBackendModule"
          };
 
       for(String moduleClassName : moduleClassNames)
@@ -84,13 +85,15 @@ public class QBackendModuleDispatcher
          {
             Class<?>                moduleClass = Class.forName(moduleClassName);
             QBackendModuleInterface module      = (QBackendModuleInterface) moduleClass.getConstructor().newInstance();
-            backendTypeToModuleClassNameMap.put(module.getBackendType(), moduleClassName);
+            newMap.put(module.getBackendType(), moduleClassName);
          }
          catch(Exception e)
          {
             LOG.debug("Backend module [{}] could not be loaded: {}", moduleClassName, e.getMessage());
          }
       }
+
+      backendTypeToModuleClassNameMap = newMap;
    }
 
 

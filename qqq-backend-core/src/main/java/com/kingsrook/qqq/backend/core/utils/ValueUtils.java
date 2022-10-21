@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -115,6 +116,10 @@ public class ValueUtils
          {
             return (i);
          }
+         else if(value instanceof BigInteger b)
+         {
+            return (b.intValue());
+         }
          else if(value instanceof Long l)
          {
             return Math.toIntExact(l);
@@ -197,6 +202,54 @@ public class ValueUtils
 
 
    /*******************************************************************************
+    ** Type-safely make a LocalDateTime from any Object.
+    ** null and empty-string inputs return null.
+    ** We may throw if the input can't be converted to a LocalDateTime
+    *******************************************************************************/
+   public static LocalDateTime getValueAsLocalDateTime(Object value) throws QValueException
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof LocalDateTime ldt)
+         {
+            return (ldt);
+         }
+         else if(value instanceof java.sql.Timestamp ts)
+         {
+            return ts.toLocalDateTime();
+         }
+         else if(value instanceof Calendar c)
+         {
+            TimeZone tz  = c.getTimeZone();
+            ZoneId   zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
+            return LocalDateTime.ofInstant(c.toInstant(), zid);
+         }
+         else if(value instanceof String s)
+         {
+            return LocalDateTime.parse(s);
+         }
+         else
+         {
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to LocalDateTime."));
+         }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to a LocalDateTime.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Type-safely make a LocalDate from any Object.
     ** null and empty-string inputs return null.
     ** We may throw if the input can't be converted to a LocalDate
@@ -226,6 +279,10 @@ public class ValueUtils
             TimeZone tz  = c.getTimeZone();
             ZoneId   zid = (tz == null) ? ZoneId.systemDefault() : tz.toZoneId();
             return LocalDateTime.ofInstant(c.toInstant(), zid).toLocalDate();
+         }
+         else if(value instanceof Instant i)
+         {
+            return LocalDate.ofInstant(i, ZoneId.systemDefault()); // todo - where should the zone come from?
          }
          else if(value instanceof LocalDateTime ldt)
          {
@@ -401,7 +458,14 @@ public class ValueUtils
                return (null);
             }
 
-            return Instant.parse(s);
+            try
+            {
+               return Instant.parse(s);
+            }
+            catch(DateTimeParseException e)
+            {
+               return tryAlternativeInstantParsing(s, e);
+            }
          }
          else
          {
@@ -415,6 +479,26 @@ public class ValueUtils
       catch(Exception e)
       {
          throw (new QValueException("Value [" + value + "] could not be converted to a Instant.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Instant tryAlternativeInstantParsing(String s, DateTimeParseException e)
+   {
+      if(s.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$"))
+      {
+         //////////////////////////
+         // todo ... time zone?? //
+         //////////////////////////
+         return Instant.parse(s + ":00Z");
+      }
+      else
+      {
+         throw (e);
       }
    }
 

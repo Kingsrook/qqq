@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+   <Properties>
+      <Property name="LOG_PATTERN">%date{ISO8601} | %relative | %level | %threadName{1} | %logger{1}.%method | %message%n</Property>
+   </Properties>
+   <Appenders>
+      <Console name="SystemOutAppender" target="SYSTEM_OUT">
+         <PatternLayout pattern="${LOG_PATTERN}"/>
+      </Console>
+   </Appenders>
+   <Loggers>
+      <Logger name="org.apache.log4j.xml" additivity="false">
+      </Logger>
+      <Root level="all">
+         <AppenderRef ref="SystemOutAppender"/>
+      </Root>
+   </Loggers>
+</Configuration>

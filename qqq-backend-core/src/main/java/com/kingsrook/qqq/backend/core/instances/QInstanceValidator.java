@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,21 +31,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
@@ -93,7 +102,7 @@ public class QInstanceValidator
          // before validation, enrich the object (e.g., to fill in values that the user doesn't have to //
          /////////////////////////////////////////////////////////////////////////////////////////////////
          // TODO - possible point of customization (use a different enricher, or none, or pass it options).
-         new QInstanceEnricher().enrich(qInstance);
+         new QInstanceEnricher(qInstance).enrich();
       }
       catch(Exception e)
       {
@@ -111,6 +120,7 @@ public class QInstanceValidator
          validateProcesses(qInstance);
          validateApps(qInstance);
          validatePossibleValueSources(qInstance);
+         validateQueuesAndProviders(qInstance);
       }
       catch(Exception e)
       {
@@ -123,6 +133,45 @@ public class QInstanceValidator
       }
 
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateQueuesAndProviders(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getQueueProviders()))
+      {
+         qInstance.getQueueProviders().forEach((name, queueProvider) ->
+         {
+            assertCondition(Objects.equals(name, queueProvider.getName()), "Inconsistent naming for queueProvider: " + name + "/" + queueProvider.getName() + ".");
+            assertCondition(queueProvider.getType() != null, "Missing type for queueProvider: " + name);
+
+            if(queueProvider instanceof SQSQueueProviderMetaData sqsQueueProvider)
+            {
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getAccessKey()), "Missing accessKey for SQSQueueProvider: " + name);
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getSecretKey()), "Missing secretKey for SQSQueueProvider: " + name);
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getBaseURL()), "Missing baseURL for SQSQueueProvider: " + name);
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getRegion()), "Missing region for SQSQueueProvider: " + name);
+            }
+         });
+      }
+
+      if(CollectionUtils.nullSafeHasContents(qInstance.getQueues()))
+      {
+         qInstance.getQueues().forEach((name, queue) ->
+         {
+            assertCondition(Objects.equals(name, queue.getName()), "Inconsistent naming for queue: " + name + "/" + queue.getName() + ".");
+            assertCondition(qInstance.getQueueProvider(queue.getProviderName()) != null, "Unrecognized queue providerName for queue: " + name);
+            assertCondition(StringUtils.hasContent(queue.getQueueName()), "Missing queueName for queue: " + name);
+            if(assertCondition(StringUtils.hasContent(queue.getProcessName()), "Missing processName for queue: " + name))
+            {
+               assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
+            }
+         });
+      }
    }
 
 
@@ -213,7 +262,7 @@ public class QInstanceValidator
             {
                for(QFieldSection section : table.getSections())
                {
-                  validateSection(table, section, fieldNamesInSections);
+                  validateFieldSection(table, section, fieldNamesInSections);
                   if(section.getTier().equals(Tier.T1))
                   {
                      assertCondition(tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
@@ -256,7 +305,41 @@ public class QInstanceValidator
             {
                validateTableAutomationDetails(qInstance, table);
             }
+
+            //////////////////////////////////////
+            // validate the table's unique keys //
+            //////////////////////////////////////
+            if(table.getUniqueKeys() != null)
+            {
+               validateTableUniqueKeys(table);
+            }
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableUniqueKeys(QTableMetaData table)
+   {
+      Set<Set<String>> ukSets = new HashSet<>();
+      for(UniqueKey uniqueKey : table.getUniqueKeys())
+      {
+         if(assertCondition(CollectionUtils.nullSafeHasContents(uniqueKey.getFieldNames()), table.getName() + " has a uniqueKey with no fields"))
+         {
+            Set<String> fieldNamesInThisUK = new HashSet<>();
+            for(String fieldName : uniqueKey.getFieldNames())
+            {
+               assertNoException(() -> table.getField(fieldName), table.getName() + " has a uniqueKey with an unrecognized field name: " + fieldName);
+               assertCondition(!fieldNamesInThisUK.contains(fieldName), table.getName() + " has a uniqueKey with the same field multiple times: " + fieldName);
+               fieldNamesInThisUK.add(fieldName);
+            }
+
+            assertCondition(!ukSets.contains(fieldNamesInThisUK), table.getName() + " has more than one uniqueKey with the same set of fields: " + fieldNamesInThisUK);
+            ukSets.add(fieldNamesInThisUK);
+         }
       }
    }
 
@@ -460,18 +543,48 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Object getInstanceOfCodeReference(String prefix, Class<?> customizerClass)
+   private Object getInstanceOfCodeReference(String prefix, Class<?> clazz)
    {
-      Object customizerInstance = null;
+      Object instance = null;
       try
       {
-         customizerInstance = customizerClass.getConstructor().newInstance();
+         instance = clazz.getConstructor().newInstance();
       }
       catch(InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e)
       {
-         errors.add(prefix + "Instance of CodeReference could not be created: " + e);
+         prefix += "Instance of " + clazz.getSimpleName() + " could not be created";
+         if(Modifier.isAbstract(clazz.getModifiers()))
+         {
+            errors.add(prefix + " because it is abstract");
+         }
+         else if(Modifier.isInterface(clazz.getModifiers()))
+         {
+            errors.add(prefix + " because it is an interface");
+         }
+         else if(!Modifier.isPublic(clazz.getModifiers()))
+         {
+            errors.add(prefix + " because it is not public");
+         }
+         else
+         {
+            //////////////////////////////////
+            // check for no-arg constructor //
+            //////////////////////////////////
+            boolean hasNoArgConstructor = Stream.of(clazz.getConstructors()).anyMatch(c -> c.getParameterCount() == 0);
+            if(!hasNoArgConstructor)
+            {
+               errors.add(prefix + " because it does not have a parameterless constructor");
+            }
+            else
+            {
+               //////////////////////////////////////////
+               // otherwise, just append the exception //
+               //////////////////////////////////////////
+               errors.add(prefix + ": " + e);
+            }
+         }
       }
-      return customizerInstance;
+      return instance;
    }
 
 
@@ -479,7 +592,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateSection(QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
+   private void validateFieldSection(QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
    {
       assertCondition(StringUtils.hasContent(section.getName()), "Missing a name for field section in table " + table.getName() + ".");
       assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for field section in table " + table.getLabel() + ".");
@@ -493,6 +606,53 @@ public class QInstanceValidator
                assertCondition(!fieldNamesInSections.contains(fieldName), "Table " + table.getName() + " has field " + fieldName + " listed more than once in its field sections.");
 
                fieldNamesInSections.add(fieldName);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateAppSection(QAppMetaData app, QAppSection section, Set<String> childNamesInSections)
+   {
+      assertCondition(StringUtils.hasContent(section.getName()), "Missing a name for a section in app " + app.getName() + ".");
+      assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for a section in app " + app.getLabel() + ".");
+      boolean hasTables    = CollectionUtils.nullSafeHasContents(section.getTables());
+      boolean hasProcesses = CollectionUtils.nullSafeHasContents(section.getProcesses());
+      boolean hasReports   = CollectionUtils.nullSafeHasContents(section.getReports());
+      if(assertCondition(hasTables || hasProcesses || hasReports, "App " + app.getName() + " section " + section.getName() + " does not have any children."))
+      {
+         if(hasTables)
+         {
+            for(String tableName : section.getTables())
+            {
+               assertCondition(app.getChildren().stream().anyMatch(c -> c.getName().equals(tableName)), "App " + app.getName() + " section " + section.getName() + " specifies table " + tableName + ", which is not a child of this app.");
+               assertCondition(!childNamesInSections.contains(tableName), "App " + app.getName() + " has table " + tableName + " listed more than once in its sections.");
+
+               childNamesInSections.add(tableName);
+            }
+         }
+         if(hasProcesses)
+         {
+            for(String processName : section.getProcesses())
+            {
+               assertCondition(app.getChildren().stream().anyMatch(c -> c.getName().equals(processName)), "App " + app.getName() + " section " + section.getName() + " specifies process " + processName + ", which is not a child of this app.");
+               assertCondition(!childNamesInSections.contains(processName), "App " + app.getName() + " has process " + processName + " listed more than once in its sections.");
+
+               childNamesInSections.add(processName);
+            }
+         }
+         if(hasReports)
+         {
+            for(String reportName : section.getReports())
+            {
+               assertCondition(app.getChildren().stream().anyMatch(c -> c.getName().equals(reportName)), "App " + app.getName() + " section " + section.getName() + " specifies report " + reportName + ", which is not a child of this app.");
+               assertCondition(!childNamesInSections.contains(reportName), "App " + app.getName() + " has report " + reportName + " listed more than once in its sections.");
+
+               childNamesInSections.add(reportName);
             }
          }
       }
@@ -531,6 +691,23 @@ public class QInstanceValidator
                {
                   assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName);
                   index++;
+
+                  ////////////////////////////////////////////
+                  // validate instantiation of step classes //
+                  ////////////////////////////////////////////
+                  if(step instanceof QBackendStepMetaData backendStepMetaData)
+                  {
+                     if(backendStepMetaData.getInputMetaData() != null && CollectionUtils.nullSafeHasContents(backendStepMetaData.getInputMetaData().getFieldList()))
+                     {
+                        for(QFieldMetaData fieldMetaData : backendStepMetaData.getInputMetaData().getFieldList())
+                        {
+                           if(fieldMetaData.getDefaultValue() != null && fieldMetaData.getDefaultValue() instanceof QCodeReference codeReference)
+                           {
+                              validateSimpleCodeReference("Process " + processName + " backend step code reference: ", codeReference, BackendStep.class);
+                           }
+                        }
+                     }
+                  }
                }
             }
          });
@@ -565,6 +742,29 @@ public class QInstanceValidator
                   childNames.add(child.getName());
                }
             }
+
+            //////////////////////////////////////////
+            // validate field sections in the table //
+            //////////////////////////////////////////
+            Set<String> childNamesInSections = new HashSet<>();
+            if(app.getSections() != null)
+            {
+               for(QAppSection section : app.getSections())
+               {
+                  validateAppSection(app, section, childNamesInSections);
+               }
+            }
+
+            if(CollectionUtils.nullSafeHasContents(app.getChildren()))
+            {
+               for(QAppChildMetaData child : app.getChildren())
+               {
+                  if(!child.getClass().equals(QAppMetaData.class))
+                  {
+                     assertCondition(childNamesInSections.contains(child.getName()), "App " + appName + " child " + child.getName() + " is not listed in any app sections.");
+                  }
+               }
+            }
          });
       }
    }
@@ -592,6 +792,8 @@ public class QInstanceValidator
                   case ENUM ->
                   {
                      assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "enum-type possibleValueSource " + pvsName + " should not have a tableName.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "enum-type possibleValueSource " + pvsName + " should not have searchFields.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "enum-type possibleValueSource " + pvsName + " should not have orderByFields.");
                      assertCondition(possibleValueSource.getCustomCodeReference() == null, "enum-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
 
                      assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()), "enum-type possibleValueSource " + pvsName + " is missing enum values");
@@ -601,15 +803,44 @@ public class QInstanceValidator
                      assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "table-type possibleValueSource " + pvsName + " should not have enum values.");
                      assertCondition(possibleValueSource.getCustomCodeReference() == null, "table-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
 
+                     QTableMetaData tableMetaData = null;
                      if(assertCondition(StringUtils.hasContent(possibleValueSource.getTableName()), "table-type possibleValueSource " + pvsName + " is missing a tableName."))
                      {
-                        assertCondition(qInstance.getTable(possibleValueSource.getTableName()) != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + pvsName + ".");
+                        tableMetaData = qInstance.getTable(possibleValueSource.getTableName());
+                        assertCondition(tableMetaData != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + pvsName + ".");
+                     }
+
+                     if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "table-type possibleValueSource " + pvsName + " is missing searchFields."))
+                     {
+                        if(tableMetaData != null)
+                        {
+                           QTableMetaData finalTableMetaData = tableMetaData;
+                           for(String searchField : possibleValueSource.getSearchFields())
+                           {
+                              assertNoException(() -> finalTableMetaData.getField(searchField), "possibleValueSource " + pvsName + " has an unrecognized searchField: " + searchField);
+                           }
+                        }
+                     }
+
+                     if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "table-type possibleValueSource " + pvsName + " is missing orderByFields."))
+                     {
+                        if(tableMetaData != null)
+                        {
+                           QTableMetaData finalTableMetaData = tableMetaData;
+
+                           for(QFilterOrderBy orderByField : possibleValueSource.getOrderByFields())
+                           {
+                              assertNoException(() -> finalTableMetaData.getField(orderByField.getFieldName()), "possibleValueSource " + pvsName + " has an unrecognized orderByField: " + orderByField.getFieldName());
+                           }
+                        }
                      }
                   }
                   case CUSTOM ->
                   {
                      assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "custom-type possibleValueSource " + pvsName + " should not have enum values.");
                      assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "custom-type possibleValueSource " + pvsName + " should not have a tableName.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "custom-type possibleValueSource " + pvsName + " should not have searchFields.");
+                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "custom-type possibleValueSource " + pvsName + " should not have orderByFields.");
 
                      if(assertCondition(possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
                      {
@@ -644,20 +875,20 @@ public class QInstanceValidator
          ///////////////////////////////////////
          // make sure the class can be loaded //
          ///////////////////////////////////////
-         Class<?> customizerClass = getClassForCodeReference(codeReference, prefix);
-         if(customizerClass != null)
+         Class<?> clazz = getClassForCodeReference(codeReference, prefix);
+         if(clazz != null)
          {
             //////////////////////////////////////////////////
             // make sure the customizer can be instantiated //
             //////////////////////////////////////////////////
-            Object customizerInstance = getInstanceOfCodeReference(prefix, customizerClass);
+            Object classInstance = getInstanceOfCodeReference(prefix, clazz);
 
             ////////////////////////////////////////////////////////////////////////
             // make sure the customizer instance can be cast to the expected type //
             ////////////////////////////////////////////////////////////////////////
-            if(customizerInstance != null)
+            if(classInstance != null)
             {
-               getCastedObject(prefix, expectedClass, customizerInstance);
+               getCastedObject(prefix, expectedClass, classInstance);
             }
          }
       }
@@ -670,16 +901,16 @@ public class QInstanceValidator
     *******************************************************************************/
    private Class<?> getClassForCodeReference(QCodeReference codeReference, String prefix)
    {
-      Class<?> customizerClass = null;
+      Class<?> clazz = null;
       try
       {
-         customizerClass = Class.forName(codeReference.getName());
+         clazz = Class.forName(codeReference.getName());
       }
       catch(ClassNotFoundException e)
       {
-         errors.add(prefix + "Class for CodeReference could not be found.");
+         errors.add(prefix + "Class for " + codeReference.getName() + " could not be found.");
       }
-      return customizerClass;
+      return clazz;
    }
 
 

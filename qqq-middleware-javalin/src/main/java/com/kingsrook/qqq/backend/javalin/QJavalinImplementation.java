@@ -28,6 +28,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,16 +37,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
-import com.kingsrook.qqq.backend.core.actions.dashboard.WidgetDataLoader;
+import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
-import com.kingsrook.qqq.backend.core.actions.reporting.ReportAction;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -61,8 +63,8 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -76,13 +78,19 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -270,10 +278,13 @@ public class QJavalinImplementation
          path("/data/{table}", () ->
          {
             get("/", QJavalinImplementation::dataQuery);
+            post("/query", QJavalinImplementation::dataQuery);
             post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
             get("/count", QJavalinImplementation::dataCount);
+            post("/count", QJavalinImplementation::dataCount);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
+            get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
 
             // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
             path("/{primaryKey}", () ->
@@ -400,9 +411,21 @@ public class QJavalinImplementation
          Map<?, ?> map = context.bodyAsClass(Map.class);
          for(Map.Entry<?, ?> entry : map.entrySet())
          {
-            if(StringUtils.hasContent(String.valueOf(entry.getValue())))
+            String fieldName = ValueUtils.getValueAsString(entry.getKey());
+            Object value     = entry.getValue();
+
+            if(StringUtils.hasContent(String.valueOf(value)))
             {
-               record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
+               record.setValue(fieldName, (Serializable) value);
+            }
+            else if("".equals(value))
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // if frontend sent us an empty string - put a null in the record's value map.                   //
+               // this could potentially be changed to be type-specific (e.g., store an empty-string for STRING //
+               // fields, but null for INTEGER, etc) - but, who really wants empty-string in database anyway?   //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               record.setValue(fieldName, null);
             }
          }
 
@@ -540,6 +563,10 @@ public class QJavalinImplementation
          countInput.setTableName(context.pathParam("table"));
 
          String filter = stringQueryParam(context, "filter");
+         if(!StringUtils.hasContent(filter))
+         {
+            filter = context.formParam("filter");
+         }
          if(filter != null)
          {
             countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
@@ -585,6 +612,10 @@ public class QJavalinImplementation
          queryInput.setLimit(integerQueryParam(context, "limit"));
 
          String filter = stringQueryParam(context, "filter");
+         if(!StringUtils.hasContent(filter))
+         {
+            filter = context.formParam("filter");
+         }
          if(filter != null)
          {
             queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
@@ -671,7 +702,6 @@ public class QJavalinImplementation
 
 
 
-
    /*******************************************************************************
     ** Load the data for a widget of a given name.
     *******************************************************************************/
@@ -682,14 +712,32 @@ public class QJavalinImplementation
          InsertInput insertInput = new InsertInput(qInstance);
          setupSession(context, insertInput);
 
-         Object widgetData = new WidgetDataLoader().execute(qInstance, insertInput.getSession(), context.pathParam("name"));
-         context.result(JsonUtils.toJson(widgetData));
+         RenderWidgetInput input = new RenderWidgetInput(qInstance)
+            .withSession(insertInput.getSession())
+            .withWidgetMetaData(qInstance.getWidget(context.pathParam("name")));
+
+         //////////////////////////
+         // process query string //
+         //////////////////////////
+         for(Map.Entry<String, List<String>> queryParam : context.queryParamMap().entrySet())
+         {
+            String       fieldName = queryParam.getKey();
+            List<String> values    = queryParam.getValue();
+            if(CollectionUtils.nullSafeHasContents(values))
+            {
+               input.addQueryParam(fieldName, values.get(0));
+            }
+         }
+
+         RenderWidgetOutput output = new RenderWidgetAction().execute(input);
+         context.result(JsonUtils.toJson(output.getWidgetData()));
       }
       catch(Exception e)
       {
          handleException(context, e);
       }
    }
+
 
 
    /*******************************************************************************
@@ -756,22 +804,22 @@ public class QJavalinImplementation
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ReportInput reportInput = new ReportInput(qInstance);
-         setupSession(context, reportInput);
-         reportInput.setTableName(tableName);
-         reportInput.setReportFormat(reportFormat);
-         reportInput.setFilename(filename);
-         reportInput.setLimit(limit);
+         ExportInput exportInput = new ExportInput(qInstance);
+         setupSession(context, exportInput);
+         exportInput.setTableName(tableName);
+         exportInput.setReportFormat(reportFormat);
+         exportInput.setFilename(filename);
+         exportInput.setLimit(limit);
 
          String fields = stringQueryParam(context, "fields");
          if(StringUtils.hasContent(fields))
          {
-            reportInput.setFieldNames(List.of(fields.split(",")));
+            exportInput.setFieldNames(List.of(fields.split(",")));
          }
 
          if(filter != null)
          {
-            reportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -782,10 +830,10 @@ public class QJavalinImplementation
          PipedOutputStream pipedOutputStream = new PipedOutputStream();
          PipedInputStream  pipedInputStream  = new PipedInputStream();
          pipedOutputStream.connect(pipedInputStream);
-         reportInput.setReportOutputStream(pipedOutputStream);
+         exportInput.setReportOutputStream(pipedOutputStream);
 
-         ReportAction reportAction = new ReportAction();
-         reportAction.preExecute(reportInput);
+         ExportAction exportAction = new ExportAction();
+         exportAction.preExecute(exportInput);
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // start the async job.                                                                            //
@@ -795,7 +843,7 @@ public class QJavalinImplementation
          {
             try
             {
-               reportAction.execute(reportInput);
+               exportAction.execute(exportInput);
                return (true);
             }
             catch(Exception e)
@@ -823,6 +871,64 @@ public class QJavalinImplementation
          //    System.out.println("Well, here we are...");
          //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
          // }
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void possibleValues(Context context)
+   {
+      try
+      {
+         String tableName  = context.pathParam("table");
+         String fieldName  = context.pathParam("fieldName");
+         String searchTerm = context.queryParam("searchTerm");
+         String ids        = context.queryParam("ids");
+
+         QTableMetaData table = qInstance.getTable(tableName);
+         if(table == null)
+         {
+            throw (new QNotFoundException("Could not find table named " + tableName + " in this instance."));
+         }
+
+         QFieldMetaData field;
+         try
+         {
+            field = table.getField(fieldName);
+         }
+         catch(Exception e)
+         {
+            throw (new QNotFoundException("Could not find field named " + fieldName + " in table " + tableName + "."));
+         }
+
+         if(!StringUtils.hasContent(field.getPossibleValueSourceName()))
+         {
+            throw (new QNotFoundException("Field " + fieldName + " in table " + tableName + " is not associated with a possible value source."));
+         }
+
+         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(qInstance);
+         setupSession(context, input);
+         input.setPossibleValueSourceName(field.getPossibleValueSourceName());
+         input.setSearchTerm(searchTerm);
+
+         if(StringUtils.hasContent(ids))
+         {
+            List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
+            input.setIdList(idList);
+         }
+
+         SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
+
+         Map<String, Object> result = new HashMap<>();
+         result.put("options", output.getResults());
+         context.result(JsonUtils.toJson(result));
       }
       catch(Exception e)
       {

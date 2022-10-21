@@ -25,16 +25,104 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  * Full "filter" for a query - a list of criteria and order-bys
  *
  *******************************************************************************/
-public class QQueryFilter implements Serializable
+public class QQueryFilter implements Serializable, Cloneable
 {
    private List<QFilterCriteria> criteria = new ArrayList<>();
-   private List<QFilterOrderBy> orderBys = new ArrayList<>();
+   private List<QFilterOrderBy>  orderBys = new ArrayList<>();
+
+   private BooleanOperator    booleanOperator = BooleanOperator.AND;
+   private List<QQueryFilter> subFilters      = new ArrayList<>();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public enum BooleanOperator
+   {
+      AND,
+      OR
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QQueryFilter clone()
+   {
+      try
+      {
+         QQueryFilter clone = (QQueryFilter) super.clone();
+
+         if(criteria != null)
+         {
+            clone.criteria = new ArrayList<>();
+            for(QFilterCriteria criterion : criteria)
+            {
+               clone.criteria.add(criterion.clone());
+            }
+         }
+
+         if(orderBys != null)
+         {
+            clone.orderBys = new ArrayList<>();
+            for(QFilterOrderBy orderBy : orderBys)
+            {
+               clone.orderBys.add(orderBy.clone());
+            }
+         }
+
+         if(subFilters != null)
+         {
+            clone.subFilters = new ArrayList<>();
+            for(QQueryFilter subFilter : subFilters)
+            {
+               clone.subFilters.add(subFilter.clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean hasAnyCriteria()
+   {
+      if(CollectionUtils.nullSafeHasContents(criteria))
+      {
+         return (true);
+      }
+
+      if(CollectionUtils.nullSafeHasContents(subFilters))
+      {
+         for(QQueryFilter subFilter : subFilters)
+         {
+            if(subFilter.hasAnyCriteria())
+            {
+               return (true);
+            }
+         }
+      }
+
+      return (false);
+   }
 
 
 
@@ -128,6 +216,89 @@ public class QQueryFilter implements Serializable
    {
       addOrderBy(qFilterOrderBy);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for booleanOperator
+    **
+    *******************************************************************************/
+   public BooleanOperator getBooleanOperator()
+   {
+      return booleanOperator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for booleanOperator
+    **
+    *******************************************************************************/
+   public void setBooleanOperator(BooleanOperator booleanOperator)
+   {
+      this.booleanOperator = booleanOperator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for booleanOperator
+    **
+    *******************************************************************************/
+   public QQueryFilter withBooleanOperator(BooleanOperator booleanOperator)
+   {
+      this.booleanOperator = booleanOperator;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for subFilters
+    **
+    *******************************************************************************/
+   public List<QQueryFilter> getSubFilters()
+   {
+      return subFilters;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for subFilters
+    **
+    *******************************************************************************/
+   public void setSubFilters(List<QQueryFilter> subFilters)
+   {
+      this.subFilters = subFilters;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for subFilters
+    **
+    *******************************************************************************/
+   public QQueryFilter withSubFilters(List<QQueryFilter> subFilters)
+   {
+      this.subFilters = subFilters;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSubFilter(QQueryFilter subFilter)
+   {
+      if(this.subFilters == null)
+      {
+         subFilters = new ArrayList<>();
+      }
+
+      subFilters.add(subFilter);
    }
 
 }

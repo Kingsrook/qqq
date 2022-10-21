@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -30,11 +31,35 @@ import java.util.List;
  * A single criteria Component of a Query
  *
  *******************************************************************************/
-public class QFilterCriteria implements Serializable
+public class QFilterCriteria implements Serializable, Cloneable
 {
    private String             fieldName;
    private QCriteriaOperator  operator;
    private List<Serializable> values;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QFilterCriteria clone()
+   {
+      try
+      {
+         QFilterCriteria clone = (QFilterCriteria) super.clone();
+         if(values != null)
+         {
+            clone.values = new ArrayList<>();
+            clone.values.addAll(values);
+         }
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 
 
 

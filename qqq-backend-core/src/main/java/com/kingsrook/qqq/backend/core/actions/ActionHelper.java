@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.actions;
 
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
@@ -41,11 +44,23 @@ public class ActionHelper
    public static void validateSession(AbstractActionInput request) throws QException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface authenticationModule = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
       if(!authenticationModule.isSessionValid(request.getInstance(), request.getSession()))
       {
          throw new QAuthenticationException("Invalid session in request");
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void editFirstValue(List<Serializable> values, Function<String, String> editFunction)
+   {
+      if(values.size() > 0)
+      {
+         values.set(0, editFunction.apply(String.valueOf(values.get(0))));
+      }
+   }
 }

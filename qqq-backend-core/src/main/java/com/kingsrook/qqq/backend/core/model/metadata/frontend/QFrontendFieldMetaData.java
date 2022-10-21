@@ -22,8 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
@@ -44,6 +46,8 @@ public class QFrontendFieldMetaData
    private String     possibleValueSourceName;
    private String     displayFormat;
 
+   private List<FieldAdornment> adornments;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -62,6 +66,7 @@ public class QFrontendFieldMetaData
       this.isEditable = fieldMetaData.getIsEditable();
       this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
       this.displayFormat = fieldMetaData.getDisplayFormat();
+      this.adornments = fieldMetaData.getAdornments();
    }
 
 
@@ -128,6 +133,17 @@ public class QFrontendFieldMetaData
    public String getDisplayFormat()
    {
       return displayFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for adornments
+    **
+    *******************************************************************************/
+   public List<FieldAdornment> getAdornments()
+   {
+      return adornments;
    }
 
 

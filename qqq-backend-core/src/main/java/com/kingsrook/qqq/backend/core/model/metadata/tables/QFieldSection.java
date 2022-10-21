@@ -64,6 +64,19 @@ public class QFieldSection
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldSection(String name, QIcon icon, Tier tier, List<String> fieldNames)
+   {
+      this.name = name;
+      this.icon = icon;
+      this.tier = tier;
+      this.fieldNames = fieldNames;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for name
     **
     *******************************************************************************/

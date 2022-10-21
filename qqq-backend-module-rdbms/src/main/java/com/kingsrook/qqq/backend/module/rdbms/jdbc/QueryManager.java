@@ -217,9 +217,8 @@ public class QueryManager
          {
             return (T) Long.valueOf(((Integer) object));
          }
-         else if(object instanceof Timestamp && returnClass.equals(LocalDateTime.class))
+         else if(object instanceof Timestamp timestamp && returnClass.equals(LocalDateTime.class))
          {
-            Timestamp timestamp = (Timestamp) object;
             return ((T) LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp.getTime()), ZoneId.systemDefault()));
          }
          else
@@ -311,7 +310,7 @@ public class QueryManager
          ResultSetMetaData metaData = resultSet.getMetaData();
          for(int i = 1; i <= metaData.getColumnCount(); i++)
          {
-            row.put(metaData.getColumnName(i), getObject(resultSet, i));
+            row.put(metaData.getColumnLabel(i), getObject(resultSet, i));
          }
       }
 

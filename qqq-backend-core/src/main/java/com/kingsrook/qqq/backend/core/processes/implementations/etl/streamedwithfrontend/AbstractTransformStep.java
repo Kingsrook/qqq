@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -40,6 +42,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
  *******************************************************************************/
 public abstract class AbstractTransformStep implements BackendStep, ProcessSummaryProviderInterface
 {
+   private Optional<QBackendTransaction> transaction = Optional.empty();
+
 
 
    /*******************************************************************************
@@ -64,6 +68,28 @@ public abstract class AbstractTransformStep implements BackendStep, ProcessSumma
       ////////////////////////
       // noop in base class //
       ////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transaction
+    **
+    *******************************************************************************/
+   public void setTransaction(Optional<QBackendTransaction> transaction)
+   {
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for transaction
+    **
+    *******************************************************************************/
+   public Optional<QBackendTransaction> getTransaction()
+   {
+      return (transaction);
    }
 
 }

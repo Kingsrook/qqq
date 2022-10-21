@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -40,7 +41,9 @@ public class QAppMetaData implements QAppChildMetaData
    private String parentAppName;
    private QIcon  icon;
 
-   private List<String> widgets;
+   private List<String>      widgets;
+   private List<QAppSection> sections;
+
 
 
    /*******************************************************************************
@@ -137,7 +140,13 @@ public class QAppMetaData implements QAppChildMetaData
     *******************************************************************************/
    public void setChildren(List<QAppChildMetaData> children)
    {
-      this.children = children;
+      if(CollectionUtils.nullSafeHasContents(children))
+      {
+         for(QAppChildMetaData child : children)
+         {
+            addChild(child);
+         }
+      }
    }
 
 
@@ -176,7 +185,7 @@ public class QAppMetaData implements QAppChildMetaData
     *******************************************************************************/
    public QAppMetaData withChildren(List<QAppChildMetaData> children)
    {
-      this.children = children;
+      setChildren(children);
       return (this);
    }
 
@@ -205,6 +214,7 @@ public class QAppMetaData implements QAppChildMetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for icon
     **
@@ -226,6 +236,7 @@ public class QAppMetaData implements QAppChildMetaData
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for icon
     **
@@ -235,7 +246,6 @@ public class QAppMetaData implements QAppChildMetaData
       this.icon = icon;
       return (this);
    }
-
 
 
 
@@ -260,6 +270,7 @@ public class QAppMetaData implements QAppChildMetaData
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for widgets
     **
@@ -270,4 +281,63 @@ public class QAppMetaData implements QAppChildMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for sections
+    **
+    *******************************************************************************/
+   public List<QAppSection> getSections()
+   {
+      return sections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sections
+    **
+    *******************************************************************************/
+   public void setSections(List<QAppSection> sections)
+   {
+      this.sections = sections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sections
+    **
+    *******************************************************************************/
+   public QAppMetaData withSections(List<QAppSection> sections)
+   {
+      this.sections = sections;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSection(QAppSection section)
+   {
+      if(this.sections == null)
+      {
+         this.sections = new ArrayList<>();
+      }
+      this.sections.add(section);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sections
+    **
+    *******************************************************************************/
+   public QAppMetaData withSection(QAppSection section)
+   {
+      this.addSection(section);
+      return (this);
+   }
 }

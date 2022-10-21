@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
 /*******************************************************************************
@@ -50,6 +51,8 @@ public class QProcessMetaData implements QAppChildMetaData
 
    private String parentAppName;
    private QIcon  icon;
+
+   private QScheduleMetaData schedule;
 
 
 
@@ -433,6 +436,40 @@ public class QProcessMetaData implements QAppChildMetaData
    public QProcessMetaData withIcon(QIcon icon)
    {
       this.icon = icon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedule
+    **
+    *******************************************************************************/
+   public QScheduleMetaData getSchedule()
+   {
+      return schedule;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedule
+    **
+    *******************************************************************************/
+   public void setSchedule(QScheduleMetaData schedule)
+   {
+      this.schedule = schedule;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for schedule
+    **
+    *******************************************************************************/
+   public QProcessMetaData withSchedule(QScheduleMetaData schedule)
+   {
+      this.schedule = schedule;
       return (this);
    }
 

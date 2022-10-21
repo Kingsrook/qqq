@@ -30,15 +30,18 @@
 
    <modules>
       <module>qqq-backend-core</module>
-      <module>qqq-backend-module-rdbms</module>
+      <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
+      <module>qqq-backend-module-rdbms</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
+      <module>qqq-middleware-lambda</module>
+      <module>qqq-utility-lambdas</module>
       <module>qqq-sample-project</module>
    </modules>
 
    <properties>
-      <revision>0.5.0</revision>
+      <revision>0.6.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -49,7 +52,19 @@
       <coverage.haltOnFailure>true</coverage.haltOnFailure>
       <coverage.instructionCoveredRatioMinimum>0.80</coverage.instructionCoveredRatioMinimum>
       <coverage.classCoveredRatioMinimum>0.95</coverage.classCoveredRatioMinimum>
+      <plugin.shade.phase>none</plugin.shade.phase>
    </properties>
+
+   <profiles>
+      <profile>
+         <!-- For qqq-middleware-lambda - to build its shaded jar, its qqq dependencies also need
+          to build a shaded jar.  So to activate that mode, use this profile (-P buildShadedJar)-->
+         <id>buildShadedJar</id>
+         <properties>
+            <plugin.shade.phase>package</plugin.shade.phase>
+         </properties>
+      </profile>
+   </profiles>
 
    <dependencyManagement>
       <dependencies>
@@ -75,12 +90,18 @@
             <scope>test</scope>
          </dependency>
          <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.8.1</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.23.1</version>
             <scope>test</scope>
          </dependency>
-       </dependencies>
+      </dependencies>
    </dependencyManagement>
 
    <build>

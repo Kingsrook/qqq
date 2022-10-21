@@ -64,6 +64,19 @@ class QValueFormatterTest
       assertEquals("1000", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.STRING), new BigDecimal("1000")));
       assertEquals("1000", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.STRING), 1000));
 
+      assertEquals("1%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT), 1));
+      assertEquals("1%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT), new BigDecimal("1.0")));
+      assertEquals("1.0%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT_POINT1), 1));
+      assertEquals("1.1%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT_POINT1), new BigDecimal("1.1")));
+      assertEquals("1.1%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT_POINT1), new BigDecimal("1.12")));
+      assertEquals("1.00%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT_POINT2), 1));
+      assertEquals("1.10%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT_POINT2), new BigDecimal("1.1")));
+      assertEquals("1.12%", qValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.PERCENT_POINT2), new BigDecimal("1.12")));
+
+      assertNull(qValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), null));
+      assertEquals("Yes", qValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), true));
+      assertEquals("No", qValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), false));
+
       //////////////////////////////////////////////////
       // this one flows through the exceptional cases //
       //////////////////////////////////////////////////

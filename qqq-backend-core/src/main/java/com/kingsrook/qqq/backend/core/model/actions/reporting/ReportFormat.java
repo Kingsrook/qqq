@@ -24,9 +24,10 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 import java.util.Locale;
 import java.util.function.Supplier;
-import com.kingsrook.qqq.backend.core.actions.reporting.CsvReportStreamer;
-import com.kingsrook.qqq.backend.core.actions.reporting.ExcelReportStreamer;
-import com.kingsrook.qqq.backend.core.actions.reporting.ReportStreamerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.CsvExportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExcelExportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.ListOfMapsExportStreamer;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.dhatim.fastexcel.Worksheet;
@@ -37,22 +38,23 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public enum ReportFormat
 {
-   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelReportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-   CSV(null, null, CsvReportStreamer::new, "text/csv");
+   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+   CSV(null, null, CsvExportStreamer::new, "text/csv"),
+   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null);
 
 
    private final Integer maxRows;
    private final Integer maxCols;
    private final String  mimeType;
 
-   private final Supplier<? extends ReportStreamerInterface> streamerConstructor;
+   private final Supplier<? extends ExportStreamerInterface> streamerConstructor;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ReportStreamerInterface> streamerConstructor, String mimeType)
+   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType)
    {
       this.maxRows = maxRows;
       this.maxCols = maxCols;
@@ -94,6 +96,7 @@ public enum ReportFormat
    }
 
 
+
    /*******************************************************************************
     ** Getter for maxCols
     **
@@ -119,7 +122,7 @@ public enum ReportFormat
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ReportStreamerInterface newReportStreamer()
+   public ExportStreamerInterface newReportStreamer()
    {
       return (streamerConstructor.get());
    }

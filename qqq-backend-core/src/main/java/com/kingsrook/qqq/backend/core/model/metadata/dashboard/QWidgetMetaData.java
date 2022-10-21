@@ -32,6 +32,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 public class QWidgetMetaData implements QWidgetMetaDataInterface
 {
    protected String         name;
+   protected String         icon;
+   protected String         label;
+   protected String         type;
+   protected Integer        gridColumns;
    protected QCodeReference codeReference;
 
 
@@ -71,6 +75,74 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
 
    /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public String getIcon()
+   {
+      return icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for icon
+    **
+    *******************************************************************************/
+   public void setIcon(String icon)
+   {
+      this.icon = icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icon
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withIcon(String icon)
+   {
+      this.icon = icon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withLabel(String label)
+   {
+      this.label = label;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for codeReference
     **
     *******************************************************************************/
@@ -99,6 +171,74 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withCodeReference(QCodeReference codeReference)
    {
       this.codeReference = codeReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    **
+    *******************************************************************************/
+   public String getType()
+   {
+      return type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for type
+    **
+    *******************************************************************************/
+   public void setType(String type)
+   {
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withType(String type)
+   {
+      this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for gridColumns
+    **
+    *******************************************************************************/
+   public Integer getGridColumns()
+   {
+      return gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for gridColumns
+    **
+    *******************************************************************************/
+   public void setGridColumns(Integer gridColumns)
+   {
+      this.gridColumns = gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for gridColumns
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withGridColumns(Integer gridColumns)
+   {
+      this.gridColumns = gridColumns;
       return (this);
    }
 

@@ -48,6 +48,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
    private static final Logger LOG = LogManager.getLogger(RDBMSDeleteAction.class);
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -258,7 +259,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       QTableMetaData     table  = deleteInput.getTable();
 
       String tableName   = getTableName(table);
-      String whereClause = makeWhereClause(table, filter.getCriteria(), params);
+      String whereClause = makeWhereClause(table, filter, params);
 
       // todo sql customization - can edit sql and/or param list?
       String sql = "DELETE FROM "

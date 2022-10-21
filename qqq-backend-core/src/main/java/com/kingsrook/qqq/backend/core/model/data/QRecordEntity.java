@@ -60,16 +60,32 @@ public abstract class QRecordEntity
       try
       {
          T entity = c.getConstructor().newInstance();
+         entity.populateFromQRecord(qRecord);
+         return (entity);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error building entity from qRecord.", e));
+      }
+   }
 
-         List<QRecordEntityField> fieldList = getFieldList(c);
+
+
+   /*******************************************************************************
+    ** Build an entity of this QRecord type from a QRecord
+    **
+    *******************************************************************************/
+   protected <T extends QRecordEntity> void populateFromQRecord(QRecord qRecord) throws QException
+   {
+      try
+      {
+         List<QRecordEntityField> fieldList = getFieldList(this.getClass());
          for(QRecordEntityField qRecordEntityField : fieldList)
          {
             Serializable value      = qRecord.getValue(qRecordEntityField.getFieldName());
             Object       typedValue = qRecordEntityField.convertValueType(value);
-            qRecordEntityField.getSetter().invoke(entity, typedValue);
+            qRecordEntityField.getSetter().invoke(this, typedValue);
          }
-
-         return (entity);
       }
       catch(Exception e)
       {

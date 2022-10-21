@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -58,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -71,6 +73,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
@@ -91,7 +96,7 @@ import org.apache.logging.log4j.Logger;
 
 /*******************************************************************************
  ** Utility class for backend-core test classes
- **
+ ** TODO - move to testutils package.
  *******************************************************************************/
 public class TestUtils
 {
@@ -120,7 +125,8 @@ public class TestUtils
    public static final String POSSIBLE_VALUE_SOURCE_CUSTOM            = "custom"; // custom-type
    public static final String POSSIBLE_VALUE_SOURCE_AUTOMATION_STATUS = "automationStatus";
 
-   public static final String POLLING_AUTOMATION = "polling";
+   public static final String POLLING_AUTOMATION     = "polling";
+   public static final String DEFAULT_QUEUE_PROVIDER = "defaultQueueProvider";
 
 
 
@@ -154,6 +160,9 @@ public class TestUtils
       qInstance.addProcess(defineProcessIncreasePersonBirthdate());
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
+
+      qInstance.addQueueProvider(defineSqsProvider());
+      qInstance.addQueue(defineTestSqsQueue());
 
       defineWidgets(qInstance);
       defineApps(qInstance);
@@ -330,7 +339,9 @@ public class TestUtils
       return new QPossibleValueSource()
          .withName(POSSIBLE_VALUE_SOURCE_SHAPE)
          .withType(QPossibleValueSourceType.TABLE)
-         .withTableName(TABLE_NAME_SHAPE);
+         .withTableName(TABLE_NAME_SHAPE)
+         .withSearchFields(List.of("id", "name"))
+         .withOrderByField("name");
    }
 
 
@@ -406,6 +417,9 @@ public class TestUtils
          .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STATE))
          .withField(new QFieldMetaData("favoriteShapeId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_SHAPE))
          .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
+         .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
+         .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          ;
    }
 
@@ -835,4 +849,41 @@ public class TestUtils
          return (new QPossibleValue<>(idValue, "Custom[" + idValue + "]"));
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QQueueProviderMetaData defineSqsProvider()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+
+      String accessKey = "MOCK"; // interpreter.interpret("${env.SQS_ACCESS_KEY}");
+      String secretKey = "MOCK"; // interpreter.interpret("${env.SQS_SECRET_KEY}");
+      String region    = "MOCK"; // interpreter.interpret("${env.SQS_REGION}");
+      String baseURL   = "MOCK"; // interpreter.interpret("${env.SQS_BASE_URL}");
+
+      return (new SQSQueueProviderMetaData()
+         .withName(DEFAULT_QUEUE_PROVIDER)
+         .withAccessKey(accessKey)
+         .withSecretKey(secretKey)
+         .withRegion(region)
+         .withBaseURL(baseURL));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QQueueMetaData defineTestSqsQueue()
+   {
+      return (new QQueueMetaData()
+         .withName("testSQSQueue")
+         .withProviderName(DEFAULT_QUEUE_PROVIDER)
+         .withQueueName("test-queue")
+         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE));
+   }
+
 }

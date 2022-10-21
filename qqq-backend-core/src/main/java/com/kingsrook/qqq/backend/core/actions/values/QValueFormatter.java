@@ -23,9 +23,14 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -41,12 +46,53 @@ public class QValueFormatter
 {
    private static final Logger LOG = LogManager.getLogger(QValueFormatter.class);
 
+   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a");
+   private static DateTimeFormatter dateFormatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
 
    /*******************************************************************************
-    **
+    ** For a field, and its value, apply the field's displayFormat.
     *******************************************************************************/
    public String formatValue(QFieldMetaData field, Serializable value)
+   {
+      if(QFieldType.BOOLEAN.equals(field.getType()))
+      {
+         Boolean b = ValueUtils.getValueAsBoolean(value);
+         if(b == null)
+         {
+            return (null);
+         }
+         else if(b)
+         {
+            return ("Yes");
+         }
+         else
+         {
+            return ("No");
+         }
+      }
+
+      return (formatValue(field.getDisplayFormat(), field.getName(), value));
+   }
+
+
+
+   /*******************************************************************************
+    ** For a display format string (e.g., %d), and a value, apply the displayFormat.
+    *******************************************************************************/
+   public String formatValue(String displayFormat, Serializable value)
+   {
+      return (formatValue(displayFormat, "", value));
+   }
+
+
+
+   /*******************************************************************************
+    ** For a display format string, an optional fieldName (only used for logging),
+    ** and a value, apply the format.
+    *******************************************************************************/
+   private String formatValue(String displayFormat, String fieldName, Serializable value)
    {
       //////////////////////////////////
       // null values get null results //
@@ -59,11 +105,11 @@ public class QValueFormatter
       ////////////////////////////////////////////////////////
       // if the field has a display format, try to apply it //
       ////////////////////////////////////////////////////////
-      if(StringUtils.hasContent(field.getDisplayFormat()))
+      if(StringUtils.hasContent(displayFormat))
       {
          try
          {
-            return (field.getDisplayFormat().formatted(value));
+            return (displayFormat.formatted(value));
          }
          catch(Exception e)
          {
@@ -72,24 +118,24 @@ public class QValueFormatter
                // todo - revisit if we actually want this - or - if you should get an error if you mis-configure your table this way (ideally during validation!)
                if(e.getMessage().equals("f != java.lang.Integer"))
                {
-                  return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
+                  return formatValue(displayFormat, ValueUtils.getValueAsBigDecimal(value));
                }
                else if(e.getMessage().equals("f != java.lang.String"))
                {
-                  return formatValue(field, ValueUtils.getValueAsBigDecimal(value));
+                  return formatValue(displayFormat, ValueUtils.getValueAsBigDecimal(value));
                }
                else if(e.getMessage().equals("d != java.math.BigDecimal"))
                {
-                  return formatValue(field, ValueUtils.getValueAsInteger(value));
+                  return formatValue(displayFormat, ValueUtils.getValueAsInteger(value));
                }
                else
                {
-                  LOG.warn("Error formatting value [" + value + "] for field [" + field.getName() + "] with format [" + field.getDisplayFormat() + "]: " + e.getMessage());
+                  LOG.warn("Error formatting value [" + value + "] for field [" + fieldName + "] with format [" + displayFormat + "]: " + e.getMessage());
                }
             }
             catch(Exception e2)
             {
-               LOG.warn("Caught secondary exception trying to convert type on field [" + field.getName() + "] for formatting", e);
+               LOG.warn("Caught secondary exception trying to convert type on field [" + fieldName + "] for formatting", e);
             }
          }
       }
@@ -98,6 +144,26 @@ public class QValueFormatter
       // by default, just get back a string //
       ////////////////////////////////////////
       return (ValueUtils.getValueAsString(value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatDate(LocalDate date)
+   {
+      return (dateFormatter.format(date));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatDateTime(LocalDateTime dateTime)
+   {
+      return (dateTimeFormatter.format(dateTime));
    }
 
 
@@ -112,21 +178,54 @@ public class QValueFormatter
          return (formatRecordLabelExceptionalCases(table, record));
       }
 
-      ///////////////////////////////////////////////////////////////////////
-      // get list of values, then pass them to the string formatter method //
-      ///////////////////////////////////////////////////////////////////////
       try
       {
-         List<Serializable> values = table.getRecordLabelFields().stream()
-            .map(record::getValue)
-            .map(v -> v == null ? "" : v)
-            .toList();
-         return (table.getRecordLabelFormat().formatted(values.toArray()));
+         return formatStringWithFields(table.getRecordLabelFormat(), table.getRecordLabelFields(), record.getDisplayValues(), record.getValues());
       }
       catch(Exception e)
       {
          return (formatRecordLabelExceptionalCases(table, record));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given format string, and a list of fields, look in displayValueMap and
+    ** rawValueMap to get the values to apply to the format.
+    *******************************************************************************/
+   private String formatStringWithFields(String formatString, List<String> formatFields, Map<String, String> displayValueMap, Map<String, Serializable> rawValueMap)
+   {
+      List<Serializable> values = formatFields.stream()
+         .map(fieldName ->
+         {
+            ///////////////////////////////////////////////////////////////////////////
+            // if there's a display value set, then use it.  Else, use the raw value //
+            ///////////////////////////////////////////////////////////////////////////
+            String displayValue = displayValueMap.get(fieldName);
+            if(displayValue != null)
+            {
+               return (displayValue);
+            }
+            return rawValueMap.get(fieldName);
+         })
+         .map(v -> v == null ? "" : v)
+         .toList();
+      return (formatString.formatted(values.toArray()));
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given format string, and a list of values, apply the format.  Note, null
+    ** values in the list become "".
+    *******************************************************************************/
+   public String formatStringWithValues(String formatString, List<String> formatValues)
+   {
+      List<String> values = formatValues.stream()
+         .map(v -> v == null ? "" : v)
+         .toList();
+      return (formatString.formatted(values.toArray()));
    }
 
 
@@ -173,8 +272,11 @@ public class QValueFormatter
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            String formattedValue = formatValue(field, record.getValue(field.getName()));
-            record.setDisplayValue(field.getName(), formattedValue);
+            if(record.getDisplayValue(field.getName()) == null)
+            {
+               String formattedValue = formatValue(field, record.getValue(field.getName()));
+               record.setDisplayValue(field.getName(), formattedValue);
+            }
          }
 
          record.setRecordLabel(formatRecordLabel(table, record));

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -54,4 +55,19 @@ public class InsertOutput extends AbstractActionOutput
    {
       this.records = records;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addRecord(QRecord record)
+   {
+      if(this.records == null)
+      {
+         this.records = new ArrayList<>();
+      }
+      this.records.add(record);
+   }
+
 }

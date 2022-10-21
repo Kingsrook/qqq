@@ -34,15 +34,22 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -70,32 +77,59 @@ public class QInstanceEnricher
 {
    private static final Logger LOG = LogManager.getLogger(QInstanceEnricher.class);
 
+   private final QInstance qInstance;
+
+   //////////////////////////////////////////////////////////
+   // todo - come up w/ a way for app devs to set configs! //
+   //////////////////////////////////////////////////////////
+   private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = true;
+
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void enrich(QInstance qInstance)
+   public QInstanceEnricher(QInstance qInstance)
+   {
+      this.qInstance = qInstance;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void enrich()
    {
       if(qInstance.getTables() != null)
       {
-         qInstance.getTables().values().forEach(this::enrich);
+         qInstance.getTables().values().forEach(this::enrichTable);
          defineTableBulkProcesses(qInstance);
       }
 
       if(qInstance.getProcesses() != null)
       {
-         qInstance.getProcesses().values().forEach(this::enrich);
+         qInstance.getProcesses().values().forEach(this::enrichProcess);
       }
 
       if(qInstance.getBackends() != null)
       {
-         qInstance.getBackends().values().forEach(this::enrich);
+         qInstance.getBackends().values().forEach(this::enrichBackend);
       }
 
       if(qInstance.getApps() != null)
       {
-         qInstance.getApps().values().forEach(this::enrich);
+         qInstance.getApps().values().forEach(this::enrichApp);
+      }
+
+      if(qInstance.getReports() != null)
+      {
+         qInstance.getReports().values().forEach(this::enrichReport);
+      }
+
+      if(qInstance.getPossibleValueSources() != null)
+      {
+         qInstance.getPossibleValueSources().values().forEach(this::enrichPossibleValueSource);
       }
    }
 
@@ -104,7 +138,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QBackendMetaData qBackendMetaData)
+   private void enrichBackend(QBackendMetaData qBackendMetaData)
    {
       qBackendMetaData.enrich();
    }
@@ -114,7 +148,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QTableMetaData table)
+   private void enrichTable(QTableMetaData table)
    {
       if(!StringUtils.hasContent(table.getLabel()))
       {
@@ -123,12 +157,16 @@ public class QInstanceEnricher
 
       if(table.getFields() != null)
       {
-         table.getFields().values().forEach(this::enrich);
+         table.getFields().values().forEach(this::enrichField);
       }
 
       if(CollectionUtils.nullSafeIsEmpty(table.getSections()))
       {
          generateTableFieldSections(table);
+      }
+      else
+      {
+         table.getSections().forEach(this::enrichFieldSection);
       }
 
       if(CollectionUtils.nullSafeHasContents(table.getRecordLabelFields()) && !StringUtils.hasContent(table.getRecordLabelFormat()))
@@ -142,7 +180,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QProcessMetaData process)
+   private void enrichProcess(QProcessMetaData process)
    {
       if(!StringUtils.hasContent(process.getLabel()))
       {
@@ -151,7 +189,7 @@ public class QInstanceEnricher
 
       if(process.getStepList() != null)
       {
-         process.getStepList().forEach(this::enrich);
+         process.getStepList().forEach(this::enrichStep);
       }
    }
 
@@ -160,29 +198,29 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QStepMetaData step)
+   private void enrichStep(QStepMetaData step)
    {
       if(!StringUtils.hasContent(step.getLabel()))
       {
          step.setLabel(nameToLabel(step.getName()));
       }
 
-      step.getInputFields().forEach(this::enrich);
-      step.getOutputFields().forEach(this::enrich);
+      step.getInputFields().forEach(this::enrichField);
+      step.getOutputFields().forEach(this::enrichField);
 
       if(step instanceof QFrontendStepMetaData frontendStepMetaData)
       {
          if(frontendStepMetaData.getFormFields() != null)
          {
-            frontendStepMetaData.getFormFields().forEach(this::enrich);
+            frontendStepMetaData.getFormFields().forEach(this::enrichField);
          }
          if(frontendStepMetaData.getViewFields() != null)
          {
-            frontendStepMetaData.getViewFields().forEach(this::enrich);
+            frontendStepMetaData.getViewFields().forEach(this::enrichField);
          }
          if(frontendStepMetaData.getRecordListFields() != null)
          {
-            frontendStepMetaData.getRecordListFields().forEach(this::enrich);
+            frontendStepMetaData.getRecordListFields().forEach(this::enrichField);
          }
       }
    }
@@ -192,11 +230,46 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QFieldMetaData field)
+   private void enrichField(QFieldMetaData field)
    {
       if(!StringUtils.hasContent(field.getLabel()))
       {
-         field.setLabel(nameToLabel(field.getName()));
+         if(configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels && StringUtils.hasContent(field.getPossibleValueSourceName()) && field.getName() != null && field.getName().endsWith("Id"))
+         {
+            field.setLabel(nameToLabel(field.getName().substring(0, field.getName().length() - 2)));
+         }
+         else
+         {
+            field.setLabel(nameToLabel(field.getName()));
+         }
+      }
+
+      //////////////////////////////////////////////////////////////////////////
+      // if this field has a possibleValueSource                              //
+      // and that PVS exists in the instance                                  //
+      // and it's a table-type PVS and the table name is set                  //
+      // and it's a valid table in the instance, and the table is in some app //
+      // and the field doesn't have a LINK adornment                          //
+      // then add a link-to-record-from-table adornment to the field.         //
+      //////////////////////////////////////////////////////////////////////////
+      if(StringUtils.hasContent(field.getPossibleValueSourceName()))
+      {
+         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+         if(possibleValueSource != null)
+         {
+            String tableName = possibleValueSource.getTableName();
+            if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()) && StringUtils.hasContent(tableName))
+            {
+               if(qInstance.getTable(tableName) != null && doesAnyAppHaveTable(tableName))
+               {
+                  if(field.getAdornments() == null || field.getAdornments().stream().noneMatch(a -> AdornmentType.LINK.equals(a.getType())))
+                  {
+                     field.withFieldAdornment(new FieldAdornment().withType(AdornmentType.LINK)
+                        .withValue(AdornmentType.LinkValues.TO_RECORD_FROM_TABLE, tableName));
+                  }
+               }
+            }
+         }
       }
    }
 
@@ -205,12 +278,44 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrich(QAppMetaData app)
+   private boolean doesAnyAppHaveTable(String tableName)
+   {
+      if(qInstance.getApps() != null)
+      {
+         for(QAppMetaData app : qInstance.getApps().values())
+         {
+            if(app.getChildren() != null)
+            {
+               for(QAppChildMetaData child : app.getChildren())
+               {
+                  if(child instanceof QTableMetaData && tableName.equals(child.getName()))
+                  {
+                     return (true);
+                  }
+               }
+            }
+         }
+      }
+
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichApp(QAppMetaData app)
    {
       if(!StringUtils.hasContent(app.getLabel()))
       {
          app.setLabel(nameToLabel(app.getName()));
       }
+
+      if(CollectionUtils.nullSafeIsEmpty(app.getSections()))
+      {
+         generateAppSections(app);
+      }
    }
 
 
@@ -218,7 +323,38 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   static String nameToLabel(String name)
+   private void enrichFieldSection(QFieldSection section)
+   {
+      if(!StringUtils.hasContent(section.getLabel()))
+      {
+         section.setLabel(nameToLabel(section.getName()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichReport(QReportMetaData report)
+   {
+      if(!StringUtils.hasContent(report.getLabel()))
+      {
+         report.setLabel(nameToLabel(report.getName()));
+      }
+
+      if(report.getInputFields() != null)
+      {
+         report.getInputFields().forEach(this::enrichField);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String nameToLabel(String name)
    {
       if(!StringUtils.hasContent(name))
       {
@@ -512,6 +648,59 @@ public class QInstanceEnricher
 
 
    /*******************************************************************************
+    ** If a app didn't have any sections, generate "sensible defaults"
+    *******************************************************************************/
+   private void generateAppSections(QAppMetaData app)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(app.getChildren()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // assume this app is valid if it has no children, but surely it doesn't need any sections then. //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         return;
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // create an identity section for the id and any fields in the record label //
+      //////////////////////////////////////////////////////////////////////////////
+      QAppSection defaultSection = new QAppSection(app.getName(), app.getLabel(), new QIcon("badge"), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+
+      boolean foundNonAppChild = false;
+      if(CollectionUtils.nullSafeHasContents(app.getChildren()))
+      {
+         for(QAppChildMetaData child : app.getChildren())
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // only tables, processes, and reports are allowed to be in sections at this time, apps //
+            // might be children but not in sections so keep track if we find any non-app           //
+            //////////////////////////////////////////////////////////////////////////////////////////
+            if(child.getClass().equals(QTableMetaData.class))
+            {
+               defaultSection.getTables().add(child.getName());
+               foundNonAppChild = true;
+            }
+            else if(child.getClass().equals(QProcessMetaData.class))
+            {
+               defaultSection.getProcesses().add(child.getName());
+               foundNonAppChild = true;
+            }
+            else if(child.getClass().equals(QReportMetaData.class))
+            {
+               defaultSection.getReports().add(child.getName());
+               foundNonAppChild = true;
+            }
+         }
+      }
+
+      if(foundNonAppChild)
+      {
+         app.addSection(defaultSection);
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** If a table didn't have any sections, generate "sensible defaults"
     *******************************************************************************/
    private void generateTableFieldSections(QTableMetaData table)
@@ -573,6 +762,52 @@ public class QInstanceEnricher
       if(!otherSection.getFieldNames().isEmpty())
       {
          table.addSection(otherSection);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichPossibleValueSource(QPossibleValueSource possibleValueSource)
+   {
+      if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
+      {
+         if(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getSearchFields()))
+         {
+            QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+            if(table != null)
+            {
+               if(table.getPrimaryKeyField() != null)
+               {
+                  possibleValueSource.withSearchField(table.getPrimaryKeyField());
+               }
+
+               for(String recordLabelField : CollectionUtils.nonNullList(table.getRecordLabelFields()))
+               {
+                  possibleValueSource.withSearchField(recordLabelField);
+               }
+            }
+         }
+
+         if(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getOrderByFields()))
+         {
+            QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+            if(table != null)
+            {
+               for(String recordLabelField : CollectionUtils.nonNullList(table.getRecordLabelFields()))
+               {
+                  possibleValueSource.withOrderByField(recordLabelField);
+               }
+
+               if(table.getPrimaryKeyField() != null)
+               {
+                  possibleValueSource.withOrderByField(table.getPrimaryKeyField());
+               }
+            }
+         }
+
       }
    }
 

@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -239,6 +240,48 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test a table count with a filter.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataCountWithFilter()
+   {
+      String               filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/count?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+
+      assertTrue(jsonObject.has("count"));
+      int count = jsonObject.getInt("count");
+      assertEquals(1, count);
+   }
+
+
+
+   /*******************************************************************************
+    ** test a table count POST.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataCountPOST()
+   {
+      String filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/count")
+         .field("filter", filterJson)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+
+      assertTrue(jsonObject.has("count"));
+      int count = jsonObject.getInt("count");
+      assertEquals(1, count);
+   }
+
+
+
+   /*******************************************************************************
     ** test a table query
     **
     *******************************************************************************/
@@ -271,6 +314,30 @@ class QJavalinImplementationTest extends QJavalinTestBase
    {
       String               filterJson = getFirstNameEqualsTimFilterJSON();
       HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals("Tim", values0.getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test a table query using an actual filter via POST.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataQueryWithFilterPOST()
+   {
+      String filterJson = getFirstNameEqualsTimFilterJSON();
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/query")
+         .field("filter", filterJson)
+         .asString();
 
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
@@ -338,7 +405,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    {
       Map<String, Serializable> body = new HashMap<>();
       body.put("firstName", "Free");
-      //? body.put("id", 4);
+      body.put("birthDate", "");
 
       HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
          .header("Content-Type", "application/json")
@@ -356,7 +423,16 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject values0 = record0.getJSONObject("values");
       assertEquals(4, values0.getInt("id"));
       assertEquals("Free", values0.getString("firstName"));
-      // mmm, whole record isn't loaded.  should it be? assertEquals("Samples", values0.getString("lastName"));
+
+      ///////////////////////////////////////////////////////////////////
+      // re-GET the record, and validate that birthDate was nulled out //
+      ///////////////////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/4").asString();
+      assertEquals(200, response.getStatus());
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("values"));
+      JSONObject values = jsonObject.getJSONObject("values");
+      assertFalse(values.has("birthDate"));
    }
 
 
@@ -451,8 +527,8 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    void testExportFieldsQueryParam()
    {
-      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/People.csv?fields=id,birthDate").asString();
-      String[] csvLines = response.getBody().split("\n");
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/People.csv?fields=id,birthDate").asString();
+      String[]             csvLines = response.getBody().split("\n");
       assertEquals("""
          "Id","Birth Date\"""", csvLines[0]);
    }
@@ -482,9 +558,62 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
-      assertEquals("barChart", jsonObject.getString("type"));
+      assertEquals(WidgetType.CHART.getType(), jsonObject.getString("type"));
       assertNotNull(jsonObject.getString("title"));
-      assertNotNull(jsonObject.getJSONObject("barChartData"));
+      assertNotNull(jsonObject.getJSONObject("chartData"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueUnfiltered()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(5, jsonObject.getJSONArray("options").length());
+      assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
+      assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueWithSearchTerm()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId?searchTerm=Chamber").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(1, jsonObject.getJSONArray("options").length());
+      assertEquals("Tim Chamberlain (3)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueWithIds()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId?ids=4,5").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(2, jsonObject.getJSONArray("options").length());
+      assertEquals(4, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
+      assertEquals(5, jsonObject.getJSONArray("options").getJSONObject(1).getInt("id"));
    }
 
 }

@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -36,7 +38,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Meta-data to represent a single field in a table.
  **
  *******************************************************************************/
-public class QFieldMetaData
+public class QFieldMetaData implements Cloneable
 {
    private String     name;
    private String     label;
@@ -53,6 +55,31 @@ public class QFieldMetaData
    private String       displayFormat = "%s";
    private Serializable defaultValue;
    private String       possibleValueSourceName;
+
+   private List<FieldAdornment> adornments;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QFieldMetaData clone()
+   {
+      try
+      {
+         QFieldMetaData clone = (QFieldMetaData) super.clone();
+         if(adornments != null)
+         {
+            clone.setAdornments(new ArrayList<>(adornments));
+         }
+         return (clone);
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new RuntimeException(e);
+      }
+   }
 
 
 
@@ -452,6 +479,56 @@ public class QFieldMetaData
    public QFieldMetaData withDisplayFormat(String displayFormat)
    {
       this.displayFormat = displayFormat;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for adornments
+    **
+    *******************************************************************************/
+   public List<FieldAdornment> getAdornments()
+   {
+      return adornments;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for adornments
+    **
+    *******************************************************************************/
+   public void setAdornments(List<FieldAdornment> adornments)
+   {
+      this.adornments = adornments;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adornments
+    **
+    *******************************************************************************/
+   public QFieldMetaData withFieldAdornments(List<FieldAdornment> adornments)
+   {
+      this.adornments = adornments;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adornments
+    **
+    *******************************************************************************/
+   public QFieldMetaData withFieldAdornment(FieldAdornment adornment)
+   {
+      if(this.adornments == null)
+      {
+         this.adornments = new ArrayList<>();
+      }
+      this.adornments.add(adornment);
       return (this);
    }
 

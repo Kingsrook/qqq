@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.math.BigDecimal;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import org.junit.jupiter.api.AfterEach;
@@ -158,6 +159,66 @@ class QMetaDataVariableInterpreterTest
       assertEquals("${env.X}", secretReader.interpret("${literal.${env.X}}"));
       assertEquals("${prop.X}", secretReader.interpret("${literal.${prop.X}}"));
       assertEquals("${literal.X}", secretReader.interpret("${literal.${literal.X}}"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValueMaps()
+   {
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", Map.of("foo", "bar", "amount", new BigDecimal("3.50")));
+
+      assertEquals("bar", variableInterpreter.interpretForObject("${input.foo}"));
+      assertEquals(new BigDecimal("3.50"), variableInterpreter.interpretForObject("${input.amount}"));
+      assertNull(variableInterpreter.interpretForObject("${input.x}"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMultipleValueMaps()
+   {
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", Map.of("amount", new BigDecimal("3.50"), "x", "y"));
+      variableInterpreter.addValueMap("others", Map.of("foo", "fu", "amount", new BigDecimal("1.75")));
+
+      assertNull(variableInterpreter.interpretForObject("${input.foo}"));
+      assertEquals("fu", variableInterpreter.interpretForObject("${others.foo}"));
+      assertEquals(new BigDecimal("3.50"), variableInterpreter.interpretForObject("${input.amount}"));
+      assertEquals(new BigDecimal("1.75"), variableInterpreter.interpretForObject("${others.amount}"));
+      assertEquals("y", variableInterpreter.interpretForObject("${input.x}"));
+      assertNull(variableInterpreter.interpretForObject("${others.x}"));
+      assertNull(variableInterpreter.interpretForObject("${input.nil}"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLooksLikeVariableButNotFound()
+   {
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", Map.of("x", 1, "y", 2));
+      variableInterpreter.addValueMap("others", Map.of("foo", "bar"));
+
+      assertNull(variableInterpreter.interpretForObject("${input.notFound}", null));
+      assertEquals(0, variableInterpreter.interpretForObject("${input.notFound}", 0));
+      assertEquals("--", variableInterpreter.interpretForObject("${input.notFound}", "--"));
+      assertEquals("--", variableInterpreter.interpretForObject("${others.notFound}", "--"));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // this one doesn't count as "looking like a variable" - because the "prefix" (notValid) isn't a value map... //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals("${notValid.notFound}", variableInterpreter.interpretForObject("${notValid.notFound}", "--"));
    }
 
 

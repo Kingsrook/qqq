@@ -23,21 +23,20 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
 import java.io.OutputStream;
-import java.util.List;
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
- ** Input for a Report action
+ ** Input for an Export action
  *******************************************************************************/
 public class ReportInput extends AbstractTableActionInput
 {
-   private QQueryFilter queryFilter;
-   private Integer      limit;
-   private List<String> fieldNames;
+   private String                    reportName;
+   private Map<String, Serializable> inputValues;
 
    private String       filename;
    private ReportFormat reportFormat;
@@ -76,67 +75,45 @@ public class ReportInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for queryFilter
+    ** Getter for reportName
     **
     *******************************************************************************/
-   public QQueryFilter getQueryFilter()
+   public String getReportName()
    {
-      return queryFilter;
+      return reportName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryFilter
+    ** Setter for reportName
     **
     *******************************************************************************/
-   public void setQueryFilter(QQueryFilter queryFilter)
+   public void setReportName(String reportName)
    {
-      this.queryFilter = queryFilter;
+      this.reportName = reportName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for limit
+    ** Getter for inputValues
     **
     *******************************************************************************/
-   public Integer getLimit()
+   public Map<String, Serializable> getInputValues()
    {
-      return limit;
+      return inputValues;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for limit
+    ** Setter for inputValues
     **
     *******************************************************************************/
-   public void setLimit(Integer limit)
+   public void setInputValues(Map<String, Serializable> inputValues)
    {
-      this.limit = limit;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldNames
-    **
-    *******************************************************************************/
-   public List<String> getFieldNames()
-   {
-      return fieldNames;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for fieldNames
-    **
-    *******************************************************************************/
-   public void setFieldNames(List<String> fieldNames)
-   {
-      this.fieldNames = fieldNames;
+      this.inputValues = inputValues;
    }
 
 

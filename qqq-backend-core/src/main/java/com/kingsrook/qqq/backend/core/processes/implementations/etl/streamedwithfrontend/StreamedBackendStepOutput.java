@@ -71,4 +71,18 @@ public class StreamedBackendStepOutput extends RunBackendStepOutput
       return (outputRecords);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addRecord(QRecord record)
+   {
+      if(this.outputRecords == null)
+      {
+         this.outputRecords = new ArrayList<>();
+      }
+      this.outputRecords.add(record);
+   }
 }

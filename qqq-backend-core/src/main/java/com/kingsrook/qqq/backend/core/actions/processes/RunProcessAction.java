@@ -113,13 +113,13 @@ public class RunProcessAction
                {
                   case BREAK ->
                   {
-                     LOG.info("Breaking process [" + process.getName() + "] at frontend step (as requested by caller): " + step.getName());
+                     LOG.trace("Breaking process [" + process.getName() + "] at frontend step (as requested by caller): " + step.getName());
                      processState.setNextStepName(step.getName());
                      break STEP_LOOP;
                   }
                   case SKIP ->
                   {
-                     LOG.info("Skipping frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
+                     LOG.trace("Skipping frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
 
                      //////////////////////////////////////////////////////////////////////
                      // much less error prone in case this code changes in the future... //
@@ -129,7 +129,7 @@ public class RunProcessAction
                   }
                   case FAIL ->
                   {
-                     LOG.info("Throwing error for frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
+                     LOG.trace("Throwing error for frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
                      throw (new QException("Failing process at step " + step.getName() + " (as requested, to fail on frontend steps)"));
                   }
                   default -> throw new IllegalStateException("Unexpected value: " + runProcessInput.getFrontendStepBehavior());
@@ -313,7 +313,7 @@ public class RunProcessAction
          QStepMetaData step = process.getStep(stepName);
          if(step == null)
          {
-            throw(new QException("Could not find a step named [" + stepName + "] in this process."));
+            throw (new QException("Could not find a step named [" + stepName + "] in this process."));
          }
          result.add(step);
       }

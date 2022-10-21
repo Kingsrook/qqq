@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +51,8 @@ public class QMetaDataVariableInterpreter
 {
    private static final Logger LOG = LogManager.getLogger(QMetaDataVariableInterpreter.class);
 
-   private Map<String, String> environmentOverrides;
+   private Map<String, String>                    environmentOverrides;
+   private Map<String, Map<String, Serializable>> valueMaps;
 
 
 
@@ -122,6 +126,18 @@ public class QMetaDataVariableInterpreter
 
 
    /*******************************************************************************
+    ** Interpret a value string, which may be a variable, into its run-time value -
+    ** always as a String.
+    **
+    *******************************************************************************/
+   public String interpret(String value)
+   {
+      return (ValueUtils.getValueAsString(interpretForObject(value)));
+   }
+
+
+
+   /*******************************************************************************
     ** Interpret a value string, which may be a variable, into its run-time value.
     **
     ** If input is null, output is null.
@@ -131,7 +147,28 @@ public class QMetaDataVariableInterpreter
     **  - used if you really want to get back the literal value, ${env.X}, for example.
     ** Else the output is the input.
     *******************************************************************************/
-   public String interpret(String value)
+   public Serializable interpretForObject(String value)
+   {
+      return (interpretForObject(value, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Interpret a value string, which may be a variable, into its run-time value,
+    ** getting back the specified default if the string looks like a variable, but can't
+    ** be found.  Where "looks like" means, for example, started with "${env." and ended
+    ** with "}", but wasn't set in the environment, or, more interestingly, based on the
+    ** valueMaps - only if the name to the left of the dot is an actual valueMap name.
+    **
+    ** If input is null, output is null.
+    ** If input looks like ${env.X}, then the return value is the value of the env variable 'X'
+    ** If input looks like ${prop.X}, then the return value is the value of the system property 'X'
+    ** If input looks like ${literal.X}, then the return value is the literal 'X'
+    **  - used if you really want to get back the literal value, ${env.X}, for example.
+    ** Else the output is the input.
+    *******************************************************************************/
+   public Serializable interpretForObject(String value, Serializable defaultIfLooksLikeVariableButNotFound)
    {
       if(value == null)
       {
@@ -142,23 +179,48 @@ public class QMetaDataVariableInterpreter
       if(value.startsWith(envPrefix) && value.endsWith("}"))
       {
          String envVarName = value.substring(envPrefix.length()).replaceFirst("}$", "");
-         String envValue   = getEnvironmentVariable(envVarName);
-         return (envValue);
+         String result     = getEnvironmentVariable(envVarName);
+         return (result == null ? defaultIfLooksLikeVariableButNotFound : result);
       }
 
       String propPrefix = "${prop.";
       if(value.startsWith(propPrefix) && value.endsWith("}"))
       {
-         String propertyName  = value.substring(propPrefix.length()).replaceFirst("}$", "");
-         String propertyValue = System.getProperty(propertyName);
-         return (propertyValue);
+         String propertyName = value.substring(propPrefix.length()).replaceFirst("}$", "");
+         String result       = System.getProperty(propertyName);
+         return (result == null ? defaultIfLooksLikeVariableButNotFound : result);
       }
 
       String literalPrefix = "${literal.";
       if(value.startsWith(literalPrefix) && value.endsWith("}"))
       {
-         String literalValue = value.substring(literalPrefix.length()).replaceFirst("}$", "");
-         return (literalValue);
+         return (value.substring(literalPrefix.length()).replaceFirst("}$", ""));
+      }
+
+      if(valueMaps != null)
+      {
+         boolean looksLikeVariable = false;
+         for(Map.Entry<String, Map<String, Serializable>> entry : valueMaps.entrySet())
+         {
+            String                    name     = entry.getKey();
+            Map<String, Serializable> valueMap = entry.getValue();
+
+            String prefix = "${" + name + ".";
+            if(value.startsWith(prefix) && value.endsWith("}"))
+            {
+               looksLikeVariable = true;
+               String lookupName = value.substring(prefix.length()).replaceFirst("}$", "");
+               if(valueMap != null && valueMap.containsKey(lookupName))
+               {
+                  return (valueMap.get(lookupName));
+               }
+            }
+         }
+
+         if(looksLikeVariable)
+         {
+            return (defaultIfLooksLikeVariableButNotFound);
+         }
       }
 
       return (value);
@@ -189,5 +251,20 @@ public class QMetaDataVariableInterpreter
       }
 
       return System.getenv(key);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addValueMap(String name, Map<String, Serializable> values)
+   {
+      if(valueMaps == null)
+      {
+         valueMaps = new LinkedHashMap<>();
+      }
+
+      valueMaps.put(name, values);
    }
 }
