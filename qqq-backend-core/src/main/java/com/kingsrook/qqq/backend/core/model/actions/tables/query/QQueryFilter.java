@@ -286,4 +286,19 @@ public class QQueryFilter implements Serializable, Cloneable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSubFilter(QQueryFilter subFilter)
+   {
+      if(this.subFilters == null)
+      {
+         subFilters = new ArrayList<>();
+      }
+
+      subFilters.add(subFilter);
+   }
+
 }

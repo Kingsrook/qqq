@@ -859,10 +859,10 @@ public class TestUtils
    {
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
 
-      String accessKey = interpreter.interpret("${env.SQS_ACCESS_KEY}");
-      String secretKey = interpreter.interpret("${env.SQS_SECRET_KEY}");
-      String region    = interpreter.interpret("${env.SQS_REGION}");
-      String baseURL   = interpreter.interpret("${env.SQS_BASE_URL}");
+      String accessKey = "MOCK"; // interpreter.interpret("${env.SQS_ACCESS_KEY}");
+      String secretKey = "MOCK"; // interpreter.interpret("${env.SQS_SECRET_KEY}");
+      String region    = "MOCK"; // interpreter.interpret("${env.SQS_REGION}");
+      String baseURL   = "MOCK"; // interpreter.interpret("${env.SQS_BASE_URL}");
 
       return (new SQSQueueProviderMetaData()
          .withName(DEFAULT_QUEUE_PROVIDER)
@@ -883,7 +883,7 @@ public class TestUtils
          .withName("testSQSQueue")
          .withProviderName(DEFAULT_QUEUE_PROVIDER)
          .withQueueName("test-queue")
-         .withProcessName("receiveEasypostTrackerWebhook"));
+         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE));
    }
 
 }

@@ -52,9 +52,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
@@ -133,7 +135,7 @@ class QInstanceValidatorTest
     **
     *******************************************************************************/
    @Test
-   public void test_validateNullTables()
+   public void test_validateNullTablesAndProcesses()
    {
       assertValidationFailureReasons((qInstance) ->
          {
@@ -141,7 +143,8 @@ class QInstanceValidatorTest
             qInstance.setProcesses(null);
          },
          "At least 1 table must be defined",
-         "Unrecognized table shape for possibleValueSource shape");
+         "Unrecognized table shape for possibleValueSource shape",
+         "Unrecognized processName for queue");
    }
 
 
@@ -151,7 +154,7 @@ class QInstanceValidatorTest
     **
     *******************************************************************************/
    @Test
-   public void test_validateEmptyTables()
+   public void test_validateEmptyTablesAndProcesses()
    {
       assertValidationFailureReasons((qInstance) ->
          {
@@ -159,7 +162,8 @@ class QInstanceValidatorTest
             qInstance.setProcesses(new HashMap<>());
          },
          "At least 1 table must be defined",
-         "Unrecognized table shape for possibleValueSource shape");
+         "Unrecognized table shape for possibleValueSource shape",
+         "Unrecognized processName for queue");
    }
 
 
@@ -1062,6 +1066,187 @@ class QInstanceValidatorTest
             );
          },
          "unrecognized field");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUniqueKeyNoFields()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).withUniqueKey(new UniqueKey()),
+         "uniqueKey with no fields");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUniqueKeyDuplicatedField()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).withUniqueKey(new UniqueKey().withFieldName("id").withFieldName("id")),
+         "the same field multiple times");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUniqueKeyInvalidField()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).withUniqueKey(new UniqueKey().withFieldName("notAField")),
+         "unrecognized field name: notAField");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUniqueKeyDuplicatedUniqueKeys()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withUniqueKey(new UniqueKey().withFieldName("id"))
+            .withUniqueKey(new UniqueKey().withFieldName("id")),
+         "more than one uniqueKey with the same set of fields");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValidUniqueKeys()
+   {
+      assertValidationSuccess((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withUniqueKey(new UniqueKey().withFieldName("id"))
+         .withUniqueKey(new UniqueKey().withFieldName("firstName").withFieldName("lastName")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueProviderName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER).withName(null),
+         "Inconsistent naming for queueProvider");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER).withName(""),
+         "Inconsistent naming for queueProvider");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER).withName("wrongName"),
+         "Inconsistent naming for queueProvider");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueProviderType()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER).withType(null),
+         "Missing type for queueProvider");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueProviderSQSAttributes()
+   {
+      assertValidationFailureReasons((qInstance) ->
+         {
+            SQSQueueProviderMetaData queueProvider = (SQSQueueProviderMetaData) qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER);
+            queueProvider.setAccessKey(null);
+            queueProvider.setSecretKey("");
+            queueProvider.setRegion(null);
+            queueProvider.setBaseURL("");
+         },
+         "Missing accessKey", "Missing secretKey", "Missing region", "Missing baseURL");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withName(null),
+         "Inconsistent naming for queue");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withName(""),
+         "Inconsistent naming for queue");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withName("wrongName"),
+         "Inconsistent naming for queue");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueQueueProviderName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProviderName(null),
+         "Unrecognized queue providerName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProviderName(""),
+         "Unrecognized queue providerName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProviderName("wrongName"),
+         "Unrecognized queue providerName");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueQueueName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withQueueName(null),
+         "Missing queueName for queue");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withQueueName(""),
+         "Missing queueName for queue");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueueProcessName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProcessName(null),
+         "Missing processName for queue");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProcessName(""),
+         "Missing processName for queue");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProcessName("notAProcess"),
+         "Unrecognized processName for queue:");
    }
 
 

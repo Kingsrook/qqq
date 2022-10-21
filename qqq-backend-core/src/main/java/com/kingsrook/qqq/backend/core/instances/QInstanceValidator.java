@@ -49,9 +49,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
@@ -118,6 +120,7 @@ public class QInstanceValidator
          validateProcesses(qInstance);
          validateApps(qInstance);
          validatePossibleValueSources(qInstance);
+         validateQueuesAndProviders(qInstance);
       }
       catch(Exception e)
       {
@@ -130,6 +133,45 @@ public class QInstanceValidator
       }
 
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateQueuesAndProviders(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getQueueProviders()))
+      {
+         qInstance.getQueueProviders().forEach((name, queueProvider) ->
+         {
+            assertCondition(Objects.equals(name, queueProvider.getName()), "Inconsistent naming for queueProvider: " + name + "/" + queueProvider.getName() + ".");
+            assertCondition(queueProvider.getType() != null, "Missing type for queueProvider: " + name);
+
+            if(queueProvider instanceof SQSQueueProviderMetaData sqsQueueProvider)
+            {
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getAccessKey()), "Missing accessKey for SQSQueueProvider: " + name);
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getSecretKey()), "Missing secretKey for SQSQueueProvider: " + name);
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getBaseURL()), "Missing baseURL for SQSQueueProvider: " + name);
+               assertCondition(StringUtils.hasContent(sqsQueueProvider.getRegion()), "Missing region for SQSQueueProvider: " + name);
+            }
+         });
+      }
+
+      if(CollectionUtils.nullSafeHasContents(qInstance.getQueues()))
+      {
+         qInstance.getQueues().forEach((name, queue) ->
+         {
+            assertCondition(Objects.equals(name, queue.getName()), "Inconsistent naming for queue: " + name + "/" + queue.getName() + ".");
+            assertCondition(qInstance.getQueueProvider(queue.getProviderName()) != null, "Unrecognized queue providerName for queue: " + name);
+            assertCondition(StringUtils.hasContent(queue.getQueueName()), "Missing queueName for queue: " + name);
+            if(assertCondition(StringUtils.hasContent(queue.getProcessName()), "Missing processName for queue: " + name))
+            {
+               assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
+            }
+         });
+      }
    }
 
 
@@ -263,7 +305,41 @@ public class QInstanceValidator
             {
                validateTableAutomationDetails(qInstance, table);
             }
+
+            //////////////////////////////////////
+            // validate the table's unique keys //
+            //////////////////////////////////////
+            if(table.getUniqueKeys() != null)
+            {
+               validateTableUniqueKeys(table);
+            }
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableUniqueKeys(QTableMetaData table)
+   {
+      Set<Set<String>> ukSets = new HashSet<>();
+      for(UniqueKey uniqueKey : table.getUniqueKeys())
+      {
+         if(assertCondition(CollectionUtils.nullSafeHasContents(uniqueKey.getFieldNames()), table.getName() + " has a uniqueKey with no fields"))
+         {
+            Set<String> fieldNamesInThisUK = new HashSet<>();
+            for(String fieldName : uniqueKey.getFieldNames())
+            {
+               assertNoException(() -> table.getField(fieldName), table.getName() + " has a uniqueKey with an unrecognized field name: " + fieldName);
+               assertCondition(!fieldNamesInThisUK.contains(fieldName), table.getName() + " has a uniqueKey with the same field multiple times: " + fieldName);
+               fieldNamesInThisUK.add(fieldName);
+            }
+
+            assertCondition(!ukSets.contains(fieldNamesInThisUK), table.getName() + " has more than one uniqueKey with the same set of fields: " + fieldNamesInThisUK);
+            ukSets.add(fieldNamesInThisUK);
+         }
       }
    }
 

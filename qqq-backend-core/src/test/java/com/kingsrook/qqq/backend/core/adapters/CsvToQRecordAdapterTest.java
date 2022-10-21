@@ -73,7 +73,7 @@ class CsvToQRecordAdapterTest
       try
       {
          CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-         List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv(csv, TestUtils.defineTablePerson(), null);
+         List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(csv, TestUtils.defineTablePerson(), null);
          System.out.println(qRecords);
       }
       catch(IllegalArgumentException iae)
@@ -94,7 +94,7 @@ class CsvToQRecordAdapterTest
    public void test_buildRecordsFromCsv_emptyList()
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-      List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader(), TestUtils.defineTablePerson(), null);
+      List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader(), TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertTrue(qRecords.isEmpty());
    }
@@ -144,7 +144,7 @@ class CsvToQRecordAdapterTest
    public void test_buildRecordsFromCsv_oneRowStandardHeaderNoMapping()
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-      List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader() + getPersonCsvRow1(), TestUtils.defineTablePerson(), null);
+      List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader() + getPersonCsvRow1(), TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertEquals(1, qRecords.size());
       QRecord qRecord = qRecords.get(0);
@@ -161,7 +161,7 @@ class CsvToQRecordAdapterTest
    public void test_buildRecordsFromCsv_twoRowsStandardHeaderNoMapping()
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-      List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader() + getPersonCsvRow1() + getPersonCsvRow2(), TestUtils.defineTablePerson(), null);
+      List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader() + getPersonCsvRow1() + getPersonCsvRow2(), TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertEquals(2, qRecords.size());
       QRecord qRecord1 = qRecords.get(0);
@@ -194,7 +194,7 @@ class CsvToQRecordAdapterTest
          .withMapping("email", "email");
 
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-      List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv(csvCustomHeader + getPersonCsvRow1(), TestUtils.defineTablePerson(), mapping);
+      List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(csvCustomHeader + getPersonCsvRow1(), TestUtils.defineTablePerson(), mapping);
       assertNotNull(qRecords);
       assertEquals(1, qRecords.size());
       QRecord qRecord = qRecords.get(0);
@@ -221,7 +221,7 @@ class CsvToQRecordAdapterTest
          .withMapping("email", index++);
 
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-      List<QRecord> qRecords = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvRow1() + getPersonCsvRow2(), TestUtils.defineTablePerson(), mapping);
+      List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvRow1() + getPersonCsvRow2(), TestUtils.defineTablePerson(), mapping);
       assertNotNull(qRecords);
       assertEquals(2, qRecords.size());
       QRecord qRecord1 = qRecords.get(0);
@@ -265,6 +265,7 @@ class CsvToQRecordAdapterTest
       assertEquals("2022-06-26", qRecord1.getValue("createDate"));
       assertEquals("2022-06-26", qRecord1.getValue("modifyDate"));
    }
+
 
 
    /*******************************************************************************
@@ -323,6 +324,8 @@ class CsvToQRecordAdapterTest
       assertNull(records.get(0).getValueString("lastName"));
    }
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -336,11 +339,58 @@ class CsvToQRecordAdapterTest
          .withMapping("lastName", index++);
 
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
-      List<QRecord> records = csvToQRecordAdapter.buildRecordsFromCsv("1,John", TestUtils.defineTablePerson(), mapping);
+      List<QRecord>       records             = csvToQRecordAdapter.buildRecordsFromCsv("1,John", TestUtils.defineTablePerson(), mapping);
 
       assertEquals(1, records.get(0).getValueInteger("id"));
       assertEquals("John", records.get(0).getValueString("firstName"));
       assertNull(records.get(0).getValueString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCaseSensitiveHeaders()
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+         .withTable(TestUtils.defineTablePerson())
+         .withCaseSensitiveHeaders(true)
+         .withCsv("""
+            id,FirstName,lastName
+            1,John,Doe
+            """));
+      List<QRecord> records = csvToQRecordAdapter.getRecordList();
+
+      assertEquals(1, records.get(0).getValueInteger("id"));
+      assertNull(records.get(0).getValueString("firstName"));
+      assertEquals("Doe", records.get(0).getValueString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCaseInsensitiveHeaders()
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+         .withTable(TestUtils.defineTablePerson())
+         // this is default, so don't set it:  withCaseSensitiveHeaders(false)
+         .withCsv("""
+            id,FirstName,lastName,EMAIL
+            1,John,Doe,john@doe.com
+            """));
+      List<QRecord> records = csvToQRecordAdapter.getRecordList();
+
+      assertEquals(1, records.get(0).getValueInteger("id"));
+      assertEquals("John", records.get(0).getValueString("firstName"));
+      assertEquals("Doe", records.get(0).getValueString("lastName"));
+      assertEquals("john@doe.com", records.get(0).getValueString("email"));
    }
 
 }
