@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -72,21 +73,28 @@ import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
  ** Action to generate a report.
  **
  ** A report can contain 1 or more Data Sources - e.g., tables + filters that define
- ** data that goes into the report.
+ ** data that goes into the report, or simple data-supplier lambdas.
  **
  ** A report can also contain 1 or more Views - e.g., sheets in a spreadsheet workbook.
- ** (how do those work in non-XLSX formats??).  Views can either be plain tables,
- ** summaries (like pivot tables, but called summary to avoid confusion with "native"
- ** pivot tables), or native pivot tables (not initially supported, due to lack of
- ** support in fastexcel...).
+ ** (how do those work in non-XLSX formats??). Views can either be:
+ ** - plain tables,
+ ** - summaries (like pivot tables, but called summary to avoid confusion with "native" pivot tables),
+ ** - native pivot tables (not initially supported, due to lack of support in fastexcel...).
  *******************************************************************************/
 public class GenerateReportAction
 {
-   //////////////////////////////////////////////////
-   // viewName > PivotKey > fieldName > Aggregates //
-   //////////////////////////////////////////////////
-   Map<String, Map<PivotKey, Map<String, AggregatesInterface<?>>>> pivotAggregates         = new HashMap<>();
-   Map<String, Map<PivotKey, Map<String, AggregatesInterface<?>>>> variancePivotAggregates = new HashMap<>();
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // summaryAggregates and varianceAggregates are multi-level maps, ala:                                     //
+   // viewName > SummaryKey > fieldName > Aggregates                                                          //
+   // e.g.:                                                                                                   //
+   // viewName: salesSummaryReport                                                                            //
+   // SummaryKey: [(state:MO),(city:St.Louis)]                                                                //
+   // fieldName: salePrice                                                                                    //
+   // Aggregates: (count:47;sum:10,000;max:2,000;min:15)                                                      //
+   // salesSummaryReport > [(state:MO),(city:St.Louis)] > salePrice  > (count:47;sum:10,000;max:2,000;min:15) //
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> summaryAggregates  = new HashMap<>();
+   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> varianceAggregates = new HashMap<>();
 
    Map<String, AggregatesInterface<?>> totalAggregates         = new HashMap<>();
    Map<String, AggregatesInterface<?>> varianceTotalAggregates = new HashMap<>();
@@ -119,7 +127,7 @@ public class GenerateReportAction
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
             .toList();
 
-         List<QReportView> dataSourcePivotViews = report.getViews().stream()
+         List<QReportView> dataSourceSummaryViews = report.getViews().stream()
             .filter(v -> v.getType().equals(ReportType.SUMMARY))
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
             .toList();
@@ -129,14 +137,15 @@ public class GenerateReportAction
             .filter(v -> v.getVarianceDataSourceName() != null && v.getVarianceDataSourceName().equals(dataSource.getName()))
             .toList();
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // if this data source isn't used for any table views, but it is used for one or more pivot views (possibly as a variant), then run the query, gathering pivot data. //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // if this data source isn't used for any table views, but it is used for one or           //
+         // more summary views (possibly as a variant), then run the query, gathering summary data. //
+         /////////////////////////////////////////////////////////////////////////////////////////////
          if(dataSourceTableViews.isEmpty())
          {
-            if(!dataSourcePivotViews.isEmpty() || !dataSourceVariantViews.isEmpty())
+            if(!dataSourceSummaryViews.isEmpty() || !dataSourceVariantViews.isEmpty())
             {
-               gatherData(reportInput, dataSource, null, dataSourcePivotViews, dataSourceVariantViews);
+               gatherData(reportInput, dataSource, null, dataSourceSummaryViews, dataSourceVariantViews);
             }
          }
          else
@@ -163,12 +172,12 @@ public class GenerateReportAction
                // start the table-view (e.g., open this tab in xlsx) and then run the query-loop //
                ////////////////////////////////////////////////////////////////////////////////////
                startTableView(reportInput, dataSource, dataSourceTableView);
-               gatherData(reportInput, dataSource, dataSourceTableView, dataSourcePivotViews, dataSourceVariantViews);
+               gatherData(reportInput, dataSource, dataSourceTableView, dataSourceSummaryViews, dataSourceVariantViews);
             }
          }
       }
 
-      outputPivots(reportInput);
+      outputSummaries(reportInput);
    }
 
 
@@ -180,10 +189,15 @@ public class GenerateReportAction
    {
       QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
 
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", reportInput.getInputValues());
+
       ExportInput exportInput = new ExportInput(reportInput.getInstance());
       exportInput.setSession(reportInput.getSession());
       exportInput.setReportFormat(reportFormat);
       exportInput.setFilename(reportInput.getFilename());
+      exportInput.setTitleRow(getTitle(reportView, variableInterpreter));
+      exportInput.setIncludeHeaderRow(reportView.getIncludeHeaderRow());
       exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
       List<QFieldMetaData> fields;
@@ -220,11 +234,8 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> pivotViews, List<QReportView> variantViews) throws QException
+   private void gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> summaryViews, List<QReportView> variantViews) throws QException
    {
-      QQueryFilter queryFilter = dataSource.getQueryFilter();
-      setInputValuesInQueryFilter(reportInput, queryFilter);
-
       ////////////////////////////////////////////////////////////////////////////////////////
       // check if this view has a transform step - if so, set it up now and run its pre-run //
       ////////////////////////////////////////////////////////////////////////////////////////
@@ -257,13 +268,40 @@ public class GenerateReportAction
       RecordPipe recordPipe = new RecordPipe();
       new AsyncRecordPipeLoop().run("Report[" + reportInput.getReportName() + "]", null, recordPipe, (callback) ->
       {
-         QueryInput queryInput = new QueryInput(reportInput.getInstance());
-         queryInput.setSession(reportInput.getSession());
-         queryInput.setRecordPipe(recordPipe);
-         queryInput.setTableName(dataSource.getSourceTable());
-         queryInput.setFilter(queryFilter);
-         queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
-         return (new QueryAction().execute(queryInput));
+         if(dataSource.getSourceTable() != null)
+         {
+            QQueryFilter queryFilter = dataSource.getQueryFilter().clone();
+            setInputValuesInQueryFilter(reportInput, queryFilter);
+
+            QueryInput queryInput = new QueryInput(reportInput.getInstance());
+            queryInput.setSession(reportInput.getSession());
+            queryInput.setRecordPipe(recordPipe);
+            queryInput.setTableName(dataSource.getSourceTable());
+            queryInput.setFilter(queryFilter);
+            queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
+            return (new QueryAction().execute(queryInput));
+         }
+         else if(dataSource.getStaticDataSupplier() != null)
+         {
+            @SuppressWarnings("unchecked")
+            Supplier<List<List<Serializable>>> supplier = QCodeLoader.getAdHoc(Supplier.class, dataSource.getStaticDataSupplier());
+            List<List<Serializable>> lists = supplier.get();
+            for(List<Serializable> list : lists)
+            {
+               QRecord record = new QRecord();
+               int     index  = 0;
+               for(Serializable value : list)
+               {
+                  record.setValue("column" + (index++), value);
+               }
+               recordPipe.addRecord(record);
+            }
+            return (true);
+         }
+         else
+         {
+            throw (new IllegalStateException("Misconfigured data source [" + dataSource.getName() + "]."));
+         }
       }, () ->
       {
          List<QRecord> records = recordPipe.consumeAvailableRecords();
@@ -274,7 +312,7 @@ public class GenerateReportAction
             records = finalTransformStepOutput.getRecords();
          }
 
-         return (consumeRecords(reportInput, dataSource, records, tableView, pivotViews, variantViews));
+         return (consumeRecords(reportInput, dataSource, records, tableView, summaryViews, variantViews));
       });
 
       ////////////////////////////////////////////////
@@ -322,7 +360,7 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Integer consumeRecords(ReportInput reportInput, QReportDataSource dataSource, List<QRecord> records, QReportView tableView, List<QReportView> pivotViews, List<QReportView> variantViews) throws QException
+   private Integer consumeRecords(ReportInput reportInput, QReportDataSource dataSource, List<QRecord> records, QReportView tableView, List<QReportView> summaryViews, List<QReportView> variantViews) throws QException
    {
       QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
 
@@ -334,14 +372,14 @@ public class GenerateReportAction
          reportStreamer.addRecords(records);
       }
 
-      //////////////////////////////
-      // do aggregates for pivots //
-      //////////////////////////////
-      if(pivotViews != null)
+      /////////////////////////////////
+      // do aggregates for summaries //
+      /////////////////////////////////
+      if(summaryViews != null)
       {
-         for(QReportView pivotView : pivotViews)
+         for(QReportView summaryView : summaryViews)
          {
-            addRecordsToPivotAggregates(pivotView, table, records, pivotAggregates);
+            addRecordsToSummaryAggregates(summaryView, table, records, summaryAggregates);
          }
       }
 
@@ -349,14 +387,14 @@ public class GenerateReportAction
       {
          for(QReportView variantView : variantViews)
          {
-            addRecordsToPivotAggregates(variantView, table, records, variancePivotAggregates);
+            addRecordsToSummaryAggregates(variantView, table, records, varianceAggregates);
          }
       }
 
       ///////////////////////////////////////////
       // do totals too, if any views want them //
       ///////////////////////////////////////////
-      if(pivotViews != null && pivotViews.stream().anyMatch(QReportView::getTotalRow))
+      if(summaryViews != null && summaryViews.stream().anyMatch(QReportView::getIncludeTotalRow))
       {
          for(QRecord record : records)
          {
@@ -364,7 +402,7 @@ public class GenerateReportAction
          }
       }
 
-      if(variantViews != null && variantViews.stream().anyMatch(QReportView::getTotalRow))
+      if(variantViews != null && variantViews.stream().anyMatch(QReportView::getIncludeTotalRow))
       {
          for(QRecord record : records)
          {
@@ -380,33 +418,33 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordsToPivotAggregates(QReportView view, QTableMetaData table, List<QRecord> records, Map<String, Map<PivotKey, Map<String, AggregatesInterface<?>>>> aggregatesMap)
+   private void addRecordsToSummaryAggregates(QReportView view, QTableMetaData table, List<QRecord> records, Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> aggregatesMap)
    {
-      Map<PivotKey, Map<String, AggregatesInterface<?>>> viewAggregates = aggregatesMap.computeIfAbsent(view.getName(), (name) -> new HashMap<>());
+      Map<SummaryKey, Map<String, AggregatesInterface<?>>> viewAggregates = aggregatesMap.computeIfAbsent(view.getName(), (name) -> new HashMap<>());
 
       for(QRecord record : records)
       {
-         PivotKey key = new PivotKey();
-         for(String pivotField : view.getPivotFields())
+         SummaryKey key = new SummaryKey();
+         for(String summaryField : view.getPivotFields())
          {
-            Serializable pivotValue = record.getValue(pivotField);
-            if(table.getField(pivotField).getPossibleValueSourceName() != null)
+            Serializable summaryValue = record.getValue(summaryField);
+            if(table.getField(summaryField).getPossibleValueSourceName() != null)
             {
-               pivotValue = record.getDisplayValue(pivotField);
+               summaryValue = record.getDisplayValue(summaryField);
             }
-            key.add(pivotField, pivotValue);
+            key.add(summaryField, summaryValue);
 
-            if(view.getPivotSubTotals() && key.getKeys().size() < view.getPivotFields().size())
+            if(view.getIncludePivotSubTotals() && key.getKeys().size() < view.getPivotFields().size())
             {
                /////////////////////////////////////////////////////////////////////////////////////////
                // be careful here, with these key objects, and their identity, being used as map keys //
                /////////////////////////////////////////////////////////////////////////////////////////
-               PivotKey subKey = key.clone();
-               addRecordToPivotKeyAggregates(table, record, viewAggregates, subKey);
+               SummaryKey subKey = key.clone();
+               addRecordToSummaryKeyAggregates(table, record, viewAggregates, subKey);
             }
          }
 
-         addRecordToPivotKeyAggregates(table, record, viewAggregates, key);
+         addRecordToSummaryKeyAggregates(table, record, viewAggregates, key);
       }
    }
 
@@ -415,7 +453,7 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToPivotKeyAggregates(QTableMetaData table, QRecord record, Map<PivotKey, Map<String, AggregatesInterface<?>>> viewAggregates, PivotKey key)
+   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?>>> viewAggregates, SummaryKey key)
    {
       Map<String, AggregatesInterface<?>> keyAggregates = viewAggregates.computeIfAbsent(key, (name) -> new HashMap<>());
       addRecordToAggregatesMap(table, record, keyAggregates);
@@ -451,30 +489,31 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void outputPivots(ReportInput reportInput) throws QReportingException, QFormulaException
+   private void outputSummaries(ReportInput reportInput) throws QReportingException, QFormulaException
    {
       List<QReportView> reportViews = report.getViews().stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
       for(QReportView view : reportViews)
       {
-         QReportDataSource dataSource  = report.getDataSource(view.getDataSourceName());
-         QTableMetaData    table       = reportInput.getInstance().getTable(dataSource.getSourceTable());
-         PivotOutput       pivotOutput = computePivotRowsForView(reportInput, view, table);
+         QReportDataSource dataSource    = report.getDataSource(view.getDataSourceName());
+         QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
+         SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
 
          ExportInput exportInput = new ExportInput(reportInput.getInstance());
          exportInput.setSession(reportInput.getSession());
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(reportInput.getFilename());
-         exportInput.setTitleRow(pivotOutput.titleRow);
+         exportInput.setTitleRow(summaryOutput.titleRow);
+         exportInput.setIncludeHeaderRow(view.getIncludeHeaderRow());
          exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
          reportStreamer.setDisplayFormats(getDisplayFormatMap(view));
          reportStreamer.start(exportInput, getFields(table, view), view.getLabel());
 
-         reportStreamer.addRecords(pivotOutput.pivotRows); // todo - what if this set is huge?
+         reportStreamer.addRecords(summaryOutput.summaryRows); // todo - what if this set is huge?
 
-         if(pivotOutput.totalRow != null)
+         if(summaryOutput.totalRow != null)
          {
-            reportStreamer.addTotalsRow(pivotOutput.totalRow);
+            reportStreamer.addTotalsRow(summaryOutput.totalRow);
          }
       }
 
@@ -530,89 +569,60 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private PivotOutput computePivotRowsForView(ReportInput reportInput, QReportView view, QTableMetaData table) throws QReportingException, QFormulaException
+   private SummaryOutput computeSummaryRowsForView(ReportInput reportInput, QReportView view, QTableMetaData table) throws QReportingException, QFormulaException
    {
       QValueFormatter              valueFormatter      = new QValueFormatter();
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", reportInput.getInputValues());
-      variableInterpreter.addValueMap("total", getPivotValuesForInterpreter(totalAggregates));
+      variableInterpreter.addValueMap("total", getSummaryValuesForInterpreter(totalAggregates));
 
       ///////////
       // title //
       ///////////
-      String title = null;
-      if(view.getTitleFields() != null && StringUtils.hasContent(view.getTitleFormat()))
-      {
-         List<String> titleValues = new ArrayList<>();
-         for(String titleField : view.getTitleFields())
-         {
-            titleValues.add(variableInterpreter.interpret(titleField));
-         }
+      String title = getTitle(view, variableInterpreter);
 
-         title = valueFormatter.formatStringWithValues(view.getTitleFormat(), titleValues);
-      }
-      else if(StringUtils.hasContent(view.getTitleFormat()))
+      /////////////////////////
+      // create summary rows //
+      /////////////////////////
+      List<QRecord> summaryRows = new ArrayList<>();
+      for(Map.Entry<SummaryKey, Map<String, AggregatesInterface<?>>> entry : summaryAggregates.getOrDefault(view.getName(), Collections.emptyMap()).entrySet())
       {
-         title = view.getTitleFormat();
-      }
-
-      if(StringUtils.hasContent(title))
-      {
-         System.out.println(title);
-      }
-
-      /////////////
-      // headers //
-      /////////////
-      for(String field : view.getPivotFields())
-      {
-         System.out.printf("%-15s", table.getField(field).getLabel());
-      }
-
-      for(QReportField column : view.getColumns())
-      {
-         System.out.printf("%25s", column.getLabel());
-      }
-      System.out.println();
-
-      ///////////////////////
-      // create pivot rows //
-      ///////////////////////
-      List<QRecord> pivotRows = new ArrayList<>();
-      for(Map.Entry<PivotKey, Map<String, AggregatesInterface<?>>> entry : pivotAggregates.getOrDefault(view.getName(), Collections.emptyMap()).entrySet())
-      {
-         PivotKey                            pivotKey        = entry.getKey();
+         SummaryKey                          summaryKey      = entry.getKey();
          Map<String, AggregatesInterface<?>> fieldAggregates = entry.getValue();
-         variableInterpreter.addValueMap("pivot", getPivotValuesForInterpreter(fieldAggregates));
+         Map<String, Serializable>           summaryValues   = getSummaryValuesForInterpreter(fieldAggregates);
+         variableInterpreter.addValueMap("pivot", summaryValues);
+         variableInterpreter.addValueMap("summary", summaryValues);
 
          HashMap<String, Serializable> thisRowValues = new HashMap<>();
          variableInterpreter.addValueMap("thisRow", thisRowValues);
 
-         if(!variancePivotAggregates.isEmpty())
+         if(!varianceAggregates.isEmpty())
          {
-            Map<PivotKey, Map<String, AggregatesInterface<?>>> varianceMap    = variancePivotAggregates.getOrDefault(view.getName(), Collections.emptyMap());
-            Map<String, AggregatesInterface<?>>                varianceSubMap = varianceMap.getOrDefault(pivotKey, Collections.emptyMap());
-            variableInterpreter.addValueMap("variancePivot", getPivotValuesForInterpreter(varianceSubMap));
+            Map<SummaryKey, Map<String, AggregatesInterface<?>>> varianceMap    = varianceAggregates.getOrDefault(view.getName(), Collections.emptyMap());
+            Map<String, AggregatesInterface<?>>                  varianceSubMap = varianceMap.getOrDefault(summaryKey, Collections.emptyMap());
+            Map<String, Serializable>                            varianceValues = getSummaryValuesForInterpreter(varianceSubMap);
+            variableInterpreter.addValueMap("variancePivot", varianceValues);
+            variableInterpreter.addValueMap("variance", varianceValues);
          }
 
-         QRecord pivotRow = new QRecord();
-         pivotRows.add(pivotRow);
+         QRecord summaryRow = new QRecord();
+         summaryRows.add(summaryRow);
 
-         //////////////////////////
-         // add the pivot values //
-         //////////////////////////
-         for(Pair<String, Serializable> key : pivotKey.getKeys())
+         ////////////////////////////
+         // add the summary values //
+         ////////////////////////////
+         for(Pair<String, Serializable> key : summaryKey.getKeys())
          {
-            pivotRow.setValue(key.getA(), key.getB());
+            summaryRow.setValue(key.getA(), key.getB());
          }
 
-         /////////////////////////////////////////////////////////////////////////////
-         // for pivot subtotals, add the text "Total" to the last field in this key //
-         /////////////////////////////////////////////////////////////////////////////
-         if(pivotKey.getKeys().size() < view.getPivotFields().size())
+         ///////////////////////////////////////////////////////////////////////////////
+         // for summary subtotals, add the text "Total" to the last field in this key //
+         ///////////////////////////////////////////////////////////////////////////////
+         if(summaryKey.getKeys().size() < view.getPivotFields().size())
          {
-            String fieldName = pivotKey.getKeys().get(pivotKey.getKeys().size() - 1).getA();
-            pivotRow.setValue(fieldName, pivotRow.getValueString(fieldName) + " Total");
+            String fieldName = summaryKey.getKeys().get(summaryKey.getKeys().size() - 1).getA();
+            summaryRow.setValue(fieldName, summaryRow.getValueString(fieldName) + " Total");
          }
 
          ///////////////////////////
@@ -621,47 +631,29 @@ public class GenerateReportAction
          for(QReportField column : view.getColumns())
          {
             Serializable serializable = getValueForColumn(variableInterpreter, column);
-            pivotRow.setValue(column.getName(), serializable);
+            summaryRow.setValue(column.getName(), serializable);
             thisRowValues.put(column.getName(), serializable);
          }
       }
 
-      /////////////////////////
-      // sort the pivot rows //
-      /////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////
+      // sort the summary rows                                                            //
+      // Note - this will NOT work correctly if there's more than 1 pivot field, as we're //
+      // not doing anything to keep related rows them together (e.g., all MO state rows)  //
+      //////////////////////////////////////////////////////////////////////////////////////
       if(CollectionUtils.nullSafeHasContents(view.getOrderByFields()))
       {
-         pivotRows.sort((o1, o2) ->
+         summaryRows.sort((o1, o2) ->
          {
-            return pivotRowComparator(view, o1, o2);
+            return summaryRowComparator(view, o1, o2);
          });
-      }
-
-      /////////////////////////////////////////////
-      // print the rows (just debugging i think) //
-      /////////////////////////////////////////////
-      for(QRecord pivotRow : pivotRows)
-      {
-         for(String pivotField : view.getPivotFields())
-         {
-            System.out.printf("%-15s", pivotRow.getValue(pivotField));
-         }
-
-         for(QReportField column : view.getColumns())
-         {
-            Serializable serializable = pivotRow.getValue(column.getName());
-            String       formatted    = valueFormatter.formatValue(column.getDisplayFormat(), serializable);
-            System.out.printf("%25s", formatted);
-         }
-
-         System.out.println();
       }
 
       ////////////////
       // totals row //
       ////////////////
       QRecord totalRow = null;
-      if(view.getTotalRow())
+      if(view.getIncludeTotalRow())
       {
          totalRow = new QRecord();
 
@@ -670,16 +662,17 @@ public class GenerateReportAction
             if(totalRow.getValues().isEmpty())
             {
                totalRow.setValue(pivotField, "Totals");
-               System.out.printf("%-15s", "Totals");
-            }
-            else
-            {
-               System.out.printf("%-15s", "");
             }
          }
 
-         variableInterpreter.addValueMap("pivot", getPivotValuesForInterpreter(totalAggregates));
-         variableInterpreter.addValueMap("variancePivot", getPivotValuesForInterpreter(varianceTotalAggregates));
+         Map<String, Serializable> totalValues = getSummaryValuesForInterpreter(totalAggregates);
+         variableInterpreter.addValueMap("pivot", totalValues);
+         variableInterpreter.addValueMap("summary", totalValues);
+
+         Map<String, Serializable> varianceTotalValues = getSummaryValuesForInterpreter(varianceTotalAggregates);
+         variableInterpreter.addValueMap("variancePivot", varianceTotalValues);
+         variableInterpreter.addValueMap("variance", varianceTotalValues);
+
          HashMap<String, Serializable> thisRowValues = new HashMap<>();
          variableInterpreter.addValueMap("thisRow", thisRowValues);
 
@@ -690,13 +683,36 @@ public class GenerateReportAction
             thisRowValues.put(column.getName(), serializable);
 
             String formatted = valueFormatter.formatValue(column.getDisplayFormat(), serializable);
-            System.out.printf("%25s", formatted);
          }
-
-         System.out.println();
       }
 
-      return (new PivotOutput(pivotRows, title, totalRow));
+      return (new SummaryOutput(summaryRows, title, totalRow));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getTitle(QReportView view, QMetaDataVariableInterpreter variableInterpreter)
+   {
+      String title = null;
+      if(view.getTitleFields() != null && StringUtils.hasContent(view.getTitleFormat()))
+      {
+         List<String> titleValues = new ArrayList<>();
+         for(String titleField : view.getTitleFields())
+         {
+            titleValues.add(variableInterpreter.interpret(titleField));
+         }
+
+         title = new QValueFormatter().formatStringWithValues(view.getTitleFormat(), titleValues);
+      }
+      else if(StringUtils.hasContent(view.getTitleFormat()))
+      {
+         title = view.getTitleFormat();
+      }
+
+      return title;
    }
 
 
@@ -725,7 +741,7 @@ public class GenerateReportAction
     **
     *******************************************************************************/
    @SuppressWarnings({ "rawtypes", "unchecked" })
-   private int pivotRowComparator(QReportView view, QRecord o1, QRecord o2)
+   private int summaryRowComparator(QReportView view, QRecord o1, QRecord o2)
    {
       if(o1 == o2)
       {
@@ -765,26 +781,28 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<String, Serializable> getPivotValuesForInterpreter(Map<String, AggregatesInterface<?>> fieldAggregates)
+   private Map<String, Serializable> getSummaryValuesForInterpreter(Map<String, AggregatesInterface<?>> fieldAggregates)
    {
-      Map<String, Serializable> pivotValuesForInterpreter = new HashMap<>();
+      Map<String, Serializable> summaryValuesForInterpreter = new HashMap<>();
       for(Map.Entry<String, AggregatesInterface<?>> subEntry : fieldAggregates.entrySet())
       {
          String                 fieldName  = subEntry.getKey();
          AggregatesInterface<?> aggregates = subEntry.getValue();
-         pivotValuesForInterpreter.put("sum." + fieldName, aggregates.getSum());
-         pivotValuesForInterpreter.put("count." + fieldName, aggregates.getCount());
-         // todo min, max, avg
+         summaryValuesForInterpreter.put("sum." + fieldName, aggregates.getSum());
+         summaryValuesForInterpreter.put("count." + fieldName, aggregates.getCount());
+         summaryValuesForInterpreter.put("min." + fieldName, aggregates.getMin());
+         summaryValuesForInterpreter.put("max." + fieldName, aggregates.getMax());
+         summaryValuesForInterpreter.put("average." + fieldName, aggregates.getAverage());
       }
-      return pivotValuesForInterpreter;
+      return summaryValuesForInterpreter;
    }
 
 
 
    /*******************************************************************************
-    ** record to serve as tuple/multi-value output of outputPivot method.
+    ** record to serve as tuple/multi-value output of computeSummaryRowsForView method.
     *******************************************************************************/
-   private record PivotOutput(List<QRecord> pivotRows, String titleRow, QRecord totalRow)
+   private record SummaryOutput(List<QRecord> summaryRows, String titleRow, QRecord totalRow)
    {
    }
 

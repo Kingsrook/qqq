@@ -36,6 +36,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
@@ -68,6 +70,9 @@ public class QInstance
    private Map<String, QReportMetaData>      reports              = new LinkedHashMap<>();
 
    private Map<String, QWidgetMetaDataInterface> widgets = new LinkedHashMap<>();
+
+   private Map<String, QQueueProviderMetaData> queueProviders = new LinkedHashMap<>();
+   private Map<String, QQueueMetaData>         queues         = new LinkedHashMap<>();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -668,6 +673,126 @@ public class QInstance
    public QWidgetMetaDataInterface getWidget(String name)
    {
       return (this.widgets.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addQueueProvider(QQueueProviderMetaData queueProvider)
+   {
+      this.addQueueProvider(queueProvider.getName(), queueProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addQueueProvider(String name, QQueueProviderMetaData queueProvider)
+   {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add an queueProvider without a name."));
+      }
+      if(this.queueProviders.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second queueProvider with name: " + name));
+      }
+      this.queueProviders.put(name, queueProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QQueueProviderMetaData getQueueProvider(String name)
+   {
+      return (this.queueProviders.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queueProviders
+    **
+    *******************************************************************************/
+   public Map<String, QQueueProviderMetaData> getQueueProviders()
+   {
+      return queueProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queueProviders
+    **
+    *******************************************************************************/
+   public void setQueueProviders(Map<String, QQueueProviderMetaData> queueProviders)
+   {
+      this.queueProviders = queueProviders;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addQueue(QQueueMetaData queue)
+   {
+      this.addQueue(queue.getName(), queue);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addQueue(String name, QQueueMetaData queue)
+   {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add an queue without a name."));
+      }
+      if(this.queues.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second queue with name: " + name));
+      }
+      this.queues.put(name, queue);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QQueueMetaData getQueue(String name)
+   {
+      return (this.queues.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queues
+    **
+    *******************************************************************************/
+   public Map<String, QQueueMetaData> getQueues()
+   {
+      return queues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queues
+    **
+    *******************************************************************************/
+   public void setQueues(Map<String, QQueueMetaData> queues)
+   {
+      this.queues = queues;
    }
 
 }

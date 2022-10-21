@@ -75,7 +75,8 @@ public class QBackendModuleDispatcher
             "com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule",
             "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule",
             "com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule",
-            "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule"
+            "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule",
+            "com.kingsrook.qqq.backend.module.api.APIBackendModule"
          };
 
       for(String moduleClassName : moduleClassNames)

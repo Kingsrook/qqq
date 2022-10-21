@@ -31,7 +31,6 @@ import java.util.Collection;
  *******************************************************************************/
 public class QuickSightChartMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
 {
-   private String             label;
    private String             accessKey;
    private String             secretKey;
    private String             dashboardId;

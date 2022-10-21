@@ -29,10 +29,28 @@ import java.io.Serializable;
  ** Bean representing an element of a query order-by clause.
  **
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable
+public class QFilterOrderBy implements Serializable, Cloneable
 {
    private String  fieldName;
    private boolean isAscending = true;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QFilterOrderBy clone()
+   {
+      try
+      {
+         return (QFilterOrderBy) super.clone();
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 
 
 

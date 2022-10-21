@@ -96,10 +96,14 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
       currentSheetLabel = label;
 
       rows.put(label, new ArrayList<>());
-      headers.put(label, new ArrayList<>());
-      for(QFieldMetaData field : fields)
+
+      if(exportInput.getIncludeHeaderRow())
       {
-         headers.get(label).add(field.getLabel());
+         headers.put(label, new ArrayList<>());
+         for(QFieldMetaData field : fields)
+         {
+            headers.get(label).add(field.getLabel());
+         }
       }
    }
 
@@ -109,15 +113,13 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int addRecords(List<QRecord> qRecords) throws QReportingException
+   public void addRecords(List<QRecord> qRecords) throws QReportingException
    {
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
-
       for(QRecord qRecord : qRecords)
       {
          addRecord(qRecord);
       }
-      return (qRecords.size());
    }
 
 

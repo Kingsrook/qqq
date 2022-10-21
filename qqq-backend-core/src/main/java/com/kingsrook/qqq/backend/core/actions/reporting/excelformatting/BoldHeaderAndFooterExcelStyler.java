@@ -28,7 +28,7 @@ import org.dhatim.fastexcel.StyleSetter;
 
 
 /*******************************************************************************
- **
+ ** Version of excel styler that does bold headers and footers, with basic borders.
  *******************************************************************************/
 public class BoldHeaderAndFooterExcelStyler implements ExcelStylerInterface
 {

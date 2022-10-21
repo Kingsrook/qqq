@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 public abstract class AbstractWidgetRenderer
 {
    public static final QValueFormatter   valueFormatter    = new QValueFormatter();
-   public static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd H:mma").withZone(ZoneId.systemDefault());
+   public static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mma").withZone(ZoneId.systemDefault());
    public static final DateTimeFormatter dateFormatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
 

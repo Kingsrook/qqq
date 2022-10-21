@@ -191,6 +191,12 @@ class FormulaInterpreterTest
 
       assertEquals("Yes", interpretFormula(vi, "IF(GT(${input.one},0),Yes,No)"));
       assertEquals("No", interpretFormula(vi, "IF(LT(${input.one},0),Yes,No)"));
+      assertEquals("Yes", interpretFormula(vi, "IF(true,Yes,No)"));
+      assertEquals("Yes", interpretFormula(vi, "IF(True,Yes,No)"));
+      assertEquals("No", interpretFormula(vi, "IF(false,Yes,No)"));
+      assertEquals("No", interpretFormula(vi, "IF(False,Yes,No)"));
+
+      assertThatThrownBy(() -> interpretFormula(vi, "IF(foo,Yes,No)")).hasRootCauseMessage("Could not evaluate string 'foo' as a boolean.");
    }
 
 }

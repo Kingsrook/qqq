@@ -59,7 +59,7 @@ public class RawHTML implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return "html";
+      return WidgetType.HTML.getType();
    }
 
 

@@ -43,7 +43,7 @@ public interface ExportStreamerInterface
    /*******************************************************************************
     ** Called as records flow into the pipe.
     ******************************************************************************/
-   int addRecords(List<QRecord> recordList) throws QReportingException;
+   void addRecords(List<QRecord> recordList) throws QReportingException;
 
    /*******************************************************************************
     ** Called once, after all rows are available.  Meant to write a footer, or close resources, for example.

@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
 
 
 /*******************************************************************************
- **
+ ** Excel styler that does nothing - just takes defaults (which are all no-op) from the interface.
  *******************************************************************************/
 public class PlainExcelStyler implements ExcelStylerInterface
 {

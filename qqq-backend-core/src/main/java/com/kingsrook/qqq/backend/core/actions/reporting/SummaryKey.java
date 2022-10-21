@@ -30,9 +30,12 @@ import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
 /*******************************************************************************
+ ** For a summary report, a list of field/value pairs that make up a "key".
  **
+ ** For example, in a report doing summaries by State > City > ZipCode, a SummaryKey
+ ** would look like:  [(state:MO),(city:St.Louis),(zipCode:63101)].
  *******************************************************************************/
-public class PivotKey implements Cloneable
+public class SummaryKey implements Cloneable
 {
    private List<Pair<String, Serializable>> keys = new ArrayList<>();
 
@@ -41,7 +44,7 @@ public class PivotKey implements Cloneable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public PivotKey()
+   public SummaryKey()
    {
    }
 
@@ -93,8 +96,8 @@ public class PivotKey implements Cloneable
       {
          return false;
       }
-      PivotKey pivotKey = (PivotKey) o;
-      return Objects.equals(keys, pivotKey.keys);
+      SummaryKey summaryKey = (SummaryKey) o;
+      return Objects.equals(keys, summaryKey.keys);
    }
 
 
@@ -114,9 +117,9 @@ public class PivotKey implements Cloneable
     **
     *******************************************************************************/
    @Override
-   public PivotKey clone()
+   public SummaryKey clone()
    {
-      PivotKey clone = new PivotKey();
+      SummaryKey clone = new SummaryKey();
 
       for(Pair<String, Serializable> key : keys)
       {

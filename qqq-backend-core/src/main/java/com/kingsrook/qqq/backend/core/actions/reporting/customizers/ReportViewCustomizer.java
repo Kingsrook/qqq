@@ -28,7 +28,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 
 
 /*******************************************************************************
- **
+ ** Interface for customizer on a QReportView.  Extends Function by adding setter
+ ** method for reportInput.
  *******************************************************************************/
 public interface ReportViewCustomizer extends Function<QReportView, QReportView>
 {

@@ -26,7 +26,8 @@ import org.dhatim.fastexcel.StyleSetter;
 
 
 /*******************************************************************************
- **
+ ** Interface for classes that know how to apply styles to an Excel stream being
+ ** built by fastexcel.
  *******************************************************************************/
 public interface ExcelStylerInterface
 {

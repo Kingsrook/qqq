@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -51,17 +52,34 @@ public class QValueFormatter
 
 
    /*******************************************************************************
-    **
+    ** For a field, and its value, apply the field's displayFormat.
     *******************************************************************************/
    public String formatValue(QFieldMetaData field, Serializable value)
    {
+      if(QFieldType.BOOLEAN.equals(field.getType()))
+      {
+         Boolean b = ValueUtils.getValueAsBoolean(value);
+         if(b == null)
+         {
+            return (null);
+         }
+         else if(b)
+         {
+            return ("Yes");
+         }
+         else
+         {
+            return ("No");
+         }
+      }
+
       return (formatValue(field.getDisplayFormat(), field.getName(), value));
    }
 
 
 
    /*******************************************************************************
-    **
+    ** For a display format string (e.g., %d), and a value, apply the displayFormat.
     *******************************************************************************/
    public String formatValue(String displayFormat, Serializable value)
    {
@@ -71,7 +89,8 @@ public class QValueFormatter
 
 
    /*******************************************************************************
-    **
+    ** For a display format string, an optional fieldName (only used for logging),
+    ** and a value, apply the format.
     *******************************************************************************/
    private String formatValue(String displayFormat, String fieldName, Serializable value)
    {
@@ -159,9 +178,6 @@ public class QValueFormatter
          return (formatRecordLabelExceptionalCases(table, record));
       }
 
-      ///////////////////////////////////////////////////////////////////////
-      // get list of values, then pass them to the string formatter method //
-      ///////////////////////////////////////////////////////////////////////
       try
       {
          return formatStringWithFields(table.getRecordLabelFormat(), table.getRecordLabelFields(), record.getDisplayValues(), record.getValues());
@@ -175,9 +191,10 @@ public class QValueFormatter
 
 
    /*******************************************************************************
-    **
+    ** For a given format string, and a list of fields, look in displayValueMap and
+    ** rawValueMap to get the values to apply to the format.
     *******************************************************************************/
-   public String formatStringWithFields(String formatString, List<String> formatFields, Map<String, String> displayValueMap, Map<String, Serializable> rawValueMap)
+   private String formatStringWithFields(String formatString, List<String> formatFields, Map<String, String> displayValueMap, Map<String, Serializable> rawValueMap)
    {
       List<Serializable> values = formatFields.stream()
          .map(fieldName ->
@@ -200,7 +217,8 @@ public class QValueFormatter
 
 
    /*******************************************************************************
-    **
+    ** For a given format string, and a list of values, apply the format.  Note, null
+    ** values in the list become "".
     *******************************************************************************/
    public String formatStringWithValues(String formatString, List<String> formatValues)
    {

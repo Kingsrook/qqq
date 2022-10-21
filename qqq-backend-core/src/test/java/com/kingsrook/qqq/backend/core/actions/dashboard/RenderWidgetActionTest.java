@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class RenderWidgetActionTest
       RenderWidgetOutput output = new RenderWidgetAction().execute(input);
       assertThat(output.getWidgetData()).isInstanceOf(ChartData.class);
       ChartData chartData = (ChartData) output.getWidgetData();
-      assertEquals("barChart", chartData.getType());
+      assertEquals(WidgetType.CHART.getType(), chartData.getType());
       assertThat(chartData.getTitle()).isNotBlank();
       assertNotNull(chartData.getChartData());
    }

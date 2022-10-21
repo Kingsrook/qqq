@@ -217,9 +217,8 @@ public class QueryManager
          {
             return (T) Long.valueOf(((Integer) object));
          }
-         else if(object instanceof Timestamp && returnClass.equals(LocalDateTime.class))
+         else if(object instanceof Timestamp timestamp && returnClass.equals(LocalDateTime.class))
          {
-            Timestamp timestamp = (Timestamp) object;
             return ((T) LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp.getTime()), ZoneId.systemDefault()));
          }
          else

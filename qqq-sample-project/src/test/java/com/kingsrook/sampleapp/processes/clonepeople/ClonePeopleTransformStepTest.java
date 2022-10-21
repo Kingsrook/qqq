@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
@@ -94,7 +95,7 @@ class ClonePeopleTransformStepTest
       input.setRecords(queryOutput.getRecords());
       clonePeopleTransformStep.run(input, output);
 
-      ArrayList<ProcessSummaryLine> processSummary = clonePeopleTransformStep.getProcessSummary(true);
+      ArrayList<ProcessSummaryLineInterface> processSummary = clonePeopleTransformStep.getProcessSummary(output, true);
 
       assertThat(processSummary)
          .usingRecursiveFieldByFieldElementComparatorOnFields("status", "count")

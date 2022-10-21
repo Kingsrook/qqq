@@ -208,9 +208,9 @@ public class ExportAction
             lastReceivedRecordsAt = System.currentTimeMillis();
             nextSleepMillis = INIT_SLEEP_MS;
 
-            List<QRecord> records         = recordPipe.consumeAvailableRecords();
-            int           recordsConsumed = reportStreamer.addRecords(records);
-            recordCount += recordsConsumed;
+            List<QRecord> records = recordPipe.consumeAvailableRecords();
+            reportStreamer.addRecords(records);
+            recordCount += records.size();
 
             LOG.info(countFromPreExecute != null
                ? String.format("Processed %,d of %,d records so far", recordCount, countFromPreExecute)
@@ -237,9 +237,9 @@ public class ExportAction
       ///////////////////////////////////////////////////
       // send the final records to the report streamer //
       ///////////////////////////////////////////////////
-      List<QRecord> records         = recordPipe.consumeAvailableRecords();
-      int           recordsConsumed = reportStreamer.addRecords(records);
-      recordCount += recordsConsumed;
+      List<QRecord> records = recordPipe.consumeAvailableRecords();
+      reportStreamer.addRecords(records);
+      recordCount += records.size();
 
       long reportEndTime = System.currentTimeMillis();
       LOG.info((countFromPreExecute != null

@@ -27,17 +27,19 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
@@ -112,7 +114,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       if("".equals(value))
       {
          QFieldType type = field.getType();
-         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME))
+         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
          {
             value = null;
          }
@@ -125,9 +127,17 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       {
          value = ValueUtils.getValueAsLocalDate(value);
       }
+      else if(field.getType().equals(QFieldType.DATE_TIME) && value instanceof String)
+      {
+         value = ValueUtils.getValueAsInstant(value);
+      }
       else if(field.getType().equals(QFieldType.DECIMAL) && value instanceof String)
       {
          value = ValueUtils.getValueAsBigDecimal(value);
+      }
+      else if(field.getType().equals(QFieldType.BOOLEAN) && value instanceof String)
+      {
+         value = ValueUtils.getValueAsBoolean(value);
       }
 
       return (value);
@@ -153,7 +163,42 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String makeWhereClause(QTableMetaData table, List<QFilterCriteria> criteria, List<Serializable> params) throws IllegalArgumentException
+   protected String makeWhereClause(QTableMetaData table, QQueryFilter filter, List<Serializable> params) throws IllegalArgumentException
+   {
+      String clause = makeWhereClause(table, filter.getCriteria(), filter.getBooleanOperator(), params);
+      if(!CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
+      {
+         ///////////////////////////////////////////////////////////////
+         // if there are no sub-clauses, then just return this clause //
+         ///////////////////////////////////////////////////////////////
+         return (clause);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // else, build a list of clauses - recursively expanding the sub-filters into clauses, then return them joined with our operator //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      List<String> clauses = new ArrayList<>();
+      if(StringUtils.hasContent(clause))
+      {
+         clauses.add("(" + clause + ")");
+      }
+      for(QQueryFilter subFilter : filter.getSubFilters())
+      {
+         String subClause = makeWhereClause(table, subFilter, params);
+         if(StringUtils.hasContent(subClause))
+         {
+            clauses.add("(" + subClause + ")");
+         }
+      }
+      return (String.join(" " + filter.getBooleanOperator().toString() + " ", clauses));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String makeWhereClause(QTableMetaData table, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
    {
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
@@ -167,121 +212,141 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          {
             case EQUALS:
             {
-               clause += " = ? ";
+               clause += " = ?";
                expectedNoOfParams = 1;
                break;
             }
             case NOT_EQUALS:
             {
-               clause += " != ? ";
+               clause += " != ?";
                expectedNoOfParams = 1;
                break;
             }
             case IN:
             {
-               clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               if(values.isEmpty())
+               {
+                  //////////////////////////////////////////////////////////////////////////////////
+                  // if there are no values, then we want a false here - so say column != column. //
+                  //////////////////////////////////////////////////////////////////////////////////
+                  clause += " != " + column;
+               }
+               else
+               {
+                  clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
+               }
                break;
             }
             case NOT_IN:
             {
-               clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ") ";
+               if(values.isEmpty())
+               {
+                  /////////////////////////////////////////////////////////////////////////////////
+                  // if there are no values, then we want a true here - so say column == column. //
+                  /////////////////////////////////////////////////////////////////////////////////
+                  clause += " = " + column;
+               }
+               else
+               {
+                  clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
+               }
                break;
             }
             case STARTS_WITH:
             {
-               clause += " LIKE ? ";
-               editFirstValue(values, (s -> s + "%"));
+               clause += " LIKE ?";
+               ActionHelper.editFirstValue(values, (s -> s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case ENDS_WITH:
             {
-               clause += " LIKE ? ";
-               editFirstValue(values, (s -> "%" + s));
+               clause += " LIKE ?";
+               ActionHelper.editFirstValue(values, (s -> "%" + s));
                expectedNoOfParams = 1;
                break;
             }
             case CONTAINS:
             {
-               clause += " LIKE ? ";
-               editFirstValue(values, (s -> "%" + s + "%"));
+               clause += " LIKE ?";
+               ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case NOT_STARTS_WITH:
             {
-               clause += " NOT LIKE ? ";
-               editFirstValue(values, (s -> s + "%"));
+               clause += " NOT LIKE ?";
+               ActionHelper.editFirstValue(values, (s -> s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case NOT_ENDS_WITH:
             {
-               clause += " NOT LIKE ? ";
-               editFirstValue(values, (s -> "%" + s));
+               clause += " NOT LIKE ?";
+               ActionHelper.editFirstValue(values, (s -> "%" + s));
                expectedNoOfParams = 1;
                break;
             }
             case NOT_CONTAINS:
             {
-               clause += " NOT LIKE ? ";
-               editFirstValue(values, (s -> "%" + s + "%"));
+               clause += " NOT LIKE ?";
+               ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
                expectedNoOfParams = 1;
                break;
             }
             case LESS_THAN:
             {
-               clause += " < ? ";
+               clause += " < ?";
                expectedNoOfParams = 1;
                break;
             }
             case LESS_THAN_OR_EQUALS:
             {
-               clause += " <= ? ";
+               clause += " <= ?";
                expectedNoOfParams = 1;
                break;
             }
             case GREATER_THAN:
             {
-               clause += " > ? ";
+               clause += " > ?";
                expectedNoOfParams = 1;
                break;
             }
             case GREATER_THAN_OR_EQUALS:
             {
-               clause += " >= ? ";
+               clause += " >= ?";
                expectedNoOfParams = 1;
                break;
             }
             case IS_BLANK:
             {
-               clause += " IS NULL ";
+               clause += " IS NULL";
                if(isString(field.getType()))
                {
-                  clause += " OR " + column + " = '' ";
+                  clause += " OR " + column + " = ''";
                }
                expectedNoOfParams = 0;
                break;
             }
             case IS_NOT_BLANK:
             {
-               clause += " IS NOT NULL ";
+               clause += " IS NOT NULL";
                if(isString(field.getType()))
                {
-                  clause += " AND " + column + " !+ '' ";
+                  clause += " AND " + column + " != ''";
                }
                expectedNoOfParams = 0;
                break;
             }
             case BETWEEN:
             {
-               clause += " BETWEEN ? AND ? ";
+               clause += " BETWEEN ? AND ?";
                expectedNoOfParams = 2;
                break;
             }
             case NOT_BETWEEN:
             {
-               clause += " NOT BETWEEN ? AND ? ";
+               clause += " NOT BETWEEN ? AND ?";
                expectedNoOfParams = 2;
                break;
             }
@@ -302,20 +367,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          params.addAll(values);
       }
 
-      return (String.join(" AND ", clauses));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void editFirstValue(List<Serializable> values, Function<String, String> editFunction)
-   {
-      if(values.size() > 0)
-      {
-         values.set(0, editFunction.apply(String.valueOf(values.get(0))));
-      }
+      return (String.join(" " + booleanOperator.toString() + " ", clauses));
    }
 
 

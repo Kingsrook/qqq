@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
@@ -239,6 +240,20 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    public BigDecimal getValueBigDecimal(String fieldName)
    {
       return (ValueUtils.getValueAsBigDecimal(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addRecord(QRecord record)
+   {
+      if(this.processState.getRecords() == null)
+      {
+         this.processState.setRecords(new ArrayList<>());
+      }
+      this.processState.getRecords().add(record);
    }
 
 }

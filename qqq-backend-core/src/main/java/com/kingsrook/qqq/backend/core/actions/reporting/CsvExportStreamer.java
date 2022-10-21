@@ -73,7 +73,7 @@ public class CsvExportStreamer implements ExportStreamerInterface
       table = exportInput.getTable();
       outputStream = this.exportInput.getReportOutputStream();
 
-      writeReportHeaderRow();
+      writeTitleAndHeader();
    }
 
 
@@ -81,7 +81,7 @@ public class CsvExportStreamer implements ExportStreamerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void writeReportHeaderRow() throws QReportingException
+   private void writeTitleAndHeader() throws QReportingException
    {
       try
       {
@@ -90,16 +90,20 @@ public class CsvExportStreamer implements ExportStreamerInterface
             outputStream.write((exportInput.getTitleRow() + "\n").getBytes(StandardCharsets.UTF_8));
          }
 
-         int col = 0;
-         for(QFieldMetaData column : fields)
+         if(exportInput.getIncludeHeaderRow())
          {
-            if(col++ > 0)
+            int col = 0;
+            for(QFieldMetaData column : fields)
             {
-               outputStream.write(',');
+               if(col++ > 0)
+               {
+                  outputStream.write(',');
+               }
+               outputStream.write(('"' + column.getLabel() + '"').getBytes(StandardCharsets.UTF_8));
             }
-            outputStream.write(('"' + column.getLabel() + '"').getBytes(StandardCharsets.UTF_8));
+            outputStream.write('\n');
          }
-         outputStream.write('\n');
+
          outputStream.flush();
       }
       catch(Exception e)
@@ -114,7 +118,7 @@ public class CsvExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int addRecords(List<QRecord> qRecords) throws QReportingException
+   public void addRecords(List<QRecord> qRecords) throws QReportingException
    {
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
 
@@ -122,7 +126,6 @@ public class CsvExportStreamer implements ExportStreamerInterface
       {
          writeRecord(qRecord);
       }
-      return (qRecords.size());
    }
 
 

@@ -43,6 +43,7 @@ public class ExportInput extends AbstractTableActionInput
    private ReportFormat reportFormat;
    private OutputStream reportOutputStream;
    private String       titleRow;
+   private boolean      includeHeaderRow = true;
 
 
 
@@ -225,4 +226,27 @@ public class ExportInput extends AbstractTableActionInput
    {
       this.titleRow = titleRow;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for includeHeaderRow
+    **
+    *******************************************************************************/
+   public boolean getIncludeHeaderRow()
+   {
+      return includeHeaderRow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for includeHeaderRow
+    **
+    *******************************************************************************/
+   public void setIncludeHeaderRow(boolean includeHeaderRow)
+   {
+      this.includeHeaderRow = includeHeaderRow;
+   }
+
 }

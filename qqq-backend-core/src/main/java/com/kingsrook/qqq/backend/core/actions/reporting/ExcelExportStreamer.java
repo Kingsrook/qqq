@@ -24,8 +24,10 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,6 +39,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.PlainExc
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -81,7 +84,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
 
 
    /*******************************************************************************
-    **
+    ** display formats is a map of field name to Excel format strings (e.g., $#,##0.00)
     *******************************************************************************/
    @Override
    public void setDisplayFormats(Map<String, String> displayFormats)
@@ -100,7 +103,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
 
 
    /*******************************************************************************
-    **
+    ** Starts a new worksheet in the current workbook.  Can be called multiple times.
     *******************************************************************************/
    @Override
    public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException
@@ -114,9 +117,18 @@ public class ExcelExportStreamer implements ExportStreamerInterface
          this.row = 0;
          this.sheetCount++;
 
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if this is the first call in here (e.g., the workbook hasn't been opened yet), then open it now //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
          if(workbook == null)
          {
-            workbook = new Workbook(outputStream, "QQQ", null);
+            String    appName  = "QQQ";
+            QInstance instance = exportInput.getInstance();
+            if(instance != null && instance.getBranding() != null && instance.getBranding().getCompanyName() != null)
+            {
+               appName = instance.getBranding().getCompanyName();
+            }
+            workbook = new Workbook(outputStream, appName, null);
          }
 
          /////////////////////////////////////////////////////////////////////////////////////
@@ -128,9 +140,9 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             worksheet.finish();
          }
 
-         worksheet = workbook.newWorksheet(Objects.requireNonNullElse(label, "Sheet " + sheetCount));
+         worksheet = workbook.newWorksheet(Objects.requireNonNullElse(label, "Sheet" + sheetCount));
 
-         writeReportHeaderRow();
+         writeTitleAndHeader();
       }
       catch(Exception e)
       {
@@ -143,7 +155,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void writeReportHeaderRow() throws QReportingException
+   private void writeTitleAndHeader() throws QReportingException
    {
       try
       {
@@ -160,25 +172,28 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             titleStyle.set();
 
             row++;
+            worksheet.flush();
          }
 
          ////////////////
          // header row //
          ////////////////
-         int col = 0;
-         for(QFieldMetaData column : fields)
+         if(exportInput.getIncludeHeaderRow())
          {
-            worksheet.value(row, col, column.getLabel());
-            col++;
+            int col = 0;
+            for(QFieldMetaData column : fields)
+            {
+               worksheet.value(row, col, column.getLabel());
+               col++;
+            }
+
+            StyleSetter headerStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
+            excelStylerInterface.styleHeaderRow(headerStyle);
+            headerStyle.set();
+
+            row++;
+            worksheet.flush();
          }
-
-         StyleSetter headerStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
-         excelStylerInterface.styleHeaderRow(headerStyle);
-         headerStyle.set();
-
-         row++;
-
-         worksheet.flush();
       }
       catch(Exception e)
       {
@@ -192,7 +207,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public int addRecords(List<QRecord> qRecords) throws QReportingException
+   public void addRecords(List<QRecord> qRecords) throws QReportingException
    {
       LOG.info("Consuming [" + qRecords.size() + "] records from the pipe");
 
@@ -208,6 +223,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
       }
       catch(Exception e)
       {
+         LOG.error("Exception generating excel file", e);
          try
          {
             workbook.finish();
@@ -218,8 +234,6 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             throw (new QReportingException("Error generating Excel report", e));
          }
       }
-
-      return (qRecords.size());
    }
 
 
@@ -235,7 +249,11 @@ public class ExcelExportStreamer implements ExportStreamerInterface
          Serializable value = qRecord.getValue(field.getName());
          if(field.getPossibleValueSourceName() != null)
          {
-            value = Objects.requireNonNullElse(qRecord.getDisplayValue(field.getName()), value);
+            String displayValue = qRecord.getDisplayValue(field.getName());
+            if(displayValue != null)
+            {
+               value = displayValue;
+            }
          }
 
          if(value != null)
@@ -279,6 +297,12 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             else if(value instanceof ZonedDateTime d)
             {
                worksheet.value(row, col, d);
+               worksheet.style(row, col).format("yyyy-MM-dd H:mm:ss").set();
+            }
+            else if(value instanceof Instant i)
+            {
+               // todo - what would be a better zone to use here?
+               worksheet.value(row, col, i.atZone(ZoneId.systemDefault()));
                worksheet.style(row, col).format("yyyy-MM-dd H:mm:ss").set();
             }
             else

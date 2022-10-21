@@ -58,9 +58,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Unit test for PollingAutomationRunner
+ ** Unit test for PollingAutomationPerTableRunner
  *******************************************************************************/
-class PollingAutomationRunnerTest
+class PollingAutomationPerTableRunnerTest
 {
 
    /*******************************************************************************
@@ -81,8 +81,7 @@ class PollingAutomationRunnerTest
    @Test
    void testInsertAndUpdate() throws QException
    {
-      QInstance               qInstance               = TestUtils.defineInstance();
-      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, null);
+      QInstance qInstance = TestUtils.defineInstance();
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // insert 2 person records, both updated by the insert action, and 1 logged by logger-on-update automation //
@@ -101,7 +100,7 @@ class PollingAutomationRunnerTest
       // assert that the update-automation won't run - as no UPDATE has happened on the table //
       // even though the insert action does update the records!!                              //
       //////////////////////////////////////////////////////////////////////////////////////////
-      pollingAutomationRunner.run();
+      runAllTableActions(qInstance);
       assertThat(TestUtils.LogPersonUpdate.updatedIds).isNullOrEmpty();
       assertAllRecordsAutomationStatus(AutomationStatus.OK);
 
@@ -114,7 +113,7 @@ class PollingAutomationRunnerTest
       /////////////////////////////////////////////////////////////////////////////////////////
       // run automations again - make sure that there haven't been any updates triggered yet //
       /////////////////////////////////////////////////////////////////////////////////////////
-      pollingAutomationRunner.run();
+      runAllTableActions(qInstance);
       assertThat(TestUtils.LogPersonUpdate.updatedIds).isNullOrEmpty();
       assertAllRecordsAutomationStatus(AutomationStatus.OK);
 
@@ -135,7 +134,7 @@ class PollingAutomationRunnerTest
       // assert that the update-automation DOES run now - and that it only runs once //
       // note that it will only run on a sub-set of the records                      //
       /////////////////////////////////////////////////////////////////////////////////
-      pollingAutomationRunner.run();
+      runAllTableActions(qInstance);
       assertThat(TestUtils.LogPersonUpdate.updatedIds)
          .contains(2)
          .hasSize(1);
@@ -145,9 +144,23 @@ class PollingAutomationRunnerTest
       // re-run and assert no further automations happen //
       /////////////////////////////////////////////////////
       TestUtils.LogPersonUpdate.updatedIds.clear();
-      pollingAutomationRunner.run();
+      runAllTableActions(qInstance);
       assertThat(TestUtils.LogPersonUpdate.updatedIds).isNullOrEmpty();
       assertAllRecordsAutomationStatus(AutomationStatus.OK);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void runAllTableActions(QInstance qInstance)
+   {
+      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      {
+         new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, null, tableAction).run();
+      }
    }
 
 
@@ -162,8 +175,7 @@ class PollingAutomationRunnerTest
    @Test
    void testMultiPages() throws QException
    {
-      QInstance               qInstance               = TestUtils.defineInstance();
-      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, null);
+      QInstance qInstance = TestUtils.defineInstance();
 
       //////////////////////////////////////////////////////////////////////////////////
       // insert many people - half who should be updated by the AgeChecker automation //
@@ -186,7 +198,7 @@ class PollingAutomationRunnerTest
       /////////////////////////
       // run the automations //
       /////////////////////////
-      pollingAutomationRunner.run();
+      runAllTableActions(qInstance);
       assertAllRecordsAutomationStatus(AutomationStatus.OK);
 
       ///////////////////////////////////////////////////////////////////////////
@@ -213,8 +225,7 @@ class PollingAutomationRunnerTest
    @Test
    void testRunningProcess() throws QException
    {
-      QInstance               qInstance               = TestUtils.defineInstance();
-      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(qInstance, TestUtils.POLLING_AUTOMATION, null);
+      QInstance qInstance = TestUtils.defineInstance();
 
       ////////////////////////////////////////////////////////////////////
       // insert 2 person records, 1 to trigger the "increaseAge" action //
@@ -228,7 +239,7 @@ class PollingAutomationRunnerTest
       ));
       new InsertAction().execute(insertInput);
 
-      pollingAutomationRunner.run();
+      runAllTableActions(qInstance);
 
       /////////////////////////////////////////////////////////////////////////////////////////////
       // make sure the process ran - which means, it would have updated Tim's birth year to 1900 //
@@ -276,19 +287,18 @@ class PollingAutomationRunnerTest
       instance.getTable(TestUtils.TABLE_NAME_SHAPE)
          .withField(new QFieldMetaData("automationStatus", QFieldType.INTEGER))
          .setAutomationDetails(new QTableAutomationDetails()
-         .withProviderName(TestUtils.POLLING_AUTOMATION)
-         .withStatusTracking(new AutomationStatusTracking().withType(AutomationStatusTrackingType.FIELD_IN_TABLE).withFieldName("automationStatus"))
-         .withAction(new TableAutomationAction()
-            .withName("shapeToPerson")
-            .withTriggerEvent(TriggerEvent.POST_INSERT)
-            .withProcessName("shapeToPersonETLProcess")
-         )
-      );
+            .withProviderName(TestUtils.POLLING_AUTOMATION)
+            .withStatusTracking(new AutomationStatusTracking().withType(AutomationStatusTrackingType.FIELD_IN_TABLE).withFieldName("automationStatus"))
+            .withAction(new TableAutomationAction()
+               .withName("shapeToPerson")
+               .withTriggerEvent(TriggerEvent.POST_INSERT)
+               .withProcessName("shapeToPersonETLProcess")
+            )
+         );
 
       TestUtils.insertDefaultShapes(instance);
 
-      PollingAutomationRunner pollingAutomationRunner = new PollingAutomationRunner(instance, TestUtils.POLLING_AUTOMATION, null);
-      pollingAutomationRunner.run();
+      runAllTableActions(instance);
 
       List<QRecord> postList = TestUtils.queryTable(instance, TestUtils.TABLE_NAME_PERSON);
       assertThat(postList)

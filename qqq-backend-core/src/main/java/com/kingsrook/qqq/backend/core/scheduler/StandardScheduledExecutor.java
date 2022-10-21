@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.automation.polling;
+package com.kingsrook.qqq.backend.core.scheduler;
 
 
 import java.util.concurrent.Executors;
@@ -33,20 +33,20 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Singleton that runs a Polling Automation Provider.  Call its 'start' method
- ** to make it go.  Likely you need to set a sessionSupplier before you start -
- ** so that threads that do work will have a valid session.
+ ** Standard class ran by ScheduleManager.  Takes a Runnable in its constructor -
+ ** that's the code that actually executes.
+ **
  *******************************************************************************/
-public class PollingAutomationExecutor
+public class StandardScheduledExecutor
 {
-   private static final Logger LOG = LogManager.getLogger(PollingAutomationExecutor.class);
-
-   private static PollingAutomationExecutor pollingAutomationExecutor = null;
+   private static final Logger LOG = LogManager.getLogger(StandardScheduledExecutor.class);
 
    private Integer initialDelayMillis = 3000;
    private Integer delayMillis        = 1000;
 
-   private Supplier<QSession> sessionSupplier;
+   protected QInstance          qInstance;
+   protected String             name;
+   protected Supplier<QSession> sessionSupplier;
 
    private RunningState             runningState = RunningState.STOPPED;
    private ScheduledExecutorService service;
@@ -54,25 +54,29 @@ public class PollingAutomationExecutor
 
 
    /*******************************************************************************
-    ** Singleton constructor
+    ** Constructor
+    **
     *******************************************************************************/
-   private PollingAutomationExecutor()
+   public StandardScheduledExecutor(Runnable runnable)
    {
-
+      this.runnable = runnable;
    }
 
 
 
    /*******************************************************************************
-    ** Singleton accessor
+    **
     *******************************************************************************/
-   public static PollingAutomationExecutor getInstance()
+   private Runnable runnable;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Runnable getRunnable()
    {
-      if(pollingAutomationExecutor == null)
-      {
-         pollingAutomationExecutor = new PollingAutomationExecutor();
-      }
-      return (pollingAutomationExecutor);
+      return (runnable);
    }
 
 
@@ -81,7 +85,7 @@ public class PollingAutomationExecutor
     **
     ** @return true iff the schedule was started
     *******************************************************************************/
-   public boolean start(QInstance instance, String providerName)
+   public boolean start()
    {
       if(!runningState.equals(RunningState.STOPPED))
       {
@@ -89,9 +93,9 @@ public class PollingAutomationExecutor
          return (false);
       }
 
-      LOG.info("Starting PollingAutomationExecutor");
+      LOG.info("Starting [" + name + "]");
       service = Executors.newSingleThreadScheduledExecutor();
-      service.scheduleWithFixedDelay(new PollingAutomationRunner(instance, providerName, sessionSupplier), initialDelayMillis, delayMillis, TimeUnit.MILLISECONDS);
+      service.scheduleWithFixedDelay(getRunnable(), initialDelayMillis, delayMillis, TimeUnit.MILLISECONDS);
       runningState = RunningState.RUNNING;
       return (true);
    }
@@ -121,7 +125,7 @@ public class PollingAutomationExecutor
          return (false);
       }
 
-      LOG.info("Stopping PollingAutomationExecutor");
+      LOG.info("Stopping [" + name + "]");
       runningState = RunningState.STOPPING;
       service.shutdown();
 
@@ -129,7 +133,7 @@ public class PollingAutomationExecutor
       {
          if(service.awaitTermination(300, TimeUnit.SECONDS))
          {
-            LOG.info("Successfully stopped PollingAutomationExecutor");
+            LOG.info("Successfully stopped [" + name + "]");
             runningState = RunningState.STOPPED;
             return (true);
          }
@@ -188,6 +192,28 @@ public class PollingAutomationExecutor
    public void setDelayMillis(Integer delayMillis)
    {
       this.delayMillis = delayMillis;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qInstance
+    **
+    *******************************************************************************/
+   public void setQInstance(QInstance qInstance)
+   {
+      this.qInstance = qInstance;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    **
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
    }
 
 

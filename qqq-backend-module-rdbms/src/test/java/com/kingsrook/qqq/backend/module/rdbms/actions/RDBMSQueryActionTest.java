@@ -23,8 +23,11 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -376,6 +379,25 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   public void testIsNotBlankQuery() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("firstName")
+            .withOperator(QCriteriaOperator.IS_NOT_BLANK)
+         ));
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("firstName") != null), "Should find expected rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testBetweenQuery() throws QException
    {
       QueryInput queryInput = initQueryRequest();
@@ -434,7 +456,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    public void testThatDisplayValuesGetSetGoingThroughQueryAction() throws QException
    {
-      QueryInput  queryInput  = initQueryRequest();
+      QueryInput queryInput = initQueryRequest();
       queryInput.setShouldGenerateDisplayValues(true);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       Assertions.assertEquals(5, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
@@ -445,6 +467,133 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          assertThat(record.getDisplayValues()).isNotEmpty();
          assertThat(record.getErrors()).isEmpty();
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLookInsideTransaction() throws QException
+   {
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(TestUtils.defineTablePerson().getName());
+
+      InsertAction        insertAction = new InsertAction();
+      QBackendTransaction transaction  = insertAction.openTransaction(insertInput);
+
+      insertInput.setTransaction(transaction);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("firstName", "George").withValue("lastName", "Washington").withValue("email", "gw@kingsrook.com")
+      ));
+
+      insertAction.execute(insertInput);
+
+      QueryInput  queryInput  = initQueryRequest();
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "Query without the transaction should not see the new row.");
+
+      queryInput = initQueryRequest();
+      queryInput.setTransaction(transaction);
+      queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(6, queryOutput.getRecords().size(), "Query with the transaction should see the new row.");
+
+      transaction.rollback();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testEmptyInList() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.IN, List.of())));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(0, queryOutput.getRecords().size(), "IN empty list should find nothing.");
+
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.NOT_IN, List.of())));
+      queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(5, queryOutput.getRecords().size(), "NOT_IN empty list should find everything.");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOr() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("Darin")))
+         .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("Tim")))
+      );
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(2, queryOutput.getRecords().size(), "OR should find 2 rows");
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Darin"));
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Tim"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNestedFilterAndOrOr() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         .withSubFilters(List.of(
+            new QQueryFilter()
+               .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+               .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("James")))
+               .withCriteria(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, List.of("Maes"))),
+            new QQueryFilter()
+               .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+               .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("Darin")))
+               .withCriteria(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, List.of("Kelkhoff")))
+         ))
+      );
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(2, queryOutput.getRecords().size(), "Complex query should find 2 rows");
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("James") && r.getValueString("lastName").equals("Maes"));
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Darin") && r.getValueString("lastName").equals("Kelkhoff"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNestedFilterOrAndAnd() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withSubFilters(List.of(
+            new QQueryFilter()
+               .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+               .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("James")))
+               .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("Tim"))),
+            new QQueryFilter()
+               .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+               .withCriteria(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, List.of("Kelkhoff")))
+               .withCriteria(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, List.of("Chamberlain")))
+         ))
+      );
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(1, queryOutput.getRecords().size(), "Complex query should find 1 row");
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Tim") && r.getValueString("lastName").equals("Chamberlain"));
    }
 
 }

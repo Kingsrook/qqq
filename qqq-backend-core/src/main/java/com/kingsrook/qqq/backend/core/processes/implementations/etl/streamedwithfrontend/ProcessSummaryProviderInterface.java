@@ -23,8 +23,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 
 import java.util.ArrayList;
-import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 
 
 /*******************************************************************************
@@ -36,7 +36,7 @@ public interface ProcessSummaryProviderInterface
    /*******************************************************************************
     ** Note - object needs to be serializable, and List isn't... so, use ArrayList?
     *******************************************************************************/
-   ArrayList<ProcessSummaryLine> getProcessSummary(boolean isForResultScreen);
+   ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen);
 
 
    /*******************************************************************************
@@ -44,20 +44,17 @@ public interface ProcessSummaryProviderInterface
     ** all lines have their proper message picked (e.g., if they have singular/plural
     ** and past/future variants).
     *******************************************************************************/
-   default ArrayList<ProcessSummaryLine> doGetProcessSummary(boolean isForResultScreen)
+   default ArrayList<ProcessSummaryLineInterface> doGetProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      ArrayList<ProcessSummaryLine> processSummary = getProcessSummary(isForResultScreen);
+      ArrayList<ProcessSummaryLineInterface> processSummary = getProcessSummary(runBackendStepOutput, isForResultScreen);
       if(processSummary == null)
       {
          return (null);
       }
 
-      for(ProcessSummaryLine processSummaryLine : processSummary)
+      for(ProcessSummaryLineInterface processSummaryLine : processSummary)
       {
-         if(!StringUtils.hasContent(processSummaryLine.getMessage()))
-         {
-            processSummaryLine.pickMessage(isForResultScreen);
-         }
+         processSummaryLine.prepareForFrontend(isForResultScreen);
       }
 
       return (processSummary);

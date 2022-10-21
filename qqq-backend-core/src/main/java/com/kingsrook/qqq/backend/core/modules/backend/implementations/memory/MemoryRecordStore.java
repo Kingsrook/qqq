@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -141,126 +142,121 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
    private boolean doesRecordMatch(QQueryFilter filter, QRecord qRecord)
    {
-      boolean recordMatches = true;
-      if(filter != null && filter.getCriteria() != null)
+      if(filter == null || !filter.hasAnyCriteria())
       {
-         for(QFilterCriteria criterion : filter.getCriteria())
-         {
-            String       fieldName = criterion.getFieldName();
-            Serializable value     = qRecord.getValue(fieldName);
+         return (true);
+      }
 
-            switch(criterion.getOperator())
+      /////////////////////////////////////////////////////////////////////////////////////
+      // for an AND query, default to a TRUE answer, and we'll &= each criteria's value. //
+      // for an OR query, default to FALSE, and |= each criteria's value.                //
+      /////////////////////////////////////////////////////////////////////////////////////
+      AtomicBoolean recordMatches = new AtomicBoolean(filter.getBooleanOperator().equals(QQueryFilter.BooleanOperator.AND) ? true : false);
+
+      ///////////////////////////////////////
+      // if there are criteria, apply them //
+      ///////////////////////////////////////
+      for(QFilterCriteria criterion : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         String       fieldName = criterion.getFieldName();
+         Serializable value     = qRecord.getValue(fieldName);
+
+         boolean criterionMatches = switch(criterion.getOperator())
             {
-               case EQUALS:
-               {
-                  recordMatches = testEquals(criterion, value);
-                  break;
-               }
-               case NOT_EQUALS:
-               {
-                  recordMatches = !testEquals(criterion, value);
-                  break;
-               }
-               case IN:
-               {
-                  recordMatches = testIn(criterion, value);
-                  break;
-               }
-               case NOT_IN:
-               {
-                  recordMatches = !testIn(criterion, value);
-                  break;
-               }
-               case IS_BLANK:
-               {
-                  recordMatches = testBlank(criterion, value);
-                  break;
-               }
-               case IS_NOT_BLANK:
-               {
-                  recordMatches = !testBlank(criterion, value);
-                  break;
-               }
-               case CONTAINS:
-               {
-                  recordMatches = testContains(criterion, fieldName, value);
-                  break;
-               }
-               case NOT_CONTAINS:
-               {
-                  recordMatches = !testContains(criterion, fieldName, value);
-                  break;
-               }
-               case STARTS_WITH:
-               {
-                  recordMatches = testStartsWith(criterion, fieldName, value);
-                  break;
-               }
-               case NOT_STARTS_WITH:
-               {
-                  recordMatches = !testStartsWith(criterion, fieldName, value);
-                  break;
-               }
-               case ENDS_WITH:
-               {
-                  recordMatches = testEndsWith(criterion, fieldName, value);
-                  break;
-               }
-               case NOT_ENDS_WITH:
-               {
-                  recordMatches = !testEndsWith(criterion, fieldName, value);
-                  break;
-               }
-               case GREATER_THAN:
-               {
-                  recordMatches = testGreaterThan(criterion, value);
-                  break;
-               }
-               case GREATER_THAN_OR_EQUALS:
-               {
-                  recordMatches = testGreaterThan(criterion, value) || testEquals(criterion, value);
-                  break;
-               }
-               case LESS_THAN:
-               {
-                  recordMatches = !testGreaterThan(criterion, value) && !testEquals(criterion, value);
-                  break;
-               }
-               case LESS_THAN_OR_EQUALS:
-               {
-                  recordMatches = !testGreaterThan(criterion, value);
-                  break;
-               }
-               case BETWEEN:
+               case EQUALS -> testEquals(criterion, value);
+               case NOT_EQUALS -> !testEquals(criterion, value);
+               case IN -> testIn(criterion, value);
+               case NOT_IN -> !testIn(criterion, value);
+               case IS_BLANK -> testBlank(criterion, value);
+               case IS_NOT_BLANK -> !testBlank(criterion, value);
+               case CONTAINS -> testContains(criterion, fieldName, value);
+               case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
+               case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
+               case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
+               case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
+               case NOT_ENDS_WITH -> !testEndsWith(criterion, fieldName, value);
+               case GREATER_THAN -> testGreaterThan(criterion, value);
+               case GREATER_THAN_OR_EQUALS -> testGreaterThan(criterion, value) || testEquals(criterion, value);
+               case LESS_THAN -> !testGreaterThan(criterion, value) && !testEquals(criterion, value);
+               case LESS_THAN_OR_EQUALS -> !testGreaterThan(criterion, value);
+               case BETWEEN ->
                {
                   QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
                   QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
                   criteria1.getValues().remove(0);
-                  recordMatches = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
-                  break;
+                  yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
                }
-               case NOT_BETWEEN:
+               case NOT_BETWEEN ->
                {
                   QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
                   QFilterCriteria criteria1 = new QFilterCriteria().withValues(criterion.getValues());
                   criteria1.getValues().remove(0);
-                  recordMatches = !(testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
-                  break;
+                  yield !(testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
                }
-               default:
-               {
-                  throw new NotImplementedException("Operator [" + criterion.getOperator() + "] is not yet implemented in the Memory backend.");
-               }
-            }
-            if(!recordMatches)
-            {
-               break;
-            }
+            };
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // add this new value to the existing recordMatches value - and if we can short circuit the remaining checks, do so. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Boolean shortCircuitValue = applyBooleanOperator(recordMatches, criterionMatches, filter.getBooleanOperator());
+         if(shortCircuitValue != null)
+         {
+            return (shortCircuitValue);
          }
       }
-      return recordMatches;
+
+      ////////////////////////////////////////
+      // apply sub-filters if there are any //
+      ////////////////////////////////////////
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(filter.getSubFilters()))
+      {
+         boolean subFilterMatches = doesRecordMatch(subFilter, qRecord);
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // add this new value to the existing recordMatches value - and if we can short circuit the remaining checks, do so. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Boolean shortCircuitValue = applyBooleanOperator(recordMatches, subFilterMatches, filter.getBooleanOperator());
+         if(shortCircuitValue != null)
+         {
+            return (shortCircuitValue);
+         }
+      }
+
+      return (recordMatches.getPlain());
+   }
+
+
+
+   /*******************************************************************************
+    ** Based on an incoming boolean value (accumulator), a new value, and a boolean
+    ** operator, update the accumulator, and if we can then short-circuit remaining
+    ** operations, return a true or false.  Returning null means to keep going.
+    *******************************************************************************/
+   private Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
+   {
+      boolean accumulatorValue = accumulator.getPlain();
+      if(booleanOperator.equals(QQueryFilter.BooleanOperator.AND))
+      {
+         accumulatorValue &= newValue;
+         if(!accumulatorValue)
+         {
+            return (false);
+         }
+      }
+      else
+      {
+         accumulatorValue |= newValue;
+         if(accumulatorValue)
+         {
+            return (true);
+         }
+      }
+
+      accumulator.set(accumulatorValue);
+      return (null);
    }
 
 
@@ -368,7 +364,17 @@ public class MemoryRecordStore
          return (false);
       }
 
-      if(!value.equals(criterion.getValues().get(0)))
+      Serializable criteriaValue = criterion.getValues().get(0);
+      if(value instanceof String && criteriaValue instanceof Number)
+      {
+         criteriaValue = String.valueOf(criteriaValue);
+      }
+      else if(criteriaValue instanceof String && value instanceof Number)
+      {
+         value = String.valueOf(value);
+      }
+
+      if(!value.equals(criteriaValue))
       {
          return (false);
       }

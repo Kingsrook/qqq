@@ -72,6 +72,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          transaction = loadStep.openTransaction(runBackendStepInput);
          loadStep.setTransaction(transaction);
+         transformStep.setTransaction(transaction);
 
          List<QRecord> loadedRecordList = new ArrayList<>();
          int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
@@ -90,7 +91,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          ////////////////////////////////////////////////////////////////////////////////////////////////////
          // get the process summary from the ... transform step?  the load step?  each knows some... todo? //
          ////////////////////////////////////////////////////////////////////////////////////////////////////
-         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(true));
+         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
 
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);

@@ -36,17 +36,21 @@ import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
- **
+ ** Helper for Generating reports - to interpret formulas in report columns,
+ ** that are in "excel-style", ala: =MINUS(47,42) or
+ ** =IF(LT(ADD(${input.x},${input.y}),10,Yes,No)
  *******************************************************************************/
 public class FormulaInterpreter
 {
+
    /*******************************************************************************
-    **
+    ** public method to interpret a formula.  Takes a variableInterpreter, optionally
+    ** full of maps of variables, and the formula string, assumed to have its leading
+    ** '=' char already trimmed away.
     *******************************************************************************/
    public static Serializable interpretFormula(QMetaDataVariableInterpreter variableInterpreter, String formula) throws QFormulaException
    {
@@ -75,12 +79,14 @@ public class FormulaInterpreter
 
 
    /*******************************************************************************
-    **
+    ** Recursive method that does the work of interpreting a formula.
+    ** Uses AtomicInteger `i` to track index through the string into and out of
+    ** recursive calls.
     *******************************************************************************/
-   public static List<Serializable> interpretFormula(QMetaDataVariableInterpreter variableInterpreter, String formula, AtomicInteger i) throws QFormulaException
+   static List<Serializable> interpretFormula(QMetaDataVariableInterpreter variableInterpreter, String formula, AtomicInteger i) throws QFormulaException
    {
-      StringBuilder      functionName = new StringBuilder();
-      List<Serializable> result       = new ArrayList<>();
+      StringBuilder      token  = new StringBuilder();
+      List<Serializable> result = new ArrayList<>();
 
       char previousChar = 0;
       while(i.get() < formula.length())
@@ -92,22 +98,24 @@ public class FormulaInterpreter
          char c = formula.charAt(i.getAndIncrement());
          if(c == '(' && i.get() < formula.length() - 1)
          {
-            //////////////////////////////////////////////////////////////////////////////////////////////////
-            // open paren means:  go into a sub-parse - to get a list of arguments for the current function //
-            //////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // open paren means:  go into a sub-parse.  Get back a list of arguments, and use those //
+            // as arguments for the current token, which must be a function name then.              //
+            //////////////////////////////////////////////////////////////////////////////////////////
             List<Serializable> args     = interpretFormula(variableInterpreter, formula, i);
-            Serializable       evaluate = evaluate(functionName.toString(), args, variableInterpreter);
+            Serializable       evaluate = evaluate(token.toString(), args, variableInterpreter);
             result.add(evaluate);
          }
          else if(c == ')')
          {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // close paren means:  end this sub-parse.  evaluate the current function, add it to the result list, and return the result list. //
-            // unless we just closed a paren.                                                                                                 //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////
+            // close paren means:  end this sub-parse.  evaluate the current token, //
+            // add it to the result list, and return the result list.               //
+            // unless we just closed a paren - then we can just return.            //
+            //////////////////////////////////////////////////////////////////////////
             if(previousChar != ')')
             {
-               Serializable evaluate = evaluate(functionName.toString(), Collections.emptyList(), variableInterpreter);
+               Serializable evaluate = evaluate(token.toString(), Collections.emptyList(), variableInterpreter);
                result.add(evaluate);
             }
             return (result);
@@ -115,22 +123,22 @@ public class FormulaInterpreter
          else if(c == ',')
          {
             /////////////////////////////////////////////////////////////////////////
-            // comma means:  evaluate the current thing; add it to the result list //
-            // unless we just closed a paren.                                      //
+            // comma means:  evaluate the current token; add it to the result list //
+            // unless we just closed a paren - then we can just return.            //
             /////////////////////////////////////////////////////////////////////////
             if(previousChar != ')')
             {
-               Serializable evaluate = evaluate(functionName.toString(), Collections.emptyList(), variableInterpreter);
+               Serializable evaluate = evaluate(token.toString(), Collections.emptyList(), variableInterpreter);
                result.add(evaluate);
             }
-            functionName = new StringBuilder();
+            token = new StringBuilder();
          }
          else
          {
-            ////////////////////////////////////////////////
-            // else, we add this char to the current name //
-            ////////////////////////////////////////////////
-            functionName.append(c);
+            /////////////////////////////////////////////////
+            // else, we add this char to the current token //
+            /////////////////////////////////////////////////
+            token.append(c);
          }
       }
 
@@ -139,9 +147,9 @@ public class FormulaInterpreter
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(result.isEmpty())
       {
-         if(!functionName.isEmpty())
+         if(!token.isEmpty())
          {
-            Serializable evaluate = evaluate(functionName.toString(), Collections.emptyList(), variableInterpreter);
+            Serializable evaluate = evaluate(token.toString(), Collections.emptyList(), variableInterpreter);
             result.add(evaluate);
          }
       }
@@ -152,12 +160,12 @@ public class FormulaInterpreter
 
 
    /*******************************************************************************
-    **
+    ** Evaluate a token - maybe a literal, or variable, or function name -
+    ** with arguments if it's a function, and in the context of the variableInterpreter.
     *******************************************************************************/
-   private static Serializable evaluate(String functionName, List<Serializable> args, QMetaDataVariableInterpreter variableInterpreter) throws QFormulaException
+   private static Serializable evaluate(String token, List<Serializable> args, QMetaDataVariableInterpreter variableInterpreter) throws QFormulaException
    {
-      // System.out.format("== Evaluating [%s](%s) ==\n", functionName, args);
-      switch(functionName)
+      switch(token)
       {
          case "ADD":
          {
@@ -209,7 +217,13 @@ public class FormulaInterpreter
          }
          case "IF":
          {
-            // IF(CONDITION,TRUE,ELSE)
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // IF(CONDITION,TRUE,ELSE)                                                           //
+            // behavior in a spreadsheet appears to be:                                          //
+            // booleans are evaluated naturally.                                                 //
+            // strings - if they look like 'true' or 'false, they are evaluated, else they error //
+            // numbers - 0 is false, all else are true.                                          //
+            ///////////////////////////////////////////////////////////////////////////////////////
             List<Serializable> actualArgs = getArgumentList(args, 3, variableInterpreter);
             Serializable       condition  = actualArgs.get(0);
             boolean            conditionBoolean;
@@ -237,7 +251,7 @@ public class FormulaInterpreter
                }
                else
                {
-                  conditionBoolean = StringUtils.hasContent(s);
+                  throw (new QFormulaException("Could not evaluate string '" + s + "' as a boolean."));
                }
             }
             else
@@ -276,7 +290,7 @@ public class FormulaInterpreter
             {
                try
                {
-                  return (ValueUtils.getValueAsBigDecimal(functionName));
+                  return (ValueUtils.getValueAsBigDecimal(token));
                }
                catch(Exception e)
                {
@@ -285,7 +299,7 @@ public class FormulaInterpreter
 
                try
                {
-                  return (variableInterpreter.interpret(functionName));
+                  return (variableInterpreter.interpret(token));
                }
                catch(Exception e)
                {
@@ -295,13 +309,13 @@ public class FormulaInterpreter
          }
       }
 
-      throw (new QFormulaException("Unable to evaluate unrecognized expression: " + functionName + ""));
+      throw (new QFormulaException("Unable to evaluate unrecognized expression: " + token + ""));
    }
 
 
 
    /*******************************************************************************
-    **
+    ** if any number in the list is null, get back null - else, return the result of the supplier.
     *******************************************************************************/
    private static Serializable nullIfAnyNullArgsElseBigDecimal(List<BigDecimal> numbers, Supplier<BigDecimal> supplier)
    {
@@ -315,7 +329,7 @@ public class FormulaInterpreter
 
 
    /*******************************************************************************
-    **
+    ** if any number in the list is null, get back null - else, return the result of the supplier.
     *******************************************************************************/
    private static Serializable nullIfAnyNullArgsElseBoolean(List<BigDecimal> numbers, Supplier<Boolean> supplier)
    {
@@ -329,7 +343,9 @@ public class FormulaInterpreter
 
 
    /*******************************************************************************
-    **
+    ** given a list of arguments, get back a specific number of arguments, all of which we
+    ** validate to be numbers (e.g., possibly interpreted variables) - else we throw.
+    ** also throw if not the right number is present.
     *******************************************************************************/
    private static List<BigDecimal> getNumberArgumentList(List<Serializable> originalArgs, Integer howMany, QMetaDataVariableInterpreter variableInterpreter) throws QFormulaException
    {
@@ -360,7 +376,8 @@ public class FormulaInterpreter
 
 
    /*******************************************************************************
-    **
+    ** given a list of arguments, get back a specific number of arguments, all of which we
+    ** get interpreted.  throw if not the right number of args is present.
     *******************************************************************************/
    private static List<Serializable> getArgumentList(List<Serializable> originalArgs, Integer howMany, QMetaDataVariableInterpreter variableInterpreter) throws QFormulaException
    {
@@ -375,15 +392,8 @@ public class FormulaInterpreter
       List<Serializable> rs = new ArrayList<>();
       for(Serializable originalArg : originalArgs)
       {
-         try
-         {
-            Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg), null);
-            rs.add(interpretedArg);
-         }
-         catch(QValueException e)
-         {
-            throw (new QFormulaException("Could not process [" + originalArg + "] as a number"));
-         }
+         Serializable interpretedArg = variableInterpreter.interpretForObject(ValueUtils.getValueAsString(originalArg), null);
+         rs.add(interpretedArg);
       }
       return (rs);
    }

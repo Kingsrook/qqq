@@ -33,7 +33,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,9 +61,9 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
 
          QQueryFilter       filter = countInput.getFilter();
          List<Serializable> params = new ArrayList<>();
-         if(filter != null && CollectionUtils.nullSafeHasContents(filter.getCriteria()))
+         if(filter != null && filter.hasAnyCriteria())
          {
-            sql += " WHERE " + makeWhereClause(table, filter.getCriteria(), params);
+            sql += " WHERE " + makeWhereClause(table, filter, params);
          }
 
          // todo sql customization - can edit sql and/or param list

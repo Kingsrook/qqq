@@ -27,7 +27,8 @@ import java.math.BigDecimal;
 
 
 /*******************************************************************************
- **
+ ** Classes that support doing data aggregations (e.g., count, sum, min, max, average).
+ ** Sub-classes should supply the type parameter.
  *******************************************************************************/
 public interface AggregatesInterface<T extends Serializable>
 {
