@@ -63,10 +63,9 @@ public class APIQueryAction extends AbstractAPIAction implements QueryInterface
          HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
          HttpClient        client            = httpClientBuilder.build();
 
-         String  url     = apiActionUtil.buildTableUrl(table) + paramString;
-         HttpGet request = new HttpGet(url);
-
+         String url = apiActionUtil.buildTableUrl(table) + paramString;
          LOG.info("API URL: " + url);
+         HttpGet request = new HttpGet(url);
 
          apiActionUtil.setupAuthorizationInRequest(request);
          apiActionUtil.setupContentTypeInRequest(request);

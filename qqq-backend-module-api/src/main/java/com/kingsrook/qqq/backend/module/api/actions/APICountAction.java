@@ -61,8 +61,9 @@ public class APICountAction extends AbstractAPIAction implements CountInterface
          HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
          HttpClient        client            = httpClientBuilder.build();
 
-         String  url     = apiActionUtil.buildTableUrl(table);
-         HttpGet request = new HttpGet(url + paramString);
+         String url = apiActionUtil.buildTableUrl(table) + paramString;
+         LOG.info("API URL: " + url);
+         HttpGet request = new HttpGet(url);
 
          apiActionUtil.setupAuthorizationInRequest(request);
          apiActionUtil.setupContentTypeInRequest(request);

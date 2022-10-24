@@ -89,6 +89,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.Mem
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.general.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,9 +117,11 @@ public class TestUtils
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_INCREASE_BIRTHDATE       = "increaseBirthdate";
    public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
+   public static final String PROCESS_NAME_BASEPULL                 = "basepullTest";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_PERSON_MEMORY              = "personMemory";
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
+   public static final String TABLE_NAME_BASEPULL                   = "basepullTest";
 
    public static final String POSSIBLE_VALUE_SOURCE_STATE             = "state"; // enum-type
    public static final String POSSIBLE_VALUE_SOURCE_SHAPE             = "shape"; // table-type
@@ -127,6 +130,9 @@ public class TestUtils
 
    public static final String POLLING_AUTOMATION     = "polling";
    public static final String DEFAULT_QUEUE_PROVIDER = "defaultQueueProvider";
+
+   public static final String BASEPULL_KEY_FIELD_NAME           = "processName";
+   public static final String BASEPULL_LAST_RUN_TIME_FIELD_NAME = "lastRunTime";
 
 
 
@@ -146,6 +152,7 @@ public class TestUtils
       qInstance.addTable(definePersonMemoryTable());
       qInstance.addTable(defineTableIdAndNameOnly());
       qInstance.addTable(defineTableShape());
+      qInstance.addTable(defineTableBasepull());
 
       qInstance.addPossibleValueSource(defineAutomationStatusPossibleValueSource());
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
@@ -158,6 +165,7 @@ public class TestUtils
       qInstance.addProcess(new BasicETLProcess().defineProcessMetaData());
       qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
       qInstance.addProcess(defineProcessIncreasePersonBirthdate());
+      qInstance.addProcess(defineProcessBasepull());
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
 
@@ -487,6 +495,26 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define a basepullTable
+    *******************************************************************************/
+   public static QTableMetaData defineTableBasepull()
+   {
+      return (new QTableMetaData()
+         .withName(TABLE_NAME_BASEPULL)
+         .withLabel("Basepull Test")
+         .withPrimaryKeyField("id")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withFields(TestUtils.defineTablePerson().getFields()))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
+         .withField(new QFieldMetaData(BASEPULL_KEY_FIELD_NAME, QFieldType.STRING).withBackendName("process_name").withIsRequired(true))
+         .withField(new QFieldMetaData(BASEPULL_LAST_RUN_TIME_FIELD_NAME, QFieldType.DATE_TIME).withBackendName("last_run_time").withIsRequired(true));
+   }
+
+
+
+   /*******************************************************************************
     ** Define a 3nd version of the 'person' table, backed by the in-memory backend
     *******************************************************************************/
    public static QTableMetaData definePersonMemoryTable()
@@ -728,6 +756,43 @@ public class TestUtils
                   .withTableName(TABLE_NAME_PERSON)
                   .withField(new QFieldMetaData("newAge", QFieldType.INTEGER)))));
 
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a sample basepull process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessBasepull()
+   {
+      return new QProcessMetaData()
+         .withBasepullConfiguration(new BasepullConfiguration()
+            .withKeyField(BASEPULL_KEY_FIELD_NAME)
+            .withLastRunTimeFieldName(BASEPULL_LAST_RUN_TIME_FIELD_NAME)
+            .withHoursBackForInitialTimestamp(24)
+            .withKeyValue(PROCESS_NAME_BASEPULL)
+            .withTableName(defineTableBasepull().getName()))
+         .withName(PROCESS_NAME_BASEPULL)
+         .withTableName(TABLE_NAME_PERSON)
+         .addStep(new QBackendStepMetaData()
+            .withName("prepare")
+            .withCode(new QCodeReference()
+               .withName(MockBackendStep.class.getName())
+               .withCodeType(QCodeType.JAVA)
+               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+            .withInputData(new QFunctionInputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
+               .withFieldList(List.of(
+                  new QFieldMetaData("greetingPrefix", QFieldType.STRING),
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+               )))
+            .withOutputMetaData(new QFunctionOutputMetaData()
+               .withRecordListMetaData(new QRecordListMetaData()
+                  .withTableName(TABLE_NAME_PERSON)
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+               )
+               .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
+         );
    }
 
 

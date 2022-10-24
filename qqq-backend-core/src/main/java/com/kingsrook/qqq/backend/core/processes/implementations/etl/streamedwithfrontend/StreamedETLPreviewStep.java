@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +64,12 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       {
          runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
          moveReviewStepAfterValidateStep(runBackendStepOutput);
+         return;
+      }
+
+      if(runBackendStepInput.getFrontendStepBehavior() != null && runBackendStepInput.getFrontendStepBehavior().equals(RunProcessInput.FrontendStepBehavior.SKIP))
+      {
+         LOG.info("Skipping preview because frontent behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
          return;
       }
 
@@ -140,7 +147,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -154,7 +160,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       ///////////////////////////////////////////////////////////////////////
       // make streamed input & output objects from the run input & outputs //
       ///////////////////////////////////////////////////////////////////////
-      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
       StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
       /////////////////////////////////////////////////////

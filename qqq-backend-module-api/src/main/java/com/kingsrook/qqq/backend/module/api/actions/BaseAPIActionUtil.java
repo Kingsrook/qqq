@@ -281,7 +281,7 @@ public class BaseAPIActionUtil
       String     resultString = EntityUtils.toString(entity);
 
       List<QRecord> recordList = new ArrayList<>();
-      if(StringUtils.hasContent(resultString))
+      if(StringUtils.hasContent(resultString) && !resultString.equals("null"))
       {
          JSONArray  resultList = null;
          JSONObject jsonObject = null;
