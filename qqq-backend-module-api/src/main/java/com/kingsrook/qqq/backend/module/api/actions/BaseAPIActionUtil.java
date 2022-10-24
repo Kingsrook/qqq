@@ -458,4 +458,16 @@ public class BaseAPIActionUtil
    {
       return (jsonObjectToRecord(getJsonObject(response), table.getFields()));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Integer processGetResponseForCount(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      List<QRecord> queryResults = processGetResponse(table, response);
+      return (queryResults.size());
+   }
+
 }

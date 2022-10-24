@@ -266,6 +266,12 @@ public class JsonUtils
             }
          }
 
+         if(jsonObjectToUse.isNull(backendName))
+         {
+            record.setValue(fieldName, null);
+            continue;
+         }
+
          switch(metaData.getType())
          {
             case INTEGER -> record.setValue(fieldName, jsonObjectToUse.optInt(backendName));
