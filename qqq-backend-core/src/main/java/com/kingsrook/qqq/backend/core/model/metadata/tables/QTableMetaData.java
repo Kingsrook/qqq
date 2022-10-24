@@ -802,4 +802,24 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluently add a section and fields in that section.
+    *******************************************************************************/
+   public QTableMetaData withSectionOfFields(QFieldSection fieldSection, QFieldMetaData... fields)
+   {
+      withSection(fieldSection);
+
+      List<String> fieldNames = new ArrayList<>();
+      for(QFieldMetaData field : fields)
+      {
+         withField(field);
+         fieldNames.add(field.getName());
+      }
+
+      fieldSection.setFieldNames(fieldNames);
+
+      return (this);
+   }
 }
