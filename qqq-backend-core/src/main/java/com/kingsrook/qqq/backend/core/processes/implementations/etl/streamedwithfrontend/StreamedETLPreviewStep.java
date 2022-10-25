@@ -106,6 +106,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       RecordPipe recordPipe = new RecordPipe();
       extractStep.setLimit(limit);
       extractStep.setRecordPipe(recordPipe);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);

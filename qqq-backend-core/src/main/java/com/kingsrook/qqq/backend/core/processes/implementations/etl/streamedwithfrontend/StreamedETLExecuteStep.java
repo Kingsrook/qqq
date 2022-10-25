@@ -63,6 +63,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          RecordPipe          recordPipe  = new RecordPipe();
          AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
          extractStep.setRecordPipe(recordPipe);
+         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
          AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);

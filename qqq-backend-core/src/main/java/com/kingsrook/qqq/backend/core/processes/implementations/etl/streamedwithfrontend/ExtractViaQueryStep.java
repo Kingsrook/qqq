@@ -54,6 +54,20 @@ public class ExtractViaQueryStep extends AbstractExtractStep
 {
    public static final String FIELD_SOURCE_TABLE = "sourceTable";
 
+   private QQueryFilter queryFilter;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      super.preRun(runBackendStepInput, runBackendStepOutput);
+      queryFilter = getQueryFilter(runBackendStepInput);
+   }
+
 
 
    /*******************************************************************************
@@ -66,7 +80,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
       queryInput.setSession(runBackendStepInput.getSession());
       queryInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
-      queryInput.setFilter(getQueryFilter(runBackendStepInput));
+      queryInput.setFilter(queryFilter);
       queryInput.setRecordPipe(getRecordPipe());
       queryInput.setLimit(getLimit());
       queryInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
@@ -88,7 +102,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       CountInput countInput = new CountInput(runBackendStepInput.getInstance());
       countInput.setSession(runBackendStepInput.getSession());
       countInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
-      countInput.setFilter(getQueryFilter(runBackendStepInput));
+      countInput.setFilter(queryFilter);
       CountOutput countOutput = new CountAction().execute(countInput);
       return (countOutput.getCount());
    }
