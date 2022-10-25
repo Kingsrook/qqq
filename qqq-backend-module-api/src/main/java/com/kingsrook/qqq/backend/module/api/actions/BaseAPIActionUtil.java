@@ -263,7 +263,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected QRecord jsonObjectToRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields) throws IOException
    {
-      QRecord record = JsonUtils.parseQRecord(jsonObject, fields);
+      QRecord record = JsonUtils.parseQRecordLenient(jsonObject, fields);
       return (record);
    }
 
@@ -276,6 +276,11 @@ public class BaseAPIActionUtil
    {
       int statusCode = response.getStatusLine().getStatusCode();
       System.out.println(statusCode);
+
+      if(statusCode >= 400)
+      {
+         handleGetResponseError(table, response);
+      }
 
       HttpEntity entity       = response.getEntity();
       String     resultString = EntityUtils.toString(entity);
@@ -314,6 +319,18 @@ public class BaseAPIActionUtil
       }
 
       return (recordList);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void handleGetResponseError(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      HttpEntity entity       = response.getEntity();
+      String     resultString = EntityUtils.toString(entity);
+      throw new IOException("Error performing query: " + resultString);
    }
 
 

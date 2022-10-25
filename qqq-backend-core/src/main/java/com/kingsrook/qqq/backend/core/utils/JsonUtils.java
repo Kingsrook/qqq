@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -230,63 +231,110 @@ public class JsonUtils
     ** Convert a json object into a QRecord
     **
     *******************************************************************************/
-   public static QRecord parseQRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields)
+   public static QRecord parseQRecordStrict(JSONObject jsonObject, Map<String, QFieldMetaData> fields)
+   {
+      return (parseQRecord(jsonObject, fields, true));
+   }
+
+
+
+   /*******************************************************************************
+    ** Convert a json object into a QRecord
+    **
+    *******************************************************************************/
+   public static QRecord parseQRecordLenient(JSONObject jsonObject, Map<String, QFieldMetaData> fields)
+   {
+      return (parseQRecord(jsonObject, fields, false));
+   }
+
+
+
+   /*******************************************************************************
+    ** Convert a json object into a QRecord
+    **
+    *******************************************************************************/
+   private static QRecord parseQRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields, boolean strict)
    {
       QRecord record = new QRecord();
 
       FIELDS_LOOP:
       for(String fieldName : fields.keySet())
       {
-         QFieldMetaData metaData    = fields.get(fieldName);
-         String         backendName = metaData.getBackendName() != null ? metaData.getBackendName() : fieldName;
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         // if the field backend name has dots in it, interpret that to mean traversal down sub-objects //
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         JSONObject jsonObjectToUse = jsonObject;
-         if(backendName.contains("."))
+         String originalBackendName = null;
+         try
          {
-            ArrayList<String> levels = new ArrayList<>(List.of(backendName.split("\\.")));
-            backendName = levels.remove(levels.size() - 1);
+            QFieldMetaData metaData    = fields.get(fieldName);
+            String         backendName = metaData.getBackendName() != null ? metaData.getBackendName() : fieldName;
+            originalBackendName = backendName;
 
-            for(String level : levels)
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the field backend name has dots in it, interpret that to mean traversal down sub-objects //
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            JSONObject jsonObjectToUse = jsonObject;
+            if(backendName.contains("."))
             {
-               try
+               ArrayList<String> levels = new ArrayList<>(List.of(backendName.split("\\.")));
+               backendName = levels.remove(levels.size() - 1);
+
+               for(String level : levels)
                {
-                  jsonObjectToUse = jsonObjectToUse.optJSONObject(level);
-                  if(jsonObjectToUse == null)
+                  try
+                  {
+                     jsonObjectToUse = jsonObjectToUse.optJSONObject(level);
+                     if(jsonObjectToUse == null)
+                     {
+                        continue FIELDS_LOOP;
+                     }
+                  }
+                  catch(Exception e)
                   {
                      continue FIELDS_LOOP;
                   }
                }
-               catch(Exception e)
-               {
-                  continue FIELDS_LOOP;
-               }
             }
-         }
 
-         if(jsonObjectToUse.isNull(backendName))
-         {
-            record.setValue(fieldName, null);
-            continue;
-         }
-
-         switch(metaData.getType())
-         {
-            case INTEGER -> record.setValue(fieldName, jsonObjectToUse.optInt(backendName));
-            case DECIMAL -> record.setValue(fieldName, jsonObjectToUse.optBigDecimal(backendName, null));
-            case BOOLEAN -> record.setValue(fieldName, jsonObjectToUse.optBoolean(backendName));
-            case DATE_TIME ->
+            if(jsonObjectToUse.isNull(backendName))
             {
-               String dateTimeString = jsonObjectToUse.optString(backendName);
-               if(StringUtils.hasContent(dateTimeString))
-               {
-                  Instant instant = ValueUtils.getValueAsInstant(dateTimeString);
-                  record.setValue(fieldName, instant);
-               }
+               record.setValue(fieldName, null);
+               continue;
             }
-            default -> record.setValue(fieldName, jsonObjectToUse.optString(backendName));
+
+            switch(metaData.getType())
+            {
+               case INTEGER -> record.setValue(fieldName, jsonObjectToUse.optInt(backendName));
+               case DECIMAL -> record.setValue(fieldName, jsonObjectToUse.optBigDecimal(backendName, null));
+               case BOOLEAN -> record.setValue(fieldName, jsonObjectToUse.optBoolean(backendName));
+               case DATE_TIME ->
+               {
+                  String dateTimeString = jsonObjectToUse.optString(backendName);
+                  if(StringUtils.hasContent(dateTimeString))
+                  {
+                     Instant instant = ValueUtils.getValueAsInstant(dateTimeString);
+                     record.setValue(fieldName, instant);
+                  }
+               }
+               case DATE ->
+               {
+                  String dateString = jsonObjectToUse.optString(backendName);
+                  if(StringUtils.hasContent(dateString))
+                  {
+                     LocalDate localDate = ValueUtils.getValueAsLocalDate(dateString);
+                     record.setValue(fieldName, localDate);
+                  }
+               }
+               default -> record.setValue(fieldName, jsonObjectToUse.optString(backendName));
+            }
+         }
+         catch(Exception e)
+         {
+            if(strict)
+            {
+               throw e;
+            }
+            else
+            {
+               LOG.debug("Caught exception parsing field [" + fieldName + "] as [" + originalBackendName + "]", e);
+            }
          }
       }
 

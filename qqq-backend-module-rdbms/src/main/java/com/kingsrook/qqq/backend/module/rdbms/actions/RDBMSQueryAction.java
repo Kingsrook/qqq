@@ -72,7 +72,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             .map(this::getColumnName)
             .collect(Collectors.joining(", "));
 
-         String sql = "SELECT " + columns + " FROM " + tableName;
+         String sql = "SELECT " + columns + " FROM " + escapeIdentifier(tableName);
 
          QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
