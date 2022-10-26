@@ -374,7 +374,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   private JSONObject getJsonObject(HttpResponse response) throws IOException
+   protected JSONObject getJsonObject(HttpResponse response) throws IOException
    {
       int statusCode = response.getStatusLine().getStatusCode();
       LOG.debug(statusCode);
