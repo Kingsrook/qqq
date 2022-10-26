@@ -420,6 +420,17 @@ public class RunBackendStepInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Instant getValueInstant(String fieldName)
+   {
+      return (ValueUtils.getValueAsInstant(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
     ** Accessor for processState - protected, because we generally want to access
     ** its members through wrapper methods, we think
     **

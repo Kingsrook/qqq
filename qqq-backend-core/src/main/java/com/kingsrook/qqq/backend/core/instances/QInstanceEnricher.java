@@ -316,6 +316,24 @@ public class QInstanceEnricher
       {
          generateAppSections(app);
       }
+
+      for(QAppSection section : CollectionUtils.nonNullList(app.getSections()))
+      {
+         enrichAppSection(section);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichAppSection(QAppSection section)
+   {
+      if(!StringUtils.hasContent(section.getLabel()))
+      {
+         section.setLabel(nameToLabel(section.getName()));
+      }
    }
 
 

@@ -151,4 +151,14 @@ public class QFilterOrderBy implements Serializable, Cloneable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return (fieldName + " " + (isAscending ? "ASC" : "DESC"));
+   }
 }

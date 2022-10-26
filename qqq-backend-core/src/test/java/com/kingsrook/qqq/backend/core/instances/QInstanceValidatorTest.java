@@ -680,10 +680,13 @@ class QInstanceValidatorTest
    @Test
    void testAppSectionsMissingLabel()
    {
+      ///////////////////////////////////////////////////////////////////////////////////
+      // the enricher makes a label from the name, so, we'll just make them both null. //
+      ///////////////////////////////////////////////////////////////////////////////////
       QAppMetaData app = new QAppMetaData().withName("test")
          .withChild(new QTableMetaData().withName("test"))
-         .withSection(new QAppSection("Section 1", null, new QIcon("person"), List.of("test"), null, null));
-      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "Missing a label");
+         .withSection(new QAppSection(null, null, new QIcon("person"), List.of("test"), null, null));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "Missing a label", "Missing a name");
    }
 
 

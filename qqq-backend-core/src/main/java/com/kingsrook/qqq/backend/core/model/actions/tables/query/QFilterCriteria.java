@@ -25,6 +25,9 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -33,6 +36,8 @@ import java.util.List;
  *******************************************************************************/
 public class QFilterCriteria implements Serializable, Cloneable
 {
+   private static final Logger LOG = LogManager.getLogger(QFilterCriteria.class);
+
    private String             fieldName;
    private QCriteriaOperator  operator;
    private List<Serializable> values;
@@ -182,5 +187,47 @@ public class QFilterCriteria implements Serializable, Cloneable
    {
       this.values = values;
       return this;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      StringBuilder rs = new StringBuilder(fieldName);
+      try
+      {
+         rs.append(" ").append(operator).append(" ");
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            if(values.size() == 1)
+            {
+               rs.append(values.get(0));
+            }
+            else
+            {
+               int index = 0;
+               for(Serializable value : values)
+               {
+                  if(index++ > 9)
+                  {
+                     rs.append("and ").append(values.size() - index).append(" more");
+                     break;
+                  }
+                  rs.append(value).append(",");
+               }
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in toString", e);
+         rs.append("Error generating toString...");
+      }
+
+      return (rs.toString());
    }
 }

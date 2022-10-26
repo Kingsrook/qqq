@@ -22,13 +22,11 @@
 package com.kingsrook.qqq.backend.module.api.actions;
 
 
-import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -55,33 +53,83 @@ public class APIQueryAction extends AbstractAPIAction implements QueryInterface
       QTableMetaData table = queryInput.getTable();
       preAction(queryInput);
 
-      try
+      QueryOutput queryOutput   = new QueryOutput(queryInput);
+      Integer     originalLimit = queryInput.getLimit();
+      Integer     limit         = originalLimit;
+      Integer     skip          = queryInput.getSkip();
+
+      if(limit == null)
       {
-         QQueryFilter filter      = queryInput.getFilter();
-         String       paramString = apiActionUtil.buildQueryStringForGet(filter, queryInput.getLimit(), queryInput.getSkip(), table.getFields());
-
-         HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-         HttpClient        client            = httpClientBuilder.build();
-
-         String url = apiActionUtil.buildTableUrl(table) + paramString;
-         LOG.info("API URL: " + url);
-         HttpGet request = new HttpGet(url);
-
-         apiActionUtil.setupAuthorizationInRequest(request);
-         apiActionUtil.setupContentTypeInRequest(request);
-         apiActionUtil.setupAdditionalHeaders(request);
-
-         HttpResponse  response     = client.execute(request);
-         List<QRecord> queryResults = apiActionUtil.processGetResponse(table, response);
-
-         QueryOutput queryOutput = new QueryOutput(queryInput);
-         queryOutput.addRecords(queryResults);
-         return (queryOutput);
+         limit = apiActionUtil.getApiStandardLimit();
       }
-      catch(Exception e)
+
+      int totalCount = 0;
+      while(true)
       {
-         LOG.warn("Error in API Query", e);
-         throw new QException("Error executing query: " + e.getMessage(), e);
+         try
+         {
+            QQueryFilter filter      = queryInput.getFilter();
+            String       paramString = apiActionUtil.buildQueryStringForGet(filter, limit, skip, table.getFields());
+
+            HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
+            HttpClient        client            = httpClientBuilder.build();
+
+            String url = apiActionUtil.buildTableUrl(table) + paramString;
+            LOG.info("API URL: " + url);
+
+            ///////////////////////////
+            // todo - 429 handling!! //
+            ///////////////////////////
+            HttpGet request = new HttpGet(url);
+
+            apiActionUtil.setupAuthorizationInRequest(request);
+            apiActionUtil.setupContentTypeInRequest(request);
+            apiActionUtil.setupAdditionalHeaders(request);
+
+            HttpResponse response = client.execute(request);
+
+            int count = apiActionUtil.processGetResponse(table, response, queryOutput);
+            totalCount += count;
+
+            /////////////////////////////////////////////////////////////////////////
+            // if we've fetched at least as many as the original limit, then break //
+            /////////////////////////////////////////////////////////////////////////
+            if(originalLimit != null && totalCount >= originalLimit)
+            {
+               return (queryOutput);
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////
+            // if we got back less than a full page this time, then we must be done, so break //
+            ////////////////////////////////////////////////////////////////////////////////////
+            if(count == 0 || (limit != null && count < limit))
+            {
+               return (queryOutput);
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            // if there's an async callback that says we're cancelled, break //
+            ///////////////////////////////////////////////////////////////////
+            if(queryInput.getAsyncJobCallback().wasCancelRequested())
+            {
+               LOG.info("Breaking query job, as requested.");
+               return (queryOutput);
+            }
+
+            ////////////////////////////////////////////////////////////////////////////
+            // else, increment the skip by the count we just got, and query for more. //
+            ////////////////////////////////////////////////////////////////////////////
+            if(skip == null)
+            {
+               skip = 0;
+            }
+            skip += count;
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error in API Query", e);
+            throw new QException("Error executing query: " + e.getMessage(), e);
+         }
       }
    }
 

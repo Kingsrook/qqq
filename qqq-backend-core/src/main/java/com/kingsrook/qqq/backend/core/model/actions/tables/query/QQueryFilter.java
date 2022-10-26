@@ -26,6 +26,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -34,6 +36,8 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class QQueryFilter implements Serializable, Cloneable
 {
+   private static final Logger LOG = LogManager.getLogger(QQueryFilter.class);
+
    private List<QFilterCriteria> criteria = new ArrayList<>();
    private List<QFilterOrderBy>  orderBys = new ArrayList<>();
 
@@ -301,4 +305,41 @@ public class QQueryFilter implements Serializable, Cloneable
       subFilters.add(subFilter);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      StringBuilder rs = new StringBuilder("(");
+      try
+      {
+         for(QFilterCriteria criterion : CollectionUtils.nonNullList(criteria))
+         {
+            rs.append(criterion).append(" ").append(getBooleanOperator());
+         }
+
+         for(QQueryFilter subFilter : CollectionUtils.nonNullList(subFilters))
+         {
+            rs.append(subFilter);
+         }
+         rs.append(")");
+
+         rs.append("OrderBy[");
+         for(QFilterOrderBy orderBy : orderBys)
+         {
+            rs.append(orderBy).append(",");
+         }
+         rs.append("]");
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in toString", e);
+         rs.append("Error generating toString...");
+      }
+
+      return (rs.toString());
+   }
 }

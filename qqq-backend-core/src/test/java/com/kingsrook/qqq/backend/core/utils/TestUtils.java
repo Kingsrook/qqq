@@ -87,9 +87,9 @@ import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationM
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
-import com.kingsrook.qqq.backend.core.processes.implementations.general.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -822,4 +822,5 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
       return (this);
    }
+
 }

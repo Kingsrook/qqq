@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +34,8 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -74,7 +75,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public long getMillisToSleepAfterEveryCall()
    {
-      return 0;
+      return (0);
    }
 
 
@@ -84,7 +85,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public int getInitialRateLimitBackoffMillis()
    {
-      return 0;
+      return (0);
    }
 
 
@@ -94,7 +95,17 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public int getMaxAllowedRateLimitErrors()
    {
-      return 0;
+      return (0);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Integer getApiStandardLimit()
+   {
+      return (20);
    }
 
 
@@ -272,7 +283,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected List<QRecord> processGetResponse(QTableMetaData table, HttpResponse response) throws IOException
+   protected int processGetResponse(QTableMetaData table, HttpResponse response, QueryOutput queryOutput) throws IOException
    {
       int statusCode = response.getStatusLine().getStatusCode();
       System.out.println(statusCode);
@@ -285,7 +296,7 @@ public class BaseAPIActionUtil
       HttpEntity entity       = response.getEntity();
       String     resultString = EntityUtils.toString(entity);
 
-      List<QRecord> recordList = new ArrayList<>();
+      int count = 0;
       if(StringUtils.hasContent(resultString) && !resultString.equals("null"))
       {
          JSONArray  resultList = null;
@@ -309,16 +320,18 @@ public class BaseAPIActionUtil
          {
             for(int i = 0; i < resultList.length(); i++)
             {
-               recordList.add(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
+               queryOutput.addRecord(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
+               count++;
             }
          }
          else
          {
-            recordList.add(jsonObjectToRecord(jsonObject, table.getFields()));
+            queryOutput.addRecord(jsonObjectToRecord(jsonObject, table.getFields()));
+            count++;
          }
       }
 
-      return (recordList);
+      return (count);
    }
 
 
@@ -483,8 +496,14 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public Integer processGetResponseForCount(QTableMetaData table, HttpResponse response) throws IOException
    {
-      List<QRecord> queryResults = processGetResponse(table, response);
-      return (queryResults.size());
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // set up a query output with a blank query input - e.g., one that isn't using a pipe. //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      QueryOutput queryOutput = new QueryOutput(new QueryInput());
+      processGetResponse(table, response, queryOutput);
+      List<QRecord> records = queryOutput.getRecords();
+
+      return (records == null ? null : records.size());
    }
 
 }

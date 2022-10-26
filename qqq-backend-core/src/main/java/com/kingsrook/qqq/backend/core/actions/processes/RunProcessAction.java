@@ -52,7 +52,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.general.BasepullConfiguration;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
@@ -69,9 +69,11 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RunProcessAction
 {
-   private static final Logger LOG                       = LogManager.getLogger(RunProcessAction.class);
-   public static final  String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
-   public static final  String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
+   private static final Logger LOG = LogManager.getLogger(RunProcessAction.class);
+
+   public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
+   public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
+   public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
 
 
 
@@ -422,7 +424,7 @@ public class RunProcessAction
 
 
    /*******************************************************************************
-    **
+    ** Insert or update the last runtime value for this basepull into the backend.
     *******************************************************************************/
    protected void storeLastRunTime(RunProcessInput runProcessInput, QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
    {
@@ -489,13 +491,22 @@ public class RunProcessAction
 
 
    /*******************************************************************************
-    **
+    ** Lookup the last runtime for this basepull, and set it (plus now) in the process's
+    ** values.
     *******************************************************************************/
    protected void persistLastRunTime(RunProcessInput runProcessInput, QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
    {
-      ////////////////////////////////////////////////////////////////////////////////////////////////
-      // store 'now', which will be used to update basepull record if process completes sucessfully //
-      ////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////
+      // if these values were already computed, don't re-do //
+      ////////////////////////////////////////////////////////
+      if(runProcessInput.getValue(BASEPULL_THIS_RUNTIME_KEY) != null)
+      {
+         return;
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // store 'now', which will be used to update basepull record if process completes successfully //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
       Instant now = Instant.now();
       runProcessInput.getValues().put(BASEPULL_THIS_RUNTIME_KEY, now);
 
@@ -533,5 +544,6 @@ public class RunProcessAction
       }
 
       runProcessInput.getValues().put(BASEPULL_LAST_RUNTIME_KEY, lastRunTime);
+      runProcessInput.getValues().put(BASEPULL_TIMESTAMP_FIELD, basepullConfiguration.getTimestampField());
    }
 }

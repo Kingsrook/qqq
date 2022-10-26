@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.general.BasepullConfiguration;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
 
 /*******************************************************************************
