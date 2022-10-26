@@ -31,5 +31,6 @@ function doOne
 doOne "qqq-backend-core              "
 doOne "qqq-backend-module-rdbms      "
 doOne "qqq-backend-module-filesystem "
+doOne "qqq-backend-module-api        "
 doOne "qqq-middleware-picocli        "
 doOne "qqq-middleware-javalin        "
