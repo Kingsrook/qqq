@@ -60,11 +60,11 @@ class ExtractViaBasepullQueryStepTest
       assertEquals(2, queryFilter.getCriteria().size());
       assertEquals("createDate", queryFilter.getCriteria().get(0).getFieldName());
       assertEquals(QCriteriaOperator.GREATER_THAN, queryFilter.getCriteria().get(0).getOperator());
-      assertEquals(timestamp, queryFilter.getCriteria().get(0).getValues().get(0));
+      assertEquals(timestamp.toString(), queryFilter.getCriteria().get(0).getValues().get(0));
 
       assertEquals("createDate", queryFilter.getCriteria().get(1).getFieldName());
       assertEquals(QCriteriaOperator.LESS_THAN_OR_EQUALS, queryFilter.getCriteria().get(1).getOperator());
-      assertEquals(now, queryFilter.getCriteria().get(1).getValues().get(0));
+      assertEquals(now.toString(), queryFilter.getCriteria().get(1).getValues().get(0));
 
       assertEquals(1, queryFilter.getOrderBys().size());
       assertEquals("createDate", queryFilter.getOrderBys().get(0).getFieldName());
