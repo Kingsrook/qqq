@@ -68,15 +68,35 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
       queryFilter.addCriteria(new QFilterCriteria()
          .withFieldName(runBackendStepInput.getValueString(RunProcessAction.BASEPULL_TIMESTAMP_FIELD))
          .withOperator(QCriteriaOperator.GREATER_THAN)
-         .withValues(List.of(runBackendStepInput.getBasepullLastRunTime())));
+         .withValues(List.of(getLastRunTimeString(runBackendStepInput))));
 
       queryFilter.addCriteria(new QFilterCriteria()
          .withFieldName(runBackendStepInput.getValueString(RunProcessAction.BASEPULL_TIMESTAMP_FIELD))
          .withOperator(QCriteriaOperator.LESS_THAN_OR_EQUALS)
-         .withValues(List.of(runBackendStepInput.getValueInstant(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY))));
+         .withValues(List.of(getThisRunTimeString(runBackendStepInput))));
 
       queryFilter.addOrderBy(new QFilterOrderBy(runBackendStepInput.getValueString(RunProcessAction.BASEPULL_TIMESTAMP_FIELD)));
 
       return (queryFilter);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String getLastRunTimeString(RunBackendStepInput runBackendStepInput) throws QException
+   {
+      return (runBackendStepInput.getBasepullLastRunTime().toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String getThisRunTimeString(RunBackendStepInput runBackendStepInput) throws QException
+   {
+      return (runBackendStepInput.getValueInstant(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY).toString());
    }
 }
