@@ -97,6 +97,11 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);
 
+         //////////////////////////////////////////////////////////////////////////////
+         // set the flag to state that the basepull timestamp should be updated now. //
+         //////////////////////////////////////////////////////////////////////////////
+         runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
+
          /////////////////////
          // commit the work //
          /////////////////////

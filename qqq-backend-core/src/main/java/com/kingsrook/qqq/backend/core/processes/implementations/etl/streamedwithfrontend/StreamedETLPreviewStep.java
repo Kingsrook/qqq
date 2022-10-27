@@ -82,12 +82,20 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
-      ///////////////////////////////////////////
-      // request a count from the extract step //
-      ///////////////////////////////////////////
+      //////////////////////////////////////////
+      // set up the extract & transform steps //
+      //////////////////////////////////////////
       AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      Integer             recordCount = extractStep.doCount(runBackendStepInput);
+      RecordPipe          recordPipe  = new RecordPipe();
+      extractStep.setLimit(limit);
+      extractStep.setRecordPipe(recordPipe);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+
+      Integer recordCount = extractStep.doCount(runBackendStepInput);
       runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+      transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the count is less than the normal limit here, and this process supports validation, then go straight to the validation step //
@@ -99,17 +107,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       //    moveReviewStepAfterValidateStep(runBackendStepOutput);
       //    return;
       // }
-
-      ////////////////////////////////////////////////////////
-      // proceed with a doing a limited extract & transform //
-      ////////////////////////////////////////////////////////
-      RecordPipe recordPipe = new RecordPipe();
-      extractStep.setLimit(limit);
-      extractStep.setRecordPipe(recordPipe);
-      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
-
-      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
-      transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
       new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->

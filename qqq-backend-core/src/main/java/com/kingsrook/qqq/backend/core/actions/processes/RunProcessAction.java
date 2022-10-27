@@ -59,6 +59,7 @@ import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,6 +75,11 @@ public class RunProcessAction
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////
+   // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
+   ////////////////////////////////////////////////////////////////////////////////////////////////
+   public static final String BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD = "basepullReadyToUpdateTimestamp";
 
 
 
@@ -184,14 +190,12 @@ public class RunProcessAction
             }
          }
 
-         ///////////////////////////////////////////////////////////////////////////////
-         // if 'basepull' style process, store the time stored before process was ran //
-         ///////////////////////////////////////////////////////////////////////////////
-         if(basepullConfiguration != null)
+         ////////////////////////////////////////////////////////////////////////////////////
+         // if 'basepull' style process, update the stored basepull timestamp              //
+         // but only when we've been signaled to do so - i.e., after an Execute step runs. //
+         ////////////////////////////////////////////////////////////////////////////////////
+         if(basepullConfiguration != null && BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(runProcessInput.getValue(BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD))))
          {
-            ///////////////////////////////////////
-            // get the stored basepull timestamp //
-            ///////////////////////////////////////
             storeLastRunTime(runProcessInput, process, basepullConfiguration);
          }
       }
