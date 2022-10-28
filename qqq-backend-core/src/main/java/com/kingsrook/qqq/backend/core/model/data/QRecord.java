@@ -64,7 +64,7 @@ public class QRecord implements Serializable
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
    private List<String>              errors         = new ArrayList<>();
 
-   public final static String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT = "jsonSourceObject";
+   public static final String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT = "jsonSourceObject";
 
 
 
