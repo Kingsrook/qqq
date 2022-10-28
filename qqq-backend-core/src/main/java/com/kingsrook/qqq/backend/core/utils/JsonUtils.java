@@ -231,29 +231,7 @@ public class JsonUtils
     ** Convert a json object into a QRecord
     **
     *******************************************************************************/
-   public static QRecord parseQRecordStrict(JSONObject jsonObject, Map<String, QFieldMetaData> fields)
-   {
-      return (parseQRecord(jsonObject, fields, true));
-   }
-
-
-
-   /*******************************************************************************
-    ** Convert a json object into a QRecord
-    **
-    *******************************************************************************/
-   public static QRecord parseQRecordLenient(JSONObject jsonObject, Map<String, QFieldMetaData> fields)
-   {
-      return (parseQRecord(jsonObject, fields, false));
-   }
-
-
-
-   /*******************************************************************************
-    ** Convert a json object into a QRecord
-    **
-    *******************************************************************************/
-   private static QRecord parseQRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields, boolean strict)
+   public static QRecord parseQRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields, boolean useBackendFieldNames)
    {
       QRecord record = new QRecord();
 
@@ -264,7 +242,12 @@ public class JsonUtils
          try
          {
             QFieldMetaData metaData    = fields.get(fieldName);
-            String         backendName = metaData.getBackendName() != null ? metaData.getBackendName() : fieldName;
+            String         backendName = fieldName;
+            if(useBackendFieldNames)
+            {
+               backendName = metaData.getBackendName() != null ? metaData.getBackendName() : fieldName;
+            }
+
             originalBackendName = backendName;
 
             /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -327,14 +310,7 @@ public class JsonUtils
          }
          catch(Exception e)
          {
-            if(strict)
-            {
-               throw e;
-            }
-            else
-            {
-               LOG.debug("Caught exception parsing field [" + fieldName + "] as [" + originalBackendName + "]", e);
-            }
+            LOG.debug("Caught exception parsing field [" + fieldName + "] as [" + originalBackendName + "]", e);
          }
       }
 

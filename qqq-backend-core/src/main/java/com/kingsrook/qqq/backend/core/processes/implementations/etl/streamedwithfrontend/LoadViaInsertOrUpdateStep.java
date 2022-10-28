@@ -62,8 +62,18 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       evaluateRecords(runBackendStepInput);
+      insertAndUpdateRecords(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void insertAndUpdateRecords(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
 
       if(CollectionUtils.nullSafeHasContents(recordsToInsert))
       {

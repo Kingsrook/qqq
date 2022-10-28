@@ -64,6 +64,8 @@ public class QRecord implements Serializable
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
    private List<String>              errors         = new ArrayList<>();
 
+   public final static String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT = "jsonSourceObject";
+
 
 
    /*******************************************************************************
@@ -455,6 +457,11 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public Serializable getBackendDetail(String key)
    {
+      if(!this.backendDetails.containsKey(key))
+      {
+         return (null);
+      }
+
       return this.backendDetails.get(key);
    }
 
@@ -466,7 +473,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public String getBackendDetailString(String key)
    {
-      return (String) this.backendDetails.get(key);
+      return (String) getBackendDetail(key);
    }
 
 

@@ -274,7 +274,8 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected QRecord jsonObjectToRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields) throws IOException
    {
-      QRecord record = JsonUtils.parseQRecordLenient(jsonObject, fields);
+      QRecord record = JsonUtils.parseQRecord(jsonObject, fields, true);
+      record.getBackendDetails().put(QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT, jsonObject.toString());
       return (record);
    }
 
