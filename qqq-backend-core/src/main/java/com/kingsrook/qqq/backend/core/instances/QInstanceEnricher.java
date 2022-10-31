@@ -608,7 +608,7 @@ public class QInstanceEnricher
     **   <li>TLAAndAnotherTLA -> tla_and_another_tla</li>
     ** </ul>
     *******************************************************************************/
-   static String inferBackendName(String fieldName)
+   public static String inferBackendName(String fieldName)
    {
       ////////////////////////////////////////////////////////////////////////////////////////
       // build a list of words in the name, then join them with _ and lower-case the result //

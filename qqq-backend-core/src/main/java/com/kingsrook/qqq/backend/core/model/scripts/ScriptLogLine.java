@@ -19,232 +19,240 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.model.scripts;
 
 
-import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
+import java.time.Instant;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Pointer to code to be ran by the qqq framework, e.g., for custom behavior -
- ** maybe process steps, maybe customization to a table, etc.
+ **
  *******************************************************************************/
-public class QCodeReference implements Serializable
+public class ScriptLogLine extends QRecordEntity
 {
-   private String     name;
-   private QCodeType  codeType;
-   private QCodeUsage codeUsage;
+   public static final String TABLE_NAME = "scriptLogLine";
 
-   private String inlineCode;
+   @QField()
+   private Integer id;
 
+   @QField()
+   private Instant createDate;
 
+   @QField()
+   private Instant modifyDate;
 
-   /*******************************************************************************
-    ** Default empty constructor
-    *******************************************************************************/
-   public QCodeReference()
-   {
-   }
+   @QField()
+   private Integer scriptLogId;
 
+   @QField()
+   private Instant timestamp;
 
-
-   /*******************************************************************************
-    ** Constructor that takes all args
-    *******************************************************************************/
-   public QCodeReference(String name, QCodeType codeType, QCodeUsage codeUsage)
-   {
-      this.name = name;
-      this.codeType = codeType;
-      this.codeUsage = codeUsage;
-   }
+   @QField()
+   private String text;
 
 
 
    /*******************************************************************************
+    ** Getter for id
     **
     *******************************************************************************/
-   @Override
-   public String toString()
+   public Integer getId()
    {
-      return "QCodeReference{name='" + name + "'}";
+      return id;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor that just takes a java class, and infers the other fields.
-    *******************************************************************************/
-   public QCodeReference(Class<?> javaClass)
-   {
-      this.name = javaClass.getName();
-      this.codeType = QCodeType.JAVA;
-
-      if(BackendStep.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.BACKEND_STEP;
-      }
-      else if(QCustomPossibleValueProvider.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.POSSIBLE_VALUE_PROVIDER;
-      }
-      else if(RecordAutomationHandler.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.RECORD_AUTOMATION_HANDLER;
-      }
-      else
-      {
-         throw (new IllegalStateException("Unable to infer code usage type for class: " + javaClass.getName()));
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that just takes a java class and code usage.
-    *******************************************************************************/
-   public QCodeReference(Class<?> javaClass, QCodeUsage codeUsage)
-   {
-      this.name = javaClass.getName();
-      this.codeType = QCodeType.JAVA;
-      this.codeUsage = codeUsage;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for name
+    ** Setter for id
     **
     *******************************************************************************/
-   public String getName()
+   public void setId(Integer id)
    {
-      return name;
+      this.id = id;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Fluent setter for id
     **
     *******************************************************************************/
-   public void setName(String name)
+   public ScriptLogLine withId(Integer id)
    {
-      this.name = name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    **
-    *******************************************************************************/
-   public QCodeReference withName(String name)
-   {
-      this.name = name;
+      this.id = id;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for codeType
+    ** Getter for createDate
     **
     *******************************************************************************/
-   public QCodeType getCodeType()
+   public Instant getCreateDate()
    {
-      return codeType;
+      return createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeType
+    ** Setter for createDate
     **
     *******************************************************************************/
-   public void setCodeType(QCodeType codeType)
+   public void setCreateDate(Instant createDate)
    {
-      this.codeType = codeType;
+      this.createDate = createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeType
+    ** Fluent setter for createDate
     **
     *******************************************************************************/
-   public QCodeReference withCodeType(QCodeType codeType)
+   public ScriptLogLine withCreateDate(Instant createDate)
    {
-      this.codeType = codeType;
+      this.createDate = createDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for codeUsage
+    ** Getter for modifyDate
     **
     *******************************************************************************/
-   public QCodeUsage getCodeUsage()
+   public Instant getModifyDate()
    {
-      return codeUsage;
+      return modifyDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeUsage
+    ** Setter for modifyDate
     **
     *******************************************************************************/
-   public void setCodeUsage(QCodeUsage codeUsage)
+   public void setModifyDate(Instant modifyDate)
    {
-      this.codeUsage = codeUsage;
+      this.modifyDate = modifyDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeUsage
+    ** Fluent setter for modifyDate
     **
     *******************************************************************************/
-   public QCodeReference withCodeUsage(QCodeUsage codeUsage)
+   public ScriptLogLine withModifyDate(Instant modifyDate)
    {
-      this.codeUsage = codeUsage;
+      this.modifyDate = modifyDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for inlineCode
+    ** Getter for scriptLogId
     **
     *******************************************************************************/
-   public String getInlineCode()
+   public Integer getScriptLogId()
    {
-      return inlineCode;
+      return scriptLogId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for inlineCode
+    ** Setter for scriptLogId
     **
     *******************************************************************************/
-   public void setInlineCode(String inlineCode)
+   public void setScriptLogId(Integer scriptLogId)
    {
-      this.inlineCode = inlineCode;
+      this.scriptLogId = scriptLogId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for inlineCode
+    ** Fluent setter for scriptLogId
     **
     *******************************************************************************/
-   public QCodeReference withInlineCode(String inlineCode)
+   public ScriptLogLine withScriptLogId(Integer scriptLogId)
    {
-      this.inlineCode = inlineCode;
+      this.scriptLogId = scriptLogId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for timestamp
+    **
+    *******************************************************************************/
+   public Instant getTimestamp()
+   {
+      return timestamp;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for timestamp
+    **
+    *******************************************************************************/
+   public void setTimestamp(Instant timestamp)
+   {
+      this.timestamp = timestamp;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for timestamp
+    **
+    *******************************************************************************/
+   public ScriptLogLine withTimestamp(Instant timestamp)
+   {
+      this.timestamp = timestamp;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for text
+    **
+    *******************************************************************************/
+   public String getText()
+   {
+      return text;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for text
+    **
+    *******************************************************************************/
+   public void setText(String text)
+   {
+      this.text = text;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for text
+    **
+    *******************************************************************************/
+   public ScriptLogLine withText(String text)
+   {
+      this.text = text;
       return (this);
    }
 

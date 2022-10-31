@@ -19,15 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.actions.scripts;
+
+
+import java.io.Serializable;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- ** Possible types for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeType
+public interface QCodeExecutor
 {
-   JAVA,
-   JAVA_SCRIPT
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   Serializable execute(QCodeReference codeReference, Map<String, Serializable> context, QCodeExecutionLoggerInterface executionLogger) throws QCodeException;
+
 }

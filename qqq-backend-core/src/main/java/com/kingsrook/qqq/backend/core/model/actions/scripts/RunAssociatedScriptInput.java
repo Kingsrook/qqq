@@ -19,90 +19,99 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.AssociatedScriptCodeReference;
 
 
 /*******************************************************************************
- ** A simple (probably only valid for testing?) implementation of the QModuleInterface,
- ** that just stores its records in-memory.
  **
- ** In general, this class is intended to behave, as much as possible, like an RDBMS.
- **
- ** TODO - in future, if we need to - make configs for things like "case-insensitive",
- **  and "allow loose typing".
  *******************************************************************************/
-public class MemoryBackendModule implements QBackendModuleInterface
+public class RunAssociatedScriptInput extends AbstractTableActionInput
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   @Override
-   public String getBackendType()
-   {
-      return ("memory");
-   }
+   private AssociatedScriptCodeReference codeReference;
+   private Map<String, String>           inputValues;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public CountInterface getCountInterface()
+   public RunAssociatedScriptInput(QInstance qInstance)
    {
-      return new MemoryCountAction();
+      super(qInstance);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for codeReference
     **
     *******************************************************************************/
-   @Override
-   public QueryInterface getQueryInterface()
+   public AssociatedScriptCodeReference getCodeReference()
    {
-      return new MemoryQueryAction();
+      return codeReference;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for codeReference
     **
     *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
+   public void setCodeReference(AssociatedScriptCodeReference codeReference)
    {
-      return (new MemoryInsertAction());
+      this.codeReference = codeReference;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for codeReference
     **
     *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
+   public RunAssociatedScriptInput withCodeReference(AssociatedScriptCodeReference codeReference)
    {
-      return (new MemoryUpdateAction());
+      this.codeReference = codeReference;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for inputValues
     **
     *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
+   public Map<String, String> getInputValues()
    {
-      return (new MemoryDeleteAction());
+      return inputValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputValues
+    **
+    *******************************************************************************/
+   public void setInputValues(Map<String, String> inputValues)
+   {
+      this.inputValues = inputValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputValues
+    **
+    *******************************************************************************/
+   public RunAssociatedScriptInput withInputValues(Map<String, String> inputValues)
+   {
+      this.inputValues = inputValues;
+      return (this);
    }
 
 }

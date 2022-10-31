@@ -19,97 +19,162 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.model.scripts;
 
 
-import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
+import java.time.Instant;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Pointer to code to be ran by the qqq framework, e.g., for custom behavior -
- ** maybe process steps, maybe customization to a table, etc.
+ **
  *******************************************************************************/
-public class QCodeReference implements Serializable
+public class Script extends QRecordEntity
 {
-   private String     name;
-   private QCodeType  codeType;
-   private QCodeUsage codeUsage;
+   public static final String TABLE_NAME = "script";
 
-   private String inlineCode;
+   @QField()
+   private Integer id;
 
+   @QField()
+   private Instant createDate;
 
+   @QField()
+   private Instant modifyDate;
 
-   /*******************************************************************************
-    ** Default empty constructor
-    *******************************************************************************/
-   public QCodeReference()
-   {
-   }
+   @QField()
+   private String name;
 
+   @QField()
+   private Integer scriptTypeId;
 
-
-   /*******************************************************************************
-    ** Constructor that takes all args
-    *******************************************************************************/
-   public QCodeReference(String name, QCodeType codeType, QCodeUsage codeUsage)
-   {
-      this.name = name;
-      this.codeType = codeType;
-      this.codeUsage = codeUsage;
-   }
+   @QField()
+   private Integer currentScriptRevisionId;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   @Override
-   public String toString()
+   public Script()
    {
-      return "QCodeReference{name='" + name + "'}";
    }
 
 
 
    /*******************************************************************************
-    ** Constructor that just takes a java class, and infers the other fields.
+    ** Constructor
+    **
     *******************************************************************************/
-   public QCodeReference(Class<?> javaClass)
+   public Script(QRecord qRecord) throws QException
    {
-      this.name = javaClass.getName();
-      this.codeType = QCodeType.JAVA;
-
-      if(BackendStep.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.BACKEND_STEP;
-      }
-      else if(QCustomPossibleValueProvider.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.POSSIBLE_VALUE_PROVIDER;
-      }
-      else if(RecordAutomationHandler.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.RECORD_AUTOMATION_HANDLER;
-      }
-      else
-      {
-         throw (new IllegalStateException("Unable to infer code usage type for class: " + javaClass.getName()));
-      }
+      populateFromQRecord(qRecord);
    }
 
 
 
    /*******************************************************************************
-    ** Constructor that just takes a java class and code usage.
+    ** Getter for id
+    **
     *******************************************************************************/
-   public QCodeReference(Class<?> javaClass, QCodeUsage codeUsage)
+   public Integer getId()
    {
-      this.name = javaClass.getName();
-      this.codeType = QCodeType.JAVA;
-      this.codeUsage = codeUsage;
+      return id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for id
+    **
+    *******************************************************************************/
+   public void setId(Integer id)
+   {
+      this.id = id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for id
+    **
+    *******************************************************************************/
+   public Script withId(Integer id)
+   {
+      this.id = id;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for createDate
+    **
+    *******************************************************************************/
+   public Instant getCreateDate()
+   {
+      return createDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for createDate
+    **
+    *******************************************************************************/
+   public void setCreateDate(Instant createDate)
+   {
+      this.createDate = createDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for createDate
+    **
+    *******************************************************************************/
+   public Script withCreateDate(Instant createDate)
+   {
+      this.createDate = createDate;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for modifyDate
+    **
+    *******************************************************************************/
+   public Instant getModifyDate()
+   {
+      return modifyDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for modifyDate
+    **
+    *******************************************************************************/
+   public void setModifyDate(Instant modifyDate)
+   {
+      this.modifyDate = modifyDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for modifyDate
+    **
+    *******************************************************************************/
+   public Script withModifyDate(Instant modifyDate)
+   {
+      this.modifyDate = modifyDate;
+      return (this);
    }
 
 
@@ -137,10 +202,10 @@ public class QCodeReference implements Serializable
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Fluent setter for name
     **
     *******************************************************************************/
-   public QCodeReference withName(String name)
+   public Script withName(String name)
    {
       this.name = name;
       return (this);
@@ -149,102 +214,68 @@ public class QCodeReference implements Serializable
 
 
    /*******************************************************************************
-    ** Getter for codeType
+    ** Getter for scriptTypeId
     **
     *******************************************************************************/
-   public QCodeType getCodeType()
+   public Integer getScriptTypeId()
    {
-      return codeType;
+      return scriptTypeId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeType
+    ** Setter for scriptTypeId
     **
     *******************************************************************************/
-   public void setCodeType(QCodeType codeType)
+   public void setScriptTypeId(Integer scriptTypeId)
    {
-      this.codeType = codeType;
+      this.scriptTypeId = scriptTypeId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeType
+    ** Fluent setter for scriptTypeId
     **
     *******************************************************************************/
-   public QCodeReference withCodeType(QCodeType codeType)
+   public Script withScriptTypeId(Integer scriptTypeId)
    {
-      this.codeType = codeType;
+      this.scriptTypeId = scriptTypeId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for codeUsage
+    ** Getter for currentScriptRevisionId
     **
     *******************************************************************************/
-   public QCodeUsage getCodeUsage()
+   public Integer getCurrentScriptRevisionId()
    {
-      return codeUsage;
+      return currentScriptRevisionId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeUsage
+    ** Setter for currentScriptRevisionId
     **
     *******************************************************************************/
-   public void setCodeUsage(QCodeUsage codeUsage)
+   public void setCurrentScriptRevisionId(Integer currentScriptRevisionId)
    {
-      this.codeUsage = codeUsage;
+      this.currentScriptRevisionId = currentScriptRevisionId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeUsage
+    ** Fluent setter for currentScriptRevisionId
     **
     *******************************************************************************/
-   public QCodeReference withCodeUsage(QCodeUsage codeUsage)
+   public Script withCurrentScriptRevisionId(Integer currentScriptRevisionId)
    {
-      this.codeUsage = codeUsage;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for inlineCode
-    **
-    *******************************************************************************/
-   public String getInlineCode()
-   {
-      return inlineCode;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inlineCode
-    **
-    *******************************************************************************/
-   public void setInlineCode(String inlineCode)
-   {
-      this.inlineCode = inlineCode;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for inlineCode
-    **
-    *******************************************************************************/
-   public QCodeReference withInlineCode(String inlineCode)
-   {
-      this.inlineCode = inlineCode;
+      this.currentScriptRevisionId = currentScriptRevisionId;
       return (this);
    }
 

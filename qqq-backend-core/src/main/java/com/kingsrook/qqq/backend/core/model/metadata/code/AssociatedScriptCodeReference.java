@@ -19,109 +19,121 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend;
+package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Interface that a QBackendModule must implement.
- **
- ** Note, some methods all have a default version, which throws a 'not implemented'
- ** exception.
  **
  *******************************************************************************/
-public interface QBackendModuleInterface
+public class AssociatedScriptCodeReference extends QCodeReference
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   String getBackendType();
+   private String       recordTable;
+   private Serializable recordPrimaryKey;
+   private String       fieldName;
+
+
 
    /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
-    *******************************************************************************/
-   default Class<? extends QBackendMetaData> getBackendMetaDataClass()
-   {
-      return (QBackendMetaData.class);
-   }
-
-   /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
-    *******************************************************************************/
-   default Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
-   {
-      return QTableBackendDetails.class;
-   }
-
-   /*******************************************************************************
+    ** Getter for recordTable
     **
     *******************************************************************************/
-   default CountInterface getCountInterface()
+   public String getRecordTable()
    {
-      throwNotImplemented("Count");
-      return null;
+      return recordTable;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryInterface getQueryInterface()
-   {
-      throwNotImplemented("Query");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Setter for recordTable
     **
     *******************************************************************************/
-   default GetInterface getGetInterface()
+   public void setRecordTable(String recordTable)
    {
-      throwNotImplemented("Get");
-      return null;
+      this.recordTable = recordTable;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default InsertInterface getInsertInterface()
-   {
-      throwNotImplemented("Insert");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Fluent setter for recordTable
     **
     *******************************************************************************/
-   default UpdateInterface getUpdateInterface()
+   public AssociatedScriptCodeReference withRecordTable(String recordTable)
    {
-      throwNotImplemented("Update");
-      return null;
+      this.recordTable = recordTable;
+      return (this);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default DeleteInterface getDeleteInterface()
-   {
-      throwNotImplemented("Delete");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Getter for recordPrimaryKey
     **
     *******************************************************************************/
-   private void throwNotImplemented(String actionName)
+   public Serializable getRecordPrimaryKey()
    {
-      throw new IllegalStateException(actionName + " is not implemented in this module: " + this.getClass().getSimpleName());
+      return recordPrimaryKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordPrimaryKey
+    **
+    *******************************************************************************/
+   public void setRecordPrimaryKey(Serializable recordPrimaryKey)
+   {
+      this.recordPrimaryKey = recordPrimaryKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordPrimaryKey
+    **
+    *******************************************************************************/
+   public AssociatedScriptCodeReference withRecordPrimaryKey(Serializable recordPrimaryKey)
+   {
+      this.recordPrimaryKey = recordPrimaryKey;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldName
+    **
+    *******************************************************************************/
+   public String getFieldName()
+   {
+      return fieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldName
+    **
+    *******************************************************************************/
+   public void setFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldName
+    **
+    *******************************************************************************/
+   public AssociatedScriptCodeReference withFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
+      return (this);
    }
 
 }

@@ -19,15 +19,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.actions.scripts;
+
+
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- ** Possible types for Q-Code entities
- **
+ ** Unit test for TestScriptAction
  *******************************************************************************/
-public enum QCodeType
+class TestScriptActionTest
 {
-   JAVA,
-   JAVA_SCRIPT
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test() throws QException
+   {
+      QInstance        instance = TestUtils.defineInstance();
+      TestScriptInput  input    = new TestScriptInput(instance);
+      TestScriptOutput output   = new TestScriptOutput();
+      new TestScriptAction().run(input, output);
+   }
+
 }

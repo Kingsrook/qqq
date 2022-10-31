@@ -19,90 +19,86 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
+package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** A simple (probably only valid for testing?) implementation of the QModuleInterface,
- ** that just stores its records in-memory.
  **
- ** In general, this class is intended to behave, as much as possible, like an RDBMS.
- **
- ** TODO - in future, if we need to - make configs for things like "case-insensitive",
- **  and "allow loose typing".
  *******************************************************************************/
-public class MemoryBackendModule implements QBackendModuleInterface
+public class AssociatedScript implements Serializable
 {
+   private String       fieldName;
+   private Serializable scriptTypeId;
+
+
+
    /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
+    ** Getter for fieldName
+    **
     *******************************************************************************/
-   @Override
-   public String getBackendType()
+   public String getFieldName()
    {
-      return ("memory");
+      return fieldName;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for fieldName
     **
     *******************************************************************************/
-   @Override
-   public CountInterface getCountInterface()
+   public void setFieldName(String fieldName)
    {
-      return new MemoryCountAction();
+      this.fieldName = fieldName;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for fieldName
     **
     *******************************************************************************/
-   @Override
-   public QueryInterface getQueryInterface()
+   public AssociatedScript withFieldName(String fieldName)
    {
-      return new MemoryQueryAction();
+      this.fieldName = fieldName;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for scriptTypeId
     **
     *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
+   public Serializable getScriptTypeId()
    {
-      return (new MemoryInsertAction());
+      return scriptTypeId;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for scriptTypeId
     **
     *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
+   public void setScriptTypeId(Serializable scriptTypeId)
    {
-      return (new MemoryUpdateAction());
+      this.scriptTypeId = scriptTypeId;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for scriptTypeId
     **
     *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
+   public AssociatedScript withScriptTypeId(Serializable scriptTypeId)
    {
-      return (new MemoryDeleteAction());
+      this.scriptTypeId = scriptTypeId;
+      return (this);
    }
 
 }

@@ -19,109 +19,169 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import java.io.Serializable;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Interface that a QBackendModule must implement.
- **
- ** Note, some methods all have a default version, which throws a 'not implemented'
- ** exception.
  **
  *******************************************************************************/
-public interface QBackendModuleInterface
+public class TestScriptInput extends AbstractTableActionInput
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   String getBackendType();
+   private Serializable        recordPrimaryKey;
+   private String              code;
+   private Serializable        scriptTypeId;
+   private Map<String, String> inputValues;
 
-   /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
-    *******************************************************************************/
-   default Class<? extends QBackendMetaData> getBackendMetaDataClass()
-   {
-      return (QBackendMetaData.class);
-   }
 
-   /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
-    *******************************************************************************/
-   default Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
-   {
-      return QTableBackendDetails.class;
-   }
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default CountInterface getCountInterface()
+   public TestScriptInput(QInstance qInstance)
    {
-      throwNotImplemented("Count");
-      return null;
+      super(qInstance);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryInterface getQueryInterface()
-   {
-      throwNotImplemented("Query");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Getter for recordPrimaryKey
     **
     *******************************************************************************/
-   default GetInterface getGetInterface()
+   public Serializable getRecordPrimaryKey()
    {
-      throwNotImplemented("Get");
-      return null;
+      return recordPrimaryKey;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default InsertInterface getInsertInterface()
-   {
-      throwNotImplemented("Insert");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Setter for recordPrimaryKey
     **
     *******************************************************************************/
-   default UpdateInterface getUpdateInterface()
+   public void setRecordPrimaryKey(Serializable recordPrimaryKey)
    {
-      throwNotImplemented("Update");
-      return null;
+      this.recordPrimaryKey = recordPrimaryKey;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default DeleteInterface getDeleteInterface()
-   {
-      throwNotImplemented("Delete");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Fluent setter for recordPrimaryKey
     **
     *******************************************************************************/
-   private void throwNotImplemented(String actionName)
+   public TestScriptInput withRecordPrimaryKey(Serializable recordPrimaryKey)
    {
-      throw new IllegalStateException(actionName + " is not implemented in this module: " + this.getClass().getSimpleName());
+      this.recordPrimaryKey = recordPrimaryKey;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for inputValues
+    **
+    *******************************************************************************/
+   public Map<String, String> getInputValues()
+   {
+      return inputValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputValues
+    **
+    *******************************************************************************/
+   public void setInputValues(Map<String, String> inputValues)
+   {
+      this.inputValues = inputValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputValues
+    **
+    *******************************************************************************/
+   public TestScriptInput withInputValues(Map<String, String> inputValues)
+   {
+      this.inputValues = inputValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for code
+    **
+    *******************************************************************************/
+   public String getCode()
+   {
+      return code;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for code
+    **
+    *******************************************************************************/
+   public void setCode(String code)
+   {
+      this.code = code;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for code
+    **
+    *******************************************************************************/
+   public TestScriptInput withCode(String code)
+   {
+      this.code = code;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptTypeId
+    **
+    *******************************************************************************/
+   public Serializable getScriptTypeId()
+   {
+      return scriptTypeId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptTypeId
+    **
+    *******************************************************************************/
+   public void setScriptTypeId(Serializable scriptTypeId)
+   {
+      this.scriptTypeId = scriptTypeId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptTypeId
+    **
+    *******************************************************************************/
+   public TestScriptInput withScriptTypeId(Serializable scriptTypeId)
+   {
+      this.scriptTypeId = scriptTypeId;
+      return (this);
    }
 
 }

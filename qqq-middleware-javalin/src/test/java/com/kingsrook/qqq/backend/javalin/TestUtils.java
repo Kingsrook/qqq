@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -47,7 +48,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
@@ -84,7 +87,7 @@ public class TestUtils
    public static void primeTestDatabase() throws Exception
    {
       ConnectionManager connectionManager          = new ConnectionManager();
-      Connection        connection                 = connectionManager.getConnection(TestUtils.defineBackend());
+      Connection        connection                 = connectionManager.getConnection(TestUtils.defineDefaultH2Backend());
       InputStream       primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
       assertNotNull(primeTestDatabaseSqlStream);
       List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
@@ -105,7 +108,7 @@ public class TestUtils
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection        connection        = connectionManager.getConnection(defineBackend());
+      Connection        connection        = connectionManager.getConnection(defineDefaultH2Backend());
       QueryManager.executeStatement(connection, sql, resultSetProcessor);
    }
 
@@ -119,7 +122,7 @@ public class TestUtils
    {
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
-      qInstance.addBackend(defineBackend());
+      qInstance.addBackend(defineDefaultH2Backend());
       qInstance.addTable(defineTablePerson());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
@@ -128,6 +131,17 @@ public class TestUtils
       qInstance.addProcess(defineProcessSimpleThrow());
       qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
       defineWidgets(qInstance);
+
+      qInstance.addBackend(defineMemoryBackend());
+      try
+      {
+         new ScriptsMetaDataProvider().defineStandardScriptsTables(qInstance, defineMemoryBackend().getName(), null);
+      }
+      catch(Exception e)
+      {
+         throw new IllegalStateException("Error adding script tables to instance");
+      }
+
       return (qInstance);
    }
 
@@ -162,7 +176,7 @@ public class TestUtils
     ** Define the h2 rdbms backend
     **
     *******************************************************************************/
-   public static RDBMSBackendMetaData defineBackend()
+   public static RDBMSBackendMetaData defineDefaultH2Backend()
    {
       RDBMSBackendMetaData rdbmsBackendMetaData = new RDBMSBackendMetaData()
          .withVendor("h2")
@@ -172,6 +186,19 @@ public class TestUtils
          .withPassword("");
       rdbmsBackendMetaData.setName("default");
       return (rdbmsBackendMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the memory-only backend
+    **
+    *******************************************************************************/
+   public static QBackendMetaData defineMemoryBackend()
+   {
+      return new QBackendMetaData()
+         .withBackendType("memory")
+         .withName("memory");
    }
 
 
@@ -187,7 +214,7 @@ public class TestUtils
          .withLabel("Person")
          .withRecordLabelFormat("%s %s")
          .withRecordLabelFields("firstName", "lastName")
-         .withBackendName(defineBackend().getName())
+         .withBackendName(defineDefaultH2Backend().getName())
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
@@ -196,7 +223,11 @@ public class TestUtils
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
          .withField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withBackendName("partner_person_id").withPossibleValueSourceName("person"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING));
+         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER).withBackendName("test_script_id"))
+         .withAssociatedScript(new AssociatedScript()
+            .withFieldName("testScriptId")
+            .withScriptTypeId(1));
    }
 
 

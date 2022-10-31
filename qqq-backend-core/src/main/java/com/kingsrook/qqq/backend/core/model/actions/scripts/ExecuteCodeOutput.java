@@ -19,15 +19,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
+
+
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Possible types for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeType
+public class ExecuteCodeOutput
 {
-   JAVA,
-   JAVA_SCRIPT
+   private Serializable output;
+
+
+
+   /*******************************************************************************
+    ** Getter for output
+    **
+    *******************************************************************************/
+   public Serializable getOutput()
+   {
+      return output;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for output
+    **
+    *******************************************************************************/
+   public void setOutput(Serializable output)
+   {
+      this.output = output;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for output
+    **
+    *******************************************************************************/
+   public ExecuteCodeOutput withOutput(Serializable output)
+   {
+      this.output = output;
+      return (this);
+   }
+
 }

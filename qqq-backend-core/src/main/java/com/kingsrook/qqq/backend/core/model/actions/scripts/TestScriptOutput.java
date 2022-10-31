@@ -19,15 +19,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
+
+
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 
 
 /*******************************************************************************
- ** Possible types for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeType
+public class TestScriptOutput extends AbstractActionOutput
 {
-   JAVA,
-   JAVA_SCRIPT
 }

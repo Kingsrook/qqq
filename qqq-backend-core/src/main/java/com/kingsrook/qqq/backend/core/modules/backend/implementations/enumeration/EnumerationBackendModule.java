@@ -19,35 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
+package com.kingsrook.qqq.backend.core.modules.backend.implementations.enumeration;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
 /*******************************************************************************
- ** A simple (probably only valid for testing?) implementation of the QModuleInterface,
- ** that just stores its records in-memory.
  **
- ** In general, this class is intended to behave, as much as possible, like an RDBMS.
- **
- ** TODO - in future, if we need to - make configs for things like "case-insensitive",
- **  and "allow loose typing".
  *******************************************************************************/
-public class MemoryBackendModule implements QBackendModuleInterface
+public class EnumerationBackendModule implements QBackendModuleInterface
 {
+
    /*******************************************************************************
     ** Method where a backend module must be able to provide its type (name).
     *******************************************************************************/
    @Override
    public String getBackendType()
    {
-      return ("memory");
+      return ("enum");
    }
 
 
@@ -56,9 +48,9 @@ public class MemoryBackendModule implements QBackendModuleInterface
     **
     *******************************************************************************/
    @Override
-   public CountInterface getCountInterface()
+   public Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
    {
-      return new MemoryCountAction();
+      return (EnumerationTableBackendDetails.class);
    }
 
 
@@ -69,40 +61,7 @@ public class MemoryBackendModule implements QBackendModuleInterface
    @Override
    public QueryInterface getQueryInterface()
    {
-      return new MemoryQueryAction();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
-   {
-      return (new MemoryInsertAction());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
-   {
-      return (new MemoryUpdateAction());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
-   {
-      return (new MemoryDeleteAction());
+      return new EnumerationQueryAction();
    }
 
 }

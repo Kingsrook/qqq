@@ -19,90 +19,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
+package com.kingsrook.qqq.backend.core.actions.scripts.logging;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 
 
 /*******************************************************************************
- ** A simple (probably only valid for testing?) implementation of the QModuleInterface,
- ** that just stores its records in-memory.
  **
- ** In general, this class is intended to behave, as much as possible, like an RDBMS.
- **
- ** TODO - in future, if we need to - make configs for things like "case-insensitive",
- **  and "allow loose typing".
  *******************************************************************************/
-public class MemoryBackendModule implements QBackendModuleInterface
+public interface QCodeExecutionLoggerInterface
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   @Override
-   public String getBackendType()
-   {
-      return ("memory");
-   }
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public CountInterface getCountInterface()
-   {
-      return new MemoryCountAction();
-   }
-
-
+   void acceptExecutionStart(ExecuteCodeInput executeCodeInput);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public QueryInterface getQueryInterface()
-   {
-      return new MemoryQueryAction();
-   }
-
-
+   void acceptLogLine(String logLine);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
+   default void log(String message)
    {
-      return (new MemoryInsertAction());
+      acceptLogLine(message);
    }
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
-   {
-      return (new MemoryUpdateAction());
-   }
-
-
+   void acceptException(Exception exception);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
-   {
-      return (new MemoryDeleteAction());
-   }
+   void acceptExecutionEnd(Serializable output);
 
 }

@@ -19,15 +19,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.code;
+package com.kingsrook.qqq.backend.core.actions.scripts;
+
+
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** Possible types for Q-Code entities
  **
  *******************************************************************************/
-public enum QCodeType
+public class TestScriptAction
 {
-   JAVA,
-   JAVA_SCRIPT
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void run(TestScriptInput input, TestScriptOutput output) throws QException
+   {
+      QTableMetaData table = input.getTable();
+   }
 }

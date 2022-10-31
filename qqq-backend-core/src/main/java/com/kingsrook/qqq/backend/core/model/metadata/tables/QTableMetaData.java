@@ -78,7 +78,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private List<QFieldSection> sections;
 
-   private List<String> widgets;
+   private List<String>           widgets;
+   private List<AssociatedScript> associatedScripts;
 
 
 
@@ -749,6 +750,56 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withWidgets(List<String> widgets)
    {
       this.widgets = widgets;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for associatedScripts
+    **
+    *******************************************************************************/
+   public List<AssociatedScript> getAssociatedScripts()
+   {
+      return associatedScripts;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for associatedScripts
+    **
+    *******************************************************************************/
+   public void setAssociatedScripts(List<AssociatedScript> associatedScripts)
+   {
+      this.associatedScripts = associatedScripts;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associatedScripts
+    **
+    *******************************************************************************/
+   public QTableMetaData withAssociatedScripts(List<AssociatedScript> associatedScripts)
+   {
+      this.associatedScripts = associatedScripts;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associatedScripts
+    **
+    *******************************************************************************/
+   public QTableMetaData withAssociatedScript(AssociatedScript associatedScript)
+   {
+      if(this.associatedScripts == null)
+      {
+         this.associatedScripts = new ArrayList();
+      }
+      this.associatedScripts.add(associatedScript);
       return (this);
    }
 

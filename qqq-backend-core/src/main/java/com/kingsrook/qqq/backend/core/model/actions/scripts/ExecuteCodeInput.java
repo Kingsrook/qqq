@@ -19,109 +19,154 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- ** Interface that a QBackendModule must implement.
- **
- ** Note, some methods all have a default version, which throws a 'not implemented'
- ** exception.
  **
  *******************************************************************************/
-public interface QBackendModuleInterface
+public class ExecuteCodeInput extends AbstractActionInput
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   String getBackendType();
+   private QCodeReference                codeReference;
+   private Map<String, Serializable>     context;
+   private QCodeExecutionLoggerInterface executionLogger;
+
+
 
    /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
-    *******************************************************************************/
-   default Class<? extends QBackendMetaData> getBackendMetaDataClass()
-   {
-      return (QBackendMetaData.class);
-   }
-
-   /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
-    *******************************************************************************/
-   default Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
-   {
-      return QTableBackendDetails.class;
-   }
-
-   /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   default CountInterface getCountInterface()
+   public ExecuteCodeInput(QInstance qInstance)
    {
-      throwNotImplemented("Count");
-      return null;
+      super(qInstance);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryInterface getQueryInterface()
-   {
-      throwNotImplemented("Query");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Getter for codeReference
     **
     *******************************************************************************/
-   default GetInterface getGetInterface()
+   public QCodeReference getCodeReference()
    {
-      throwNotImplemented("Get");
-      return null;
+      return codeReference;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default InsertInterface getInsertInterface()
-   {
-      throwNotImplemented("Insert");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Setter for codeReference
     **
     *******************************************************************************/
-   default UpdateInterface getUpdateInterface()
+   public void setCodeReference(QCodeReference codeReference)
    {
-      throwNotImplemented("Update");
-      return null;
+      this.codeReference = codeReference;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default DeleteInterface getDeleteInterface()
-   {
-      throwNotImplemented("Delete");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Fluent setter for codeReference
     **
     *******************************************************************************/
-   private void throwNotImplemented(String actionName)
+   public ExecuteCodeInput withCodeReference(QCodeReference codeReference)
    {
-      throw new IllegalStateException(actionName + " is not implemented in this module: " + this.getClass().getSimpleName());
+      this.codeReference = codeReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for context
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getContext()
+   {
+      return context;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for context
+    **
+    *******************************************************************************/
+   public void setContext(Map<String, Serializable> context)
+   {
+      this.context = context;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for context
+    **
+    *******************************************************************************/
+   public ExecuteCodeInput withContext(Map<String, Serializable> context)
+   {
+      this.context = context;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for context
+    **
+    *******************************************************************************/
+   public ExecuteCodeInput withContext(String key, Serializable value)
+   {
+      if(this.context == null)
+      {
+         context = new HashMap<>();
+      }
+      this.context.put(key, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for executionLogger
+    **
+    *******************************************************************************/
+   public QCodeExecutionLoggerInterface getExecutionLogger()
+   {
+      return executionLogger;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for executionLogger
+    **
+    *******************************************************************************/
+   public void setExecutionLogger(QCodeExecutionLoggerInterface executionLogger)
+   {
+      this.executionLogger = executionLogger;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for executionLogger
+    **
+    *******************************************************************************/
+   public ExecuteCodeInput withExecutionLogger(QCodeExecutionLoggerInterface executionLogger)
+   {
+      this.executionLogger = executionLogger;
+      return (this);
    }
 
 }

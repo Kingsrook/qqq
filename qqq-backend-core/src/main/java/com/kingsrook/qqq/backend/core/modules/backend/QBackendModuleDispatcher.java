@@ -73,6 +73,7 @@ public class QBackendModuleDispatcher
             //  e.g., backend-core shouldn't need to "know" about the modules.
             "com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule",
             "com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule",
+            "com.kingsrook.qqq.backend.core.modules.backend.implementations.enumeration.EnumerationBackendModule",
             "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule",
             "com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule",
             "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule",
