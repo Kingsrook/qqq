@@ -27,23 +27,24 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 
 
 /*******************************************************************************
- **
+ ** Interface to provide logging functionality to QCodeExecution (e.g., scripts)
  *******************************************************************************/
 public interface QCodeExecutionLoggerInterface
 {
 
    /*******************************************************************************
-    **
+    ** Called when the execution starts - takes the execution's input object.
     *******************************************************************************/
    void acceptExecutionStart(ExecuteCodeInput executeCodeInput);
 
    /*******************************************************************************
-    **
+    ** Called to log a line, a message.
     *******************************************************************************/
    void acceptLogLine(String logLine);
 
    /*******************************************************************************
-    **
+    ** In case the loggerInterface object is provided to the script as context,
+    ** this method gives a clean interface for the script to log a line.
     *******************************************************************************/
    default void log(String message)
    {
@@ -51,12 +52,12 @@ public interface QCodeExecutionLoggerInterface
    }
 
    /*******************************************************************************
-    **
+    ** Called if the script fails with an exception.
     *******************************************************************************/
    void acceptException(Exception exception);
 
    /*******************************************************************************
-    **
+    ** Called if the script completes without exception.
     *******************************************************************************/
    void acceptExecutionEnd(Serializable output);
 

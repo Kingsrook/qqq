@@ -45,7 +45,7 @@ public class ScriptRevision extends QRecordEntity
    @QField()
    private Instant modifyDate;
 
-   @QField()
+   @QField(possibleValueSourceName = "script")
    private Integer scriptId;
 
    @QField()

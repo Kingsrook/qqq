@@ -24,15 +24,12 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 import java.io.Serializable;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -47,6 +44,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -85,7 +83,7 @@ class StoreAssociatedScriptActionTest
             .withFieldName("otherScriptId")
          );
 
-      new ScriptsMetaDataProvider().defineStandardScriptsTables(instance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new ScriptsMetaDataProvider().defineAll(instance, TestUtils.MEMORY_BACKEND_NAME, null);
 
       TestUtils.insertRecords(instance, table, List.of(
          new QRecord().withValue("id", 1),
@@ -149,7 +147,6 @@ class StoreAssociatedScriptActionTest
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 1, "testScriptId", 1);
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 1, "otherScriptId", 3);
       assertValueInField(instance, "script", 3, "currentScriptRevisionId", 4);
-
    }
 
 
@@ -157,16 +154,19 @@ class StoreAssociatedScriptActionTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Serializable assertValueInField(QInstance instance, String tableName, Serializable recordId, String fieldName, Serializable value) throws QException
+   private void assertValueInField(QInstance instance, String tableName, Serializable recordId, String fieldName, Serializable value) throws QException
    {
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
-      queryInput.setTableName(tableName);
-      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.EQUALS, List.of(recordId))));
-      QueryOutput  queryOutput = new QueryAction().execute(queryInput);
-      Serializable actual      = queryOutput.getRecords().get(0).getValue(fieldName);
-      assertEquals(value, actual);
-      return (actual);
+      GetInput getInput = new GetInput(instance);
+      getInput.setSession(new QSession());
+      getInput.setTableName(tableName);
+      getInput.setPrimaryKey(recordId);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      if(getOutput.getRecord() == null)
+      {
+         fail("Expected value [" + value + "] in field [" + fieldName + "], record [" + tableName + "][" + recordId + "], but the record wasn't found...");
+      }
+      Serializable actual = getOutput.getRecord().getValue(fieldName);
+      assertEquals(value, actual, "Expected value in field [" + fieldName + "], record [" + tableName + "][" + recordId + "]");
    }
 
 }

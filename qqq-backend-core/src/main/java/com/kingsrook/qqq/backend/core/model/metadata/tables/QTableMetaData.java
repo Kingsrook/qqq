@@ -26,10 +26,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
@@ -80,6 +82,9 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private List<String>           widgets;
    private List<AssociatedScript> associatedScripts;
+
+   private Set<Capability> enabledCapabilities  = new HashSet<>();
+   private Set<Capability> disabledCapabilities = new HashSet<>();
 
 
 
@@ -871,6 +876,162 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
       fieldSection.setFieldNames(fieldNames);
 
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public Set<Capability> getEnabledCapabilities()
+   {
+      return enabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public void setEnabledCapabilities(Set<Capability> enabledCapabilities)
+   {
+      this.enabledCapabilities = enabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withEnabledCapabilities(Set<Capability> enabledCapabilities)
+   {
+      this.enabledCapabilities = enabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withCapabilities(Set<Capability> enabledCapabilities)
+   {
+      this.enabledCapabilities = enabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for a single enabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withCapability(Capability capability)
+   {
+      if(this.enabledCapabilities == null)
+      {
+         this.enabledCapabilities = new HashSet<>();
+      }
+      this.enabledCapabilities.add(capability);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withCapabilities(Capability... enabledCapabilities)
+   {
+      if(this.enabledCapabilities == null)
+      {
+         this.enabledCapabilities = new HashSet<>();
+      }
+      this.enabledCapabilities.addAll(Arrays.stream(enabledCapabilities).toList());
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public Set<Capability> getDisabledCapabilities()
+   {
+      return disabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public void setDisabledCapabilities(Set<Capability> disabledCapabilities)
+   {
+      this.disabledCapabilities = disabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withDisabledCapabilities(Set<Capability> disabledCapabilities)
+   {
+      this.disabledCapabilities = disabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withoutCapabilities(Capability... disabledCapabilities)
+   {
+      if(this.disabledCapabilities == null)
+      {
+         this.disabledCapabilities = new HashSet<>();
+      }
+      this.disabledCapabilities.addAll(Arrays.stream(disabledCapabilities).toList());
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withoutCapabilities(Set<Capability> disabledCapabilities)
+   {
+      this.disabledCapabilities = disabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for a single disabledCapabilities
+    **
+    *******************************************************************************/
+   public QTableMetaData withoutCapability(Capability capability)
+   {
+      if(this.disabledCapabilities == null)
+      {
+         this.disabledCapabilities = new HashSet<>();
+      }
+      this.disabledCapabilities.add(capability);
       return (this);
    }
 

@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
@@ -69,8 +70,10 @@ public class MetaDataAction
       Map<String, QFrontendTableMetaData> tables = new LinkedHashMap<>();
       for(Map.Entry<String, QTableMetaData> entry : metaDataInput.getInstance().getTables().entrySet())
       {
-         tables.put(entry.getKey(), new QFrontendTableMetaData(entry.getValue(), false));
-         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
+         String           tableName       = entry.getKey();
+         QBackendMetaData backendForTable = metaDataInput.getInstance().getBackendForTable(tableName);
+         tables.put(tableName, new QFrontendTableMetaData(backendForTable, entry.getValue(), false));
+         treeNodes.put(tableName, new AppTreeNode(entry.getValue()));
       }
       metaDataOutput.setTables(tables);
 

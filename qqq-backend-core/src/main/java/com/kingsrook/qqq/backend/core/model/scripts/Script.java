@@ -48,10 +48,10 @@ public class Script extends QRecordEntity
    @QField()
    private String name;
 
-   @QField()
+   @QField(possibleValueSourceName = "scriptType")
    private Integer scriptTypeId;
 
-   @QField()
+   @QField(possibleValueSourceName = "scriptRevision")
    private Integer currentScriptRevisionId;
 
 

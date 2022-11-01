@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 public class ExecuteCodeInput extends AbstractActionInput
 {
    private QCodeReference                codeReference;
+   private Map<String, Serializable>     input;
    private Map<String, Serializable>     context;
    private QCodeExecutionLoggerInterface executionLogger;
 
@@ -82,6 +83,56 @@ public class ExecuteCodeInput extends AbstractActionInput
    public ExecuteCodeInput withCodeReference(QCodeReference codeReference)
    {
       this.codeReference = codeReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for input
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getInput()
+   {
+      return input;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for input
+    **
+    *******************************************************************************/
+   public void setInput(Map<String, Serializable> input)
+   {
+      this.input = input;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for input
+    **
+    *******************************************************************************/
+   public ExecuteCodeInput withInput(Map<String, Serializable> input)
+   {
+      this.input = input;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for input
+    **
+    *******************************************************************************/
+   public ExecuteCodeInput withInput(String key, Serializable value)
+   {
+      if(this.input == null)
+      {
+         input = new HashMap<>();
+      }
+      this.input.put(key, value);
       return (this);
    }
 

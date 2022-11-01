@@ -406,8 +406,11 @@ public class QPossibleValueTranslator
             /////////////////////////////////////////////////////////////////////////////////////////
             // this is needed to get record labels, which are what we use here... unclear if best! //
             /////////////////////////////////////////////////////////////////////////////////////////
-            queryInput.setShouldTranslatePossibleValues(true);
-            queryInput.setShouldGenerateDisplayValues(true);
+            if(notTooDeep())
+            {
+               queryInput.setShouldTranslatePossibleValues(true);
+               queryInput.setShouldGenerateDisplayValues(true);
+            }
 
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -426,6 +429,26 @@ public class QPossibleValueTranslator
       {
          LOG.warn("Error looking up possible values for table [" + tableName + "]", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Avoid infinite recursion, for where one field's PVS depends on another's...
+    ** not too smart, just breaks at 5...
+    *******************************************************************************/
+   private boolean notTooDeep()
+   {
+      int count = 0;
+      for(StackTraceElement stackTraceElement : new Throwable().getStackTrace())
+      {
+         if(stackTraceElement.getMethodName().equals("translatePossibleValuesInRecords"))
+         {
+            count++;
+         }
+      }
+
+      return (count < 5);
    }
 
 }

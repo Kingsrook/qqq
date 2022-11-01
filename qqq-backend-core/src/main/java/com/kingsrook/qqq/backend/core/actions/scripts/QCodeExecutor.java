@@ -30,7 +30,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- **
+ ** Interface to be implemented by language-specific code executors, e.g., in
+ ** qqq-language-support-${languageName} maven modules.
  *******************************************************************************/
 public interface QCodeExecutor
 {
@@ -38,6 +39,6 @@ public interface QCodeExecutor
    /*******************************************************************************
     **
     *******************************************************************************/
-   Serializable execute(QCodeReference codeReference, Map<String, Serializable> context, QCodeExecutionLoggerInterface executionLogger) throws QCodeException;
+   Serializable execute(QCodeReference codeReference, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException;
 
 }

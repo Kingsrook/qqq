@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -50,6 +51,13 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
+ ** Action to store a new version of a script, associated with a record.
+ **
+ ** If there's never been a script assigned to the record (for the specified field),
+ ** then a new Script record is first inserted.
+ **
+ ** The script referenced by the record is always updated to point at the new
+ ** scriptRevision record that is inserted.
  **
  *******************************************************************************/
 public class StoreAssociatedScriptAction
@@ -60,6 +68,8 @@ public class StoreAssociatedScriptAction
     *******************************************************************************/
    public void run(StoreAssociatedScriptInput input, StoreAssociatedScriptOutput output) throws QException
    {
+      ActionHelper.validateSession(input);
+
       QTableMetaData             table               = input.getTable();
       Optional<AssociatedScript> optAssociatedScript = table.getAssociatedScripts().stream().filter(as -> as.getFieldName().equals(input.getFieldName())).findFirst();
       if(optAssociatedScript.isEmpty())
@@ -77,6 +87,7 @@ public class StoreAssociatedScriptAction
          getInput.setSession(input.getSession());
          getInput.setTableName(input.getTableName());
          getInput.setPrimaryKey(input.getRecordPrimaryKey());
+         getInput.setShouldGenerateDisplayValues(true);
          GetOutput getOutput = new GetAction().execute(getInput);
          associatedRecord = getOutput.getRecord();
       }
@@ -100,8 +111,13 @@ public class StoreAssociatedScriptAction
          getInput.setSession(input.getSession());
          getInput.setTableName("scriptType");
          getInput.setPrimaryKey(associatedScript.getScriptTypeId());
+         getInput.setShouldGenerateDisplayValues(true);
          GetOutput getOutput  = new GetAction().execute(getInput);
          QRecord   scriptType = getOutput.getRecord();
+         if(scriptType == null)
+         {
+            throw (new QException("Script type [" + associatedScript.getScriptTypeId() + "] was not found."));
+         }
 
          /////////////////////////
          // insert a new script //

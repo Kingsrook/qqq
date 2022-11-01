@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- * Exception thrown while generating reports
- *
+ ** Exception thrown while executing custom code in QQQ.
+ **
+ ** Context field is meant to give the user "context" for where the error occurred
+ ** - e.g., a line number or word that was bad.
  *******************************************************************************/
 public class QCodeException extends QException
 {

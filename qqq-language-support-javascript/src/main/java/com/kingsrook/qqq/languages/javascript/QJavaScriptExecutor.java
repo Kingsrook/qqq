@@ -50,10 +50,10 @@ public class QJavaScriptExecutor implements QCodeExecutor
     **
     *******************************************************************************/
    @Override
-   public Serializable execute(QCodeReference codeReference, Map<String, Serializable> context, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
+   public Serializable execute(QCodeReference codeReference, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
    {
       String       code   = getCode(codeReference);
-      Serializable output = runInline(code, context, executionLogger);
+      Serializable output = runInline(code, inputContext, executionLogger);
       return (output);
    }
 
@@ -62,13 +62,17 @@ public class QJavaScriptExecutor implements QCodeExecutor
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Serializable runInline(String code, Map<String, Serializable> context, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
+   private Serializable runInline(String code, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
    {
       new NashornScriptEngineFactory();
       ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
 
+      //////////////////////////////////////////////
+      // setup the javascript environment/context //
+      //////////////////////////////////////////////
       Bindings bindings = engine.createBindings();
-      bindings.putAll(context);
+      bindings.putAll(inputContext);
+
       if(!bindings.containsKey("logger"))
       {
          bindings.put("logger", executionLogger);

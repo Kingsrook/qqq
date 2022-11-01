@@ -26,10 +26,10 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.HeaderAndDetailTableCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.Log4jCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.NoopCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
@@ -120,9 +120,9 @@ class ExecuteCodeActionTest
    void testTableLogger() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
-      new ScriptsMetaDataProvider().defineStandardScriptsTables(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new ScriptsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
 
-      ExecuteCodeInput  executeCodeInput  = setupInput(qInstance, Map.of("x", 4), new HeaderAndDetailTableCodeExecutionLogger(1701, 1702));
+      ExecuteCodeInput  executeCodeInput  = setupInput(qInstance, Map.of("x", 4), new StoreScriptLogAndScriptLogLineExecutionLogger(1701, 1702));
       ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
       assertEquals(16, executeCodeOutput.getOutput());

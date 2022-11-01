@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
+import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -34,7 +35,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.AssociatedScriptCodeRe
 public class RunAssociatedScriptInput extends AbstractTableActionInput
 {
    private AssociatedScriptCodeReference codeReference;
-   private Map<String, String>           inputValues;
+   private Map<String, Serializable>     inputValues;
+
+   private Serializable outputObject;
 
 
 
@@ -86,7 +89,7 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
     ** Getter for inputValues
     **
     *******************************************************************************/
-   public Map<String, String> getInputValues()
+   public Map<String, Serializable> getInputValues()
    {
       return inputValues;
    }
@@ -97,7 +100,7 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
     ** Setter for inputValues
     **
     *******************************************************************************/
-   public void setInputValues(Map<String, String> inputValues)
+   public void setInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
    }
@@ -108,9 +111,43 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
     ** Fluent setter for inputValues
     **
     *******************************************************************************/
-   public RunAssociatedScriptInput withInputValues(Map<String, String> inputValues)
+   public RunAssociatedScriptInput withInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for outputObject
+    **
+    *******************************************************************************/
+   public Serializable getOutputObject()
+   {
+      return outputObject;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for outputObject
+    **
+    *******************************************************************************/
+   public void setOutputObject(Serializable outputObject)
+   {
+      this.outputObject = outputObject;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for outputObject
+    **
+    *******************************************************************************/
+   public RunAssociatedScriptInput withOutputObject(Serializable outputObject)
+   {
+      this.outputObject = outputObject;
       return (this);
    }
 

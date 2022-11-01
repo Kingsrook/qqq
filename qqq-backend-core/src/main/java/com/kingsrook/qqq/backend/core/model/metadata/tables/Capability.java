@@ -19,34 +19,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.scripts;
-
-
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 /*******************************************************************************
- ** Unit test for TestScriptAction
+ ** Things that can be done to tables, fields.
+ **
  *******************************************************************************/
-class TestScriptActionTest
+public enum Capability
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   @Disabled("Not yet done.")
-   void test() throws QException
-   {
-      QInstance        instance = TestUtils.defineInstance();
-      TestScriptInput  input    = new TestScriptInput(instance);
-      TestScriptOutput output   = new TestScriptOutput();
-      new TestScriptAction().run(input, output);
-   }
+   TABLE_QUERY,
+   TABLE_GET,
+   TABLE_COUNT,
+   TABLE_INSERT,
+   TABLE_UPDATE,
+   TABLE_DELETE
+   //////////////////////////////////////////////////////////////////////////
+   // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
+   //////////////////////////////////////////////////////////////////////////
 
 }

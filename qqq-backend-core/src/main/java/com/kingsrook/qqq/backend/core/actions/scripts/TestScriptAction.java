@@ -22,14 +22,20 @@
 package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
+import java.util.HashMap;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.BuildScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- **
+ ** Class for running a test of a script - e.g., maybe before it is saved.
  *******************************************************************************/
 public class TestScriptAction
 {
@@ -40,5 +46,20 @@ public class TestScriptAction
    public void run(TestScriptInput input, TestScriptOutput output) throws QException
    {
       QTableMetaData table = input.getTable();
+
+      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput(input.getInstance());
+      executeCodeInput.setSession(input.getSession());
+      executeCodeInput.setInput(new HashMap<>(input.getInputValues()));
+      executeCodeInput.setContext(new HashMap<>());
+      // todo! if(input.getOutputObject() != null)
+      // todo! {
+      // todo!    executeCodeInput.getContext().put("output", input.getOutputObject());
+      // todo! }
+      executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(input.getCode()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
+      executeCodeInput.setExecutionLogger(new BuildScriptLogAndScriptLogLineExecutionLogger());
+      ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
+      new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
+
+      // todo! output.setOutput(executeCodeOutput.getOutput());
    }
 }

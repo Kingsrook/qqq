@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- **
+ ** Java
  *******************************************************************************/
 public class QJavaExecutor implements QCodeExecutor
 {
@@ -42,9 +42,9 @@ public class QJavaExecutor implements QCodeExecutor
     **
     *******************************************************************************/
    @Override
-   public Serializable execute(QCodeReference codeReference, Map<String, Serializable> input, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
+   public Serializable execute(QCodeReference codeReference, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
    {
-      Map<String, Object> context = new HashMap<>(input);
+      Map<String, Object> context = new HashMap<>(inputContext);
       if(!context.containsKey("logger"))
       {
          context.put("logger", executionLogger);

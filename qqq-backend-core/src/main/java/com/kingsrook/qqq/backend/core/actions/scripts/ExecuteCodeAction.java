@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.Log4jCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
@@ -33,7 +35,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
+ ** Action to execute user/runtime defined code.
  **
+ ** This action is designed to support code in multiple languages, by using
+ ** executors, e.g., provided by additional runtime qqq dependencies.  Initially
+ ** we are building qqq-language-support-javascript.
+ **
+ ** We also have a Java executor, to provide at least a little bit of testability
+ ** within qqq-backend-core.  This executor is a candidate to be replaced in the
+ ** future with something that would do actual dynamic java (whether that's compiled
+ ** at runtime, or loaded from a plugin jar at runtime).  In other words, the java
+ ** executor in place today is just meant to be a placeholder.
  *******************************************************************************/
 public class ExecuteCodeAction
 {
@@ -65,7 +77,20 @@ public class ExecuteCodeAction
          Class<? extends QCodeExecutor> executorClass = (Class<? extends QCodeExecutor>) Class.forName(languageExecutor);
          QCodeExecutor qCodeExecutor = executorClass.getConstructor().newInstance();
 
-         Serializable codeOutput = qCodeExecutor.execute(codeReference, input.getContext(), executionLogger);
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // merge all of the input context, plus the input... input - into a context for the code executor //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         Map<String, Serializable> context = new HashMap<>();
+         if(input.getContext() != null)
+         {
+            context.putAll(input.getContext());
+         }
+         if(input.getInput() != null)
+         {
+            context.putAll(input.getInput());
+         }
+
+         Serializable codeOutput = qCodeExecutor.execute(codeReference, context, executionLogger);
          output.setOutput(codeOutput);
          executionLogger.acceptExecutionEnd(codeOutput);
       }

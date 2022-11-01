@@ -24,9 +24,11 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.HeaderAndDetailTableCodeExecutionLogger;
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAssociatedScriptInput;
@@ -50,15 +52,34 @@ public class RunAssociatedScriptAction
     *******************************************************************************/
    public void run(RunAssociatedScriptInput input, RunAssociatedScriptOutput output) throws QException
    {
-      Serializable   scriptId       = getScriptId(input);
-      Script         script         = getScript(input, scriptId);
+      ActionHelper.validateSession(input);
+
+      Serializable scriptId = getScriptId(input);
+      if(scriptId == null)
+      {
+         throw (new QNotFoundException("The input record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey()
+            + "] does not have a script specified for [" + input.getCodeReference().getFieldName() + "]"));
+      }
+
+      Script script = getScript(input, scriptId);
+      if(script.getCurrentScriptRevisionId() == null)
+      {
+         throw (new QNotFoundException("The script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey()
+            + "] (scriptId=" + scriptId + ") does not have a current version."));
+      }
+
       ScriptRevision scriptRevision = getCurrentScriptRevision(input, script.getCurrentScriptRevisionId());
 
       ExecuteCodeInput executeCodeInput = new ExecuteCodeInput(input.getInstance());
       executeCodeInput.setSession(input.getSession());
-      executeCodeInput.setContext(new HashMap<>(input.getInputValues()));
-      executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT));
-      executeCodeInput.setExecutionLogger(new HeaderAndDetailTableCodeExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
+      executeCodeInput.setInput(new HashMap<>(input.getInputValues()));
+      executeCodeInput.setContext(new HashMap<>());
+      if(input.getOutputObject() != null)
+      {
+         executeCodeInput.getContext().put("output", input.getOutputObject());
+      }
+      executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
+      executeCodeInput.setExecutionLogger(new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
       ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
 
@@ -77,6 +98,12 @@ public class RunAssociatedScriptAction
       getInput.setTableName("scriptRevision");
       getInput.setPrimaryKey(scriptRevisionId);
       GetOutput getOutput = new GetAction().execute(getInput);
+      if(getOutput.getRecord() == null)
+      {
+         throw (new QNotFoundException("The current revision of the script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey() + "]["
+            + input.getCodeReference().getFieldName() + "] (scriptRevisionId=" + scriptRevisionId + ") was not found."));
+      }
+
       return (new ScriptRevision(getOutput.getRecord()));
    }
 
@@ -92,6 +119,13 @@ public class RunAssociatedScriptAction
       getInput.setTableName("script");
       getInput.setPrimaryKey(scriptId);
       GetOutput getOutput = new GetAction().execute(getInput);
+
+      if(getOutput.getRecord() == null)
+      {
+         throw (new QNotFoundException("The script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey() + "]["
+            + input.getCodeReference().getFieldName() + "] (script id=" + scriptId + ") was not found."));
+      }
+
       return (new Script(getOutput.getRecord()));
    }
 
@@ -107,6 +141,11 @@ public class RunAssociatedScriptAction
       getInput.setTableName(input.getCodeReference().getRecordTable());
       getInput.setPrimaryKey(input.getCodeReference().getRecordPrimaryKey());
       GetOutput getOutput = new GetAction().execute(getInput);
+      if(getOutput.getRecord() == null)
+      {
+         throw (new QNotFoundException("The requested record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey() + "] was not found."));
+      }
+
       return (getOutput.getRecord().getValue(input.getCodeReference().getFieldName()));
    }
 

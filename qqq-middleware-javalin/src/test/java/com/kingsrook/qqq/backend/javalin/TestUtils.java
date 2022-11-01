@@ -135,7 +135,7 @@ public class TestUtils
       qInstance.addBackend(defineMemoryBackend());
       try
       {
-         new ScriptsMetaDataProvider().defineStandardScriptsTables(qInstance, defineMemoryBackend().getName(), null);
+         new ScriptsMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
       }
       catch(Exception e)
       {

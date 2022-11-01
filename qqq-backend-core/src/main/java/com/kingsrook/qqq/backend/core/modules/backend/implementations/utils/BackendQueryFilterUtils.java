@@ -39,12 +39,16 @@ import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
+ ** Utility class for backend modules that need to do filter operations.
  **
+ ** e.g., like an in-memory module, or one that's working with files - basically
+ ** one that doesn't have filtering provided by the backend (like a database or API).
  *******************************************************************************/
 public class BackendQueryFilterUtils
 {
+
    /*******************************************************************************
-    **
+    ** Test if record matches filter.
     *******************************************************************************/
    @SuppressWarnings("checkstyle:indentation")
    public static boolean doesRecordMatch(QQueryFilter filter, QRecord qRecord)
@@ -407,7 +411,7 @@ public class BackendQueryFilterUtils
 
 
    /*******************************************************************************
-    **
+    ** Sort list of records based on filter.
     *******************************************************************************/
    public static void sortRecordList(QQueryFilter filter, List<QRecord> recordList)
    {
@@ -443,7 +447,7 @@ public class BackendQueryFilterUtils
 
 
    /*******************************************************************************
-    **
+    ** Apply skip & limit attributes from queryInput to a list of records.
     *******************************************************************************/
    public static List<QRecord> applySkipAndLimit(QueryInput queryInput, List<QRecord> recordList)
    {

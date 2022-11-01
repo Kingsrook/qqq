@@ -25,11 +25,17 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAssociatedScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAssociatedScriptOutput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AssociatedScriptCodeReference;
@@ -56,24 +62,7 @@ class RunAssociatedScriptActionTest
    @Test
    void test() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
-      QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER))
-         .withAssociatedScript(new AssociatedScript()
-            .withScriptTypeId(1)
-            .withFieldName("testScriptId")
-         );
-
-      new ScriptsMetaDataProvider().defineStandardScriptsTables(instance, TestUtils.MEMORY_BACKEND_NAME, null);
-
-      TestUtils.insertRecords(instance, table, List.of(
-         new QRecord().withValue("id", 1),
-         new QRecord().withValue("id", 2)
-      ));
-
-      TestUtils.insertRecords(instance, instance.getTable("scriptType"), List.of(
-         new QRecord().withValue("id", 1).withValue("name", "Test Script Type")
-      ));
+      QInstance instance = setupInstance();
 
       insertScript(instance, 1, """
          return "Hello";
@@ -90,10 +79,211 @@ class RunAssociatedScriptActionTest
       );
       RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
 
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // ok - since the core module doesn't have the javascript language support module as a dep, this action will fail - but at least we can confirm it fails with this specific exception! //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
          .isInstanceOf(QException.class)
          .hasRootCauseInstanceOf(ClassNotFoundException.class)
          .hasRootCauseMessage("com.kingsrook.qqq.languages.javascript.QJavaScriptExecutor");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QInstance setupInstance() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER))
+         .withAssociatedScript(new AssociatedScript()
+            .withScriptTypeId(1)
+            .withFieldName("testScriptId")
+         );
+
+      new ScriptsMetaDataProvider().defineAll(instance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      TestUtils.insertRecords(instance, table, List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)
+      ));
+
+      TestUtils.insertRecords(instance, instance.getTable("scriptType"), List.of(
+         new QRecord().withValue("id", 1).withValue("name", "Test Script Type")
+      ));
+      return instance;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordNotFound() throws QException
+   {
+      QInstance instance = setupInstance();
+
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
+      runAssociatedScriptInput.setSession(new QSession());
+      runAssociatedScriptInput.setInputValues(Map.of());
+      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
+         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withRecordPrimaryKey(-9999)
+         .withFieldName("testScriptId")
+      );
+      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
+
+      assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
+         .isInstanceOf(QNotFoundException.class)
+         .hasMessageMatching("The requested record.*was not found.*");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNoScriptInRecord() throws QException
+   {
+      QInstance instance = setupInstance();
+
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
+      runAssociatedScriptInput.setSession(new QSession());
+      runAssociatedScriptInput.setInputValues(Map.of());
+      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
+         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withRecordPrimaryKey(1)
+         .withFieldName("testScriptId")
+      );
+      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
+
+      assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
+         .isInstanceOf(QNotFoundException.class)
+         .hasMessageMatching("The input record.*does not have a script specified for.*");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBadScriptIdInRecord() throws QException
+   {
+      QInstance instance = setupInstance();
+
+      UpdateInput updateInput = new UpdateInput(instance);
+      updateInput.setSession(new QSession());
+      updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("testScriptId", -9998)));
+      new UpdateAction().execute(updateInput);
+
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
+      runAssociatedScriptInput.setSession(new QSession());
+      runAssociatedScriptInput.setInputValues(Map.of());
+      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
+         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withRecordPrimaryKey(1)
+         .withFieldName("testScriptId")
+      );
+      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
+
+      assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
+         .isInstanceOf(QNotFoundException.class)
+         .hasMessageMatching("The script for record .* was not found.*");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNoCurrentScriptRevisionOnScript() throws QException
+   {
+      QInstance instance = setupInstance();
+
+      insertScript(instance, 1, """
+         return "Hello";
+         """);
+
+      GetInput getInput = new GetInput(instance);
+      getInput.setSession(new QSession());
+      getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      getInput.setPrimaryKey(1);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      Integer   scriptId  = getOutput.getRecord().getValueInteger("testScriptId");
+
+      UpdateInput updateInput = new UpdateInput(instance);
+      updateInput.setSession(new QSession());
+      updateInput.setTableName("script");
+      updateInput.setRecords(List.of(new QRecord().withValue("id", scriptId).withValue("currentScriptRevisionId", null)));
+      new UpdateAction().execute(updateInput);
+
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
+      runAssociatedScriptInput.setSession(new QSession());
+      runAssociatedScriptInput.setInputValues(Map.of());
+      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
+         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withRecordPrimaryKey(1)
+         .withFieldName("testScriptId")
+      );
+      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
+
+      assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
+         .isInstanceOf(QNotFoundException.class)
+         .hasMessageMatching("The script for record .* does not have a current version.*");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBadCurrentScriptRevisionOnScript() throws QException
+   {
+      QInstance instance = setupInstance();
+
+      insertScript(instance, 1, """
+         return "Hello";
+         """);
+
+      GetInput getInput = new GetInput(instance);
+      getInput.setSession(new QSession());
+      getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      getInput.setPrimaryKey(1);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      Integer   scriptId  = getOutput.getRecord().getValueInteger("testScriptId");
+
+      UpdateInput updateInput = new UpdateInput(instance);
+      updateInput.setSession(new QSession());
+      updateInput.setTableName("script");
+      updateInput.setRecords(List.of(new QRecord().withValue("id", scriptId).withValue("currentScriptRevisionId", 9997)));
+      new UpdateAction().execute(updateInput);
+
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
+      runAssociatedScriptInput.setSession(new QSession());
+      runAssociatedScriptInput.setInputValues(Map.of());
+      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
+         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withRecordPrimaryKey(1)
+         .withFieldName("testScriptId")
+      );
+      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
+
+      assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
+         .isInstanceOf(QNotFoundException.class)
+         .hasMessageMatching("The current revision of the script for record .* was not found.*");
    }
 
 

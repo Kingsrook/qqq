@@ -43,7 +43,7 @@ public class ScriptLogLine extends QRecordEntity
    @QField()
    private Instant modifyDate;
 
-   @QField()
+   @QField(possibleValueSourceName = "scriptLog")
    private Integer scriptLogId;
 
    @QField()

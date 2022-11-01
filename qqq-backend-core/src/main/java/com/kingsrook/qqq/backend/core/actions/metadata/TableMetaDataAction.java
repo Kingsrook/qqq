@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
@@ -52,7 +53,8 @@ public class TableMetaDataAction
       {
          throw (new QNotFoundException("Table [" + tableMetaDataInput.getTableName() + "] was not found."));
       }
-      tableMetaDataOutput.setTable(new QFrontendTableMetaData(table, true));
+      QBackendMetaData backendForTable = tableMetaDataInput.getInstance().getBackendForTable(table.getName());
+      tableMetaDataOutput.setTable(new QFrontendTableMetaData(backendForTable, table, true));
 
       // todo post-customization - can do whatever w/ the result if you want
 

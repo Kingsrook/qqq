@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -805,6 +806,7 @@ class QInstanceValidatorTest
             possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
             possibleValueSource.setCustomCodeReference(new QCodeReference());
             possibleValueSource.setEnumValues(null);
+            possibleValueSource.setType(QPossibleValueSourceType.ENUM);
          },
          "should not have a tableName",
          "should not have searchFields",
@@ -831,6 +833,7 @@ class QInstanceValidatorTest
             possibleValueSource.setOrderByFields(new ArrayList<>());
             possibleValueSource.setCustomCodeReference(new QCodeReference());
             possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+            possibleValueSource.setType(QPossibleValueSourceType.TABLE);
          },
          "should not have enum values",
          "should not have a customCodeReference",
@@ -860,6 +863,7 @@ class QInstanceValidatorTest
             possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
             possibleValueSource.setCustomCodeReference(null);
             possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+            possibleValueSource.setType(QPossibleValueSourceType.CUSTOM);
          },
          "should not have enum values",
          "should not have a tableName",

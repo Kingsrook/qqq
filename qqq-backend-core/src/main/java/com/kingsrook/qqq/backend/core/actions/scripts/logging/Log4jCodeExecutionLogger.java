@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
- ** Implementation of a code execution logger that just logs to LOG 4j
+ ** Implementation of a code execution logger that logs to LOG 4j
  *******************************************************************************/
 public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
 {
@@ -52,8 +52,8 @@ public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
    {
       this.qCodeReference = executeCodeInput.getCodeReference();
 
-      String contextString = StringUtils.safeTruncate(ValueUtils.getValueAsString(executeCodeInput.getContext()), 250, "...");
-      LOG.info("Starting script execution: " + qCodeReference.getName() + ", uuid: " + uuid + ", with context: " + contextString);
+      String inputString = StringUtils.safeTruncate(ValueUtils.getValueAsString(executeCodeInput.getInput()), 250, "...");
+      LOG.info("Starting script execution: " + qCodeReference.getName() + ", uuid: " + uuid + ", with input: " + inputString);
    }
 
 

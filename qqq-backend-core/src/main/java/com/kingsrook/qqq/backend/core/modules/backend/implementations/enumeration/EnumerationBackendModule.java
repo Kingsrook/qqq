@@ -28,7 +28,11 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
 /*******************************************************************************
+ ** Backend module for a table based on a java enum.  So we can expose an enum
+ ** as a table (similar to exposing an enum as a possible value source), with multiple
+ ** fields in the enum (exposed via getter methods in the enum) as fields in the table.
  **
+ ** Only supports read-operations, as you can't modify an enum.
  *******************************************************************************/
 public class EnumerationBackendModule implements QBackendModuleInterface
 {

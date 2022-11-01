@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.scripts;
 import java.time.Instant;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 
 
 /*******************************************************************************
@@ -43,10 +44,10 @@ public class ScriptLog extends QRecordEntity
    @QField()
    private Instant modifyDate;
 
-   @QField()
+   @QField(possibleValueSourceName = "script")
    private Integer scriptId;
 
-   @QField()
+   @QField(possibleValueSourceName = "scriptRevision")
    private Integer scriptRevisionId;
 
    @QField()
@@ -55,7 +56,7 @@ public class ScriptLog extends QRecordEntity
    @QField()
    private Instant endTimestamp;
 
-   @QField()
+   @QField(displayFormat = DisplayFormat.COMMAS)
    private Integer runTimeMillis;
 
    @QField()

@@ -28,7 +28,14 @@ import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 
 
 /*******************************************************************************
@@ -36,6 +43,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  *******************************************************************************/
 public class ScriptsMetaDataProvider
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void defineAll(QInstance instance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   {
+      defineStandardScriptsTables(instance, backendName, backendDetailEnricher);
+      defineStandardScriptsPossibleValueSources(instance);
+   }
+
+
 
    /*******************************************************************************
     **
@@ -53,7 +71,35 @@ public class ScriptsMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QTableMetaData> defineStandardScriptsTables(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   public void defineStandardScriptsPossibleValueSources(QInstance instance) throws QException
+   {
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(Script.TABLE_NAME)
+         .withTableName(Script.TABLE_NAME)
+      );
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(ScriptRevision.TABLE_NAME)
+         .withTableName(ScriptRevision.TABLE_NAME)
+      );
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(ScriptType.TABLE_NAME)
+         .withTableName(ScriptType.TABLE_NAME)
+      );
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(ScriptLog.TABLE_NAME)
+         .withTableName(ScriptLog.TABLE_NAME)
+      );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<QTableMetaData> defineStandardScriptsTables(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       List<QTableMetaData> rs = new ArrayList<>();
       rs.add(enrich(backendDetailEnricher, defineScriptTypeTable(backendName)));
@@ -101,7 +147,9 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineScriptTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, Script.TABLE_NAME, Script.class));
+      return (defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate"))));
    }
 
 
@@ -111,7 +159,12 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineScriptTypeTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, ScriptType.TABLE_NAME, ScriptType.class));
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptType.TABLE_NAME, ScriptType.class)
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name")))
+         .withSection(new QFieldSection("details", new QIcon().withName("dataset"), Tier.T2, List.of("helpText", "sampleCode")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+      tableMetaData.getField("sampleCode").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR));
+      return (tableMetaData);
    }
 
 
@@ -121,8 +174,17 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineScriptRevisionTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, ScriptRevision.TABLE_NAME, ScriptRevision.class)
-         .withRecordLabelFields(List.of("id")));
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptRevision.TABLE_NAME, ScriptRevision.class)
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE)
+         .withRecordLabelFormat("%s v%s")
+         .withRecordLabelFields(List.of("scriptId", "sequenceNo"))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scriptId", "sequenceNo")))
+         .withSection(new QFieldSection("code", new QIcon().withName("data_object"), Tier.T2, List.of("contents")))
+         .withSection(new QFieldSection("changeManagement", new QIcon().withName("history"), Tier.T2, List.of("commitMessage", "author")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      tableMetaData.getField("contents").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR));
+      return (tableMetaData);
    }
 
 
@@ -133,7 +195,12 @@ public class ScriptsMetaDataProvider
    private QTableMetaData defineScriptLogTable(String backendName) throws QException
    {
       return (defineStandardTable(backendName, ScriptLog.TABLE_NAME, ScriptLog.class)
-         .withRecordLabelFields(List.of("id")));
+         .withRecordLabelFields(List.of("id"))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("script", new QIcon().withName("data_object"), Tier.T2, List.of("scriptId", "scriptRevisionId")))
+         .withSection(new QFieldSection("timing", new QIcon().withName("schedule"), Tier.T2, List.of("startTimestamp", "endTimestamp", "runTimeMillis", "createDate", "modifyDate")))
+         .withSection(new QFieldSection("error", "Error", new QIcon().withName("error_outline"), Tier.T2, List.of("hadError", "error")))
+         .withSection(new QFieldSection("inputOutput", "Input/Output", new QIcon().withName("chat"), Tier.T2, List.of("input", "output"))));
    }
 
 

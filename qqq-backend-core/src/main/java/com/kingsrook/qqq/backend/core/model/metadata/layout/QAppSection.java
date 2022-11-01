@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -167,6 +168,22 @@ public class QAppSection
 
 
    /*******************************************************************************
+    ** Fluent setter for tables
+    **
+    *******************************************************************************/
+   public QAppSection withTable(String tableName)
+   {
+      if(this.tables == null)
+      {
+         this.tables = new ArrayList<>();
+      }
+      this.tables.add(tableName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for processes
     **
     *******************************************************************************/
@@ -201,6 +218,22 @@ public class QAppSection
 
 
    /*******************************************************************************
+    ** Fluent setter for processes
+    **
+    *******************************************************************************/
+   public QAppSection withProcess(String processName)
+   {
+      if(this.processes == null)
+      {
+         this.processes = new ArrayList<>();
+      }
+      this.processes.add(processName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for reports
     **
     *******************************************************************************/
@@ -229,6 +262,22 @@ public class QAppSection
    public QAppSection withReports(List<String> reports)
    {
       this.reports = reports;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for reports
+    **
+    *******************************************************************************/
+   public QAppSection withReport(String reportName)
+   {
+      if(this.reports == null)
+      {
+         this.reports = new ArrayList<>();
+      }
+      this.reports.add(reportName);
       return (this);
    }
 
