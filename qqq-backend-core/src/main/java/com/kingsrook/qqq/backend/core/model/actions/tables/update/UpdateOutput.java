@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.update;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -53,5 +54,19 @@ public class UpdateOutput extends AbstractActionOutput
    public void setRecords(List<QRecord> records)
    {
       this.records = records;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addRecord(QRecord record)
+   {
+      if(this.records == null)
+      {
+         this.records = new ArrayList<>();
+      }
+      this.records.add(record);
    }
 }

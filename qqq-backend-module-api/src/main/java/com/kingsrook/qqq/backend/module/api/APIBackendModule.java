@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.module.api.actions.APICountAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIGetAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIInsertAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIQueryAction;
+import com.kingsrook.qqq.backend.module.api.actions.APIUpdateAction;
 
 
 /*******************************************************************************
@@ -124,7 +125,7 @@ public class APIBackendModule implements QBackendModuleInterface
    @Override
    public UpdateInterface getUpdateInterface()
    {
-      return (null); //return (new RDBMSUpdateAction());
+      return (new APIUpdateAction());
    }
 
 

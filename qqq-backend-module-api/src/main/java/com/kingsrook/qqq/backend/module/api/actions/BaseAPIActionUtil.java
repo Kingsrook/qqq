@@ -231,6 +231,14 @@ public class BaseAPIActionUtil
    {
       JSONObject body = recordToJsonObject(table, record);
       String     json = body.toString();
+
+      String tablePath = getBackendDetails(table).getTablePath();
+      if(tablePath != null)
+      {
+         body = new JSONObject();
+         body.put(tablePath, new JSONObject(json));
+         json = body.toString();
+      }
       LOG.debug(json);
       return (new StringEntity(json));
    }
