@@ -30,7 +30,8 @@ CREATE TABLE person
    last_name VARCHAR(80) NOT NULL,
    birth_date DATE,
    email VARCHAR(250) NOT NULL,
-   partner_person_id INT
+   partner_person_id INT,
+   test_script_id INT
 );
 
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com');

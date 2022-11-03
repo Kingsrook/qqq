@@ -289,6 +289,7 @@ public class QPossibleValueSource
     *******************************************************************************/
    public void setTableName(String tableName)
    {
+      this.type = QPossibleValueSourceType.TABLE;
       this.tableName = tableName;
    }
 
@@ -300,7 +301,7 @@ public class QPossibleValueSource
     *******************************************************************************/
    public QPossibleValueSource withTableName(String tableName)
    {
-      this.tableName = tableName;
+      setTableName(tableName);
       return (this);
    }
 
@@ -446,6 +447,7 @@ public class QPossibleValueSource
    public void setEnumValues(List<QPossibleValue<?>> enumValues)
    {
       this.enumValues = enumValues;
+      setType(QPossibleValueSourceType.ENUM);
    }
 
 
@@ -456,7 +458,7 @@ public class QPossibleValueSource
     *******************************************************************************/
    public QPossibleValueSource withEnumValues(List<QPossibleValue<?>> enumValues)
    {
-      this.enumValues = enumValues;
+      setEnumValues(enumValues);
       return this;
    }
 
@@ -472,6 +474,7 @@ public class QPossibleValueSource
          this.enumValues = new ArrayList<>();
       }
       this.enumValues.add(possibleValue);
+      setType(QPossibleValueSourceType.ENUM);
    }
 
 
@@ -512,6 +515,7 @@ public class QPossibleValueSource
    public void setCustomCodeReference(QCodeReference customCodeReference)
    {
       this.customCodeReference = customCodeReference;
+      setType(QPossibleValueSourceType.CUSTOM);
    }
 
 
@@ -522,7 +526,7 @@ public class QPossibleValueSource
     *******************************************************************************/
    public QPossibleValueSource withCustomCodeReference(QCodeReference customCodeReference)
    {
-      this.customCodeReference = customCodeReference;
+      setCustomCodeReference(customCodeReference);
       return (this);
    }
 

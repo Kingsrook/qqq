@@ -24,8 +24,10 @@ package com.kingsrook.qqq.backend.module.api.model.metadata;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.api.APIBackendModule;
 import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 
@@ -379,4 +381,14 @@ public class APIBackendMetaData extends QBackendMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void performValidation(QInstanceValidator qInstanceValidator)
+   {
+      qInstanceValidator.assertCondition(StringUtils.hasContent(baseUrl), "Missing baseUrl for API backend: " + getName());
+   }
 }

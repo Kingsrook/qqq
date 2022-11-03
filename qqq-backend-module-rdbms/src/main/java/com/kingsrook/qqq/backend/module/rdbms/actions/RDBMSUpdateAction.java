@@ -223,7 +223,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          .map(f -> this.getColumnName(table.getField(f)) + " = ?")
          .collect(Collectors.joining(", "));
 
-      String tableName = getTableName(table);
+      String tableName = escapeIdentifier(getTableName(table));
       return ("UPDATE " + tableName
          + " SET " + columns
          + " WHERE " + getColumnName(table.getField(table.getPrimaryKeyField())) + " ");

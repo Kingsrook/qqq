@@ -23,11 +23,16 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -53,6 +58,8 @@ public class QFrontendTableMetaData
 
    private List<String> widgets;
 
+   private Set<String> capabilities;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +69,7 @@ public class QFrontendTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendTableMetaData(QTableMetaData tableMetaData, boolean includeFields)
+   public QFrontendTableMetaData(QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFields)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
@@ -89,6 +96,62 @@ public class QFrontendTableMetaData
       {
          this.widgets = tableMetaData.getWidgets();
       }
+
+      setCapabilities(backendForTable, tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void setCapabilities(QBackendMetaData backend, QTableMetaData table)
+   {
+      Set<Capability> enabledCapabilities = new HashSet<>();
+      for(Capability capability : Capability.values())
+      {
+         ///////////////////////////////////////////////
+         // by default, every table can do everything //
+         ///////////////////////////////////////////////
+         boolean hasCapability = true;
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the table's backend says the capability is disabled, then by default, then the capability is disabled... //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(backend.getDisabledCapabilities().contains(capability))
+         {
+            hasCapability = false;
+
+            /////////////////////////////////////////////////////////////////
+            // unless the table overrides that and says that it IS enabled //
+            /////////////////////////////////////////////////////////////////
+            if(table.getEnabledCapabilities().contains(capability))
+            {
+               hasCapability = true;
+            }
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // if the backend doesn't specify the capability, then disable it if the table says so //
+            /////////////////////////////////////////////////////////////////////////////////////////
+            if(table.getDisabledCapabilities().contains(capability))
+            {
+               hasCapability = false;
+            }
+         }
+
+         if(hasCapability)
+         {
+            ///////////////////////////////////////
+            // todo - check if user is allowed!! //
+            ///////////////////////////////////////
+
+            enabledCapabilities.add(capability);
+         }
+      }
+
+      this.capabilities = enabledCapabilities.stream().map(Enum::name).collect(Collectors.toSet());
    }
 
 
@@ -178,4 +241,16 @@ public class QFrontendTableMetaData
    {
       return widgets;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for capabilities
+    **
+    *******************************************************************************/
+   public Set<String> getCapabilities()
+   {
+      return capabilities;
+   }
+
 }

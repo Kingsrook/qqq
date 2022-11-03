@@ -57,7 +57,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          QTableMetaData table     = countInput.getTable();
          String         tableName = getTableName(table);
 
-         String sql = "SELECT count(*) as record_count FROM " + tableName;
+         String sql = "SELECT count(*) as record_count FROM " + escapeIdentifier(tableName);
 
          QQueryFilter       filter = countInput.getFilter();
          List<Serializable> params = new ArrayList<>();

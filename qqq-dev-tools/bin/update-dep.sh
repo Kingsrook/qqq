@@ -8,6 +8,11 @@
 dep=$1
 version=$2
 
+verbose=1
+if [ "$3" == "-q" ]; then
+   verbose=0;
+fi
+
 if [ -z "$dep" -o -z "$version" ]; then
 
    echo "What dependency?"
@@ -38,7 +43,12 @@ if [ $lineNo -lt $dependenciesTagLineNo ]; then
    exit 0;
 fi
 
-echo "Going to update version of $dep at line $lineNo"
+if [ "$verbose" == "1" ]; then
+   echo "Going to update version of $dep at line $lineNo"
+fi
+
 gsed -i "${lineNo}s/<version>.*</<version>$version</" pom.xml
 
-git diff pom.xml
+if [ "$verbose" == "1" ]; then
+   git diff pom.xml
+fi

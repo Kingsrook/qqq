@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -49,6 +50,9 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
 {
    public static final String FIELD_DESTINATION_TABLE = "destinationTable";
 
+   protected List<QRecord> recordsToInsert = null;
+   protected List<QRecord> recordsToUpdate = null;
+
 
 
    /*******************************************************************************
@@ -58,22 +62,20 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QTableMetaData tableMetaData   = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-      List<QRecord>  recordsToInsert = new ArrayList<>();
-      List<QRecord>  recordsToUpdate = new ArrayList<>();
-      for(QRecord record : runBackendStepInput.getRecords())
-      {
-         if(record.getValue(tableMetaData.getPrimaryKeyField()) == null)
-         {
-            recordsToInsert.add(record);
-         }
-         else
-         {
-            recordsToUpdate.add(record);
-         }
-      }
+      evaluateRecords(runBackendStepInput);
+      insertAndUpdateRecords(runBackendStepInput, runBackendStepOutput);
+   }
 
-      if(!recordsToInsert.isEmpty())
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void insertAndUpdateRecords(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+
+      if(CollectionUtils.nullSafeHasContents(recordsToInsert))
       {
          InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
          insertInput.setSession(runBackendStepInput.getSession());
@@ -84,7 +86,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
          runBackendStepOutput.getRecords().addAll(insertOutput.getRecords());
       }
 
-      if(!recordsToUpdate.isEmpty())
+      if(CollectionUtils.nullSafeHasContents(recordsToUpdate))
       {
          UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
          updateInput.setSession(runBackendStepInput.getSession());
@@ -109,5 +111,28 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
 
       return (Optional.of(new InsertAction().openTransaction(insertInput)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void evaluateRecords(RunBackendStepInput runBackendStepInput) throws QException
+   {
+      QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      recordsToInsert = new ArrayList<>();
+      recordsToUpdate = new ArrayList<>();
+      for(QRecord record : runBackendStepInput.getRecords())
+      {
+         if(record.getValue(tableMetaData.getPrimaryKeyField()) == null)
+         {
+            recordsToInsert.add(record);
+         }
+         else
+         {
+            recordsToUpdate.add(record);
+         }
+      }
    }
 }

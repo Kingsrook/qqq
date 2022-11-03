@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Calendar;
@@ -498,6 +499,22 @@ public class ValueUtils
       }
       else
       {
+         try
+         {
+            return LocalDateTime.parse(s, DateTimeFormatter.ISO_ZONED_DATE_TIME).toInstant(ZoneOffset.UTC);
+         }
+         catch(DateTimeParseException e2)
+         {
+            try
+            {
+               return LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME).toInstant(ZoneOffset.UTC);
+            }
+            catch(Exception e3)
+            {
+               // just throw the original
+            }
+         }
+
          throw (e);
       }
    }

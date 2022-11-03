@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import org.apache.logging.log4j.LogManager;
@@ -66,6 +67,12 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
+      if(runBackendStepInput.getFrontendStepBehavior() != null && runBackendStepInput.getFrontendStepBehavior().equals(RunProcessInput.FrontendStepBehavior.SKIP))
+      {
+         LOG.info("Skipping preview because frontent behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
+         return;
+      }
+
       /////////////////////////////////////////////////////////////////
       // if we're running inside an automation, then skip this step. //
       /////////////////////////////////////////////////////////////////
@@ -75,12 +82,20 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
-      ///////////////////////////////////////////
-      // request a count from the extract step //
-      ///////////////////////////////////////////
+      //////////////////////////////////////////
+      // set up the extract & transform steps //
+      //////////////////////////////////////////
       AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      Integer             recordCount = extractStep.doCount(runBackendStepInput);
+      RecordPipe          recordPipe  = new RecordPipe();
+      extractStep.setLimit(limit);
+      extractStep.setRecordPipe(recordPipe);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+
+      Integer recordCount = extractStep.doCount(runBackendStepInput);
       runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+      transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the count is less than the normal limit here, and this process supports validation, then go straight to the validation step //
@@ -92,16 +107,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       //    moveReviewStepAfterValidateStep(runBackendStepOutput);
       //    return;
       // }
-
-      ////////////////////////////////////////////////////////
-      // proceed with a doing a limited extract & transform //
-      ////////////////////////////////////////////////////////
-      RecordPipe recordPipe = new RecordPipe();
-      extractStep.setLimit(limit);
-      extractStep.setRecordPipe(recordPipe);
-
-      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
-      transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
       new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
@@ -140,7 +145,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -154,7 +158,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       ///////////////////////////////////////////////////////////////////////
       // make streamed input & output objects from the run input & outputs //
       ///////////////////////////////////////////////////////////////////////
-      StreamedBackendStepInput streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+      StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
       StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
       /////////////////////////////////////////////////////

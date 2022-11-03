@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
 
 /*******************************************************************************
@@ -41,10 +42,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
  *******************************************************************************/
 public class QProcessMetaData implements QAppChildMetaData
 {
-   private String  name;
-   private String  label;
-   private String  tableName;
-   private boolean isHidden = false;
+   private String                name;
+   private String                label;
+   private String                tableName;
+   private boolean               isHidden = false;
+   private BasepullConfiguration basepullConfiguration;
 
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
@@ -470,6 +472,40 @@ public class QProcessMetaData implements QAppChildMetaData
    public QProcessMetaData withSchedule(QScheduleMetaData schedule)
    {
       this.schedule = schedule;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for basepullConfiguration
+    **
+    *******************************************************************************/
+   public BasepullConfiguration getBasepullConfiguration()
+   {
+      return basepullConfiguration;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for basepullConfiguration
+    **
+    *******************************************************************************/
+   public void setBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+   {
+      this.basepullConfiguration = basepullConfiguration;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for basepullConfiguration
+    **
+    *******************************************************************************/
+   public QProcessMetaData withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+   {
+      this.basepullConfiguration = basepullConfiguration;
       return (this);
    }
 

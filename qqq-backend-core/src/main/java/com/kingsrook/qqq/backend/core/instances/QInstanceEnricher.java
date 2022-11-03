@@ -316,6 +316,24 @@ public class QInstanceEnricher
       {
          generateAppSections(app);
       }
+
+      for(QAppSection section : CollectionUtils.nonNullList(app.getSections()))
+      {
+         enrichAppSection(section);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichAppSection(QAppSection section)
+   {
+      if(!StringUtils.hasContent(section.getLabel()))
+      {
+         section.setLabel(nameToLabel(section.getName()));
+      }
    }
 
 
@@ -590,7 +608,7 @@ public class QInstanceEnricher
     **   <li>TLAAndAnotherTLA -> tla_and_another_tla</li>
     ** </ul>
     *******************************************************************************/
-   static String inferBackendName(String fieldName)
+   public static String inferBackendName(String fieldName)
    {
       ////////////////////////////////////////////////////////////////////////////////////////
       // build a list of words in the name, then join them with _ and lower-case the result //

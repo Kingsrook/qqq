@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.mock;
 
 
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -64,6 +65,7 @@ public class MockBackendStep implements BackendStep
       runBackendStepOutput.setValues(runBackendStepInput.getValues());
       runBackendStepOutput.addValue(FIELD_MOCK_VALUE, MOCK_VALUE);
       runBackendStepOutput.addValue("noOfPeopleGreeted", runBackendStepInput.getRecords().size());
+      runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
 
       if("there".equalsIgnoreCase(runBackendStepInput.getValueString(FIELD_GREETING_SUFFIX)))
       {
