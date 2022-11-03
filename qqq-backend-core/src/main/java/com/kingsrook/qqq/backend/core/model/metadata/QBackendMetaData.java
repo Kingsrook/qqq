@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QBackendMetaDataDeserializer;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -321,4 +322,15 @@ public class QBackendMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void performValidation(QInstanceValidator qInstanceValidator)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
 }

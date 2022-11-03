@@ -76,6 +76,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
@@ -91,6 +96,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.basepull.Basepul
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.reports.RunReportForRecordProcess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -118,10 +124,12 @@ public class TestUtils
    public static final String PROCESS_NAME_INCREASE_BIRTHDATE       = "increaseBirthdate";
    public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
    public static final String PROCESS_NAME_BASEPULL                 = "basepullTest";
+   public static final String PROCESS_NAME_RUN_SHAPES_PERSON_REPORT = "runShapesPersonReport";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_PERSON_MEMORY              = "personMemory";
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
    public static final String TABLE_NAME_BASEPULL                   = "basepullTest";
+   public static final String REPORT_NAME_SHAPES_PERSON             = "shapesPersonReport";
 
    public static final String POSSIBLE_VALUE_SOURCE_STATE             = "state"; // enum-type
    public static final String POSSIBLE_VALUE_SOURCE_SHAPE             = "shape"; // table-type
@@ -166,6 +174,9 @@ public class TestUtils
       qInstance.addProcess(new StreamedETLProcess().defineProcessMetaData());
       qInstance.addProcess(defineProcessIncreasePersonBirthdate());
       qInstance.addProcess(defineProcessBasepull());
+
+      qInstance.addReport(defineShapesPersonsReport());
+      qInstance.addProcess(defineShapesPersonReportProcess());
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
 
@@ -949,6 +960,54 @@ public class TestUtils
          .withProviderName(DEFAULT_QUEUE_PROVIDER)
          .withQueueName("test-queue")
          .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QReportMetaData defineShapesPersonsReport()
+   {
+      return new QReportMetaData()
+         .withName(REPORT_NAME_SHAPES_PERSON)
+         .withProcessName(PROCESS_NAME_RUN_SHAPES_PERSON_REPORT)
+         .withInputFields(List.of(
+            new QFieldMetaData(RunReportForRecordProcess.FIELD_RECORD_ID, QFieldType.INTEGER).withIsRequired(true)
+         ))
+         .withDataSources(List.of(
+            new QReportDataSource()
+               .withName("persons")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withQueryFilter(new QQueryFilter()
+                  .withCriteria(new QFilterCriteria("favoriteShapeId", QCriteriaOperator.EQUALS, List.of("${input." + RunReportForRecordProcess.FIELD_RECORD_ID + "}")))
+               )
+         ))
+         .withViews(List.of(
+            new QReportView()
+               .withName("person")
+               .withDataSourceName("persons")
+               .withType(ReportType.TABLE)
+               .withColumns(List.of(
+                  new QReportField().withName("id"),
+                  new QReportField().withName("firstName"),
+                  new QReportField().withName("lastName")
+               ))
+         ));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessMetaData defineShapesPersonReportProcess()
+   {
+      return RunReportForRecordProcess.processMetaDataBuilder()
+         .withProcessName(PROCESS_NAME_RUN_SHAPES_PERSON_REPORT)
+         .withReportName(REPORT_NAME_SHAPES_PERSON)
+         .withTableName(TestUtils.TABLE_NAME_SHAPE)
+         .getProcessMetaData();
    }
 
 }

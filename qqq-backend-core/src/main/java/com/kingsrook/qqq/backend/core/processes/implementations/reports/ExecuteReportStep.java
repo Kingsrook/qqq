@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -46,6 +47,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
  *******************************************************************************/
 public class ExecuteReportStep implements BackendStep
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
@@ -70,10 +75,9 @@ public class ExecuteReportStep implements BackendStep
 
             new GenerateReportAction().execute(reportInput);
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm").withZone(ZoneId.systemDefault());
-            String            datePart  = formatter.format(Instant.now());
+            String downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, report);
 
-            runBackendStepOutput.addValue("downloadFileName", report.getLabel() + " " + datePart + ".xlsx");
+            runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + ".xlsx");
             runBackendStepOutput.addValue("serverFilePath", tmpFile.getCanonicalPath());
          }
       }
@@ -82,4 +86,26 @@ public class ExecuteReportStep implements BackendStep
          throw (new QException("Error running report", e));
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getDownloadFileBaseName(RunBackendStepInput runBackendStepInput, QReportMetaData report)
+   {
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm").withZone(ZoneId.systemDefault());
+      String            datePart  = formatter.format(Instant.now());
+
+      String downloadFileBaseName = runBackendStepInput.getValueString("downloadFileBaseName");
+      if(!StringUtils.hasContent(downloadFileBaseName))
+      {
+         downloadFileBaseName = report.getLabel();
+      }
+
+      downloadFileBaseName = downloadFileBaseName.replaceAll("/", "-");
+
+      return (downloadFileBaseName + " - " + datePart);
+   }
+
 }

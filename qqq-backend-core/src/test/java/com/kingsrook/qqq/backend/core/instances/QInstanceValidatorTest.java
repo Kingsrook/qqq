@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -143,9 +144,8 @@ class QInstanceValidatorTest
             qInstance.setTables(null);
             qInstance.setProcesses(null);
          },
-         "At least 1 table must be defined",
-         "Unrecognized table shape for possibleValueSource shape",
-         "Unrecognized processName for queue");
+         true,
+         "At least 1 table must be defined");
    }
 
 
@@ -162,9 +162,8 @@ class QInstanceValidatorTest
             qInstance.setTables(new HashMap<>());
             qInstance.setProcesses(new HashMap<>());
          },
-         "At least 1 table must be defined",
-         "Unrecognized table shape for possibleValueSource shape",
-         "Unrecognized processName for queue");
+         true,
+         "At least 1 table must be defined");
    }
 
 
@@ -566,6 +565,40 @@ class QInstanceValidatorTest
          .withSection(new QFieldSection("section1", null, new QIcon("person"), Tier.T1, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationSuccess((qInstance) -> qInstance.addTable(table));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionDuplicateName()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("section1", "Section 2", new QIcon("person"), Tier.T2, List.of("name")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section named");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSectionDuplicateLabel()
+   {
+      QTableMetaData table = new QTableMetaData().withName("test")
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("section2", "Section 1", new QIcon("person"), Tier.T2, List.of("name")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.INTEGER));
+      assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "more than 1 section labeled");
    }
 
 
@@ -1254,6 +1287,138 @@ class QInstanceValidatorTest
 
       assertValidationFailureReasons((qInstance) -> qInstance.getQueue("testSQSQueue").withProcessName("notAProcess"),
          "Unrecognized processName for queue:");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportName()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).withName(null),
+         "Inconsistent naming for report");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).withName(""),
+         "Inconsistent naming for report");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).withName("wrongName"),
+         "Inconsistent naming for report");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportNoDataSources()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).withDataSources(null),
+         "At least 1 data source",
+         "unrecognized dataSourceName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).withDataSources(new ArrayList<>()),
+         "At least 1 data source",
+         "unrecognized dataSourceName");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportDataSourceNames()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setName(null),
+         "Missing name for a dataSource",
+         "unrecognized dataSourceName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setName(""),
+         "Missing name for a dataSource",
+         "unrecognized dataSourceName");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            List<QReportDataSource> dataSources = new ArrayList<>(qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources());
+            dataSources.add(dataSources.get(0));
+            qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setDataSources(dataSources);
+         },
+         "More than one dataSource with name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportDataSourceTables()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setSourceTable("notATable"),
+         "is not a table in this instance");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setSourceTable(null),
+         "does not have a sourceTable");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setSourceTable(""),
+         "does not have a sourceTable");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportDataSourceTablesFilter()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).getQueryFilter().getCriteria().get(0).setFieldName(null),
+         "Missing fieldName for a criteria");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).getQueryFilter().getCriteria().get(0).setFieldName("notAField"),
+         "is not a field in this table");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).getQueryFilter().getCriteria().get(0).setOperator(null),
+         "Missing operator for a criteria");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).getQueryFilter().withOrderBy(new QFilterOrderBy(null)),
+         "Missing fieldName for an orderBy");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).getQueryFilter().withOrderBy(new QFilterOrderBy("notAField")),
+         "is not a field in this table");
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportDataSourceStaticDataSupplier()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).withStaticDataSupplier(new QCodeReference()),
+         "has both a sourceTable and a staticDataSupplier");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
+            dataSource.setSourceTable(null);
+            dataSource.setStaticDataSupplier(new QCodeReference(null, QCodeType.JAVA, null));
+         },
+         "missing a code reference name");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
+            dataSource.setSourceTable(null);
+            dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class, null));
+         },
+         "is not of the expected type");
+
    }
 
 

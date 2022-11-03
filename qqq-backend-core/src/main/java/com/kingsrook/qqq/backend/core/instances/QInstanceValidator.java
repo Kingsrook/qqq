@@ -31,13 +31,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -50,6 +53,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -118,6 +123,7 @@ public class QInstanceValidator
          validateAutomationProviders(qInstance);
          validateTables(qInstance);
          validateProcesses(qInstance);
+         validateReports(qInstance);
          validateApps(qInstance);
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
@@ -186,6 +192,8 @@ public class QInstanceValidator
          qInstance.getBackends().forEach((backendName, backend) ->
          {
             assertCondition(Objects.equals(backendName, backend.getName()), "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
+
+            backend.performValidation(this);
          });
       }
    }
@@ -258,6 +266,8 @@ public class QInstanceValidator
             //////////////////////////////////////////
             Set<String>   fieldNamesInSections = new HashSet<>();
             QFieldSection tier1Section         = null;
+            Set<String>   usedSectionNames     = new HashSet<>();
+            Set<String>   usedSectionLabels    = new HashSet<>();
             if(table.getSections() != null)
             {
                for(QFieldSection section : table.getSections())
@@ -268,6 +278,12 @@ public class QInstanceValidator
                      assertCondition(tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
                      tier1Section = section;
                   }
+
+                  assertCondition(!usedSectionNames.contains(section.getName()), "Table " + tableName + " has more than 1 section named " + section.getName());
+                  usedSectionNames.add(section.getName());
+
+                  assertCondition(!usedSectionLabels.contains(section.getLabel()), "Table " + tableName + " has more than 1 section labeled " + section.getLabel());
+                  usedSectionLabels.add(section.getLabel());
                }
             }
 
@@ -719,6 +735,133 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
+   private void validateReports(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getReports()))
+      {
+         qInstance.getReports().forEach((reportName, report) ->
+         {
+            assertCondition(Objects.equals(reportName, report.getName()), "Inconsistent naming for report: " + reportName + "/" + report.getName() + ".");
+            validateAppChildHasValidParentAppName(qInstance, report);
+
+            ////////////////////////////////////////
+            // validate dataSources in the report //
+            ////////////////////////////////////////
+            Set<String> usedDataSourceNames = new HashSet<>();
+            if(assertCondition(CollectionUtils.nullSafeHasContents(report.getDataSources()), "At least 1 data source must be defined in report " + reportName + "."))
+            {
+               int index = 0;
+               for(QReportDataSource dataSource : report.getDataSources())
+               {
+                  assertCondition(StringUtils.hasContent(dataSource.getName()), "Missing name for a dataSource at index " + index + " in report " + reportName);
+                  index++;
+
+                  assertCondition(!usedDataSourceNames.contains(dataSource.getName()), "More than one dataSource with name " + dataSource.getName() + " in report " + reportName);
+                  usedDataSourceNames.add(dataSource.getName());
+
+                  String dataSourceErrorPrefix = "Report " + reportName + " data source " + dataSource.getName() + " ";
+
+                  if(StringUtils.hasContent(dataSource.getSourceTable()))
+                  {
+                     assertCondition(dataSource.getStaticDataSupplier() == null, dataSourceErrorPrefix + "has both a sourceTable and a staticDataSupplier (exactly 1 is required).");
+                     if(assertCondition(qInstance.getTable(dataSource.getSourceTable()) != null, dataSourceErrorPrefix + "source table " + dataSource.getSourceTable() + " is not a table in this instance."))
+                     {
+                        if(dataSource.getQueryFilter() != null)
+                        {
+                           validateQueryFilter("In " + dataSourceErrorPrefix + "query filter - ", qInstance.getTable(dataSource.getSourceTable()), dataSource.getQueryFilter());
+                        }
+                     }
+                  }
+                  else if(dataSource.getStaticDataSupplier() != null)
+                  {
+                     validateSimpleCodeReference(dataSourceErrorPrefix, dataSource.getStaticDataSupplier(), Supplier.class);
+                  }
+                  else
+                  {
+                     errors.add(dataSourceErrorPrefix + "does not have a sourceTable or a staticDataSupplier (exactly 1 is required).");
+                  }
+               }
+            }
+
+            ////////////////////////////////////////
+            // validate dataSources in the report //
+            ////////////////////////////////////////
+            if(assertCondition(CollectionUtils.nullSafeHasContents(report.getViews()), "At least 1 view must be defined in report " + reportName + "."))
+            {
+               int         index         = 0;
+               Set<String> usedViewNames = new HashSet<>();
+               for(QReportView view : report.getViews())
+               {
+                  assertCondition(StringUtils.hasContent(view.getName()), "Missing name for a view at index " + index + " in report " + reportName);
+                  index++;
+
+                  assertCondition(!usedViewNames.contains(view.getName()), "More than one view with name " + view.getName() + " in report " + reportName);
+                  usedViewNames.add(view.getName());
+
+                  String viewErrorPrefix = "Report " + reportName + " view " + view.getName() + " ";
+                  assertCondition(view.getType() != null, viewErrorPrefix + " is missing its type.");
+                  if(assertCondition(StringUtils.hasContent(view.getDataSourceName()), viewErrorPrefix + " is missing a dataSourceName"))
+                  {
+                     assertCondition(usedDataSourceNames.contains(view.getDataSourceName()), viewErrorPrefix + " has an unrecognized dataSourceName: " + view.getDataSourceName());
+                  }
+
+                  if(StringUtils.hasContent(view.getVarianceDataSourceName()))
+                  {
+                     assertCondition(usedDataSourceNames.contains(view.getVarianceDataSourceName()), viewErrorPrefix + " has an unrecognized varianceDataSourceName: " + view.getVarianceDataSourceName());
+                  }
+
+                  // actually, this is okay if there's a customizer, so...
+                  assertCondition(CollectionUtils.nullSafeHasContents(view.getColumns()), viewErrorPrefix + " does not have any columns.");
+
+                  // todo - all these too...
+                  // view.getPivotFields();
+                  // view.getViewCustomizer(); // validate code ref
+                  // view.getRecordTransformStep(); // validate code ref
+                  // view.getOrderByFields(); // make sure valid field names?
+                  // view.getIncludePivotSubTotals(); // only for pivot type
+                  // view.getTitleFormat(); view.getTitleFields(); // validate these match?
+               }
+            }
+         });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateQueryFilter(String context, QTableMetaData table, QQueryFilter queryFilter)
+   {
+      for(QFilterCriteria criterion : CollectionUtils.nonNullList(queryFilter.getCriteria()))
+      {
+         if(assertCondition(StringUtils.hasContent(criterion.getFieldName()), context + "Missing fieldName for a criteria"))
+         {
+            assertNoException(() -> table.getField(criterion.getFieldName()), context + "Criteria fieldName " + criterion.getFieldName() + " is not a field in this table.");
+         }
+         assertCondition(criterion.getOperator() != null, context + "Missing operator for a criteria on fieldName " + criterion.getFieldName());
+         assertCondition(criterion.getValues() != null, context + "Missing values for a criteria on fieldName " + criterion.getFieldName()); // todo - what about ops w/ no value (BLANK)
+      }
+
+      for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(queryFilter.getOrderBys()))
+      {
+         if(assertCondition(StringUtils.hasContent(orderBy.getFieldName()), context + "Missing fieldName for an orderBy"))
+         {
+            assertNoException(() -> table.getField(orderBy.getFieldName()), context + "OrderBy fieldName " + orderBy.getFieldName() + " is not a field in this table.");
+         }
+      }
+
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(queryFilter.getSubFilters()))
+      {
+         validateQueryFilter(context, table, subFilter);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void validateApps(QInstance qInstance)
    {
       if(CollectionUtils.nullSafeHasContents(qInstance.getApps()))
@@ -978,7 +1121,7 @@ public class QInstanceValidator
     ** But if it's false, add the provided message to the list of errors (and return false,
     ** e.g., in case you need to stop evaluating rules to avoid exceptions).
     *******************************************************************************/
-   private boolean assertCondition(boolean condition, String message)
+   public boolean assertCondition(boolean condition, String message)
    {
       if(!condition)
       {
@@ -1034,5 +1177,16 @@ public class QInstanceValidator
       {
          LOG.info("Validation warning: " + message);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for errors
+    **
+    *******************************************************************************/
+   public List<String> getErrors()
+   {
+      return errors;
    }
 }

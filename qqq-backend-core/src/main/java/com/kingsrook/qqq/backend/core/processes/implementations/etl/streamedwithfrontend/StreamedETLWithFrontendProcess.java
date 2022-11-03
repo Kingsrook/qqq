@@ -23,11 +23,16 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.AbstractProcessMetaDataBuilder;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -131,8 +136,8 @@ public class StreamedETLWithFrontendProcess
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
             .withField(new QFieldMetaData(FIELD_SUPPORTS_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, true)))
             .withField(new QFieldMetaData(FIELD_DEFAULT_QUERY_FILTER, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
-            .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(extractStepClass)))
-            .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(transformStepClass)))
+            .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(extractStepClass == null ? null : new QCodeReference(extractStepClass)))
+            .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(transformStepClass == null ? null : new QCodeReference(transformStepClass)))
             .withField(new QFieldMetaData(FIELD_PREVIEW_MESSAGE, QFieldType.STRING).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_PREVIEW_MESSAGE, DEFAULT_PREVIEW_MESSAGE_FOR_INSERT)))
          );
 
@@ -153,7 +158,7 @@ public class StreamedETLWithFrontendProcess
          .withName(STEP_NAME_EXECUTE)
          .withCode(new QCodeReference(StreamedETLExecuteStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData(FIELD_LOAD_CODE, QFieldType.STRING).withDefaultValue(new QCodeReference(loadStepClass))))
+            .withField(new QFieldMetaData(FIELD_LOAD_CODE, QFieldType.STRING).withDefaultValue(loadStepClass == null ? null : new QCodeReference(loadStepClass))))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withField(new QFieldMetaData(FIELD_PROCESS_SUMMARY, QFieldType.STRING))
          );
@@ -168,5 +173,205 @@ public class StreamedETLWithFrontendProcess
          .addStep(validateStep)
          .addStep(executeStep)
          .addStep(resultStep);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Builder processMetaDataBuilder()
+   {
+      return (new Builder(defineProcessMetaData(null, null, null, Collections.emptyMap())));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class Builder extends AbstractProcessMetaDataBuilder
+   {
+
+      /*******************************************************************************
+       ** Constructor
+       **
+       *******************************************************************************/
+      public Builder(QProcessMetaData processMetaData)
+      {
+         super(processMetaData);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for extractStepClass
+       **
+       *******************************************************************************/
+      public Builder withExtractStepClass(Class<? extends AbstractExtractStep> extractStepClass)
+      {
+         setInputFieldDefaultValue(FIELD_EXTRACT_CODE, new QCodeReference(extractStepClass));
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for transformStepClass
+       **
+       *******************************************************************************/
+      public Builder withTransformStepClass(Class<? extends AbstractTransformStep> transformStepClass)
+      {
+         setInputFieldDefaultValue(FIELD_TRANSFORM_CODE, new QCodeReference(transformStepClass));
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for loadStepClass
+       **
+       *******************************************************************************/
+      public Builder withLoadStepClass(Class<? extends AbstractLoadStep> loadStepClass)
+      {
+         setInputFieldDefaultValue(FIELD_LOAD_CODE, new QCodeReference(loadStepClass));
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for sourceTable
+       **
+       *******************************************************************************/
+      public Builder withSourceTable(String sourceTable)
+      {
+         setInputFieldDefaultValue(FIELD_SOURCE_TABLE, sourceTable);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for destinationTable
+       **
+       *******************************************************************************/
+      public Builder withDestinationTable(String destinationTable)
+      {
+         setInputFieldDefaultValue(FIELD_DESTINATION_TABLE, destinationTable);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for supportsFullValidation
+       **
+       *******************************************************************************/
+      public Builder withSupportsFullValidation(Boolean supportsFullValidation)
+      {
+         setInputFieldDefaultValue(FIELD_SUPPORTS_FULL_VALIDATION, supportsFullValidation);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for doFullValidation
+       **
+       *******************************************************************************/
+      public Builder withDoFullValidation(Boolean doFullValidation)
+      {
+         setInputFieldDefaultValue(FIELD_DO_FULL_VALIDATION, doFullValidation);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for defaultQueryFilter
+       **
+       *******************************************************************************/
+      public Builder withDefaultQueryFilter(QQueryFilter defaultQueryFilter)
+      {
+         setInputFieldDefaultValue(FIELD_DEFAULT_QUERY_FILTER, defaultQueryFilter);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for previewMessage
+       **
+       *******************************************************************************/
+      public Builder withPreviewMessage(String previewMessage)
+      {
+         setInputFieldDefaultValue(FIELD_PREVIEW_MESSAGE, previewMessage);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for name
+       **
+       *******************************************************************************/
+      public Builder withName(String name)
+      {
+         processMetaData.setName(name);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for label
+       **
+       *******************************************************************************/
+      public Builder withLabel(String name)
+      {
+         processMetaData.setLabel(name);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for tableName
+       **
+       *******************************************************************************/
+      public Builder withTableName(String tableName)
+      {
+         processMetaData.setTableName(tableName);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for icon
+       **
+       *******************************************************************************/
+      public Builder withIcon(QIcon icon)
+      {
+         processMetaData.setIcon(icon);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withReviewStepRecordFields(List<QFieldMetaData> fieldList)
+      {
+         QFrontendStepMetaData reviewStep = processMetaData.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
+         for(QFieldMetaData fieldMetaData : fieldList)
+         {
+            reviewStep.withRecordListField(fieldMetaData);
+         }
+
+         return (this);
+      }
    }
 }

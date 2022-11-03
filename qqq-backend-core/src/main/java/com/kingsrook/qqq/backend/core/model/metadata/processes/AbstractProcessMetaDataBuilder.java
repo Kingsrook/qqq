@@ -19,31 +19,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
-import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Class for loading widget implementation code and rendering of widgets
  **
  *******************************************************************************/
-public class RenderWidgetAction
+public class AbstractProcessMetaDataBuilder
 {
+   protected QProcessMetaData processMetaData;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder(QProcessMetaData processMetaData)
+   {
+      this.processMetaData = processMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processMetaData
+    **
+    *******************************************************************************/
+   public QProcessMetaData getProcessMetaData()
+   {
+      return processMetaData;
+   }
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RenderWidgetOutput execute(RenderWidgetInput input) throws QException
+   protected void setInputFieldDefaultValue(String fieldName, Serializable value)
    {
-      ActionHelper.validateSession(input);
-
-      AbstractWidgetRenderer widgetRenderer = QCodeLoader.getAdHoc(AbstractWidgetRenderer.class, input.getWidgetMetaData().getCodeReference());
-      return (widgetRenderer.render(input));
+      processMetaData.getInputFields().stream()
+         .filter(f -> f.getName().equals(fieldName)).findFirst()
+         .ifPresent(f -> f.setDefaultValue(value));
    }
 }

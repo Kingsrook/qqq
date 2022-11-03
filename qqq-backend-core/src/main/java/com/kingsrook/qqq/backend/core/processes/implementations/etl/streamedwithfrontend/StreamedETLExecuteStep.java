@@ -90,10 +90,17 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          updateRecordsWithDisplayValuesAndPossibleValues(runBackendStepInput, loadedRecordList);
          runBackendStepOutput.setRecords(loadedRecordList);
 
-         ////////////////////////////////////////////////////////////////////////////////////////////////////
-         // get the process summary from the ... transform step?  the load step?  each knows some... todo? //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////
-         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // get the process summary from the load step, if it's a summary-provider -- else, use the transform step (which is always a provider) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(loadStep instanceof ProcessSummaryProviderInterface provider)
+         {
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, provider.doGetProcessSummary(runBackendStepOutput, true));
+         }
+         else
+         {
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
+         }
 
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);

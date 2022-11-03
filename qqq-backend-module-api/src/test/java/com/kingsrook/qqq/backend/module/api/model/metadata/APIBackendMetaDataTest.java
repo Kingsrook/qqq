@@ -19,31 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.module.api.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Class for loading widget implementation code and rendering of widgets
- **
+ ** Unit test for APIBackendMetaData
  *******************************************************************************/
-public class RenderWidgetAction
+class APIBackendMetaDataTest
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RenderWidgetOutput execute(RenderWidgetInput input) throws QException
+   @Test
+   void test()
    {
-      ActionHelper.validateSession(input);
-
-      AbstractWidgetRenderer widgetRenderer = QCodeLoader.getAdHoc(AbstractWidgetRenderer.class, input.getWidgetMetaData().getCodeReference());
-      return (widgetRenderer.render(input));
+      APIBackendMetaData apiBackendMetaData = new APIBackendMetaData()
+         .withName("test");
+      QInstanceValidator qInstanceValidator = new QInstanceValidator();
+      apiBackendMetaData.performValidation(qInstanceValidator);
+      assertEquals(1, qInstanceValidator.getErrors().size());
+      assertThat(qInstanceValidator.getErrors()).anyMatch(e -> e.contains("Missing baseUrl"));
    }
+
 }
