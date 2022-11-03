@@ -31,6 +31,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
 {
    private String baseUrl;
+   private String clientId;
+   private String clientSecret;
 
 
 
@@ -76,4 +78,69 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
       this.baseUrl = baseUrl;
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter, override to help fluent flows
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withClientId(String clientId)
+   {
+      setClientId(clientId);
+      return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for clientId
+    **
+    *******************************************************************************/
+   public String getClientId()
+   {
+      return clientId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clientId
+    **
+    *******************************************************************************/
+   public void setClientId(String clientId)
+   {
+      this.clientId = clientId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter, override to help fluent flows
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withClientSecret(String clientSecret)
+   {
+      setClientSecret(clientSecret);
+      return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for clientSecret
+    **
+    *******************************************************************************/
+   public String getClientSecret()
+   {
+      return clientSecret;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clientSecret
+    **
+    *******************************************************************************/
+   public void setClientSecret(String clientSecret)
+   {
+      this.clientSecret = clientSecret;
+   }
 }

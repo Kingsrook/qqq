@@ -34,6 +34,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 public class QIcon
 {
    private String name;
+   private String path;
 
 
 
@@ -85,6 +86,40 @@ public class QIcon
    public QIcon withName(String name)
    {
       this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for path
+    **
+    *******************************************************************************/
+   public String getPath()
+   {
+      return path;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for path
+    **
+    *******************************************************************************/
+   public void setPath(String path)
+   {
+      this.path = path;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for path
+    **
+    *******************************************************************************/
+   public QIcon withPath(String path)
+   {
+      this.path = path;
       return (this);
    }
 

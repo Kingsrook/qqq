@@ -22,8 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QBackendMetaDataDeserializer;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
@@ -37,6 +42,9 @@ public class QBackendMetaData
 {
    private String name;
    private String backendType;
+
+   private Set<Capability> enabledCapabilities  = new HashSet<>();
+   private Set<Capability> disabledCapabilities = new HashSet<>();
 
    // todo - at some point, we may want to apply this to secret properties on subclasses?
    // @JsonFilter("secretsFilter")
@@ -152,6 +160,174 @@ public class QBackendMetaData
     ** Original use case is:  reading secrets into fields (e.g., passwords).
     *******************************************************************************/
    public void enrich()
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public Set<Capability> getEnabledCapabilities()
+   {
+      return enabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public void setEnabledCapabilities(Set<Capability> enabledCapabilities)
+   {
+      this.enabledCapabilities = enabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withEnabledCapabilities(Set<Capability> enabledCapabilities)
+   {
+      this.enabledCapabilities = enabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withCapabilities(Set<Capability> enabledCapabilities)
+   {
+      this.enabledCapabilities = enabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for a single enabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withCapability(Capability capability)
+   {
+      if(this.enabledCapabilities == null)
+      {
+         this.enabledCapabilities = new HashSet<>();
+      }
+      this.enabledCapabilities.add(capability);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withCapabilities(Capability... enabledCapabilities)
+   {
+      if(this.enabledCapabilities == null)
+      {
+         this.enabledCapabilities = new HashSet<>();
+      }
+      this.enabledCapabilities.addAll(Arrays.stream(enabledCapabilities).toList());
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public Set<Capability> getDisabledCapabilities()
+   {
+      return disabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public void setDisabledCapabilities(Set<Capability> disabledCapabilities)
+   {
+      this.disabledCapabilities = disabledCapabilities;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withDisabledCapabilities(Set<Capability> disabledCapabilities)
+   {
+      this.disabledCapabilities = disabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withoutCapabilities(Capability... disabledCapabilities)
+   {
+      if(this.disabledCapabilities == null)
+      {
+         this.disabledCapabilities = new HashSet<>();
+      }
+      this.disabledCapabilities.addAll(Arrays.stream(disabledCapabilities).toList());
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for disabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withoutCapabilities(Set<Capability> disabledCapabilities)
+   {
+      this.disabledCapabilities = disabledCapabilities;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Alternative fluent setter for a single disabledCapabilities
+    **
+    *******************************************************************************/
+   public QBackendMetaData withoutCapability(Capability capability)
+   {
+      if(this.disabledCapabilities == null)
+      {
+         this.disabledCapabilities = new HashSet<>();
+      }
+      this.disabledCapabilities.add(capability);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void performValidation(QInstanceValidator qInstanceValidator)
    {
       ////////////////////////
       // noop in base class //

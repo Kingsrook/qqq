@@ -23,26 +23,43 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +71,15 @@ import org.apache.logging.log4j.Logger;
 public class RunProcessAction
 {
    private static final Logger LOG = LogManager.getLogger(RunProcessAction.class);
+
+   public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
+   public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
+   public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////
+   // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
+   ////////////////////////////////////////////////////////////////////////////////////////////////
+   public static final String BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD = "basepullReadyToUpdateTimestamp";
 
 
 
@@ -83,6 +109,18 @@ public class RunProcessAction
 
       UUIDAndTypeStateKey stateKey     = new UUIDAndTypeStateKey(UUID.fromString(runProcessInput.getProcessUUID()), StateType.PROCESS_STATUS);
       ProcessState        processState = primeProcessState(runProcessInput, stateKey, process);
+
+      /////////////////////////////////////////////////////////
+      // if process is 'basepull' style, keep track of 'now' //
+      /////////////////////////////////////////////////////////
+      BasepullConfiguration basepullConfiguration = process.getBasepullConfiguration();
+      if(basepullConfiguration != null)
+      {
+         ///////////////////////////////////////
+         // get the stored basepull timestamp //
+         ///////////////////////////////////////
+         persistLastRunTime(runProcessInput, process, basepullConfiguration);
+      }
 
       try
       {
@@ -150,6 +188,15 @@ public class RunProcessAction
                //////////////////////////////////////////////////
                throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
             }
+         }
+
+         ////////////////////////////////////////////////////////////////////////////////////
+         // if 'basepull' style process, update the stored basepull timestamp              //
+         // but only when we've been signaled to do so - i.e., after an Execute step runs. //
+         ////////////////////////////////////////////////////////////////////////////////////
+         if(basepullConfiguration != null && BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(runProcessInput.getValue(BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD))))
+         {
+            storeLastRunTime(runProcessInput, process, basepullConfiguration);
          }
       }
       catch(QException qe)
@@ -250,7 +297,17 @@ public class RunProcessAction
       runBackendStepInput.setTableName(process.getTableName());
       runBackendStepInput.setSession(runProcessInput.getSession());
       runBackendStepInput.setCallback(runProcessInput.getCallback());
+      runBackendStepInput.setFrontendStepBehavior(runProcessInput.getFrontendStepBehavior());
       runBackendStepInput.setAsyncJobCallback(runProcessInput.getAsyncJobCallback());
+
+      ///////////////////////////////////////////////////////////////
+      // if 'basepull' values are in the inputs, add to step input //
+      ///////////////////////////////////////////////////////////////
+      if(runProcessInput.getValues().containsKey(BASEPULL_LAST_RUNTIME_KEY))
+      {
+         runBackendStepInput.setBasepullLastRunTime((Instant) runProcessInput.getValues().get(BASEPULL_LAST_RUNTIME_KEY));
+      }
+
       RunBackendStepOutput lastFunctionResult = new RunBackendStepAction().execute(runBackendStepInput);
       storeState(stateKey, lastFunctionResult.getProcessState());
 
@@ -368,4 +425,129 @@ public class RunProcessAction
       return (getStateProvider().get(ProcessState.class, stateKey));
    }
 
+
+
+   /*******************************************************************************
+    ** Insert or update the last runtime value for this basepull into the backend.
+    *******************************************************************************/
+   protected void storeLastRunTime(RunProcessInput runProcessInput, QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
+   {
+      String basepullTableName            = basepullConfiguration.getTableName();
+      String basepullKeyFieldName         = basepullConfiguration.getKeyField();
+      String basepullLastRunTimeFieldName = basepullConfiguration.getLastRunTimeFieldName();
+      String basepullKeyValue             = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+
+      ///////////////////////////////////////
+      // get the stored basepull timestamp //
+      ///////////////////////////////////////
+      QueryInput queryInput = new QueryInput(runProcessInput.getInstance());
+      queryInput.setSession(runProcessInput.getSession());
+      queryInput.setTableName(basepullTableName);
+      queryInput.setFilter(new QQueryFilter().withCriteria(
+         new QFilterCriteria()
+            .withFieldName(basepullKeyFieldName)
+            .withOperator(QCriteriaOperator.EQUALS)
+            .withValues(List.of(basepullKeyValue))));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      //////////////////////////////////////////
+      // get the runtime for this process run //
+      //////////////////////////////////////////
+      Instant newRunTime = (Instant) runProcessInput.getValues().get(BASEPULL_THIS_RUNTIME_KEY);
+
+      /////////////////////////////////////////////////
+      // update if found, otherwise insert new value //
+      /////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
+      {
+         ///////////////////////////////////////////////////////////////////////////////
+         // update the basepull table with 'now' (which is before original query ran) //
+         ///////////////////////////////////////////////////////////////////////////////
+         QRecord basepullRecord = queryOutput.getRecords().get(0);
+         basepullRecord.setValue(basepullLastRunTimeFieldName, newRunTime);
+
+         ////////////
+         // update //
+         ////////////
+         UpdateInput updateInput = new UpdateInput(runProcessInput.getInstance());
+         updateInput.setSession(runProcessInput.getSession());
+         updateInput.setTableName(basepullTableName);
+         updateInput.setRecords(List.of(basepullRecord));
+         new UpdateAction().execute(updateInput);
+      }
+      else
+      {
+         QRecord basepullRecord = new QRecord()
+            .withValue(basepullKeyFieldName, basepullKeyValue)
+            .withValue(basepullLastRunTimeFieldName, newRunTime);
+
+         ////////////////////////////////
+         // insert new basepull record //
+         ////////////////////////////////
+         InsertInput insertInput = new InsertInput(runProcessInput.getInstance());
+         insertInput.setSession(runProcessInput.getSession());
+         insertInput.setTableName(basepullTableName);
+         insertInput.setRecords(List.of(basepullRecord));
+         new InsertAction().execute(insertInput);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Lookup the last runtime for this basepull, and set it (plus now) in the process's
+    ** values.
+    *******************************************************************************/
+   protected void persistLastRunTime(RunProcessInput runProcessInput, QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
+   {
+      ////////////////////////////////////////////////////////
+      // if these values were already computed, don't re-do //
+      ////////////////////////////////////////////////////////
+      if(runProcessInput.getValue(BASEPULL_THIS_RUNTIME_KEY) != null)
+      {
+         return;
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // store 'now', which will be used to update basepull record if process completes successfully //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      Instant now = Instant.now();
+      runProcessInput.getValues().put(BASEPULL_THIS_RUNTIME_KEY, now);
+
+      String  basepullTableName                    = basepullConfiguration.getTableName();
+      String  basepullKeyFieldName                 = basepullConfiguration.getKeyField();
+      String  basepullLastRunTimeFieldName         = basepullConfiguration.getLastRunTimeFieldName();
+      Integer basepullHoursBackForInitialTimestamp = basepullConfiguration.getHoursBackForInitialTimestamp();
+      String  basepullKeyValue                     = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+
+      ///////////////////////////////////////
+      // get the stored basepull timestamp //
+      ///////////////////////////////////////
+      QueryInput queryInput = new QueryInput(runProcessInput.getInstance());
+      queryInput.setSession(runProcessInput.getSession());
+      queryInput.setTableName(basepullTableName);
+      queryInput.setFilter(new QQueryFilter().withCriteria(
+         new QFilterCriteria()
+            .withFieldName(basepullKeyFieldName)
+            .withOperator(QCriteriaOperator.EQUALS)
+            .withValues(List.of(basepullKeyValue))));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // get the stored time, if not, default to 'now' unless a number of hours to offset was provided //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      Instant lastRunTime = now;
+      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
+      {
+         QRecord basepullRecord = queryOutput.getRecords().get(0);
+         lastRunTime = ValueUtils.getValueAsInstant(basepullRecord.getValue(basepullLastRunTimeFieldName));
+      }
+      else if(basepullHoursBackForInitialTimestamp != null)
+      {
+         lastRunTime = lastRunTime.minus(basepullHoursBackForInitialTimestamp, ChronoUnit.HOURS);
+      }
+
+      runProcessInput.getValues().put(BASEPULL_LAST_RUNTIME_KEY, lastRunTime);
+      runProcessInput.getValues().put(BASEPULL_TIMESTAMP_FIELD, basepullConfiguration.getTimestampField());
+   }
 }

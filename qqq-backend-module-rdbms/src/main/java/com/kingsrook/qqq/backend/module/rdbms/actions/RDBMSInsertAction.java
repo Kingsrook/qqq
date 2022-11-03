@@ -109,7 +109,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          {
             for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
             {
-               String        tableName   = getTableName(table);
+               String        tableName   = escapeIdentifier(getTableName(table));
                StringBuilder sql         = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
                List<Object>  params      = new ArrayList<>();
                int           recordIndex = 0;

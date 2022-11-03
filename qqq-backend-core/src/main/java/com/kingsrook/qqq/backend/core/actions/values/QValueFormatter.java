@@ -184,6 +184,7 @@ public class QValueFormatter
       }
       catch(Exception e)
       {
+         LOG.debug("Error formatting record label", e);
          return (formatRecordLabelExceptionalCases(table, record));
       }
    }

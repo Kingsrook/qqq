@@ -22,12 +22,16 @@
 package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
+import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import com.auth0.client.auth.AuthAPI;
+import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.TokenHolder;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -65,6 +69,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    public static final int ID_TOKEN_VALIDATION_INTERVAL_SECONDS = 1800;
 
    public static final String AUTH0_ID_TOKEN_KEY = "sessionId";
+   public static final String BASIC_AUTH_KEY     = "basicAuthString";
 
    public static final String TOKEN_NOT_PROVIDED_ERROR = "Id Token was not provided";
    public static final String COULD_NOT_DECODE_ERROR   = "Unable to decode id token";
@@ -82,6 +87,43 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    @Override
    public QSession createSession(QInstance qInstance, Map<String, String> context) throws QAuthenticationException
    {
+      ///////////////////////////////////////////////////////////
+      // check if we are processing a Basic Auth Session first //
+      ///////////////////////////////////////////////////////////
+      if(context.containsKey(BASIC_AUTH_KEY))
+      {
+         Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
+         AuthAPI auth = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
+         try
+         {
+            /////////////////////////////////////////////////
+            // decode the credentials from the header auth //
+            /////////////////////////////////////////////////
+            String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
+            byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
+            String credentials = new String(credDecoded, StandardCharsets.UTF_8);
+
+            /////////////////////////////////////
+            // call auth0 with a login request //
+            /////////////////////////////////////
+            TokenHolder result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
+               .setScope("openid email nickname")
+               .execute();
+
+            context.put(AUTH0_ID_TOKEN_KEY, result.getIdToken());
+         }
+         catch(Auth0Exception e)
+         {
+            ////////////////
+            // ¯\_(ツ)_/¯ //
+            ////////////////
+            String message = "An unknown error occurred during handling basic auth";
+            LOG.error(message, e);
+            throw (new QAuthenticationException(message));
+         }
+
+      }
+
       //////////////////////////////////////////////////
       // get the jwt id token from the context object //
       //////////////////////////////////////////////////

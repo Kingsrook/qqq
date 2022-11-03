@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 
 
 /*******************************************************************************
@@ -46,6 +47,18 @@ public abstract class AbstractExtractStep implements BackendStep
 {
    private RecordPipe recordPipe;
    private Integer    limit;
+
+
+
+   /*******************************************************************************
+    ** Allow subclasses to do an action before the run begins.
+    *******************************************************************************/
+   public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
 
 
 

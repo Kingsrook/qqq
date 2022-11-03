@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
@@ -40,6 +41,8 @@ public class RenderWidgetAction
     *******************************************************************************/
    public RenderWidgetOutput execute(RenderWidgetInput input) throws QException
    {
+      ActionHelper.validateSession(input);
+
       AbstractWidgetRenderer widgetRenderer = QCodeLoader.getAdHoc(AbstractWidgetRenderer.class, input.getWidgetMetaData().getCodeReference());
       return (widgetRenderer.render(input));
    }

@@ -38,6 +38,8 @@ public class QFieldSection
    private List<String> fieldNames;
    private QIcon        icon;
 
+   private boolean isHidden = false;
+
 
 
    /*******************************************************************************
@@ -241,6 +243,40 @@ public class QFieldSection
    public QFieldSection withIcon(QIcon icon)
    {
       this.icon = icon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return (isHidden);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    **
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent Setter for isHidden
+    **
+    *******************************************************************************/
+   public QFieldSection withIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
       return (this);
    }
 

@@ -26,9 +26,23 @@ import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -68,7 +82,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertTrue(jsonObject.has("tables"));
       JSONObject tables = jsonObject.getJSONObject("tables");
-      assertEquals(1, tables.length());
+      assertEquals(6, tables.length()); // person + 5 script tables
       JSONObject personTable = tables.getJSONObject("person");
       assertTrue(personTable.has("name"));
       assertEquals("person", personTable.getString("name"));
@@ -614,6 +628,137 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertEquals(2, jsonObject.getJSONArray("options").length());
       assertEquals(4, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
       assertEquals(5, jsonObject.getJSONArray("options").getJSONObject(1).getInt("id"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetRecordDeveloperMode() throws QException
+   {
+      UpdateInput updateInput = new UpdateInput(TestUtils.defineInstance());
+      updateInput.setSession(new QSession());
+      updateInput.setTableName("person");
+      updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("testScriptId", 47)));
+      new UpdateAction().execute(updateInput);
+
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName("script");
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("currentScriptRevisionId", 100)));
+      new InsertAction().execute(insertInput);
+
+      insertInput.setTableName("scriptRevision");
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1000).withValue("scriptId", 47).withValue("content", "var i;")));
+      new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/1/developer").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      System.out.println(jsonObject.toString(3));
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONObject("record"));
+      assertEquals("Darin", jsonObject.getJSONObject("record").getJSONObject("values").getString("firstName"));
+      assertEquals("Darin", jsonObject.getJSONObject("record").getJSONObject("displayValues").getString("firstName"));
+      assertNotNull(jsonObject.getJSONArray("associatedScripts"));
+      assertNotNull(jsonObject.getJSONArray("associatedScripts").getJSONObject(0));
+      assertNotNull(jsonObject.getJSONArray("associatedScripts").getJSONObject(0).getJSONArray("scriptRevisions"));
+      assertEquals("var i;", jsonObject.getJSONArray("associatedScripts").getJSONObject(0).getJSONArray("scriptRevisions").getJSONObject(0).getJSONObject("values").getString("content"));
+      assertNotNull(jsonObject.getJSONArray("associatedScripts").getJSONObject(0).getJSONObject("script"));
+      assertEquals(100, jsonObject.getJSONArray("associatedScripts").getJSONObject(0).getJSONObject("script").getJSONObject("values").getInt("currentScriptRevisionId"));
+      assertNotNull(jsonObject.getJSONArray("associatedScripts").getJSONObject(0).getJSONObject("associatedScript"));
+      assertEquals("testScriptId", jsonObject.getJSONArray("associatedScripts").getJSONObject(0).getJSONObject("associatedScript").getString("fieldName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testStoreRecordAssociatedScript() throws QException
+   {
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName("scriptType");
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("name", "Test")));
+      new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/1/developer/associatedScript/testScriptId")
+         .field("contents", "var j = 0;")
+         .field("commitMessage", "Javalin Commit")
+         .asString();
+
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setSession(new QSession());
+      queryInput.setTableName("scriptRevision");
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria("contents", QCriteriaOperator.EQUALS, List.of("var j = 0;")))
+         .withCriteria(new QFilterCriteria("commitMessage", QCriteriaOperator.EQUALS, List.of("Javalin Commit")))
+      );
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTestAssociatedScript() throws QException
+   {
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName("scriptType");
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("name", "Test")));
+      new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/1/developer/associatedScript/testScriptId/test")
+         .field("code", "var j = 0;")
+         .field("scriptTypeId", "1")
+         .field("x", "47")
+         .asString();
+
+      /////////////////////////////////////////
+      // todo - assertions after implemented //
+      /////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetAssociatedScriptLogs() throws QException
+   {
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName("scriptLog");
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("output", "testOutput").withValue("scriptRevisionId", 100)));
+      new InsertAction().execute(insertInput);
+
+      insertInput.setTableName("scriptLogLine");
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("scriptLogId", 1).withValue("text", "line one"),
+         new QRecord().withValue("scriptLogId", 1).withValue("text", "line two")
+      ));
+      new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/1/developer/associatedScript/testScriptId/100/logs").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject.getJSONArray("scriptLogRecords"));
+      assertEquals(1, jsonObject.getJSONArray("scriptLogRecords").length());
+      assertNotNull(jsonObject.getJSONArray("scriptLogRecords").getJSONObject(0).getJSONObject("values"));
+      assertEquals("testOutput", jsonObject.getJSONArray("scriptLogRecords").getJSONObject(0).getJSONObject("values").getString("output"));
+      assertNotNull(jsonObject.getJSONArray("scriptLogRecords").getJSONObject(0).getJSONObject("values").getJSONArray("scriptLogLine"));
+      assertEquals(2, jsonObject.getJSONArray("scriptLogRecords").getJSONObject(0).getJSONObject("values").getJSONArray("scriptLogLine").length());
+      assertEquals("line one", jsonObject.getJSONArray("scriptLogRecords").getJSONObject(0).getJSONObject("values").getJSONArray("scriptLogLine").getJSONObject(0).getJSONObject("values").getString("text"));
+      assertEquals("line two", jsonObject.getJSONArray("scriptLogRecords").getJSONObject(0).getJSONObject("values").getJSONArray("scriptLogLine").getJSONObject(1).getJSONObject("values").getString("text"));
    }
 
 }

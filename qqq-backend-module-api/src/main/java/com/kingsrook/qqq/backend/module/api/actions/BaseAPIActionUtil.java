@@ -26,20 +26,23 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
 import org.apache.http.HttpEntity;
@@ -72,7 +75,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public long getMillisToSleepAfterEveryCall()
    {
-      return 0;
+      return (0);
    }
 
 
@@ -82,7 +85,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public int getInitialRateLimitBackoffMillis()
    {
-      return 0;
+      return (0);
    }
 
 
@@ -92,7 +95,17 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public int getMaxAllowedRateLimitErrors()
    {
-      return 0;
+      return (0);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Integer getApiStandardLimit()
+   {
+      return (20);
    }
 
 
@@ -101,10 +114,23 @@ public class BaseAPIActionUtil
     ** method to build up a query string based on a given QFilter object
     **
     *******************************************************************************/
-   protected String buildQueryString(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
+   protected String buildQueryStringForGet(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
    {
       // todo: reasonable default action
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a default query string for a single-record GET - e.g., a query for just 1 record.
+    *******************************************************************************/
+   public String buildUrlSuffixForSingleRecordGet(Serializable primaryKey) throws QException
+   {
+      QTableMetaData table = actionInput.getTable();
+      QQueryFilter filter = new QQueryFilter()
+         .withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.EQUALS, List.of(primaryKey)));
+      return (buildQueryStringForGet(filter, 1, 0, table.getFields()));
    }
 
 
@@ -205,6 +231,14 @@ public class BaseAPIActionUtil
    {
       JSONObject body = recordToJsonObject(table, record);
       String     json = body.toString();
+
+      String tablePath = getBackendDetails(table).getTablePath();
+      if(tablePath != null)
+      {
+         body = new JSONObject();
+         body.put(tablePath, new JSONObject(json));
+         json = body.toString();
+      }
       LOG.debug(json);
       return (new StringEntity(json));
    }
@@ -248,7 +282,8 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected QRecord jsonObjectToRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields) throws IOException
    {
-      QRecord record = JsonUtils.parseQRecord(jsonObject, fields);
+      QRecord record = JsonUtils.parseQRecord(jsonObject, fields, true);
+      record.getBackendDetails().put(QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT, jsonObject.toString());
       return (record);
    }
 
@@ -257,16 +292,21 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected List<QRecord> processGetResponse(QTableMetaData table, HttpResponse response) throws IOException
+   protected int processGetResponse(QTableMetaData table, HttpResponse response, QueryOutput queryOutput) throws IOException
    {
       int statusCode = response.getStatusLine().getStatusCode();
       System.out.println(statusCode);
 
+      if(statusCode >= 400)
+      {
+         handleGetResponseError(table, response);
+      }
+
       HttpEntity entity       = response.getEntity();
       String     resultString = EntityUtils.toString(entity);
 
-      List<QRecord> recordList = new ArrayList<>();
-      if(StringUtils.hasContent(resultString))
+      int count = 0;
+      if(StringUtils.hasContent(resultString) && !resultString.equals("null"))
       {
          JSONArray  resultList = null;
          JSONObject jsonObject = null;
@@ -289,16 +329,30 @@ public class BaseAPIActionUtil
          {
             for(int i = 0; i < resultList.length(); i++)
             {
-               recordList.add(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
+               queryOutput.addRecord(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
+               count++;
             }
          }
          else
          {
-            recordList.add(jsonObjectToRecord(jsonObject, table.getFields()));
+            queryOutput.addRecord(jsonObjectToRecord(jsonObject, table.getFields()));
+            count++;
          }
       }
 
-      return (recordList);
+      return (count);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void handleGetResponseError(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      HttpEntity entity       = response.getEntity();
+      String     resultString = EntityUtils.toString(entity);
+      throw new IOException("Error performing query: " + resultString);
    }
 
 
@@ -308,14 +362,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected QRecord processPostResponse(QTableMetaData table, QRecord record, HttpResponse response) throws IOException
    {
-      int statusCode = response.getStatusLine().getStatusCode();
-      LOG.debug(statusCode);
-
-      HttpEntity entity       = response.getEntity();
-      String     resultString = EntityUtils.toString(entity);
-      LOG.debug(resultString);
-
-      JSONObject jsonObject = JsonUtils.toJSONObject(resultString);
+      JSONObject jsonObject = getJsonObject(response);
 
       String primaryKeyFieldName   = table.getPrimaryKeyField();
       String primaryKeyBackendName = getFieldBackendName(table.getField(primaryKeyFieldName));
@@ -342,6 +389,24 @@ public class BaseAPIActionUtil
       }
 
       return (record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected JSONObject getJsonObject(HttpResponse response) throws IOException
+   {
+      int statusCode = response.getStatusLine().getStatusCode();
+      LOG.debug(statusCode);
+
+      HttpEntity entity       = response.getEntity();
+      String     resultString = EntityUtils.toString(entity);
+      LOG.debug(resultString);
+
+      JSONObject jsonObject = JsonUtils.toJSONObject(resultString);
+      return jsonObject;
    }
 
 
@@ -418,8 +483,36 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String urlEncode(String s)
+   protected String urlEncode(Serializable s)
    {
-      return (URLEncoder.encode(s, StandardCharsets.UTF_8));
+      return (URLEncoder.encode(ValueUtils.getValueAsString(s), StandardCharsets.UTF_8));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord processSingleRecordGetResponse(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      return (jsonObjectToRecord(getJsonObject(response), table.getFields()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Integer processGetResponseForCount(QTableMetaData table, HttpResponse response) throws IOException
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // set up a query output with a blank query input - e.g., one that isn't using a pipe. //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      QueryOutput queryOutput = new QueryOutput(new QueryInput());
+      processGetResponse(table, response, queryOutput);
+      List<QRecord> records = queryOutput.getRecords();
+
+      return (records == null ? null : records.size());
+   }
+
 }

@@ -23,19 +23,27 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 
 
 import java.io.Serializable;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -47,6 +55,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackend
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -67,6 +76,80 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class RunProcessTest
 {
    private static final Logger LOG = LogManager.getLogger(RunProcessTest.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testBasepull() throws QException
+   {
+      TestCallback    callback = new TestCallback();
+      RunProcessInput request  = new RunProcessInput(TestUtils.defineInstance());
+      request.setSession(TestUtils.getMockSession());
+      request.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
+      request.setCallback(callback);
+      RunProcessOutput result = new RunProcessAction().execute(request);
+      assertNotNull(result);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // get the last run time and 'this' run time - because the definition states that if no //
+      // rows found, the last runtime timestamp should be for 24 hours ago                    //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      Instant lastRunTime = (Instant) result.getValues().get(RunProcessAction.BASEPULL_LAST_RUNTIME_KEY);
+      Instant thisRunTime = (Instant) result.getValues().get(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY);
+      assertTrue(thisRunTime.isAfter(lastRunTime), "new run time should be after last run time.");
+
+      DayOfWeek lastRunTimeDayOfWeek = lastRunTime.atZone(ZoneId.systemDefault()).getDayOfWeek();
+      DayOfWeek thisRunTimeDayOfWeek = thisRunTime.atZone(ZoneId.systemDefault()).getDayOfWeek();
+      thisRunTimeDayOfWeek = thisRunTimeDayOfWeek.minus(1);
+      assertEquals(lastRunTimeDayOfWeek.getValue(), thisRunTimeDayOfWeek.getValue(), "last and this run times should be the same day after subtracting a day");
+
+      ///////////////////////////////////////////////
+      // make sure new stamp stored in backend too //
+      ///////////////////////////////////////////////
+      assertEquals(thisRunTime, getBasepullLastRunTime(), "last run time should be properly stored in backend");
+
+      ////////////////////////////////////////////////////
+      // run the process one more time and check values //
+      ////////////////////////////////////////////////////
+      result = new RunProcessAction().execute(request);
+      assertNotNull(result);
+
+      ////////////////////////////////
+      // this should still be after //
+      ////////////////////////////////
+      lastRunTime = (Instant) result.getValues().get(RunProcessAction.BASEPULL_LAST_RUNTIME_KEY);
+      thisRunTime = (Instant) result.getValues().get(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY);
+      assertTrue(thisRunTime.isAfter(lastRunTime), "new run time should be after last run time.");
+
+      ///////////////////////////////////////////////
+      // make sure new stamp stored in backend too //
+      ///////////////////////////////////////////////
+      assertEquals(thisRunTime, getBasepullLastRunTime(), "last run time should be properly stored in backend");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Instant getBasepullLastRunTime() throws QException
+   {
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria()
+         .withFieldName(TestUtils.BASEPULL_KEY_FIELD_NAME)
+         .withOperator(QCriteriaOperator.EQUALS)
+         .withValues(List.of(TestUtils.PROCESS_NAME_BASEPULL))));
+      queryInput.setSession(TestUtils.getMockSession());
+      queryInput.setTableName(TestUtils.TABLE_NAME_BASEPULL);
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertNotNull(queryOutput);
+      assertEquals(1, queryOutput.getRecords().size(), "Should have one record");
+      return (ValueUtils.getValueAsInstant(queryOutput.getRecords().get(0).getValue(TestUtils.BASEPULL_LAST_RUN_TIME_FIELD_NAME)));
+   }
 
 
 

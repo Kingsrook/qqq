@@ -38,6 +38,8 @@ public class QCodeReference implements Serializable
    private QCodeType  codeType;
    private QCodeUsage codeUsage;
 
+   private String inlineCode;
+
 
 
    /*******************************************************************************
@@ -209,6 +211,40 @@ public class QCodeReference implements Serializable
    public QCodeReference withCodeUsage(QCodeUsage codeUsage)
    {
       this.codeUsage = codeUsage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for inlineCode
+    **
+    *******************************************************************************/
+   public String getInlineCode()
+   {
+      return inlineCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inlineCode
+    **
+    *******************************************************************************/
+   public void setInlineCode(String inlineCode)
+   {
+      this.inlineCode = inlineCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inlineCode
+    **
+    *******************************************************************************/
+   public QCodeReference withInlineCode(String inlineCode)
+   {
+      this.inlineCode = inlineCode;
       return (this);
    }
 

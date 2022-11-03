@@ -28,6 +28,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -63,6 +64,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          RecordPipe          recordPipe  = new RecordPipe();
          AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
          extractStep.setRecordPipe(recordPipe);
+         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
          AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
@@ -88,13 +90,25 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          updateRecordsWithDisplayValuesAndPossibleValues(runBackendStepInput, loadedRecordList);
          runBackendStepOutput.setRecords(loadedRecordList);
 
-         ////////////////////////////////////////////////////////////////////////////////////////////////////
-         // get the process summary from the ... transform step?  the load step?  each knows some... todo? //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////
-         runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // get the process summary from the load step, if it's a summary-provider -- else, use the transform step (which is always a provider) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(loadStep instanceof ProcessSummaryProviderInterface provider)
+         {
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, provider.doGetProcessSummary(runBackendStepOutput, true));
+         }
+         else
+         {
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
+         }
 
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);
+
+         //////////////////////////////////////////////////////////////////////////////
+         // set the flag to state that the basepull timestamp should be updated now. //
+         //////////////////////////////////////////////////////////////////////////////
+         runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
 
          /////////////////////
          // commit the work //

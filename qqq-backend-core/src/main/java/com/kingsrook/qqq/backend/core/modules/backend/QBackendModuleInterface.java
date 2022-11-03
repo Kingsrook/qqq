@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.modules.backend;
 
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
@@ -48,7 +49,10 @@ public interface QBackendModuleInterface
    /*******************************************************************************
     ** Method to identify the class used for backend meta data for this module.
     *******************************************************************************/
-   Class<? extends QBackendMetaData> getBackendMetaDataClass();
+   default Class<? extends QBackendMetaData> getBackendMetaDataClass()
+   {
+      return (QBackendMetaData.class);
+   }
 
    /*******************************************************************************
     ** Method to identify the class used for table-backend details for this module.
@@ -73,6 +77,15 @@ public interface QBackendModuleInterface
    default QueryInterface getQueryInterface()
    {
       throwNotImplemented("Query");
+      return null;
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default GetInterface getGetInterface()
+   {
+      throwNotImplemented("Get");
       return null;
    }
 

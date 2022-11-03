@@ -87,7 +87,7 @@ checkBuild()
       color="gray"
    fi
 
-   if [ $index -lt 1 -o $seconds -lt 300 ]; then
+   if [ $index -lt 1 -o $seconds -lt 600 ]; then
       echo -n "${shortRepo}(${shortAge})${icon} "
    fi
    details="$details\n$repo: $jobName: $buildStatus @ $age ago | color=$color | href=$url | image=$avatarB64"

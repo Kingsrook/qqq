@@ -401,4 +401,14 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String escapeIdentifier(String id)
+   {
+      return ("`" + id + "`");
+   }
+
 }

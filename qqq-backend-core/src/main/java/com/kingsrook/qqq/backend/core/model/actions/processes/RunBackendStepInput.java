@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -44,12 +45,14 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RunBackendStepInput extends AbstractActionInput
 {
-   private ProcessState     processState;
-   private String           processName;
-   private String           tableName;
-   private String           stepName;
-   private QProcessCallback callback;
-   private AsyncJobCallback asyncJobCallback;
+   private ProcessState                         processState;
+   private String                               processName;
+   private String                               tableName;
+   private String                               stepName;
+   private QProcessCallback                     callback;
+   private AsyncJobCallback                     asyncJobCallback;
+   private RunProcessInput.FrontendStepBehavior frontendStepBehavior;
+   private Instant                              basepullLastRunTime;
 
    ////////////////////////////////////////////////////////////////////////////
    // note - new fields should generally be added in method: cloneFieldsInto //
@@ -417,6 +420,17 @@ public class RunBackendStepInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Instant getValueInstant(String fieldName)
+   {
+      return (ValueUtils.getValueAsInstant(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
     ** Accessor for processState - protected, because we generally want to access
     ** its members through wrapper methods, we think
     **
@@ -451,6 +465,74 @@ public class RunBackendStepInput extends AbstractActionInput
          asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus());
       }
       return (asyncJobCallback);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for frontendStepBehavior
+    **
+    *******************************************************************************/
+   public RunProcessInput.FrontendStepBehavior getFrontendStepBehavior()
+   {
+      return frontendStepBehavior;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for frontendStepBehavior
+    **
+    *******************************************************************************/
+   public void setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior frontendStepBehavior)
+   {
+      this.frontendStepBehavior = frontendStepBehavior;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for frontendStepBehavior
+    **
+    *******************************************************************************/
+   public RunBackendStepInput withFrontendStepBehavior(RunProcessInput.FrontendStepBehavior frontendStepBehavior)
+   {
+      this.frontendStepBehavior = frontendStepBehavior;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for basepullLastRunTime
+    **
+    *******************************************************************************/
+   public Instant getBasepullLastRunTime()
+   {
+      return basepullLastRunTime;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for basepullLastRunTime
+    **
+    *******************************************************************************/
+   public void setBasepullLastRunTime(Instant basepullLastRunTime)
+   {
+      this.basepullLastRunTime = basepullLastRunTime;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for basepullLastRunTime
+    **
+    *******************************************************************************/
+   public RunBackendStepInput withBasepullLastRunTime(Instant basepullLastRunTime)
+   {
+      this.basepullLastRunTime = basepullLastRunTime;
+      return (this);
    }
 
 }

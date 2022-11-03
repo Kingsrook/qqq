@@ -24,6 +24,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -340,4 +343,38 @@ public class QAppMetaData implements QAppChildMetaData
       this.addSection(section);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAppMetaData withSectionOfChildren(QAppSection section, QAppChildMetaData... children)
+   {
+      this.addSection(section);
+
+      for(QAppChildMetaData child : children)
+      {
+         withChild(child);
+         if(child instanceof QTableMetaData)
+         {
+            section.withTable(child.getName());
+         }
+         else if(child instanceof QProcessMetaData)
+         {
+            section.withProcess(child.getName());
+         }
+         else if(child instanceof QReportMetaData)
+         {
+            section.withReport(child.getName());
+         }
+         else
+         {
+            throw new IllegalArgumentException("Unrecognized child type: " + child.getName());
+         }
+      }
+
+      return (this);
+   }
+
 }

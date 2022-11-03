@@ -1,0 +1,271 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.core.modules.backend.implementations.enumeration;
+
+
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEnum;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+
+/*******************************************************************************
+ ** Unit test for EnumerationQueryAction
+ *******************************************************************************/
+class EnumerationQueryActionTest
+{
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUnfilteredQuery() throws QException
+   {
+      QInstance instance = defineQInstance();
+
+      QueryInput queryInput = new QueryInput(instance);
+      queryInput.setSession(new QSession());
+      queryInput.setTableName("statesEnum");
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(2, queryOutput.getRecords().size());
+
+      assertEquals(1, queryOutput.getRecords().get(0).getValueInteger("id"));
+      assertEquals("Missouri", queryOutput.getRecords().get(0).getValueString("name"));
+      assertEquals("MO", queryOutput.getRecords().get(0).getValueString("postalCode"));
+      assertEquals(15_000_000, queryOutput.getRecords().get(0).getValueInteger("population"));
+
+      assertEquals(2, queryOutput.getRecords().get(1).getValueInteger("id"));
+      assertEquals("Illinois", queryOutput.getRecords().get(1).getValueString("name"));
+      assertEquals("IL", queryOutput.getRecords().get(1).getValueString("postalCode"));
+      assertEquals(25_000_000, queryOutput.getRecords().get(1).getValueInteger("population"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilteredQuery() throws QException
+   {
+      QInstance instance = defineQInstance();
+
+      QueryInput queryInput = new QueryInput(instance);
+      queryInput.setSession(new QSession());
+      queryInput.setTableName("statesEnum");
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("population", QCriteriaOperator.GREATER_THAN, List.of(20_000_000))));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size());
+
+      assertEquals(2, queryOutput.getRecords().get(0).getValueInteger("id"));
+      assertEquals("IL", queryOutput.getRecords().get(0).getValueString("postalCode"));
+      assertEquals(25_000_000, queryOutput.getRecords().get(0).getValueInteger("population"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryOrderBy() throws QException
+   {
+      QInstance instance = defineQInstance();
+
+      QueryInput queryInput = new QueryInput(instance);
+      queryInput.setSession(new QSession());
+      queryInput.setTableName("statesEnum");
+
+      queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("name")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Illinois", "Missouri"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("name", false)));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuerySkipLimit() throws QException
+   {
+      QInstance instance = defineQInstance();
+
+      QueryInput queryInput = new QueryInput(instance);
+      queryInput.setSession(new QSession());
+      queryInput.setTableName("statesEnum");
+      queryInput.setSkip(0);
+      queryInput.setLimit(null);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setSkip(1);
+      queryInput.setLimit(null);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setSkip(2);
+      queryInput.setLimit(null);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of(), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setSkip(null);
+      queryInput.setLimit(1);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Missouri"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setSkip(null);
+      queryInput.setLimit(2);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setSkip(null);
+      queryInput.setLimit(3);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+      queryInput.setSkip(null);
+      queryInput.setLimit(0);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(List.of(), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QInstance defineQInstance()
+   {
+      QInstance instance = TestUtils.defineInstance();
+      instance.addBackend(new QBackendMetaData()
+         .withName("enum")
+         .withBackendType("enum")
+      );
+
+      instance.addTable(new QTableMetaData()
+         .withName("statesEnum")
+         .withBackendName("enum")
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withField(new QFieldMetaData("postalCode", QFieldType.STRING))
+         .withField(new QFieldMetaData("population", QFieldType.INTEGER))
+         .withBackendDetails(new EnumerationTableBackendDetails().withEnumClass(States.class))
+      );
+      return instance;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static enum States implements QRecordEnum
+   {
+      MO(1, "Missouri", "MO", 15_000_000),
+      IL(2, "Illinois", "IL", 25_000_000);
+
+
+      private final Integer id;
+      private final String  name;
+      private final String  postalCode;
+      private final Integer population;
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      States(int id, String name, String postalCode, int population)
+      {
+         this.id = id;
+         this.name = name;
+         this.postalCode = postalCode;
+         this.population = population;
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for id
+       **
+       *******************************************************************************/
+      public Integer getId()
+      {
+         return id;
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for name
+       **
+       *******************************************************************************/
+      public String getName()
+      {
+         return name;
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for postalCode
+       **
+       *******************************************************************************/
+      public String getPostalCode()
+      {
+         return postalCode;
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for population
+       **
+       *******************************************************************************/
+      public Integer getPopulation()
+      {
+         return population;
+      }
+   }
+
+}

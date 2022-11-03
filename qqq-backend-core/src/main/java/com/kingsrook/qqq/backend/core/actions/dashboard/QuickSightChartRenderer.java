@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
@@ -51,6 +52,8 @@ public class QuickSightChartRenderer extends AbstractWidgetRenderer
    @Override
    public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
+      ActionHelper.validateSession(input);
+
       try
       {
          QuickSightChartMetaData quickSightMetaData = (QuickSightChartMetaData) input.getWidgetMetaData();

@@ -85,6 +85,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
       extractStep.setLimit(null);
       extractStep.setRecordPipe(recordPipe);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);

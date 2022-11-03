@@ -43,6 +43,10 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class PrepareReportStep implements BackendStep
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
@@ -68,12 +72,22 @@ public class PrepareReportStep implements BackendStep
       }
       else
       {
-         //////////////////////////////////////////////////////////////
-         // no input?  re-route the process to skip the input screen //
-         //////////////////////////////////////////////////////////////
-         List<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
-         stepList.removeIf(s -> s.equals(BasicRunReportProcess.STEP_NAME_INPUT));
-         runBackendStepOutput.getProcessState().setStepList(stepList);
+         removeInputStepFromProcess(runBackendStepOutput);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void removeInputStepFromProcess(RunBackendStepOutput runBackendStepOutput)
+   {
+      //////////////////////////////////////////////////////////////
+      // no input?  re-route the process to skip the input screen //
+      //////////////////////////////////////////////////////////////
+      List<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
+      stepList.removeIf(s -> s.equals(BasicRunReportProcess.STEP_NAME_INPUT));
+      runBackendStepOutput.getProcessState().setStepList(stepList);
    }
 }

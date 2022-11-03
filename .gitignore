@@ -2,6 +2,7 @@ target/
 *.iml
 .env
 
+.idea
 
 #############################################
 ## Original contents from github template: ##

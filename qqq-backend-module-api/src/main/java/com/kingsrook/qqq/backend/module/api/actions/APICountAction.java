@@ -22,13 +22,11 @@
 package com.kingsrook.qqq.backend.module.api.actions;
 
 
-import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -58,23 +56,24 @@ public class APICountAction extends AbstractAPIAction implements CountInterface
       try
       {
          QQueryFilter filter      = countInput.getFilter();
-         String       paramString = apiActionUtil.buildQueryString(filter, null, null, table.getFields());
+         String       paramString = apiActionUtil.buildQueryStringForGet(filter, null, null, table.getFields());
 
          HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
          HttpClient        client            = httpClientBuilder.build();
 
-         String  url     = apiActionUtil.buildTableUrl(table);
-         HttpGet request = new HttpGet(url + paramString);
+         String url = apiActionUtil.buildTableUrl(table) + paramString;
+         LOG.info("API URL: " + url);
+         HttpGet request = new HttpGet(url);
 
          apiActionUtil.setupAuthorizationInRequest(request);
          apiActionUtil.setupContentTypeInRequest(request);
          apiActionUtil.setupAdditionalHeaders(request);
 
-         HttpResponse  response     = client.execute(request);
-         List<QRecord> queryResults = apiActionUtil.processGetResponse(table, response);
+         HttpResponse response = client.execute(request);
+         Integer      count    = apiActionUtil.processGetResponseForCount(table, response);
 
          CountOutput rs = new CountOutput();
-         rs.setCount(queryResults.size());
+         rs.setCount(count);
          return rs;
       }
       catch(Exception e)

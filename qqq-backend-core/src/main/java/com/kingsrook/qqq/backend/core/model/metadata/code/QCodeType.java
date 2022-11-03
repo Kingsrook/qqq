@@ -28,5 +28,6 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
  *******************************************************************************/
 public enum QCodeType
 {
-   JAVA
+   JAVA,
+   JAVA_SCRIPT
 }

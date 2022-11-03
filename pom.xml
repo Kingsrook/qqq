@@ -33,6 +33,7 @@
       <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
       <module>qqq-backend-module-rdbms</module>
+      <module>qqq-language-support-javascript</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
       <module>qqq-middleware-lambda</module>
@@ -41,7 +42,7 @@
    </modules>
 
    <properties>
-      <revision>0.6.0-SNAPSHOT</revision>
+      <revision>0.6.0</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

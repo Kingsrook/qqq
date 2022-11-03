@@ -32,9 +32,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -43,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  **
  *******************************************************************************/
-@DisabledOnOs(OS.LINUX)
+@Disabled // OnOs(OS.LINUX)
 public class EasyPostApiTest
 {
 
