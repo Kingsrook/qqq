@@ -30,6 +30,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -237,6 +238,34 @@ public class BaseAPIActionUtil
       {
          body = new JSONObject();
          body.put(tablePath, new JSONObject(json));
+         json = body.toString();
+      }
+      LOG.debug(json);
+      return (new StringEntity(json));
+   }
+
+
+
+   /*******************************************************************************
+    ** Build an HTTP Entity (e.g., for a PUT or POST) from a list of QRecords.  Can be
+    ** overridden if an API doesn't do a basic json object.  Or, can override a
+    ** helper method, such as recordToJsonObject.
+    **
+    *******************************************************************************/
+   protected AbstractHttpEntity recordsToEntity(QTableMetaData table, List<QRecord> recordList) throws IOException
+   {
+      JSONArray entityListJson = new JSONArray();
+      for(QRecord record : recordList)
+      {
+         entityListJson.put(entityListJson.length(), recordToJsonObject(table, record));
+      }
+
+      String json      = entityListJson.toString();
+      String tablePath = getBackendDetails(table).getTablePath();
+      if(tablePath != null)
+      {
+         JSONObject body = new JSONObject();
+         body.put(tablePath, new JSONArray(json));
          json = body.toString();
       }
       LOG.debug(json);
@@ -515,4 +544,23 @@ public class BaseAPIActionUtil
       return (records == null ? null : records.size());
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void throwUnsupportedCriteriaField(QFilterCriteria criteria) throws QUserFacingException
+   {
+      throw new QUserFacingException("Unsupported query field [" + criteria.getFieldName() + "]");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void throwUnsupportedCriteriaOperator(QFilterCriteria criteria) throws QUserFacingException
+   {
+      throw new QUserFacingException("Unsupported operator [" + criteria.getOperator() + "] for query field [" + criteria.getFieldName() + "]");
+   }
 }

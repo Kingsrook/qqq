@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.api.actions;
 
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -34,7 +35,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -76,11 +77,12 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
       {
          connectionManager = new PoolingHttpClientConnectionManager();
 
-         // todo - supports bulk put?
-
-         for(QRecord record : updateInput.getRecords())
+         ///////////////////////////////////////////////////////////////
+         // make post requests for groups of orders that need updated //
+         ///////////////////////////////////////////////////////////////
+         for(List<QRecord> recordList : CollectionUtils.getPages(updateInput.getRecords(), 20))
          {
-            putRecords(updateOutput, table, connectionManager, record);
+            processRecords(table, connectionManager, recordList);
 
             if(updateInput.getRecords().size() > 1 && apiActionUtil.getMillisToSleepAfterEveryCall() > 0)
             {
@@ -110,7 +112,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void putRecords(UpdateOutput updateOutput, QTableMetaData table, HttpClientConnectionManager connectionManager, QRecord record) throws RateLimitException
+   private void processRecords(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList)
    {
       int sleepMillis      = apiActionUtil.getInitialRateLimitBackoffMillis();
       int rateLimitsCaught = 0;
@@ -118,7 +120,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
       {
          try
          {
-            putOneTime(updateOutput, table, connectionManager, record);
+            doPost(table, connectionManager, recordList);
             return;
          }
          catch(RateLimitException rle)
@@ -127,12 +129,10 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
             if(rateLimitsCaught > apiActionUtil.getMaxAllowedRateLimitErrors())
             {
                LOG.warn("Giving up PUT to [" + table.getName() + "] after too many rate-limit errors (" + apiActionUtil.getMaxAllowedRateLimitErrors() + ")");
-               record.addError("Error: " + rle.getMessage());
-               updateOutput.addRecord(record);
                return;
             }
 
-            LOG.info("Caught RateLimitException [#" + rateLimitsCaught + "] PUT'ing to [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
+            LOG.info("Caught RateLimitException [#" + rateLimitsCaught + "] POSTing to [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
             SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
             sleepMillis *= 2;
          }
@@ -144,20 +144,17 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void putOneTime(UpdateOutput insertOutput, QTableMetaData table, HttpClientConnectionManager connectionManager, QRecord record) throws RateLimitException
+   private void doPost(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList) throws RateLimitException
    {
-      try
+      try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build())
       {
-         CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build();
-
-         String url = buildTableUrl(table);
-         url += record.getValueString("number");
-         HttpPut request = new HttpPut(url);
+         String   url     = apiActionUtil.buildTableUrl(table);
+         HttpPost request = new HttpPost(url);
          apiActionUtil.setupAuthorizationInRequest(request);
          apiActionUtil.setupContentTypeInRequest(request);
          apiActionUtil.setupAdditionalHeaders(request);
 
-         request.setEntity(apiActionUtil.recordToEntity(table, record));
+         request.setEntity(apiActionUtil.recordsToEntity(table, recordList));
 
          HttpResponse response   = client.execute(request);
          int          statusCode = response.getStatusLine().getStatusCode();
@@ -165,9 +162,10 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
          {
             throw (new RateLimitException(EntityUtils.toString(response.getEntity())));
          }
-
-         QRecord outputRecord = apiActionUtil.processPostResponse(table, record, response);
-         insertOutput.addRecord(outputRecord);
+         if(statusCode != 207)
+         {
+            LOG.warn("Did not receive response status code of 207: " + EntityUtils.toString(response.getEntity()));
+         }
       }
       catch(RateLimitException rle)
       {
@@ -176,19 +174,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
       catch(Exception e)
       {
          LOG.warn("Error posting to [" + table.getName() + "]", e);
-         record.addError("Error: " + e.getMessage());
-         insertOutput.addRecord(record);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected String buildTableUrl(QTableMetaData table)
-   {
-      return (backendMetaData.getBaseUrl() + "/orders/SalesOrder/");
    }
 
 }

@@ -29,8 +29,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,12 +53,10 @@ public class APIGetAction extends AbstractAPIAction implements GetInterface
       QTableMetaData table = getInput.getTable();
       preAction(getInput);
 
-      try
+      HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
+      try(CloseableHttpClient client = httpClientBuilder.build())
       {
          String urlSuffix = apiActionUtil.buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey());
-
-         HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-         HttpClient        client            = httpClientBuilder.build();
 
          String  url     = apiActionUtil.buildTableUrl(table);
          HttpGet request = new HttpGet(url + urlSuffix);
