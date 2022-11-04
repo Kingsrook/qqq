@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 
 
@@ -204,6 +205,30 @@ public class GeneralProcessUtils
 
 
    /*******************************************************************************
+    ** Load all rows from a table as a RecordEntity.
+    **
+    ** Note, this is inherently unsafe, if you were to call it on a table with
+    ** too many rows...  Caveat emptor.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> List<T> loadTable(AbstractActionInput parentActionInput, String tableName, Class<T> entityClass) throws QException
+   {
+      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
+      queryInput.setSession(parentActionInput.getSession());
+      queryInput.setTableName(tableName);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      List<T> rs = new ArrayList<>();
+      for(QRecord record : queryOutput.getRecords())
+      {
+         rs.add(QRecordEntity.fromQRecord(entityClass, record));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
     ** Load all rows from a table, into a map, keyed by the keyFieldName.
     **
     ** Note - null values from the key field are NOT put in the map.
@@ -229,6 +254,31 @@ public class GeneralProcessUtils
          if(value != null)
          {
             map.put(value, record);
+         }
+      }
+      return (map);
+   }
+
+
+
+   /*******************************************************************************
+    ** Note - null values from the key field are NOT put in the map.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, Class<T> entityClass) throws QException
+   {
+      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
+      queryInput.setSession(parentActionInput.getSession());
+      queryInput.setTableName(tableName);
+      QueryOutput   queryOutput = new QueryAction().execute(queryInput);
+      List<QRecord> records     = queryOutput.getRecords();
+
+      Map<Serializable, T> map = new HashMap<>();
+      for(QRecord record : records)
+      {
+         Serializable value = record.getValue(keyFieldName);
+         if(value != null)
+         {
+            map.put(value, QRecordEntity.fromQRecord(entityClass, record));
          }
       }
       return (map);
