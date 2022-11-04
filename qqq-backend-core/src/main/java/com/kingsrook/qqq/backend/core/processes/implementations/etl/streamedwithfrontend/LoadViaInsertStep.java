@@ -54,6 +54,7 @@ public class LoadViaInsertStep extends AbstractLoadStep
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       insertInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(insertInput::setTransaction);
+      insertInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
       runBackendStepOutput.getRecords().addAll(insertOutput.getRecords());
    }

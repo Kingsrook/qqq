@@ -89,7 +89,7 @@ public class StandardScheduledExecutor
    {
       if(!runningState.equals(RunningState.STOPPED))
       {
-         LOG.info("Request to start from an invalid running state [" + runningState + "].  Must be STOPPED.");
+         LOG.warn("Request to start from an invalid running state [" + runningState + "].  Must be STOPPED.");
          return (false);
       }
 
@@ -121,7 +121,7 @@ public class StandardScheduledExecutor
    {
       if(!runningState.equals(RunningState.RUNNING))
       {
-         LOG.info("Request to stop from an invalid running state [" + runningState + "].  Must be RUNNING.");
+         LOG.warn("Request to stop from an invalid running state [" + runningState + "].  Must be RUNNING.");
          return (false);
       }
 
@@ -138,7 +138,7 @@ public class StandardScheduledExecutor
             return (true);
          }
 
-         LOG.info("Timed out waiting for service to fully terminate.  Will be left in STOPPING state.");
+         LOG.warn("Timed out waiting for service to fully terminate.  Will be left in STOPPING state.");
       }
       catch(InterruptedException ie)
       {

@@ -36,8 +36,8 @@ gumBanner "Getting dev & main branches up to date and ready"
 git checkout main && git pull && git checkout dev && git pull
 
 if [ ! -e "qqq-sample-project/.env" ]; then
-   dir=$(realpath qqq-sample-project)
-   gumBanner "Installing .env file -- for qqq-sample-project" "Tell it your qqq is at:" "$dir"
+   dir=$(realpath .)
+   gumBanner "Installing .env file -- for qqq" "Tell it your qqq is at:" "$dir"
    setup-environments.sh --qqq --quiet
 fi
 

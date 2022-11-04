@@ -174,7 +174,7 @@ public class PollingAutomationPerTableRunner implements Runnable
    public void run()
    {
       Thread.currentThread().setName(name);
-      LOG.info("Running " + this.getClass().getSimpleName() + "[" + name + "]");
+      LOG.debug("Running " + this.getClass().getSimpleName() + "[" + name + "]");
 
       try
       {

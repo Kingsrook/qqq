@@ -379,6 +379,8 @@ public class QJavalinImplementation
          {
             context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
          }
+
+         setUserTimezoneOffsetMinutesHeaderInSession(context, session);
       }
       catch(QAuthenticationException qae)
       {
@@ -388,6 +390,30 @@ public class QJavalinImplementation
          if(authenticationModule instanceof Auth0AuthenticationModule)
          {
             context.removeCookie(SESSION_ID_COOKIE_NAME);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setUserTimezoneOffsetMinutesHeaderInSession(Context context, QSession session)
+   {
+      String userTimezoneOffsetMinutes = context.header("X-QQQ-UserTimezoneOffsetMinutes");
+      if(StringUtils.hasContent(userTimezoneOffsetMinutes))
+      {
+         try
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // even though we're putting it in the session as a string, go through parse int, to make sure it's a valid int. //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            session.setValue("UserTimezoneOffsetMinutes", String.valueOf(Integer.parseInt(userTimezoneOffsetMinutes)));
+         }
+         catch(Exception e)
+         {
+            LOG.debug("Received non-integer value for X-QQQ-UserTimezoneOffsetMinutes header: " + userTimezoneOffsetMinutes);
          }
       }
    }

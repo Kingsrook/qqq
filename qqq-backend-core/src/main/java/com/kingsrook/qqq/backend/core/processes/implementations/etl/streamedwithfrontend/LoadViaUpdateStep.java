@@ -56,6 +56,7 @@ public class LoadViaUpdateStep extends AbstractLoadStep
       updateInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       updateInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(updateInput::setTransaction);
+      updateInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
       runBackendStepOutput.getRecords().addAll(updateOutput.getRecords());
    }

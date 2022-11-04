@@ -81,6 +81,12 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
 
          for(QRecord record : insertInput.getRecords())
          {
+            //////////////////////////////////////////////////////////
+            // hmm, unclear if this should always be done...        //
+            // is added initially for registering easypost trackers //
+            //////////////////////////////////////////////////////////
+            insertInput.getAsyncJobCallback().incrementCurrent();
+
             postOneRecord(insertOutput, table, connectionManager, record);
 
             if(insertInput.getRecords().size() > 1 && apiActionUtil.getMillisToSleepAfterEveryCall() > 0)

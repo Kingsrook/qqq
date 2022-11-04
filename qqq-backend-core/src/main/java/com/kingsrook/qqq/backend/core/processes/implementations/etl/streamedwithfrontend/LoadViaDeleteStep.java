@@ -58,6 +58,7 @@ public class LoadViaDeleteStep extends AbstractLoadStep
       deleteInput.setSession(runBackendStepInput.getSession());
       deleteInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       deleteInput.setPrimaryKeys(runBackendStepInput.getRecords().stream().map(r -> r.getValue(table.getPrimaryKeyField())).collect(Collectors.toList()));
+      deleteInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
       // todo?  can make more efficient deletes, maybe? deleteInput.setQueryFilter();
       getTransaction().ifPresent(deleteInput::setTransaction);
       new DeleteAction().execute(deleteInput);

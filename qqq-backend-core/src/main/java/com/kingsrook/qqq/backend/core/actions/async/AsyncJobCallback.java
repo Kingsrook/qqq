@@ -98,6 +98,30 @@ public class AsyncJobCallback
 
 
    /*******************************************************************************
+    ** Increase the 'current' value in the '1 of 2' sense.
+    *******************************************************************************/
+   public void incrementCurrent()
+   {
+      incrementCurrent(1);
+   }
+
+
+
+   /*******************************************************************************
+    ** Increase the 'current' value in the '1 of 2' sense.
+    *******************************************************************************/
+   public void incrementCurrent(int amount)
+   {
+      if(this.asyncJobStatus.getCurrent() != null)
+      {
+         this.asyncJobStatus.setCurrent(this.asyncJobStatus.getCurrent() + amount);
+         storeUpdatedStatus();
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Remove the values from the current & total fields
     *******************************************************************************/
    public void clearCurrentAndTotal()
