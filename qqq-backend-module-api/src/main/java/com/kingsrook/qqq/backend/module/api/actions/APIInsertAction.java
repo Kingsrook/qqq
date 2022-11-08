@@ -153,10 +153,8 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
     *******************************************************************************/
    private void postOneTime(InsertOutput insertOutput, QTableMetaData table, HttpClientConnectionManager connectionManager, QRecord record) throws RateLimitException
    {
-      try
+      try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build())
       {
-         CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build();
-
          String   url     = apiActionUtil.buildTableUrl(table);
          HttpPost request = new HttpPost(url);
          apiActionUtil.setupAuthorizationInRequest(request);
@@ -186,5 +184,4 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
          insertOutput.addRecord(record);
       }
    }
-
 }

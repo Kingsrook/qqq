@@ -252,7 +252,7 @@ public class BaseAPIActionUtil
     ** helper method, such as recordToJsonObject.
     **
     *******************************************************************************/
-   protected AbstractHttpEntity recordsToEntity(QTableMetaData table, List<QRecord> recordList) throws IOException
+   protected AbstractHttpEntity recordsToEntity(QTableMetaData table, List<QRecord> recordList) throws IOException, QException
    {
       JSONArray entityListJson = new JSONArray();
       for(QRecord record : recordList)

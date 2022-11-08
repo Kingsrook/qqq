@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -43,6 +44,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
@@ -83,8 +85,11 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
          for(List<QRecord> recordList : CollectionUtils.getPages(updateInput.getRecords(), 20))
          {
             processRecords(table, connectionManager, recordList);
-
-            if(updateInput.getRecords().size() > 1 && apiActionUtil.getMillisToSleepAfterEveryCall() > 0)
+            for(QRecord qRecord : recordList)
+            {
+               updateOutput.addRecord(qRecord);
+            }
+            if(recordList.size() == 20 && apiActionUtil.getMillisToSleepAfterEveryCall() > 0)
             {
                SleepUtils.sleep(apiActionUtil.getMillisToSleepAfterEveryCall(), TimeUnit.MILLISECONDS);
             }
@@ -112,7 +117,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void processRecords(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList)
+   private void processRecords(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList) throws QException
    {
       int sleepMillis      = apiActionUtil.getInitialRateLimitBackoffMillis();
       int rateLimitsCaught = 0;
@@ -144,7 +149,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void doPost(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList) throws RateLimitException
+   private void doPost(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList) throws RateLimitException, QException
    {
       try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build())
       {
@@ -156,24 +161,39 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
 
          request.setEntity(apiActionUtil.recordsToEntity(table, recordList));
 
-         HttpResponse response   = client.execute(request);
-         int          statusCode = response.getStatusLine().getStatusCode();
-         if(statusCode == 429)
+         HttpResponse response       = client.execute(request);
+         int          statusCode     = response.getStatusLine().getStatusCode();
+         String       responseString = EntityUtils.toString(response.getEntity());
+         if(statusCode == HttpStatus.SC_TOO_MANY_REQUESTS)
          {
-            throw (new RateLimitException(EntityUtils.toString(response.getEntity())));
+            throw (new RateLimitException(responseString));
          }
-         if(statusCode != 207)
+         if(statusCode != HttpStatus.SC_MULTI_STATUS && statusCode != HttpStatus.SC_OK)
          {
-            LOG.warn("Did not receive response status code of 207: " + EntityUtils.toString(response.getEntity()));
+            String errorMessage = "Did not receive response status code of 200 or 207: " + responseString;
+            LOG.warn(errorMessage);
+            throw (new QException(errorMessage));
+         }
+         if(statusCode == HttpStatus.SC_MULTI_STATUS)
+         {
+            JSONObject responseJSON = new JSONObject(responseString).getJSONObject("response");
+            if(!responseJSON.optString("status").contains("200 OK"))
+            {
+               String errorMessage = "Did not receive ok status response: " + responseJSON.optString("description");
+               LOG.warn(errorMessage);
+               throw (new QException(errorMessage));
+            }
          }
       }
-      catch(RateLimitException rle)
+      catch(RateLimitException | QException e)
       {
-         throw (rle);
+         throw (e);
       }
       catch(Exception e)
       {
-         LOG.warn("Error posting to [" + table.getName() + "]", e);
+         String errorMessage = "An unexpected error occurred updating entities.";
+         LOG.warn(errorMessage, e);
+         throw (new QException(errorMessage, e));
       }
    }
 
