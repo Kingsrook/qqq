@@ -214,6 +214,10 @@ public class ScheduleManager
    {
       Runnable runProcess = () ->
       {
+         String originalThreadName = Thread.currentThread().getName();
+         Thread.currentThread().setName("ScheduledProcess>" + process.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
+         LOG.debug("Running Scheduled Process [" + process.getName() + "]");
+
          try
          {
             RunProcessInput runProcessInput = new RunProcessInput(qInstance);
@@ -227,6 +231,10 @@ public class ScheduleManager
          catch(Exception e)
          {
             LOG.warn("Exception thrown running scheduled process [" + process.getName() + "]", e);
+         }
+         finally
+         {
+            Thread.currentThread().setName(originalThreadName);
          }
       };
 

@@ -393,7 +393,7 @@ public class QJavalinProcessHandler
       Map<String, Object> resultForCaller = new HashMap<>();
       resultForCaller.put("processUUID", processUUID);
 
-      LOG.info("Request for status of process " + processUUID + ", job " + jobUUID);
+      LOG.debug("Request for status of process " + processUUID + ", job " + jobUUID);
       Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
       if(optionalJobStatus.isEmpty())
       {
@@ -404,7 +404,7 @@ public class QJavalinProcessHandler
          AsyncJobStatus jobStatus = optionalJobStatus.get();
 
          resultForCaller.put("jobStatus", jobStatus);
-         LOG.info("Job status is " + jobStatus.getState() + " for " + jobUUID);
+         LOG.debug("Job status is " + jobStatus.getState() + " for " + jobUUID);
 
          if(jobStatus.getState().equals(AsyncJobState.COMPLETE))
          {

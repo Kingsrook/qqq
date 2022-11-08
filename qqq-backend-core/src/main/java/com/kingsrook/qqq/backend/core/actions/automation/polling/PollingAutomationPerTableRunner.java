@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -173,7 +174,8 @@ public class PollingAutomationPerTableRunner implements Runnable
    @Override
    public void run()
    {
-      Thread.currentThread().setName(name);
+      String originalThreadName = Thread.currentThread().getName();
+      Thread.currentThread().setName(name + StandardScheduledExecutor.newThreadNameRandomSuffix());
       LOG.debug("Running " + this.getClass().getSimpleName() + "[" + name + "]");
 
       try
@@ -184,6 +186,10 @@ public class PollingAutomationPerTableRunner implements Runnable
       catch(Exception e)
       {
          LOG.warn("Error running automations", e);
+      }
+      finally
+      {
+         Thread.currentThread().setName(originalThreadName);
       }
    }
 

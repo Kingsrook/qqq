@@ -65,7 +65,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
 
       if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
       {
-         LOG.info("Update request called with 0 records.  Returning with no-op");
+         LOG.debug("Update request called with 0 records.  Returning with no-op");
          return (updateOutput);
       }
 

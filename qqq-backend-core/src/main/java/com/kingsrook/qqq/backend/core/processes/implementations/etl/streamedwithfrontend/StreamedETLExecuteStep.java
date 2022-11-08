@@ -34,6 +34,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -43,6 +45,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class StreamedETLExecuteStep extends BaseStreamedETLStep implements BackendStep
 {
+   private static final Logger LOG = LogManager.getLogger(StreamedETLExecuteStep.class);
+
    private int currentRowCount = 1;
 
 
@@ -104,6 +108,11 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          transformStep.postRun(runBackendStepInput, runBackendStepOutput);
          loadStep.postRun(runBackendStepInput, runBackendStepOutput);
+
+         if(recordCount > 0)
+         {
+            LOG.info("Processed [" + recordCount + "] records.");
+         }
 
          //////////////////////////////////////////////////////////////////////////////
          // set the flag to state that the basepull timestamp should be updated now. //

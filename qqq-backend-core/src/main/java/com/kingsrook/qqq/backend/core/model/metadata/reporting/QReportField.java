@@ -38,7 +38,7 @@ public class QReportField
    private String     displayFormat;
 
    ///////////////////////////////////////////////////////////////////////////
-   // Noew: new attributes added here probably belong in the toField method //
+   // Note: new attributes added here probably belong in the toField method //
    ///////////////////////////////////////////////////////////////////////////
 
    private boolean isVirtual = false;

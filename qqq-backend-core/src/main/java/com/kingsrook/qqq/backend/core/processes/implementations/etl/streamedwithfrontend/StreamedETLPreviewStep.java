@@ -69,7 +69,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
 
       if(runBackendStepInput.getFrontendStepBehavior() != null && runBackendStepInput.getFrontendStepBehavior().equals(RunProcessInput.FrontendStepBehavior.SKIP))
       {
-         LOG.info("Skipping preview because frontent behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
+         LOG.debug("Skipping preview because frontent behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
          return;
       }
 
@@ -78,7 +78,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       /////////////////////////////////////////////////////////////////
       if(runningWithinAutomation())
       {
-         LOG.info("Skipping preview step when [" + runBackendStepInput.getProcessName() + "] is running as part of an automation.");
+         LOG.debug("Skipping preview step when [" + runBackendStepInput.getProcessName() + "] is running as part of an automation.");
          return;
       }
 

@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,6 +67,10 @@ public class SQSQueuePoller implements Runnable
    @Override
    public void run()
    {
+      String originalThreadName = Thread.currentThread().getName();
+      Thread.currentThread().setName("SQSPoller>" + queueMetaData.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
+      LOG.debug("Running " + this.getClass().getSimpleName() + "[" + queueMetaData.getName() + "]");
+
       try
       {
          BasicAWSCredentials credentials = new BasicAWSCredentials(queueProviderMetaData.getAccessKey(), queueProviderMetaData.getSecretKey());
@@ -118,6 +123,10 @@ public class SQSQueuePoller implements Runnable
       catch(Exception e)
       {
          LOG.warn("Error receiving SQS Message", e);
+      }
+      finally
+      {
+         Thread.currentThread().setName(originalThreadName);
       }
    }
 

@@ -73,9 +73,9 @@ public class RDBMSTransaction extends QBackendTransaction
    {
       try
       {
-         RDBMSTransaction.LOG.info("Committing transaction");
+         RDBMSTransaction.LOG.debug("Committing transaction");
          connection.commit();
-         RDBMSTransaction.LOG.info("Commit complete");
+         RDBMSTransaction.LOG.debug("Commit complete");
       }
       catch(Exception e)
       {

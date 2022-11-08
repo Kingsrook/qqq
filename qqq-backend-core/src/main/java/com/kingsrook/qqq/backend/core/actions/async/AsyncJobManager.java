@@ -91,7 +91,7 @@ public class AsyncJobManager
       }
       catch(TimeoutException e)
       {
-         LOG.info("Job going async " + uuidAndTypeStateKey.getUuid());
+         LOG.debug("Job going async " + uuidAndTypeStateKey.getUuid());
          throw (new JobGoingAsyncException(uuidAndTypeStateKey.getUuid().toString()));
       }
    }

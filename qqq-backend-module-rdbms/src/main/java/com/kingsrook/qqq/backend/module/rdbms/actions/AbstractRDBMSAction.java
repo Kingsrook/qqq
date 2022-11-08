@@ -390,7 +390,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    {
       try
       {
-         LOG.info("Opening transaction");
+         LOG.debug("Opening transaction");
          Connection connection = getConnection(input);
 
          return (new RDBMSTransaction(connection));

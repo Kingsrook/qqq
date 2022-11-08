@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.scheduler;
 
 
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +69,16 @@ public class StandardScheduledExecutor
     **
     *******************************************************************************/
    private Runnable runnable;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String newThreadNameRandomSuffix()
+   {
+      return (":" + UUID.randomUUID().toString().split("-")[0]);
+   }
 
 
 

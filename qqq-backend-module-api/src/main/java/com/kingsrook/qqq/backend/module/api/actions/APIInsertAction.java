@@ -64,7 +64,7 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
 
       if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
-         LOG.info("Insert request called with 0 records.  Returning with no-op");
+         LOG.debug("Insert request called with 0 records.  Returning with no-op");
          return (insertOutput);
       }
 

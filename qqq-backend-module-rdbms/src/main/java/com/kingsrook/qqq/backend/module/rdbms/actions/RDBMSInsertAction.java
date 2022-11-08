@@ -59,7 +59,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
       if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
-         LOG.info("Insert request called with 0 records.  Returning with no-op");
+         LOG.debug("Insert request called with 0 records.  Returning with no-op");
          rs.setRecords(new ArrayList<>());
          return (rs);
       }

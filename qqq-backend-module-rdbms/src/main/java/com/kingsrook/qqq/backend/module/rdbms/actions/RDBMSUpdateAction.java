@@ -71,7 +71,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 
       if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
       {
-         LOG.info("Update request called with 0 records.  Returning with no-op");
+         LOG.debug("Update request called with 0 records.  Returning with no-op");
          rs.setRecords(new ArrayList<>());
          return (rs);
       }
