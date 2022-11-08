@@ -30,6 +30,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -475,6 +479,22 @@ public class CollectionUtils
       }
 
       return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Map objectToMap(Object o)
+   {
+      ObjectMapper mapper = new ObjectMapper()
+         .registerModule(new JavaTimeModule())
+         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+         .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+         .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+      return (mapper.convertValue(o, Map.class));
    }
 
 }
