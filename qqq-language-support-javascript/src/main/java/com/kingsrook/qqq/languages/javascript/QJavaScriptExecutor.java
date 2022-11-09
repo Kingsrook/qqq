@@ -90,10 +90,14 @@ public class QJavaScriptExecutor implements QCodeExecutor
          {
             %s
 
-            if(script && script.main)
+            try
             {
-               return (script.main());
+               if(script && script.main)
+               {
+                  return (script.main());
+               }
             }
+            catch(e) { }
          })();
          """.formatted(code);
 

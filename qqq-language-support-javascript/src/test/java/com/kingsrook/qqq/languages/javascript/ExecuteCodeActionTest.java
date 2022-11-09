@@ -108,16 +108,11 @@ class ExecuteCodeActionTest
    {
       OneTestOutput oneTestOutput = testOne(4, """
          var script = (function (exports) {
-                  
-            function cooling() {
+            function main() {
                output.setD(7);
                return (output);
             }
-                  
-            cooling();
-                  
-            exports.cooling = cooling;
-            
+            exports.main = main;
             return exports;
          })({});
          """);
