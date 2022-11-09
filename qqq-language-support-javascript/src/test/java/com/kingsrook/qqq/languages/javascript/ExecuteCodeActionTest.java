@@ -104,6 +104,34 @@ class ExecuteCodeActionTest
     **
     *******************************************************************************/
    @Test
+   void testCompiledFromTypeScript() throws QException
+   {
+      OneTestOutput oneTestOutput = testOne(4, """
+         var script = (function (exports) {
+                  
+            function cooling() {
+               output.setD(7);
+               return (output);
+            }
+                  
+            cooling();
+                  
+            exports.cooling = cooling;
+            
+            return exports;
+         })({});
+         """);
+      assertEquals(7, oneTestOutput.testOutput().getD());
+      assertTrue(oneTestOutput.executeCodeOutput().getOutput() instanceof TestOutput);
+      assertEquals(7, ((TestOutput) oneTestOutput.executeCodeOutput().getOutput()).getD());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testReturnsPrimitive() throws QException
    {
       OneTestOutput oneTestOutput = testOne(5, """

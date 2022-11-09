@@ -109,6 +109,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
+import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -1113,6 +1114,8 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void storeRecordAssociatedScript(Context context)
    {
+      context.contentType(ContentType.APPLICATION_JSON);
+
       try
       {
          StoreAssociatedScriptInput input = new StoreAssociatedScriptInput(qInstance);
@@ -1128,7 +1131,7 @@ public class QJavalinImplementation
          StoreAssociatedScriptAction storeAssociatedScriptAction = new StoreAssociatedScriptAction();
          storeAssociatedScriptAction.run(input, output);
 
-         context.result(JsonUtils.toJson("OK"));
+         context.result(JsonUtils.toJson(output));
       }
       catch(Exception e)
       {

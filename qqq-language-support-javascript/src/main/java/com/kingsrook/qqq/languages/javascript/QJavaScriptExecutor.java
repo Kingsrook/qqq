@@ -80,11 +80,20 @@ public class QJavaScriptExecutor implements QCodeExecutor
 
       ////////////////////////////////////////////////////////////////////////
       // wrap the user's code in an immediately-invoked function expression //
+      // if the user's code (%s below) returns - then our IIFE is done.     //
+      // if the user's code doesn't return, but instead created a 'script'  //
+      // variable, with a 'main' function on it (e.g., from a compiled      //
+      // type script file), then call main function and return its result.  //
       ////////////////////////////////////////////////////////////////////////
       String codeToRun = """
          (function userDefinedFunction()
          {
-         %s
+            %s
+
+            if(script && script.main)
+            {
+               return (script.main());
+            }
          })();
          """.formatted(code);
 
