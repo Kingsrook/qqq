@@ -102,7 +102,7 @@ public class TestUtils
          .withBackendName("easypost")
          .withField(new QFieldMetaData("id", QFieldType.STRING))
          .withField(new QFieldMetaData("trackingNo", QFieldType.STRING).withBackendName("tracking_code"))
-         .withField(new QFieldMetaData("carrierCode", QFieldType.STRING).withBackendName("carrier"))
+         .withField(new QFieldMetaData("carrier", QFieldType.STRING).withBackendName("carrier"))
          .withPrimaryKeyField("id")
          .withBackendDetails(new APITableBackendDetails()
             .withTablePath("trackers")

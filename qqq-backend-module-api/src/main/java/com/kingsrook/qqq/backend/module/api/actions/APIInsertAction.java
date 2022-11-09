@@ -33,12 +33,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
-import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,11 +71,8 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
 
       preAction(insertInput);
 
-      HttpClientConnectionManager connectionManager = null;
-      try
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
       {
-         connectionManager = new PoolingHttpClientConnectionManager();
-
          // todo - supports bulk post?
 
          for(QRecord record : insertInput.getRecords())
@@ -87,7 +83,7 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
             //////////////////////////////////////////////////////////
             insertInput.getAsyncJobCallback().incrementCurrent();
 
-            postOneRecord(insertOutput, table, connectionManager, record);
+            postOneRecord(insertOutput, table, httpClient, record);
 
             if(insertInput.getRecords().size() > 1 && apiActionUtil.getMillisToSleepAfterEveryCall() > 0)
             {
@@ -102,14 +98,6 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
          LOG.warn("Error in API Insert for [" + table.getName() + "]", e);
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
-      finally
-      {
-         if(connectionManager != null)
-         {
-            connectionManager.shutdown();
-         }
-      }
-
    }
 
 
@@ -117,7 +105,7 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void postOneRecord(InsertOutput insertOutput, QTableMetaData table, HttpClientConnectionManager connectionManager, QRecord record) throws RateLimitException
+   private void postOneRecord(InsertOutput insertOutput, QTableMetaData table, CloseableHttpClient httpClient, QRecord record) throws RateLimitException
    {
       int sleepMillis      = apiActionUtil.getInitialRateLimitBackoffMillis();
       int rateLimitsCaught = 0;
@@ -125,7 +113,7 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
       {
          try
          {
-            postOneTime(insertOutput, table, connectionManager, record);
+            postOneTime(insertOutput, table, httpClient, record);
             return;
          }
          catch(RateLimitException rle)
@@ -151,9 +139,9 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void postOneTime(InsertOutput insertOutput, QTableMetaData table, HttpClientConnectionManager connectionManager, QRecord record) throws RateLimitException
+   private void postOneTime(InsertOutput insertOutput, QTableMetaData table, CloseableHttpClient httpClient, QRecord record) throws RateLimitException
    {
-      try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build())
+      try
       {
          String   url     = apiActionUtil.buildTableUrl(table);
          HttpPost request = new HttpPost(url);
@@ -163,15 +151,17 @@ public class APIInsertAction extends AbstractAPIAction implements InsertInterfac
 
          request.setEntity(apiActionUtil.recordToEntity(table, record));
 
-         HttpResponse response   = client.execute(request);
-         int          statusCode = response.getStatusLine().getStatusCode();
-         if(statusCode == 429)
+         try(CloseableHttpResponse response = httpClient.execute(request))
          {
-            throw (new RateLimitException(EntityUtils.toString(response.getEntity())));
-         }
+            int statusCode = response.getStatusLine().getStatusCode();
+            if(statusCode == HttpStatus.SC_TOO_MANY_REQUESTS)
+            {
+               throw (new RateLimitException(EntityUtils.toString(response.getEntity())));
+            }
 
-         QRecord outputRecord = apiActionUtil.processPostResponse(table, record, response);
-         insertOutput.addRecord(outputRecord);
+            QRecord outputRecord = apiActionUtil.processPostResponse(table, record, response);
+            insertOutput.addRecord(outputRecord);
+         }
       }
       catch(RateLimitException rle)
       {

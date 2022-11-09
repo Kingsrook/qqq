@@ -34,13 +34,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,17 +72,14 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
       QTableMetaData table = updateInput.getTable();
       preAction(updateInput);
 
-      HttpClientConnectionManager connectionManager = null;
-      try
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
       {
-         connectionManager = new PoolingHttpClientConnectionManager();
-
          ///////////////////////////////////////////////////////////////
          // make post requests for groups of orders that need updated //
          ///////////////////////////////////////////////////////////////
          for(List<QRecord> recordList : CollectionUtils.getPages(updateInput.getRecords(), 20))
          {
-            processRecords(table, connectionManager, recordList);
+            processRecords(table, httpClient, recordList);
             for(QRecord qRecord : recordList)
             {
                updateOutput.addRecord(qRecord);
@@ -102,14 +97,6 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
          LOG.warn("Error in API Insert for [" + table.getName() + "]", e);
          throw new QException("Error executing update: " + e.getMessage(), e);
       }
-      finally
-      {
-         if(connectionManager != null)
-         {
-            connectionManager.shutdown();
-         }
-      }
-
    }
 
 
@@ -117,7 +104,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void processRecords(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList) throws QException
+   private void processRecords(QTableMetaData table, CloseableHttpClient httpClient, List<QRecord> recordList) throws QException
    {
       int sleepMillis      = apiActionUtil.getInitialRateLimitBackoffMillis();
       int rateLimitsCaught = 0;
@@ -125,7 +112,7 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
       {
          try
          {
-            doPost(table, connectionManager, recordList);
+            doPost(table, httpClient, recordList);
             return;
          }
          catch(RateLimitException rle)
@@ -149,9 +136,9 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void doPost(QTableMetaData table, HttpClientConnectionManager connectionManager, List<QRecord> recordList) throws RateLimitException, QException
+   private void doPost(QTableMetaData table, CloseableHttpClient httpClient, List<QRecord> recordList) throws RateLimitException, QException
    {
-      try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(connectionManager).build())
+      try
       {
          String   url     = apiActionUtil.buildTableUrl(table);
          HttpPost request = new HttpPost(url);
@@ -161,27 +148,29 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
 
          request.setEntity(apiActionUtil.recordsToEntity(table, recordList));
 
-         HttpResponse response       = client.execute(request);
-         int          statusCode     = response.getStatusLine().getStatusCode();
-         String       responseString = EntityUtils.toString(response.getEntity());
-         if(statusCode == HttpStatus.SC_TOO_MANY_REQUESTS)
+         try(CloseableHttpResponse response = httpClient.execute(request))
          {
-            throw (new RateLimitException(responseString));
-         }
-         if(statusCode != HttpStatus.SC_MULTI_STATUS && statusCode != HttpStatus.SC_OK)
-         {
-            String errorMessage = "Did not receive response status code of 200 or 207: " + responseString;
-            LOG.warn(errorMessage);
-            throw (new QException(errorMessage));
-         }
-         if(statusCode == HttpStatus.SC_MULTI_STATUS)
-         {
-            JSONObject responseJSON = new JSONObject(responseString).getJSONObject("response");
-            if(!responseJSON.optString("status").contains("200 OK"))
+            int    statusCode     = response.getStatusLine().getStatusCode();
+            String responseString = EntityUtils.toString(response.getEntity());
+            if(statusCode == HttpStatus.SC_TOO_MANY_REQUESTS)
             {
-               String errorMessage = "Did not receive ok status response: " + responseJSON.optString("description");
+               throw (new RateLimitException(responseString));
+            }
+            if(statusCode != HttpStatus.SC_MULTI_STATUS && statusCode != HttpStatus.SC_OK)
+            {
+               String errorMessage = "Did not receive response status code of 200 or 207: " + responseString;
                LOG.warn(errorMessage);
                throw (new QException(errorMessage));
+            }
+            if(statusCode == HttpStatus.SC_MULTI_STATUS)
+            {
+               JSONObject responseJSON = new JSONObject(responseString).getJSONObject("response");
+               if(!responseJSON.optString("status").contains("200 OK"))
+               {
+                  String errorMessage = "Did not receive ok status response: " + responseJSON.optString("description");
+                  LOG.warn(errorMessage);
+                  throw (new QException(errorMessage));
+               }
             }
          }
       }

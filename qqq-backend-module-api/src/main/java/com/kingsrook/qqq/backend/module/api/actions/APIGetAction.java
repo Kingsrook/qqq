@@ -28,7 +28,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -53,8 +53,7 @@ public class APIGetAction extends AbstractAPIAction implements GetInterface
       QTableMetaData table = getInput.getTable();
       preAction(getInput);
 
-      HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-      try(CloseableHttpClient client = httpClientBuilder.build())
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
       {
          String urlSuffix = apiActionUtil.buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey());
 
@@ -65,12 +64,14 @@ public class APIGetAction extends AbstractAPIAction implements GetInterface
          apiActionUtil.setupContentTypeInRequest(request);
          apiActionUtil.setupAdditionalHeaders(request);
 
-         HttpResponse response = client.execute(request);
-         QRecord      record   = apiActionUtil.processSingleRecordGetResponse(table, response);
+         try(CloseableHttpResponse response = httpClient.execute(request))
+         {
+            QRecord record = apiActionUtil.processSingleRecordGetResponse(table, response);
 
-         GetOutput rs = new GetOutput();
-         rs.setRecord(record);
-         return rs;
+            GetOutput rs = new GetOutput();
+            rs.setRecord(record);
+            return rs;
+         }
       }
       catch(Exception e)
       {

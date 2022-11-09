@@ -64,7 +64,7 @@ public class EasyPostApiTest
    {
       QRecord record = new QRecord()
          .withValue("__ignoreMe", "123")
-         .withValue("carrierCode", "USPS")
+         .withValue("carrier", "USPS")
          .withValue("trackingNo", "EZ4000000004");
 
       InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
@@ -75,6 +75,30 @@ public class EasyPostApiTest
 
       QRecord outputRecord = insertOutput.getRecords().get(0);
       assertNotNull(outputRecord.getValue("id"), "Should get a tracker id");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPostMultiple() throws QException
+   {
+      QRecord record1 = new QRecord().withValue("carrier", "USPS").withValue("trackingNo", "EZ1000000001");
+      QRecord record2 = new QRecord().withValue("carrier", "USPS").withValue("trackingNo", "EZ2000000002");
+
+      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
+      insertInput.setSession(new QSession());
+      insertInput.setTableName("easypostTracker");
+      insertInput.setRecords(List.of(record1, record2));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+      QRecord outputRecord0 = insertOutput.getRecords().get(0);
+      assertNotNull(outputRecord0.getValue("id"), "Should get a tracker id");
+
+      QRecord outputRecord1 = insertOutput.getRecords().get(1);
+      assertNotNull(outputRecord1.getValue("id"), "Should get a tracker id");
    }
 
 
@@ -109,7 +133,7 @@ public class EasyPostApiTest
       ((APIBackendMetaData) backend).setApiKey("not-valid");
 
       QRecord record = new QRecord()
-         .withValue("carrierCode", "USPS")
+         .withValue("carrier", "USPS")
          .withValue("trackingNo", "EZ1000000001");
 
       InsertInput insertInput = new InsertInput(instance);
@@ -132,7 +156,7 @@ public class EasyPostApiTest
    void testPostTrackerError() throws QException
    {
       QRecord record = new QRecord()
-         .withValue("carrierCode", "USPS")
+         .withValue("carrier", "USPS")
          .withValue("trackingNo", "Not-Valid-Tracking-No");
 
       InsertInput insertInput = new InsertInput(TestUtils.defineInstance());

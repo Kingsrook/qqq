@@ -28,9 +28,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,13 +53,10 @@ public class APICountAction extends AbstractAPIAction implements CountInterface
       QTableMetaData table = countInput.getTable();
       preAction(countInput);
 
-      try
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
       {
          QQueryFilter filter      = countInput.getFilter();
          String       paramString = apiActionUtil.buildQueryStringForGet(filter, null, null, table.getFields());
-
-         HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-         HttpClient        client            = httpClientBuilder.build();
 
          String url = apiActionUtil.buildTableUrl(table) + paramString;
          LOG.info("API URL: " + url);
@@ -69,12 +66,14 @@ public class APICountAction extends AbstractAPIAction implements CountInterface
          apiActionUtil.setupContentTypeInRequest(request);
          apiActionUtil.setupAdditionalHeaders(request);
 
-         HttpResponse response = client.execute(request);
-         Integer      count    = apiActionUtil.processGetResponseForCount(table, response);
+         try(CloseableHttpResponse response = httpClient.execute(request))
+         {
+            Integer count = apiActionUtil.processGetResponseForCount(table, response);
 
-         CountOutput rs = new CountOutput();
-         rs.setCount(count);
-         return rs;
+            CountOutput rs = new CountOutput();
+            rs.setCount(count);
+            return rs;
+         }
       }
       catch(Exception e)
       {

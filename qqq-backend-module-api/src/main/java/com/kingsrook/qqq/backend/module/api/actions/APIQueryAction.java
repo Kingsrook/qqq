@@ -28,9 +28,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,13 +66,10 @@ public class APIQueryAction extends AbstractAPIAction implements QueryInterface
       int totalCount = 0;
       while(true)
       {
-         try
+         try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
          {
             QQueryFilter filter      = queryInput.getFilter();
             String       paramString = apiActionUtil.buildQueryStringForGet(filter, limit, skip, table.getFields());
-
-            HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-            HttpClient        client            = httpClientBuilder.build();
 
             String url = apiActionUtil.buildTableUrl(table) + paramString;
             LOG.info("API URL: " + url);
@@ -86,44 +83,45 @@ public class APIQueryAction extends AbstractAPIAction implements QueryInterface
             apiActionUtil.setupContentTypeInRequest(request);
             apiActionUtil.setupAdditionalHeaders(request);
 
-            HttpResponse response = client.execute(request);
-
-            int count = apiActionUtil.processGetResponse(table, response, queryOutput);
-            totalCount += count;
-
-            /////////////////////////////////////////////////////////////////////////
-            // if we've fetched at least as many as the original limit, then break //
-            /////////////////////////////////////////////////////////////////////////
-            if(originalLimit != null && totalCount >= originalLimit)
+            try(CloseableHttpResponse response = httpClient.execute(request))
             {
-               return (queryOutput);
-            }
+               int count = apiActionUtil.processGetResponse(table, response, queryOutput);
+               totalCount += count;
 
-            ////////////////////////////////////////////////////////////////////////////////////
-            // if we got back less than a full page this time, then we must be done, so break //
-            ////////////////////////////////////////////////////////////////////////////////////
-            if(count == 0 || (limit != null && count < limit))
-            {
-               return (queryOutput);
-            }
+               /////////////////////////////////////////////////////////////////////////
+               // if we've fetched at least as many as the original limit, then break //
+               /////////////////////////////////////////////////////////////////////////
+               if(originalLimit != null && totalCount >= originalLimit)
+               {
+                  return (queryOutput);
+               }
 
-            ///////////////////////////////////////////////////////////////////
-            // if there's an async callback that says we're cancelled, break //
-            ///////////////////////////////////////////////////////////////////
-            if(queryInput.getAsyncJobCallback().wasCancelRequested())
-            {
-               LOG.info("Breaking query job, as requested.");
-               return (queryOutput);
-            }
+               ////////////////////////////////////////////////////////////////////////////////////
+               // if we got back less than a full page this time, then we must be done, so break //
+               ////////////////////////////////////////////////////////////////////////////////////
+               if(count == 0 || (limit != null && count < limit))
+               {
+                  return (queryOutput);
+               }
 
-            ////////////////////////////////////////////////////////////////////////////
-            // else, increment the skip by the count we just got, and query for more. //
-            ////////////////////////////////////////////////////////////////////////////
-            if(skip == null)
-            {
-               skip = 0;
+               ///////////////////////////////////////////////////////////////////
+               // if there's an async callback that says we're cancelled, break //
+               ///////////////////////////////////////////////////////////////////
+               if(queryInput.getAsyncJobCallback().wasCancelRequested())
+               {
+                  LOG.info("Breaking query job, as requested.");
+                  return (queryOutput);
+               }
+
+               ////////////////////////////////////////////////////////////////////////////
+               // else, increment the skip by the count we just got, and query for more. //
+               ////////////////////////////////////////////////////////////////////////////
+               if(skip == null)
+               {
+                  skip = 0;
+               }
+               skip += count;
             }
-            skip += count;
          }
          catch(Exception e)
          {
