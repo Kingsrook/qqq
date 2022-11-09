@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -119,6 +120,29 @@ class ExecuteCodeActionTest
       assertEquals(7, oneTestOutput.testOutput().getD());
       assertTrue(oneTestOutput.executeCodeOutput().getOutput() instanceof TestOutput);
       assertEquals(7, ((TestOutput) oneTestOutput.executeCodeOutput().getOutput()).getD());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCompiledFromTypeScriptThatThrows() throws QException
+   {
+      assertThatThrownBy(() ->
+      {
+         testOne(4, """
+            var script = (function (exports) {
+               function main() {
+                  throw "inline script failure";
+                  return (output);
+               }
+               exports.main = main;
+               return exports;
+            })({});
+            """);
+      }).hasMessageContaining("inline script failure");
    }
 
 

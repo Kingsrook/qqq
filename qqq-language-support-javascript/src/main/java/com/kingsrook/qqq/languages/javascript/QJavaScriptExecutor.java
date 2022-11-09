@@ -90,14 +90,20 @@ public class QJavaScriptExecutor implements QCodeExecutor
          {
             %s
 
+            var mainFunction = null;
             try
             {
-               if(script && script.main)
+               if(script && script.main && typeof script.main == "function")
                {
-                  return (script.main());
+                  mainFunction = script.main;
                }
             }
             catch(e) { }
+
+            if(mainFunction != null)
+            {
+               return (mainFunction());
+            }
          })();
          """.formatted(code);
 
