@@ -218,5 +218,10 @@ public class StoreAssociatedScriptAction
       updateInput.setTableName("script");
       updateInput.setRecords(List.of(script));
       new UpdateAction().execute(updateInput);
+
+      output.setScriptId(script.getValueInteger("id"));
+      output.setScriptName(script.getValueString("name"));
+      output.setScriptRevisionId(scriptRevision.getValueInteger("id"));
+      output.setScriptRevisionSequenceNo(scriptRevision.getValueInteger("sequenceNo"));
    }
 }

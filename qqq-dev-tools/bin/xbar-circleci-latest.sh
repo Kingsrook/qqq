@@ -24,14 +24,17 @@ checkBuild()
    index=$1
 
    repo=$($JQ ".[$i].reponame" < $FILE | sed 's/"//g')
+   branch=$($JQ ".[$i].branch" < $FILE | sed 's/"//g;s/null//;')
+   tag=$($JQ ".[$i].vcs_tag" < $FILE | sed 's/"//g;s/null//;')
    buildStatus=$($JQ ".[$i].status" < $FILE | sed 's/"//g')
    url=$($JQ ".[$i].build_url" < $FILE | sed 's/"//g')
    jobName=$($JQ ".[$i].workflows.job_name" < $FILE | sed 's/"//g')
    avatarUrl=$($JQ ".[$i].user.avatar_url" < $FILE | sed 's/"//g')
-   date=$($JQ ".[$i].queued_at" < $FILE | sed 's/"//g')
-   if [ "$date" == "null" ]; then
-      date=$($JQ ".[$i].committer_date" < $FILE | sed 's/"//g')
+   startDate=$($JQ ".[$i].queued_at" < $FILE | sed 's/"//g')
+   if [ "$startDate" == "null" ]; then
+      startDate=$($JQ ".[$i].committer_date" < $FILE | sed 's/"//g')
    fi
+   endDate=$($JQ ".[$i].stop_time" < $FILE | sed 's/"//g;s/null//;')
 
    curl $avatarUrl > /tmp/avatar.jpg
    sips -s dpiHeight 96 -s dpiWidth 96 /tmp/avatar.jpg -o /tmp/avatar-96dpi.jpg > /dev/null
@@ -41,18 +44,14 @@ checkBuild()
 
    shortRepo="$repo"
    case $repo in
-    qqq-backend-core)                shortRepo="core";;
-    qqq-backend-module-filesystem)   shortRepo="fs";;
-    qqq-backend-module-rdbms)        shortRepo="db";;
-    qqq-middleware-javalin)          shortRepo="j'lin";;
-    qqq-middleware-picocli)          shortRepo="p'cli";;
-    qqq-sample-project)              shortRepo="samp";;
+    qqq)                             shortRepo="qqq";;
     qqq-frontend-core)               shortRepo="f'core";;
     qqq-frontend-material-dashboard) shortRepo="m-db";;
     Nutrifresh-One)                  shortRepo="nf1";;
+    Nutrifresh-One-Scripts)          shortRepo="nf1-scr";;
    esac
 
-   timestamp=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" $(echo "$date" | sed 's/\....Z/+0000/') +%s)
+   timestamp=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" $(echo "$startDate" | sed 's/\....Z/+0000/') +%s)
    seconds=$(( $NOW - $timestamp ))
    if [ $seconds -lt 120 ]; then
       age="$seconds seconds"
@@ -90,7 +89,7 @@ checkBuild()
    if [ $index -lt 1 -o $seconds -lt 600 ]; then
       echo -n "${shortRepo}(${shortAge})${icon} "
    fi
-   details="$details\n$repo: $jobName: $buildStatus @ $age ago | color=$color | href=$url | image=$avatarB64"
+   details="$details\n$repo/${branch}${tag}: $jobName: $buildStatus @ $age ago | color=$color | href=$url | image=$avatarB64"
 }
 
 details="---"

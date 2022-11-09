@@ -58,6 +58,26 @@ public class RecordPipe
 
 
    /*******************************************************************************
+    ** Default constructor.
+    *******************************************************************************/
+   public RecordPipe()
+   {
+
+   }
+
+
+
+   /*******************************************************************************
+    ** Construct a record pipe, with an alternative capacity for the internal queue.
+    *******************************************************************************/
+   public RecordPipe(Integer overrideCapacity)
+   {
+      queue = new ArrayBlockingQueue<>(overrideCapacity);
+   }
+
+
+
+   /*******************************************************************************
     ** Turn off the pipe.  Stop accepting new records (just ignore them in the add
     ** method).  Clear the existing queue.  Don't return any more records.  Note that
     ** if consumeAvailableRecords was running in another thread, it may still return
@@ -109,6 +129,7 @@ public class RecordPipe
 
       if(!offerResult && !isTerminated)
       {
+         LOG.debug("Pipe is full.  Waiting.");
          long sleepLoopStartTime = System.currentTimeMillis();
          long now                = System.currentTimeMillis();
          while(!offerResult && !isTerminated)
@@ -123,6 +144,7 @@ public class RecordPipe
             offerResult = queue.offer(record);
             now = System.currentTimeMillis();
          }
+         LOG.debug("Pipe has opened up.  Resuming.");
       }
    }
 

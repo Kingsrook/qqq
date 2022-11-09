@@ -65,13 +65,29 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          ///////////////////////////////////////////////////////
          // set up the extract, transform, and load functions //
          ///////////////////////////////////////////////////////
-         RecordPipe          recordPipe  = new RecordPipe();
-         AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-         extractStep.setRecordPipe(recordPipe);
-         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
-
+         AbstractExtractStep   extractStep   = getExtractStep(runBackendStepInput);
          AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
+
+         /////////////////////////////////////////////////////////////////////////////
+         // let the load step override the capacity for the record pipe.            //
+         // this is useful for slower load steps - so that the extract step doesn't //
+         // fill the pipe, then timeout waiting for all the records to be consumed, //
+         // before it can put more records in.                                      //
+         /////////////////////////////////////////////////////////////////////////////
+         RecordPipe recordPipe;
+         if(loadStep.getOverrideRecordPipeCapacity() != null)
+         {
+            recordPipe = new RecordPipe(loadStep.getOverrideRecordPipeCapacity());
+            LOG.debug("Overriding record pipe capacity to: " + loadStep.getOverrideRecordPipeCapacity());
+         }
+         else
+         {
+            recordPipe = new RecordPipe();
+         }
+
+         extractStep.setRecordPipe(recordPipe);
+         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
          transformStep.preRun(runBackendStepInput, runBackendStepOutput);
          loadStep.preRun(runBackendStepInput, runBackendStepOutput);

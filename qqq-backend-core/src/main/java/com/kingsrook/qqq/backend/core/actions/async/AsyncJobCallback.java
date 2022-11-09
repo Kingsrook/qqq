@@ -78,9 +78,7 @@ public class AsyncJobCallback
    public void updateStatus(String message, int current, int total)
    {
       this.asyncJobStatus.setMessage(message);
-      this.asyncJobStatus.setCurrent(current);
-      this.asyncJobStatus.setTotal(total);
-      storeUpdatedStatus();
+      updateStatus(current, total); // this call will storeUpdatedStatus.
    }
 
 
@@ -90,7 +88,7 @@ public class AsyncJobCallback
     *******************************************************************************/
    public void updateStatus(int current, int total)
    {
-      this.asyncJobStatus.setCurrent(current);
+      this.asyncJobStatus.setCurrent(current > total ? total : current);
       this.asyncJobStatus.setTotal(total);
       storeUpdatedStatus();
    }
@@ -112,9 +110,20 @@ public class AsyncJobCallback
     *******************************************************************************/
    public void incrementCurrent(int amount)
    {
-      if(this.asyncJobStatus.getCurrent() != null)
+      if(asyncJobStatus.getCurrent() != null)
       {
-         this.asyncJobStatus.setCurrent(this.asyncJobStatus.getCurrent() + amount);
+         if(asyncJobStatus.getTotal() != null && asyncJobStatus.getCurrent() + amount > asyncJobStatus.getTotal())
+         {
+            /////////////////////////////////////////////////////
+            // make sure we don't ever make current > total... //
+            /////////////////////////////////////////////////////
+            asyncJobStatus.setCurrent(asyncJobStatus.getTotal());
+         }
+         else
+         {
+            asyncJobStatus.setCurrent(asyncJobStatus.getCurrent() + amount);
+         }
+
          storeUpdatedStatus();
       }
    }

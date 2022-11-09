@@ -30,4 +30,97 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
  *******************************************************************************/
 public class StoreAssociatedScriptOutput extends AbstractActionOutput
 {
+   private Integer scriptId;
+   private String  scriptName;
+   private Integer scriptRevisionId;
+   private Integer scriptRevisionSequenceNo;
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptId
+    **
+    *******************************************************************************/
+   public Integer getScriptId()
+   {
+      return scriptId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptId
+    **
+    *******************************************************************************/
+   public void setScriptId(Integer scriptId)
+   {
+      this.scriptId = scriptId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptName
+    **
+    *******************************************************************************/
+   public String getScriptName()
+   {
+      return scriptName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptName
+    **
+    *******************************************************************************/
+   public void setScriptName(String scriptName)
+   {
+      this.scriptName = scriptName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptRevisionId
+    **
+    *******************************************************************************/
+   public Integer getScriptRevisionId()
+   {
+      return scriptRevisionId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptRevisionId
+    **
+    *******************************************************************************/
+   public void setScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptRevisionSequenceNo
+    **
+    *******************************************************************************/
+   public Integer getScriptRevisionSequenceNo()
+   {
+      return scriptRevisionSequenceNo;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptRevisionSequenceNo
+    **
+    *******************************************************************************/
+   public void setScriptRevisionSequenceNo(Integer scriptRevisionSequenceNo)
+   {
+      this.scriptRevisionSequenceNo = scriptRevisionSequenceNo;
+   }
+
 }
