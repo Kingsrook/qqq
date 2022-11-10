@@ -204,6 +204,27 @@ public class JsonUtils
 
 
    /*******************************************************************************
+    ** returns a JSONArray with a single value if given value looks like an object
+    ** otherwise returns the JSONArray
+    **
+    *******************************************************************************/
+   public static JSONArray getJSONArrayFromJSONObjectOrJSONArray(Object o)
+   {
+      JSONArray a = new JSONArray();
+      if(o instanceof JSONObject)
+      {
+         a.put(o);
+      }
+      else
+      {
+         a = (JSONArray) o;
+      }
+      return (a);
+   }
+
+
+
+   /*******************************************************************************
     ** Check if a string looks like it could be a JSON object (e.g., starts with "{"
     ** (plus optional whitespace))
     **
