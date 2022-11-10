@@ -227,7 +227,8 @@ public class TestUtils
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER).withBackendName("test_script_id"))
          .withAssociatedScript(new AssociatedScript()
             .withFieldName("testScriptId")
-            .withScriptTypeId(1));
+            .withScriptTypeId(1)
+            .withScriptTester(new QCodeReference(TestScriptAction.class, QCodeUsage.SCRIPT_TESTER)));
    }
 
 

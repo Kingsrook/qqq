@@ -52,7 +52,7 @@ public class BasicETLExtractFunction implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
-      LOG.info("Start query on table: " + tableName);
+      LOG.debug("Start query on table: " + tableName);
 
       QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
       queryInput.setSession(runBackendStepInput.getSession());
@@ -70,7 +70,7 @@ public class BasicETLExtractFunction implements BackendStep
       //////////////////////////////////////////////////////////////////////
       // if the caller gave us a record pipe, pass it to the query action //
       //////////////////////////////////////////////////////////////////////
-      if (recordPipe != null)
+      if(recordPipe != null)
       {
          queryInput.setRecordPipe(recordPipe);
       }
@@ -78,7 +78,7 @@ public class BasicETLExtractFunction implements BackendStep
       QueryAction queryAction = new QueryAction();
       QueryOutput queryOutput = queryAction.execute(queryInput);
 
-      if (recordPipe == null)
+      if(recordPipe == null)
       {
          ////////////////////////////////////////////////////////////////////////////
          // only return the records (and log about them) if there's no record pipe //

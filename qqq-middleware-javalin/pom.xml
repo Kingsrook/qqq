@@ -49,6 +49,12 @@
          <version>${revision}</version>
          <scope>test</scope>
       </dependency>
+      <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-language-support-javascript</artifactId>
+         <version>${revision}</version>
+         <scope>test</scope>
+      </dependency>
 
       <!-- 3rd party deps specifically for this module -->
       <dependency>

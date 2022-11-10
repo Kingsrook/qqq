@@ -98,4 +98,20 @@ public enum AdornmentType
       String XLARGE = "xlarge";
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public interface CodeEditorValues
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      static Pair<String, Serializable> languageMode(String languageMode)
+      {
+         return (new Pair<>("languageMode", languageMode));
+      }
+   }
+
 }

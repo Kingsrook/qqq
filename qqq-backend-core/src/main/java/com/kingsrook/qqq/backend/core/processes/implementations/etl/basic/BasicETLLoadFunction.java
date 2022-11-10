@@ -60,12 +60,13 @@ public class BasicETLLoadFunction implements BackendStep
       // exit early with no-op if no records made it here //
       //////////////////////////////////////////////////////
       List<QRecord> inputRecords = runBackendStepInput.getRecords();
-      LOG.info("Received [" + inputRecords.size() + "] records to load");
       if(CollectionUtils.nullSafeIsEmpty(inputRecords))
       {
          runBackendStepOutput.addValue(BasicETLProcess.FIELD_RECORD_COUNT, 0);
          return;
       }
+
+      LOG.info("Received [" + inputRecords.size() + "] records to load");
 
       //////////////////////////////////////////////////////////////////
       // put the destination table name in all records being inserted //

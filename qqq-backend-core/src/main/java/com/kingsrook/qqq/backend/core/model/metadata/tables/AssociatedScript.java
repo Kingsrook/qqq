@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -30,8 +31,9 @@ import java.io.Serializable;
  *******************************************************************************/
 public class AssociatedScript implements Serializable
 {
-   private String       fieldName;
-   private Serializable scriptTypeId;
+   private String         fieldName;
+   private Serializable   scriptTypeId;
+   private QCodeReference scriptTester;
 
 
 
@@ -98,6 +100,40 @@ public class AssociatedScript implements Serializable
    public AssociatedScript withScriptTypeId(Serializable scriptTypeId)
    {
       this.scriptTypeId = scriptTypeId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptTester
+    **
+    *******************************************************************************/
+   public QCodeReference getScriptTester()
+   {
+      return scriptTester;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptTester
+    **
+    *******************************************************************************/
+   public void setScriptTester(QCodeReference scriptTester)
+   {
+      this.scriptTester = scriptTester;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptTester
+    **
+    *******************************************************************************/
+   public AssociatedScript withScriptTester(QCodeReference scriptTester)
+   {
+      this.scriptTester = scriptTester;
       return (this);
    }
 

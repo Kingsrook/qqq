@@ -42,8 +42,6 @@ import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
-import com.kingsrook.qqq.backend.core.actions.scripts.StoreAssociatedScriptAction;
-import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -68,10 +66,6 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptInput;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptOutput;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -80,9 +74,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -95,13 +86,11 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
-import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -109,7 +98,6 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
-import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -308,10 +296,7 @@ public class QJavalinImplementation
                put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
                delete("", QJavalinImplementation::dataDelete);
 
-               get("/developer", QJavalinImplementation::getRecordDeveloperMode);
-               post("/developer/associatedScript/{fieldName}", QJavalinImplementation::storeRecordAssociatedScript);
-               get("/developer/associatedScript/{fieldName}/{scriptRevisionId}/logs", QJavalinImplementation::getAssociatedScriptLogs);
-               post("/developer/associatedScript/{fieldName}/test", QJavalinImplementation::testAssociatedScript);
+               QJavalinScriptsHandler.defineRecordRoutes();
             });
          });
 
@@ -977,213 +962,6 @@ public class QJavalinImplementation
          Map<String, Object> result = new HashMap<>();
          result.put("options", output.getResults());
          context.result(JsonUtils.toJson(result));
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void getRecordDeveloperMode(Context context)
-   {
-      try
-      {
-         String         tableName  = context.pathParam("table");
-         QTableMetaData table      = qInstance.getTable(tableName);
-         String         primaryKey = context.pathParam("primaryKey");
-         GetInput       getInput   = new GetInput(qInstance);
-
-         setupSession(context, getInput);
-         getInput.setTableName(tableName);
-         getInput.setShouldGenerateDisplayValues(true);
-         getInput.setShouldTranslatePossibleValues(true);
-
-         // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
-         //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
-
-         getInput.setPrimaryKey(primaryKey);
-
-         GetAction getAction = new GetAction();
-         GetOutput getOutput = getAction.execute(getInput);
-
-         ///////////////////////////////////////////////////////
-         // throw a not found error if the record isn't found //
-         ///////////////////////////////////////////////////////
-         QRecord record = getOutput.getRecord();
-         if(record == null)
-         {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
-         }
-
-         Map<String, Serializable> rs = new HashMap<>();
-         rs.put("record", record);
-
-         ArrayList<HashMap<String, Serializable>> associatedScripts = new ArrayList<>();
-         rs.put("associatedScripts", associatedScripts);
-
-         ///////////////////////////////////////////////////////
-         // process each associated script type for the table //
-         ///////////////////////////////////////////////////////
-         for(AssociatedScript associatedScript : CollectionUtils.nonNullList(table.getAssociatedScripts()))
-         {
-            HashMap<String, Serializable> thisScriptData = new HashMap<>();
-            associatedScripts.add(thisScriptData);
-            thisScriptData.put("associatedScript", associatedScript);
-
-            String       fieldName = associatedScript.getFieldName();
-            Serializable scriptId  = record.getValue(fieldName);
-            if(scriptId != null)
-            {
-               GetInput getScriptInput = new GetInput(qInstance);
-               setupSession(context, getScriptInput);
-               getScriptInput.setTableName("script");
-               getScriptInput.setPrimaryKey(scriptId);
-               GetOutput getScriptOutput = new GetAction().execute(getScriptInput);
-               if(getScriptOutput.getRecord() != null)
-               {
-                  thisScriptData.put("script", getScriptOutput.getRecord());
-
-                  QueryInput queryInput = new QueryInput(qInstance);
-                  setupSession(context, queryInput);
-                  queryInput.setTableName("scriptRevision");
-                  queryInput.setFilter(new QQueryFilter()
-                     .withCriteria(new QFilterCriteria("scriptId", QCriteriaOperator.EQUALS, List.of(getScriptOutput.getRecord().getValue("id"))))
-                     .withOrderBy(new QFilterOrderBy("id", false))
-                  );
-                  QueryOutput queryOutput = new QueryAction().execute(queryInput);
-                  thisScriptData.put("scriptRevisions", new ArrayList<>(queryOutput.getRecords()));
-               }
-            }
-         }
-
-         context.result(JsonUtils.toJson(rs));
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void getAssociatedScriptLogs(Context context)
-   {
-      try
-      {
-         String scriptRevisionId = context.pathParam("scriptRevisionId");
-
-         QueryInput queryInput = new QueryInput(qInstance);
-         setupSession(context, queryInput);
-         queryInput.setTableName("scriptLog");
-         queryInput.setFilter(new QQueryFilter()
-            .withCriteria(new QFilterCriteria("scriptRevisionId", QCriteriaOperator.EQUALS, List.of(scriptRevisionId)))
-            .withOrderBy(new QFilterOrderBy("id", false))
-         );
-         queryInput.setLimit(100);
-         QueryOutput queryOutput = new QueryAction().execute(queryInput);
-
-         if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
-         {
-            GeneralProcessUtils.addForeignRecordsListToRecordList(queryInput, queryOutput.getRecords(), "id", "scriptLogLine", "scriptLogId");
-         }
-
-         Map<String, Serializable> rs = new HashMap<>();
-         rs.put("scriptLogRecords", new ArrayList<>(queryOutput.getRecords()));
-
-         context.result(JsonUtils.toJson(rs));
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void storeRecordAssociatedScript(Context context)
-   {
-      context.contentType(ContentType.APPLICATION_JSON);
-
-      try
-      {
-         StoreAssociatedScriptInput input = new StoreAssociatedScriptInput(qInstance);
-         setupSession(context, input);
-         input.setCode(context.formParam("contents"));
-         input.setCommitMessage(context.formParam("commitMessage"));
-         input.setFieldName(context.pathParam("fieldName"));
-         input.setTableName(context.pathParam("table"));
-         input.setRecordPrimaryKey(context.pathParam("primaryKey"));
-
-         StoreAssociatedScriptOutput output = new StoreAssociatedScriptOutput();
-
-         StoreAssociatedScriptAction storeAssociatedScriptAction = new StoreAssociatedScriptAction();
-         storeAssociatedScriptAction.run(input, output);
-
-         context.result(JsonUtils.toJson(output));
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void testAssociatedScript(Context context)
-   {
-      try
-      {
-         TestScriptInput input = new TestScriptInput(qInstance);
-         setupSession(context, input);
-         input.setTableName(context.pathParam("table"));
-         input.setRecordPrimaryKey(context.pathParam("primaryKey"));
-         // context.pathParam("fieldName");
-         Map<String, String> inputValues = new HashMap<>();
-         input.setInputValues(inputValues);
-
-         for(Map.Entry<String, List<String>> entry : context.formParamMap().entrySet())
-         {
-            String key   = entry.getKey();
-            String value = entry.getValue().get(0);
-
-            if(key.equals("code"))
-            {
-               input.setCode(value);
-            }
-            else if(key.equals("scriptTypeId"))
-            {
-               input.setScriptTypeId(ValueUtils.getValueAsInteger(value));
-            }
-            else
-            {
-               inputValues.put(key, value);
-            }
-         }
-
-         TestScriptOutput output = new TestScriptOutput();
-
-         new TestScriptAction().run(input, output);
-
-         //////////////////////////////////////////////////////////////
-         // todo - output to frontend - then add assertions in test. //
-         //////////////////////////////////////////////////////////////
-
-         context.result(JsonUtils.toJson("OK"));
       }
       catch(Exception e)
       {

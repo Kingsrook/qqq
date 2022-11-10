@@ -57,7 +57,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
    public static final String FIELD_MOVE_OR_DELETE        = "moveOrDelete";
    public static final String FIELD_DESTINATION_FOR_MOVES = "destinationForMoves";
 
-   public static final String VALUE_MOVE    = "move";
+   public static final String VALUE_MOVE   = "move";
    public static final String VALUE_DELETE = "delete";
    public static final String STEP_NAME    = "cleanupSourceFiles";
 
@@ -84,7 +84,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
       String sourceFilePaths = runBackendStepInput.getValueString(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS);
       if(!StringUtils.hasContent(sourceFilePaths))
       {
-         LOG.info("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS + "]");
+         LOG.debug("No source file paths were specified in field [" + BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS + "]");
          return;
       }
 

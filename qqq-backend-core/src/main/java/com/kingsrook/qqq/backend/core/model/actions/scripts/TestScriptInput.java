@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -33,10 +34,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  *******************************************************************************/
 public class TestScriptInput extends AbstractTableActionInput
 {
-   private Serializable        recordPrimaryKey;
-   private String              code;
-   private Serializable        scriptTypeId;
-   private Map<String, String> inputValues;
+   private Map<String, Serializable> inputValues;
+   private QCodeReference            codeReference;
 
 
 
@@ -51,44 +50,10 @@ public class TestScriptInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for recordPrimaryKey
-    **
-    *******************************************************************************/
-   public Serializable getRecordPrimaryKey()
-   {
-      return recordPrimaryKey;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for recordPrimaryKey
-    **
-    *******************************************************************************/
-   public void setRecordPrimaryKey(Serializable recordPrimaryKey)
-   {
-      this.recordPrimaryKey = recordPrimaryKey;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for recordPrimaryKey
-    **
-    *******************************************************************************/
-   public TestScriptInput withRecordPrimaryKey(Serializable recordPrimaryKey)
-   {
-      this.recordPrimaryKey = recordPrimaryKey;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for inputValues
     **
     *******************************************************************************/
-   public Map<String, String> getInputValues()
+   public Map<String, Serializable> getInputValues()
    {
       return inputValues;
    }
@@ -99,7 +64,7 @@ public class TestScriptInput extends AbstractTableActionInput
     ** Setter for inputValues
     **
     *******************************************************************************/
-   public void setInputValues(Map<String, String> inputValues)
+   public void setInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
    }
@@ -110,7 +75,7 @@ public class TestScriptInput extends AbstractTableActionInput
     ** Fluent setter for inputValues
     **
     *******************************************************************************/
-   public TestScriptInput withInputValues(Map<String, String> inputValues)
+   public TestScriptInput withInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
       return (this);
@@ -119,68 +84,34 @@ public class TestScriptInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for code
+    ** Getter for codeReference
     **
     *******************************************************************************/
-   public String getCode()
+   public QCodeReference getCodeReference()
    {
-      return code;
+      return codeReference;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for code
+    ** Setter for codeReference
     **
     *******************************************************************************/
-   public void setCode(String code)
+   public void setCodeReference(QCodeReference codeReference)
    {
-      this.code = code;
+      this.codeReference = codeReference;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for code
+    ** Fluent setter for codeReference
     **
     *******************************************************************************/
-   public TestScriptInput withCode(String code)
+   public TestScriptInput withCodeReference(QCodeReference codeReference)
    {
-      this.code = code;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for scriptTypeId
-    **
-    *******************************************************************************/
-   public Serializable getScriptTypeId()
-   {
-      return scriptTypeId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for scriptTypeId
-    **
-    *******************************************************************************/
-   public void setScriptTypeId(Serializable scriptTypeId)
-   {
-      this.scriptTypeId = scriptTypeId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for scriptTypeId
-    **
-    *******************************************************************************/
-   public TestScriptInput withScriptTypeId(Serializable scriptTypeId)
-   {
-      this.scriptTypeId = scriptTypeId;
+      this.codeReference = codeReference;
       return (this);
    }
 

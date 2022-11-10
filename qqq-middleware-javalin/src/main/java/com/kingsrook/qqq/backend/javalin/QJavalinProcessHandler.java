@@ -174,10 +174,10 @@ public class QJavalinProcessHandler
             return (new RunProcessAction().execute(runProcessInput));
          });
 
-         LOG.info("Process result error? " + runProcessOutput.getException());
+         LOG.debug("Process result error? " + runProcessOutput.getException());
          for(QFieldMetaData outputField : QJavalinImplementation.qInstance.getProcess(runProcessInput.getProcessName()).getOutputFields())
          {
-            LOG.info("Process result output value: " + outputField.getName() + ": " + runProcessOutput.getValues().get(outputField.getName()));
+            LOG.debug("Process result output value: " + outputField.getName() + ": " + runProcessOutput.getValues().get(outputField.getName()));
          }
 
          serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);

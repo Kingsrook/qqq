@@ -34,13 +34,13 @@ public class ScriptLogLine extends QRecordEntity
 {
    public static final String TABLE_NAME = "scriptLogLine";
 
-   @QField()
+   @QField(isEditable = false)
    private Integer id;
 
-   @QField()
+   @QField(isEditable = false)
    private Instant createDate;
 
-   @QField()
+   @QField(isEditable = false)
    private Instant modifyDate;
 
    @QField(possibleValueSourceName = "scriptLog")

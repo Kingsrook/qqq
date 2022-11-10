@@ -59,21 +59,21 @@ public class BasicETLTransformFunction implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE);
-      LOG.info("Start transform for destination table: " + tableName);
+      LOG.debug("Start transform for destination table: " + tableName);
 
       ////////////////////////////////////////////////////////////////////////////////////////////
       // exit early with no-op if no records made it here, or if we don't have a mapping to use //
       ////////////////////////////////////////////////////////////////////////////////////////////
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
-         LOG.info("Exiting early with no-op for empty input record list.");
+         LOG.debug("Exiting early with no-op for empty input record list.");
          return;
       }
 
       String mappingJSON = runBackendStepInput.getValueString(BasicETLProcess.FIELD_MAPPING_JSON);
       if(!StringUtils.hasContent(mappingJSON))
       {
-         LOG.info("Exiting early with no-op for empty mappingJSON.");
+         LOG.debug("Exiting early with no-op for empty mappingJSON.");
          return;
       }
 

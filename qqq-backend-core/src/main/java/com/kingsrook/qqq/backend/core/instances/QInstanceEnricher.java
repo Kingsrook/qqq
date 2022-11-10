@@ -230,7 +230,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void enrichField(QFieldMetaData field)
+   public void enrichField(QFieldMetaData field)
    {
       if(!StringUtils.hasContent(field.getLabel()))
       {
