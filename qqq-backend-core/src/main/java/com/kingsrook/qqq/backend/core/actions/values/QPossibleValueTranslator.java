@@ -414,6 +414,9 @@ public class QPossibleValueTranslator
 
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
+            ///////////////////////////////////////////////////////////////////////////////////
+            // for all records that were found, put a formatted value into cache foreach PVS //
+            ///////////////////////////////////////////////////////////////////////////////////
             for(QRecord record : queryOutput.getRecords())
             {
                Serializable pkeyValue = record.getValue(primaryKeyField);
@@ -421,6 +424,20 @@ public class QPossibleValueTranslator
                {
                   QPossibleValue<?> possibleValue = new QPossibleValue<>(pkeyValue, record.getRecordLabel());
                   possibleValueCache.get(possibleValueSource.getName()).put(pkeyValue, formatPossibleValue(possibleValueSource, possibleValue));
+               }
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // for all pkeys that were NOT found, put a null value into cache foreach PVS (to avoid re-looking up) //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            for(Serializable pkey : page)
+            {
+               for(QPossibleValueSource possibleValueSource : possibleValueSources)
+               {
+                  if(!possibleValueCache.get(possibleValueSource.getName()).containsKey(pkey))
+                  {
+                     possibleValueCache.get(possibleValueSource.getName()).put(pkey, null);
+                  }
                }
             }
          }

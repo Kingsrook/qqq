@@ -273,6 +273,14 @@ public class BackendQueryFilterUtils
     *******************************************************************************/
    private static boolean testIn(QFilterCriteria criterion, Serializable value)
    {
+      if(CollectionUtils.nullSafeHasContents(criterion.getValues()))
+      {
+         if(criterion.getValues().get(0) instanceof String && value instanceof Number)
+         {
+            value = String.valueOf(value);
+         }
+      }
+
       if(!criterion.getValues().contains(value))
       {
          return (false);

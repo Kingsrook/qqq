@@ -354,10 +354,10 @@ class QInstanceValidatorTest
    public void test_validateTableWithNoFields()
    {
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setFields(null),
-         "At least 1 field");
+         "At least 1 field", "Primary key for table person is not a recognized field");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").setFields(new HashMap<>()),
-         "At least 1 field");
+         "At least 1 field", "Primary key for table person is not a recognized field");
    }
 
 
@@ -547,6 +547,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection(null, "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "Missing a name");
@@ -562,6 +563,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", null, new QIcon("person"), Tier.T1, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationSuccess((qInstance) -> qInstance.addTable(table));
@@ -577,6 +579,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("section1", "Section 2", new QIcon("person"), Tier.T2, List.of("name")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -594,6 +597,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("section2", "Section 1", new QIcon("person"), Tier.T2, List.of("name")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -611,12 +615,14 @@ class QInstanceValidatorTest
    {
       QTableMetaData table1 = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of()))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table1), "section1 does not have any fields", "field id is not listed in any field sections");
 
       QTableMetaData table2 = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, null))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table2), "section1 does not have any fields", "field id is not listed in any field sections");
@@ -632,6 +638,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "od")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table), "not a field on this table");
@@ -647,12 +654,14 @@ class QInstanceValidatorTest
    {
       QTableMetaData table1 = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id", "id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       assertValidationFailureReasons((qInstance) -> qInstance.addTable(table1), "more than once");
 
       QTableMetaData table2 = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("section2", "Section 2", new QIcon("person"), Tier.T2, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
@@ -669,6 +678,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING));
@@ -685,6 +695,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("section2", "Section 2", new QIcon("person"), Tier.T1, List.of("name")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -800,6 +811,7 @@ class QInstanceValidatorTest
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField("id")
          .withSection(new QFieldSection("section1", "Section 1", new QIcon("person"), Tier.T1, List.of("id")))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING));

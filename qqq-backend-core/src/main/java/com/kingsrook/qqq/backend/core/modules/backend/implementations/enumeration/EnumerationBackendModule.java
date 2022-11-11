@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.enumeration;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -66,6 +67,17 @@ public class EnumerationBackendModule implements QBackendModuleInterface
    public QueryInterface getQueryInterface()
    {
       return new EnumerationQueryAction();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public CountInterface getCountInterface()
+   {
+      return new EnumerationCountAction();
    }
 
 }

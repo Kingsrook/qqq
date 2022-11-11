@@ -36,11 +36,13 @@ import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -55,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -222,24 +225,34 @@ public class QInstanceValidator
     *******************************************************************************/
    private void validateTables(QInstance qInstance)
    {
-      if(assertCondition(CollectionUtils.nullSafeHasContents(qInstance.getTables()),
-         "At least 1 table must be defined."))
+      if(assertCondition(CollectionUtils.nullSafeHasContents(qInstance.getTables()), "At least 1 table must be defined."))
       {
          qInstance.getTables().forEach((tableName, table) ->
          {
             assertCondition(Objects.equals(tableName, table.getName()), "Inconsistent naming for table: " + tableName + "/" + table.getName() + ".");
-
             validateAppChildHasValidParentAppName(qInstance, table);
 
             ////////////////////////////////////////
             // validate the backend for the table //
             ////////////////////////////////////////
-            if(assertCondition(StringUtils.hasContent(table.getBackendName()),
-               "Missing backend name for table " + tableName + "."))
+            if(assertCondition(StringUtils.hasContent(table.getBackendName()), "Missing backend name for table " + tableName + "."))
             {
                if(CollectionUtils.nullSafeHasContents(qInstance.getBackends()))
                {
-                  assertCondition(qInstance.getBackendForTable(tableName) != null, "Unrecognized backend " + table.getBackendName() + " for table " + tableName + ".");
+                  QBackendMetaData backendForTable = qInstance.getBackendForTable(tableName);
+                  if(assertCondition(backendForTable != null, "Unrecognized backend " + table.getBackendName() + " for table " + tableName + "."))
+                  {
+                     ////////////////////////////////////////////////////////////
+                     // if the backend requires primary keys, then validate it //
+                     ////////////////////////////////////////////////////////////
+                     if(backendForTable.requiresPrimaryKeyOnTables())
+                     {
+                        if(assertCondition(StringUtils.hasContent(table.getPrimaryKeyField()), "Missing primary key for table: " + tableName))
+                        {
+                           assertNoException(() -> table.getField(table.getPrimaryKeyField()), "Primary key for table " + tableName + " is not a recognized field on this table.");
+                        }
+                     }
+                  }
                }
             }
 
@@ -329,7 +342,44 @@ public class QInstanceValidator
             {
                validateTableUniqueKeys(table);
             }
+
+            /////////////////////////////////////////////
+            // validate the table's associated scripts //
+            /////////////////////////////////////////////
+            if(table.getAssociatedScripts() != null)
+            {
+               validateAssociatedScripts(table);
+            }
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateAssociatedScripts(QTableMetaData table)
+   {
+      Set<String> usedFieldNames = new HashSet<>();
+      for(AssociatedScript associatedScript : table.getAssociatedScripts())
+      {
+         if(assertCondition(StringUtils.hasContent(associatedScript.getFieldName()), "Table " + table.getName() + " has an associatedScript without a fieldName"))
+         {
+            assertCondition(!usedFieldNames.contains(associatedScript.getFieldName()), "Table " + table.getName() + " has more than one associatedScript specifying field: " + associatedScript.getFieldName());
+            usedFieldNames.add(associatedScript.getFieldName());
+            assertNoException(() -> table.getField(associatedScript.getFieldName()), "Table " + table.getName() + " has an associatedScript specifying an unrecognized field: " + associatedScript.getFieldName());
+         }
+
+         assertCondition(associatedScript.getScriptTypeId() != null, "Table " + table.getName() + " associatedScript on field " + associatedScript.getFieldName() + " is missing a scriptTypeId");
+         if(associatedScript.getScriptTester() != null)
+         {
+            String prefix = "Table " + table.getName() + " associatedScript on field " + associatedScript.getFieldName();
+            if(preAssertionsForCodeReference(associatedScript.getScriptTester(), prefix))
+            {
+               validateSimpleCodeReference(prefix, associatedScript.getScriptTester(), TestScriptActionInterface.class);
+            }
+         }
       }
    }
 

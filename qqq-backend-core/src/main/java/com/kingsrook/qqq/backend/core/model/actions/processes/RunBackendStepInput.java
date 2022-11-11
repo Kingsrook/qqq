@@ -106,6 +106,7 @@ public class RunBackendStepInput extends AbstractActionInput
       target.setTableName(getTableName());
       target.setProcessName(getProcessName());
       target.setAsyncJobCallback(getAsyncJobCallback());
+      target.setFrontendStepBehavior(getFrontendStepBehavior());
       target.setValues(getValues());
    }
 

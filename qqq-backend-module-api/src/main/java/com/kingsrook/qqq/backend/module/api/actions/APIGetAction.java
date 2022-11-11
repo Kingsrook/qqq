@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -60,16 +61,28 @@ public class APIGetAction extends AbstractAPIAction implements GetInterface
          String  url     = apiActionUtil.buildTableUrl(table);
          HttpGet request = new HttpGet(url + urlSuffix);
 
+         LOG.debug("GET " + url + urlSuffix);
+
          apiActionUtil.setupAuthorizationInRequest(request);
          apiActionUtil.setupContentTypeInRequest(request);
          apiActionUtil.setupAdditionalHeaders(request);
 
          try(CloseableHttpResponse response = httpClient.execute(request))
          {
-            QRecord record = apiActionUtil.processSingleRecordGetResponse(table, response);
-
             GetOutput rs = new GetOutput();
-            rs.setRecord(record);
+            if(response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND)
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               // leave get response null - downstream will convert into not-found exception if/as needed //
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               LOG.debug("HTTP GET for " + table.getName() + " " + getInput.getPrimaryKey() + " failed with status 404.");
+            }
+            else
+            {
+               QRecord record = apiActionUtil.processSingleRecordGetResponse(table, response);
+               rs.setRecord(record);
+            }
+
             return rs;
          }
       }

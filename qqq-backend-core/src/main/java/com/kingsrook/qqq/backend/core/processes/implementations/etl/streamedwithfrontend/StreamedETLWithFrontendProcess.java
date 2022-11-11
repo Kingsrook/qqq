@@ -373,5 +373,21 @@ public class StreamedETLWithFrontendProcess
 
          return (this);
       }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withPreviewStepInputFields(List<QFieldMetaData> fieldList)
+      {
+         QBackendStepMetaData previewStep = processMetaData.getBackendStep(STEP_NAME_PREVIEW);
+         for(QFieldMetaData field : fieldList)
+         {
+            previewStep.getInputMetaData().withField(field);
+         }
+
+         return (this);
+      }
    }
 }

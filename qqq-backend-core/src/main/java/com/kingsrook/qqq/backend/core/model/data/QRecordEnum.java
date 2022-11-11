@@ -35,6 +35,8 @@ import java.util.Locale;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -42,6 +44,8 @@ import com.kingsrook.qqq.backend.core.utils.ListingHash;
  *******************************************************************************/
 public interface QRecordEnum
 {
+   Logger LOG = LogManager.getLogger(QRecordEnum.class);
+
    ListingHash<Class<? extends QRecordEnum>, QRecordEntityField> fieldMapping = new ListingHash<>();
 
 
@@ -140,9 +144,9 @@ public interface QRecordEnum
          }
          else
          {
-            if(!method.getName().equals("getClass"))
+            if(!method.getName().equals("getClass") && !method.getName().equals("getDeclaringClass") && !method.getName().equals("getPossibleValueId"))
             {
-               System.err.println("Method [" + method.getName() + "] looks like a getter, but its return type, [" + method.getReturnType() + "], isn't supported.");
+               LOG.debug("Method [" + method.getName() + "] looks like a getter, but its return type, [" + method.getReturnType() + "], isn't supported.");
             }
          }
       }

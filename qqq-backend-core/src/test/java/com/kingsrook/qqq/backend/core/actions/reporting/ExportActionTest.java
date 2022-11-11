@@ -189,6 +189,7 @@ class ExportActionTest
    {
       QTableMetaData wideTable = new QTableMetaData()
          .withName("wide")
+         .withPrimaryKeyField("field0")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME);
       for(int i = 0; i < ReportFormat.XLSX.getMaxCols() + 1; i++)
       {

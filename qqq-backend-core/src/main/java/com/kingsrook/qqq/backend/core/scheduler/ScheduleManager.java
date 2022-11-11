@@ -119,7 +119,7 @@ public class ScheduleManager
 
       for(QProcessMetaData process : qInstance.getProcesses().values())
       {
-         if(process.getSchedule() != null)
+         if(process.getSchedule() != null && allowedToStart(process.getName()))
          {
             startProcess(process);
          }
@@ -140,17 +140,37 @@ public class ScheduleManager
       List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
       for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
       {
-         PollingAutomationPerTableRunner runner   = new PollingAutomationPerTableRunner(qInstance, automationProvider.getName(), sessionSupplier, tableAction);
-         StandardScheduledExecutor       executor = new StandardScheduledExecutor(runner);
+         if(allowedToStart(tableAction.tableName()))
+         {
+            PollingAutomationPerTableRunner runner   = new PollingAutomationPerTableRunner(qInstance, automationProvider.getName(), sessionSupplier, tableAction);
+            StandardScheduledExecutor       executor = new StandardScheduledExecutor(runner);
 
-         QScheduleMetaData schedule = Objects.requireNonNullElseGet(automationProvider.getSchedule(), this::getDefaultSchedule);
+            QScheduleMetaData schedule = Objects.requireNonNullElseGet(automationProvider.getSchedule(), this::getDefaultSchedule);
 
-         executor.setName(runner.getName());
-         setScheduleInExecutor(schedule, executor);
-         executor.start();
+            executor.setName(runner.getName());
+            setScheduleInExecutor(schedule, executor);
+            executor.start();
 
-         executors.add(executor);
+            executors.add(executor);
+         }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean allowedToStart(String name)
+   {
+      String propertyName  = "qqq.scheduleManager.onlyStartNamesMatching";
+      String propertyValue = System.getProperty(propertyName, "");
+      if(propertyValue.equals(""))
+      {
+         return (true);
+      }
+
+      return (name.matches(propertyValue));
    }
 
 
@@ -160,13 +180,16 @@ public class ScheduleManager
     *******************************************************************************/
    private void startQueueProvider(QQueueProviderMetaData queueProvider)
    {
-      switch(queueProvider.getType())
+      if(allowedToStart(queueProvider.getName()))
       {
-         case SQS:
-            startSqsProvider((SQSQueueProviderMetaData) queueProvider);
-            break;
-         default:
-            throw new IllegalArgumentException("Unhandled queue provider type: " + queueProvider.getType());
+         switch(queueProvider.getType())
+         {
+            case SQS:
+               startSqsProvider((SQSQueueProviderMetaData) queueProvider);
+               break;
+            default:
+               throw new IllegalArgumentException("Unhandled queue provider type: " + queueProvider.getType());
+         }
       }
    }
 
@@ -182,7 +205,7 @@ public class ScheduleManager
 
       for(QQueueMetaData queue : qInstance.getQueues().values())
       {
-         if(queueProvider.getName().equals(queue.getProviderName()))
+         if(queueProvider.getName().equals(queue.getProviderName()) && allowedToStart(queue.getName()))
          {
             SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
             sqsQueuePoller.setQueueProviderMetaData(queueProvider);

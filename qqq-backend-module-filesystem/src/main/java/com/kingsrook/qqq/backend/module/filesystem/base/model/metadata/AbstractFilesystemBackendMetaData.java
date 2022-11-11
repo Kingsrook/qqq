@@ -76,4 +76,15 @@ public class AbstractFilesystemBackendMetaData extends QBackendMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean requiresPrimaryKeyOnTables()
+   {
+      return (false);
+   }
+
 }

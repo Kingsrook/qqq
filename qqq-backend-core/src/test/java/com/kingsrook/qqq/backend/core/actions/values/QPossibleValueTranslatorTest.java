@@ -129,7 +129,6 @@ public class QPossibleValueTranslatorTest
    {
       QInstance                qInstance               = TestUtils.defineInstance();
       QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
-      QTableMetaData           shapeTable              = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
       QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
       QPossibleValueSource     possibleValueSource     = qInstance.getPossibleValueSource(shapeField.getPossibleValueSourceName());
 
@@ -191,6 +190,32 @@ public class QPossibleValueTranslatorTest
       possibleValueTranslator.translatePossibleValue(shapeField, 1);
       possibleValueTranslator.translatePossibleValue(shapeField, 2);
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should only run 1 query");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueTableWithBadForeignKeys() throws QException
+   {
+      QInstance                qInstance               = TestUtils.defineInstance();
+      QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
+      QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
+
+      TestUtils.insertDefaultShapes(qInstance);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // assert that we don't re-run queries for cached values, even ones that aren't found (e.g., 4 below). //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      MemoryRecordStore.setCollectStatistics(true);
+      possibleValueTranslator.translatePossibleValue(shapeField, 1);
+      possibleValueTranslator.translatePossibleValue(shapeField, 2);
+      assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran 2 queries so far");
+      assertNull(possibleValueTranslator.translatePossibleValue(shapeField, 4));
+      assertNull(possibleValueTranslator.translatePossibleValue(shapeField, 4));
+      assertEquals(3, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran 3 queries in total");
    }
 
 
