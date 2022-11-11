@@ -164,4 +164,20 @@ public class FieldAdornment
       return (withValue(value.getA(), value.getB()));
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for values
+    **
+    *******************************************************************************/
+   public FieldAdornment withValues(Pair<String, Serializable>... values)
+   {
+      for(Pair<String, Serializable> value : values)
+      {
+         withValue(value);
+      }
+
+      return (this);
+   }
+
 }

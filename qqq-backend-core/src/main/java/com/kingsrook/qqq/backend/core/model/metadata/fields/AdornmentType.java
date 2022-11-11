@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
@@ -80,6 +81,20 @@ public enum AdornmentType
       static Pair<String, Serializable> iconValue(Serializable value, String iconName)
       {
          return (new Pair<>("icon." + value, iconName));
+      }
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @SuppressWarnings("unchecked")
+      static Pair<String, Serializable>[] iconAndColorValues(Serializable value, String iconName, String colorName)
+      {
+         if(value instanceof PossibleValueEnum<?> possibleValueEnum)
+         {
+            value = (Serializable) possibleValueEnum.getPossibleValueId();
+         }
+
+         return (new Pair[] { iconValue(value, iconName), colorValue(value, colorName) });
       }
    }
 
