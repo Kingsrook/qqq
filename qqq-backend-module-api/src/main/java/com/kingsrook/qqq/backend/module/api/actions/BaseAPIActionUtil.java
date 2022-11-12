@@ -474,12 +474,12 @@ public class BaseAPIActionUtil
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
       String errorMessage = "HTTP " + request.getMethod() + " for table + [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
+      LOG.warn(errorMessage);
 
       if("GET".equals(request.getMethod()))
       {
          if(statusCode == HttpStatus.SC_NOT_FOUND)
          {
-            LOG.warn(errorMessage);
             return;
          }
       }
@@ -717,8 +717,7 @@ public class BaseAPIActionUtil
    {
       try
       {
-         JSONObject jsonObject = JsonUtils.toJSONObject(response.getContent());
-         return jsonObject;
+         return JsonUtils.toJSONObject(response.getContent());
       }
       catch(Exception e)
       {
@@ -749,10 +748,10 @@ public class BaseAPIActionUtil
             setupContentTypeInRequest(request);
             setupAdditionalHeaders(request);
 
-            LOG.warn("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
+            LOG.info("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
             if("POST".equals(request.getMethod()))
             {
-               LOG.warn("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
+               LOG.info("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
             }
 
             try(CloseableHttpResponse response = httpClient.execute(request))
@@ -769,6 +768,7 @@ public class BaseAPIActionUtil
                   handleResponseError(table, request, qResponse);
                }
 
+               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
                return (qResponse);
             }
          }
