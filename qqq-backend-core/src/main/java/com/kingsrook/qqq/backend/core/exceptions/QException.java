@@ -33,6 +33,17 @@ public class QException extends Exception
     ** Constructor of message
     **
     *******************************************************************************/
+   public QException(Throwable t)
+   {
+      super(t.getMessage(), t);
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor of message
+    **
+    *******************************************************************************/
    public QException(String message)
    {
       super(message);

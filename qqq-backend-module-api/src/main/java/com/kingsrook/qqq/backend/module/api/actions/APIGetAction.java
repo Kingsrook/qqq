@@ -26,15 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -42,10 +34,6 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class APIGetAction extends AbstractAPIAction implements GetInterface
 {
-   private static final Logger LOG = LogManager.getLogger(APIGetAction.class);
-
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -53,43 +41,6 @@ public class APIGetAction extends AbstractAPIAction implements GetInterface
    {
       QTableMetaData table = getInput.getTable();
       preAction(getInput);
-
-      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
-      {
-         String urlSuffix = apiActionUtil.buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey());
-
-         String  url     = apiActionUtil.buildTableUrl(table);
-         HttpGet request = new HttpGet(url + urlSuffix);
-
-         LOG.debug("GET " + url + urlSuffix);
-
-         apiActionUtil.setupAuthorizationInRequest(request);
-         apiActionUtil.setupContentTypeInRequest(request);
-         apiActionUtil.setupAdditionalHeaders(request);
-
-         try(CloseableHttpResponse response = httpClient.execute(request))
-         {
-            GetOutput rs = new GetOutput();
-            if(response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND)
-            {
-               /////////////////////////////////////////////////////////////////////////////////////////////
-               // leave get response null - downstream will convert into not-found exception if/as needed //
-               /////////////////////////////////////////////////////////////////////////////////////////////
-               LOG.debug("HTTP GET for " + table.getName() + " " + getInput.getPrimaryKey() + " failed with status 404.");
-            }
-            else
-            {
-               QRecord record = apiActionUtil.processSingleRecordGetResponse(table, response);
-               rs.setRecord(record);
-            }
-
-            return rs;
-         }
-      }
-      catch(Exception e)
-      {
-         LOG.warn("Error in API get", e);
-         throw new QException("Error executing get: " + e.getMessage(), e);
-      }
+      return (apiActionUtil.doGet(table, getInput));
    }
 }

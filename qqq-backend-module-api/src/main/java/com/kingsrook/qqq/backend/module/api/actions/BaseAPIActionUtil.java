@@ -26,32 +26,47 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -64,7 +79,7 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class BaseAPIActionUtil
 {
-   private static final Logger LOG = LogManager.getLogger(BaseAPIActionUtil.class);
+   protected static final Logger LOG = LogManager.getLogger(BaseAPIActionUtil.class);
 
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
@@ -74,9 +89,27 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public long getMillisToSleepAfterEveryCall()
+   public CountOutput doCount(QTableMetaData table, CountInput countInput) throws QException
    {
-      return (0);
+      try
+      {
+         QQueryFilter filter      = countInput.getFilter();
+         String       paramString = buildQueryStringForGet(filter, null, null, table.getFields());
+         String       url         = buildTableUrl(table) + paramString;
+
+         HttpGet       request  = new HttpGet(url);
+         QHttpResponse response = makeRequest(table, request);
+
+         Integer     count = processGetResponseForCount(table, response);
+         CountOutput rs    = new CountOutput();
+         rs.setCount(count);
+         return rs;
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in API count", e);
+         throw new QException("Error executing count: " + e.getMessage(), e);
+      }
    }
 
 
@@ -84,9 +117,30 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public int getInitialRateLimitBackoffMillis()
+   public GetOutput doGet(QTableMetaData table, GetInput getInput) throws QException
    {
-      return (0);
+      try
+      {
+         String  urlSuffix = buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey());
+         String  url       = buildTableUrl(table);
+         HttpGet request   = new HttpGet(url + urlSuffix);
+
+         GetOutput     rs       = new GetOutput();
+         QHttpResponse response = makeRequest(table, request);
+
+         if(response.getStatusCode() != HttpStatus.SC_NOT_FOUND)
+         {
+            QRecord record = processSingleRecordGetResponse(table, response);
+            rs.setRecord(record);
+         }
+
+         return rs;
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in API get", e);
+         throw new QException("Error executing get: " + e.getMessage(), e);
+      }
    }
 
 
@@ -94,9 +148,58 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public int getMaxAllowedRateLimitErrors()
+   public InsertOutput doInsert(QTableMetaData table, InsertInput insertInput) throws QException
    {
-      return (0);
+      InsertOutput insertOutput = new InsertOutput();
+      insertOutput.setRecords(new ArrayList<>());
+
+      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
+      {
+         LOG.debug("Insert request called with 0 records.  Returning with no-op");
+         return (insertOutput);
+      }
+
+      try
+      {
+         // todo - supports bulk post?
+         for(QRecord record : insertInput.getRecords())
+         {
+            //////////////////////////////////////////////////////////
+            // hmm, unclear if this should always be done...        //
+            // is added initially for registering easypost trackers //
+            //////////////////////////////////////////////////////////
+            insertInput.getAsyncJobCallback().incrementCurrent();
+
+            try
+            {
+               String   url     = buildTableUrl(table);
+               HttpPost request = new HttpPost(url);
+               request.setEntity(recordToEntity(table, record));
+
+               QHttpResponse response = makeRequest(table, request);
+               record = processPostResponse(table, record, response);
+               insertOutput.addRecord(record);
+            }
+            catch(Exception e)
+            {
+               record.addError("Error: " + e.getMessage());
+               insertOutput.addRecord(record);
+            }
+
+            if(insertInput.getRecords().size() > 1 && getMillisToSleepAfterEveryCall() > 0)
+            {
+               SleepUtils.sleep(getMillisToSleepAfterEveryCall(), TimeUnit.MILLISECONDS);
+            }
+         }
+
+         return (insertOutput);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in API Insert for [" + table.getName() + "]", e);
+         throw new QException("Error executing insert: " + e.getMessage(), e);
+      }
+
    }
 
 
@@ -104,9 +207,284 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Integer getApiStandardLimit()
+   public QueryOutput doQuery(QTableMetaData table, QueryInput queryInput) throws QException
    {
-      return (20);
+      QueryOutput queryOutput   = new QueryOutput(queryInput);
+      Integer     originalLimit = queryInput.getLimit();
+      Integer     limit         = originalLimit;
+      Integer     skip          = queryInput.getSkip();
+
+      if(limit == null)
+      {
+         limit = getApiStandardLimit();
+      }
+
+      int totalCount = 0;
+      while(true)
+      {
+         try
+         {
+            QQueryFilter filter      = queryInput.getFilter();
+            String       paramString = buildQueryStringForGet(filter, limit, skip, table.getFields());
+            String       url         = buildTableUrl(table) + paramString;
+            HttpGet      request     = new HttpGet(url);
+
+            QHttpResponse response = makeRequest(table, request);
+            int           count    = processGetResponse(table, response, queryOutput);
+            totalCount += count;
+
+            /////////////////////////////////////////////////////////////////////////
+            // if we've fetched at least as many as the original limit, then break //
+            /////////////////////////////////////////////////////////////////////////
+            if(originalLimit != null && totalCount >= originalLimit)
+            {
+               return (queryOutput);
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////
+            // if we got back less than a full page this time, then we must be done, so break //
+            ////////////////////////////////////////////////////////////////////////////////////
+            if(count == 0 || (limit != null && count < limit))
+            {
+               return (queryOutput);
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            // if there's an async callback that says we're cancelled, break //
+            ///////////////////////////////////////////////////////////////////
+            if(queryInput.getAsyncJobCallback().wasCancelRequested())
+            {
+               LOG.info("Breaking query job, as requested.");
+               return (queryOutput);
+            }
+
+            ////////////////////////////////////////////////////////////////////////////
+            // else, increment the skip by the count we just got, and query for more. //
+            ////////////////////////////////////////////////////////////////////////////
+            if(skip == null)
+            {
+               skip = 0;
+            }
+            skip += count;
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error in API Query", e);
+            throw new QException("Error executing query: " + e.getMessage(), e);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public UpdateOutput doUpdate(QTableMetaData table, UpdateInput updateInput) throws QException
+   {
+      UpdateOutput updateOutput = new UpdateOutput();
+      updateOutput.setRecords(new ArrayList<>());
+
+      if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
+      {
+         LOG.debug("Update request called with 0 records.  Returning with no-op");
+         return (updateOutput);
+      }
+
+      try
+      {
+         ///////////////////////////////////////////////////////////////
+         // make post requests for groups of orders that need updated //
+         ///////////////////////////////////////////////////////////////
+         for(List<QRecord> recordList : CollectionUtils.getPages(updateInput.getRecords(), 20))
+         {
+            try
+            {
+               String   url     = buildTableUrl(table);
+               HttpPost request = new HttpPost(url);
+               request.setEntity(recordsToEntity(table, recordList));
+
+               QHttpResponse response       = makeRequest(table, request);
+               int           statusCode     = response.getStatusCode();
+               String        responseString = response.getContent();
+               if(statusCode != HttpStatus.SC_MULTI_STATUS && statusCode != HttpStatus.SC_OK)
+               {
+                  String errorMessage = "Did not receive response status code of 200 or 207: " + responseString;
+                  LOG.warn(errorMessage);
+                  throw (new QException(errorMessage));
+               }
+               if(statusCode == HttpStatus.SC_MULTI_STATUS)
+               {
+                  JSONObject responseJSON = new JSONObject(responseString).getJSONObject("response");
+                  if(!responseJSON.optString("status").contains("200 OK"))
+                  {
+                     String errorMessage = "Did not receive ok status response: " + responseJSON.optString("description");
+                     LOG.warn(errorMessage);
+                     throw (new QException(errorMessage));
+                  }
+               }
+            }
+            catch(QException e)
+            {
+               throw (e);
+            }
+            catch(Exception e)
+            {
+               String errorMessage = "An unexpected error occurred updating entities.";
+               LOG.warn(errorMessage, e);
+               throw (new QException(errorMessage, e));
+            }
+
+            for(QRecord qRecord : recordList)
+            {
+               updateOutput.addRecord(qRecord);
+            }
+            if(recordList.size() == 20 && getMillisToSleepAfterEveryCall() > 0)
+            {
+               SleepUtils.sleep(getMillisToSleepAfterEveryCall(), TimeUnit.MILLISECONDS);
+            }
+         }
+
+         return (updateOutput);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in API Insert for [" + table.getName() + "]", e);
+         throw new QException("Error executing update: " + e.getMessage(), e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Integer processGetResponseForCount(QTableMetaData table, QHttpResponse response) throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // set up a query output with a blank query input - e.g., one that isn't using a pipe. //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      QueryOutput queryOutput = new QueryOutput(new QueryInput());
+      processGetResponse(table, response, queryOutput);
+      List<QRecord> records = queryOutput.getRecords();
+
+      return (records == null ? null : records.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord processSingleRecordGetResponse(QTableMetaData table, QHttpResponse response) throws QException
+   {
+      return (jsonObjectToRecord(getJsonObject(response), table.getFields()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected QRecord processPostResponse(QTableMetaData table, QRecord record, QHttpResponse response) throws QException
+   {
+      JSONObject jsonObject = getJsonObject(response);
+
+      String primaryKeyFieldName   = table.getPrimaryKeyField();
+      String primaryKeyBackendName = getFieldBackendName(table.getField(primaryKeyFieldName));
+      if(jsonObject.has(primaryKeyBackendName))
+      {
+         Serializable primaryKey = (Serializable) jsonObject.get(primaryKeyBackendName);
+         record.setValue(primaryKeyFieldName, primaryKey);
+      }
+      else
+      {
+         if(jsonObject.has("error"))
+         {
+            JSONObject errorObject = jsonObject.getJSONObject("error");
+            if(errorObject.has("message"))
+            {
+               record.addError("Error: " + errorObject.getString("message"));
+            }
+         }
+
+         if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
+         {
+            record.addError("Unspecified error executing insert.");
+         }
+      }
+
+      return (record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected int processGetResponse(QTableMetaData table, QHttpResponse response, QueryOutput queryOutput) throws QException
+   {
+      String resultString = response.getContent();
+
+      int count = 0;
+      if(StringUtils.hasContent(response.getContent()) && !resultString.equals("null"))
+      {
+         JSONArray  resultList = null;
+         JSONObject jsonObject = null;
+
+         if(resultString.startsWith("["))
+         {
+            resultList = JsonUtils.toJSONArray(resultString);
+         }
+         else
+         {
+            String tablePath = getBackendDetails(table).getTablePath();
+            jsonObject = JsonUtils.toJSONObject(resultString);
+            if(jsonObject.has(tablePath))
+            {
+               resultList = jsonObject.getJSONArray(getBackendDetails(table).getTablePath());
+            }
+         }
+
+         if(resultList != null)
+         {
+            for(int i = 0; i < resultList.length(); i++)
+            {
+               queryOutput.addRecord(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
+               count++;
+            }
+         }
+         else
+         {
+            queryOutput.addRecord(jsonObjectToRecord(jsonObject, table.getFields()));
+            count++;
+         }
+      }
+
+      return (count);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void handleResponseError(QTableMetaData table, HttpRequestBase request, QHttpResponse response) throws QException
+   {
+      int    statusCode   = response.getStatusCode();
+      String resultString = response.getContent();
+      String errorMessage = "HTTP " + request.getMethod() + " for table + [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
+
+      if("GET".equals(request.getMethod()))
+      {
+         if(statusCode == HttpStatus.SC_NOT_FOUND)
+         {
+            LOG.warn(errorMessage);
+            return;
+         }
+      }
+
+      throw (new QException(errorMessage));
    }
 
 
@@ -252,24 +630,31 @@ public class BaseAPIActionUtil
     ** helper method, such as recordToJsonObject.
     **
     *******************************************************************************/
-   protected AbstractHttpEntity recordsToEntity(QTableMetaData table, List<QRecord> recordList) throws IOException, QException
+   protected AbstractHttpEntity recordsToEntity(QTableMetaData table, List<QRecord> recordList) throws QException
    {
-      JSONArray entityListJson = new JSONArray();
-      for(QRecord record : recordList)
+      try
       {
-         entityListJson.put(entityListJson.length(), recordToJsonObject(table, record));
-      }
+         JSONArray entityListJson = new JSONArray();
+         for(QRecord record : recordList)
+         {
+            entityListJson.put(entityListJson.length(), recordToJsonObject(table, record));
+         }
 
-      String json      = entityListJson.toString();
-      String tablePath = getBackendDetails(table).getTablePath();
-      if(tablePath != null)
-      {
-         JSONObject body = new JSONObject();
-         body.put(tablePath, new JSONArray(json));
-         json = body.toString();
+         String json      = entityListJson.toString();
+         String tablePath = getBackendDetails(table).getTablePath();
+         if(tablePath != null)
+         {
+            JSONObject body = new JSONObject();
+            body.put(tablePath, new JSONArray(json));
+            json = body.toString();
+         }
+         LOG.debug(json);
+         return (new StringEntity(json));
       }
-      LOG.debug(json);
-      return (new StringEntity(json));
+      catch(Exception e)
+      {
+         throw (new QException(e.getMessage(), e));
+      }
    }
 
 
@@ -309,11 +694,18 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected QRecord jsonObjectToRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields) throws IOException
+   protected QRecord jsonObjectToRecord(JSONObject jsonObject, Map<String, QFieldMetaData> fields) throws QException
    {
-      QRecord record = JsonUtils.parseQRecord(jsonObject, fields, true);
-      record.getBackendDetails().put(QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT, jsonObject.toString());
-      return (record);
+      try
+      {
+         QRecord record = JsonUtils.parseQRecord(jsonObject, fields, true);
+         record.getBackendDetails().put(QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT, jsonObject.toString());
+         return (record);
+      }
+      catch(Exception e)
+      {
+         throw (new QException(e));
+      }
    }
 
 
@@ -321,121 +713,85 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected int processGetResponse(QTableMetaData table, HttpResponse response, QueryOutput queryOutput) throws IOException
+   protected JSONObject getJsonObject(QHttpResponse response) throws QException
    {
-      int statusCode = response.getStatusLine().getStatusCode();
-      System.out.println(statusCode);
-
-      if(statusCode >= 400)
+      try
       {
-         handleGetResponseError(table, response);
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getContent());
+         return jsonObject;
       }
-
-      HttpEntity entity       = response.getEntity();
-      String     resultString = EntityUtils.toString(entity);
-
-      int count = 0;
-      if(StringUtils.hasContent(resultString) && !resultString.equals("null"))
+      catch(Exception e)
       {
-         JSONArray  resultList = null;
-         JSONObject jsonObject = null;
+         throw (new QException(e));
+      }
+   }
 
-         if(resultString.startsWith("["))
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
+   {
+      int sleepMillis      = getInitialRateLimitBackoffMillis();
+      int rateLimitsCaught = 0;
+      while(true)
+      {
+         //////////////////////////////////////////////////////
+         // make sure to use closeable client to avoid leaks //
+         //////////////////////////////////////////////////////
+         try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
          {
-            resultList = JsonUtils.toJSONArray(resultString);
-         }
-         else
-         {
-            String tablePath = getBackendDetails(table).getTablePath();
-            jsonObject = JsonUtils.toJSONObject(resultString);
-            if(jsonObject.has(tablePath))
+            ////////////////////////////////////////////////////////////
+            // call utility methods that populate data in the request //
+            ////////////////////////////////////////////////////////////
+            setupAuthorizationInRequest(request);
+            setupContentTypeInRequest(request);
+            setupAdditionalHeaders(request);
+
+            LOG.warn("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
+            if("POST".equals(request.getMethod()))
             {
-               resultList = jsonObject.getJSONArray(getBackendDetails(table).getTablePath());
+               LOG.warn("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
+            }
+
+            try(CloseableHttpResponse response = httpClient.execute(request))
+            {
+               QHttpResponse qResponse = new QHttpResponse(response);
+
+               int statusCode = qResponse.getStatusCode();
+               if(statusCode == HttpStatus.SC_TOO_MANY_REQUESTS)
+               {
+                  throw (new RateLimitException(qResponse.getContent()));
+               }
+               if(statusCode >= 400)
+               {
+                  handleResponseError(table, request, qResponse);
+               }
+
+               return (qResponse);
             }
          }
-
-         if(resultList != null)
+         catch(RateLimitException rle)
          {
-            for(int i = 0; i < resultList.length(); i++)
+            rateLimitsCaught++;
+            if(rateLimitsCaught > getMaxAllowedRateLimitErrors())
             {
-               queryOutput.addRecord(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
-               count++;
+               LOG.warn("Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
+               throw (new QException(rle));
             }
+
+            LOG.info("Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
+            SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
+            sleepMillis *= 2;
          }
-         else
+         catch(Exception e)
          {
-            queryOutput.addRecord(jsonObjectToRecord(jsonObject, table.getFields()));
-            count++;
+            String message = "An unknown error occurred trying to make an HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "].";
+            LOG.warn(message, e);
+            throw (new QException(message, e));
          }
       }
-
-      return (count);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void handleGetResponseError(QTableMetaData table, HttpResponse response) throws IOException
-   {
-      HttpEntity entity       = response.getEntity();
-      String     resultString = EntityUtils.toString(entity);
-      throw new IOException("Error performing query: " + resultString);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected QRecord processPostResponse(QTableMetaData table, QRecord record, HttpResponse response) throws IOException
-   {
-      JSONObject jsonObject = getJsonObject(response);
-
-      String primaryKeyFieldName   = table.getPrimaryKeyField();
-      String primaryKeyBackendName = getFieldBackendName(table.getField(primaryKeyFieldName));
-      if(jsonObject.has(primaryKeyBackendName))
-      {
-         Serializable primaryKey = (Serializable) jsonObject.get(primaryKeyBackendName);
-         record.setValue(primaryKeyFieldName, primaryKey);
-      }
-      else
-      {
-         if(jsonObject.has("error"))
-         {
-            JSONObject errorObject = jsonObject.getJSONObject("error");
-            if(errorObject.has("message"))
-            {
-               record.addError("Error: " + errorObject.getString("message"));
-            }
-         }
-
-         if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
-         {
-            record.addError("Unspecified error executing insert.");
-         }
-      }
-
-      return (record);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected JSONObject getJsonObject(HttpResponse response) throws IOException
-   {
-      int statusCode = response.getStatusLine().getStatusCode();
-      LOG.debug(statusCode);
-
-      HttpEntity entity       = response.getEntity();
-      String     resultString = EntityUtils.toString(entity);
-      LOG.debug(resultString);
-
-      JSONObject jsonObject = JsonUtils.toJSONObject(resultString);
-      return jsonObject;
    }
 
 
@@ -466,6 +822,16 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String urlEncode(Serializable s)
+   {
+      return (URLEncoder.encode(ValueUtils.getValueAsString(s), StandardCharsets.UTF_8));
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for backendMetaData
     **
     *******************************************************************************/
@@ -488,60 +854,12 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
-    ** Getter for actionInput
-    **
-    *******************************************************************************/
-   public AbstractTableActionInput getActionInput()
-   {
-      return actionInput;
-   }
-
-
-
-   /*******************************************************************************
     ** Setter for actionInput
     **
     *******************************************************************************/
    public void setActionInput(AbstractTableActionInput actionInput)
    {
       this.actionInput = actionInput;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected String urlEncode(Serializable s)
-   {
-      return (URLEncoder.encode(ValueUtils.getValueAsString(s), StandardCharsets.UTF_8));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QRecord processSingleRecordGetResponse(QTableMetaData table, HttpResponse response) throws IOException
-   {
-      return (jsonObjectToRecord(getJsonObject(response), table.getFields()));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Integer processGetResponseForCount(QTableMetaData table, HttpResponse response) throws IOException
-   {
-      /////////////////////////////////////////////////////////////////////////////////////////
-      // set up a query output with a blank query input - e.g., one that isn't using a pipe. //
-      /////////////////////////////////////////////////////////////////////////////////////////
-      QueryOutput queryOutput = new QueryOutput(new QueryInput());
-      processGetResponse(table, response, queryOutput);
-      List<QRecord> records = queryOutput.getRecords();
-
-      return (records == null ? null : records.size());
    }
 
 
@@ -562,5 +880,45 @@ public class BaseAPIActionUtil
    protected void throwUnsupportedCriteriaOperator(QFilterCriteria criteria) throws QUserFacingException
    {
       throw new QUserFacingException("Unsupported operator [" + criteria.getOperator() + "] for query field [" + criteria.getFieldName() + "]");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected long getMillisToSleepAfterEveryCall()
+   {
+      return (0);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected int getInitialRateLimitBackoffMillis()
+   {
+      return (0);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected int getMaxAllowedRateLimitErrors()
+   {
+      return (0);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Integer getApiStandardLimit()
+   {
+      return (20);
    }
 }

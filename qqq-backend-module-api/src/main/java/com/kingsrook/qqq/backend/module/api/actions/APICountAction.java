@@ -26,14 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -41,10 +34,6 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class APICountAction extends AbstractAPIAction implements CountInterface
 {
-   private static final Logger LOG = LogManager.getLogger(APICountAction.class);
-
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -52,33 +41,6 @@ public class APICountAction extends AbstractAPIAction implements CountInterface
    {
       QTableMetaData table = countInput.getTable();
       preAction(countInput);
-
-      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
-      {
-         QQueryFilter filter      = countInput.getFilter();
-         String       paramString = apiActionUtil.buildQueryStringForGet(filter, null, null, table.getFields());
-
-         String url = apiActionUtil.buildTableUrl(table) + paramString;
-         LOG.info("API URL: " + url);
-         HttpGet request = new HttpGet(url);
-
-         apiActionUtil.setupAuthorizationInRequest(request);
-         apiActionUtil.setupContentTypeInRequest(request);
-         apiActionUtil.setupAdditionalHeaders(request);
-
-         try(CloseableHttpResponse response = httpClient.execute(request))
-         {
-            Integer count = apiActionUtil.processGetResponseForCount(table, response);
-
-            CountOutput rs = new CountOutput();
-            rs.setCount(count);
-            return rs;
-         }
-      }
-      catch(Exception e)
-      {
-         LOG.warn("Error in API count", e);
-         throw new QException("Error executing count: " + e.getMessage(), e);
-      }
+      return (apiActionUtil.doCount(table, countInput));
    }
 }
