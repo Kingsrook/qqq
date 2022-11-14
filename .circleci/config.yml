@@ -20,7 +20,7 @@ commands:
       - run:
           name: Install Java 17
           command: |
-            sudo -E add-apt-repository -y ppa:openjdk-r/ppa
+            sudo apt-get update
             sudo apt install -y openjdk-17-jdk
             sudo rm /etc/alternatives/java
             sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
