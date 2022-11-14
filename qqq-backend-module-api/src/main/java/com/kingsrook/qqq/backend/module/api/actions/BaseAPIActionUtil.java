@@ -304,25 +304,8 @@ public class BaseAPIActionUtil
                HttpPost request = new HttpPost(url);
                request.setEntity(recordsToEntity(table, recordList));
 
-               QHttpResponse response       = makeRequest(table, request);
-               int           statusCode     = response.getStatusCode();
-               String        responseString = response.getContent();
-               if(statusCode != HttpStatus.SC_MULTI_STATUS && statusCode != HttpStatus.SC_OK)
-               {
-                  String errorMessage = "Did not receive response status code of 200 or 207: " + responseString;
-                  LOG.warn(errorMessage);
-                  throw (new QException(errorMessage));
-               }
-               if(statusCode == HttpStatus.SC_MULTI_STATUS)
-               {
-                  JSONObject responseJSON = new JSONObject(responseString).getJSONObject("response");
-                  if(!responseJSON.optString("status").contains("200 OK"))
-                  {
-                     String errorMessage = "Did not receive ok status response: " + responseJSON.optString("description");
-                     LOG.warn(errorMessage);
-                     throw (new QException(errorMessage));
-                  }
-               }
+               QHttpResponse response = makeRequest(table, request);
+               validateResponse(response);
             }
             catch(QException e)
             {
@@ -349,9 +332,22 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.warn("Error in API Insert for [" + table.getName() + "]", e);
+         LOG.warn("Error in API Update for [" + table.getName() + "]", e);
          throw new QException("Error executing update: " + e.getMessage(), e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validateResponse(QHttpResponse response) throws QException
+   {
+      ////////////////////////
+      // noop at base level //
+      ////////////////////////
+      return;
    }
 
 
@@ -469,7 +465,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void handleResponseError(QTableMetaData table, HttpRequestBase request, QHttpResponse response) throws QException
+   protected void handleResponseError(QTableMetaData table, HttpRequestBase request, QHttpResponse response) throws QException
    {
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
@@ -734,6 +730,7 @@ public class BaseAPIActionUtil
    {
       int sleepMillis      = getInitialRateLimitBackoffMillis();
       int rateLimitsCaught = 0;
+
       while(true)
       {
          //////////////////////////////////////////////////////
