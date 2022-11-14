@@ -212,7 +212,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       RecordPipe          recordPipe          = new RecordPipe();
       AsyncRecordPipeLoop asyncRecordPipeLoop = new AsyncRecordPipeLoop();
-      asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + automationStatus, null, recordPipe, (status) ->
+      asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + automationStatus + ">" + table.getName(), null, recordPipe, (status) ->
          {
             QueryInput queryInput = new QueryInput(instance);
             queryInput.setSession(session);
