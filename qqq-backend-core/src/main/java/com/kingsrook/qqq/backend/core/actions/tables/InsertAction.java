@@ -67,7 +67,7 @@ public class InsertAction
     *******************************************************************************/
    private void setAutomationStatusField(InsertInput insertInput)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(insertInput.getTable(), insertInput.getRecords(), AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(insertInput.getSession(), insertInput.getTable(), insertInput.getRecords(), AutomationStatus.PENDING_INSERT_AUTOMATIONS);
    }
 
 

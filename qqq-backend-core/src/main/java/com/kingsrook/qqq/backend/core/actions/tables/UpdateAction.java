@@ -47,7 +47,7 @@ public class UpdateAction
       setAutomationStatusField(updateInput);
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
       // todo pre-customization - just get to modify the request?
       UpdateOutput updateResult = qModule.getUpdateInterface().execute(updateInput);
       // todo post-customization - can do whatever w/ the result if you want
@@ -61,7 +61,7 @@ public class UpdateAction
     *******************************************************************************/
    private void setAutomationStatusField(UpdateInput updateInput)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getSession(), updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
    }
 
 }

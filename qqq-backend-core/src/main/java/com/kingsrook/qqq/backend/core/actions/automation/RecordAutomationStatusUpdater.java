@@ -37,9 +37,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAuto
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -47,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RecordAutomationStatusUpdater
 {
-   private static final Logger LOG = LogManager.getLogger(RecordAutomationStatusUpdater.class);
+   private static final QLogger LOG = QLogger.getLogger(RecordAutomationStatusUpdater.class);
 
 
 
@@ -55,7 +54,7 @@ public class RecordAutomationStatusUpdater
     ** for a list of records from a table, set their automation status - based on
     ** how the table is configured.
     *******************************************************************************/
-   public static boolean setAutomationStatusInRecords(QTableMetaData table, List<QRecord> records, AutomationStatus automationStatus)
+   public static boolean setAutomationStatusInRecords(QSession session, QTableMetaData table, List<QRecord> records, AutomationStatus automationStatus)
    {
       if(table == null || table.getAutomationDetails() == null || CollectionUtils.nullSafeIsEmpty(records))
       {
@@ -77,7 +76,7 @@ public class RecordAutomationStatusUpdater
             String className = stackTraceElement.getClassName();
             if(className.contains("com.kingsrook.qqq.backend.core.actions.automation") && !className.equals(RecordAutomationStatusUpdater.class.getName()) && !className.endsWith("Test"))
             {
-               LOG.debug("Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
+               LOG.debug(session, "Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
                return (false);
             }
          }
@@ -135,7 +134,7 @@ public class RecordAutomationStatusUpdater
       QTableAutomationDetails automationDetails = table.getAutomationDetails();
       if(automationDetails != null && AutomationStatusTrackingType.FIELD_IN_TABLE.equals(automationDetails.getStatusTracking().getType()))
       {
-         boolean didSetStatusField = setAutomationStatusInRecords(table, records, automationStatus);
+         boolean didSetStatusField = setAutomationStatusInRecords(session, table, records, automationStatus);
          if(didSetStatusField)
          {
             UpdateInput updateInput = new UpdateInput(instance);

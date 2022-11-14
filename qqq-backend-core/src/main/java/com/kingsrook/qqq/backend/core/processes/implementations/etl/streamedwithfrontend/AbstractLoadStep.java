@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -43,7 +44,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
  *******************************************************************************/
 public abstract class AbstractLoadStep implements BackendStep
 {
-   private Optional<QBackendTransaction> transaction = Optional.empty();
+   private   Optional<QBackendTransaction> transaction = Optional.empty();
+   protected QSession                      session;
 
 
 
@@ -53,9 +55,7 @@ public abstract class AbstractLoadStep implements BackendStep
     *******************************************************************************/
    public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
+      this.session = runBackendStepInput.getSession();
    }
 
 

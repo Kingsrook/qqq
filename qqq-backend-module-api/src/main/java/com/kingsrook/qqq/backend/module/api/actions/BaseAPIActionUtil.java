@@ -50,8 +50,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -67,8 +69,6 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -79,8 +79,9 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class BaseAPIActionUtil
 {
-   protected static final Logger LOG = LogManager.getLogger(BaseAPIActionUtil.class);
+   private final QLogger LOG = QLogger.getLogger(BaseAPIActionUtil.class);
 
+   protected QSession                 session;
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
 
@@ -107,7 +108,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.warn("Error in API count", e);
+         LOG.error(session, "Error in API count", e);
          throw new QException("Error executing count: " + e.getMessage(), e);
       }
    }
@@ -138,7 +139,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.warn("Error in API get", e);
+         LOG.error(session, "Error in API get", e);
          throw new QException("Error executing get: " + e.getMessage(), e);
       }
    }
@@ -155,7 +156,7 @@ public class BaseAPIActionUtil
 
       if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op");
+         LOG.debug(session, "Insert request called with 0 records.  Returning with no-op");
          return (insertOutput);
       }
 
@@ -196,7 +197,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.warn("Error in API Insert for [" + table.getName() + "]", e);
+         LOG.error(session, "Error in API Insert for [" + table.getName() + "]", e);
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
 
@@ -254,7 +255,7 @@ public class BaseAPIActionUtil
             ///////////////////////////////////////////////////////////////////
             if(queryInput.getAsyncJobCallback().wasCancelRequested())
             {
-               LOG.info("Breaking query job, as requested.");
+               LOG.info(session, "Breaking query job, as requested.");
                return (queryOutput);
             }
 
@@ -269,7 +270,7 @@ public class BaseAPIActionUtil
          }
          catch(Exception e)
          {
-            LOG.warn("Error in API Query", e);
+            LOG.error(session, "Error in API Query", e);
             throw new QException("Error executing query: " + e.getMessage(), e);
          }
       }
@@ -287,7 +288,7 @@ public class BaseAPIActionUtil
 
       if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
       {
-         LOG.debug("Update request called with 0 records.  Returning with no-op");
+         LOG.debug(session, "Update request called with 0 records.  Returning with no-op");
          return (updateOutput);
       }
 
@@ -314,7 +315,7 @@ public class BaseAPIActionUtil
             catch(Exception e)
             {
                String errorMessage = "An unexpected error occurred updating entities.";
-               LOG.warn(errorMessage, e);
+               LOG.error(session, errorMessage, e);
                throw (new QException(errorMessage, e));
             }
 
@@ -332,7 +333,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.warn("Error in API Update for [" + table.getName() + "]", e);
+         LOG.error(session, "Error in API Update for [" + table.getName() + "]", e);
          throw new QException("Error executing update: " + e.getMessage(), e);
       }
    }
@@ -469,8 +470,8 @@ public class BaseAPIActionUtil
    {
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
-      String errorMessage = "HTTP " + request.getMethod() + " for table + [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
-      LOG.warn(errorMessage);
+      String errorMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
+      LOG.error(session, errorMessage);
 
       if("GET".equals(request.getMethod()))
       {
@@ -614,7 +615,6 @@ public class BaseAPIActionUtil
          body.put(tablePath, new JSONObject(json));
          json = body.toString();
       }
-      LOG.debug(json);
       return (new StringEntity(json));
    }
 
@@ -644,7 +644,6 @@ public class BaseAPIActionUtil
             body.put(tablePath, new JSONArray(json));
             json = body.toString();
          }
-         LOG.debug(json);
          return (new StringEntity(json));
       }
       catch(Exception e)
@@ -745,10 +744,10 @@ public class BaseAPIActionUtil
             setupContentTypeInRequest(request);
             setupAdditionalHeaders(request);
 
-            LOG.info("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
+            LOG.info(session, "Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
             if("POST".equals(request.getMethod()))
             {
-               LOG.info("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
+               LOG.info(session, "POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
             }
 
             try(CloseableHttpResponse response = httpClient.execute(request))
@@ -765,7 +764,7 @@ public class BaseAPIActionUtil
                   handleResponseError(table, request, qResponse);
                }
 
-               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
+               LOG.info(session, "Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
                return (qResponse);
             }
          }
@@ -774,18 +773,18 @@ public class BaseAPIActionUtil
             rateLimitsCaught++;
             if(rateLimitsCaught > getMaxAllowedRateLimitErrors())
             {
-               LOG.warn("Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
+               LOG.error(session, "Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
                throw (new QException(rle));
             }
 
-            LOG.info("Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
+            LOG.warn(session, "Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
             SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
             sleepMillis *= 2;
          }
          catch(Exception e)
          {
             String message = "An unknown error occurred trying to make an HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "].";
-            LOG.warn(message, e);
+            LOG.error(session, message, e);
             throw (new QException(message, e));
          }
       }
@@ -857,6 +856,17 @@ public class BaseAPIActionUtil
    public void setActionInput(AbstractTableActionInput actionInput)
    {
       this.actionInput = actionInput;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for session
+    **
+    *******************************************************************************/
+   public void setSession(QSession session)
+   {
+      this.session = session;
    }
 
 

@@ -168,7 +168,7 @@ public class QJavalinProcessHandler
          // run the process as an async action //
          ////////////////////////////////////////
          Integer timeout = getTimeoutMillis(context);
-         RunProcessOutput runProcessOutput = new AsyncJobManager().startJob(timeout, TimeUnit.MILLISECONDS, (callback) ->
+         RunProcessOutput runProcessOutput = new AsyncJobManager().startJob(processName, timeout, TimeUnit.MILLISECONDS, (callback) ->
          {
             runProcessInput.setAsyncJobCallback(callback);
             return (new RunProcessAction().execute(runProcessInput));

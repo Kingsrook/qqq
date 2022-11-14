@@ -19,80 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.session;
+package com.kingsrook.qqq.backend.core.utils;
 
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
+ ** Utility class for logging
  **
  *******************************************************************************/
-public class QSession implements Serializable
+public class QLogger
 {
-   private String idReference;
-   private QUser  user;
-   private String uuid;
-
-   // implementation-specific custom values
-   private Map<String, String> values;
+   private static Map<String, QLogger> loggerMap = new HashMap<>();
+   private        Logger               logger;
 
 
 
    /*******************************************************************************
-    ** Default constructor, puts a uuid in the session
     **
     *******************************************************************************/
-   public QSession()
+   public QLogger(Logger logger)
    {
-      this.uuid = UUID.randomUUID().toString();
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for idReference
-    **
-    *******************************************************************************/
-   public String getIdReference()
-   {
-      return idReference;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for idReference
-    **
-    *******************************************************************************/
-   public void setIdReference(String idReference)
-   {
-      this.idReference = idReference;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for user
-    **
-    *******************************************************************************/
-   public QUser getUser()
-   {
-      return user;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for user
-    **
-    *******************************************************************************/
-   public void setUser(QUser user)
-   {
-      this.user = user;
+      this.logger = logger;
    }
 
 
@@ -100,83 +53,86 @@ public class QSession implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getValue(String key)
+   public static QLogger getLogger(Class<?> c)
    {
-      if(values == null)
+      return (loggerMap.computeIfAbsent(c.getName(), x -> new QLogger(LogManager.getLogger(c))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void debug(QSession session, String message)
+   {
+      logger.debug(wrapMessage(session, message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void info(QSession session, String message)
+   {
+      logger.info(wrapMessage(session, message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void warn(QSession session, String message)
+   {
+      logger.warn(wrapMessage(session, message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void warn(QSession session, String message, Throwable t)
+   {
+      logger.warn(wrapMessage(session, message), t);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void error(QSession session, String message)
+   {
+      logger.error(wrapMessage(session, message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void error(QSession session, String message, Throwable t)
+   {
+      logger.error(wrapMessage(session, message), t);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String wrapMessage(QSession session, String message)
+   {
+      String propertyName  = "qqq.logger.logSessionId.disabled";
+      String propertyValue = System.getProperty(propertyName, "");
+      if(propertyValue.equals("true"))
       {
-         return null;
+         return (message);
       }
-      return values.get(key);
-   }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setValue(String key, String value)
-   {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QSession withValue(String key, String value)
-   {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Map<String, String> getValues()
-   {
-      return values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setValues(Map<String, String> values)
-   {
-      this.values = values;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for uuid
-    **
-    *******************************************************************************/
-   public String getUuid()
-   {
-      return uuid;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for uuid
-    **
-    *******************************************************************************/
-   public void setUuid(String uuid)
-   {
-      this.uuid = uuid;
+      String sessionString = (session != null) ? session.getUuid() : "Not provided";
+      return ("Session [" + sessionString + "] | " + message);
    }
 }
