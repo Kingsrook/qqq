@@ -22,11 +22,15 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -44,6 +48,18 @@ public class RenderWidgetAction
       ActionHelper.validateSession(input);
 
       AbstractWidgetRenderer widgetRenderer = QCodeLoader.getAdHoc(AbstractWidgetRenderer.class, input.getWidgetMetaData().getCodeReference());
+
+      ///////////////////////////////////////////////////////////////
+      // move default values from meta data into this render input //
+      ///////////////////////////////////////////////////////////////
+      if(input.getWidgetMetaData() instanceof QWidgetMetaData widgetMetaData)
+      {
+         for(Map.Entry<String, Serializable> entry : widgetMetaData.getDefaultValues().entrySet())
+         {
+            input.getQueryParams().putIfAbsent(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
+         }
+      }
+
       return (widgetRenderer.render(input));
    }
 }

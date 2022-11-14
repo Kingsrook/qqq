@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -62,6 +63,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
@@ -116,8 +120,10 @@ public class TestUtils
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
-   public static final String TABLE_NAME_PERSON = "person";
-   public static final String TABLE_NAME_SHAPE  = "shape";
+   public static final String TABLE_NAME_PERSON    = "person";
+   public static final String TABLE_NAME_SHAPE     = "shape";
+   public static final String TABLE_NAME_ORDER     = "order";
+   public static final String TABLE_NAME_LINE_ITEM = "orderLine";
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
@@ -161,6 +167,10 @@ public class TestUtils
       qInstance.addTable(defineTableIdAndNameOnly());
       qInstance.addTable(defineTableShape());
       qInstance.addTable(defineTableBasepull());
+      qInstance.addTable(defineTableOrder());
+      qInstance.addTable(defineTableLineItem());
+
+      qInstance.addJoin(defineJoinOrderLineItem());
 
       qInstance.addPossibleValueSource(defineAutomationStatusPossibleValueSource());
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
@@ -440,6 +450,60 @@ public class TestUtils
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          ;
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the order table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableOrder()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_ORDER)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
+         .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the lineItem table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableLineItem()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_LINE_ITEM)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
+         .withField(new QFieldMetaData("sku", QFieldType.STRING))
+         .withField(new QFieldMetaData("quantity", QFieldType.INTEGER));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJoinMetaData defineJoinOrderLineItem()
+   {
+      return new QJoinMetaData()
+         .withName("orderLineItem")
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_LINE_ITEM)
+         .withJoinOn(new JoinOn("id", "orderId"))
+         .withOrderBy(new QFilterOrderBy("lineNumber"));
    }
 
 

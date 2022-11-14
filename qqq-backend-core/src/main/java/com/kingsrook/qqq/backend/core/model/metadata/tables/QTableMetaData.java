@@ -80,7 +80,6 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private List<QFieldSection> sections;
 
-   private List<String>           widgets;
    private List<AssociatedScript> associatedScripts;
 
    private Set<Capability> enabledCapabilities  = new HashSet<>();
@@ -721,40 +720,6 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
    public QTableMetaData withSection(QFieldSection fieldSection)
    {
       addSection(fieldSection);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for widgets
-    **
-    *******************************************************************************/
-   public List<String> getWidgets()
-   {
-      return widgets;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for widgets
-    **
-    *******************************************************************************/
-   public void setWidgets(List<String> widgets)
-   {
-      this.widgets = widgets;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for widgets
-    **
-    *******************************************************************************/
-   public QTableMetaData withWidgets(List<String> widgets)
-   {
-      this.widgets = widgets;
       return (this);
    }
 

@@ -19,47 +19,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.metadata.joins;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ ** Type for a QJoin.
+ **
+ ** - One to One - what about zero??
+ ** - One to Many - e.g., where the parent record really "owns" all of the child
+ **      records.  Like Order -> OrderLine.
+ ** - Many to One - e.g., where a child references a parent, but we'd never really
+ **      view or manage all of the children under the parent.
+ ** - Many to Many - e.g., through an intersection table... ? Needs more thought.
  *******************************************************************************/
-public enum WidgetType
+public enum JoinType
 {
-   CHART("chart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   CHILD_RECORD_LIST("childRecordList");
-
-
-   private final String type;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   WidgetType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for type
-    **
-    *******************************************************************************/
-   public String getType()
-   {
-      return type;
-   }
-
+   ONE_TO_ONE,
+   ONE_TO_MANY,
+   MANY_TO_ONE,
+   MANY_TO_MANY
 }

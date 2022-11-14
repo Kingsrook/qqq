@@ -19,76 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.tables;
+package com.kingsrook.qqq.backend.core.model.metadata.joins;
 
 
+import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** A section of fields - a logical grouping.
- ** TODO - this class should be named QTableSection!
+ **
  *******************************************************************************/
-public class QFieldSection
+public class QJoinMetaData
 {
-   private String name;
-   private String label;
-   private Tier   tier;
+   private String   name;
+   private JoinType type;
+   private String   leftTable;
+   private String   rightTable;
 
-   private List<String> fieldNames;
-   private String       widgetName;
-   private QIcon        icon;
-
-   private boolean isHidden = false;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFieldSection()
-   {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFieldSection(String name, String label, QIcon icon, Tier tier, List<String> fieldNames)
-   {
-      this.name = name;
-      this.label = label;
-      this.icon = icon;
-      this.tier = tier;
-      this.fieldNames = fieldNames;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFieldSection(String name, QIcon icon, Tier tier, List<String> fieldNames)
-   {
-      this.name = name;
-      this.icon = icon;
-      this.tier = tier;
-      this.fieldNames = fieldNames;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFieldSection(String name, QIcon icon, Tier tier)
-   {
-      this.name = name;
-      this.icon = icon;
-      this.tier = tier;
-   }
+   private List<JoinOn>         joinOns;
+   private List<QFilterOrderBy> orderBys;
 
 
 
@@ -118,7 +69,7 @@ public class QFieldSection
     ** Fluent setter for name
     **
     *******************************************************************************/
-   public QFieldSection withName(String name)
+   public QJoinMetaData withName(String name)
    {
       this.name = name;
       return (this);
@@ -127,205 +78,216 @@ public class QFieldSection
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Getter for type
     **
     *******************************************************************************/
-   public String getLabel()
+   public JoinType getType()
    {
-      return label;
+      return type;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Setter for type
     **
     *******************************************************************************/
-   public void setLabel(String label)
+   public void setType(JoinType type)
    {
-      this.label = label;
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for label
+    ** Fluent setter for type
     **
     *******************************************************************************/
-   public QFieldSection withLabel(String label)
+   public QJoinMetaData withType(JoinType type)
    {
-      this.label = label;
+      this.type = type;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for tier
+    ** Getter for leftTable
     **
     *******************************************************************************/
-   public Tier getTier()
+   public String getLeftTable()
    {
-      return tier;
+      return leftTable;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tier
+    ** Setter for leftTable
     **
     *******************************************************************************/
-   public void setTier(Tier tier)
+   public void setLeftTable(String leftTable)
    {
-      this.tier = tier;
+      this.leftTable = leftTable;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for tier
+    ** Fluent setter for leftTable
     **
     *******************************************************************************/
-   public QFieldSection withTier(Tier tier)
+   public QJoinMetaData withLeftTable(String leftTable)
    {
-      this.tier = tier;
+      this.leftTable = leftTable;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for fieldNames
+    ** Getter for rightTable
     **
     *******************************************************************************/
-   public List<String> getFieldNames()
+   public String getRightTable()
    {
-      return fieldNames;
+      return rightTable;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldNames
+    ** Setter for rightTable
     **
     *******************************************************************************/
-   public void setFieldNames(List<String> fieldNames)
+   public void setRightTable(String rightTable)
    {
-      this.fieldNames = fieldNames;
+      this.rightTable = rightTable;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for fieldNames
+    ** Fluent setter for rightTable
     **
     *******************************************************************************/
-   public QFieldSection withFieldNames(List<String> fieldNames)
+   public QJoinMetaData withRightTable(String rightTable)
    {
-      this.fieldNames = fieldNames;
+      this.rightTable = rightTable;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for icon
+    ** Getter for joinOns
     **
     *******************************************************************************/
-   public QIcon getIcon()
+   public List<JoinOn> getJoinOns()
    {
-      return icon;
+      return joinOns;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for icon
+    ** Setter for joinOns
     **
     *******************************************************************************/
-   public void setIcon(QIcon icon)
+   public void setJoinOns(List<JoinOn> joinOns)
    {
-      this.icon = icon;
+      this.joinOns = joinOns;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for icon
+    ** Fluent setter for joinOns
     **
     *******************************************************************************/
-   public QFieldSection withIcon(QIcon icon)
+   public QJoinMetaData withJoinOns(List<JoinOn> joinOns)
    {
-      this.icon = icon;
+      this.joinOns = joinOns;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isHidden
+    ** Fluent setter for joinOns
     **
     *******************************************************************************/
-   public boolean getIsHidden()
+   public QJoinMetaData withJoinOn(JoinOn joinOn)
    {
-      return (isHidden);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for isHidden
-    **
-    *******************************************************************************/
-   public void setIsHidden(boolean isHidden)
-   {
-      this.isHidden = isHidden;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent Setter for isHidden
-    **
-    *******************************************************************************/
-   public QFieldSection withIsHidden(boolean isHidden)
-   {
-      this.isHidden = isHidden;
+      if(this.joinOns == null)
+      {
+         this.joinOns = new ArrayList<>();
+      }
+      this.joinOns.add(joinOn);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for widgetName
+    ** Getter for orderBys
     **
     *******************************************************************************/
-   public String getWidgetName()
+   public List<QFilterOrderBy> getOrderBys()
    {
-      return widgetName;
+      return orderBys;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for widgetName
+    ** Setter for orderBys
     **
     *******************************************************************************/
-   public void setWidgetName(String widgetName)
+   public void setOrderBys(List<QFilterOrderBy> orderBys)
    {
-      this.widgetName = widgetName;
+      this.orderBys = orderBys;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for widgetName
+    ** Fluent setter for orderBys
     **
     *******************************************************************************/
-   public QFieldSection withWidgetName(String widgetName)
+   public QJoinMetaData withOrderBys(List<QFilterOrderBy> orderBys)
    {
-      this.widgetName = widgetName;
+      this.orderBys = orderBys;
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for orderBys
+    **
+    *******************************************************************************/
+   public QJoinMetaData withOrderBy(QFilterOrderBy orderBy)
+   {
+      if(this.orderBys == null)
+      {
+         this.orderBys = new ArrayList<>();
+      }
+      this.orderBys.add(orderBy);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QJoinMetaData withInferredName()
+   {
+      if(!StringUtils.hasContent(getLeftTable()) || !StringUtils.hasContent(getRightTable()))
+      {
+         throw (new IllegalStateException("Missing either a left or right table name when trying to set inferred name for join"));
+      }
+      return (withName(getLeftTable() + "Join" + getRightTable()));
+   }
 }

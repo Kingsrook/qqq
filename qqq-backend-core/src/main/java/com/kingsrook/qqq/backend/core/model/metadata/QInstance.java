@@ -28,10 +28,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -64,6 +72,7 @@ public class QInstance
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
    ////////////////////////////////////////////////////////////////////////////////////////////
    private Map<String, QTableMetaData>       tables               = new LinkedHashMap<>();
+   private Map<String, QJoinMetaData>        joins                = new LinkedHashMap<>();
    private Map<String, QPossibleValueSource> possibleValueSources = new LinkedHashMap<>();
    private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
    private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
@@ -78,6 +87,9 @@ public class QInstance
 
    @JsonIgnore
    private boolean hasBeenValidated = false;
+
+   private Map<String, String> memoizedTablePaths   = new HashMap<>();
+   private Map<String, String> memoizedProcessPaths = new HashMap<>();
 
 
 
@@ -114,6 +126,71 @@ public class QInstance
          }
       }
       return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the full path to a table
+    *******************************************************************************/
+   public String getTablePath(AbstractActionInput actionInput, String tableName) throws QException
+   {
+      if(!memoizedTablePaths.containsKey(tableName))
+      {
+         MetaDataInput input = new MetaDataInput(this);
+         input.setSession(actionInput.getSession());
+         MetaDataOutput output = new MetaDataAction().execute(input);
+         memoizedTablePaths.put(tableName, searchAppTree(output.getAppTree(), tableName, AppTreeNodeType.TABLE, ""));
+      }
+      return (memoizedTablePaths.get(tableName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the full path to a process
+    *******************************************************************************/
+   public String getProcessPath(AbstractActionInput actionInput, String processName) throws QException
+   {
+      if(!memoizedProcessPaths.containsKey(processName))
+      {
+         MetaDataInput input = new MetaDataInput(this);
+         input.setSession(actionInput.getSession());
+         MetaDataOutput output = new MetaDataAction().execute(input);
+         return searchAppTree(output.getAppTree(), processName, AppTreeNodeType.PROCESS, "");
+      }
+      return (memoizedProcessPaths.get(processName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String searchAppTree(List<AppTreeNode> appTree, String tableName, AppTreeNodeType treeNodeType, String path)
+   {
+      if(appTree == null)
+      {
+         return (null);
+      }
+
+      for(AppTreeNode appTreeNode : appTree)
+      {
+         if(appTreeNode.getType().equals(treeNodeType) && appTreeNode.getName().equals(tableName))
+         {
+            return (path + "/" + tableName);
+         }
+         else if(appTreeNode.getType().equals(AppTreeNodeType.APP))
+         {
+            String subResult = searchAppTree(appTreeNode.getChildren(), tableName, treeNodeType, path + "/" + appTreeNode.getName());
+            if(subResult != null)
+            {
+               return (subResult);
+            }
+         }
+      }
+
+      return (null);
    }
 
 
@@ -239,6 +316,71 @@ public class QInstance
    public void setTables(Map<String, QTableMetaData> tables)
    {
       this.tables = tables;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addJoin(QJoinMetaData join)
+   {
+      addJoin(join.getName(), join);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addJoin(String name, QJoinMetaData join)
+   {
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a join without a name."));
+      }
+      if(this.joins.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second join with name: " + name));
+      }
+      this.joins.put(name, join);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QJoinMetaData getJoin(String name)
+   {
+      if(this.joins == null)
+      {
+         return (null);
+      }
+
+      return (this.joins.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for joins
+    **
+    *******************************************************************************/
+   public Map<String, QJoinMetaData> getJoins()
+   {
+      return joins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for joins
+    **
+    *******************************************************************************/
+   public void setJoins(Map<String, QJoinMetaData> joins)
+   {
+      this.joins = joins;
    }
 
 

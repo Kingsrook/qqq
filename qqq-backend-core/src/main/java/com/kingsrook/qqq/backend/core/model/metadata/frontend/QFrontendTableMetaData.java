@@ -35,7 +35,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -90,11 +89,6 @@ public class QFrontendTableMetaData
       if(tableMetaData.getIcon() != null)
       {
          this.iconName = tableMetaData.getIcon().getName();
-      }
-
-      if(CollectionUtils.nullSafeHasContents(tableMetaData.getWidgets()))
-      {
-         this.widgets = tableMetaData.getWidgets();
       }
 
       setCapabilities(backendForTable, tableMetaData);

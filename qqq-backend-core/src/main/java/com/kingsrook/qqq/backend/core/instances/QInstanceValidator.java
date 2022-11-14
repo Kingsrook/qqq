@@ -285,7 +285,7 @@ public class QInstanceValidator
             {
                for(QFieldSection section : table.getSections())
                {
-                  validateFieldSection(table, section, fieldNamesInSections);
+                  validateTableSection(qInstance, table, section, fieldNamesInSections);
                   if(section.getTier().equals(Tier.T1))
                   {
                      assertCondition(tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
@@ -658,13 +658,17 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateFieldSection(QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
+   private void validateTableSection(QInstance qInstance, QTableMetaData table, QFieldSection section, Set<String> fieldNamesInSections)
    {
       assertCondition(StringUtils.hasContent(section.getName()), "Missing a name for field section in table " + table.getName() + ".");
       assertCondition(StringUtils.hasContent(section.getLabel()), "Missing a label for field section in table " + table.getLabel() + ".");
-      if(assertCondition(CollectionUtils.nullSafeHasContents(section.getFieldNames()), "Table " + table.getName() + " section " + section.getName() + " does not have any fields."))
+
+      boolean hasFields = CollectionUtils.nullSafeHasContents(section.getFieldNames());
+      boolean hasWidget = StringUtils.hasContent(section.getWidgetName());
+
+      if(assertCondition(hasFields || hasWidget, "Table " + table.getName() + " section " + section.getName() + " does not have any fields or a widget."))
       {
-         if(table.getFields() != null)
+         if(table.getFields() != null && hasFields)
          {
             for(String fieldName : section.getFieldNames())
             {
@@ -673,6 +677,10 @@ public class QInstanceValidator
 
                fieldNamesInSections.add(fieldName);
             }
+         }
+         else if(hasWidget)
+         {
+            assertCondition(qInstance.getWidget(section.getWidgetName()) != null, "Table " + table.getName() + " section " + section.getName() + " specifies widget " + section.getWidgetName() + ", which is not a widget in this instance.");
          }
       }
    }

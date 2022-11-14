@@ -128,6 +128,8 @@ public class MemoryRecordStore
          }
       }
 
+      BackendQueryFilterUtils.sortRecordList(input.getFilter(), records);
+
       return (records);
    }
 
