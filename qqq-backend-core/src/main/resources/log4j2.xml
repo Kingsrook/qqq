@@ -7,7 +7,7 @@
       </Console>
       <Syslog name="SyslogAppender" format="RFC5424" host="localhost" port="514" protocol="UDP" appName="qqq" facility="LOCAL0">
          <LevelRangeFilter minLevel="ERROR" maxLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-         <JsonTemplateLayout eventTemplateUri="classpath:logTemplate.json"/>
+         <JSONLayout complete="false" compact="true" stacktraceAsString="true" />
       </Syslog>
       <File name="LogFileAppender" fileName="log/qqq.log">
          <LevelRangeFilter minLevel="ERROR" maxLevel="all" onMatch="ACCEPT" onMismatch="DENY"/>
