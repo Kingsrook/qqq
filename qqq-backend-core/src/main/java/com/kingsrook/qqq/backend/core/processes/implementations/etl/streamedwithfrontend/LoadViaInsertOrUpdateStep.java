@@ -80,7 +80,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
          InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
          insertInput.setSession(runBackendStepInput.getSession());
          insertInput.setTableName(tableMetaData.getName());
-         insertInput.setRecords(runBackendStepInput.getRecords());
+         insertInput.setRecords(recordsToInsert);
          getTransaction().ifPresent(insertInput::setTransaction);
          insertInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -92,7 +92,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
          UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
          updateInput.setSession(runBackendStepInput.getSession());
          updateInput.setTableName(tableMetaData.getName());
-         updateInput.setRecords(runBackendStepInput.getRecords());
+         updateInput.setRecords(recordsToUpdate);
          getTransaction().ifPresent(updateInput::setTransaction);
          updateInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
