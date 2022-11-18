@@ -33,6 +33,8 @@ import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -45,6 +47,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -328,4 +331,40 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected InsertOutput executeInsert(InsertInput insertInput) throws QException
+   {
+      try
+      {
+         InsertOutput     output  = new InsertOutput();
+         QTableMetaData   table   = insertInput.getTable();
+         QBackendMetaData backend = insertInput.getBackend();
+
+         AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
+         if(tableDetails.getCardinality().equals(Cardinality.ONE))
+         {
+            for(QRecord record : insertInput.getRecords())
+            {
+               String fullPath = stripDuplicatedSlashes(getFullBasePath(table, backend) + File.separator + record.getValueString("fileName"));
+               writeFile(backend, fullPath, record.getValueByteArray("contents"));
+               record.addBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, fullPath);
+               output.addRecord(record);
+            }
+         }
+         else
+         {
+            throw (new NotImplementedException("Insert is not implemented for filesystem tables with cardinality: " + tableDetails.getCardinality()));
+         }
+
+         return (output);
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error executing insert: " + e.getMessage(), e);
+      }
+   }
 }

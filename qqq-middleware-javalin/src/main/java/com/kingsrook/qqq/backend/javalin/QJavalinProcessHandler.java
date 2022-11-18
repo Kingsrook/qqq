@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,6 +44,8 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -49,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -290,6 +295,8 @@ public class QJavalinProcessHandler
          TempFileStateProvider.getInstance().put(key, qUploadedFile);
          LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
          runProcessInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
+
+         archiveUploadedFile(runProcessInput, qUploadedFile);
       }
 
       /////////////////////////////////////////////////////////////
@@ -315,6 +322,28 @@ public class QJavalinProcessHandler
             }
          });
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void archiveUploadedFile(RunProcessInput runProcessInput, QUploadedFile qUploadedFile)
+   {
+      String fileName = new QValueFormatter().formatDate(LocalDate.now())
+         + File.separator + runProcessInput.getProcessName()
+         + File.separator + qUploadedFile.getFilename();
+
+      InsertInput insertInput = new InsertInput(QJavalinImplementation.qInstance);
+      insertInput.setSession(runProcessInput.getSession());
+      insertInput.setTableName(QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName());
+      insertInput.setRecords(List.of(new QRecord()
+         .withValue("fileName", fileName)
+         .withValue("contents", qUploadedFile.getBytes())
+      ));
+
+      new InsertAction().executeAsync(insertInput);
    }
 
 

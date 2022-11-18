@@ -130,6 +130,8 @@ public class QInstanceValidator
          validateApps(qInstance);
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
+
+         validateUniqueTopLevelNames(qInstance);
       }
       catch(Exception e)
       {
@@ -142,6 +144,45 @@ public class QInstanceValidator
       }
 
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
+   }
+
+
+
+   /*******************************************************************************
+    ** there can be some unexpected bad-times if you have a table and process, or
+    ** table and app (etc) with the same name (e.g., in app tree building).  So,
+    ** just go ahead and make sure those are all unique.
+    *******************************************************************************/
+   private void validateUniqueTopLevelNames(QInstance qInstance)
+   {
+      String      suffix    = " is not unique across tables, processes, and apps (but it needs to be)";
+      Set<String> usedNames = new HashSet<>();
+      if(qInstance.getTables() != null)
+      {
+         for(String tableName : qInstance.getTables().keySet())
+         {
+            assertCondition(!usedNames.contains(tableName), "Table name " + tableName + suffix);
+            usedNames.add(tableName);
+         }
+      }
+
+      if(qInstance.getProcesses() != null)
+      {
+         for(String processName : qInstance.getProcesses().keySet())
+         {
+            assertCondition(!usedNames.contains(processName), "Process name " + processName + suffix);
+            usedNames.add(processName);
+         }
+      }
+
+      if(qInstance.getApps() != null)
+      {
+         for(String appName : qInstance.getApps().keySet())
+         {
+            assertCondition(!usedNames.contains(appName), "App name " + appName + suffix);
+            usedNames.add(appName);
+         }
+      }
    }
 
 
@@ -311,7 +352,7 @@ public class QInstanceValidator
             ///////////////////////////////
             // validate the record label //
             ///////////////////////////////
-            if(table.getRecordLabelFields() != null)
+            if(table.getRecordLabelFields() != null && table.getFields() != null)
             {
                for(String recordLabelField : table.getRecordLabelFields())
                {

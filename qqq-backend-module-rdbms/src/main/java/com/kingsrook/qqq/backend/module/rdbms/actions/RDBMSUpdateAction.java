@@ -83,7 +83,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       rs.setRecords(outputRecords);
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      // we want to do batch updates.  But, since we only update the columns columns that        //
+      // we want to do batch updates.  But, since we only update the columns that                //
       // are present in each record, it means we may have different update SQL for each          //
       // record.  So, we will first "hash" up the records by their list of fields being updated. //
       /////////////////////////////////////////////////////////////////////////////////////////////

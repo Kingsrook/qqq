@@ -19,27 +19,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
+package com.kingsrook.qqq.backend.core.actions;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 
 
 /*******************************************************************************
- **
+ ** Base class for QQQ Actions (both framework and application defined) that
+ ** have a signature like a Function - taking an Input object as a parameter,
+ ** and returning an Output object.
  *******************************************************************************/
-public class S3InsertAction extends AbstractS3Action implements InsertInterface
+public abstract class AbstractQActionFunction<I extends AbstractActionInput, O extends AbstractActionOutput>
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertOutput execute(InsertInput insertInput) throws QException
+   public abstract O execute(I input) throws QException;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Future<O> executeAsync(I input)
    {
-      return (super.executeInsert(insertInput));
+      CompletableFuture<O> completableFuture = new CompletableFuture<>();
+      Executors.newCachedThreadPool().submit(() ->
+      {
+         try
+         {
+            O output = execute(input);
+            completableFuture.complete(output);
+         }
+         catch(QException e)
+         {
+            completableFuture.completeExceptionally(e);
+         }
+      });
+      return (completableFuture);
    }
 
 }

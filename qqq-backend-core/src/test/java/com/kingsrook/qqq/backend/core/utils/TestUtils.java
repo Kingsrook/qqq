@@ -129,7 +129,7 @@ public class TestUtils
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_INCREASE_BIRTHDATE       = "increaseBirthdate";
    public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
-   public static final String PROCESS_NAME_BASEPULL                 = "basepullTest";
+   public static final String PROCESS_NAME_BASEPULL                 = "basepullTestProcess";
    public static final String PROCESS_NAME_RUN_SHAPES_PERSON_REPORT = "runShapesPersonReport";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_PERSON_MEMORY              = "personMemory";

@@ -123,7 +123,8 @@ public class QJavalinImplementation
    private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
    private static final String SESSION_ID_COOKIE_NAME = "sessionId";
 
-   static QInstance qInstance;
+   static QInstance        qInstance;
+   static QJavalinMetaData javalinMetaData = new QJavalinMetaData();
 
    private static Supplier<QInstance> qInstanceHotSwapSupplier;
    private static long                lastQInstanceHotSwapMillis;
@@ -1063,4 +1064,25 @@ public class QJavalinImplementation
       QJavalinImplementation.qInstanceHotSwapSupplier = qInstanceHotSwapSupplier;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for javalinMetaData
+    **
+    *******************************************************************************/
+   public QJavalinMetaData getJavalinMetaData()
+   {
+      return javalinMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for javalinMetaData
+    **
+    *******************************************************************************/
+   public void setJavalinMetaData(QJavalinMetaData javalinMetaData)
+   {
+      QJavalinImplementation.javalinMetaData = javalinMetaData;
+   }
 }

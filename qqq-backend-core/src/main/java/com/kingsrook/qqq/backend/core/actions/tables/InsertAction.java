@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
@@ -39,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  ** Action to insert one or more records.
  **
  *******************************************************************************/
-public class InsertAction
+public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOutput>
 {
    private static final Logger LOG = LogManager.getLogger(InsertAction.class);
 
@@ -48,6 +49,7 @@ public class InsertAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Override
    public InsertOutput execute(InsertInput insertInput) throws QException
    {
       ActionHelper.validateSession(insertInput);

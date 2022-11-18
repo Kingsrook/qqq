@@ -19,27 +19,48 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
-
-
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+package com.kingsrook.qqq.backend.javalin;
 
 
 /*******************************************************************************
- **
+ ** MetaData specific to a QQQ Javalin server.
  *******************************************************************************/
-public class S3InsertAction extends AbstractS3Action implements InsertInterface
+public class QJavalinMetaData
 {
+   private String uploadedFileArchiveTableName;
+
+
 
    /*******************************************************************************
+    ** Getter for uploadedFileArchiveTableName
     **
     *******************************************************************************/
-   public InsertOutput execute(InsertInput insertInput) throws QException
+   public String getUploadedFileArchiveTableName()
    {
-      return (super.executeInsert(insertInput));
+      return uploadedFileArchiveTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for uploadedFileArchiveTableName
+    **
+    *******************************************************************************/
+   public void setUploadedFileArchiveTableName(String uploadedFileArchiveTableName)
+   {
+      this.uploadedFileArchiveTableName = uploadedFileArchiveTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for uploadedFileArchiveTableName
+    **
+    *******************************************************************************/
+   public QJavalinMetaData withUploadedFileArchiveTableName(String uploadedFileArchiveTableName)
+   {
+      this.uploadedFileArchiveTableName = uploadedFileArchiveTableName;
+      return (this);
    }
 
 }

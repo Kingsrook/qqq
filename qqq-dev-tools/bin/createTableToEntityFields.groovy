@@ -12,6 +12,7 @@ boolean writeTableMetaData = args.length > 2 ? args[2] : false;
 def reader = new BufferedReader(new InputStreamReader(System.in))
 String line
 String allFieldNames = ""
+String dataFieldNames = ""
 List<String> fieldNameList = new ArrayList<>();
 List<String> fieldTypeList = new ArrayList<>();
 
@@ -64,6 +65,15 @@ while((line = reader.readLine()) != null)
    """.formatted(attributes, fieldType, fieldName))
 
    allFieldNames += '"' + fieldName + '",'
+   if(!fieldName.equals("id") && !fieldName.equals("createDate") && !fieldName.equals("modifyDate"))
+   {
+      dataFieldNames += '"' + fieldName + '",'
+   }
+}
+
+if(dataFieldNames.length() > 0)
+{
+   dataFieldNames = dataFieldNames.substring(0, dataFieldNames.length() - 1);
 }
 
 if(writeWholeClass)
@@ -162,22 +172,35 @@ if(writeTableMetaData)
          .withRecordLabelFields("TODO")
          .withBackendName(TODO)
          .withPrimaryKeyField("id")
+         .withFieldsFromEntity({className}.class)
          .withBackendDetails(new RDBMSTableBackendDetails()
             .withTableName("{tableName}")
-         );
+         )
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of({dataFieldNames})))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+         
+      QInstanceEnricher.setInferredFieldBackendNames(qTableMetaData);
+         
       return (qTableMetaData);
    }
 
    """
       .replaceAll("\\{className}", className)
       .replaceAll("\\{tableName}", tableName)
+      .replaceAll("\\{dataFieldNames}", dataFieldNames)
    );
 }
 
 println(output);
 println()
-println("All field names (e.g., for sections):")
-println(allFieldNames);
+
+if(!writeTableMetaData)
+{
+   println("All field names (e.g., for sections):")
+   allFieldNames = allFieldNames.substring(0, allFieldNames.length() - 1);
+   println(allFieldNames);
+}
 println();
 
 

@@ -62,7 +62,9 @@ public class TestUtils
 
    public static final String TABLE_NAME_PERSON_LOCAL_FS_JSON = "person-local-json";
    public static final String TABLE_NAME_PERSON_LOCAL_FS_CSV  = "person-local-csv";
+   public static final String TABLE_NAME_BLOB_LOCAL_FS        = "local-blob";
    public static final String TABLE_NAME_PERSON_S3            = "person-s3";
+   public static final String TABLE_NAME_BLOB_S3              = "s3-blob";
    public static final String TABLE_NAME_PERSON_MOCK          = "person-mock";
 
    public static final String PROCESS_NAME_STREAMED_ETL = "etl.streamed";
@@ -132,8 +134,10 @@ public class TestUtils
       qInstance.addBackend(defineLocalFilesystemBackend());
       qInstance.addTable(defineLocalFilesystemJSONPersonTable());
       qInstance.addTable(defineLocalFilesystemCSVPersonTable());
+      qInstance.addTable(defineLocalFilesystemBlobTable());
       qInstance.addBackend(defineS3Backend());
       qInstance.addTable(defineS3CSVPersonTable());
+      qInstance.addTable(defineS3BlobTable());
       qInstance.addBackend(defineMockBackend());
       qInstance.addTable(defineMockPersonTable());
       qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
@@ -233,6 +237,46 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static QTableMetaData defineLocalFilesystemBlobTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_BLOB_LOCAL_FS)
+         .withLabel("Blob")
+         .withBackendName(defineLocalFilesystemBackend().getName())
+         .withPrimaryKeyField("fileName")
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB))
+         .withBackendDetails(new FilesystemTableBackendDetails()
+            .withBasePath("blobs")
+            .withCardinality(Cardinality.ONE)
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineS3BlobTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_BLOB_S3)
+         .withLabel("Blob S3")
+         .withBackendName(defineS3Backend().getName())
+         .withPrimaryKeyField("fileName")
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB))
+         .withBackendDetails(new S3TableBackendDetails()
+            .withBasePath("blobs")
+            .withCardinality(Cardinality.ONE)
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static S3BackendMetaData defineS3Backend()
    {
       return (new S3BackendMetaData()
@@ -296,7 +340,7 @@ public class TestUtils
    {
       QProcessMetaData qProcessMetaData = new StreamedETLProcess().defineProcessMetaData();
       qProcessMetaData.setName(PROCESS_NAME_STREAMED_ETL);
-      QBackendStepMetaData backendStep  = qProcessMetaData.getBackendStep(StreamedETLProcess.FUNCTION_NAME_ETL);
+      QBackendStepMetaData backendStep = qProcessMetaData.getBackendStep(StreamedETLProcess.FUNCTION_NAME_ETL);
       backendStep.setCode(new QCodeReference(StreamedETLFilesystemBackendStep.class));
 
       backendStep.getInputMetaData().getFieldThrowing(StreamedETLProcess.FIELD_SOURCE_TABLE).setDefaultValue(TABLE_NAME_PERSON_LOCAL_FS_CSV);

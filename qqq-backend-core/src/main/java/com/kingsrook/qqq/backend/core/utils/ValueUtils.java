@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.utils;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -557,6 +558,31 @@ public class ValueUtils
       catch(Exception e)
       {
          throw (new QValueException("Value [" + value + "] could not be converted to a LocalTime.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static byte[] getValueAsByteArray(Serializable value)
+   {
+      if(value == null)
+      {
+         return (null);
+      }
+      else if(value instanceof byte[] ba)
+      {
+         return (ba);
+      }
+      else if(value instanceof String s)
+      {
+         return (s.getBytes(StandardCharsets.UTF_8));
+      }
+      else
+      {
+         throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to ByteArray."));
       }
    }
 }
