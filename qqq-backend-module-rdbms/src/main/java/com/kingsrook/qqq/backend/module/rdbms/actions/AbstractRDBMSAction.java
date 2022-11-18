@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,10 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -43,6 +47,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 import org.apache.logging.log4j.LogManager;
@@ -411,4 +416,80 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       return ("`" + id + "`");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Serializable getFieldValueFromResultSet(QFieldMetaData qFieldMetaData, ResultSet resultSet, int i) throws SQLException
+   {
+      switch(qFieldMetaData.getType())
+      {
+         case STRING:
+         case TEXT:
+         case HTML:
+         case PASSWORD:
+         {
+            return (QueryManager.getString(resultSet, i));
+         }
+         case INTEGER:
+         {
+            return (QueryManager.getInteger(resultSet, i));
+         }
+         case DECIMAL:
+         {
+            return (QueryManager.getBigDecimal(resultSet, i));
+         }
+         case DATE:
+         {
+            // todo - queryManager.getLocalDate?
+            return (QueryManager.getDate(resultSet, i));
+         }
+         case TIME:
+         {
+            return (QueryManager.getLocalTime(resultSet, i));
+         }
+         case DATE_TIME:
+         {
+            return (QueryManager.getInstant(resultSet, i));
+         }
+         case BOOLEAN:
+         {
+            return (QueryManager.getBoolean(resultSet, i));
+         }
+         default:
+         {
+            throw new IllegalStateException("Unexpected field type: " + qFieldMetaData.getType());
+         }
+      }
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys)
+   {
+      List<String> clauses = new ArrayList<>();
+
+      for(QFilterOrderBy orderBy : orderBys)
+      {
+         String ascOrDesc = orderBy.getIsAscending() ? "ASC" : "DESC";
+         if(orderBy instanceof QFilterOrderByAggregate orderByAggregate)
+         {
+            Aggregate aggregate = orderByAggregate.getAggregate();
+            String    clause    = (aggregate.getOperator() + "(" + escapeIdentifier(getColumnName(table.getField(aggregate.getFieldName()))) + ")");
+            clauses.add(clause + " " + ascOrDesc);
+         }
+         else
+         {
+            QFieldMetaData field  = table.getField(orderBy.getFieldName());
+            String         column = escapeIdentifier(getColumnName(field));
+            clauses.add(column + " " + ascOrDesc);
+         }
+      }
+      return (String.join(", ", clauses));
+   }
 }

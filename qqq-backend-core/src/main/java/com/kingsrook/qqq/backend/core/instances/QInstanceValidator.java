@@ -114,6 +114,7 @@ public class QInstanceValidator
       }
       catch(Exception e)
       {
+         LOG.error("Error enriching instance prior to validation", e);
          throw (new QInstanceValidationException("Error enriching qInstance prior to validation.", e));
       }
 

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -73,6 +74,10 @@ public class QFilterCriteria implements Serializable, Cloneable
     *******************************************************************************/
    public QFilterCriteria()
    {
+      ///////////////////////////////
+      // don't let values be null. //
+      ///////////////////////////////
+      values = new ArrayList<>();
    }
 
 
@@ -84,7 +89,31 @@ public class QFilterCriteria implements Serializable, Cloneable
    {
       this.fieldName = fieldName;
       this.operator = operator;
-      this.values = values;
+      this.values = values == null ? new ArrayList<>() : values;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFilterCriteria(String fieldName, QCriteriaOperator operator, Serializable... values)
+   {
+      this.fieldName = fieldName;
+      this.operator = operator;
+
+      if(values == null || (values.length == 1 && values[0] == null))
+      {
+         ////////////////////////////////////////////////////////////////////
+         // this ... could be a sign of an issue... debug juuuust in case? //
+         ////////////////////////////////////////////////////////////////////
+         LOG.debug("null passed as singleton varargs array will be ignored");
+         this.values = new ArrayList<>();
+      }
+      else
+      {
+         this.values = Arrays.stream(values).toList();
+      }
    }
 
 

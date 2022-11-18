@@ -19,61 +19,70 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms;
+package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSAggregateAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 /*******************************************************************************
- ** QQQ Backend module for working with Relational Databases (RDBMS's).
+ **
  *******************************************************************************/
-public class RDBMSBackendModule implements QBackendModuleInterface
+public class AggregateResult
 {
+   private Map<Aggregate, Serializable> aggregateValues = new LinkedHashMap<>();
+   private Map<String, Serializable>    groupByValues   = new LinkedHashMap<>();
+
+
+
    /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
+    ** Getter for aggregateValues
+    **
     *******************************************************************************/
-   public String getBackendType()
+   public Map<Aggregate, Serializable> getAggregateValues()
    {
-      return ("rdbms");
+      return aggregateValues;
    }
 
 
 
    /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
+    ** Setter for aggregateValues
+    **
     *******************************************************************************/
-   @Override
-   public Class<? extends QBackendMetaData> getBackendMetaDataClass()
+   public void setAggregateValues(Map<Aggregate, Serializable> aggregateValues)
    {
-      return (RDBMSBackendMetaData.class);
+      this.aggregateValues = aggregateValues;
    }
 
 
 
    /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
+    ** Fluent setter for aggregateValues
+    **
     *******************************************************************************/
-   @Override
-   public Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
+   public AggregateResult withAggregateValues(Map<Aggregate, Serializable> aggregateValues)
    {
-      return (RDBMSTableBackendDetails.class);
+      this.aggregateValues = aggregateValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for groupByValues
+    **
+    *******************************************************************************/
+   public AggregateResult withAggregateValue(Aggregate aggregate, Serializable value)
+   {
+      if(this.aggregateValues == null)
+      {
+         this.aggregateValues = new LinkedHashMap<>();
+      }
+      this.aggregateValues.put(aggregate, value);
+      return (this);
    }
 
 
@@ -81,10 +90,59 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public CountInterface getCountInterface()
+   public Serializable getAggregateValue(Aggregate aggregate)
    {
-      return (new RDBMSCountAction());
+      return (this.aggregateValues.get(aggregate));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for groupByValues
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getGroupByValues()
+   {
+      return groupByValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for groupByValues
+    **
+    *******************************************************************************/
+   public void setGroupByValues(Map<String, Serializable> groupByValues)
+   {
+      this.groupByValues = groupByValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for groupByValues
+    **
+    *******************************************************************************/
+   public AggregateResult withGroupByValues(Map<String, Serializable> groupByValues)
+   {
+      this.groupByValues = groupByValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for groupByValues
+    **
+    *******************************************************************************/
+   public AggregateResult withGroupByValue(String fieldName, Serializable value)
+   {
+      if(this.groupByValues == null)
+      {
+         this.groupByValues = new LinkedHashMap<>();
+      }
+      this.groupByValues.put(fieldName, value);
+      return (this);
    }
 
 
@@ -92,54 +150,9 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public QueryInterface getQueryInterface()
+   public Serializable getGroupByValue(String fieldName)
    {
-      return (new RDBMSQueryAction());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
-   {
-      return (new RDBMSInsertAction());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
-   {
-      return (new RDBMSUpdateAction());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
-   {
-      return (new RDBMSDeleteAction());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public AggregateInterface getAggregateInterface()
-   {
-      return (new RDBMSAggregateAction());
+      return (this.groupByValues.get(fieldName));
    }
 
 }

@@ -26,9 +26,9 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
@@ -131,7 +131,10 @@ public class TestUtils
          .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("email", QFieldType.STRING).withBackendName("email"))
+         .withField(new QFieldMetaData("isEmployed", QFieldType.BOOLEAN).withBackendName("is_employed"))
+         .withField(new QFieldMetaData("annualSalary", QFieldType.DECIMAL).withBackendName("annual_salary"))
+         .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked"))
          .withBackendDetails(new RDBMSTableBackendDetails()
             .withTableName("person"));
    }

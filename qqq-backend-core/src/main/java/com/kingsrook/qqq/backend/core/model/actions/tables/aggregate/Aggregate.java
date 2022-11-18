@@ -19,61 +19,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms;
+package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSAggregateAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import java.io.Serializable;
+import java.util.Objects;
 
 
 /*******************************************************************************
- ** QQQ Backend module for working with Relational Databases (RDBMS's).
+ **
  *******************************************************************************/
-public class RDBMSBackendModule implements QBackendModuleInterface
+public class Aggregate implements Serializable
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   public String getBackendType()
-   {
-      return ("rdbms");
-   }
+   private String            fieldName;
+   private AggregateOperator operator;
 
 
 
    /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
+    **
     *******************************************************************************/
-   @Override
-   public Class<? extends QBackendMetaData> getBackendMetaDataClass()
+   public Aggregate()
    {
-      return (RDBMSBackendMetaData.class);
-   }
-
-
-
-   /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
-    *******************************************************************************/
-   @Override
-   public Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
-   {
-      return (RDBMSTableBackendDetails.class);
    }
 
 
@@ -82,9 +49,18 @@ public class RDBMSBackendModule implements QBackendModuleInterface
     **
     *******************************************************************************/
    @Override
-   public CountInterface getCountInterface()
+   public boolean equals(Object o)
    {
-      return (new RDBMSCountAction());
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      Aggregate aggregate = (Aggregate) o;
+      return Objects.equals(fieldName, aggregate.fieldName) && operator == aggregate.operator;
    }
 
 
@@ -93,9 +69,9 @@ public class RDBMSBackendModule implements QBackendModuleInterface
     **
     *******************************************************************************/
    @Override
-   public QueryInterface getQueryInterface()
+   public int hashCode()
    {
-      return (new RDBMSQueryAction());
+      return Objects.hash(fieldName, operator);
    }
 
 
@@ -103,43 +79,78 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
+   public Aggregate(String fieldName, AggregateOperator operator)
    {
-      return (new RDBMSInsertAction());
+      this.fieldName = fieldName;
+      this.operator = operator;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for fieldName
     **
     *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
+   public String getFieldName()
    {
-      return (new RDBMSUpdateAction());
+      return fieldName;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for fieldName
     **
     *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
+   public void setFieldName(String fieldName)
    {
-      return (new RDBMSDeleteAction());
+      this.fieldName = fieldName;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for fieldName
     **
     *******************************************************************************/
-   @Override
-   public AggregateInterface getAggregateInterface()
+   public Aggregate withFieldName(String fieldName)
    {
-      return (new RDBMSAggregateAction());
+      this.fieldName = fieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for operator
+    **
+    *******************************************************************************/
+   public AggregateOperator getOperator()
+   {
+      return operator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for operator
+    **
+    *******************************************************************************/
+   public void setOperator(AggregateOperator operator)
+   {
+      this.operator = operator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for operator
+    **
+    *******************************************************************************/
+   public Aggregate withOperator(AggregateOperator operator)
+   {
+      this.operator = operator;
+      return (this);
    }
 
 }

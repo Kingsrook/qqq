@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +54,27 @@ public class QQueryFilter implements Serializable, Cloneable
    {
       AND,
       OR
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public QQueryFilter()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public QQueryFilter(QFilterCriteria... criteria)
+   {
+      this.criteria = new ArrayList<>(Arrays.stream(criteria).toList());
    }
 
 

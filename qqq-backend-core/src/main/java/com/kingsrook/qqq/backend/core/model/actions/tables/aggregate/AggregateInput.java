@@ -19,119 +19,177 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend;
+package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import java.util.ArrayList;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Interface that a QBackendModule must implement.
- **
- ** Note, some methods all have a default version, which throws a 'not implemented'
- ** exception.
+ ** Input data for the Count action
  **
  *******************************************************************************/
-public interface QBackendModuleInterface
+public class AggregateInput extends AbstractTableActionInput
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   String getBackendType();
+   private QQueryFilter    filter;
+   private List<Aggregate> aggregates;
+   private List<String>    groupByFieldNames;
 
-   /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
-    *******************************************************************************/
-   default Class<? extends QBackendMetaData> getBackendMetaDataClass()
-   {
-      return (QBackendMetaData.class);
-   }
 
-   /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
-    *******************************************************************************/
-   default Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
-   {
-      return QTableBackendDetails.class;
-   }
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default CountInterface getCountInterface()
+   public AggregateInput()
    {
-      throwNotImplemented("Count");
-      return null;
    }
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default QueryInterface getQueryInterface()
+   public AggregateInput(QInstance instance)
    {
-      throwNotImplemented("Query");
-      return null;
+      super(instance);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default GetInterface getGetInterface()
-   {
-      throwNotImplemented("Get");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Getter for filter
     **
     *******************************************************************************/
-   default InsertInterface getInsertInterface()
+   public QQueryFilter getFilter()
    {
-      throwNotImplemented("Insert");
-      return null;
+      return filter;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default UpdateInterface getUpdateInterface()
-   {
-      throwNotImplemented("Update");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Setter for filter
     **
     *******************************************************************************/
-   default DeleteInterface getDeleteInterface()
+   public void setFilter(QQueryFilter filter)
    {
-      throwNotImplemented("Delete");
-      return null;
+      this.filter = filter;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default AggregateInterface getAggregateInterface()
-   {
-      throwNotImplemented("Aggregate");
-      return null;
-   }
+
 
    /*******************************************************************************
+    ** Fluent setter for filter
     **
     *******************************************************************************/
-   private void throwNotImplemented(String actionName)
+   public AggregateInput withFilter(QQueryFilter filter)
    {
-      throw new IllegalStateException(actionName + " is not implemented in this module: " + this.getClass().getSimpleName());
+      setFilter(filter);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for aggregates
+    **
+    *******************************************************************************/
+   public List<Aggregate> getAggregates()
+   {
+      return aggregates;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for aggregates
+    **
+    *******************************************************************************/
+   public void setAggregates(List<Aggregate> aggregates)
+   {
+      this.aggregates = aggregates;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for aggregates
+    **
+    *******************************************************************************/
+   public AggregateInput withAggregates(List<Aggregate> aggregates)
+   {
+      this.aggregates = aggregates;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for aggregates
+    **
+    *******************************************************************************/
+   public AggregateInput withAggregate(Aggregate aggregate)
+   {
+      if(this.aggregates == null)
+      {
+         this.aggregates = new ArrayList<>();
+      }
+      this.aggregates.add(aggregate);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for groupByFieldNames
+    **
+    *******************************************************************************/
+   public List<String> getGroupByFieldNames()
+   {
+      return groupByFieldNames;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for groupByFieldNames
+    **
+    *******************************************************************************/
+   public void setGroupByFieldNames(List<String> groupByFieldNames)
+   {
+      this.groupByFieldNames = groupByFieldNames;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for groupByFieldNames
+    **
+    *******************************************************************************/
+   public AggregateInput withGroupByFieldNames(List<String> groupByFieldNames)
+   {
+      this.groupByFieldNames = groupByFieldNames;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for groupByFieldNames
+    **
+    *******************************************************************************/
+   public AggregateInput withGroupByFieldName(String groupByFieldName)
+   {
+      if(this.groupByFieldNames == null)
+      {
+         this.groupByFieldNames = new ArrayList<>();
+      }
+      this.groupByFieldNames.add(groupByFieldName);
+      return (this);
    }
 
 }

@@ -19,127 +19,134 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms;
+package com.kingsrook.qqq.backend.core.model.templates;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSAggregateAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** QQQ Backend module for working with Relational Databases (RDBMS's).
+ **
  *******************************************************************************/
-public class RDBMSBackendModule implements QBackendModuleInterface
+public class RenderTemplateInput extends AbstractActionInput
 {
-   /*******************************************************************************
-    ** Method where a backend module must be able to provide its type (name).
-    *******************************************************************************/
-   public String getBackendType()
-   {
-      return ("rdbms");
-   }
+   private String       code; // todo - TemplateReference, like CodeReference??
+   private TemplateType templateType;
 
-
-
-   /*******************************************************************************
-    ** Method to identify the class used for backend meta data for this module.
-    *******************************************************************************/
-   @Override
-   public Class<? extends QBackendMetaData> getBackendMetaDataClass()
-   {
-      return (RDBMSBackendMetaData.class);
-   }
-
-
-
-   /*******************************************************************************
-    ** Method to identify the class used for table-backend details for this module.
-    *******************************************************************************/
-   @Override
-   public Class<? extends QTableBackendDetails> getTableBackendDetailsClass()
-   {
-      return (RDBMSTableBackendDetails.class);
-   }
+   private Map<String, Object> context;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public CountInterface getCountInterface()
+   public RenderTemplateInput(QInstance instance)
    {
-      return (new RDBMSCountAction());
+      super(instance);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for code
     **
     *******************************************************************************/
-   @Override
-   public QueryInterface getQueryInterface()
+   public String getCode()
    {
-      return (new RDBMSQueryAction());
+      return code;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for code
     **
     *******************************************************************************/
-   @Override
-   public InsertInterface getInsertInterface()
+   public void setCode(String code)
    {
-      return (new RDBMSInsertAction());
+      this.code = code;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for code
     **
     *******************************************************************************/
-   @Override
-   public UpdateInterface getUpdateInterface()
+   public RenderTemplateInput withCode(String code)
    {
-      return (new RDBMSUpdateAction());
+      this.code = code;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for templateType
     **
     *******************************************************************************/
-   @Override
-   public DeleteInterface getDeleteInterface()
+   public TemplateType getTemplateType()
    {
-      return (new RDBMSDeleteAction());
+      return templateType;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for templateType
     **
     *******************************************************************************/
-   @Override
-   public AggregateInterface getAggregateInterface()
+   public void setTemplateType(TemplateType templateType)
    {
-      return (new RDBMSAggregateAction());
+      this.templateType = templateType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for templateType
+    **
+    *******************************************************************************/
+   public RenderTemplateInput withTemplateType(TemplateType templateType)
+   {
+      this.templateType = templateType;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for context
+    **
+    *******************************************************************************/
+   public Map<String, Object> getContext()
+   {
+      return context;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for context
+    **
+    *******************************************************************************/
+   public void setContext(Map<String, Object> context)
+   {
+      this.context = context;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for context
+    **
+    *******************************************************************************/
+   public RenderTemplateInput withContext(Map<String, Object> context)
+   {
+      this.context = context;
+      return (this);
    }
 
 }

@@ -462,9 +462,25 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true);
 
-      List<QFieldMetaData> editableFields = table.getFields().values().stream()
-         .filter(QFieldMetaData::getIsEditable)
-         .toList();
+      List<QFieldMetaData> editableFields = new ArrayList<>();
+      for(QFieldSection section : CollectionUtils.nonNullList(table.getSections()))
+      {
+         for(String fieldName : CollectionUtils.nonNullList(section.getFieldNames()))
+         {
+            try
+            {
+               QFieldMetaData field = table.getField(fieldName);
+               if(field.getIsEditable())
+               {
+                  editableFields.add(field);
+               }
+            }
+            catch(Exception e)
+            {
+               // shrug?
+            }
+         }
+      }
 
       String fieldsForHelpText = editableFields.stream()
          .map(QFieldMetaData::getLabel)

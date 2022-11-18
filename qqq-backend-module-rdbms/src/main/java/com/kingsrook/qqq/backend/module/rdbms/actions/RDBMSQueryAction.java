@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -129,7 +128,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                   for(int i = 1; i <= metaData.getColumnCount(); i++)
                   {
                      QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
-                     Serializable   value          = getValue(qFieldMetaData, resultSet, i);
+                     Serializable   value          = getFieldValueFromResultSet(qFieldMetaData, resultSet, i);
                      values.put(qFieldMetaData.getName(), value);
                   }
 
@@ -185,73 +184,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          statement = connection.prepareStatement(sql);
       }
       return (statement);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private Serializable getValue(QFieldMetaData qFieldMetaData, ResultSet resultSet, int i) throws SQLException
-   {
-      switch(qFieldMetaData.getType())
-      {
-         case STRING:
-         case TEXT:
-         case HTML:
-         case PASSWORD:
-         {
-            return (QueryManager.getString(resultSet, i));
-         }
-         case INTEGER:
-         {
-            return (QueryManager.getInteger(resultSet, i));
-         }
-         case DECIMAL:
-         {
-            return (QueryManager.getBigDecimal(resultSet, i));
-         }
-         case DATE:
-         {
-            // todo - queryManager.getLocalDate?
-            return (QueryManager.getDate(resultSet, i));
-         }
-         case TIME:
-         {
-            return (QueryManager.getLocalTime(resultSet, i));
-         }
-         case DATE_TIME:
-         {
-            return (QueryManager.getInstant(resultSet, i));
-         }
-         case BOOLEAN:
-         {
-            return (QueryManager.getBoolean(resultSet, i));
-         }
-         default:
-         {
-            throw new IllegalStateException("Unexpected field type: " + qFieldMetaData.getType());
-         }
-      }
-
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys)
-   {
-      List<String> clauses = new ArrayList<>();
-
-      for(QFilterOrderBy orderBy : orderBys)
-      {
-         QFieldMetaData field  = table.getField(orderBy.getFieldName());
-         String         column = getColumnName(field);
-         clauses.add(column + " " + (orderBy.getIsAscending() ? "ASC" : "DESC"));
-      }
-      return (String.join(", ", clauses));
    }
 
 }
