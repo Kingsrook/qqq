@@ -28,9 +28,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -39,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -174,7 +180,7 @@ public class GeneralProcessUtils
     ** key, or any other field on the table.  Note, if multiple rows do match the value,
     ** only 1 (determined in an unspecified way) is returned.
     *******************************************************************************/
-   public static Optional<QRecord> getRecordById(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
+   public static Optional<QRecord> getRecordByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
    {
       QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
       queryInput.setSession(parentActionInput.getSession());
@@ -183,6 +189,43 @@ public class GeneralProcessUtils
       queryInput.setLimit(1);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords().stream().findFirst());
+   }
+
+
+
+   /*******************************************************************************
+    ** Query to get one record by a unique key value.
+    *******************************************************************************/
+   public static QRecord getRecordByFieldOrElseThrow(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
+   {
+      return getRecordByField(parentActionInput, tableName, fieldName, fieldValue)
+         .orElseThrow(() -> new QException(tableName + " with " + fieldName + " of " + fieldValue + " was not found."));
+   }
+
+
+
+   /*******************************************************************************
+    ** Query to get one record by its primary key value.
+    *******************************************************************************/
+   public static Optional<QRecord> getRecordByPrimaryKey(AbstractActionInput parentActionInput, String tableName, Serializable value) throws QException
+   {
+      GetInput getInput = new GetInput(parentActionInput.getInstance());
+      getInput.setSession(parentActionInput.getSession());
+      getInput.setTableName(tableName);
+      getInput.setPrimaryKey(value);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      return (Optional.ofNullable(getOutput.getRecord()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Query to get one record by its primary key value.
+    *******************************************************************************/
+   public static QRecord getRecordByPrimaryKeyOrElseThrow(AbstractActionInput parentActionInput, String tableName, Serializable value) throws QException
+   {
+      return getRecordByPrimaryKey(parentActionInput, tableName, value)
+         .orElseThrow(() -> new QException(tableName + " with primary key of " + value + " was not found."));
    }
 
 
@@ -314,6 +357,53 @@ public class GeneralProcessUtils
          }
       }
       return (map);
+   }
+
+
+
+   /*******************************************************************************
+    ** Ensure that a process has been initiated with a single record as input - and
+    ** get that record id.
+    **
+    *******************************************************************************/
+   public static Integer validateSingleSelectedId(RunBackendStepInput runBackendStepInput, String tableLabel) throws QException
+   {
+      ////////////////////////////////////////////////////
+      // Get the selected recordId and verify we only 1 //
+      ////////////////////////////////////////////////////
+      String recordIds = (String) runBackendStepInput.getValue("recordIds");
+      if(!StringUtils.hasContent(recordIds))
+      {
+         throw new QUserFacingException("Select a " + tableLabel + " to process.");
+      }
+
+      String[] idStrings = recordIds.split(",");
+      if(idStrings.length > 1)
+      {
+         throw new QUserFacingException("Select a single " + tableLabel + " to process.");
+      }
+
+      return (Integer.parseInt(idStrings[0]));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T extends QRecordEntity> List<T> recordsToEntities(Class<T> recordEntityClass, List<QRecord> records) throws QException
+   {
+      if(records == null)
+      {
+         return (null);
+      }
+
+      List<T> rs = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         rs.add(QRecordEntity.fromQRecord(recordEntityClass, record));
+      }
+      return (rs);
    }
 
 }
