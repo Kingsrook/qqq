@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -287,16 +288,19 @@ public class QJavalinProcessHandler
       ////////////////////////////
       for(UploadedFile uploadedFile : context.uploadedFiles())
       {
-         QUploadedFile qUploadedFile = new QUploadedFile();
-         qUploadedFile.setBytes(uploadedFile.getContent().readAllBytes());
-         qUploadedFile.setFilename(uploadedFile.getFilename());
+         try(InputStream content = uploadedFile.content())
+         {
+            QUploadedFile qUploadedFile = new QUploadedFile();
+            qUploadedFile.setBytes(content.readAllBytes());
+            qUploadedFile.setFilename(uploadedFile.filename());
 
-         UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
-         TempFileStateProvider.getInstance().put(key, qUploadedFile);
-         LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
-         runProcessInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
+            UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
+            TempFileStateProvider.getInstance().put(key, qUploadedFile);
+            LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
+            runProcessInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
 
-         archiveUploadedFile(runProcessInput, qUploadedFile);
+            archiveUploadedFile(runProcessInput, qUploadedFile);
+         }
       }
 
       /////////////////////////////////////////////////////////////

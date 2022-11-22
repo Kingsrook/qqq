@@ -28,12 +28,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -45,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -305,6 +309,41 @@ public class GeneralProcessUtils
 
 
    /*******************************************************************************
+    ** Load all rows from a table, into a map, keyed by the keyFieldName - typed as
+    ** the specified keyType.
+    **
+    ** Note - null values from the key field are NOT put in the map.
+    **
+    ** If multiple values are found for the key, they'll squash each other, and only
+    ** one random value will appear.
+    **
+    ** Also, note, this is inherently unsafe, if you were to call it on a table with
+    ** too many rows...  Caveat emptor.
+    *******************************************************************************/
+   public static <T extends Serializable> Map<T, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, Class<T> keyType, String keyFieldName) throws QException
+   {
+      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
+      queryInput.setSession(parentActionInput.getSession());
+      queryInput.setTableName(tableName);
+      QueryOutput   queryOutput = new QueryAction().execute(queryInput);
+      List<QRecord> records     = queryOutput.getRecords();
+
+      Map<T, QRecord> map = new HashMap<>();
+      for(QRecord record : records)
+      {
+         Serializable value = record.getValue(keyFieldName);
+         if(value != null)
+         {
+            T valueAsT = ValueUtils.getValueAsType(keyType, value);
+            map.put(valueAsT, record);
+         }
+      }
+      return (map);
+   }
+
+
+
+   /*******************************************************************************
     ** Note - null values from the key field are NOT put in the map.
     *******************************************************************************/
    public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, Class<T> entityClass) throws QException
@@ -406,4 +445,19 @@ public class GeneralProcessUtils
       return (rs);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Integer count(AbstractActionInput input, String tableName, QQueryFilter filter) throws QException
+   {
+      CountInput countInput = new CountInput(input.getInstance());
+      countInput.setSession(input.getSession());
+      countInput.setTableName(tableName);
+      countInput.setFilter(filter);
+      CountOutput countOutput = new CountAction().execute(countInput);
+      return (countOutput.getCount());
+
+   }
 }

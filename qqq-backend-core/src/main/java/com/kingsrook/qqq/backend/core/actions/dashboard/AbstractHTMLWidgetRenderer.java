@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
+import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 
 
@@ -36,6 +39,7 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
  *******************************************************************************/
 public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
 {
+
 
    /*******************************************************************************
     **
@@ -104,7 +108,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String linkTableBulkLoad(RenderWidgetInput input, String tableName) throws QException
+   public static String linkTableBulkLoad(RenderWidgetInput input, String tableName) throws QException
    {
       String tablePath = input.getInstance().getTablePath(input, tableName);
       return (tablePath + "/" + tableName + ".bulkInsert");
@@ -115,10 +119,34 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
+   public static String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
    {
       String tablePath = input.getInstance().getTablePath(input, tableName);
       return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkRecordEdit(AbstractActionInput input, String tableName, Serializable recordId) throws QException
+   {
+      String tablePath = input.getInstance().getTablePath(input, tableName);
+      return (tablePath + "/" + recordId + "/edit");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
+   {
+      QProcessMetaData process   = input.getInstance().getProcess(processName);
+      String           tableName = process.getTableName();
+      String           tablePath = input.getInstance().getTablePath(input, tableName);
+      return (tablePath + "/" + recordId + "/" + processName);
    }
 
 }

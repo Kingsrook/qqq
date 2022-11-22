@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
@@ -54,6 +55,9 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    {
       ActionHelper.validateSession(insertInput);
       setAutomationStatusField(insertInput);
+
+      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), insertInput.getTable(), insertInput.getRecords());
+      // todo - need to handle records with errors coming out of here...
 
       QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
       // todo pre-customization - just get to modify the request?

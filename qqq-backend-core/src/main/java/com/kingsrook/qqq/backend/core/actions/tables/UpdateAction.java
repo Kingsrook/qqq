@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
@@ -45,6 +46,9 @@ public class UpdateAction
    {
       ActionHelper.validateSession(updateInput);
       setAutomationStatusField(updateInput);
+
+      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), updateInput.getTable(), updateInput.getRecords());
+      // todo - need to handle records with errors coming out of here...
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());

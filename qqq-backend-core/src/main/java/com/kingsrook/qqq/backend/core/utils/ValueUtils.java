@@ -585,4 +585,51 @@ public class ValueUtils
          throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to ByteArray."));
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public static <T extends Serializable> T getValueAsType(Class<T> type, Serializable value)
+   {
+      if(type.equals(Integer.class))
+      {
+         return (T) getValueAsInteger(value);
+      }
+      else if(type.equals(String.class))
+      {
+         return (T) getValueAsString(value);
+      }
+      else if(type.equals(Boolean.class))
+      {
+         return (T) getValueAsBoolean(value);
+      }
+      else if(type.equals(BigDecimal.class))
+      {
+         return (T) getValueAsBigDecimal(value);
+      }
+      else if(type.equals(LocalDateTime.class))
+      {
+         return (T) getValueAsLocalDateTime(value);
+      }
+      else if(type.equals(LocalDate.class))
+      {
+         return (T) getValueAsLocalDate(value);
+      }
+      else if(type.equals(Instant.class))
+      {
+         return (T) getValueAsInstant(value);
+      }
+      else if(type.equals(byte[].class))
+      {
+         return (T) getValueAsByteArray(value);
+      }
+      else
+      {
+         throw new QValueException("Unsupported type [" + type.getSimpleName() + "] in getValueAsType.");
+      }
+   }
+
 }
