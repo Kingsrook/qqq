@@ -38,13 +38,16 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -290,6 +293,71 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       aggregateInput.withGroupByFieldName("lastName");
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       assertTrue(aggregateOutput.getResults().isEmpty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOmsJoinAggregate() throws Exception
+   {
+      AggregateInput aggregateInput = new AggregateInput(TestUtils.defineInstance());
+      Aggregate      sumOfQuantity  = new Aggregate(TestUtils.TABLE_NAME_ORDER_LINE + ".quantity", AggregateOperator.SUM);
+      aggregateInput.setSession(new QSession());
+      aggregateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      aggregateInput.withAggregate(sumOfQuantity);
+      aggregateInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_ORDER_LINE));
+
+      AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+      AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+      Assertions.assertEquals(43, aggregateResult.getAggregateValue(sumOfQuantity));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOmsJoinGroupBy() throws Exception
+   {
+      AggregateInput aggregateInput = new AggregateInput(TestUtils.defineInstance());
+      Aggregate      sumOfQuantity  = new Aggregate(TestUtils.TABLE_NAME_ORDER_LINE + ".quantity", AggregateOperator.SUM);
+      aggregateInput.setSession(new QSession());
+      aggregateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      aggregateInput.withAggregate(sumOfQuantity);
+      aggregateInput.withGroupByFieldName(TestUtils.TABLE_NAME_ORDER_LINE + ".sku");
+      aggregateInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_ORDER_LINE));
+
+      AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+      assertEquals(6, aggregateOutput.getResults().size());
+      assertSkuQuantity("QM-1", 30, aggregateOutput.getResults());
+      assertSkuQuantity("QM-2", 1, aggregateOutput.getResults());
+      assertSkuQuantity("QM-3", 1, aggregateOutput.getResults());
+      assertSkuQuantity("QRU-1", 3, aggregateOutput.getResults());
+      assertSkuQuantity("QRU-2", 2, aggregateOutput.getResults());
+      assertSkuQuantity("QD-1", 6, aggregateOutput.getResults());
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertSkuQuantity(String sku, int quantity, List<AggregateResult> results)
+   {
+      for(AggregateResult result : results)
+      {
+         if(result.getGroupByValue("orderLine.sku").equals(sku))
+         {
+            assertEquals(quantity, result.getAggregateValues().values().iterator().next());
+            return;
+         }
+      }
+      fail("Didn't find SKU " + sku + " in aggregate results");
    }
 
 

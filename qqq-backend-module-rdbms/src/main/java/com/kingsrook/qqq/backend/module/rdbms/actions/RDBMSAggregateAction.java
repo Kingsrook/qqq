@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateIn
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -61,29 +62,30 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    {
       try
       {
-         QTableMetaData table     = aggregateInput.getTable();
-         String         tableName = getTableName(table);
+         QTableMetaData table = aggregateInput.getTable();
 
-         List<String> selectClauses = buildSelectClauses(aggregateInput);
+         JoinsContext joinsContext  = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins());
+         String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext);
+         List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
 
          String sql = "SELECT " + StringUtils.join(", ", selectClauses)
-            + " FROM " + escapeIdentifier(tableName);
+            + " FROM " + fromClause;
 
          QQueryFilter       filter = aggregateInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && filter.hasAnyCriteria())
          {
-            sql += " WHERE " + makeWhereClause(table, filter, params);
+            sql += " WHERE " + makeWhereClause(aggregateInput.getInstance(), table, joinsContext, filter, params);
          }
 
          if(CollectionUtils.nullSafeHasContents(aggregateInput.getGroupByFieldNames()))
          {
-            sql += " GROUP BY " + makeGroupByClause(aggregateInput);
+            sql += " GROUP BY " + makeGroupByClause(aggregateInput, joinsContext);
          }
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
-            sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys());
+            sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys(), joinsContext);
          }
 
          // todo sql customization - can edit sql and/or param list
@@ -105,13 +107,16 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                   int selectionIndex = 1;
                   for(String groupByFieldName : CollectionUtils.nonNullList(aggregateInput.getGroupByFieldNames()))
                   {
-                     Serializable value = getFieldValueFromResultSet(table.getField(groupByFieldName), resultSet, selectionIndex++);
+                     JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupByFieldName);
+                     Serializable                          value                    = getFieldValueFromResultSet(fieldAndTableNameOrAlias.field(), resultSet, selectionIndex++);
                      result.withGroupByValue(groupByFieldName, value);
                   }
 
                   for(Aggregate aggregate : aggregateInput.getAggregates())
                   {
-                     QFieldMetaData field = table.getField(aggregate.getFieldName());
+                     JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
+                     QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
+
                      if(field.getType().equals(QFieldType.INTEGER) && aggregate.getOperator().equals(AggregateOperator.AVG))
                      {
                         field = new QFieldMetaData().withType(QFieldType.DECIMAL);
@@ -139,19 +144,20 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<String> buildSelectClauses(AggregateInput aggregateInput)
+   private List<String> buildSelectClauses(AggregateInput aggregateInput, JoinsContext joinsContext)
    {
-      QTableMetaData table = aggregateInput.getTable();
-      List<String>   rs    = new ArrayList<>();
+      List<String> rs = new ArrayList<>();
 
       for(String groupByFieldName : CollectionUtils.nonNullList(aggregateInput.getGroupByFieldNames()))
       {
-         rs.add(escapeIdentifier(getColumnName(table.getField(groupByFieldName))));
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupByFieldName);
+         rs.add(escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())));
       }
 
       for(Aggregate aggregate : aggregateInput.getAggregates())
       {
-         rs.add(aggregate.getOperator() + "(" + escapeIdentifier(getColumnName(table.getField(aggregate.getFieldName()))) + ")");
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
+         rs.add(aggregate.getOperator() + "(" + escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())) + ")");
       }
       return (rs);
    }
@@ -161,13 +167,13 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String makeGroupByClause(AggregateInput aggregateInput)
+   private String makeGroupByClause(AggregateInput aggregateInput, JoinsContext joinsContext)
    {
-      QTableMetaData table   = aggregateInput.getTable();
-      List<String>   columns = new ArrayList<>();
+      List<String> columns = new ArrayList<>();
       for(String groupByFieldName : aggregateInput.getGroupByFieldNames())
       {
-         columns.add(escapeIdentifier(getColumnName(table.getField(groupByFieldName))));
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupByFieldName);
+         columns.add(escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())));
       }
 
       return (StringUtils.join(",", columns));

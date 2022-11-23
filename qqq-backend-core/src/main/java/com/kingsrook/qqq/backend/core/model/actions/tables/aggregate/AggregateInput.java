@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
@@ -38,6 +39,8 @@ public class AggregateInput extends AbstractTableActionInput
    private QQueryFilter    filter;
    private List<Aggregate> aggregates;
    private List<String>    groupByFieldNames;
+
+   private List<QueryJoin> queryJoins = null;
 
 
 
@@ -189,6 +192,56 @@ public class AggregateInput extends AbstractTableActionInput
          this.groupByFieldNames = new ArrayList<>();
       }
       this.groupByFieldNames.add(groupByFieldName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryJoins
+    **
+    *******************************************************************************/
+   public List<QueryJoin> getQueryJoins()
+   {
+      return queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryJoins
+    **
+    *******************************************************************************/
+   public void setQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public AggregateInput withQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public AggregateInput withQueryJoin(QueryJoin queryJoin)
+   {
+      if(this.queryJoins == null)
+      {
+         this.queryJoins = new ArrayList<>();
+      }
+      this.queryJoins.add(queryJoin);
       return (this);
    }
 

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
@@ -32,6 +33,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -258,8 +260,9 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       List<Serializable> params = new ArrayList<>();
       QTableMetaData     table  = deleteInput.getTable();
 
-      String tableName   = getTableName(table);
-      String whereClause = makeWhereClause(table, filter, params);
+      String       tableName    = getTableName(table);
+      JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), Collections.emptyList());
+      String       whereClause  = makeWhereClause(deleteInput.getInstance(), table, joinsContext, filter, params);
 
       // todo sql customization - can edit sql and/or param list?
       String sql = "DELETE FROM "

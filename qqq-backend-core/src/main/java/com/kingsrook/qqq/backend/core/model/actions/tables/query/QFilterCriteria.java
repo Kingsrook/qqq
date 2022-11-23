@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +43,8 @@ public class QFilterCriteria implements Serializable, Cloneable
    private String             fieldName;
    private QCriteriaOperator  operator;
    private List<Serializable> values;
+
+   private String otherFieldName;
 
 
 
@@ -221,6 +224,40 @@ public class QFilterCriteria implements Serializable, Cloneable
 
 
    /*******************************************************************************
+    ** Getter for otherFieldName
+    **
+    *******************************************************************************/
+   public String getOtherFieldName()
+   {
+      return otherFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for otherFieldName
+    **
+    *******************************************************************************/
+   public void setOtherFieldName(String otherFieldName)
+   {
+      this.otherFieldName = otherFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for otherFieldName
+    **
+    *******************************************************************************/
+   public QFilterCriteria withOtherFieldName(String otherFieldName)
+   {
+      this.otherFieldName = otherFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Override
@@ -232,21 +269,28 @@ public class QFilterCriteria implements Serializable, Cloneable
          rs.append(" ").append(operator).append(" ");
          if(CollectionUtils.nullSafeHasContents(values))
          {
-            if(values.size() == 1)
+            if(StringUtils.hasContent(otherFieldName))
             {
-               rs.append(values.get(0));
+               rs.append(otherFieldName);
             }
             else
             {
-               int index = 0;
-               for(Serializable value : values)
+               if(values.size() == 1)
                {
-                  if(index++ > 9)
+                  rs.append(values.get(0));
+               }
+               else
+               {
+                  int index = 0;
+                  for(Serializable value : values)
                   {
-                     rs.append("and ").append(values.size() - index).append(" more");
-                     break;
+                     if(index++ > 9)
+                     {
+                        rs.append("and ").append(values.size() - index).append(" more");
+                        break;
+                     }
+                     rs.append(value).append(",");
                   }
-                  rs.append(value).append(",");
                }
             }
          }

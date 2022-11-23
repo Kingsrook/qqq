@@ -29,6 +29,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
@@ -45,8 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *******************************************************************************/
 public class TestUtils
 {
-
    public static final String DEFAULT_BACKEND_NAME = "default";
+
+   public static final String TABLE_NAME_PERSON           = "personTable";
+   public static final String TABLE_NAME_PERSONAL_ID_CARD = "personalIdCard";
+   public static final String TABLE_NAME_STORE            = "store";
+   public static final String TABLE_NAME_ORDER            = "order";
+   public static final String TABLE_NAME_ITEM             = "item";
+   public static final String TABLE_NAME_ORDER_LINE       = "orderLine";
 
 
 
@@ -81,6 +90,9 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addTable(defineTablePersonalIdCard());
+      qInstance.addJoin(defineJoinPersonAndPersonalIdCard());
+      addOmsTablesAndJoins(qInstance);
       qInstance.setAuthentication(defineAuthentication());
       return (qInstance);
    }
@@ -121,9 +133,9 @@ public class TestUtils
    public static QTableMetaData defineTablePerson()
    {
       return new QTableMetaData()
-         .withName("a-person") // use this name, so it isn't the same as the actual database-table name (which must come from the backend details)
+         .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
-         .withBackendName(defineBackend().getName())
+         .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
@@ -137,6 +149,138 @@ public class TestUtils
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked"))
          .withBackendDetails(new RDBMSTableBackendDetails()
             .withTableName("person"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a 1:1 table with Person.
+    **
+    *******************************************************************************/
+   private static QTableMetaData defineTablePersonalIdCard()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_PERSONAL_ID_CARD)
+         .withLabel("Personal Id Card")
+         .withBackendName(DEFAULT_BACKEND_NAME)
+         .withBackendDetails(new RDBMSTableBackendDetails()
+            .withTableName("personal_id_card"))
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
+         .withField(new QFieldMetaData("personId", QFieldType.INTEGER).withBackendName("person_id"))
+         .withField(new QFieldMetaData("idNumber", QFieldType.STRING).withBackendName("id_number"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QJoinMetaData defineJoinPersonAndPersonalIdCard()
+   {
+      return new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_PERSON)
+         .withRightTable(TABLE_NAME_PERSONAL_ID_CARD)
+         .withInferredName()
+         .withType(JoinType.ONE_TO_ONE)
+         .withJoinOn(new JoinOn("id", "personId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void addOmsTablesAndJoins(QInstance qInstance)
+   {
+      qInstance.addTable(defineBaseTable(TABLE_NAME_STORE, "store")
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER, "order")
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
+         .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id"))
+         .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id"))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_ITEM, "item")
+         .withField(new QFieldMetaData("sku", QFieldType.STRING))
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER_LINE, "order_line")
+         .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
+         .withField(new QFieldMetaData("sku", QFieldType.STRING))
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
+         .withField(new QFieldMetaData("quantity", QFieldType.INTEGER))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderJoinStore")
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_STORE)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("storeId", "id"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderJoinBillToPerson")
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_PERSON)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("billToPersonId", "id"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderJoinShipToPerson")
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_PERSON)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("shipToPersonId", "id"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("itemJoinStore")
+         .withLeftTable(TABLE_NAME_ITEM)
+         .withRightTable(TABLE_NAME_STORE)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("storeId", "id"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderJoinOrderLine")
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_ORDER_LINE)
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "orderId"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderLineJoinItem")
+         .withLeftTable(TABLE_NAME_ORDER_LINE)
+         .withRightTable(TABLE_NAME_ITEM)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("sku", "sku"))
+         .withJoinOn(new JoinOn("storeId", "storeId"))
+      );
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QTableMetaData defineBaseTable(String tableName, String backendTableName)
+   {
+      return new QTableMetaData()
+         .withName(tableName)
+         .withBackendName(DEFAULT_BACKEND_NAME)
+         .withBackendDetails(new RDBMSTableBackendDetails().withTableName(backendTableName))
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
    }
 
 }

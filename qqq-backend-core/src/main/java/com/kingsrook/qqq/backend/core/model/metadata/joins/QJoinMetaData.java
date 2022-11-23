@@ -29,7 +29,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- **
+ ** Definition of how 2 tables join together within a QQQ Instance.
  *******************************************************************************/
 public class QJoinMetaData
 {
@@ -40,6 +40,22 @@ public class QJoinMetaData
 
    private List<JoinOn>         joinOns;
    private List<QFilterOrderBy> orderBys;
+
+
+
+   /*******************************************************************************
+    ** Return a new QJoinMetaData, with all the same data as this one, but flipped
+    ** right ←→ left, for the tables, the type, and the joinOns.
+    *******************************************************************************/
+   public QJoinMetaData flip()
+   {
+      return (new QJoinMetaData()
+         .withLeftTable(rightTable)
+         .withRightTable(leftTable)
+         .withType(type.flip())
+         .withJoinOns(joinOns.stream().map(JoinOn::flip).toList()));
+      // todo - what about order bys??
+   }
 
 
 

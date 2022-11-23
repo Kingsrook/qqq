@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
@@ -151,6 +152,21 @@ public class QReportMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QReportMetaData withInputField(QFieldMetaData inputField)
+   {
+      if(this.inputFields == null)
+      {
+         this.inputFields = new ArrayList<>();
+      }
+      this.inputFields.add(inputField);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for processName
     **
     *******************************************************************************/
@@ -219,6 +235,22 @@ public class QReportMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
+    ** Fluent setter for dataSources
+    **
+    *******************************************************************************/
+   public QReportMetaData withDataSource(QReportDataSource dataSource)
+   {
+      if(this.dataSources == null)
+      {
+         this.dataSources = new ArrayList<>();
+      }
+      this.dataSources.add(dataSource);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for views
     **
     *******************************************************************************/
@@ -247,6 +279,22 @@ public class QReportMetaData implements QAppChildMetaData
    public QReportMetaData withViews(List<QReportView> views)
    {
       this.views = views;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for views
+    **
+    *******************************************************************************/
+   public QReportMetaData withView(QReportView view)
+   {
+      if(this.views == null)
+      {
+         this.views = new ArrayList<>();
+      }
+      this.views.add(view);
       return (this);
    }
 

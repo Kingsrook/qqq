@@ -22,276 +22,284 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Input data for the Query action
- **
+ ** Part of query (or count, aggregate) input, to do a Join as part of a query.
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput
+public class QueryJoin
 {
-   private QBackendTransaction transaction;
-   private QQueryFilter        filter;
-   private Integer             skip;
-   private Integer             limit;
-
-   private RecordPipe recordPipe;
-
-   private boolean shouldTranslatePossibleValues = false;
-   private boolean shouldGenerateDisplayValues   = false;
-
-   private List<QueryJoin> queryJoins = null;
+   private String        leftTableOrAlias;
+   private String        rightTable;
+   private QJoinMetaData joinMetaData;
+   private String        alias;
+   private boolean       select = false;
+   private Type          type   = Type.INNER;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryInput()
+   public enum Type
+   {INNER, LEFT, RIGHT, FULL}
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public QueryJoin()
    {
    }
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public QueryInput(QInstance instance)
+   public QueryJoin(String leftTableOrAlias, String rightTable)
    {
-      super(instance);
+      this.leftTableOrAlias = leftTableOrAlias;
+      this.rightTable = rightTable;
    }
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public QueryInput(QInstance instance, QSession session)
+   public QueryJoin(QJoinMetaData joinMetaData)
    {
-      super(instance);
-      setSession(session);
+      setJoinMetaData(joinMetaData);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for filter
+    ** Getter for leftTableOrAlias
     **
     *******************************************************************************/
-   public QQueryFilter getFilter()
+   public String getLeftTableOrAlias()
    {
-      return filter;
+      return leftTableOrAlias;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filter
+    ** Setter for leftTableOrAlias
     **
     *******************************************************************************/
-   public void setFilter(QQueryFilter filter)
+   public void setLeftTableOrAlias(String leftTableOrAlias)
    {
-      this.filter = filter;
+      this.leftTableOrAlias = leftTableOrAlias;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for skip
+    ** Fluent setter for leftTableOrAlias
     **
     *******************************************************************************/
-   public Integer getSkip()
+   public QueryJoin withLeftTableOrAlias(String leftTableOrAlias)
    {
-      return skip;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for skip
-    **
-    *******************************************************************************/
-   public void setSkip(Integer skip)
-   {
-      this.skip = skip;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for limit
-    **
-    *******************************************************************************/
-   public Integer getLimit()
-   {
-      return limit;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for limit
-    **
-    *******************************************************************************/
-   public void setLimit(Integer limit)
-   {
-      this.limit = limit;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for recordPipe
-    **
-    *******************************************************************************/
-   public RecordPipe getRecordPipe()
-   {
-      return recordPipe;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for recordPipe
-    **
-    *******************************************************************************/
-   public void setRecordPipe(RecordPipe recordPipe)
-   {
-      this.recordPipe = recordPipe;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for shouldTranslatePossibleValues
-    **
-    *******************************************************************************/
-   public boolean getShouldTranslatePossibleValues()
-   {
-      return shouldTranslatePossibleValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for shouldTranslatePossibleValues
-    **
-    *******************************************************************************/
-   public void setShouldTranslatePossibleValues(boolean shouldTranslatePossibleValues)
-   {
-      this.shouldTranslatePossibleValues = shouldTranslatePossibleValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for shouldGenerateDisplayValues
-    **
-    *******************************************************************************/
-   public boolean getShouldGenerateDisplayValues()
-   {
-      return shouldGenerateDisplayValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for shouldGenerateDisplayValues
-    **
-    *******************************************************************************/
-   public void setShouldGenerateDisplayValues(boolean shouldGenerateDisplayValues)
-   {
-      this.shouldGenerateDisplayValues = shouldGenerateDisplayValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for transaction
-    **
-    *******************************************************************************/
-   public QBackendTransaction getTransaction()
-   {
-      return transaction;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for transaction
-    **
-    *******************************************************************************/
-   public void setTransaction(QBackendTransaction transaction)
-   {
-      this.transaction = transaction;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for transaction
-    **
-    *******************************************************************************/
-   public QueryInput withTransaction(QBackendTransaction transaction)
-   {
-      this.transaction = transaction;
+      this.leftTableOrAlias = leftTableOrAlias;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for queryJoins
+    ** Getter for rightTable
     **
     *******************************************************************************/
-   public List<QueryJoin> getQueryJoins()
+   public String getRightTable()
    {
-      return queryJoins;
+      return rightTable;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryJoins
+    ** Setter for rightTable
     **
     *******************************************************************************/
-   public void setQueryJoins(List<QueryJoin> queryJoins)
+   public void setRightTable(String rightTable)
    {
-      this.queryJoins = queryJoins;
+      this.rightTable = rightTable;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryJoins
+    ** Fluent setter for rightTable
     **
     *******************************************************************************/
-   public QueryInput withQueryJoins(List<QueryJoin> queryJoins)
+   public QueryJoin withRightTable(String rightTable)
    {
-      this.queryJoins = queryJoins;
+      this.rightTable = rightTable;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryJoins
+    ** Getter for alias
     **
     *******************************************************************************/
-   public QueryInput withQueryJoin(QueryJoin queryJoin)
+   public String getAlias()
    {
-      if(this.queryJoins == null)
+      return alias;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for alias
+    **
+    *******************************************************************************/
+   public void setAlias(String alias)
+   {
+      this.alias = alias;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for alias
+    **
+    *******************************************************************************/
+   public QueryJoin withAlias(String alias)
+   {
+      this.alias = alias;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for select
+    **
+    *******************************************************************************/
+   public boolean getSelect()
+   {
+      return select;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for select
+    **
+    *******************************************************************************/
+   public void setSelect(boolean select)
+   {
+      this.select = select;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for select
+    **
+    *******************************************************************************/
+   public QueryJoin withSelect(boolean select)
+   {
+      this.select = select;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getAliasOrRightTable()
+   {
+      if(StringUtils.hasContent(alias))
       {
-         this.queryJoins = new ArrayList<>();
+         return (alias);
       }
-      this.queryJoins.add(queryJoin);
+      return (rightTable);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    **
+    *******************************************************************************/
+   public Type getType()
+   {
+      return type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for type
+    **
+    *******************************************************************************/
+   public void setType(Type type)
+   {
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    **
+    *******************************************************************************/
+   public QueryJoin withType(Type type)
+   {
+      this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for joinMetaData
+    **
+    *******************************************************************************/
+   public QJoinMetaData getJoinMetaData()
+   {
+      return joinMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for joinMetaData
+    **
+    *******************************************************************************/
+   public void setJoinMetaData(QJoinMetaData joinMetaData)
+   {
+      this.joinMetaData = joinMetaData;
+
+      if(!StringUtils.hasContent(this.leftTableOrAlias) && !StringUtils.hasContent(this.rightTable))
+      {
+         setLeftTableOrAlias(joinMetaData.getLeftTable());
+         setRightTable(joinMetaData.getRightTable());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for joinMetaData
+    **
+    *******************************************************************************/
+   public QueryJoin withJoinMetaData(QJoinMetaData joinMetaData)
+   {
+      setJoinMetaData(joinMetaData);
       return (this);
    }
 

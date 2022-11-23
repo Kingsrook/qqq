@@ -25,7 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.joins;
 /*******************************************************************************
  ** Type for a QJoin.
  **
- ** - One to One - what about zero??
+ ** - One to One - or zero, i guess...
  ** - One to Many - e.g., where the parent record really "owns" all of the child
  **      records.  Like Order -> OrderLine.
  ** - Many to One - e.g., where a child references a parent, but we'd never really
@@ -37,5 +37,21 @@ public enum JoinType
    ONE_TO_ONE,
    ONE_TO_MANY,
    MANY_TO_ONE,
-   MANY_TO_MANY
+   MANY_TO_MANY;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   public JoinType flip()
+   {
+      return switch(this)
+         {
+            case ONE_TO_MANY -> MANY_TO_ONE;
+            case MANY_TO_ONE -> ONE_TO_MANY;
+            case MANY_TO_MANY, ONE_TO_ONE -> this;
+         };
+   }
 }

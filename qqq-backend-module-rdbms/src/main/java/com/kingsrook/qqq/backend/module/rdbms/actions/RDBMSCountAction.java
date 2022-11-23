@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -54,16 +55,18 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
    {
       try
       {
-         QTableMetaData table     = countInput.getTable();
-         String         tableName = getTableName(table);
+         QTableMetaData table = countInput.getTable();
 
-         String sql = "SELECT count(*) as record_count FROM " + escapeIdentifier(tableName);
+         JoinsContext joinsContext = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins());
+
+         String sql = "SELECT count(*) as record_count FROM "
+            + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);
 
          QQueryFilter       filter = countInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          if(filter != null && filter.hasAnyCriteria())
          {
-            sql += " WHERE " + makeWhereClause(table, filter, params);
+            sql += " WHERE " + makeWhereClause(countInput.getInstance(), table, joinsContext, filter, params);
          }
 
          // todo sql customization - can edit sql and/or param list

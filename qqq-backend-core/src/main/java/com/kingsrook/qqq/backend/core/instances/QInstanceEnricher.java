@@ -49,7 +49,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponen
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -364,6 +366,50 @@ public class QInstanceEnricher
       if(report.getInputFields() != null)
       {
          report.getInputFields().forEach(this::enrichField);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's only 1 data source in the report, and it doesn't have a name, give it a default name //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      String singleDataSourceName = null;
+      if(report.getDataSources() != null)
+      {
+         if(report.getDataSources().size() == 1)
+         {
+            QReportDataSource dataSource = report.getDataSources().get(0);
+            if(!StringUtils.hasContent(dataSource.getName()))
+            {
+               dataSource.setName("DEFAULT");
+            }
+            singleDataSourceName = dataSource.getName();
+         }
+      }
+
+      if(report.getViews() != null)
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // if there's only 1 view in the report, and it doesn't have a name, give it a default name //
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         if(report.getViews().size() == 1)
+         {
+            QReportView view = report.getViews().get(0);
+            if(!StringUtils.hasContent(view.getName()))
+            {
+               view.setName("DEFAULT");
+            }
+         }
+
+         /////////////////////////////////////////////////////////////////////////////
+         // for any views in the report, if they don't specify a data source name,  //
+         // but there's only 1 data source, then use that single data source's name //
+         /////////////////////////////////////////////////////////////////////////////
+         for(QReportView view : report.getViews())
+         {
+            if(!StringUtils.hasContent(view.getDataSourceName()) && singleDataSourceName != null)
+            {
+               view.setDataSourceName(singleDataSourceName);
+            }
+         }
       }
    }
 

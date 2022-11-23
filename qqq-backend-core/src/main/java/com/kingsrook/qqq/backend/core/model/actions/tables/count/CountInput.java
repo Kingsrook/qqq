@@ -22,8 +22,11 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.count;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
@@ -34,6 +37,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 public class CountInput extends AbstractTableActionInput
 {
    private QQueryFilter filter;
+
+   private List<QueryJoin> queryJoins = null;
 
 
 
@@ -77,5 +82,53 @@ public class CountInput extends AbstractTableActionInput
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for queryJoins
+    **
+    *******************************************************************************/
+   public List<QueryJoin> getQueryJoins()
+   {
+      return queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryJoins
+    **
+    *******************************************************************************/
+   public void setQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public CountInput withQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public CountInput withQueryJoin(QueryJoin queryJoin)
+   {
+      if(this.queryJoins == null)
+      {
+         this.queryJoins = new ArrayList<>();
+      }
+      this.queryJoins.add(queryJoin);
+      return (this);
+   }
 
 }

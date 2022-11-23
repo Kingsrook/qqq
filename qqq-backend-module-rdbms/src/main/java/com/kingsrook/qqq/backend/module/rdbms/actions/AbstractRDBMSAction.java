@@ -27,7 +27,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -36,12 +38,17 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -168,9 +175,88 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String makeWhereClause(QTableMetaData table, QQueryFilter filter, List<Serializable> params) throws IllegalArgumentException
+   protected String makeFromClause(QInstance instance, String tableName, JoinsContext joinsContext) throws QException
    {
-      String clause = makeWhereClause(table, filter.getCriteria(), filter.getBooleanOperator(), params);
+      StringBuilder rs = new StringBuilder(escapeIdentifier(getTableName(instance.getTable(tableName))) + " AS " + escapeIdentifier(tableName));
+
+      for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+      {
+         QTableMetaData joinTable        = instance.getTable(queryJoin.getRightTable());
+         String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+
+         rs.append(" ").append(queryJoin.getType()).append(" JOIN ")
+            .append(escapeIdentifier(getTableName(joinTable)))
+            .append(" AS ").append(escapeIdentifier(tableNameOrAlias));
+
+         ////////////////////////////////////////////////////////////
+         // find the join in the instance, to see the 'on' clause  //
+         ////////////////////////////////////////////////////////////
+         List<String>  joinClauseList = new ArrayList<>();
+         String        leftTableName  = joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getLeftTableOrAlias());
+         QJoinMetaData joinMetaData   = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () -> findJoinMetaData(instance, leftTableName, queryJoin.getRightTable()));
+         for(JoinOn joinOn : joinMetaData.getJoinOns())
+         {
+            QTableMetaData leftTable  = instance.getTable(joinMetaData.getLeftTable());
+            QTableMetaData rightTable = instance.getTable(joinMetaData.getRightTable());
+
+            String leftTableOrAlias  = queryJoin.getLeftTableOrAlias();
+            String aliasOrRightTable = queryJoin.getAliasOrRightTable();
+
+            joinClauseList.add(escapeIdentifier(leftTableOrAlias)
+               + "." + escapeIdentifier(getColumnName(leftTable.getField(joinOn.getLeftField())))
+               + " = " + escapeIdentifier(aliasOrRightTable)
+               + "." + escapeIdentifier(getColumnName((rightTable.getField(joinOn.getRightField())))));
+         }
+         rs.append(" ON ").append(StringUtils.join(" AND ", joinClauseList));
+      }
+
+      return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QJoinMetaData findJoinMetaData(QInstance instance, String leftTable, String rightTable)
+   {
+      List<QJoinMetaData> matches = new ArrayList<>();
+      for(QJoinMetaData join : instance.getJoins().values())
+      {
+         if(join.getLeftTable().equals(leftTable) && join.getRightTable().equals(rightTable))
+         {
+            matches.add(join);
+         }
+
+         //////////////////////////////
+         // look in both directions! //
+         //////////////////////////////
+         if(join.getRightTable().equals(leftTable) && join.getLeftTable().equals(rightTable))
+         {
+            matches.add(join.flip());
+         }
+      }
+
+      if(matches.size() == 1)
+      {
+         return (matches.get(0));
+      }
+      else if(matches.size() > 1)
+      {
+         throw (new RuntimeException("More than 1 join was found between [" + leftTable + "] and [" + rightTable + "].  Specify which one in your QueryJoin."));
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String makeWhereClause(QInstance instance, QTableMetaData table, JoinsContext joinsContext, QQueryFilter filter, List<Serializable> params) throws IllegalArgumentException, QException
+   {
+      String clause = makeSimpleWhereClause(instance, table, joinsContext, filter.getCriteria(), filter.getBooleanOperator(), params);
       if(!CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
       {
          ///////////////////////////////////////////////////////////////
@@ -189,7 +275,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
       for(QQueryFilter subFilter : filter.getSubFilters())
       {
-         String subClause = makeWhereClause(table, subFilter, params);
+         String subClause = makeWhereClause(instance, table, joinsContext, subFilter, params);
          if(StringUtils.hasContent(subClause))
          {
             clauses.add("(" + subClause + ")");
@@ -203,14 +289,16 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String makeWhereClause(QTableMetaData table, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
+   private String makeSimpleWhereClause(QInstance instance, QTableMetaData table, JoinsContext joinsContext, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
    {
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
       {
-         QFieldMetaData     field              = table.getField(criterion.getFieldName());
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName());
+
          List<Serializable> values             = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
-         String             column             = getColumnName(field);
+         QFieldMetaData     field              = fieldAndTableNameOrAlias.field();
+         String             column             = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
          String             clause             = column;
          Integer            expectedNoOfParams = null;
          switch(criterion.getOperator())
@@ -360,14 +448,28 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                throw new IllegalArgumentException("Unexpected operator: " + criterion.getOperator());
             }
          }
-         clauses.add("(" + clause + ")");
+
          if(expectedNoOfParams != null)
          {
-            if(!expectedNoOfParams.equals(values.size()))
+            if(expectedNoOfParams.equals(1) && StringUtils.hasContent(criterion.getOtherFieldName()))
+            {
+               JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getOtherFieldName());
+
+               String otherColumn = escapeIdentifier(otherFieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(otherFieldAndTableNameOrAlias.field()));
+               clause = clause.replace("?", otherColumn);
+
+               /////////////////////////////////////////////////////////////////////
+               // make sure we don't add any values in this case, just in case... //
+               /////////////////////////////////////////////////////////////////////
+               values = Collections.emptyList();
+            }
+            else if(!expectedNoOfParams.equals(values.size()))
             {
                throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
             }
          }
+
+         clauses.add("(" + clause + ")");
 
          params.addAll(values);
       }
@@ -470,7 +572,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys)
+   protected String makeOrderByClause(QTableMetaData table, List<QFilterOrderBy> orderBys, JoinsContext joinsContext)
    {
       List<String> clauses = new ArrayList<>();
 
@@ -485,9 +587,11 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          }
          else
          {
-            QFieldMetaData field  = table.getField(orderBy.getFieldName());
-            String         column = escapeIdentifier(getColumnName(field));
-            clauses.add(column + " " + ascOrDesc);
+            JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName());
+
+            QFieldMetaData field  = otherFieldAndTableNameOrAlias.field();
+            String         column = getColumnName(field);
+            clauses.add(escapeIdentifier(otherFieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(column) + " " + ascOrDesc);
          }
       }
       return (String.join(", ", clauses));

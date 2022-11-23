@@ -34,10 +34,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -64,35 +67,34 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       try
       {
          QTableMetaData table     = queryInput.getTable();
-         String         tableName = getTableName(table);
+         String         tableName = queryInput.getTableName();
 
-         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
-         String columns = fieldList.stream()
-            .map(this::getColumnName)
-            .collect(Collectors.joining(", "));
+         StringBuilder sql = new StringBuilder("SELECT ").append(makeSelectClause(queryInput.getInstance(), tableName, queryInput.getQueryJoins()));
 
-         String sql = "SELECT " + columns + " FROM " + escapeIdentifier(tableName);
+         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins());
+         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext));
 
          QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
+
          if(filter != null && filter.hasAnyCriteria())
          {
-            sql += " WHERE " + makeWhereClause(table, filter, params);
+            sql.append(" WHERE ").append(makeWhereClause(queryInput.getInstance(), table, joinsContext, filter, params));
          }
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
-            sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys());
+            sql.append(" ORDER BY ").append(makeOrderByClause(table, filter.getOrderBys(), joinsContext));
          }
 
          if(queryInput.getLimit() != null)
          {
-            sql += " LIMIT " + queryInput.getLimit();
+            sql.append(" LIMIT ").append(queryInput.getLimit());
 
             if(queryInput.getSkip() != null)
             {
                // todo - other sql grammars?
-               sql += " OFFSET " + queryInput.getSkip();
+               sql.append(" OFFSET ").append(queryInput.getSkip());
             }
          }
 
@@ -111,10 +113,31 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             needToCloseConnection = true;
          }
 
+         ////////////////////////////////////////////////////////////////////////////
+         // build the list of fields that will be processed in the result-set loop //
+         ////////////////////////////////////////////////////////////////////////////
+         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
+         for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryInput.getQueryJoins()))
+         {
+            if(queryJoin.getSelect())
+            {
+               QTableMetaData joinTable        = queryInput.getInstance().getTable(queryJoin.getRightTable());
+               String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+               for(QFieldMetaData joinField : joinTable.getFields().values())
+               {
+                  fieldList.add(joinField.clone().withName(tableNameOrAlias + "." + joinField.getName()));
+               }
+            }
+         }
+
          try
          {
-            QueryOutput       queryOutput = new QueryOutput(queryInput);
-            PreparedStatement statement   = createStatement(connection, sql, queryInput);
+            //////////////////////////////////////////////
+            // execute the query - iterate over results //
+            //////////////////////////////////////////////
+            QueryOutput queryOutput = new QueryOutput(queryInput);
+            System.out.println(sql);
+            PreparedStatement statement = createStatement(connection, sql.toString(), queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
                ResultSetMetaData metaData = resultSet.getMetaData();
@@ -158,6 +181,42 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String makeSelectClause(QInstance instance, String tableName, List<QueryJoin> queryJoins) throws QException
+   {
+      QTableMetaData       table     = instance.getTable(tableName);
+      List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
+      String columns = fieldList.stream()
+         .map(field -> escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field)))
+         .collect(Collectors.joining(", "));
+      StringBuilder rs = new StringBuilder(columns);
+
+      for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
+      {
+         if(queryJoin.getSelect())
+         {
+            QTableMetaData joinTable        = instance.getTable(queryJoin.getRightTable());
+            String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+            if(joinTable == null)
+            {
+               throw new QException("Requested join table [" + queryJoin.getRightTable() + "] is not a defined table.");
+            }
+
+            List<QFieldMetaData> joinFieldList = new ArrayList<>(joinTable.getFields().values());
+            String joinColumns = joinFieldList.stream()
+               .map(field -> escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field)))
+               .collect(Collectors.joining(", "));
+            rs.append(", ").append(joinColumns);
+         }
+      }
+
+      return (rs.toString());
    }
 
 
