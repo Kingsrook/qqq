@@ -436,13 +436,29 @@ public class CollectionUtils
     **
     ** Meant to help avoid null checks on foreach loops.
     *******************************************************************************/
-   public static <T> Collection<T> nonNullCollection(Collection<T> list)
+   public static <T> Collection<T> nonNullCollection(Collection<T> c)
    {
-      if(list == null)
+      if(c == null)
       {
          return (new ArrayList<>());
       }
-      return (list);
+      return (c);
+   }
+
+
+
+   /*******************************************************************************
+    ** Returns the input map, unless it was null - in which case a new HashMap is returned.
+    **
+    ** Meant to help avoid null checks on foreach loops.
+    *******************************************************************************/
+   public static <K, V> Map<K, V> nonNullMap(Map<K, V> map)
+   {
+      if(map == null)
+      {
+         return (new HashMap<>());
+      }
+      return (map);
    }
 
 
