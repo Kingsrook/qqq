@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
 import java.time.ZoneId;
@@ -36,9 +36,8 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
  *******************************************************************************/
 public abstract class AbstractWidgetRenderer
 {
-   public static final QValueFormatter   valueFormatter    = new QValueFormatter();
-   public static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mma").withZone(ZoneId.systemDefault());
-   public static final DateTimeFormatter dateFormatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+   public static final QValueFormatter   valueFormatter = new QValueFormatter();
+   public static final DateTimeFormatter dateFormatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
 
 

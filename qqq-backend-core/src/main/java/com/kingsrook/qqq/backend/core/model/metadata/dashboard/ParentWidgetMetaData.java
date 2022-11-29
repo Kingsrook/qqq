@@ -19,135 +19,157 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
-import java.io.Serializable;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import java.util.List;
 
 
 /*******************************************************************************
- ** Base class for rendering qqq HTML dashboard widgets
+ ** Specific meta data for frontend parent widget
  **
  *******************************************************************************/
-public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
+public class ParentWidgetMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
 {
+   private String       title;
+   private List<String> possibleValueNameList;
+   private List<String> childWidgetNameList;
+   private List<String> childProcessNameList;
+
 
 
    /*******************************************************************************
+    ** Getter for title
     **
     *******************************************************************************/
-   protected String openTopLevelBulletList()
+   public String getTitle()
    {
-      return ("""
-         <div style="padding: 1rem;">
-            <ul>""");
+      return title;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for title
     **
     *******************************************************************************/
-   protected String closeTopLevelBulletList()
+   public void setTitle(String title)
    {
-      return ("""
-            </ul>
-         </div>""");
+      this.title = title;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for title
     **
     *******************************************************************************/
-   protected String bulletItalics(String text)
+   public ParentWidgetMetaData withTitle(String title)
    {
-      return ("<li><i>" + text + "</i></li>");
+      this.title = title;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for possibleValueNameList
     **
     *******************************************************************************/
-   protected String bulletLink(String href, String text)
+   public List<String> getPossibleValueNameList()
    {
-      return ("<li><a href=\"" + href + "\">" + text + "</a></li>");
+      return possibleValueNameList;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for possibleValueNameList
     **
     *******************************************************************************/
-   protected String bulletNameLink(String name, String href, String text)
+   public void setPossibleValueNameList(List<String> possibleValueNameList)
    {
-      return (bulletNameValue(name, "<a href=\"" + href + "\">" + text + "</a>"));
+      this.possibleValueNameList = possibleValueNameList;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for possibleValueNameList
     **
     *******************************************************************************/
-   protected String bulletNameValue(String name, String value)
+   public ParentWidgetMetaData withPossibleValueNameList(List<String> possibleValueNameList)
    {
-      return ("<li><b>" + name + "</b> &nbsp; " + value + "</li>");
+      this.possibleValueNameList = possibleValueNameList;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for childWidgetNameList
     **
     *******************************************************************************/
-   public static String linkTableBulkLoad(RenderWidgetInput input, String tableName) throws QException
+   public List<String> getChildWidgetNameList()
    {
-      String tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "/" + tableName + ".bulkInsert");
+      return childWidgetNameList;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for childWidgetNameList
     **
     *******************************************************************************/
-   public static String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
+   public void setChildWidgetNameList(List<String> childWidgetNameList)
    {
-      String tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+      this.childWidgetNameList = childWidgetNameList;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for childWidgetNameList
     **
     *******************************************************************************/
-   public static String linkRecordEdit(AbstractActionInput input, String tableName, Serializable recordId) throws QException
+   public ParentWidgetMetaData withChildWidgetNameList(List<String> childWidgetNameList)
    {
-      String tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "/" + recordId + "/edit");
+      this.childWidgetNameList = childWidgetNameList;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for childProcessNameList
     **
     *******************************************************************************/
-   public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
+   public List<String> getChildProcessNameList()
    {
-      QProcessMetaData process   = input.getInstance().getProcess(processName);
-      String           tableName = process.getTableName();
-      String           tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "/" + recordId + "/" + processName);
+      return childProcessNameList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for childProcessNameList
+    **
+    *******************************************************************************/
+   public void setChildProcessNameList(List<String> childProcessNameList)
+   {
+      this.childProcessNameList = childProcessNameList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for childProcessNameList
+    **
+    *******************************************************************************/
+   public ParentWidgetMetaData withChildProcessNameList(List<String> childProcessNameList)
+   {
+      this.childProcessNameList = childProcessNameList;
+      return (this);
    }
 
 }

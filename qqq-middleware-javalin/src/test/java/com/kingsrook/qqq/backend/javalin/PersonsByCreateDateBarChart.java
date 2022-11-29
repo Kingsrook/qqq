@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;

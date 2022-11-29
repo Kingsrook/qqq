@@ -19,54 +19,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ProcessWidgetData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
- ** Sample bar chart widget
+ ** Generic widget for displaying a process as a widget
  *******************************************************************************/
-public class PersonsByCreateDateBarChart extends AbstractWidgetRenderer
+public class ProcessWidgetRenderer extends AbstractWidgetRenderer
 {
+   public static final String WIDGET_PROCESS_NAME = "processName";
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    @Override
    public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
+      ActionHelper.validateSession(input);
+
       try
       {
-         List<String> labels = new ArrayList<>();
-         List<Number> data   = new ArrayList<>();
-
-         labels.add("Jan. 2022");
-         data.add(17);
-
-         labels.add("Feb. 2022");
-         data.add(42);
-
-         labels.add("Mar. 2022");
-         data.add(47);
-
-         labels.add("Apr. 2022");
-         data.add(0);
-
-         labels.add("May 2022");
-         data.add(64);
-
-         return (new RenderWidgetOutput(new ChartData("Persons created per Month", null, "Person records", labels, data)));
+         ProcessWidgetData data = new ProcessWidgetData();
+         if(input.getWidgetMetaData() instanceof QWidgetMetaData widgetMetaData)
+         {
+            String           processName     = (String) widgetMetaData.getDefaultValues().get(WIDGET_PROCESS_NAME);
+            QProcessMetaData processMetaData = input.getInstance().getProcess(processName);
+            data.setProcessMetaData(processMetaData);
+         }
+         return (new RenderWidgetOutput(data));
       }
       catch(Exception e)
       {
-         throw (new QException("Error rendering widget", e));
+         throw (new QException("Error rendering process widget", e));
       }
    }
+
 }

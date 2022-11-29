@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.amazonaws.regions.Regions;
-import com.kingsrook.qqq.backend.core.actions.dashboard.QuickSightChartRenderer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.QuickSightChartRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;

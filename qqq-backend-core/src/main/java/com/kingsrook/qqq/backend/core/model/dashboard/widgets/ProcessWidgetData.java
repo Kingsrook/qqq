@@ -22,36 +22,26 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+
+
 /*******************************************************************************
- ** Possible values for widget type
+ ** Model containing datastructure expected by frontend stepper widget
+ **
  *******************************************************************************/
-public enum WidgetType
+public class ProcessWidgetData implements QWidget
 {
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   GENERIC("generic"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STEPPER("stepper"),
-   TABLE("table");
-
-
-   private final String type;
+   private QProcessMetaData processMetaData;
 
 
 
    /*******************************************************************************
+    ** Getter for processMetaData
     **
     *******************************************************************************/
-   WidgetType(String type)
+   public QProcessMetaData getProcessMetaData()
    {
-      this.type = type;
+      return processMetaData;
    }
 
 
@@ -62,7 +52,30 @@ public enum WidgetType
     *******************************************************************************/
    public String getType()
    {
-      return type;
+      return WidgetType.PROCESS.getType();
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processMetaData
+    **
+    *******************************************************************************/
+   public void setProcessMetaData(QProcessMetaData processMetaData)
+   {
+      this.processMetaData = processMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processMetaData
+    **
+    *******************************************************************************/
+   public ProcessWidgetData withProcessMetaData(QProcessMetaData processMetaData)
+   {
+      this.processMetaData = processMetaData;
+      return (this);
    }
 
 }
