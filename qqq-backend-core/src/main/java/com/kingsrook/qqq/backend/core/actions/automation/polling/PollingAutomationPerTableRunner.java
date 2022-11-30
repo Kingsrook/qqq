@@ -52,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -210,18 +211,22 @@ public class PollingAutomationPerTableRunner implements Runnable
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // run an async-pipe loop - that will query for records in PENDING - put them in a pipe - then apply actions to them //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      RecordPipe          recordPipe          = new RecordPipe();
-      AsyncRecordPipeLoop asyncRecordPipeLoop = new AsyncRecordPipeLoop();
-      asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + automationStatus, null, recordPipe, (status) ->
+      QTableAutomationDetails automationDetails   = table.getAutomationDetails();
+      AsyncRecordPipeLoop     asyncRecordPipeLoop = new AsyncRecordPipeLoop();
+
+      RecordPipe recordPipe = automationDetails.getOverrideBatchSize() == null
+         ? new RecordPipe() : new RecordPipe(automationDetails.getOverrideBatchSize());
+
+      asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + automationStatus + ">" + table.getName(), null, recordPipe, (status) ->
          {
             QueryInput queryInput = new QueryInput(instance);
             queryInput.setSession(session);
             queryInput.setTableName(table.getName());
 
-            AutomationStatusTrackingType statusTrackingType = table.getAutomationDetails().getStatusTracking().getType();
+            AutomationStatusTrackingType statusTrackingType = automationDetails.getStatusTracking().getType();
             if(AutomationStatusTrackingType.FIELD_IN_TABLE.equals(statusTrackingType))
             {
-               queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(table.getAutomationDetails().getStatusTracking().getFieldName(), QCriteriaOperator.EQUALS, List.of(automationStatus.getId()))));
+               queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(automationDetails.getStatusTracking().getFieldName(), QCriteriaOperator.EQUALS, List.of(automationStatus.getId()))));
             }
             else
             {
@@ -274,7 +279,7 @@ public class PollingAutomationPerTableRunner implements Runnable
             if(CollectionUtils.nullSafeHasContents(matchingQRecords))
             {
                LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
-               applyActionToMatchingRecords(session, table, matchingQRecords, action);
+               applyActionToMatchingRecords(instance, session, table, matchingQRecords, action);
             }
          }
          catch(Exception e)
@@ -352,8 +357,9 @@ public class PollingAutomationPerTableRunner implements Runnable
 
    /*******************************************************************************
     ** Finally, actually run action code against a list of known matching records.
+    ** todo not commit - move to somewhere genericer
     *******************************************************************************/
-   private void applyActionToMatchingRecords(QSession session, QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws Exception
+   public static void applyActionToMatchingRecords(QInstance instance, QSession session, QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws Exception
    {
       if(StringUtils.hasContent(action.getProcessName()))
       {
