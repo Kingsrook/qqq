@@ -22,16 +22,19 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend stepper widget
+ ** Model containing datastructure expected by frontend process widget
  **
  *******************************************************************************/
 public class ProcessWidgetData implements QWidget
 {
-   private QProcessMetaData processMetaData;
+   private QProcessMetaData          processMetaData;
+   private Map<String, Serializable> defaultValues;
 
 
 
@@ -75,6 +78,40 @@ public class ProcessWidgetData implements QWidget
    public ProcessWidgetData withProcessMetaData(QProcessMetaData processMetaData)
    {
       this.processMetaData = processMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValues
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getDefaultValues()
+   {
+      return defaultValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultValues
+    **
+    *******************************************************************************/
+   public void setDefaultValues(Map<String, Serializable> defaultValues)
+   {
+      this.defaultValues = defaultValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultValues
+    **
+    *******************************************************************************/
+   public ProcessWidgetData withDefaultValues(Map<String, Serializable> defaultValues)
+   {
+      this.defaultValues = defaultValues;
       return (this);
    }
 

@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ParentWidgetData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -70,9 +70,9 @@ public class ParentWidgetRenderer extends AbstractWidgetRenderer
          List<String>                    pvsNames  = new ArrayList<>();
          for(String possibleValueSourceName : CollectionUtils.nonNullList(metaData.getPossibleValueNameList()))
          {
-            QTableMetaData tableMetaData = input.getInstance().getTable(input.getInstance().getPossibleValueSource(possibleValueSourceName).getTableName());
-            pvsLabels.add(tableMetaData.getLabel());
-            pvsNames.add(tableMetaData.getName());
+            QPossibleValueSource possibleValueSource = input.getInstance().getPossibleValueSource(possibleValueSourceName);
+            pvsLabels.add(possibleValueSource.getLabel() != null ? possibleValueSource.getLabel() : possibleValueSourceName);
+            pvsNames.add(possibleValueSourceName);
 
             SearchPossibleValueSourceInput pvsInput = new SearchPossibleValueSourceInput(input.getInstance());
             pvsInput.setSession(input.getSession());

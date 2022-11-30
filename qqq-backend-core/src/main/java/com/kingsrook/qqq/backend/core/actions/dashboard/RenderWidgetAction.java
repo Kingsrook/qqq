@@ -57,7 +57,7 @@ public class RenderWidgetAction
       {
          for(Map.Entry<String, Serializable> entry : widgetMetaData.getDefaultValues().entrySet())
          {
-            input.getQueryParams().putIfAbsent(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
+            input.addQueryParam(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
          }
       }
 
