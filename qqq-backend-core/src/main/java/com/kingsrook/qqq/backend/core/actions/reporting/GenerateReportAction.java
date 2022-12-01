@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -185,7 +186,7 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startTableView(ReportInput reportInput, QReportDataSource dataSource, QReportView reportView) throws QReportingException
+   private void startTableView(ReportInput reportInput, QReportDataSource dataSource, QReportView reportView) throws QException
    {
       QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
 
@@ -200,6 +201,8 @@ public class GenerateReportAction
       exportInput.setIncludeHeaderRow(reportView.getIncludeHeaderRow());
       exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
+      JoinsContext joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins());
+
       List<QFieldMetaData> fields;
       if(CollectionUtils.nullSafeHasContents(reportView.getColumns()))
       {
@@ -212,7 +215,14 @@ public class GenerateReportAction
             }
             else
             {
-               QFieldMetaData field = table.getField(column.getName()).clone();
+               JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(column.getName());
+               if(fieldAndTableNameOrAlias.field() == null)
+               {
+                  throw new QReportingException("Could not find field named [" + column.getName() + "] on table [" + table.getName() + "]");
+               }
+
+               QFieldMetaData field = fieldAndTableNameOrAlias.field().clone();
+               field.setName(column.getName());
                if(StringUtils.hasContent(column.getLabel()))
                {
                   field.setLabel(column.getLabel());
@@ -278,6 +288,7 @@ public class GenerateReportAction
             queryInput.setRecordPipe(recordPipe);
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
+            queryInput.setQueryJoins(dataSource.getQueryJoins());
             queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
             return (new QueryAction().execute(queryInput));
          }

@@ -25,12 +25,16 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -55,6 +59,19 @@ public class QFieldMetaData implements Cloneable
    private String       displayFormat = "%s";
    private Serializable defaultValue;
    private String       possibleValueSourceName;
+
+   private Integer            maxLength;
+   private Set<FieldBehavior> behaviors;
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // w/ longer-term vision:                                                                                             //
+   // - more enums that implement ValueTooLongBehavior e.g., NumberOutsideRangeBehavior or DecimalPrecisionErrorBehavior //
+   // - QInstance.Set<FieldBehavior> defaultFieldBehaviors                                                               //
+   // - QBackendMetaData.Set<FieldBehavior> defaultFieldBehaviors                                                        //
+   // - QTableMetaData.Set<FieldBehavior> defaultFieldBehaviors                                                          //
+   // - inherit behaviors all the way down (up?)                                                                         //
+   // - instance validation to make sure you don’t specify more than 1 behavior of a given type at a given level.        //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    private List<FieldAdornment> adornments;
 
@@ -175,6 +192,16 @@ public class QFieldMetaData implements Cloneable
             if(StringUtils.hasContent(fieldAnnotation.possibleValueSourceName()))
             {
                setPossibleValueSourceName(fieldAnnotation.possibleValueSourceName());
+            }
+
+            if(fieldAnnotation.maxLength() != Integer.MAX_VALUE)
+            {
+               setMaxLength(fieldAnnotation.maxLength());
+            }
+
+            if(fieldAnnotation.valueTooLongBehavior() != ValueTooLongBehavior.PASS_THROUGH)
+            {
+               withBehavior(fieldAnnotation.valueTooLongBehavior());
             }
          }
       }
@@ -529,6 +556,120 @@ public class QFieldMetaData implements Cloneable
          this.adornments = new ArrayList<>();
       }
       this.adornments.add(adornment);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxLength
+    **
+    *******************************************************************************/
+   public Integer getMaxLength()
+   {
+      return maxLength;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxLength
+    **
+    *******************************************************************************/
+   public void setMaxLength(Integer maxLength)
+   {
+      this.maxLength = maxLength;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxLength
+    **
+    *******************************************************************************/
+   public QFieldMetaData withMaxLength(Integer maxLength)
+   {
+      this.maxLength = maxLength;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for behaviors
+    **
+    *******************************************************************************/
+   public Set<FieldBehavior> getBehaviors()
+   {
+      return behaviors;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public <T extends FieldBehavior> T getBehavior(QInstance instance, Class<T> behaviorType)
+   {
+      for(FieldBehavior fieldBehavior : CollectionUtils.nonNullCollection(behaviors))
+      {
+         if(behaviorType.isInstance(fieldBehavior))
+         {
+            return (behaviorType.cast(fieldBehavior));
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////
+      // todo - cascade/inherit behaviors down from table, backend, instance //
+      /////////////////////////////////////////////////////////////////////////
+
+      ///////////////////////////////////////////
+      // return default behavior for this type //
+      ///////////////////////////////////////////
+      if(behaviorType.equals(ValueTooLongBehavior.class))
+      {
+         return behaviorType.cast(ValueTooLongBehavior.getDefault());
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for behaviors
+    **
+    *******************************************************************************/
+   public void setBehaviors(Set<FieldBehavior> behaviors)
+   {
+      this.behaviors = behaviors;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for behaviors
+    **
+    *******************************************************************************/
+   public QFieldMetaData withBehaviors(Set<FieldBehavior> behaviors)
+   {
+      this.behaviors = behaviors;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for behaviors
+    **
+    *******************************************************************************/
+   public QFieldMetaData withBehavior(FieldBehavior behavior)
+   {
+      if(behaviors == null)
+      {
+         behaviors = new HashSet<>();
+      }
+      this.behaviors.add(behavior);
       return (this);
    }
 

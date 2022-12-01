@@ -26,13 +26,12 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
-import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class FilesystemInsertAction implements InsertInterface
+public class FilesystemInsertAction extends AbstractFilesystemAction implements InsertInterface
 {
 
    /*******************************************************************************
@@ -40,23 +39,7 @@ public class FilesystemInsertAction implements InsertInterface
     *******************************************************************************/
    public InsertOutput execute(InsertInput insertInput) throws QException
    {
-      throw new NotImplementedException("Filesystem insert not implemented");
-      /*
-      try
-      {
-         InsertResult rs = new InsertResult();
-         QTableMetaData table = insertRequest.getTable();
-
-         List<QRecord> recordsWithStatus = new ArrayList<>();
-         rs.setRecords(recordsWithStatus);
-
-         // return rs;
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error executing insert: " + e.getMessage(), e);
-      }
-      */
+      return (super.executeInsert(insertInput));
    }
 
 }

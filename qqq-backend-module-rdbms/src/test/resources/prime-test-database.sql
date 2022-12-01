@@ -29,14 +29,34 @@ CREATE TABLE person
    first_name VARCHAR(80) NOT NULL,
    last_name VARCHAR(80) NOT NULL,
    birth_date DATE,
-   email VARCHAR(250) NOT NULL
+   email VARCHAR(250) NOT NULL,
+   is_employed BOOLEAN,
+   annual_salary DECIMAL(12,2),
+   days_worked INTEGER
 );
 
-INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com');
-INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com');
-INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com');
-INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com');
-INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com');
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 1, 25000, 27);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com', 1, 26000, 124);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com', 0, null, 0);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com', 1, 30000, 99);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com', 1, 1000000, 232);
+
+DROP TABLE IF EXISTS personal_id_card;
+CREATE TABLE personal_id_card
+(
+   id INT AUTO_INCREMENT primary key ,
+   create_date TIMESTAMP DEFAULT now(),
+   modify_date TIMESTAMP DEFAULT now(),
+   person_id INTEGER,
+   id_number VARCHAR(250)
+);
+
+INSERT INTO personal_id_card (person_id, id_number) VALUES (1, '19800531');
+INSERT INTO personal_id_card (person_id, id_number) VALUES (2, '19800515');
+INSERT INTO personal_id_card (person_id, id_number) VALUES (3, '19760528');
+INSERT INTO personal_id_card (person_id, id_number) VALUES (6, '123123123');
+INSERT INTO personal_id_card (person_id, id_number) VALUES (null, '987987987');
+INSERT INTO personal_id_card (person_id, id_number) VALUES (null, '456456456');
 
 DROP TABLE IF EXISTS carrier;
 CREATE TABLE carrier
@@ -58,3 +78,77 @@ INSERT INTO carrier (id, name, company_code, service_level) VALUES (8, 'USPS Sup
 INSERT INTO carrier (id, name, company_code, service_level) VALUES (9, 'USPS Super Fast', 'USPS', '0');
 INSERT INTO carrier (id, name, company_code, service_level) VALUES (10, 'DHL International', 'DHL', 'I');
 INSERT INTO carrier (id, name, company_code, service_level) VALUES (11, 'GSO', 'GSO', 'G');
+
+DROP TABLE IF EXISTS order_line;
+DROP TABLE IF EXISTS item;
+DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS store;
+
+CREATE TABLE store
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   name VARCHAR(80) NOT NULL
+);
+
+-- define 3 stores
+INSERT INTO store (id, name) VALUES (1, 'Q-Mart');
+INSERT INTO store (id, name) VALUES (2, 'QQQ ''R'' Us');
+INSERT INTO store (id, name) VALUES (3, 'QDepot');
+
+CREATE TABLE item
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   sku VARCHAR(80) NOT NULL,
+   store_id INT NOT NULL REFERENCES store
+);
+
+-- three items for each store
+INSERT INTO item (id, sku, store_id) VALUES (1, 'QM-1', 1);
+INSERT INTO item (id, sku, store_id) VALUES (2, 'QM-2', 1);
+INSERT INTO item (id, sku, store_id) VALUES (3, 'QM-3', 1);
+INSERT INTO item (id, sku, store_id) VALUES (4, 'QRU-1', 2);
+INSERT INTO item (id, sku, store_id) VALUES (5, 'QRU-2', 2);
+INSERT INTO item (id, sku, store_id) VALUES (6, 'QRU-3', 2);
+INSERT INTO item (id, sku, store_id) VALUES (7, 'QD-1', 3);
+INSERT INTO item (id, sku, store_id) VALUES (8, 'QD-2', 3);
+INSERT INTO item (id, sku, store_id) VALUES (9, 'QD-3', 3);
+
+CREATE TABLE `order`
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   store_id INT REFERENCES store,
+   bill_to_person_id INT,
+   ship_to_person_id INT
+);
+
+-- variable orders
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (1, 1, 1, 1);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (2, 1, 1, 2);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (3, 1, 2, 3);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (4, 2, 4, 5);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (5, 2, 5, 4);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (6, 3, 5, null);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (7, 3, null, 5);
+INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (8, 3, null, 5);
+
+CREATE TABLE order_line
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   order_id INT REFERENCES `order`,
+   sku VARCHAR(80),
+   store_id INT REFERENCES store, -- todo - as a challenge, if this field wasn't here, so we had to join through order...
+   quantity INT
+);
+
+-- various lines
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (1, 'QM-1', 1, 10);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (1, 'QM-2', 1, 1);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (1, 'QM-3', 1, 1);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (2, 'QRU-1', 2, 1); -- this line has an item from a different store than its order.
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (3, 'QM-1', 1, 20);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (4, 'QRU-1', 2, 1);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (4, 'QRU-2', 2, 2);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (5, 'QRU-1', 2, 1);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (6, 'QD-1', 3, 1);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (7, 'QD-1', 3, 2);
+INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (8, 'QD-1', 3, 3);

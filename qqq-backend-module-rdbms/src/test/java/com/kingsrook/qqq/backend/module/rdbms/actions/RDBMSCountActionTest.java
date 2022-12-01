@@ -23,16 +23,19 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -60,7 +63,7 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    {
       CountInput  countInput  = initCountRequest();
       CountOutput countOutput = new RDBMSCountAction().execute(countInput);
-      Assertions.assertEquals(5, countOutput.getCount(), "Unfiltered query should find all rows");
+      assertEquals(5, countOutput.getCount(), "Unfiltered query should find all rows");
    }
 
 
@@ -81,7 +84,7 @@ public class RDBMSCountActionTest extends RDBMSActionTest
             .withValues(List.of(email)))
       );
       CountOutput countOutput = new RDBMSCountAction().execute(countInput);
-      Assertions.assertEquals(1, countOutput.getCount(), "Expected # of rows");
+      assertEquals(1, countOutput.getCount(), "Expected # of rows");
    }
 
 
@@ -102,7 +105,7 @@ public class RDBMSCountActionTest extends RDBMSActionTest
             .withValues(List.of(email)))
       );
       CountOutput countOutput = new RDBMSCountAction().execute(countInput);
-      Assertions.assertEquals(4, countOutput.getCount(), "Expected # of rows");
+      assertEquals(4, countOutput.getCount(), "Expected # of rows");
    }
 
 
@@ -114,8 +117,66 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    {
       CountInput countInput = new CountInput();
       countInput.setInstance(TestUtils.defineInstance());
+      countInput.setSession(new QSession());
       countInput.setTableName(TestUtils.defineTablePerson().getName());
       return countInput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOneToOneInnerJoinWithoutWhere() throws QException
+   {
+      CountInput countInput = initCountRequest();
+      countInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD));
+      CountOutput countOutput = new CountAction().execute(countInput);
+      assertEquals(3, countOutput.getCount(), "Join count should find 3 rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOneToOneLeftJoinWithoutWhere() throws QException
+   {
+      CountInput countInput = initCountRequest();
+      countInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withType(QueryJoin.Type.LEFT));
+      CountOutput countOutput = new CountAction().execute(countInput);
+      assertEquals(5, countOutput.getCount(), "Left Join count should find 5 rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOneToOneRightJoinWithoutWhere() throws QException
+   {
+      CountInput countInput = initCountRequest();
+      countInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withType(QueryJoin.Type.RIGHT));
+      CountOutput countOutput = new CountAction().execute(countInput);
+      assertEquals(6, countOutput.getCount(), "Right Join count should find 6 rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOneToOneInnerJoinWithWhere() throws QException
+   {
+      CountInput countInput = initCountRequest();
+      countInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withSelect(true));
+      countInput.setFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber", QCriteriaOperator.STARTS_WITH, "1980")));
+      CountOutput countOutput = new CountAction().execute(countInput);
+      assertEquals(2, countOutput.getCount(), "Right Join count should find 2 rows");
    }
 
 }

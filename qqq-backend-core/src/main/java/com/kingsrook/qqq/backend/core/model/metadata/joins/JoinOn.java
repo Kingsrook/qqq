@@ -23,7 +23,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.joins;
 
 
 /*******************************************************************************
- **
+ ** Specification for (at least part of) how two tables join together - e.g.,
+ ** leftField = rightField.  Used as part of a list in a QJoinMetaData.
  *******************************************************************************/
 public class JoinOn
 {
@@ -50,6 +51,16 @@ public class JoinOn
    {
       this.leftField = leftField;
       this.rightField = rightField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Return a new JoinOn, with the fields of this one, but flipped (right ←→ left)
+    *******************************************************************************/
+   public JoinOn flip()
+   {
+      return new JoinOn(rightField, leftField);
    }
 
 

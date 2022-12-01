@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
@@ -44,6 +46,8 @@ public class QueryInput extends AbstractTableActionInput
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
+
+   private List<QueryJoin> queryJoins = null;
 
 
 
@@ -238,6 +242,56 @@ public class QueryInput extends AbstractTableActionInput
    public QueryInput withTransaction(QBackendTransaction transaction)
    {
       this.transaction = transaction;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryJoins
+    **
+    *******************************************************************************/
+   public List<QueryJoin> getQueryJoins()
+   {
+      return queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryJoins
+    **
+    *******************************************************************************/
+   public void setQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public QueryInput withQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public QueryInput withQueryJoin(QueryJoin queryJoin)
+   {
+      if(this.queryJoins == null)
+      {
+         this.queryJoins = new ArrayList<>();
+      }
+      this.queryJoins.add(queryJoin);
       return (this);
    }
 

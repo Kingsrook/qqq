@@ -19,32 +19,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.utils;
 
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import org.apache.logging.log4j.Level;
+import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- ** Base class for rendering qqq dashboard widgets
- **
+ ** Unit test for Timer
  *******************************************************************************/
-public abstract class AbstractWidgetRenderer
+class TimerTest
 {
-   public static final QValueFormatter   valueFormatter    = new QValueFormatter();
-   public static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mma").withZone(ZoneId.systemDefault());
-   public static final DateTimeFormatter dateFormatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract RenderWidgetOutput render(RenderWidgetInput input) throws QException;
+   @Test
+   void test()
+   {
+      Timer timer = new Timer("Test").withLevel(Level.INFO);
+      timer.mark("Tested!");
+      timer.setLevel(Level.OFF);
+      timer.mark("can't see me!");
+   }
 
 }

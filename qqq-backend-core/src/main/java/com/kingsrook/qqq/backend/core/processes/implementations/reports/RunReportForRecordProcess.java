@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMeta
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
 /*******************************************************************************
@@ -59,6 +60,21 @@ public class RunReportForRecordProcess
    public static Builder processMetaDataBuilder()
    {
       return (new Builder(defineProcessMetaData()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Create a process meta data builder for this type of process, pre-populated
+    ** with attributes based on a given report.
+    *******************************************************************************/
+   public static Builder processMetaDataBuilder(QReportMetaData reportMetaData)
+   {
+      return (new Builder(defineProcessMetaData())
+         .withProcessName(reportMetaData.getProcessName())
+         .withReportName(reportMetaData.getName())
+         .withTableName(reportMetaData.getDataSources().get(0).getSourceTable())
+         .withIcon(reportMetaData.getIcon()));
    }
 
 

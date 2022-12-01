@@ -28,15 +28,18 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 public enum WidgetType
 {
    CHART("chart"),
+   CHILD_RECORD_LIST("childRecordList"),
+   GENERIC("generic"),
    HTML("html"),
    LINE_CHART("lineChart"),
    LOCATION("location"),
    MULTI_STATISTICS("multiStatistics"),
+   PARENT_WIDGET("parentWidget"),
+   PROCESS("process"),
    QUICK_SIGHT_CHART("quickSightChart"),
    STATISTICS("statistics"),
    STEPPER("stepper"),
-   TABLE("table"),
-   CHILD_RECORD_LIST("childRecordList");
+   TABLE("table");
 
 
    private final String type;

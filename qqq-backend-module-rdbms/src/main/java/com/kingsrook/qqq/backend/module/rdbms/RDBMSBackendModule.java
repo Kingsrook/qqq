@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
@@ -30,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSAggregateAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
@@ -87,7 +89,6 @@ public class RDBMSBackendModule implements QBackendModuleInterface
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -128,6 +129,17 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    public DeleteInterface getDeleteInterface()
    {
       return (new RDBMSDeleteAction());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public AggregateInterface getAggregateInterface()
+   {
+      return (new RDBMSAggregateAction());
    }
 
 }

@@ -26,6 +26,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 
 
 /*******************************************************************************
@@ -66,6 +67,16 @@ public @interface QField
     **
     *******************************************************************************/
    String possibleValueSourceName() default "";
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   int maxLength() default Integer.MAX_VALUE;
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   ValueTooLongBehavior valueTooLongBehavior() default ValueTooLongBehavior.PASS_THROUGH;
 
    //////////////////////////////////////////////////////////////////////////////////////////
    // new attributes here likely need implementation in QFieldMetaData.constructFromGetter //

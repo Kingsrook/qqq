@@ -22,8 +22,10 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +36,7 @@ import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -231,6 +234,7 @@ class ValueUtilsTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -249,6 +253,22 @@ class ValueUtilsTest
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("a,b"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("1980/05/31"));
       assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant(new Object())).getMessage()).contains("Unsupported class");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsType()
+   {
+      assertEquals(1, ValueUtils.getValueAsType(Integer.class, "1"));
+      assertEquals("1", ValueUtils.getValueAsType(String.class, 1));
+      assertEquals(BigDecimal.ONE, ValueUtils.getValueAsType(BigDecimal.class, 1));
+      assertEquals(true, ValueUtils.getValueAsType(Boolean.class, "true"));
+      assertArrayEquals("a".getBytes(StandardCharsets.UTF_8), ValueUtils.getValueAsType(byte[].class, "a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsType(Serializable.class, 1));
    }
 
 }

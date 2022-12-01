@@ -22,12 +22,25 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
+import java.io.IOException;
+import java.util.List;
+import com.amazonaws.services.s3.model.S3Object;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -40,9 +53,46 @@ public class S3InsertActionTest extends BaseS3Test
     **
     *******************************************************************************/
    @Test
-   public void test() throws QException
+   public void testCardinalityOne() throws QException, IOException
    {
-      assertThrows(NotImplementedException.class, () -> new S3InsertAction().execute(new InsertInput()));
+      QInstance qInstance = TestUtils.defineInstance();
+
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(TestUtils.TABLE_NAME_BLOB_S3);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("fileName", "file2.txt").withValue("contents", "Hi, Bob.")
+      ));
+
+      S3InsertAction insertAction = new S3InsertAction();
+      insertAction.setS3Utils(getS3Utils());
+
+      InsertOutput insertOutput = insertAction.execute(insertInput);
+      assertThat(insertOutput.getRecords())
+         .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains("blobs"));
+
+      String   fullPath = insertOutput.getRecords().get(0).getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH);
+      S3Object object   = getAmazonS3().getObject(BUCKET_NAME, fullPath);
+      List     lines    = IOUtils.readLines(object.getObjectContent());
+      assertEquals("Hi, Bob.", lines.get(0));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testCardinalityMany() throws QException, IOException
+   {
+      QInstance   qInstance   = TestUtils.defineInstance();
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_S3);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", "1").withValue("firstName", "Bob")
+      ));
+      assertThatThrownBy(() -> new InsertAction().execute(insertInput))
+         .hasRootCauseInstanceOf(NotImplementedException.class);
+   }
 }

@@ -22,7 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
@@ -32,9 +35,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  *******************************************************************************/
 public class QReportDataSource
 {
-   private String       name;
-   private String       sourceTable;
-   private QQueryFilter queryFilter;
+   private String name;
+
+   private String          sourceTable;
+   private QQueryFilter    queryFilter;
+   private List<QueryJoin> queryJoins = null;
+
 
    private QCodeReference staticDataSupplier;
 
@@ -171,6 +177,56 @@ public class QReportDataSource
    public QReportDataSource withStaticDataSupplier(QCodeReference staticDataSupplier)
    {
       this.staticDataSupplier = staticDataSupplier;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryJoins
+    **
+    *******************************************************************************/
+   public List<QueryJoin> getQueryJoins()
+   {
+      return queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryJoins
+    **
+    *******************************************************************************/
+   public void setQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public QReportDataSource withQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public QReportDataSource withQueryJoin(QueryJoin queryJoin)
+   {
+      if(this.queryJoins == null)
+      {
+         this.queryJoins = new ArrayList<>();
+      }
+      this.queryJoins.add(queryJoin);
       return (this);
    }
 

@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
@@ -56,7 +57,7 @@ public class RenderWidgetAction
       {
          for(Map.Entry<String, Serializable> entry : widgetMetaData.getDefaultValues().entrySet())
          {
-            input.getQueryParams().putIfAbsent(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
+            input.addQueryParam(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
          }
       }
 

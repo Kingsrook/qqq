@@ -241,11 +241,11 @@ class GeneralProcessUtilsTest
 
       QueryInput queryInput = new QueryInput(instance);
       queryInput.setSession(new QSession());
-      Optional<QRecord> record = GeneralProcessUtils.getRecordById(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName", "James");
+      Optional<QRecord> record = GeneralProcessUtils.getRecordByField(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName", "James");
       assertTrue(record.isPresent());
       assertEquals(2, record.get().getValueInteger("id"));
 
-      record = GeneralProcessUtils.getRecordById(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName", "Bobby");
+      record = GeneralProcessUtils.getRecordByField(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName", "Bobby");
       assertFalse(record.isPresent());
    }
 

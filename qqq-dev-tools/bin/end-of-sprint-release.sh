@@ -41,6 +41,11 @@ if [ ! -e "qqq-sample-project/.env" ]; then
    setup-environments.sh --qqq --quiet
 fi
 
+###################################
+## go back to root qqq directory ##
+###################################
+cd ~/git/kingsrook/qqq/
+
 MVN_VERIFY_LOG=/tmp/mvn-verify.log
 gumBanner "Doing clean build (logging to $MVN_VERIFY_LOG)"
 cp ~/git/kingsrook/qqq/qqq-sample-project/.env qqq-sample-project

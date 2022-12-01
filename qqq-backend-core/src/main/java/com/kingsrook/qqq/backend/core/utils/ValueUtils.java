@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.utils;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -559,4 +560,76 @@ public class ValueUtils
          throw (new QValueException("Value [" + value + "] could not be converted to a LocalTime.", e));
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static byte[] getValueAsByteArray(Serializable value)
+   {
+      if(value == null)
+      {
+         return (null);
+      }
+      else if(value instanceof byte[] ba)
+      {
+         return (ba);
+      }
+      else if(value instanceof String s)
+      {
+         return (s.getBytes(StandardCharsets.UTF_8));
+      }
+      else
+      {
+         throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to ByteArray."));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public static <T extends Serializable> T getValueAsType(Class<T> type, Serializable value)
+   {
+      if(type.equals(Integer.class))
+      {
+         return (T) getValueAsInteger(value);
+      }
+      else if(type.equals(String.class))
+      {
+         return (T) getValueAsString(value);
+      }
+      else if(type.equals(Boolean.class))
+      {
+         return (T) getValueAsBoolean(value);
+      }
+      else if(type.equals(BigDecimal.class))
+      {
+         return (T) getValueAsBigDecimal(value);
+      }
+      else if(type.equals(LocalDateTime.class))
+      {
+         return (T) getValueAsLocalDateTime(value);
+      }
+      else if(type.equals(LocalDate.class))
+      {
+         return (T) getValueAsLocalDate(value);
+      }
+      else if(type.equals(Instant.class))
+      {
+         return (T) getValueAsInstant(value);
+      }
+      else if(type.equals(byte[].class))
+      {
+         return (T) getValueAsByteArray(value);
+      }
+      else
+      {
+         throw new QValueException("Unsupported type [" + type.getSimpleName() + "] in getValueAsType.");
+      }
+   }
+
 }

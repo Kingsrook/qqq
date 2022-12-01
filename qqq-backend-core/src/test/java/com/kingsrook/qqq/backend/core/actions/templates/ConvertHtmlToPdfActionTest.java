@@ -1,0 +1,104 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.core.actions.templates;
+
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.templates.ConvertHtmlToPdfInput;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.Test;
+
+
+/*******************************************************************************
+ ** Unit test for ConvertHtmlToPdfAction
+ *******************************************************************************/
+class ConvertHtmlToPdfActionTest
+{
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test() throws QException, IOException
+   {
+      QInstance             instance = TestUtils.defineInstance();
+      ConvertHtmlToPdfInput input    = new ConvertHtmlToPdfInput(instance);
+      input.setSession(new QSession());
+
+      input.setHtml("""
+         <html>
+             <head>
+                 <style>
+                     .center_div {
+                         border: 1px solid gray;
+                         margin-left: auto;
+                         margin-right: auto;
+                         width: 90%;
+                         background-color: #d0f0f6;
+                         text-align: left;
+                         padding: 8px;
+                         font-family: Helvetica;
+                     }
+                 </style>
+                 <link href="styles/styles.css" rel="stylesheet">
+             </head>
+             <body>
+                 <div class="center_div">
+                     <h1>
+                        <img src="images/qqq-logo-2.png" width=50>
+                        Hello QQQ!
+                     </h1>
+                     <div class="myclass">
+                         <p>This is a test of converting HTML to PDF!!</p>
+                         <p style="font-family: SF-Pro; font-size: 24px;">(btw, is this in SF-Pro???)</p>
+                     </div>
+                 </div>
+             </body>
+         </html>
+         """);
+
+      OutputStream outputStream = new FileOutputStream("/tmp/file.pdf");
+      input.setOutputStream(outputStream);
+
+      String resourceDir = "src/test/resources/actions/templates";
+      input.withCustomFont("SF-Pro", Path.of(resourceDir + "/fonts/SF-Pro-Rounded-Regular.otf"));
+      input.withCustomFont("Helvetica", Path.of(resourceDir + "/fonts/Helvetica.ttc"));
+      input.withBasePath(Path.of(resourceDir));
+
+      new ConvertHtmlToPdfAction().execute(input);
+      System.out.println("Wrote /tmp/file.pdf");
+
+      outputStream.close();
+
+      /////////////////////////////////////////////////////////////////////////
+      // for local dev on a mac, turn this on to auto-open the generated PDF //
+      /////////////////////////////////////////////////////////////////////////
+      // Runtime.getRuntime().exec(new String[] { "/usr/bin/open", "/tmp/file.pdf" });
+   }
+
+}

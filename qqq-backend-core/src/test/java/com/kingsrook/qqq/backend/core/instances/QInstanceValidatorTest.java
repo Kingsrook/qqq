@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -1344,11 +1345,35 @@ class QInstanceValidatorTest
    @Test
    void testReportDataSourceNames()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setName(null),
+      assertValidationFailureReasons((qInstance) ->
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // enricher will give us a default name if only 1 data source, so, set 1st one to null name, then add a second //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            QReportMetaData report = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON);
+            report.setDataSources(new ArrayList<>(report.getDataSources()));
+            report.getDataSources().get(0).setName(null);
+            report.getDataSources().add(new QReportDataSource()
+               .withName("2nd")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON)
+            );
+         },
          "Missing name for a dataSource",
          "unrecognized dataSourceName");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).setName(""),
+      assertValidationFailureReasons((qInstance) ->
+         {
+            ///////////////////////////////////
+            // same as above, but "" vs null //
+            ///////////////////////////////////
+            QReportMetaData report = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON);
+            report.setDataSources(new ArrayList<>(report.getDataSources()));
+            report.getDataSources().get(0).setName("");
+            report.getDataSources().add(new QReportDataSource()
+               .withName("2nd")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON)
+            );
+         },
          "Missing name for a dataSource",
          "unrecognized dataSourceName");
 

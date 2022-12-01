@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
@@ -38,6 +40,7 @@ public class QFrontendStepMetaData extends QStepMetaData
    private List<QFieldMetaData>             formFields;
    private List<QFieldMetaData>             viewFields;
    private List<QFieldMetaData>             recordListFields;
+   private Map<String, QFieldMetaData>      formFieldMap;
 
 
 
@@ -102,6 +105,22 @@ public class QFrontendStepMetaData extends QStepMetaData
 
 
    /*******************************************************************************
+    ** Getter for a single formFields by its name
+    **
+    *******************************************************************************/
+   public QFieldMetaData getFormField(String fieldName)
+   {
+      if(formFieldMap != null && formFieldMap.containsKey(fieldName))
+      {
+         return (formFieldMap.get(fieldName));
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for formFields
     **
     *******************************************************************************/
@@ -113,12 +132,42 @@ public class QFrontendStepMetaData extends QStepMetaData
 
 
    /*******************************************************************************
+    ** adder for formFields
+    **
+    *******************************************************************************/
+   public void addFormField(QFieldMetaData fieldMetaData)
+   {
+      if(fieldMetaData != null)
+      {
+         if(formFieldMap == null)
+         {
+            formFieldMap = new HashMap<>();
+         }
+         if(formFields == null)
+         {
+            formFields = new ArrayList<>();
+         }
+
+         formFieldMap.put(fieldMetaData.getName(), fieldMetaData);
+         formFields.add(fieldMetaData);
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for formFields
     **
     *******************************************************************************/
    public void setFormFields(List<QFieldMetaData> formFields)
    {
-      this.formFields = formFields;
+      if(formFields != null)
+      {
+         for(QFieldMetaData fieldMetaData : formFields)
+         {
+            addFormField(fieldMetaData);
+         }
+      }
    }
 
 
@@ -129,11 +178,7 @@ public class QFrontendStepMetaData extends QStepMetaData
     *******************************************************************************/
    public QFrontendStepMetaData withFormField(QFieldMetaData formField)
    {
-      if(this.formFields == null)
-      {
-         this.formFields = new ArrayList<>();
-      }
-      this.formFields.add(formField);
+      addFormField(formField);
       return (this);
    }
 
@@ -145,7 +190,7 @@ public class QFrontendStepMetaData extends QStepMetaData
     *******************************************************************************/
    public QFrontendStepMetaData withFormFields(List<QFieldMetaData> formFields)
    {
-      this.formFields = formFields;
+      this.setFormFields(formFields);
       return (this);
    }
 

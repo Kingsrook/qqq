@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.authentication.metadata;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 
 
@@ -32,6 +33,11 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
 {
    private String baseUrl;
    private String clientId;
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   // keep this secret, on the server - don't let it be serialized and sent to a client! //
+   ////////////////////////////////////////////////////////////////////////////////////////
+   @JsonIgnore
    private String clientSecret;
 
 

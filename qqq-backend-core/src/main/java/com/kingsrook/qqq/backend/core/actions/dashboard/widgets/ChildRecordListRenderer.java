@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;

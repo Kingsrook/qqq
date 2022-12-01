@@ -129,7 +129,7 @@ public class TestUtils
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_INCREASE_BIRTHDATE       = "increaseBirthdate";
    public static final String PROCESS_NAME_ADD_TO_PEOPLES_AGE       = "addToPeoplesAge";
-   public static final String PROCESS_NAME_BASEPULL                 = "basepullTest";
+   public static final String PROCESS_NAME_BASEPULL                 = "basepullTestProcess";
    public static final String PROCESS_NAME_RUN_SHAPES_PERSON_REPORT = "runShapesPersonReport";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_PERSON_MEMORY              = "personMemory";
@@ -349,7 +349,7 @@ public class TestUtils
     ** Define the "states" possible value source used in standard tests
     **
     *******************************************************************************/
-   private static QPossibleValueSource defineStatesPossibleValueSource()
+   public static QPossibleValueSource defineStatesPossibleValueSource()
    {
       return new QPossibleValueSource()
          .withName(POSSIBLE_VALUE_SOURCE_STATE)
@@ -363,7 +363,7 @@ public class TestUtils
     ** Define the "shape" possible value source used in standard tests
     **
     *******************************************************************************/
-   private static QPossibleValueSource defineShapePossibleValueSource()
+   public static QPossibleValueSource defineShapePossibleValueSource()
    {
       return new QPossibleValueSource()
          .withName(POSSIBLE_VALUE_SOURCE_SHAPE)

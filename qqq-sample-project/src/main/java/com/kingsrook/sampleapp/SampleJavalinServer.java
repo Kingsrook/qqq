@@ -25,6 +25,7 @@ package com.kingsrook.sampleapp;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.Javalin;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,8 +67,8 @@ public class SampleJavalinServer
          QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
          javalinService = Javalin.create(config ->
          {
-            // todo - not all!!
-            config.enableCorsForAllOrigins();
+            // todo - not all?
+            config.plugins.enableCors(cors -> cors.add(CorsPluginConfig::anyHost));
          }).start(PORT);
          javalinService.routes(qJavalinImplementation.getRoutes());
 
@@ -88,8 +89,7 @@ public class SampleJavalinServer
          });
          javalinService.before(QJavalinImplementation::hotSwapQInstance);
 
-         javalinService.after(ctx ->
-            ctx.res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
+         javalinService.after(ctx -> ctx.res().setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
       }
       catch(Exception e)
       {

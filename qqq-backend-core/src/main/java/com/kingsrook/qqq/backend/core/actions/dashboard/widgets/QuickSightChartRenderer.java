@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;

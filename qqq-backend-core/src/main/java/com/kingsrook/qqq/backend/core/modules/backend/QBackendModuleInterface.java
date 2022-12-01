@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.backend;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
@@ -113,6 +114,15 @@ public interface QBackendModuleInterface
    default DeleteInterface getDeleteInterface()
    {
       throwNotImplemented("Delete");
+      return null;
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default AggregateInterface getAggregateInterface()
+   {
+      throwNotImplemented("Aggregate");
       return null;
    }
 

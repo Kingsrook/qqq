@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 public class QPossibleValueSource
 {
    private String                   name;
+   private String                   label;
    private QPossibleValueSourceType type;
 
    private String       valueFormat           = PVSValueFormatAndFields.LABEL_ONLY.getFormat();
@@ -100,6 +101,40 @@ public class QPossibleValueSource
    public QPossibleValueSource withName(String name)
    {
       this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public QPossibleValueSource withLabel(String label)
+   {
+      this.label = label;
       return (this);
    }
 
