@@ -35,6 +35,8 @@ public class QTableAutomationDetails
    private String                      providerName;
    private List<TableAutomationAction> actions;
 
+   private Integer overrideBatchSize;
+
 
 
    /*******************************************************************************
@@ -151,4 +153,39 @@ public class QTableAutomationDetails
       this.actions.add(action);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for overrideBatchSize
+    **
+    *******************************************************************************/
+   public Integer getOverrideBatchSize()
+   {
+      return overrideBatchSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideBatchSize
+    **
+    *******************************************************************************/
+   public void setOverrideBatchSize(Integer overrideBatchSize)
+   {
+      this.overrideBatchSize = overrideBatchSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideBatchSize
+    **
+    *******************************************************************************/
+   public QTableAutomationDetails withOverrideBatchSize(Integer overrideBatchSize)
+   {
+      this.overrideBatchSize = overrideBatchSize;
+      return (this);
+   }
+
 }
