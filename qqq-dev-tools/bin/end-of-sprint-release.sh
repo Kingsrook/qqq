@@ -24,6 +24,10 @@ function gumConfirmProceed
    fi
 }
 
+cd $(pwd)
+cd ../../
+echo $(pwd)
+
 gumBanner "Making sure you have a clean git checkout"
 git status
 gumConfirmProceed "Can we Proceed, or do you need to clean up your checkout (git stash -u)?" "Proceed" "I need to clean up my checkout"
