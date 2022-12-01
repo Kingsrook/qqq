@@ -24,10 +24,6 @@ function gumConfirmProceed
    fi
 }
 
-cd $(pwd)
-cd ../../
-echo $(pwd)
-
 gumBanner "Making sure you have a clean git checkout"
 git status
 gumConfirmProceed "Can we Proceed, or do you need to clean up your checkout (git stash -u)?" "Proceed" "I need to clean up my checkout"
@@ -44,6 +40,11 @@ if [ ! -e "qqq-sample-project/.env" ]; then
    gumBanner "Installing .env file -- for qqq" "Tell it your qqq is at:" "$dir"
    setup-environments.sh --qqq --quiet
 fi
+
+###################################
+## go back to root qqq directory ##
+###################################
+cd ~/git/kingsrook/qqq/
 
 MVN_VERIFY_LOG=/tmp/mvn-verify.log
 gumBanner "Doing clean build (logging to $MVN_VERIFY_LOG)"
