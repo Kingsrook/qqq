@@ -73,8 +73,8 @@ class ParentWidgetRendererTest
    {
       QInstance qInstance = TestUtils.defineInstance();
 
-      QWidgetMetaDataInterface parcelRulesWidget = new ParentWidgetMetaData()
-         .withTitle("Parcel Rules")
+      QWidgetMetaDataInterface parentWidget = new ParentWidgetMetaData()
+         .withTitle("Parent")
          .withPossibleValueNameList(
             List.of(
                TestUtils.defineStatesPossibleValueSource().getName(),
@@ -92,11 +92,11 @@ class ParentWidgetRendererTest
          .withLabel("Test Parent Widget")
          .withCodeReference(new QCodeReference(ParentWidgetRenderer.class, null))
          .withIcon("local_shipping");
-      qInstance.addWidget(parcelRulesWidget);
+      qInstance.addWidget(parentWidget);
 
       RenderWidgetInput input = new RenderWidgetInput(qInstance);
       input.setSession(new QSession());
-      input.setWidgetMetaData(parcelRulesWidget);
+      input.setWidgetMetaData(parentWidget);
 
       RenderWidgetAction renderWidgetAction = new RenderWidgetAction();
       RenderWidgetOutput output             = renderWidgetAction.execute(input);
