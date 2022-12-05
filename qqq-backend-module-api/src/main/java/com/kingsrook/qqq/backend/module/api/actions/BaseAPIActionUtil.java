@@ -57,9 +57,14 @@ import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.module.api.exceptions.OAuthCredentialsException;
+import com.kingsrook.qqq.backend.module.api.exceptions.OAuthExpiredTokenException;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
+import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -69,6 +74,9 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -122,9 +130,11 @@ public class BaseAPIActionUtil
    {
       try
       {
-         String  urlSuffix = buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey());
-         String  url       = buildTableUrl(table);
-         HttpGet request   = new HttpGet(url + urlSuffix);
+         String urlSuffix = getInput.getPrimaryKey() != null
+            ? buildUrlSuffixForSingleRecordGet(getInput.getPrimaryKey())
+            : buildUrlSuffixForSingleRecordGet(getInput.getUniqueKey());
+         String  url     = buildTableUrl(table);
+         HttpGet request = new HttpGet(url + urlSuffix);
 
          GetOutput     rs       = new GetOutput();
          QHttpResponse response = makeRequest(table, request);
@@ -468,6 +478,8 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void handleResponseError(QTableMetaData table, HttpRequestBase request, QHttpResponse response) throws QException
    {
+      checkForOAuthExpiredToken(table, request, response);
+
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
       String errorMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
@@ -482,6 +494,22 @@ public class BaseAPIActionUtil
       }
 
       throw (new QException(errorMessage));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void checkForOAuthExpiredToken(QTableMetaData table, HttpRequestBase request, QHttpResponse response) throws OAuthExpiredTokenException
+   {
+      if(backendMetaData.getAuthorizationType().equals(AuthorizationType.OAUTH2))
+      {
+         if(response.getStatusCode().equals(HttpStatus.SC_UNAUTHORIZED)) // 401
+         {
+            throw (new OAuthExpiredTokenException("Expired token indicated by response: " + response));
+         }
+      }
    }
 
 
@@ -512,12 +540,28 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String buildUrlSuffixForSingleRecordGet(Map<String, Serializable> uniqueKey) throws QException
+   {
+      QTableMetaData table  = actionInput.getTable();
+      QQueryFilter   filter = new QQueryFilter();
+      for(Map.Entry<String, Serializable> entry : uniqueKey.entrySet())
+      {
+         filter.addCriteria(new QFilterCriteria(entry.getKey(), QCriteriaOperator.EQUALS, entry.getValue()));
+      }
+      return (buildQueryStringForGet(filter, 1, 0, table.getFields()));
+   }
+
+
+
+   /*******************************************************************************
     ** As part of making a request - set up its authorization header (not just
     ** strictly "Authorization", but whatever is needed for auth).
     **
     ** Can be overridden if an API uses an authorization type we don't natively support.
     *******************************************************************************/
-   protected void setupAuthorizationInRequest(HttpRequestBase request)
+   protected void setupAuthorizationInRequest(HttpRequestBase request) throws QException
    {
       switch(backendMetaData.getAuthorizationType())
       {
@@ -533,9 +577,73 @@ public class BaseAPIActionUtil
             request.addHeader("API-Key", backendMetaData.getApiKey());
             break;
 
+         case OAUTH2:
+            request.setHeader("Authorization", "Bearer " + getOAuth2Token());
+            break;
+
          default:
             throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getOAuth2Token() throws OAuthCredentialsException
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // check for the access token in the backend meta data.  if it's not there, then issue a request for a token. //
+      // this is not generally meant to be put in the meta data by the app programmer - rather, we're just using    //
+      // it as a "cheap & easy" way to "cache" the token within our process's memory...                             //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      String accessToken = ValueUtils.getValueAsString(backendMetaData.getCustomValue("accessToken"));
+
+      if(!StringUtils.hasContent(accessToken))
+      {
+         String fullURL  = backendMetaData.getBaseUrl() + "oauth/token";
+         String postBody = "grant_type=client_credentials&client_id=" + backendMetaData.getClientId() + "&client_secret=" + backendMetaData.getClientSecret();
+
+         LOG.info(session, "Fetching OAuth2 token from " + fullURL);
+
+         try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
+         {
+            HttpPost request = new HttpPost(fullURL);
+            request.setEntity(new StringEntity(postBody));
+            request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+
+            HttpResponse response     = client.execute(request);
+            int          statusCode   = response.getStatusLine().getStatusCode();
+            HttpEntity   entity       = response.getEntity();
+            String       resultString = EntityUtils.toString(entity);
+            if(statusCode != HttpStatus.SC_OK)
+            {
+               throw (new OAuthCredentialsException("Did not receive successful response when requesting oauth token [" + statusCode + "]: " + resultString));
+            }
+
+            JSONObject resultJSON = new JSONObject(resultString);
+            accessToken = (resultJSON.getString("access_token"));
+            LOG.debug(session, "Fetched access token: " + accessToken);
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // stash the access token in the backendMetaData, from which it will be used for future requests //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            backendMetaData.withCustomValue("accessToken", accessToken);
+         }
+         catch(OAuthCredentialsException oce)
+         {
+            throw (oce);
+         }
+         catch(Exception e)
+         {
+            String errorMessage = "Error getting OAuth Token";
+            LOG.warn(session, errorMessage, e);
+            throw (new OAuthCredentialsException(errorMessage, e));
+         }
+      }
+
+      return (accessToken);
    }
 
 
@@ -727,8 +835,9 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
-      int sleepMillis      = getInitialRateLimitBackoffMillis();
-      int rateLimitsCaught = 0;
+      int     sleepMillis               = getInitialRateLimitBackoffMillis();
+      int     rateLimitsCaught          = 0;
+      boolean caughtAnOAuthExpiredToken = false;
 
       while(true)
       {
@@ -768,6 +877,25 @@ public class BaseAPIActionUtil
                return (qResponse);
             }
          }
+         catch(OAuthCredentialsException oce)
+         {
+            LOG.error(session, "OAuth Credential failure for [" + table.getName() + "]");
+            throw (oce);
+         }
+         catch(OAuthExpiredTokenException oete)
+         {
+            if(!caughtAnOAuthExpiredToken)
+            {
+               LOG.info(session, "OAuth Expired token for [" + table.getName() + "] - retrying");
+               backendMetaData.withCustomValue("accessToken", null);
+               caughtAnOAuthExpiredToken = true;
+            }
+            else
+            {
+               LOG.info(session, "OAuth Expired token for [" + table.getName() + "] even after a retry.  Giving up.");
+               throw (oete);
+            }
+         }
          catch(RateLimitException rle)
          {
             rateLimitsCaught++;
@@ -780,6 +908,13 @@ public class BaseAPIActionUtil
             LOG.warn(session, "Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
             SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
             sleepMillis *= 2;
+         }
+         catch(QException qe)
+         {
+            ///////////////////////////////////////////////////////////////
+            // re-throw exceptions that QQQ or application code produced //
+            ///////////////////////////////////////////////////////////////
+            throw (qe);
          }
          catch(Exception e)
          {
@@ -906,7 +1041,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected int getInitialRateLimitBackoffMillis()
    {
-      return (0);
+      return (500);
    }
 
 
@@ -916,7 +1051,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected int getMaxAllowedRateLimitErrors()
    {
-      return (0);
+      return (3);
    }
 
 

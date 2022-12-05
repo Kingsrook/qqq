@@ -48,6 +48,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
@@ -65,6 +67,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -131,6 +135,7 @@ public class QInstanceValidator
          validateApps(qInstance);
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
+         validateJoins(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
       }
@@ -145,6 +150,43 @@ public class QInstanceValidator
       }
 
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateJoins(QInstance qInstance)
+   {
+      qInstance.getJoins().forEach((joinName, join) ->
+      {
+         assertCondition(Objects.equals(joinName, join.getName()), "Inconsistent naming for join: " + joinName + "/" + join.getName() + ".");
+
+         assertCondition(StringUtils.hasContent(join.getLeftTable()), "Missing left-table name in join: " + joinName);
+         assertCondition(StringUtils.hasContent(join.getRightTable()), "Missing right-table name in join: " + joinName);
+         assertCondition(join.getType() != null, "Missing type for join: " + joinName);
+         assertCondition(CollectionUtils.nullSafeHasContents(join.getJoinOns()), "Missing joinOns for join: " + joinName);
+
+         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " join " + joinName + " is not a defined table in this instance.");
+         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " join " + joinName + " is not a defined table in this instance.");
+
+         for(JoinOn joinOn : CollectionUtils.nonNullList(join.getJoinOns()))
+         {
+            assertCondition(StringUtils.hasContent(joinOn.getLeftField()), "Missing left-field name in a joinOn for join: " + joinName);
+            assertCondition(StringUtils.hasContent(joinOn.getRightField()), "Missing right-field name in a joinOn for join: " + joinName);
+
+            if(leftTableExists)
+            {
+               assertNoException(() -> qInstance.getTable(join.getLeftTable()).getField(joinOn.getLeftField()), "Left field name in joinOn " + joinName + " is not a defined field in table " + join.getLeftTable());
+            }
+
+            if(rightTableExists)
+            {
+               assertNoException(() -> qInstance.getTable(join.getRightTable()).getField(joinOn.getRightField()), "Right field name in joinOn " + joinName + " is not a defined field in table " + join.getRightTable());
+            }
+         }
+      });
    }
 
 
@@ -305,14 +347,7 @@ public class QInstanceValidator
             {
                table.getFields().forEach((fieldName, field) ->
                {
-                  assertCondition(Objects.equals(fieldName, field.getName()),
-                     "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
-
-                  if(field.getPossibleValueSourceName() != null)
-                  {
-                     assertCondition(qInstance.getPossibleValueSource(field.getPossibleValueSourceName()) != null,
-                        "Unrecognized possibleValueSourceName " + field.getPossibleValueSourceName() + " in table " + tableName + " for field " + fieldName + ".");
-                  }
+                  validateTableField(qInstance, tableName, fieldName, field);
                });
             }
 
@@ -392,7 +427,77 @@ public class QInstanceValidator
             {
                validateAssociatedScripts(table);
             }
+
+            //////////////////////
+            // validate cacheOf //
+            //////////////////////
+            if(table.getCacheOf() != null)
+            {
+               validateTableCacheOf(qInstance, table);
+            }
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QFieldMetaData field)
+   {
+      assertCondition(Objects.equals(fieldName, field.getName()),
+         "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
+
+      if(field.getPossibleValueSourceName() != null)
+      {
+         assertCondition(qInstance.getPossibleValueSource(field.getPossibleValueSourceName()) != null,
+            "Unrecognized possibleValueSourceName " + field.getPossibleValueSourceName() + " in table " + tableName + " for field " + fieldName + ".");
+      }
+
+      ValueTooLongBehavior behavior = field.getBehavior(qInstance, ValueTooLongBehavior.class);
+      if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
+      {
+         assertCondition(field.getMaxLength() != null, "Field " + fieldName + " in table " + tableName + " specifies a ValueTooLongBehavior, but not a maxLength.");
+      }
+
+      if(field.getMaxLength() != null)
+      {
+         assertCondition(field.getMaxLength() > 0, "Field " + fieldName + " in table " + tableName + " has an invalid maxLength (" + field.getMaxLength() + ") - must be greater than 0.");
+         assertCondition(field.getType().isStringLike(), "Field " + fieldName + " in table " + tableName + " has maxLength, but is not of a supported type (" + field.getType() + ") - must be a string-like type.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableCacheOf(QInstance qInstance, QTableMetaData table)
+   {
+      CacheOf cacheOf         = table.getCacheOf();
+      String  prefix          = "Table " + table.getName() + " cacheOf ";
+      String  sourceTableName = cacheOf.getSourceTable();
+      if(assertCondition(StringUtils.hasContent(sourceTableName), prefix + "is missing a sourceTable name"))
+      {
+         assertCondition(qInstance.getTable(sourceTableName) != null, prefix + "is referencing an unknown sourceTable: " + sourceTableName);
+
+         boolean hasExpirationSeconds  = cacheOf.getExpirationSeconds() != null;
+         boolean hasCacheDateFieldName = StringUtils.hasContent(cacheOf.getCachedDateFieldName());
+         assertCondition(hasExpirationSeconds && hasCacheDateFieldName || (!hasExpirationSeconds && !hasCacheDateFieldName), prefix + "is missing either expirationSeconds or cachedDateFieldName (must either have both, or neither.)");
+
+         if(hasCacheDateFieldName)
+         {
+            assertNoException(() -> table.getField(cacheOf.getCachedDateFieldName()), prefix + "cachedDateFieldName " + cacheOf.getCachedDateFieldName() + " is an unrecognized field.");
+         }
+
+         if(assertCondition(CollectionUtils.nullSafeHasContents(cacheOf.getUseCases()), prefix + "does not have any useCases defined."))
+         {
+            for(CacheUseCase useCase : cacheOf.getUseCases())
+            {
+               assertCondition(useCase.getType() != null, prefix + "has a useCase without a type.");
+            }
+         }
       }
    }
 

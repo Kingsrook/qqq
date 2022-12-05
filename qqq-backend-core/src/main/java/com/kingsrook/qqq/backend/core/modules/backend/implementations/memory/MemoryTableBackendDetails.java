@@ -19,24 +19,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.api.exceptions;
+package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RateLimitException extends QException
+public class MemoryTableBackendDetails extends QTableBackendDetails
 {
+   private boolean cloneUponStore = false;
+
+
 
    /*******************************************************************************
+    ** Getter for cloneUponStore
     **
     *******************************************************************************/
-   public RateLimitException(String message)
+   public boolean getCloneUponStore()
    {
-      super(message);
+      return cloneUponStore;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cloneUponStore
+    **
+    *******************************************************************************/
+   public void setCloneUponStore(boolean cloneUponStore)
+   {
+      this.cloneUponStore = cloneUponStore;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cloneUponStore
+    **
+    *******************************************************************************/
+   public MemoryTableBackendDetails withCloneUponStore(boolean cloneUponStore)
+   {
+      this.cloneUponStore = cloneUponStore;
+      return (this);
    }
 
 }

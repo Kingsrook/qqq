@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.get;
 
 
 import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -36,7 +37,9 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 public class GetInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
-   private Serializable        primaryKey;
+
+   private Serializable              primaryKey;
+   private Map<String, Serializable> uniqueKey;
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
@@ -104,7 +107,41 @@ public class GetInput extends AbstractTableActionInput
       this.primaryKey = primaryKey;
       return (this);
    }
-  
+
+
+
+   /*******************************************************************************
+    ** Getter for uniqueKey
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getUniqueKey()
+   {
+      return uniqueKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for uniqueKey
+    **
+    *******************************************************************************/
+   public void setUniqueKey(Map<String, Serializable> uniqueKey)
+   {
+      this.uniqueKey = uniqueKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for uniqueKey
+    **
+    *******************************************************************************/
+   public GetInput withUniqueKey(Map<String, Serializable> uniqueKey)
+   {
+      this.uniqueKey = uniqueKey;
+      return (this);
+   }
+
 
 
    /*******************************************************************************

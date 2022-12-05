@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.actions.interfaces;
 
 
+import java.util.HashSet;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
 
 /*******************************************************************************
@@ -37,4 +40,34 @@ public interface GetInterface
     **
     *******************************************************************************/
    GetOutput execute(GetInput getInput) throws QException;
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void validateInput(GetInput getInput) throws QException
+   {
+      if(getInput.getPrimaryKey() != null & getInput.getUniqueKey() != null)
+      {
+         throw new QException("A GetInput may not contain both a primary key [" + getInput.getPrimaryKey() + "] and unique key [" + getInput.getUniqueKey() + "]");
+      }
+
+      if(getInput.getUniqueKey() != null)
+      {
+         QTableMetaData table      = getInput.getTable();
+         boolean        foundMatch = false;
+         for(UniqueKey uniqueKey : table.getUniqueKeys())
+         {
+            if(new HashSet<>(uniqueKey.getFieldNames()).equals(getInput.getUniqueKey().keySet()))
+            {
+               foundMatch = true;
+               break;
+            }
+         }
+
+         if(!foundMatch)
+         {
+            throw new QException("Table [" + table.getName() + "] does not have a unique key defined on fields: " + getInput.getUniqueKey().keySet().stream().sorted().toList());
+         }
+      }
+   }
 }

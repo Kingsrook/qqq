@@ -88,4 +88,14 @@ public enum QFieldType
 
       throw (new QException("Unrecognized class [" + c + "]"));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isStringLike()
+   {
+      return this == QFieldType.STRING || this == QFieldType.TEXT || this == QFieldType.HTML || this == QFieldType.PASSWORD;
+   }
 }

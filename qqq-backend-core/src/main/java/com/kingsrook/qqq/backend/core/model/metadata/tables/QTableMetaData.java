@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 
 
 /*******************************************************************************
@@ -84,6 +85,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private Set<Capability> enabledCapabilities  = new HashSet<>();
    private Set<Capability> disabledCapabilities = new HashSet<>();
+
+   private CacheOf cacheOf;
 
 
 
@@ -997,6 +1000,40 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
          this.disabledCapabilities = new HashSet<>();
       }
       this.disabledCapabilities.add(capability);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for cacheOf
+    **
+    *******************************************************************************/
+   public CacheOf getCacheOf()
+   {
+      return cacheOf;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cacheOf
+    **
+    *******************************************************************************/
+   public void setCacheOf(CacheOf cacheOf)
+   {
+      this.cacheOf = cacheOf;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cacheOf
+    **
+    *******************************************************************************/
+   public QTableMetaData withCacheOf(CacheOf cacheOf)
+   {
+      this.cacheOf = cacheOf;
       return (this);
    }
 

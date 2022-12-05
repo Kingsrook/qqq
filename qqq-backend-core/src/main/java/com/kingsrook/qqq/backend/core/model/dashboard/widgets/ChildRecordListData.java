@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
@@ -38,6 +40,9 @@ public class ChildRecordListData implements QWidget
 
    private String tablePath;
    private String viewAllLink;
+
+   private boolean                   canAddChildRecord = true;
+   private Map<String, Serializable> defaultValuesForNewChildRecords;
 
 
 
@@ -209,4 +214,73 @@ public class ChildRecordListData implements QWidget
    {
       this.viewAllLink = viewAllLink;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for canAddChildRecord
+    **
+    *******************************************************************************/
+   public boolean getCanAddChildRecord()
+   {
+      return canAddChildRecord;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for canAddChildRecord
+    **
+    *******************************************************************************/
+   public void setCanAddChildRecord(boolean canAddChildRecord)
+   {
+      this.canAddChildRecord = canAddChildRecord;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for canAddChildRecord
+    **
+    *******************************************************************************/
+   public ChildRecordListData withCanAddChildRecord(boolean canAddChildRecord)
+   {
+      this.canAddChildRecord = canAddChildRecord;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValuesForNewChildRecords
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getDefaultValuesForNewChildRecords()
+   {
+      return defaultValuesForNewChildRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultValuesForNewChildRecords
+    **
+    *******************************************************************************/
+   public void setDefaultValuesForNewChildRecords(Map<String, Serializable> defaultValuesForNewChildRecords)
+   {
+      this.defaultValuesForNewChildRecords = defaultValuesForNewChildRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultValuesForNewChildRecords
+    **
+    *******************************************************************************/
+   public ChildRecordListData withDefaultValuesForNewChildRecords(Map<String, Serializable> defaultValuesForNewChildRecords)
+   {
+      this.defaultValuesForNewChildRecords = defaultValuesForNewChildRecords;
+      return (this);
+   }
+
 }

@@ -19,136 +19,169 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.dashboard;
+package com.kingsrook.qqq.backend.core.model.metadata.tables.cache;
 
 
-import java.io.Serializable;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.Objects;
-import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
 
 /*******************************************************************************
- ** Base class for rendering qqq HTML dashboard widgets
  **
  *******************************************************************************/
-public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
+public class CacheUseCase
 {
+   public enum Type
+   {
+      PRIMARY_KEY_TO_PRIMARY_KEY, // e.g., the primary key in the cache table equals the primary key in the source table.
+      UNIQUE_KEY_TO_PRIMARY_KEY, // e.g., a unique key in the cache table equals the primary key in the source table.
+      UNIQUE_KEY_TO_UNIQUE_KEY // e..g, a unique key in the cache table equals a unique key in the source table.
+   }
+
+
+
+   private Type    type;
+   private boolean cacheSourceMisses = false; // whether or not, if a "miss" happens in the SOURCE, if that fact gets cached.
+
+   //////////////////////////
+   // for UNIQUE_KEY types //
+   //////////////////////////
+   private UniqueKey cacheUniqueKey;
+   private UniqueKey sourceUniqueKey;
+
 
 
    /*******************************************************************************
+    ** Getter for type
     **
     *******************************************************************************/
-   protected String openTopLevelBulletList()
+   public Type getType()
    {
-      return ("""
-         <div style="padding-left: 2rem;">
-            <ul>""");
+      return type;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for type
     **
     *******************************************************************************/
-   protected String closeTopLevelBulletList()
+   public void setType(Type type)
    {
-      return ("""
-            </ul>
-         </div>""");
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for type
     **
     *******************************************************************************/
-   protected String bulletItalics(String text)
+   public CacheUseCase withType(Type type)
    {
-      return ("<li><i>" + text + "</i></li>");
+      this.type = type;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for cacheSourceMisses
     **
     *******************************************************************************/
-   protected String bulletLink(String href, String text)
+   public boolean getCacheSourceMisses()
    {
-      return ("<li><a href=\"" + href + "\">" + text + "</a></li>");
+      return cacheSourceMisses;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for cacheSourceMisses
     **
     *******************************************************************************/
-   protected String bulletNameLink(String name, String href, String text)
+   public void setCacheSourceMisses(boolean cacheSourceMisses)
    {
-      return (bulletNameValue(name, "<a href=\"" + href + "\">" + text + "</a>"));
+      this.cacheSourceMisses = cacheSourceMisses;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for cacheSourceMisses
     **
     *******************************************************************************/
-   protected String bulletNameValue(String name, String value)
+   public CacheUseCase withCacheSourceMisses(boolean cacheSourceMisses)
    {
-      return ("<li><b>" + name + "</b> &nbsp; " + Objects.requireNonNullElse(value, "--") + "</li>");
+      this.cacheSourceMisses = cacheSourceMisses;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for cacheUniqueKey
     **
     *******************************************************************************/
-   public static String linkTableBulkLoad(RenderWidgetInput input, String tableName) throws QException
+   public UniqueKey getCacheUniqueKey()
    {
-      String tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "/" + tableName + ".bulkInsert");
+      return cacheUniqueKey;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for cacheUniqueKey
     **
     *******************************************************************************/
-   public static String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
+   public void setCacheUniqueKey(UniqueKey cacheUniqueKey)
    {
-      String tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+      this.cacheUniqueKey = cacheUniqueKey;
    }
 
 
 
    /*******************************************************************************
+    ** Fluent setter for cacheUniqueKey
     **
     *******************************************************************************/
-   public static String linkRecordEdit(AbstractActionInput input, String tableName, Serializable recordId) throws QException
+   public CacheUseCase withCacheUniqueKey(UniqueKey cacheUniqueKey)
    {
-      String tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "/" + recordId + "/edit");
+      this.cacheUniqueKey = cacheUniqueKey;
+      return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for sourceUniqueKey
     **
     *******************************************************************************/
-   public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
+   public UniqueKey getSourceUniqueKey()
    {
-      QProcessMetaData process   = input.getInstance().getProcess(processName);
-      String           tableName = process.getTableName();
-      String           tablePath = input.getInstance().getTablePath(input, tableName);
-      return (tablePath + "/" + recordId + "/" + processName);
+      return sourceUniqueKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceUniqueKey
+    **
+    *******************************************************************************/
+   public void setSourceUniqueKey(UniqueKey sourceUniqueKey)
+   {
+      this.sourceUniqueKey = sourceUniqueKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceUniqueKey
+    **
+    *******************************************************************************/
+   public CacheUseCase withSourceUniqueKey(UniqueKey sourceUniqueKey)
+   {
+      this.sourceUniqueKey = sourceUniqueKey;
+      return (this);
    }
 
 }

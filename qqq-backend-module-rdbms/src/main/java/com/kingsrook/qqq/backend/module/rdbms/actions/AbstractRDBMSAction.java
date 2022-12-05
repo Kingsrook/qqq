@@ -414,7 +414,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             case IS_BLANK:
             {
                clause += " IS NULL";
-               if(isString(field.getType()))
+               if(field.getType().isStringLike())
                {
                   clause += " OR " + column + " = ''";
                }
@@ -424,7 +424,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             case IS_NOT_BLANK:
             {
                clause += " IS NOT NULL";
-               if(isString(field.getType()))
+               if(field.getType().isStringLike())
                {
                   clause += " AND " + column + " != ''";
                }
@@ -475,16 +475,6 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
 
       return (String.join(" " + booleanOperator.toString() + " ", clauses));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static boolean isString(QFieldType fieldType)
-   {
-      return fieldType == QFieldType.STRING || fieldType == QFieldType.TEXT || fieldType == QFieldType.HTML || fieldType == QFieldType.PASSWORD;
    }
 
 

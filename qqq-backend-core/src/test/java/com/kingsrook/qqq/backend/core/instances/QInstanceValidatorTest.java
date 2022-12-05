@@ -1180,8 +1180,7 @@ class QInstanceValidatorTest
    void testValidUniqueKeys()
    {
       assertValidationSuccess((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withUniqueKey(new UniqueKey().withFieldName("id"))
-         .withUniqueKey(new UniqueKey().withFieldName("firstName").withFieldName("lastName")));
+         .withUniqueKey(new UniqueKey().withFieldName("id")));
    }
 
 

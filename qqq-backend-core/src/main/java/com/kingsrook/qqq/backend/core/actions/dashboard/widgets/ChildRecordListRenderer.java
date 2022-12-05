@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
+import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -42,11 +45,14 @@ import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChildRecordListDat
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.AbstractWidgetMetaDataBuilder;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -58,13 +64,64 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QWidgetMetaData defineWidgetFromJoin(QJoinMetaData join)
+   public static Builder widgetMetaDataBuilder(QJoinMetaData join)
    {
-      return (new QWidgetMetaData()
+      return (new Builder(new QWidgetMetaData()
          .withName(join.getName())
          .withCodeReference(new QCodeReference(ChildRecordListRenderer.class, null))
          .withType(WidgetType.CHILD_RECORD_LIST.getType())
-         .withDefaultValue("joinName", join.getName()));
+         .withDefaultValue("joinName", join.getName())));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class Builder extends AbstractWidgetMetaDataBuilder
+   {
+
+      /*******************************************************************************
+       ** Constructor
+       **
+       *******************************************************************************/
+      public Builder(QWidgetMetaData widgetMetaData)
+      {
+         super(widgetMetaData);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withName(String name)
+      {
+         widgetMetaData.setName(name);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withLabel(String label)
+      {
+         widgetMetaData.setLabel(label);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public AbstractWidgetMetaDataBuilder withCanAddChildRecord(boolean b)
+      {
+         widgetMetaData.withDefaultValue("canAddChildRecord", true);
+         return (this);
+      }
    }
 
 
@@ -119,7 +176,24 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       String         tablePath   = input.getInstance().getTablePath(input, table.getName());
       String         viewAllLink = tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset());
 
-      return (new RenderWidgetOutput(new ChildRecordListData(widgetLabel, queryOutput, table, tablePath, viewAllLink)));
+      ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, table, tablePath, viewAllLink);
+
+      if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("canAddChildRecord"))))
+      {
+         widgetData.setCanAddChildRecord(true);
+
+         //////////////////////////////////////////////////////////
+         // new child records must have values from the join-ons //
+         //////////////////////////////////////////////////////////
+         Map<String, Serializable> defaultValuesForNewChildRecords = new HashMap<>();
+         for(JoinOn joinOn : join.getJoinOns())
+         {
+            defaultValuesForNewChildRecords.put(joinOn.getRightField(), record.getValue(joinOn.getLeftField()));
+         }
+         widgetData.setDefaultValuesForNewChildRecords(defaultValuesForNewChildRecords);
+      }
+
+      return (new RenderWidgetOutput(widgetData));
    }
 
 }

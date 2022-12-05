@@ -19,17 +19,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.api.model;
+package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public enum AuthorizationType
+public class AbstractWidgetMetaDataBuilder
 {
-   API_KEY_HEADER,
-   BASIC_AUTH_API_KEY,
-   BASIC_AUTH_USERNAME_PASSWORD,
-   OAUTH2,
+   protected QWidgetMetaData widgetMetaData;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public AbstractWidgetMetaDataBuilder(QWidgetMetaData widgetMetaData)
+   {
+      this.widgetMetaData = widgetMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for widgetMetaData
+    **
+    *******************************************************************************/
+   public QWidgetMetaData getWidgetMetaData()
+   {
+      return widgetMetaData;
+   }
 
 }

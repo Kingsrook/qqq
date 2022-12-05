@@ -19,17 +19,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.api.model;
+package com.kingsrook.qqq.backend.module.api.exceptions;
+
+
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
 /*******************************************************************************
+ ** Exception to be thrown by a request that uses OAuth, if the current token
+ ** is expired.  Generally should signal that the token needs refreshed, and the
+ ** request should be tried again.
  **
  *******************************************************************************/
-public enum AuthorizationType
+public class OAuthExpiredTokenException extends QException
 {
-   API_KEY_HEADER,
-   BASIC_AUTH_API_KEY,
-   BASIC_AUTH_USERNAME_PASSWORD,
-   OAUTH2,
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public OAuthExpiredTokenException(String message)
+   {
+      super(message);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public OAuthExpiredTokenException(String errorMessage, Exception e)
+   {
+      super(errorMessage, e);
+   }
 }

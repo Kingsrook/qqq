@@ -1,14 +1,20 @@
 #!/usr/bin/env groovy
 
 /*******************************************************************************
- ** Script to convert a list of columnNames from a CREATE TABLE statement
- ** to fields for a QRecordEntity (on stdout)
+ ** Script to convert a CREATE TABLE statement  to fields for a QRecordEntity
  *******************************************************************************/
+
+if (args.length < 1)
+{
+   System.out.println("Usage: ${this.class.getSimpleName()} EntityClassName [writeWholeClass] [writeTableMetaData]")
+   System.exit(1);
+}
 
 String className = args[0]
 boolean writeWholeClass = args.length > 1 ? args[1] : false;
 boolean writeTableMetaData = args.length > 2 ? args[2] : false;
 
+println("Please paste in a CREATE TABLE statement (then a newline and an end-of-file (CTRL-D))")
 def reader = new BufferedReader(new InputStreamReader(System.in))
 String line
 String allFieldNames = ""
@@ -27,7 +33,6 @@ if(writeWholeClass)
 public class %s extends QRecordEntity
 {
       public static final String TABLE_NAME = "%s";
-      
    """.formatted(className, className, classNameLcFirst));
 }
 

@@ -86,15 +86,19 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
@@ -133,6 +137,7 @@ public class TestUtils
    public static final String PROCESS_NAME_RUN_SHAPES_PERSON_REPORT = "runShapesPersonReport";
    public static final String TABLE_NAME_PERSON_FILE                = "personFile";
    public static final String TABLE_NAME_PERSON_MEMORY              = "personMemory";
+   public static final String TABLE_NAME_PERSON_MEMORY_CACHE        = "personMemoryCache";
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
    public static final String TABLE_NAME_BASEPULL                   = "basepullTest";
    public static final String REPORT_NAME_SHAPES_PERSON             = "shapesPersonReport";
@@ -164,6 +169,7 @@ public class TestUtils
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(definePersonMemoryTable());
+      qInstance.addTable(definePersonMemoryCacheTable());
       qInstance.addTable(defineTableIdAndNameOnly());
       qInstance.addTable(defineTableShape());
       qInstance.addTable(defineTableBasepull());
@@ -608,6 +614,7 @@ public class TestUtils
          .withName(TABLE_NAME_PERSON_MEMORY)
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
+         .withUniqueKey(new UniqueKey("firstName", "lastName"))
          .withFields(TestUtils.defineTablePerson().getFields()))
 
          .withField(standardQqqAutomationStatusField())
@@ -631,6 +638,36 @@ public class TestUtils
                .withCodeReference(new QCodeReference(LogPersonUpdate.class))
             )
          );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define yet another version of the 'person' table, also in-memory, and as a
+    ** cache on the other in-memory one...
+    *******************************************************************************/
+   public static QTableMetaData definePersonMemoryCacheTable()
+   {
+      UniqueKey uniqueKey = new UniqueKey("firstName", "lastName");
+      return (new QTableMetaData()
+         .withName(TABLE_NAME_PERSON_MEMORY_CACHE)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withBackendDetails(new MemoryTableBackendDetails()
+            .withCloneUponStore(true))
+         .withPrimaryKeyField("id")
+         .withUniqueKey(uniqueKey)
+         .withFields(TestUtils.defineTablePerson().getFields()))
+         .withField(new QFieldMetaData("cachedDate", QFieldType.DATE_TIME))
+         .withCacheOf(new CacheOf()
+            .withSourceTable(TABLE_NAME_PERSON_MEMORY)
+            .withCachedDateFieldName("cachedDate")
+            .withExpirationSeconds(60)
+            .withUseCase(new CacheUseCase()
+               .withType(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY)
+               .withSourceUniqueKey(uniqueKey)
+               .withCacheUniqueKey(uniqueKey)
+               .withCacheSourceMisses(false)
+            ));
    }
 
 

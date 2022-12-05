@@ -22,7 +22,11 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
@@ -32,16 +36,26 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
@@ -65,7 +79,8 @@ public class GetAction
    {
       ActionHelper.validateSession(getInput);
 
-      postGetRecordCustomizer = QCodeLoader.getTableCustomizerFunction(getInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
+      QTableMetaData table = getInput.getTable();
+      postGetRecordCustomizer = QCodeLoader.getTableCustomizerFunction(table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.getInput = getInput;
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -79,22 +94,55 @@ public class GetAction
       }
       catch(IllegalStateException ise)
       {
-         ////////////////////////////////////////////////////////////////////////////////////////////////
-         // if a module doesn't implement Get directly - try to do a Get by a Query by the primary key //
-         // see below.                                                                                 //
-         ////////////////////////////////////////////////////////////////////////////////////////////////
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if a module doesn't implement Get directly - try to do a Get by a Query in the DefaultGetInterface (inner class) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       }
 
       GetOutput getOutput;
-      if(getInterface != null)
+      if(getInterface == null)
       {
-         getOutput = getInterface.execute(getInput);
-      }
-      else
-      {
-         getOutput = performGetViaQuery(getInput);
+         getInterface = new DefaultGetInterface();
       }
 
+      getInterface.validateInput(getInput);
+      getOutput = getInterface.execute(getInput);
+
+      ////////////////////////////
+      // handle cache use-cases //
+      ////////////////////////////
+      if(table.getCacheOf() != null)
+      {
+         if(getOutput.getRecord() == null)
+         {
+            ///////////////////////////////////////////////////////////////////////
+            // if the record wasn't found, see if we should look in cache-source //
+            ///////////////////////////////////////////////////////////////////////
+            QRecord recordFromSource = tryToGetFromCacheSource(getInput, getOutput);
+            if(recordFromSource != null)
+            {
+               QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
+
+               InsertInput insertInput = new InsertInput(getInput.getInstance());
+               insertInput.setSession(getInput.getSession());
+               insertInput.setTableName(getInput.getTableName());
+               insertInput.setRecords(List.of(recordToCache));
+               InsertOutput insertOutput = new InsertAction().execute(insertInput);
+               getOutput.setRecord(insertOutput.getRecords().get(0));
+            }
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////
+            // if the record was found, but it's too old, maybe re-fetch from cache source //
+            /////////////////////////////////////////////////////////////////////////////////
+            refreshCacheIfExpired(getInput, getOutput);
+         }
+      }
+
+      ////////////////////////////////////////////////////////
+      // if the record is found, perform post-actions on it //
+      ////////////////////////////////////////////////////////
       if(getOutput.getRecord() != null)
       {
          getOutput.setRecord(postRecordActions(getOutput.getRecord()));
@@ -108,20 +156,162 @@ public class GetAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private GetOutput performGetViaQuery(GetInput getInput) throws QException
+   private static QRecord mapSourceRecordToCacheRecord(QTableMetaData table, QRecord recordFromSource)
    {
-      QueryInput queryInput = new QueryInput(getInput.getInstance());
-      queryInput.setSession(getInput.getSession());
-      queryInput.setTableName(getInput.getTableName());
-      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(getInput.getTable().getPrimaryKeyField(), QCriteriaOperator.EQUALS, List.of(getInput.getPrimaryKey()))));
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-
-      GetOutput getOutput = new GetOutput();
-      if(!queryOutput.getRecords().isEmpty())
+      QRecord cacheRecord = new QRecord(recordFromSource);
+      if(StringUtils.hasContent(table.getCacheOf().getCachedDateFieldName()))
       {
-         getOutput.setRecord(queryOutput.getRecords().get(0));
+         cacheRecord.setValue(table.getCacheOf().getCachedDateFieldName(), Instant.now());
       }
-      return (getOutput);
+      return (cacheRecord);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void refreshCacheIfExpired(GetInput getInput, GetOutput getOutput) throws QException
+   {
+      QTableMetaData table             = getInput.getTable();
+      Integer        expirationSeconds = table.getCacheOf().getExpirationSeconds();
+      if(expirationSeconds != null)
+      {
+         QRecord cachedRecord = getOutput.getRecord();
+         Instant cachedDate   = cachedRecord.getValueInstant(table.getCacheOf().getCachedDateFieldName());
+         if(cachedDate == null || cachedDate.isBefore(Instant.now().minus(expirationSeconds, ChronoUnit.SECONDS)))
+         {
+            QRecord recordFromSource = tryToGetFromCacheSource(getInput, getOutput);
+            if(recordFromSource != null)
+            {
+               ///////////////////////////////////////////////////////////////////
+               // if the record was found in the source, update it in the cache //
+               ///////////////////////////////////////////////////////////////////
+               QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
+               recordToCache.setValue(table.getPrimaryKeyField(), cachedRecord.getValue(table.getPrimaryKeyField()));
+
+               UpdateInput updateInput = new UpdateInput(getInput.getInstance());
+               updateInput.setSession(getInput.getSession());
+               updateInput.setTableName(getInput.getTableName());
+               updateInput.setRecords(List.of(recordToCache));
+               UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+
+               getOutput.setRecord(updateOutput.getRecords().get(0));
+            }
+            else
+            {
+               /////////////////////////////////////////////////////////////////////////////
+               // if the record is no longer in the source, then remove it from the cache //
+               /////////////////////////////////////////////////////////////////////////////
+               DeleteInput deleteInput = new DeleteInput(getInput.getInstance());
+               deleteInput.setSession(getInput.getSession());
+               deleteInput.setTableName(getInput.getTableName());
+               deleteInput.setPrimaryKeys(List.of(getOutput.getRecord().getValue(table.getPrimaryKeyField())));
+               new DeleteAction().execute(deleteInput);
+
+               getOutput.setRecord(null);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QRecord tryToGetFromCacheSource(GetInput getInput, GetOutput getOutput) throws QException
+   {
+      QRecord        recordFromSource = null;
+      QTableMetaData table            = getInput.getTable();
+
+      for(CacheUseCase cacheUseCase : CollectionUtils.nonNullList(table.getCacheOf().getUseCases()))
+      {
+         if(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY.equals(cacheUseCase.getType()) && getInput.getUniqueKey() != null)
+         {
+            recordFromSource = getFromCachedSourceForUniqueKeyToUniqueKey(getInput, table.getCacheOf().getSourceTable());
+            break;
+         }
+         else
+         {
+            // todo!!
+            throw new NotImplementedException("Not-yet-implemented cache use case type: " + cacheUseCase.getType());
+         }
+      }
+
+      return (recordFromSource);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QRecord getFromCachedSourceForUniqueKeyToUniqueKey(GetInput getInput, String sourceTableName) throws QException
+   {
+      /////////////////////////////////////////////////////
+      // do a Get on the source table, by the unique key //
+      /////////////////////////////////////////////////////
+      GetInput sourceGetInput = new GetInput(getInput.getInstance());
+      sourceGetInput.setSession(getInput.getSession());
+      sourceGetInput.setTableName(sourceTableName);
+      sourceGetInput.setUniqueKey(getInput.getUniqueKey());
+      GetOutput sourceGetOutput = new GetAction().execute(sourceGetInput);
+      return (sourceGetOutput.getRecord());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static class DefaultGetInterface implements GetInterface
+   {
+      @Override
+      public GetOutput execute(GetInput getInput) throws QException
+      {
+         QueryInput queryInput = new QueryInput(getInput.getInstance());
+         queryInput.setSession(getInput.getSession());
+         queryInput.setTableName(getInput.getTableName());
+
+         //////////////////////////////////////////////////
+         // build filter using either pkey or unique key //
+         //////////////////////////////////////////////////
+         QQueryFilter filter = new QQueryFilter();
+         if(getInput.getPrimaryKey() != null)
+         {
+            filter.addCriteria(new QFilterCriteria(getInput.getTable().getPrimaryKeyField(), QCriteriaOperator.EQUALS, getInput.getPrimaryKey()));
+         }
+         else if(getInput.getUniqueKey() != null)
+         {
+            for(Map.Entry<String, Serializable> entry : getInput.getUniqueKey().entrySet())
+            {
+               if(entry.getValue() == null)
+               {
+                  filter.addCriteria(new QFilterCriteria(entry.getKey(), QCriteriaOperator.IS_BLANK));
+               }
+               else
+               {
+                  filter.addCriteria(new QFilterCriteria(entry.getKey(), QCriteriaOperator.EQUALS, entry.getValue()));
+               }
+            }
+         }
+         else
+         {
+            throw (new QException("No primaryKey or uniqueKey was passed to Get"));
+         }
+
+         queryInput.setFilter(filter);
+
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+         GetOutput getOutput = new GetOutput();
+         if(!queryOutput.getRecords().isEmpty())
+         {
+            getOutput.setRecord(queryOutput.getRecords().get(0));
+         }
+         return (getOutput);
+      }
    }
 
 

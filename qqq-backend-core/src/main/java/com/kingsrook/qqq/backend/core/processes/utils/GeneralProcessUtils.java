@@ -405,8 +405,10 @@ public class GeneralProcessUtils
     ** get that record id.
     **
     *******************************************************************************/
-   public static Integer validateSingleSelectedId(RunBackendStepInput runBackendStepInput, String tableLabel) throws QException
+   public static Integer validateSingleSelectedId(RunBackendStepInput runBackendStepInput, String tableName) throws QException
    {
+      String tableLabel = runBackendStepInput.getInstance().getTable(tableName).getLabel();
+
       ////////////////////////////////////////////////////
       // Get the selected recordId and verify we only 1 //
       ////////////////////////////////////////////////////

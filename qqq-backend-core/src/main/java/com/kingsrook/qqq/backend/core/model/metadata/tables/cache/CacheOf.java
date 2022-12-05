@@ -19,153 +19,177 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.tables;
+package com.kingsrook.qqq.backend.core.model.metadata.tables.cache;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Definition of a Unique Key (or "Constraint", if you wanna use fancy words)
- ** on a QTable.
+ ** Meta-data, to assign to a table which is a "cache of" another table.
+ ** e.g., a database table that's a "cache of" an api table - we'd have
+ ** databaseTable.withCacheOf(sourceTable=apiTable)
  *******************************************************************************/
-public class UniqueKey
+public class CacheOf
 {
-   private List<String> fieldNames;
-   private String       label;
+   private String             sourceTable;
+   private Integer            expirationSeconds;
+   private String             cachedDateFieldName;
+   private List<CacheUseCase> useCases;
+
+   // private QCodeReference mapper;
 
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Getter for sourceTable
     **
     *******************************************************************************/
-   public UniqueKey()
+   public String getSourceTable()
    {
+      return sourceTable;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Setter for sourceTable
     **
     *******************************************************************************/
-   public UniqueKey(List<String> fieldNames)
+   public void setSourceTable(String sourceTable)
    {
-      this.fieldNames = fieldNames;
+      this.sourceTable = sourceTable;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Fluent setter for sourceTable
     **
     *******************************************************************************/
-   public UniqueKey(String... fieldNames)
+   public CacheOf withSourceTable(String sourceTable)
    {
-      this.fieldNames = Arrays.stream(fieldNames).toList();
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fieldNames
-    **
-    *******************************************************************************/
-   public List<String> getFieldNames()
-   {
-      return fieldNames;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for fieldNames
-    **
-    *******************************************************************************/
-   public void setFieldNames(List<String> fieldNames)
-   {
-      this.fieldNames = fieldNames;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for fieldNames
-    **
-    *******************************************************************************/
-   public UniqueKey withFieldNames(List<String> fieldNames)
-   {
-      this.fieldNames = fieldNames;
+      this.sourceTable = sourceTable;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Getter for expirationSeconds
     **
     *******************************************************************************/
-   public String getLabel()
+   public Integer getExpirationSeconds()
    {
-      return label;
+      return expirationSeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Setter for expirationSeconds
     **
     *******************************************************************************/
-   public void setLabel(String label)
+   public void setExpirationSeconds(Integer expirationSeconds)
    {
-      this.label = label;
+      this.expirationSeconds = expirationSeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for label
+    ** Fluent setter for expirationSeconds
     **
     *******************************************************************************/
-   public UniqueKey withLabel(String label)
+   public CacheOf withExpirationSeconds(Integer expirationSeconds)
    {
-      this.label = label;
+      this.expirationSeconds = expirationSeconds;
       return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for cachedDateFieldName
     **
     *******************************************************************************/
-   public UniqueKey withFieldName(String fieldName)
+   public String getCachedDateFieldName()
    {
-      if(this.fieldNames == null)
+      return cachedDateFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cachedDateFieldName
+    **
+    *******************************************************************************/
+   public void setCachedDateFieldName(String cachedDateFieldName)
+   {
+      this.cachedDateFieldName = cachedDateFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cachedDateFieldName
+    **
+    *******************************************************************************/
+   public CacheOf withCachedDateFieldName(String cachedDateFieldName)
+   {
+      this.cachedDateFieldName = cachedDateFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for useCases
+    **
+    *******************************************************************************/
+   public List<CacheUseCase> getUseCases()
+   {
+      return useCases;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for useCases
+    **
+    *******************************************************************************/
+   public void setUseCases(List<CacheUseCase> useCases)
+   {
+      this.useCases = useCases;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for useCases
+    **
+    *******************************************************************************/
+   public CacheOf withUseCases(List<CacheUseCase> useCases)
+   {
+      this.useCases = useCases;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for useCases
+    **
+    *******************************************************************************/
+   public CacheOf withUseCase(CacheUseCase useCase)
+   {
+      if(this.useCases == null)
       {
-         this.fieldNames = new ArrayList<>();
+         this.useCases = new ArrayList<>();
       }
-      this.fieldNames.add(fieldName);
+      this.useCases.add(useCase);
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public String getDescription(QTableMetaData table)
-   {
-      List<String> fieldLabels = new ArrayList<>();
-
-      for(String fieldName : getFieldNames())
-      {
-         fieldLabels.add(table.getField(fieldName).getLabel());
-      }
-
-      return (StringUtils.joinWithCommasAndAnd(fieldLabels));
-   }
 }

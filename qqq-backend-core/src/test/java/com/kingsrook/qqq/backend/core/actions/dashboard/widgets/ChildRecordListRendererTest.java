@@ -69,8 +69,9 @@ class ChildRecordListRendererTest
    void testParentRecordNotFound() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
-      QWidgetMetaData widget = ChildRecordListRenderer.defineWidgetFromJoin(qInstance.getJoin("orderLineItem"))
-         .withLabel("Line Items");
+      QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
+         .withLabel("Line Items")
+         .getWidgetMetaData();
       qInstance.addWidget(widget);
 
       RenderWidgetInput input = new RenderWidgetInput(qInstance);
@@ -92,8 +93,9 @@ class ChildRecordListRendererTest
    void testNoChildRecordsFound() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
-      QWidgetMetaData widget = ChildRecordListRenderer.defineWidgetFromJoin(qInstance.getJoin("orderLineItem"))
-         .withLabel("Line Items");
+      QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
+         .withLabel("Line Items")
+         .getWidgetMetaData();
       qInstance.addWidget(widget);
 
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
@@ -122,8 +124,9 @@ class ChildRecordListRendererTest
    void testChildRecordsFound() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
-      QWidgetMetaData widget = ChildRecordListRenderer.defineWidgetFromJoin(qInstance.getJoin("orderLineItem"))
-         .withLabel("Line Items");
+      QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
+         .withLabel("Line Items")
+         .getWidgetMetaData();
       qInstance.addWidget(widget);
 
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(

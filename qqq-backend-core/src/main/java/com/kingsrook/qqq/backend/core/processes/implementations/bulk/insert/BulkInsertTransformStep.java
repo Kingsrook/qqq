@@ -48,7 +48,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -176,16 +175,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
     *******************************************************************************/
    private Set<List<Serializable>> getExistingKeys(RunBackendStepInput runBackendStepInput, UniqueKey uniqueKey) throws QException
    {
-      return (getExistingKeys(runBackendStepInput, uniqueKey.getFieldNames()));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private Set<List<Serializable>> getExistingKeys(RunBackendStepInput runBackendStepInput, List<String> ukFieldNames) throws QException
-   {
+      List<String>            ukFieldNames    = uniqueKey.getFieldNames();
       Set<List<Serializable>> existingRecords = new HashSet<>();
       if(ukFieldNames != null)
       {
@@ -276,7 +266,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       {
          UniqueKey          uniqueKey      = entry.getKey();
          ProcessSummaryLine ukErrorSummary = entry.getValue();
-         String             ukErrorSuffix  = " inserted, because they contain a duplicate key (" + getUkDescription(uniqueKey.getFieldNames()) + ")";
+         String             ukErrorSuffix  = " inserted, because they contain a duplicate key (" + uniqueKey.getDescription(table) + ")";
 
          ukErrorSummary
             .withSingularFutureMessage(tableLabel + " record will not be" + ukErrorSuffix)
@@ -288,23 +278,6 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       }
 
       return (rs);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String getUkDescription(List<String> ukFieldNames)
-   {
-      List<String> fieldLabels = new ArrayList<>();
-
-      for(String fieldName : ukFieldNames)
-      {
-         fieldLabels.add(table.getField(fieldName).getLabel());
-      }
-
-      return (StringUtils.joinWithCommasAndAnd(fieldLabels));
    }
 
 }

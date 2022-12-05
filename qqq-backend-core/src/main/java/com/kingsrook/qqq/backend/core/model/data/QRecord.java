@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -412,6 +413,16 @@ public class QRecord implements Serializable
    public byte[] getValueByteArray(String fieldName)
    {
       return (ValueUtils.getValueAsByteArray(values.get(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Instant getValueInstant(String fieldName)
+   {
+      return (ValueUtils.getValueAsInstant(values.get(fieldName)));
    }
 
 

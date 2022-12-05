@@ -39,6 +39,8 @@ public class APIBackendMetaData extends QBackendMetaData
 {
    private String baseUrl;
    private String apiKey;
+   private String clientId;
+   private String clientSecret;
    private String username;
    private String password;
 
@@ -151,6 +153,74 @@ public class APIBackendMetaData extends QBackendMetaData
    public APIBackendMetaData withApiKey(String apiKey)
    {
       this.apiKey = apiKey;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for clientId
+    **
+    *******************************************************************************/
+   public String getClientId()
+   {
+      return clientId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clientId
+    **
+    *******************************************************************************/
+   public void setClientId(String clientId)
+   {
+      this.clientId = clientId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for clientId
+    **
+    *******************************************************************************/
+   public APIBackendMetaData withClientId(String clientId)
+   {
+      this.clientId = clientId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for clientSecret
+    **
+    *******************************************************************************/
+   public String getClientSecret()
+   {
+      return clientSecret;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clientSecret
+    **
+    *******************************************************************************/
+   public void setClientSecret(String clientSecret)
+   {
+      this.clientSecret = clientSecret;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for clientSecret
+    **
+    *******************************************************************************/
+   public APIBackendMetaData withClientSecret(String clientSecret)
+   {
+      this.clientSecret = clientSecret;
       return (this);
    }
 
@@ -391,4 +461,16 @@ public class APIBackendMetaData extends QBackendMetaData
    {
       qInstanceValidator.assertCondition(StringUtils.hasContent(baseUrl), "Missing baseUrl for API backend: " + getName());
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean requiresPrimaryKeyOnTables()
+   {
+      return (false);
+   }
+
 }
