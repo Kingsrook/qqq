@@ -522,6 +522,11 @@ public class QJavalinImplementation
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
 
+         if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getErrors()))
+         {
+            throw (new QUserFacingException("Error inserting " + qInstance.getTable(table).getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
+         }
+
          context.result(JsonUtils.toJson(insertOutput));
       }
       catch(Exception e)

@@ -114,13 +114,25 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                List<Object>  params      = new ArrayList<>();
                int           recordIndex = 0;
 
+               //////////////////////////////////////////////////////
+               // for each record in the page:                     //
+               // - if it has errors, skip it                      //
+               // - else add a "(?,?,...,?)," clause to the INSERT //
+               // - then add all fields into the params list       //
+               //////////////////////////////////////////////////////
                for(QRecord record : page)
                {
+                  if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+                  {
+                     continue;
+                  }
+
                   if(recordIndex++ > 0)
                   {
                      sql.append(",");
                   }
                   sql.append("(").append(questionMarks).append(")");
+
                   for(QFieldMetaData field : insertableFields)
                   {
                      Serializable value = record.getValue(field.getName());
@@ -129,6 +141,23 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                   }
                }
 
+               ////////////////////////////////////////////////////////////////////////////////////////
+               // if all records had errors, copy them to the output, and continue w/o running query //
+               ////////////////////////////////////////////////////////////////////////////////////////
+               if(recordIndex == 0)
+               {
+                  for(QRecord record : page)
+                  {
+                     QRecord outputRecord = new QRecord(record);
+                     outputRecords.add(outputRecord);
+                  }
+                  continue;
+               }
+
+               ///////////////////////////////////////////////////////////
+               // execute the insert, then foreach record in the input, //
+               // add it to the output, and set its generated id too.   //
+               ///////////////////////////////////////////////////////////
                // todo sql customization - can edit sql and/or param list
                // todo - non-serial-id style tables
                // todo - other generated values, e.g., createDate...  maybe need to re-select?
@@ -136,10 +165,14 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                int           index  = 0;
                for(QRecord record : page)
                {
-                  Integer id           = idList.get(index++);
                   QRecord outputRecord = new QRecord(record);
-                  outputRecord.setValue(table.getPrimaryKeyField(), id);
                   outputRecords.add(outputRecord);
+
+                  if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
+                  {
+                     Integer id = idList.get(index++);
+                     outputRecord.setValue(table.getPrimaryKeyField(), id);
+                  }
                }
             }
          }

@@ -64,6 +64,21 @@ public class QCodeLoader
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static <T> Optional<T> getTableCustomizer(Class<T> expectedClass, QTableMetaData table, String customizerName)
+   {
+      Optional<QCodeReference> codeReference = table.getCustomizer(customizerName);
+      if(codeReference.isPresent())
+      {
+         return (Optional.ofNullable(QCodeLoader.getAdHoc(expectedClass, codeReference.get())));
+      }
+      return (Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @SuppressWarnings("unchecked")
    public static <T, R> Function<T, R> getFunction(QCodeReference codeReference)
    {

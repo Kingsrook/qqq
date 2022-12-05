@@ -19,51 +19,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
+package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class MemoryTableBackendDetails extends QTableBackendDetails
+public abstract class AbstractPostInsertCustomizer
 {
-   private boolean cloneUponStore = false;
+   protected InsertInput insertInput;
 
 
 
    /*******************************************************************************
-    ** Getter for cloneUponStore
     **
     *******************************************************************************/
-   public boolean getCloneUponStore()
+   public abstract List<QRecord> apply(List<QRecord> records);
+
+
+
+   /*******************************************************************************
+    ** Getter for insertInput
+    **
+    *******************************************************************************/
+   public InsertInput getInsertInput()
    {
-      return cloneUponStore;
+      return insertInput;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for cloneUponStore
+    ** Setter for insertInput
     **
     *******************************************************************************/
-   public void setCloneUponStore(boolean cloneUponStore)
+   public void setInsertInput(InsertInput insertInput)
    {
-      this.cloneUponStore = cloneUponStore;
+      this.insertInput = insertInput;
    }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for cloneUponStore
-    **
-    *******************************************************************************/
-   public MemoryTableBackendDetails withCloneUponStore(boolean cloneUponStore)
-   {
-      this.cloneUponStore = cloneUponStore;
-      return (this);
-   }
-
 }

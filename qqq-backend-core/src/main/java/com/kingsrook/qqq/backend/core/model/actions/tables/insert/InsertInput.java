@@ -36,7 +36,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 public class InsertInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
-   private List<QRecord> records;
+   private List<QRecord>       records;
+
+   private boolean skipUniqueKeyCheck = false;
 
 
 
@@ -80,6 +82,7 @@ public class InsertInput extends AbstractTableActionInput
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for transaction
     **
@@ -111,4 +114,39 @@ public class InsertInput extends AbstractTableActionInput
    {
       this.records = records;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for skipUniqueKeyCheck
+    **
+    *******************************************************************************/
+   public boolean getSkipUniqueKeyCheck()
+   {
+      return skipUniqueKeyCheck;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for skipUniqueKeyCheck
+    **
+    *******************************************************************************/
+   public void setSkipUniqueKeyCheck(boolean skipUniqueKeyCheck)
+   {
+      this.skipUniqueKeyCheck = skipUniqueKeyCheck;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for skipUniqueKeyCheck
+    **
+    *******************************************************************************/
+   public InsertInput withSkipUniqueKeyCheck(boolean skipUniqueKeyCheck)
+   {
+      this.skipUniqueKeyCheck = skipUniqueKeyCheck;
+      return (this);
+   }
+
 }

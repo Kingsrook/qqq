@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -182,6 +183,12 @@ public class MemoryRecordStore
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
       for(QRecord record : input.getRecords())
       {
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         {
+            outputRecords.add(record);
+            continue;
+         }
+
          /////////////////////////////////////////////////
          // set the next serial in the record if needed //
          /////////////////////////////////////////////////

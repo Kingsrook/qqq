@@ -38,7 +38,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
  *******************************************************************************/
 public class LoadViaInsertStep extends AbstractLoadStep
 {
-   public static final String FIELD_DESTINATION_TABLE = "destinationTable";
+   public static final String FIELD_DESTINATION_TABLE     = "destinationTable";
+   public static final String FIELD_SKIP_UNIQUE_KEY_CHECK = "skipUniqueKeyCheck";
 
 
 
@@ -55,6 +56,12 @@ public class LoadViaInsertStep extends AbstractLoadStep
       insertInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(insertInput::setTransaction);
       insertInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
+
+      if(runBackendStepInput.getValuePrimitiveBoolean(FIELD_SKIP_UNIQUE_KEY_CHECK))
+      {
+         insertInput.setSkipUniqueKeyCheck(true);
+      }
+
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
       runBackendStepOutput.getRecords().addAll(insertOutput.getRecords());
    }

@@ -28,24 +28,20 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -71,6 +67,11 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       this.table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // since we're doing a unique key check in this class, we can tell the loadViaInsert step that it (rather, the InsertAction) doesn't need to re-do one. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      runBackendStepOutput.addValue(LoadViaInsertStep.FIELD_SKIP_UNIQUE_KEY_CHECK, true);
    }
 
 
@@ -87,7 +88,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       List<UniqueKey>                         uniqueKeys   = CollectionUtils.nonNullList(table.getUniqueKeys());
       for(UniqueKey uniqueKey : uniqueKeys)
       {
-         existingKeys.put(uniqueKey, getExistingKeys(runBackendStepInput, uniqueKey));
+         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(runBackendStepInput, null, table, runBackendStepInput.getRecords(), uniqueKey));
          ukErrorSummaries.computeIfAbsent(uniqueKey, x -> new ProcessSummaryLine(Status.ERROR));
       }
 
@@ -142,8 +143,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
             boolean foundDupe = false;
             for(UniqueKey uniqueKey : uniqueKeys)
             {
-               List<Serializable> keyValues = getKeyValues(uniqueKey, record);
-               if(existingKeys.get(uniqueKey).contains(keyValues) || keysInThisFile.get(uniqueKey).contains(keyValues))
+               Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
+               if(keyValues.isPresent() && (existingKeys.get(uniqueKey).contains(keyValues.get()) || keysInThisFile.get(uniqueKey).contains(keyValues.get())))
                {
                   ukErrorSummaries.get(uniqueKey).incrementCount();
                   foundDupe = true;
@@ -158,89 +159,14 @@ public class BulkInsertTransformStep extends AbstractTransformStep
             {
                for(UniqueKey uniqueKey : uniqueKeys)
                {
-                  List<Serializable> keyValues = getKeyValues(uniqueKey, record);
-                  keysInThisFile.get(uniqueKey).add(keyValues);
+                  Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
+                  keyValues.ifPresent(kv -> keysInThisFile.get(uniqueKey).add(kv));
                }
                okSummary.incrementCount();
                runBackendStepOutput.addRecord(record);
             }
          }
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private Set<List<Serializable>> getExistingKeys(RunBackendStepInput runBackendStepInput, UniqueKey uniqueKey) throws QException
-   {
-      List<String>            ukFieldNames    = uniqueKey.getFieldNames();
-      Set<List<Serializable>> existingRecords = new HashSet<>();
-      if(ukFieldNames != null)
-      {
-         QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-         queryInput.setSession(runBackendStepInput.getSession());
-         queryInput.setTableName(runBackendStepInput.getTableName());
-         getTransaction().ifPresent(queryInput::setTransaction);
-
-         QQueryFilter filter = new QQueryFilter();
-         if(ukFieldNames.size() == 1)
-         {
-            List<Serializable> values = runBackendStepInput.getRecords().stream()
-               .map(r -> r.getValue(ukFieldNames.get(0)))
-               .collect(Collectors.toList());
-            filter.addCriteria(new QFilterCriteria(ukFieldNames.get(0), QCriteriaOperator.IN, values));
-         }
-         else
-         {
-            filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
-            for(QRecord record : runBackendStepInput.getRecords())
-            {
-               QQueryFilter subFilter = new QQueryFilter();
-               filter.addSubFilter(subFilter);
-               for(String fieldName : ukFieldNames)
-               {
-                  subFilter.addCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, List.of(record.getValue(fieldName))));
-               }
-            }
-         }
-
-         queryInput.setFilter(filter);
-         QueryOutput queryOutput = new QueryAction().execute(queryInput);
-         for(QRecord record : queryOutput.getRecords())
-         {
-            List<Serializable> keyValues = getKeyValues(ukFieldNames, record);
-            existingRecords.add(keyValues);
-         }
-      }
-
-      return (existingRecords);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private List<Serializable> getKeyValues(UniqueKey uniqueKey, QRecord record)
-   {
-      return (getKeyValues(uniqueKey.getFieldNames(), record));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private List<Serializable> getKeyValues(List<String> fieldNames, QRecord record)
-   {
-      List<Serializable> keyValues = new ArrayList<>();
-      for(String fieldName : fieldNames)
-      {
-         keyValues.add(record.getValue(fieldName));
-      }
-      return keyValues;
    }
 
 

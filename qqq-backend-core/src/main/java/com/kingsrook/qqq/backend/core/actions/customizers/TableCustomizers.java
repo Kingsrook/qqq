@@ -47,8 +47,10 @@ public enum TableCustomizers
    {
       @SuppressWarnings("unchecked")
       Function<QRecord, QRecord> function = (Function<QRecord, QRecord>) x;
-      QRecord                    output   = function.apply(new QRecord());
-   })));
+      QRecord output = function.apply(new QRecord());
+   }))),
+
+   POST_INSERT_RECORD(new TableCustomizer("postInsertRecord", AbstractPostInsertCustomizer.class));
 
 
    private final TableCustomizer tableCustomizer;

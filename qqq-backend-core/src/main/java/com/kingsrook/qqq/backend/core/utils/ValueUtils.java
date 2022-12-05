@@ -38,6 +38,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
@@ -632,4 +633,24 @@ public class ValueUtils
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   public static Serializable getValueAsFieldType(QFieldType type, Serializable value)
+   {
+      return switch(type)
+         {
+            case STRING, TEXT, HTML, PASSWORD -> getValueAsString(value);
+            case INTEGER -> getValueAsInteger(value);
+            case DECIMAL -> getValueAsBigDecimal(value);
+            case BOOLEAN -> getValueAsBoolean(value);
+            case DATE -> getValueAsLocalDate(value);
+            case TIME -> getValueAsLocalTime(value);
+            case DATE_TIME -> getValueAsInstant(value);
+            case BLOB -> getValueAsByteArray(value);
+         };
+   }
 }

@@ -98,7 +98,6 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
@@ -652,8 +651,6 @@ public class TestUtils
       return (new QTableMetaData()
          .withName(TABLE_NAME_PERSON_MEMORY_CACHE)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withBackendDetails(new MemoryTableBackendDetails()
-            .withCloneUponStore(true))
          .withPrimaryKeyField("id")
          .withUniqueKey(uniqueKey)
          .withFields(TestUtils.defineTablePerson().getFields()))
