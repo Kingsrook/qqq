@@ -41,7 +41,7 @@ public class ChildRecordListData implements QWidget
    private String tablePath;
    private String viewAllLink;
 
-   private boolean                   canAddChildRecord = true;
+   private boolean                   canAddChildRecord = false;
    private Map<String, Serializable> defaultValuesForNewChildRecords;
 
 

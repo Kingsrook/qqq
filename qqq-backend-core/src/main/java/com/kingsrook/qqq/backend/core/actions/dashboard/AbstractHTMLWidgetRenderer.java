@@ -25,7 +25,11 @@ package com.kingsrook.qqq.backend.core.actions.dashboard;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
@@ -121,6 +125,38 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static String linkTableBulkLoadChildren(String baseHref, String tableName) throws QException
+   {
+      return (baseHref + "#/launchProcess=" + tableName + ".bulkInsert");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkTableCreate(RenderWidgetInput input, String tableName) throws QException
+   {
+      String tablePath = input.getInstance().getTablePath(input, tableName);
+      return (tablePath + "/create");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkTableCreateWithDefaultValues(RenderWidgetInput input, String tableName, Map<String, Serializable> defaultValues) throws QException
+   {
+      String tablePath = input.getInstance().getTablePath(input, tableName);
+      return (tablePath + "/create?defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), Charset.defaultCharset()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
    {
       String tablePath = input.getInstance().getTablePath(input, tableName);
@@ -143,12 +179,47 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static String linkRecordView(AbstractActionInput input, String tableName, Serializable recordId) throws QException
+   {
+      String tablePath = input.getInstance().getTablePath(input, tableName);
+      return (tablePath + "/" + recordId);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
    {
       QProcessMetaData process   = input.getInstance().getProcess(processName);
       String           tableName = process.getTableName();
       String           tablePath = input.getInstance().getTablePath(input, tableName);
       return (tablePath + "/" + recordId + "/" + processName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkTableCreateChild(String baseHref, String childTableName, Map<String, Serializable> defaultValues)
+   {
+      return (linkTableCreateChild(baseHref, childTableName, defaultValues, defaultValues.keySet()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkTableCreateChild(String baseHref, String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields)
+   {
+      Map<String, Integer> disabledFieldsMap = disabledFields.stream().collect(Collectors.toMap(k -> k, k -> 1));
+
+      return (baseHref + "#/createChild=" + childTableName
+         + "/defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), StandardCharsets.UTF_8).replaceAll("\\+", "%20")
+         + "/disabledFields=" + URLEncoder.encode(JsonUtils.toJson(disabledFieldsMap), StandardCharsets.UTF_8).replaceAll("\\+", "%20"));
    }
 
 }
