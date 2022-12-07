@@ -37,7 +37,9 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -123,7 +125,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
     *******************************************************************************/
    protected Serializable scrubValue(QFieldMetaData field, Serializable value, boolean isInsert)
    {
-      if("".equals(value))
+      if("" .equals(value))
       {
          QFieldType type = field.getType();
          if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
@@ -513,9 +515,9 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected Serializable getFieldValueFromResultSet(QFieldMetaData qFieldMetaData, ResultSet resultSet, int i) throws SQLException
+   protected Serializable getFieldValueFromResultSet(QFieldType type, ResultSet resultSet, int i) throws SQLException
    {
-      switch(qFieldMetaData.getType())
+      switch(type)
       {
          case STRING:
          case TEXT:
@@ -551,10 +553,19 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          }
          default:
          {
-            throw new IllegalStateException("Unexpected field type: " + qFieldMetaData.getType());
+            throw new IllegalStateException("Unexpected field type: " + type);
          }
       }
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Serializable getFieldValueFromResultSet(QFieldMetaData qFieldMetaData, ResultSet resultSet, int i) throws SQLException
+   {
+      return (getFieldValueFromResultSet(qFieldMetaData.getType(), resultSet, i));
    }
 
 
@@ -575,6 +586,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             String    clause    = (aggregate.getOperator() + "(" + escapeIdentifier(getColumnName(table.getField(aggregate.getFieldName()))) + ")");
             clauses.add(clause + " " + ascOrDesc);
          }
+         else if(orderBy instanceof QFilterOrderByGroupBy orderByGroupBy)
+         {
+            clauses.add(getSingleGroupByClause(orderByGroupBy.getGroupBy(), joinsContext) + " " + ascOrDesc);
+         }
          else
          {
             JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName());
@@ -585,5 +600,24 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          }
       }
       return (String.join(", ", clauses));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String getSingleGroupByClause(GroupBy groupBy, JoinsContext joinsContext)
+   {
+      JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupBy.getFieldName());
+      String                                fullFieldName            = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field()));
+      if(groupBy.getFormatString() == null)
+      {
+         return (fullFieldName);
+      }
+      else
+      {
+         return (String.format(groupBy.getFormatString(), fullFieldName));
+      }
    }
 }

@@ -38,7 +38,7 @@ public class AggregateInput extends AbstractTableActionInput
 {
    private QQueryFilter    filter;
    private List<Aggregate> aggregates;
-   private List<String>    groupByFieldNames;
+   private List<GroupBy>   groupBys = new ArrayList<>();
 
    private List<QueryJoin> queryJoins = null;
 
@@ -148,50 +148,50 @@ public class AggregateInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for groupByFieldNames
+    ** Getter for groupBys
     **
     *******************************************************************************/
-   public List<String> getGroupByFieldNames()
+   public List<GroupBy> getGroupBys()
    {
-      return groupByFieldNames;
+      return groupBys;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for groupByFieldNames
+    ** Setter for groupBys
     **
     *******************************************************************************/
-   public void setGroupByFieldNames(List<String> groupByFieldNames)
+   public void setGroupBys(List<GroupBy> groupBys)
    {
-      this.groupByFieldNames = groupByFieldNames;
+      this.groupBys = groupBys;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for groupByFieldNames
+    ** Fluent setter for groupBys
     **
     *******************************************************************************/
-   public AggregateInput withGroupByFieldNames(List<String> groupByFieldNames)
+   public AggregateInput withGroupBys(List<GroupBy> groupBys)
    {
-      this.groupByFieldNames = groupByFieldNames;
+      this.groupBys = groupBys;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for groupByFieldNames
+    ** Fluent setter for groupBys
     **
     *******************************************************************************/
-   public AggregateInput withGroupByFieldName(String groupByFieldName)
+   public AggregateInput withGroupBy(GroupBy groupBy)
    {
-      if(this.groupByFieldNames == null)
+      if(this.groupBys == null)
       {
-         this.groupByFieldNames = new ArrayList<>();
+         this.groupBys = new ArrayList<>();
       }
-      this.groupByFieldNames.add(groupByFieldName);
+      this.groupBys.add(groupBy);
       return (this);
    }
 

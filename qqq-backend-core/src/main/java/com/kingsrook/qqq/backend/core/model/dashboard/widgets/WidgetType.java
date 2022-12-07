@@ -27,9 +27,11 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  *******************************************************************************/
 public enum WidgetType
 {
+   BAR_CHART("barChart"),
    CHART("chart"),
    CHILD_RECORD_LIST("childRecordList"),
    GENERIC("generic"),
+   HORIZONTAL_BAR_CHART("horizontalBarChart"),
    HTML("html"),
    LINE_CHART("lineChart"),
    LOCATION("location"),

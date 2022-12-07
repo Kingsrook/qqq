@@ -31,10 +31,11 @@ import java.util.List;
  *******************************************************************************/
 public class ParentWidgetMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
 {
-   private String       title;
-   private List<String> possibleValueNameList;
-   private List<String> childWidgetNameList;
-   private List<String> childProcessNameList;
+   private String             title;
+   private List<String>       possibleValueNameList;
+   private List<String>       childWidgetNameList;
+   private List<String>       childProcessNameList;
+   private List<DropdownData> dropdowns;
 
 
 
@@ -170,6 +171,156 @@ public class ParentWidgetMetaData extends QWidgetMetaData implements QWidgetMeta
    {
       this.childProcessNameList = childProcessNameList;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for dropdowns
+    **
+    *******************************************************************************/
+   public List<DropdownData> getDropdowns()
+   {
+      return dropdowns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dropdowns
+    **
+    *******************************************************************************/
+   public void setDropdowns(List<DropdownData> dropdowns)
+   {
+      this.dropdowns = dropdowns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdowns
+    **
+    *******************************************************************************/
+   public ParentWidgetMetaData withDropdowns(List<DropdownData> dropdowns)
+   {
+      this.dropdowns = dropdowns;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** inner class for specifying details about dropdown fields on a parent widget
+    **
+    *******************************************************************************/
+   public static class DropdownData
+   {
+      private String possibleValueSourceName;
+      private String foreignKeyFieldName;
+      private String label;
+
+
+
+      /*******************************************************************************
+       ** Getter for possibleValueSourceName
+       **
+       *******************************************************************************/
+      public String getPossibleValueSourceName()
+      {
+         return possibleValueSourceName;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for possibleValueSourceName
+       **
+       *******************************************************************************/
+      public void setPossibleValueSourceName(String possibleValueSourceName)
+      {
+         this.possibleValueSourceName = possibleValueSourceName;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for possibleValueSourceName
+       **
+       *******************************************************************************/
+      public DropdownData withPossibleValueSourceName(String possibleValueSourceName)
+      {
+         this.possibleValueSourceName = possibleValueSourceName;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for foreignKeyFieldName
+       **
+       *******************************************************************************/
+      public String getForeignKeyFieldName()
+      {
+         return foreignKeyFieldName;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for foreignKeyFieldName
+       **
+       *******************************************************************************/
+      public void setForeignKeyFieldName(String foreignKeyFieldName)
+      {
+         this.foreignKeyFieldName = foreignKeyFieldName;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for foreignKeyFieldName
+       **
+       *******************************************************************************/
+      public DropdownData withForeignKeyFieldName(String foreignKeyFieldName)
+      {
+         this.foreignKeyFieldName = foreignKeyFieldName;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for label
+       **
+       *******************************************************************************/
+      public String getLabel()
+      {
+         return label;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for label
+       **
+       *******************************************************************************/
+      public void setLabel(String label)
+      {
+         this.label = label;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for label
+       **
+       *******************************************************************************/
+      public DropdownData withLabel(String label)
+      {
+         this.label = label;
+         return (this);
+      }
+
    }
 
 }

@@ -38,17 +38,18 @@ public class StatisticsData implements QWidget
       }
     */
 
-   private String title;
-   private int    count;
-   private Number percentageAmount;
-   private String percentageLabel;
+   private String  title;
+   private Number  count;
+   private Number  percentageAmount;
+   private String  percentageLabel;
+   private boolean isCurrency = false;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public StatisticsData(String title, int count, Number percentageAmount, String percentageLabel)
+   public StatisticsData(String title, Number count, Number percentageAmount, String percentageLabel)
    {
       this.title = title;
       this.count = count;
@@ -107,7 +108,7 @@ public class StatisticsData implements QWidget
     ** Getter for count
     **
     *******************************************************************************/
-   public int getCount()
+   public Number getCount()
    {
       return count;
    }
@@ -118,7 +119,7 @@ public class StatisticsData implements QWidget
     ** Setter for count
     **
     *******************************************************************************/
-   public void setCount(int count)
+   public void setCount(Number count)
    {
       this.count = count;
    }
@@ -129,7 +130,7 @@ public class StatisticsData implements QWidget
     ** Fluent setter for count
     **
     *******************************************************************************/
-   public StatisticsData withCount(int count)
+   public StatisticsData withCount(Number count)
    {
       this.count = count;
       return (this);
@@ -200,6 +201,40 @@ public class StatisticsData implements QWidget
    public StatisticsData withPercentageLabel(String percentageLabel)
    {
       this.percentageLabel = percentageLabel;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isCurrency
+    **
+    *******************************************************************************/
+   public boolean getIsCurrency()
+   {
+      return isCurrency;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isCurrency
+    **
+    *******************************************************************************/
+   public void setIsCurrency(boolean isCurrency)
+   {
+      this.isCurrency = isCurrency;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isCurrency
+    **
+    *******************************************************************************/
+   public StatisticsData withIsCurrency(boolean isCurrency)
+   {
+      this.isCurrency = isCurrency;
       return (this);
    }
 

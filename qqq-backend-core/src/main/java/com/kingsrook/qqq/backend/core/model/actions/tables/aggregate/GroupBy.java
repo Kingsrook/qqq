@@ -23,136 +23,130 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
 import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class AggregateResult
+public class GroupBy implements Serializable
 {
-   private Map<Aggregate, Serializable> aggregateValues = new LinkedHashMap<>();
-   private Map<GroupBy, Serializable>   groupByValues   = new LinkedHashMap<>();
+   private QFieldType type;
+   private String     fieldName;
+   private String     formatString;
 
 
 
    /*******************************************************************************
-    ** Getter for aggregateValues
     **
     *******************************************************************************/
-   public Map<Aggregate, Serializable> getAggregateValues()
+   public GroupBy(QFieldType type, String fieldName, String formatString)
    {
-      return aggregateValues;
+      this.type = type;
+      this.fieldName = fieldName;
+      this.formatString = formatString;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for aggregateValues
+    ** Getter for type
     **
     *******************************************************************************/
-   public void setAggregateValues(Map<Aggregate, Serializable> aggregateValues)
+   public QFieldType getType()
    {
-      this.aggregateValues = aggregateValues;
+      return type;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for aggregateValues
+    ** Setter for type
     **
     *******************************************************************************/
-   public AggregateResult withAggregateValues(Map<Aggregate, Serializable> aggregateValues)
+   public void setType(QFieldType type)
    {
-      this.aggregateValues = aggregateValues;
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    **
+    *******************************************************************************/
+   public GroupBy withType(QFieldType type)
+   {
+      this.type = type;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for groupByValues
+    ** Getter for fieldName
     **
     *******************************************************************************/
-   public AggregateResult withAggregateValue(Aggregate aggregate, Serializable value)
+   public String getFieldName()
    {
-      if(this.aggregateValues == null)
-      {
-         this.aggregateValues = new LinkedHashMap<>();
-      }
-      this.aggregateValues.put(aggregate, value);
+      return fieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldName
+    **
+    *******************************************************************************/
+   public void setFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldName
+    **
+    *******************************************************************************/
+   public GroupBy withFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
       return (this);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for formatString
     **
     *******************************************************************************/
-   public Serializable getAggregateValue(Aggregate aggregate)
+   public String getFormatString()
    {
-      return (this.aggregateValues.get(aggregate));
+      return formatString;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for groupByValues
+    ** Setter for formatString
     **
     *******************************************************************************/
-   public Map<GroupBy, Serializable> getGroupByValues()
+   public void setFormatString(String formatString)
    {
-      return groupByValues;
+      this.formatString = formatString;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for groupByValues
+    ** Fluent setter for formatString
     **
     *******************************************************************************/
-   public void setGroupByValues(Map<GroupBy, Serializable> groupByValues)
+   public GroupBy withFormatString(String formatString)
    {
-      this.groupByValues = groupByValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for groupByValues
-    **
-    *******************************************************************************/
-   public AggregateResult withGroupByValues(Map<GroupBy, Serializable> groupByValues)
-   {
-      this.groupByValues = groupByValues;
+      this.formatString = formatString;
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for groupByValues
-    **
-    *******************************************************************************/
-   public AggregateResult withGroupByValue(GroupBy groupBy, Serializable value)
-   {
-      if(this.groupByValues == null)
-      {
-         this.groupByValues = new LinkedHashMap<>();
-      }
-      this.groupByValues.put(groupBy, value);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Serializable getGroupByValue(GroupBy groupBy)
-   {
-      return (this.groupByValues.get(groupBy));
    }
 
 }

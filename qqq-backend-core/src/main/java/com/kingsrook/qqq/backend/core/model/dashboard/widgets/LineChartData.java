@@ -44,8 +44,9 @@ public class LineChartData implements QWidget
       };
     */
 
-   private String title;
-   private Data   chartData;
+   private String  title;
+   private Data    chartData;
+   private boolean isYAxisCurrency = false;
 
 
 
@@ -146,6 +147,40 @@ public class LineChartData implements QWidget
    public LineChartData withChartData(Data chartData)
    {
       this.chartData = chartData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isYAxisCurrency
+    **
+    *******************************************************************************/
+   public boolean getIsYAxisCurrency()
+   {
+      return isYAxisCurrency;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isYAxisCurrency
+    **
+    *******************************************************************************/
+   public void setIsYAxisCurrency(boolean isYAxisCurrency)
+   {
+      this.isYAxisCurrency = isYAxisCurrency;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isYAxisCurrency
+    **
+    *******************************************************************************/
+   public LineChartData withIsYAxisCurrency(boolean isYAxisCurrency)
+   {
+      this.isYAxisCurrency = isYAxisCurrency;
       return (this);
    }
 

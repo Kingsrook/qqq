@@ -198,6 +198,23 @@ public class GeneralProcessUtils
 
 
    /*******************************************************************************
+    ** Query to get one entity by a unique key value.  That field can be the primary
+    ** key, or any other field on the table.  Note, if multiple rows do match the value,
+    ** only 1 (determined in an unspecified way) is returned.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> Optional<T> getEntityByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue, Class<T> entityClass) throws QException
+   {
+      Optional<QRecord> optionalQRecord = getRecordByField(parentActionInput, tableName, fieldName, fieldValue);
+      if(optionalQRecord.isPresent())
+      {
+         return (Optional.of(QRecordEntity.fromQRecord(entityClass, optionalQRecord.get())));
+      }
+      return (Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
     ** Query to get one record by a unique key value.
     *******************************************************************************/
    public static QRecord getRecordByFieldOrElseThrow(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException

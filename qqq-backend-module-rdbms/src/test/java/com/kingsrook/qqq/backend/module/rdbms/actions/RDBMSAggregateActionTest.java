@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateIn
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -40,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.Assertions;
@@ -145,7 +147,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       aggregateInput.withAggregate(countOfId);
       aggregateInput.withAggregate(sumOfDaysWorked);
 
-      aggregateInput.withGroupByFieldName("lastName");
+      aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, "lastName", null));
       aggregateInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("lastName")));
 
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
@@ -182,8 +184,8 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       aggregateInput.withAggregate(countOfId);
       aggregateInput.withAggregate(sumOfDaysWorked);
 
-      aggregateInput.withGroupByFieldName("lastName");
-      aggregateInput.withGroupByFieldName("firstName");
+      aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, "lastName", null));
+      aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, "firstName", null));
 
       aggregateInput.setFilter(new QQueryFilter()
          .withOrderBy(new QFilterOrderBy("lastName"))
@@ -238,7 +240,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       aggregateInput.withAggregate(countOfId);
       // note - don't query this value - just order by it!! aggregateInput.withAggregate(sumOfDaysWorked);
 
-      aggregateInput.withGroupByFieldName("lastName");
+      aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, "lastName", null));
 
       aggregateInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderByAggregate(sumOfDaysWorked, false)));
 
@@ -290,7 +292,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       /////////////////////////////////////////////////////////////////////////////////////////
       // but re-run w/ a group-by -- then, if no rows are found, there are 0 result objects. //
       /////////////////////////////////////////////////////////////////////////////////////////
-      aggregateInput.withGroupByFieldName("lastName");
+      aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, "lastName", null));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       assertTrue(aggregateOutput.getResults().isEmpty());
    }
@@ -328,7 +330,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       aggregateInput.setSession(new QSession());
       aggregateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       aggregateInput.withAggregate(sumOfQuantity);
-      aggregateInput.withGroupByFieldName(TestUtils.TABLE_NAME_ORDER_LINE + ".sku");
+      aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, TestUtils.TABLE_NAME_ORDER_LINE + ".sku", null));
       aggregateInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_ORDER_LINE));
 
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);

@@ -31,6 +31,9 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
@@ -40,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -68,15 +72,42 @@ public class ParentWidgetRenderer extends AbstractWidgetRenderer
          List<List<Map<String, String>>> pvsData   = new ArrayList<>();
          List<String>                    pvsLabels = new ArrayList<>();
          List<String>                    pvsNames  = new ArrayList<>();
-         for(String possibleValueSourceName : CollectionUtils.nonNullList(metaData.getPossibleValueNameList()))
+         for(ParentWidgetMetaData.DropdownData dropdownData : CollectionUtils.nonNullList(metaData.getDropdowns()))
          {
-            QPossibleValueSource possibleValueSource = input.getInstance().getPossibleValueSource(possibleValueSourceName);
-            pvsLabels.add(possibleValueSource.getLabel() != null ? possibleValueSource.getLabel() : possibleValueSourceName);
+            String               possibleValueSourceName = dropdownData.getPossibleValueSourceName();
+            QPossibleValueSource possibleValueSource     = input.getInstance().getPossibleValueSource(possibleValueSourceName);
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // this looks complicated, but is just look for a label in the dropdown data and if found use it,                                                                                  //
+            // otherwise look for label in PVS and if found use that, otherwise just use the PVS name                                                                                          //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            pvsLabels.add(dropdownData.getLabel() != null ? dropdownData.getLabel() : (possibleValueSource.getLabel() != null ? possibleValueSource.getLabel() : possibleValueSourceName));
             pvsNames.add(possibleValueSourceName);
 
             SearchPossibleValueSourceInput pvsInput = new SearchPossibleValueSourceInput(input.getInstance());
             pvsInput.setSession(input.getSession());
             pvsInput.setPossibleValueSourceName(possibleValueSourceName);
+
+            if(dropdownData.getForeignKeyFieldName() != null)
+            {
+               ////////////////////////////////////////
+               // look for an id in the query params //
+               ////////////////////////////////////////
+               Integer id = null;
+               if(input.getQueryParams() != null && input.getQueryParams().containsKey("id") && StringUtils.hasContent(input.getQueryParams().get("id")))
+               {
+                  id = Integer.parseInt(input.getQueryParams().get("id"));
+               }
+               if(id != null)
+               {
+                  pvsInput.setDefaultQueryFilter(new QQueryFilter().withCriteria(
+                     new QFilterCriteria(
+                        dropdownData.getForeignKeyFieldName(),
+                        QCriteriaOperator.EQUALS,
+                        id)));
+               }
+            }
+
             SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(pvsInput);
 
             List<Map<String, String>> dropdownOptionList = new ArrayList<>();

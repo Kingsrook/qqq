@@ -41,9 +41,21 @@ public class ChartData implements QWidget
       }
     */
 
-   private String title;
-   private String description;
-   private Data   chartData;
+   private String       title;
+   private String       description;
+   private List<String> colors;
+   private Data         chartData;
+   private boolean      isCurrency = false;
+   private int          height;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public ChartData()
+   {
+   }
 
 
 
@@ -177,6 +189,74 @@ public class ChartData implements QWidget
 
 
    /*******************************************************************************
+    ** Getter for isCurrency
+    **
+    *******************************************************************************/
+   public boolean getIsCurrency()
+   {
+      return isCurrency;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isCurrency
+    **
+    *******************************************************************************/
+   public void setIsCurrency(boolean isCurrency)
+   {
+      this.isCurrency = isCurrency;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isCurrency
+    **
+    *******************************************************************************/
+   public ChartData withIsCurrency(boolean isCurrency)
+   {
+      this.isCurrency = isCurrency;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for height
+    **
+    *******************************************************************************/
+   public int getHeight()
+   {
+      return height;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for height
+    **
+    *******************************************************************************/
+   public void setHeight(int height)
+   {
+      this.height = height;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for height
+    **
+    *******************************************************************************/
+   public ChartData withHeight(int height)
+   {
+      this.height = height;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public static class Data
@@ -224,9 +304,13 @@ public class ChartData implements QWidget
        ** Getter for datasets
        **
        *******************************************************************************/
-      public Dataset getDataset()
+      public List<Dataset> getDatasets()
       {
-         return dataset;
+         if(dataset != null)
+         {
+            return List.of(dataset);
+         }
+         return List.of();
       }
 
 
@@ -260,6 +344,7 @@ public class ChartData implements QWidget
       public static class Dataset
       {
          private String       label;
+         private String       color;
          private List<Number> data;
 
 
@@ -282,6 +367,40 @@ public class ChartData implements QWidget
          public void setLabel(String label)
          {
             this.label = label;
+         }
+
+
+
+         /*******************************************************************************
+          ** Getter for color
+          **
+          *******************************************************************************/
+         public String getColor()
+         {
+            return color;
+         }
+
+
+
+         /*******************************************************************************
+          ** Setter for color
+          **
+          *******************************************************************************/
+         public void setColor(String color)
+         {
+            this.color = color;
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for color
+          **
+          *******************************************************************************/
+         public Dataset withColor(String color)
+         {
+            this.color = color;
+            return (this);
          }
 
 

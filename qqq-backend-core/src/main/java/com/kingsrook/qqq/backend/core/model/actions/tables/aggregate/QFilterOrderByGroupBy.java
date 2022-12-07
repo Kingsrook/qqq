@@ -22,126 +22,91 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
-import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 
 
 /*******************************************************************************
+ ** Bean representing an element of a query order-by clause - ordering by a
+ ** group by
  **
  *******************************************************************************/
-public class AggregateResult
+public class QFilterOrderByGroupBy extends QFilterOrderBy implements Cloneable
 {
-   private Map<Aggregate, Serializable> aggregateValues = new LinkedHashMap<>();
-   private Map<GroupBy, Serializable>   groupByValues   = new LinkedHashMap<>();
+   private GroupBy groupBy;
 
 
 
    /*******************************************************************************
-    ** Getter for aggregateValues
     **
     *******************************************************************************/
-   public Map<Aggregate, Serializable> getAggregateValues()
+   @Override
+   public QFilterOrderByGroupBy clone()
    {
-      return aggregateValues;
+      return (QFilterOrderByGroupBy) super.clone();
    }
 
 
 
    /*******************************************************************************
-    ** Setter for aggregateValues
-    **
+    ** Default no-arg constructor
     *******************************************************************************/
-   public void setAggregateValues(Map<Aggregate, Serializable> aggregateValues)
+   public QFilterOrderByGroupBy()
    {
-      this.aggregateValues = aggregateValues;
+
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for aggregateValues
-    **
+    ** Constructor that sets groupBy, but leaves default for isAscending (true)
     *******************************************************************************/
-   public AggregateResult withAggregateValues(Map<Aggregate, Serializable> aggregateValues)
+   public QFilterOrderByGroupBy(GroupBy groupBy)
    {
-      this.aggregateValues = aggregateValues;
-      return (this);
+      this.groupBy = groupBy;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for groupByValues
-    **
+    ** Constructor that takes groupBy and isAscending.
     *******************************************************************************/
-   public AggregateResult withAggregateValue(Aggregate aggregate, Serializable value)
+   public QFilterOrderByGroupBy(GroupBy groupBy, boolean isAscending)
    {
-      if(this.aggregateValues == null)
-      {
-         this.aggregateValues = new LinkedHashMap<>();
-      }
-      this.aggregateValues.put(aggregate, value);
-      return (this);
+      this.groupBy = groupBy;
+      setIsAscending(isAscending);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for groupBy
     **
     *******************************************************************************/
-   public Serializable getAggregateValue(Aggregate aggregate)
+   public GroupBy getGroupBy()
    {
-      return (this.aggregateValues.get(aggregate));
+      return groupBy;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for groupByValues
+    ** Setter for groupBy
     **
     *******************************************************************************/
-   public Map<GroupBy, Serializable> getGroupByValues()
+   public void setGroupBy(GroupBy groupBy)
    {
-      return groupByValues;
+      this.groupBy = groupBy;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for groupByValues
+    ** Fluent setter for groupBy
     **
     *******************************************************************************/
-   public void setGroupByValues(Map<GroupBy, Serializable> groupByValues)
+   public QFilterOrderByGroupBy withGroupBy(GroupBy groupBy)
    {
-      this.groupByValues = groupByValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for groupByValues
-    **
-    *******************************************************************************/
-   public AggregateResult withGroupByValues(Map<GroupBy, Serializable> groupByValues)
-   {
-      this.groupByValues = groupByValues;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for groupByValues
-    **
-    *******************************************************************************/
-   public AggregateResult withGroupByValue(GroupBy groupBy, Serializable value)
-   {
-      if(this.groupByValues == null)
-      {
-         this.groupByValues = new LinkedHashMap<>();
-      }
-      this.groupByValues.put(groupBy, value);
+      this.groupBy = groupBy;
       return (this);
    }
 
@@ -150,9 +115,9 @@ public class AggregateResult
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Serializable getGroupByValue(GroupBy groupBy)
+   @Override
+   public String toString()
    {
-      return (this.groupByValues.get(groupBy));
+      return (groupBy + " " + (getIsAscending() ? "ASC" : "DESC"));
    }
-
 }

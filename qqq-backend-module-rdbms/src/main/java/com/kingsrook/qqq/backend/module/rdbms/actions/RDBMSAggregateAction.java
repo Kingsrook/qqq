@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateIn
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -78,7 +79,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             sql += " WHERE " + makeWhereClause(aggregateInput.getInstance(), table, joinsContext, filter, params);
          }
 
-         if(CollectionUtils.nullSafeHasContents(aggregateInput.getGroupByFieldNames()))
+         if(CollectionUtils.nullSafeHasContents(aggregateInput.getGroupBys()))
          {
             sql += " GROUP BY " + makeGroupByClause(aggregateInput, joinsContext);
          }
@@ -105,11 +106,10 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                   results.add(result);
 
                   int selectionIndex = 1;
-                  for(String groupByFieldName : CollectionUtils.nonNullList(aggregateInput.getGroupByFieldNames()))
+                  for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
                   {
-                     JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupByFieldName);
-                     Serializable                          value                    = getFieldValueFromResultSet(fieldAndTableNameOrAlias.field(), resultSet, selectionIndex++);
-                     result.withGroupByValue(groupByFieldName, value);
+                     Serializable value = getFieldValueFromResultSet(groupBy.getType(), resultSet, selectionIndex++);
+                     result.withGroupByValue(groupBy, value);
                   }
 
                   for(Aggregate aggregate : aggregateInput.getAggregates())
@@ -148,10 +148,9 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    {
       List<String> rs = new ArrayList<>();
 
-      for(String groupByFieldName : CollectionUtils.nonNullList(aggregateInput.getGroupByFieldNames()))
+      for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
       {
-         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupByFieldName);
-         rs.add(escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())));
+         rs.add(getSingleGroupByClause(groupBy, joinsContext));
       }
 
       for(Aggregate aggregate : aggregateInput.getAggregates())
@@ -170,10 +169,9 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    private String makeGroupByClause(AggregateInput aggregateInput, JoinsContext joinsContext)
    {
       List<String> columns = new ArrayList<>();
-      for(String groupByFieldName : aggregateInput.getGroupByFieldNames())
+      for(GroupBy groupBy : CollectionUtils.nonNullList(aggregateInput.getGroupBys()))
       {
-         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(groupByFieldName);
-         columns.add(escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())));
+         columns.add(getSingleGroupByClause(groupBy, joinsContext));
       }
 
       return (StringUtils.join(",", columns));
