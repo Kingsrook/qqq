@@ -75,10 +75,12 @@ class ParentWidgetRendererTest
 
       QWidgetMetaDataInterface parentWidget = new ParentWidgetMetaData()
          .withTitle("Parent")
-         .withPossibleValueNameList(
+         .withDropdowns(
             List.of(
-               TestUtils.defineStatesPossibleValueSource().getName(),
-               TestUtils.defineShapePossibleValueSource().getName()
+               new ParentWidgetMetaData.DropdownData()
+                  .withPossibleValueSourceName(TestUtils.defineStatesPossibleValueSource().getName()),
+               new ParentWidgetMetaData.DropdownData()
+                  .withPossibleValueSourceName(TestUtils.defineShapePossibleValueSource().getName())
             )
          )
          .withChildWidgetNameList(

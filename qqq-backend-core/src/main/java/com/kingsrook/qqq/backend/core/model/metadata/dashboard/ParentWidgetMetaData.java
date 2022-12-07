@@ -32,7 +32,6 @@ import java.util.List;
 public class ParentWidgetMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
 {
    private String             title;
-   private List<String>       possibleValueNameList;
    private List<String>       childWidgetNameList;
    private List<String>       childProcessNameList;
    private List<DropdownData> dropdowns;
@@ -68,40 +67,6 @@ public class ParentWidgetMetaData extends QWidgetMetaData implements QWidgetMeta
    public ParentWidgetMetaData withTitle(String title)
    {
       this.title = title;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for possibleValueNameList
-    **
-    *******************************************************************************/
-   public List<String> getPossibleValueNameList()
-   {
-      return possibleValueNameList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for possibleValueNameList
-    **
-    *******************************************************************************/
-   public void setPossibleValueNameList(List<String> possibleValueNameList)
-   {
-      this.possibleValueNameList = possibleValueNameList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for possibleValueNameList
-    **
-    *******************************************************************************/
-   public ParentWidgetMetaData withPossibleValueNameList(List<String> possibleValueNameList)
-   {
-      this.possibleValueNameList = possibleValueNameList;
       return (this);
    }
 
