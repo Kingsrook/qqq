@@ -27,7 +27,7 @@ import java.util.Map;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend stepper widget
+ ** Model containing datastructure expected by frontend parent widget
  **
  *******************************************************************************/
 public class ParentWidgetData implements QWidget
@@ -43,6 +43,7 @@ public class ParentWidgetData implements QWidget
    private List<List<Map<String, String>>> dropdownDataList;
 
    private List<String> childWidgetNameList;
+   private String       dropdownNeedsSelectedText;
 
 
 
@@ -197,6 +198,40 @@ public class ParentWidgetData implements QWidget
    public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
    {
       this.childWidgetNameList = childWidgetNameList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for dropdownNeedsSelectedText
+    **
+    *******************************************************************************/
+   public String getDropdownNeedsSelectedText()
+   {
+      return dropdownNeedsSelectedText;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dropdownNeedsSelectedText
+    **
+    *******************************************************************************/
+   public void setDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
+   {
+      this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdownNeedsSelectedText
+    **
+    *******************************************************************************/
+   public ParentWidgetData withDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
+   {
+      this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
       return (this);
    }
 

@@ -19,54 +19,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
+
+
+import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.DividerWidgetData;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ ** Generic widget for showing a divider
  *******************************************************************************/
-public enum WidgetType
+public class DividerWidgetRenderer extends AbstractWidgetRenderer
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   FIELD_VALUE_LIST("fieldValueList");
-
-
-   private final String type;
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   WidgetType(String type)
+   @Override
+   public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
-      this.type = type;
+      ActionHelper.validateSession(input);
+      return (new RenderWidgetOutput(new DividerWidgetData()));
    }
-
-
-
-   /*******************************************************************************
-    ** Getter for type
-    **
-    *******************************************************************************/
-   public String getType()
-   {
-      return type;
-   }
-
 }

@@ -180,9 +180,10 @@ public class ParentWidgetMetaData extends QWidgetMetaData
     *******************************************************************************/
    public static class DropdownData
    {
-      private String possibleValueSourceName;
-      private String foreignKeyFieldName;
-      private String label;
+      private String  possibleValueSourceName;
+      private String  foreignKeyFieldName;
+      private String  label;
+      private boolean isRequired;
 
 
 
@@ -283,6 +284,40 @@ public class ParentWidgetMetaData extends QWidgetMetaData
       public DropdownData withLabel(String label)
       {
          this.label = label;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for isRequired
+       **
+       *******************************************************************************/
+      public boolean getIsRequired()
+      {
+         return isRequired;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for isRequired
+       **
+       *******************************************************************************/
+      public void setIsRequired(boolean isRequired)
+      {
+         this.isRequired = isRequired;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for isRequired
+       **
+       *******************************************************************************/
+      public DropdownData withIsRequired(boolean isRequired)
+      {
+         this.isRequired = isRequired;
          return (this);
       }
 

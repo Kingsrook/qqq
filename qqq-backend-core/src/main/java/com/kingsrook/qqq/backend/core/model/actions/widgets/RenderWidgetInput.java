@@ -38,7 +38,7 @@ public class RenderWidgetInput extends AbstractActionInput
 {
    private QSession                 session;
    private QWidgetMetaDataInterface widgetMetaData;
-   private Map<String, String>      queryParams;
+   private Map<String, String>      queryParams = new HashMap<>();
 
 
 

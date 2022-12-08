@@ -41,12 +41,11 @@ public class ChartData implements QWidget
       }
     */
 
-   private String       title;
-   private String       description;
-   private List<String> colors;
-   private Data         chartData;
-   private boolean      isCurrency = false;
-   private int          height;
+   private String  title;
+   private String  description;
+   private Data    chartData;
+   private boolean isCurrency = false;
+   private int     height;
 
 
 
@@ -68,9 +67,12 @@ public class ChartData implements QWidget
       setDescription(description);
       setChartData(new ChartData.Data()
          .withLabels(labels)
-         .withDatasets(new ChartData.Data.Dataset()
-            .withLabel(seriesLabel)
-            .withData(data)));
+         .withDatasets(List.of(
+            new ChartData.Data.Dataset()
+               .withLabel(seriesLabel)
+               .withData(data)
+         ))
+      );
    }
 
 
@@ -261,8 +263,8 @@ public class ChartData implements QWidget
     *******************************************************************************/
    public static class Data
    {
-      private List<String> labels;
-      private Dataset      dataset;
+      private List<String>  labels;
+      private List<Dataset> datasets;
 
 
 
@@ -306,22 +308,7 @@ public class ChartData implements QWidget
        *******************************************************************************/
       public List<Dataset> getDatasets()
       {
-         if(dataset != null)
-         {
-            return List.of(dataset);
-         }
-         return List.of();
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for datasets
-       **
-       *******************************************************************************/
-      public void setDataset(Dataset dataset)
-      {
-         this.dataset = dataset;
+         return (datasets);
       }
 
 
@@ -330,9 +317,9 @@ public class ChartData implements QWidget
        ** Fluent setter for datasets
        **
        *******************************************************************************/
-      public Data withDatasets(Dataset datasets)
+      public Data withDatasets(List<Dataset> datasets)
       {
-         this.dataset = datasets;
+         this.datasets = datasets;
          return (this);
       }
 
@@ -344,8 +331,8 @@ public class ChartData implements QWidget
       public static class Dataset
       {
          private String       label;
-         private String       color;
          private List<Number> data;
+         private String       color;
 
 
 

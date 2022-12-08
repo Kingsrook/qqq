@@ -161,7 +161,6 @@ public class SearchPossibleValueSourceAction
 
       QQueryFilter queryFilter = new QQueryFilter();
       queryFilter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
-      queryInput.setFilter(queryFilter);
 
       if(input.getIdList() != null)
       {
@@ -207,10 +206,18 @@ public class SearchPossibleValueSourceAction
 
       queryFilter.setOrderBys(possibleValueSource.getOrderByFields());
 
-      // todo - default filter
-
       // todo - skip & limit as params
       queryInput.setLimit(250);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if given a default filter, make it the 'top level' filter and the one we just created a subfilter //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(input.getDefaultQueryFilter() != null)
+      {
+         input.getDefaultQueryFilter().addSubFilter(queryFilter);
+         queryFilter = input.getDefaultQueryFilter();
+      }
+      queryInput.setFilter(queryFilter);
 
       QueryOutput             queryOutput     = new QueryAction().execute(queryInput);
       List<Serializable>      ids             = queryOutput.getRecords().stream().map(r -> r.getValue(table.getPrimaryKeyField())).toList();

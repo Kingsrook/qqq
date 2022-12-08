@@ -23,39 +23,16 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ ** Model containing datastructure expected by frontend divider widget
+ **
  *******************************************************************************/
-public enum WidgetType
+public class DividerWidgetData implements QWidget
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   FIELD_VALUE_LIST("fieldValueList");
-
-
-   private final String type;
-
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
-   WidgetType(String type)
+   public DividerWidgetData()
    {
-      this.type = type;
    }
 
 
@@ -66,7 +43,6 @@ public enum WidgetType
     *******************************************************************************/
    public String getType()
    {
-      return type;
+      return WidgetType.DIVIDER.getType();
    }
-
 }
