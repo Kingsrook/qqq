@@ -181,6 +181,16 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static String aHrefViewRecord(RenderWidgetInput input, String tableName, Serializable id, String linkText) throws QException
+   {
+      return ("<a href=\"" + linkRecordView(input, tableName, id) + "\">" + linkText + "</a>");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String linkRecordEdit(AbstractActionInput input, String tableName, Serializable recordId) throws QException
    {
       String tablePath = input.getInstance().getTablePath(input, tableName);
