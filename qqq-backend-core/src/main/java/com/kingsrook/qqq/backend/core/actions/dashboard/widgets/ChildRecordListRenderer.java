@@ -26,8 +26,10 @@ import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -117,9 +119,20 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       /*******************************************************************************
        **
        *******************************************************************************/
-      public AbstractWidgetMetaDataBuilder withCanAddChildRecord(boolean b)
+      public Builder withCanAddChildRecord(boolean b)
       {
          widgetMetaData.withDefaultValue("canAddChildRecord", true);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withDisabledFieldsForNewChildRecords(Set<String> disabledFieldsForNewChildRecords)
+      {
+         widgetMetaData.withDefaultValue("disabledFieldsForNewChildRecords", new HashSet<>(disabledFieldsForNewChildRecords));
          return (this);
       }
    }
@@ -191,6 +204,12 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             defaultValuesForNewChildRecords.put(joinOn.getRightField(), record.getValue(joinOn.getLeftField()));
          }
          widgetData.setDefaultValuesForNewChildRecords(defaultValuesForNewChildRecords);
+
+         Map<String, Serializable> widgetValues = input.getWidgetMetaData().getDefaultValues();
+         if(widgetValues.containsKey("disabledFieldsForNewChildRecords"))
+         {
+            widgetData.setDisabledFieldsForNewChildRecords((Set<String>) widgetValues.get("disabledFieldsForNewChildRecords"));
+         }
       }
 
       return (new RenderWidgetOutput(widgetData));

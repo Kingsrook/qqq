@@ -41,7 +41,8 @@ public enum WidgetType
    QUICK_SIGHT_CHART("quickSightChart"),
    STATISTICS("statistics"),
    STEPPER("stepper"),
-   TABLE("table");
+   TABLE("table"),
+   FIELD_VALUE_LIST("fieldValueList");
 
 
    private final String type;

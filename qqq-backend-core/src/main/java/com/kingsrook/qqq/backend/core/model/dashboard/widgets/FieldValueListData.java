@@ -23,41 +23,131 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Model containing data structure expected by frontend ChildRecordList widget
+ ** Model containing data structure expected by frontend FieldValueListData widget
  **
  *******************************************************************************/
-public class ChildRecordListData implements QWidget
+public class FieldValueListData implements QWidget
 {
-   private String         title;
-   private QueryOutput    queryOutput;
-   private QTableMetaData childTableMetaData;
+   private List<QFieldMetaData> fields;
+   private QRecord              record;
 
-   private String tablePath;
-   private String viewAllLink;
-
-   private boolean                   canAddChildRecord = false;
-   private Map<String, Serializable> defaultValuesForNewChildRecords;
-   private Set<String>               disabledFieldsForNewChildRecords;
+   private Map<String, String>  fieldLabelPrefixIconNames;
+   private Map<String, String>  fieldLabelPrefixIconColors;
+   private Map<String, Integer> fieldIndentLevels;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ChildRecordListData(String title, QueryOutput queryOutput, QTableMetaData childTableMetaData, String tablePath, String viewAllLink)
+   public FieldValueListData()
    {
-      this.title = title;
-      this.queryOutput = queryOutput;
-      this.childTableMetaData = childTableMetaData;
-      this.tablePath = tablePath;
-      this.viewAllLink = viewAllLink;
+      this.fields = new ArrayList<>();
+      this.record = new QRecord();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData addField(QFieldMetaData field)
+   {
+      fields.add(field);
+      return (field);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setValue(String fieldName, Serializable value)
+   {
+      record.setValue(fieldName, value);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setDisplayValue(String fieldName, String displayValue)
+   {
+      record.setDisplayValue(fieldName, displayValue);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData addFieldWithValue(String fieldName, QFieldType type, Serializable value)
+   {
+      return (addFieldWithValue(fieldName, type, value, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFieldMetaData addFieldWithValue(String fieldName, QFieldType type, Serializable value, String displayValue)
+   {
+      QFieldMetaData field = new QFieldMetaData(fieldName, type);
+      addField(field);
+
+      record.setValue(fieldName, value);
+      if(displayValue != null)
+      {
+         record.setDisplayValue(fieldName, displayValue);
+      }
+
+      return (field);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public FieldValueListData(List<QFieldMetaData> fields, QRecord record)
+   {
+      this.fields = fields;
+      this.record = record;
+      enrich();
+   }
+
+
+
+   /*******************************************************************************
+    ** do some enrichment on fields (e.g., name -> label) and set display values in the record.
+    *******************************************************************************/
+   public void enrich()
+   {
+      for(QFieldMetaData field : fields)
+      {
+         if(!StringUtils.hasContent(field.getLabel()))
+         {
+            field.setLabel(QInstanceEnricher.nameToLabel(field.getName()));
+         }
+      }
+
+      QValueFormatter.setDisplayValuesInRecord(fields, record);
    }
 
 
@@ -68,255 +158,153 @@ public class ChildRecordListData implements QWidget
     *******************************************************************************/
    public String getType()
    {
-      return WidgetType.CHILD_RECORD_LIST.getType();
+      return WidgetType.FIELD_VALUE_LIST.getType();
    }
 
 
 
    /*******************************************************************************
-    ** Getter for title
+    ** Getter for fields
     **
     *******************************************************************************/
-   public String getTitle()
+   public List<QFieldMetaData> getFields()
    {
-      return title;
+      return fields;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for title
+    ** Setter for fields
     **
     *******************************************************************************/
-   public void setTitle(String title)
+   public void setFields(List<QFieldMetaData> fields)
    {
-      this.title = title;
+      this.fields = fields;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for title
+    ** Fluent setter for fields
     **
     *******************************************************************************/
-   public ChildRecordListData withTitle(String title)
+   public FieldValueListData withFields(List<QFieldMetaData> fields)
    {
-      this.title = title;
+      this.fields = fields;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for queryOutput
+    ** Getter for record
     **
     *******************************************************************************/
-   public QueryOutput getQueryOutput()
+   public QRecord getRecord()
    {
-      return queryOutput;
+      return record;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryOutput
+    ** Setter for record
     **
     *******************************************************************************/
-   public void setQueryOutput(QueryOutput queryOutput)
+   public void setRecord(QRecord record)
    {
-      this.queryOutput = queryOutput;
+      this.record = record;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryOutput
+    ** Fluent setter for record
     **
     *******************************************************************************/
-   public ChildRecordListData withQueryOutput(QueryOutput queryOutput)
+   public FieldValueListData withRecord(QRecord record)
    {
-      this.queryOutput = queryOutput;
+      this.record = record;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for childTableMetaData
     **
     *******************************************************************************/
-   public QTableMetaData getChildTableMetaData()
+   public void setFieldLabelPrefixIconAndColor(String fieldName, Pair<String, String> iconAndColorPair)
    {
-      return childTableMetaData;
+      setFieldLabelPrefixIconAndColor(fieldName, iconAndColorPair.getA(), iconAndColorPair.getB());
    }
 
 
 
    /*******************************************************************************
-    ** Setter for childTableMetaData
     **
     *******************************************************************************/
-   public void setChildTableMetaData(QTableMetaData childTableMetaData)
+   public void setFieldLabelPrefixIconAndColor(String fieldName, String iconName, String color)
    {
-      this.childTableMetaData = childTableMetaData;
+      if(fieldLabelPrefixIconNames == null)
+      {
+         fieldLabelPrefixIconNames = new HashMap<>();
+      }
+
+      if(fieldLabelPrefixIconColors == null)
+      {
+         fieldLabelPrefixIconColors = new HashMap<>();
+      }
+
+      fieldLabelPrefixIconNames.put(fieldName, iconName);
+      fieldLabelPrefixIconColors.put(fieldName, color);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for childTableMetaData
     **
     *******************************************************************************/
-   public ChildRecordListData withChildTableMetaData(QTableMetaData childTableMetaData)
+   public void setFieldIndentLevel(String fieldName, Integer indentLevel)
    {
-      this.childTableMetaData = childTableMetaData;
-      return (this);
+      if(fieldIndentLevels == null)
+      {
+         fieldIndentLevels = new HashMap<>();
+      }
+
+      fieldIndentLevels.put(fieldName, indentLevel);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for tablePath
+    ** Getter for fieldLabelPrefixIconNames
     **
     *******************************************************************************/
-   public String getTablePath()
+   public Map<String, String> getFieldLabelPrefixIconNames()
    {
-      return tablePath;
+      return fieldLabelPrefixIconNames;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tablePath
+    ** Getter for fieldLabelPrefixIconColors
     **
     *******************************************************************************/
-   public void setTablePath(String tablePath)
+   public Map<String, String> getFieldLabelPrefixIconColors()
    {
-      this.tablePath = tablePath;
+      return fieldLabelPrefixIconColors;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for viewAllLink
+    ** Getter for fieldIndentLevels
     **
     *******************************************************************************/
-   public String getViewAllLink()
+   public Map<String, Integer> getFieldIndentLevels()
    {
-      return viewAllLink;
+      return fieldIndentLevels;
    }
-
-
-
-   /*******************************************************************************
-    ** Setter for viewAllLink
-    **
-    *******************************************************************************/
-   public void setViewAllLink(String viewAllLink)
-   {
-      this.viewAllLink = viewAllLink;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for canAddChildRecord
-    **
-    *******************************************************************************/
-   public boolean getCanAddChildRecord()
-   {
-      return canAddChildRecord;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for canAddChildRecord
-    **
-    *******************************************************************************/
-   public void setCanAddChildRecord(boolean canAddChildRecord)
-   {
-      this.canAddChildRecord = canAddChildRecord;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for canAddChildRecord
-    **
-    *******************************************************************************/
-   public ChildRecordListData withCanAddChildRecord(boolean canAddChildRecord)
-   {
-      this.canAddChildRecord = canAddChildRecord;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for defaultValuesForNewChildRecords
-    **
-    *******************************************************************************/
-   public Map<String, Serializable> getDefaultValuesForNewChildRecords()
-   {
-      return defaultValuesForNewChildRecords;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for defaultValuesForNewChildRecords
-    **
-    *******************************************************************************/
-   public void setDefaultValuesForNewChildRecords(Map<String, Serializable> defaultValuesForNewChildRecords)
-   {
-      this.defaultValuesForNewChildRecords = defaultValuesForNewChildRecords;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for defaultValuesForNewChildRecords
-    **
-    *******************************************************************************/
-   public ChildRecordListData withDefaultValuesForNewChildRecords(Map<String, Serializable> defaultValuesForNewChildRecords)
-   {
-      this.defaultValuesForNewChildRecords = defaultValuesForNewChildRecords;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for disabledFieldsForNewChildRecords
-    **
-    *******************************************************************************/
-   public Set<String> getDisabledFieldsForNewChildRecords()
-   {
-      return disabledFieldsForNewChildRecords;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for disabledFieldsForNewChildRecords
-    **
-    *******************************************************************************/
-   public void setDisabledFieldsForNewChildRecords(Set<String> disabledFieldsForNewChildRecords)
-   {
-      this.disabledFieldsForNewChildRecords = disabledFieldsForNewChildRecords;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for disabledFieldsForNewChildRecords
-    **
-    *******************************************************************************/
-   public ChildRecordListData withDisabledFieldsForNewChildRecords(Set<String> disabledFieldsForNewChildRecords)
-   {
-      this.disabledFieldsForNewChildRecords = disabledFieldsForNewChildRecords;
-      return (this);
-   }
-
 }

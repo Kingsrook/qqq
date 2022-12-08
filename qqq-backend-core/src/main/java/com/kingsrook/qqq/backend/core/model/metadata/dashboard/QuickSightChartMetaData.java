@@ -22,7 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
+import java.io.Serializable;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 /*******************************************************************************
@@ -38,6 +41,8 @@ public class QuickSightChartMetaData extends QWidgetMetaData implements QWidgetM
    private String             userArn;
    private String             region;
    private Collection<String> allowedDomains;
+
+   protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
 
 
@@ -322,5 +327,57 @@ public class QuickSightChartMetaData extends QWidgetMetaData implements QWidgetM
    {
       this.allowedDomains = allowedDomains;
       return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValues
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getDefaultValues()
+   {
+      return defaultValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultValues
+    **
+    *******************************************************************************/
+   public void setDefaultValues(Map<String, Serializable> defaultValues)
+   {
+      this.defaultValues = defaultValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultValues
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withDefaultValues(Map<String, Serializable> defaultValues)
+   {
+      this.defaultValues = defaultValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for a single defaultValue
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withDefaultValue(String key, Serializable value)
+   {
+      if(this.defaultValues == null)
+      {
+         this.defaultValues = new LinkedHashMap<>();
+      }
+
+      this.defaultValues.put(key, value);
+
+      return (this);
    }
 }

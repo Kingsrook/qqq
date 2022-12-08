@@ -29,7 +29,7 @@ import java.util.List;
  ** Specific meta data for frontend parent widget
  **
  *******************************************************************************/
-public class ParentWidgetMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
+public class ParentWidgetMetaData extends QWidgetMetaData
 {
    private String             title;
    private List<String>       childWidgetNameList;

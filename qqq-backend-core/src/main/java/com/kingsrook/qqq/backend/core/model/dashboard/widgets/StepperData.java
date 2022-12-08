@@ -171,6 +171,9 @@ public class StepperData implements QWidget
       private String linkText;
       private String linkURL;
 
+      private String iconOverride;
+      private String colorOverride;
+
 
 
       /*******************************************************************************
@@ -178,9 +181,6 @@ public class StepperData implements QWidget
        *******************************************************************************/
       public Step()
       {
-         this.label = label;
-         this.linkText = linkText;
-         this.linkURL = linkURL;
       }
 
 
@@ -294,6 +294,74 @@ public class StepperData implements QWidget
       public Step withLinkURL(String linkURL)
       {
          this.linkURL = linkURL;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for iconOverride
+       **
+       *******************************************************************************/
+      public String getIconOverride()
+      {
+         return iconOverride;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for iconOverride
+       **
+       *******************************************************************************/
+      public void setIconOverride(String iconOverride)
+      {
+         this.iconOverride = iconOverride;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for iconOverride
+       **
+       *******************************************************************************/
+      public Step withIconOverride(String iconOverride)
+      {
+         this.iconOverride = iconOverride;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for colorOverride
+       **
+       *******************************************************************************/
+      public String getColorOverride()
+      {
+         return colorOverride;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for colorOverride
+       **
+       *******************************************************************************/
+      public void setColorOverride(String colorOverride)
+      {
+         this.colorOverride = colorOverride;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for colorOverride
+       **
+       *******************************************************************************/
+      public Step withColorOverride(String colorOverride)
+      {
+         this.colorOverride = colorOverride;
          return (this);
       }
 

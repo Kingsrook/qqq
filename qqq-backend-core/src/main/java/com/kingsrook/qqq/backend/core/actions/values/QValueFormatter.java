@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -54,7 +55,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a field, and its value, apply the field's displayFormat.
     *******************************************************************************/
-   public String formatValue(QFieldMetaData field, Serializable value)
+   public static String formatValue(QFieldMetaData field, Serializable value)
    {
       if(QFieldType.BOOLEAN.equals(field.getType()))
       {
@@ -81,7 +82,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a display format string (e.g., %d), and a value, apply the displayFormat.
     *******************************************************************************/
-   public String formatValue(String displayFormat, Serializable value)
+   public static String formatValue(String displayFormat, Serializable value)
    {
       return (formatValue(displayFormat, "", value));
    }
@@ -92,7 +93,7 @@ public class QValueFormatter
     ** For a display format string, an optional fieldName (only used for logging),
     ** and a value, apply the format.
     *******************************************************************************/
-   private String formatValue(String displayFormat, String fieldName, Serializable value)
+   private static String formatValue(String displayFormat, String fieldName, Serializable value)
    {
       //////////////////////////////////
       // null values get null results //
@@ -151,7 +152,7 @@ public class QValueFormatter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String formatDate(LocalDate date)
+   public static String formatDate(LocalDate date)
    {
       return (dateFormatter.format(date));
    }
@@ -161,7 +162,7 @@ public class QValueFormatter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String formatDateTime(LocalDateTime dateTime)
+   public static String formatDateTime(LocalDateTime dateTime)
    {
       return (dateTimeFormatter.format(dateTime));
    }
@@ -171,7 +172,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** Make a string from a table's recordLabelFormat and fields, for a given record.
     *******************************************************************************/
-   public String formatRecordLabel(QTableMetaData table, QRecord record)
+   public static String formatRecordLabel(QTableMetaData table, QRecord record)
    {
       if(!StringUtils.hasContent(table.getRecordLabelFormat()))
       {
@@ -195,7 +196,7 @@ public class QValueFormatter
     ** For a given format string, and a list of fields, look in displayValueMap and
     ** rawValueMap to get the values to apply to the format.
     *******************************************************************************/
-   private String formatStringWithFields(String formatString, List<String> formatFields, Map<String, String> displayValueMap, Map<String, Serializable> rawValueMap)
+   private static String formatStringWithFields(String formatString, List<String> formatFields, Map<String, String> displayValueMap, Map<String, Serializable> rawValueMap)
    {
       List<Serializable> values = formatFields.stream()
          .map(fieldName ->
@@ -221,7 +222,7 @@ public class QValueFormatter
     ** For a given format string, and a list of values, apply the format.  Note, null
     ** values in the list become "".
     *******************************************************************************/
-   public String formatStringWithValues(String formatString, List<String> formatValues)
+   public static String formatStringWithValues(String formatString, List<String> formatValues)
    {
       List<String> values = formatValues.stream()
          .map(v -> v == null ? "" : v)
@@ -234,7 +235,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** Deal with non-happy-path cases for making a record label.
     *******************************************************************************/
-   private String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
+   private static String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
    {
       ///////////////////////////////////////////////////////////////////////////////////////
       // if there's no record label format, then just return the primary key display value //
@@ -262,7 +263,7 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a list of records, set their recordLabels and display values
     *******************************************************************************/
-   public void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
+   public static void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
       if(records == null)
       {
@@ -271,16 +272,25 @@ public class QValueFormatter
 
       for(QRecord record : records)
       {
-         for(QFieldMetaData field : table.getFields().values())
-         {
-            if(record.getDisplayValue(field.getName()) == null)
-            {
-               String formattedValue = formatValue(field, record.getValue(field.getName()));
-               record.setDisplayValue(field.getName(), formattedValue);
-            }
-         }
-
+         setDisplayValuesInRecord(table.getFields().values(), record);
          record.setRecordLabel(formatRecordLabel(table, record));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of records, set their display values
+    *******************************************************************************/
+   public static void setDisplayValuesInRecord(Collection<QFieldMetaData> fields, QRecord record)
+   {
+      for(QFieldMetaData field : fields)
+      {
+         if(record.getDisplayValue(field.getName()) == null)
+         {
+            String formattedValue = formatValue(field, record.getValue(field.getName()));
+            record.setDisplayValue(field.getName(), formattedValue);
+         }
       }
    }
 

@@ -186,6 +186,14 @@ public class QInstanceValidator
                assertNoException(() -> qInstance.getTable(join.getRightTable()).getField(joinOn.getRightField()), "Right field name in joinOn " + joinName + " is not a defined field in table " + join.getRightTable());
             }
          }
+
+         for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(join.getOrderBys()))
+         {
+            if(rightTableExists)
+            {
+               assertNoException(() -> qInstance.getTable(join.getRightTable()).getField(orderBy.getFieldName()), "Field name " + orderBy.getFieldName() + " in orderBy for join " + joinName + " is not a defined field in the right-table " + join.getRightTable());
+            }
+         }
       });
    }
 

@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
@@ -115,4 +117,26 @@ public interface QWidgetMetaDataInterface
     ** Setter for type
     *******************************************************************************/
    void setIcon(String type);
+
+   /*******************************************************************************
+    ** Getter for defaultValues
+    *******************************************************************************/
+   Map<String, Serializable> getDefaultValues();
+
+   /*******************************************************************************
+    ** Setter for defaultValues
+    *******************************************************************************/
+   void setDefaultValues(Map<String, Serializable> defaultValues);
+
+   /*******************************************************************************
+    ** Fluent setter for defaultValues
+    *******************************************************************************/
+   QWidgetMetaData withDefaultValues(Map<String, Serializable> defaultValues);
+
+   /*******************************************************************************
+    ** Fluent setter for a single defaultValue
+    *******************************************************************************/
+   QWidgetMetaData withDefaultValue(String key, Serializable value);
+
 }
+

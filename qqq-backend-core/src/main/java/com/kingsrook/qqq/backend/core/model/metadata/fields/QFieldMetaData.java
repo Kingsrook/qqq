@@ -562,6 +562,22 @@ public class QFieldMetaData implements Cloneable
 
 
    /*******************************************************************************
+    ** Fluent setter for adornments
+    **
+    *******************************************************************************/
+   public QFieldMetaData withFieldAdornment(AdornmentType adornmentType)
+   {
+      if(this.adornments == null)
+      {
+         this.adornments = new ArrayList<>();
+      }
+      this.adornments.add(new FieldAdornment(adornmentType));
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for maxLength
     **
     *******************************************************************************/

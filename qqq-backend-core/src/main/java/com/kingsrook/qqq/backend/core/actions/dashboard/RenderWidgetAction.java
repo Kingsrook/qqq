@@ -30,7 +30,6 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRe
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -53,12 +52,9 @@ public class RenderWidgetAction
       ///////////////////////////////////////////////////////////////
       // move default values from meta data into this render input //
       ///////////////////////////////////////////////////////////////
-      if(input.getWidgetMetaData() instanceof QWidgetMetaData widgetMetaData)
+      for(Map.Entry<String, Serializable> entry : input.getWidgetMetaData().getDefaultValues().entrySet())
       {
-         for(Map.Entry<String, Serializable> entry : widgetMetaData.getDefaultValues().entrySet())
-         {
-            input.addQueryParam(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
-         }
+         input.addQueryParam(entry.getKey(), ValueUtils.getValueAsString(entry.getValue()));
       }
 
       return (widgetRenderer.render(input));

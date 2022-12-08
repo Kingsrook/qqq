@@ -31,10 +31,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 
@@ -125,9 +127,9 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String linkTableBulkLoadChildren(String baseHref, String tableName) throws QException
+   public static String linkTableBulkLoadChildren(String tableName) throws QException
    {
-      return (baseHref + "#/launchProcess=" + tableName + ".bulkInsert");
+      return ("#/launchProcess=" + tableName + ".bulkInsert");
    }
 
 
@@ -161,6 +163,17 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    {
       String tablePath = input.getInstance().getTablePath(input, tableName);
       return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
+   {
+      String href = linkTableFilter(input, tableName, filter);
+      return ("<a href=\"" + href + "\">" + QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + " " + pluralize(noOfRecords, singularLabel, pluralLabel) + "</a>");
    }
 
 
@@ -203,9 +216,9 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String linkTableCreateChild(String baseHref, String childTableName, Map<String, Serializable> defaultValues)
+   public static String linkTableCreateChild(String childTableName, Map<String, Serializable> defaultValues)
    {
-      return (linkTableCreateChild(baseHref, childTableName, defaultValues, defaultValues.keySet()));
+      return (linkTableCreateChild(childTableName, defaultValues, defaultValues.keySet()));
    }
 
 
@@ -213,13 +226,48 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String linkTableCreateChild(String baseHref, String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields)
+   public static String aHrefTableCreateChild(String childTableName, Map<String, Serializable> defaultValues)
+   {
+      return (aHrefTableCreateChild(childTableName, defaultValues, defaultValues.keySet()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkTableCreateChild(String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields)
    {
       Map<String, Integer> disabledFieldsMap = disabledFields.stream().collect(Collectors.toMap(k -> k, k -> 1));
 
-      return (baseHref + "#/createChild=" + childTableName
+      return ("#/createChild=" + childTableName
          + "/defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), StandardCharsets.UTF_8).replaceAll("\\+", "%20")
          + "/disabledFields=" + URLEncoder.encode(JsonUtils.toJson(disabledFieldsMap), StandardCharsets.UTF_8).replaceAll("\\+", "%20"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String aHrefTableCreateChild(String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields)
+   {
+      return ("<a href=\"" + linkTableCreateChild(childTableName, defaultValues, defaultValues.keySet()) + "\">Create new</a>");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String pluralize(Integer count, String singular, String plural)
+   {
+      if(count != null && count.equals(1))
+      {
+         return (singular);
+      }
+
+      return (plural);
    }
 
 }

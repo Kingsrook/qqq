@@ -37,6 +37,7 @@ public enum AdornmentType
    CHIP,
    SIZE,
    CODE_EDITOR,
+   RENDER_HTML,
    ERROR;
    //////////////////////////////////////////////////////////////////////////
    // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
