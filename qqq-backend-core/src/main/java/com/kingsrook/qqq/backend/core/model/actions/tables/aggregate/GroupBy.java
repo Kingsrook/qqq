@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
 import java.io.Serializable;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
@@ -149,4 +150,34 @@ public class GroupBy implements Serializable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      GroupBy groupBy = (GroupBy) o;
+      return type == groupBy.type && Objects.equals(fieldName, groupBy.fieldName) && Objects.equals(formatString, groupBy.formatString);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(type, fieldName, formatString);
+   }
 }
