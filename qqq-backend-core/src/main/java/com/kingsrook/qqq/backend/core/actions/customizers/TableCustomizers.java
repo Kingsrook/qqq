@@ -22,10 +22,6 @@
 package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
-import java.util.function.Function;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-
-
 /*******************************************************************************
  ** Enum definition of possible table customizers - "roles" for custom code that
  ** can be applied to tables.
@@ -43,13 +39,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public enum TableCustomizers
 {
-   POST_QUERY_RECORD(new TableCustomizer("postQueryRecord", Function.class, ((Object x) ->
-   {
-      @SuppressWarnings("unchecked")
-      Function<QRecord, QRecord> function = (Function<QRecord, QRecord>) x;
-      QRecord output = function.apply(new QRecord());
-   }))),
-
+   POST_QUERY_RECORD(new TableCustomizer("postQueryRecord", AbstractPostQueryCustomizer.class)),
    POST_INSERT_RECORD(new TableCustomizer("postInsertRecord", AbstractPostInsertCustomizer.class));
 
 

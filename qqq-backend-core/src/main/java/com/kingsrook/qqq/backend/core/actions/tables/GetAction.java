@@ -28,8 +28,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
@@ -64,7 +64,7 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class GetAction
 {
-   private Optional<Function<QRecord, QRecord>> postGetRecordCustomizer;
+   private Optional<AbstractPostQueryCustomizer> postGetRecordCustomizer;
 
    private GetInput                 getInput;
    private QValueFormatter          qValueFormatter;
@@ -80,7 +80,7 @@ public class GetAction
       ActionHelper.validateSession(getInput);
 
       QTableMetaData table = getInput.getTable();
-      postGetRecordCustomizer = QCodeLoader.getTableCustomizerFunction(table, TableCustomizers.POST_QUERY_RECORD.getRole());
+      postGetRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.getInput = getInput;
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -325,7 +325,7 @@ public class GetAction
       QRecord returnRecord = record;
       if(this.postGetRecordCustomizer.isPresent())
       {
-         returnRecord = postGetRecordCustomizer.get().apply(record);
+         returnRecord = postGetRecordCustomizer.get().apply(List.of(record)).get(0);
       }
 
       if(getInput.getShouldTranslatePossibleValues())

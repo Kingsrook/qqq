@@ -25,7 +25,7 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
-import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -472,13 +472,15 @@ class MemoryBackendModuleTest
       ///////////////////////////////////////////////////////
       // do a query - assert that the customizer did stuff //
       ///////////////////////////////////////////////////////
-      ShapeTestCustomizer.executionCount = 0;
+      ShapeTestCustomizer.invocationCount = 0;
+      ShapeTestCustomizer.recordsCustomizedCount = 0;
       QueryInput queryInput = new QueryInput(qInstance);
       queryInput.setSession(session);
       queryInput.setTableName(table.getName());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size());
-      assertEquals(3, ShapeTestCustomizer.executionCount);
+      assertEquals(1, ShapeTestCustomizer.invocationCount);
+      assertEquals(3, ShapeTestCustomizer.recordsCustomizedCount);
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1) && r.getValueInteger("tenTimesId").equals(10)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(2) && r.getValueInteger("tenTimesId").equals(20)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3) && r.getValueInteger("tenTimesId").equals(30)));
@@ -489,18 +491,26 @@ class MemoryBackendModuleTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class ShapeTestCustomizer implements Function<QRecord, QRecord>
+   public static class ShapeTestCustomizer extends AbstractPostQueryCustomizer
    {
-      static int executionCount = 0;
+      static int invocationCount        = 0;
+      static int recordsCustomizedCount = 0;
 
 
 
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       @Override
-      public QRecord apply(QRecord record)
+      public List<QRecord> apply(List<QRecord> records)
       {
-         executionCount++;
-         record.setValue("tenTimesId", record.getValueInteger("id") * 10);
-         return (record);
+         invocationCount++;
+         for(QRecord record : records)
+         {
+            recordsCustomizedCount++;
+            record.setValue("tenTimesId", record.getValueInteger("id") * 10);
+         }
+         return (records);
       }
    }
 }

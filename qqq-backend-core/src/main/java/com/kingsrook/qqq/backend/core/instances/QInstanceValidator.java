@@ -784,6 +784,9 @@ public class QInstanceValidator
          }
          else if(!Modifier.isPublic(clazz.getModifiers()))
          {
+            //////////////////////////////////////////////////////////////
+            // seems like this doesn't get hit, for private classses... //
+            //////////////////////////////////////////////////////////////
             errors.add(prefix + " because it is not public");
          }
          else
@@ -794,7 +797,7 @@ public class QInstanceValidator
             boolean hasNoArgConstructor = Stream.of(clazz.getConstructors()).anyMatch(c -> c.getParameterCount() == 0);
             if(!hasNoArgConstructor)
             {
-               errors.add(prefix + " because it does not have a parameterless constructor");
+               errors.add(prefix + " because it does not have a public parameterless constructor");
             }
             else
             {

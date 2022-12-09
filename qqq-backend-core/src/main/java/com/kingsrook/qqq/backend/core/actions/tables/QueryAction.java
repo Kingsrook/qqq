@@ -24,8 +24,8 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
@@ -44,10 +44,9 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class QueryAction
 {
-   private Optional<Function<QRecord, QRecord>> postQueryRecordCustomizer;
+   private Optional<AbstractPostQueryCustomizer> postQueryRecordCustomizer;
 
    private QueryInput               queryInput;
-   private QValueFormatter          qValueFormatter;
    private QPossibleValueTranslator qPossibleValueTranslator;
 
 
@@ -59,7 +58,7 @@ public class QueryAction
    {
       ActionHelper.validateSession(queryInput);
 
-      postQueryRecordCustomizer = QCodeLoader.getTableCustomizerFunction(queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
+      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
 
       if(queryInput.getRecordPipe() != null)
@@ -92,7 +91,7 @@ public class QueryAction
    {
       if(this.postQueryRecordCustomizer.isPresent())
       {
-         records.replaceAll(t -> postQueryRecordCustomizer.get().apply(t));
+         records = postQueryRecordCustomizer.get().apply(records);
       }
 
       if(queryInput.getShouldTranslatePossibleValues())
@@ -106,11 +105,7 @@ public class QueryAction
 
       if(queryInput.getShouldGenerateDisplayValues())
       {
-         if(qValueFormatter == null)
-         {
-            qValueFormatter = new QValueFormatter();
-         }
-         qValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
+         QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
       }
    }
 }

@@ -55,7 +55,6 @@ public class ProcessWidgetRenderer extends AbstractWidgetRenderer
          if(input.getWidgetMetaData() instanceof QWidgetMetaData widgetMetaData)
          {
             setupDropdowns(input, widgetMetaData, data);
-            // todo - something about an error-like screen if dropdowns aren't valid?
 
             String           processName     = (String) widgetMetaData.getDefaultValues().get(WIDGET_PROCESS_NAME);
             QProcessMetaData processMetaData = input.getInstance().getProcess(processName);

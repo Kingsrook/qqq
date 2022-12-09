@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
 /*******************************************************************************
- ** inner class for specifying details about dropdown fields on a parent widget
+ ** Details about dropdown fields on a widget
  **
  *******************************************************************************/
 public class WidgetDropdownData

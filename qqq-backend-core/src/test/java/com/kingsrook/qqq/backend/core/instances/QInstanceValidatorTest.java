@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -387,17 +387,17 @@ class QInstanceValidatorTest
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithNoVoidConstructor.class, QCodeUsage.CUSTOMIZER)),
          "Instance of " + CustomizerWithNoVoidConstructor.class.getSimpleName() + " could not be created");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotAFunction.class, QCodeUsage.CUSTOMIZER)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotOfTheRightBaseClass.class, QCodeUsage.CUSTOMIZER)),
          "CodeReference is not of the expected type");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameters.class, QCodeUsage.CUSTOMIZER)),
-         "Error validating customizer type parameters");
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithOnlyPrivateConstructor.class, QCodeUsage.CUSTOMIZER)),
+         "it does not have a public parameterless constructor");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameter1.class, QCodeUsage.CUSTOMIZER)),
-         "Error validating customizer type parameters");
-
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerFunctionWithIncorrectTypeParameter2.class, QCodeUsage.CUSTOMIZER)),
-         "Error validating customizer type parameters");
+      /////////////////////////////////////////////
+      // this class actually works, so, :shrug:? //
+      /////////////////////////////////////////////
+      // assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithPrivateVisibility.class, QCodeUsage.CUSTOMIZER)),
+      //    "it does not have a public parameterless constructor");
 
       assertValidationSuccess((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerValid.class, QCodeUsage.CUSTOMIZER)));
    }
@@ -420,6 +420,30 @@ class QInstanceValidatorTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static class CustomizerWithPrivateVisibility extends AbstractPostQueryCustomizer
+   {
+      public CustomizerWithPrivateVisibility()
+      {
+         System.out.println("eh?");
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records)
+      {
+         return (records);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static class CustomizerWithOnlyPrivateConstructor
    {
       private CustomizerWithOnlyPrivateConstructor()
@@ -433,7 +457,7 @@ class QInstanceValidatorTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class CustomizerThatIsNotAFunction
+   public static class CustomizerThatIsNotOfTheRightBaseClass
    {
    }
 
@@ -442,54 +466,12 @@ class QInstanceValidatorTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class CustomizerFunctionWithIncorrectTypeParameters implements Function<String, String>
+   public static class CustomizerValid extends AbstractPostQueryCustomizer
    {
       @Override
-      public String apply(String s)
+      public List<QRecord> apply(List<QRecord> records)
       {
-         return null;
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class CustomizerFunctionWithIncorrectTypeParameter1 implements Function<String, QRecord>
-   {
-      @Override
-      public QRecord apply(String s)
-      {
-         return null;
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class CustomizerFunctionWithIncorrectTypeParameter2 implements Function<QRecord, String>
-   {
-      @Override
-      public String apply(QRecord s)
-      {
-         return "Test";
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class CustomizerValid implements Function<QRecord, QRecord>
-   {
-      @Override
-      public QRecord apply(QRecord record)
-      {
-         return null;
+         return (records);
       }
    }
 
