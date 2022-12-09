@@ -79,7 +79,12 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          if(loadStep.getOverrideRecordPipeCapacity() != null)
          {
             recordPipe = new RecordPipe(loadStep.getOverrideRecordPipeCapacity());
-            LOG.debug("Overriding record pipe capacity to: " + loadStep.getOverrideRecordPipeCapacity());
+            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + loadStep.getOverrideRecordPipeCapacity());
+         }
+         else if(transformStep.getOverrideRecordPipeCapacity() != null)
+         {
+            recordPipe = new RecordPipe(transformStep.getOverrideRecordPipeCapacity());
+            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + transformStep.getOverrideRecordPipeCapacity());
          }
          else
          {

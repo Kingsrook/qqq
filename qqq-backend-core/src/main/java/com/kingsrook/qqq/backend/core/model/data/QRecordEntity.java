@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +76,7 @@ public abstract class QRecordEntity
     ** Build an entity of this QRecord type from a QRecord
     **
     *******************************************************************************/
-   protected <T extends QRecordEntity> void populateFromQRecord(QRecord qRecord) throws QException
+   protected <T extends QRecordEntity> void populateFromQRecord(QRecord qRecord) throws QRuntimeException
    {
       try
       {
@@ -89,7 +90,7 @@ public abstract class QRecordEntity
       }
       catch(Exception e)
       {
-         throw (new QException("Error building entity from qRecord.", e));
+         throw (new QRuntimeException("Error building entity from qRecord.", e));
       }
    }
 
@@ -99,7 +100,7 @@ public abstract class QRecordEntity
     ** Convert this entity to a QRecord.
     **
     *******************************************************************************/
-   public QRecord toQRecord() throws QException
+   public QRecord toQRecord() throws QRuntimeException
    {
       try
       {
@@ -115,7 +116,7 @@ public abstract class QRecordEntity
       }
       catch(Exception e)
       {
-         throw (new QException("Error building qRecord from entity.", e));
+         throw (new QRuntimeException("Error building qRecord from entity.", e));
       }
    }
 

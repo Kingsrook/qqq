@@ -92,4 +92,23 @@ public abstract class AbstractTransformStep implements BackendStep, ProcessSumma
       return (transaction);
    }
 
+
+
+   /*******************************************************************************
+    ** Allow this transform step to specify the capacity of the pipe being used by the process.
+    **
+    ** The specific use-case for which this is being added is, in the case of a process
+    ** with many records being extracted, if the transform job is too slow, then the pipe
+    ** can get filled, and the extractor (who puts records into the pipe) can time out
+    ** waiting for capacity in the pipe to open up, while a slow loader is consuming
+    ** the records.
+    **
+    ** In other words, for a slow transformer, setting a lower pipe capacity can help prevent
+    ** time-out errors ("Giving up adding record to pipe...")
+    *******************************************************************************/
+   public Integer getOverrideRecordPipeCapacity()
+   {
+      return (null);
+   }
+
 }
