@@ -26,7 +26,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  ** Model containing datastructure expected by frontend bar chart widget
  **
  *******************************************************************************/
-public class StatisticsData implements QWidget
+public class StatisticsData extends QWidgetData
 {
    /*
       interface BarChartData{

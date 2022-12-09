@@ -26,7 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidget;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidgetData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QuickSightChart;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -74,8 +74,8 @@ public class QuickSightChartRenderer extends AbstractWidgetRenderer
 
          final GenerateEmbedUrlForRegisteredUserResponse generateEmbedUrlForRegisteredUserResponse = quickSightClient.generateEmbedUrlForRegisteredUser(generateEmbedUrlForRegisteredUserRequest);
 
-         String  embedUrl = generateEmbedUrlForRegisteredUserResponse.embedUrl();
-         QWidget widget   = new QuickSightChart(input.getWidgetMetaData().getName(), quickSightMetaData.getLabel(), embedUrl);
+         String      embedUrl = generateEmbedUrlForRegisteredUserResponse.embedUrl();
+         QWidgetData widget   = new QuickSightChart(input.getWidgetMetaData().getName(), quickSightMetaData.getLabel(), embedUrl);
          return (new RenderWidgetOutput(widget));
       }
       catch(Exception e)

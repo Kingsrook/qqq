@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  ** Model containing data structure expected by frontend ChildRecordList widget
  **
  *******************************************************************************/
-public class ChildRecordListData implements QWidget
+public class ChildRecordListData extends QWidgetData
 {
    private String         title;
    private QueryOutput    queryOutput;

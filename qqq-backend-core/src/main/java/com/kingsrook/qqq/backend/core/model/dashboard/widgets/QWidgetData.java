@@ -22,212 +22,167 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.util.List;
+import java.util.Map;
+
+
 /*******************************************************************************
- ** Model containing datastructure expected by frontend location widget
+ ** Base class for the data returned by rendering a Widget.
  **
  *******************************************************************************/
-public class LocationData extends QWidgetData
+public abstract class QWidgetData
 {
-   private String imageUrl;
-   private String title;
-   private String description;
-   private String footerText;
-   private String location;
+   private List<String> dropdownNameList;
+   private List<String> dropdownLabelList;
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public LocationData(String imageUrl, String title, String description, String location, String footerText)
-   {
-      this.imageUrl = imageUrl;
-      this.title = title;
-      this.description = description;
-      this.location = location;
-      this.footerText = footerText;
-   }
+   /////////////////////////////////////////////////////////////////////////////////////////
+   // this is a list of lists, the outer list corresponds to each dropdown (parallel list //
+   // with the above dropdownLabelList) - the inner list is the list of actual dropdown   //
+   // options                                                                             //
+   /////////////////////////////////////////////////////////////////////////////////////////
+   private List<List<Map<String, String>>> dropdownDataList;
+   private String                          dropdownNeedsSelectedText;
 
 
 
    /*******************************************************************************
     ** Getter for type
+    *******************************************************************************/
+   public abstract String getType();
+
+
+
+   /*******************************************************************************
+    ** Getter for dropdownLabelList
     **
     *******************************************************************************/
-   public String getType()
+   public List<String> getDropdownLabelList()
    {
-      return WidgetType.LOCATION.getType();
+      return dropdownLabelList;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for imageUrl
+    ** Setter for dropdownLabelList
     **
     *******************************************************************************/
-   public String getImageUrl()
+   public void setDropdownLabelList(List<String> dropdownLabelList)
    {
-      return imageUrl;
+      this.dropdownLabelList = dropdownLabelList;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for imageUrl
+    ** Fluent setter for dropdownLabelList
     **
     *******************************************************************************/
-   public void setImageUrl(String imageUrl)
+   public QWidgetData withDropdownLabelList(List<String> dropdownLabelList)
    {
-      this.imageUrl = imageUrl;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for imageUrl
-    **
-    *******************************************************************************/
-   public LocationData withImageUrl(String imageUrl)
-   {
-      this.imageUrl = imageUrl;
+      this.dropdownLabelList = dropdownLabelList;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for description
+    ** Getter for dropdownNameList
     **
     *******************************************************************************/
-   public String getDescription()
+   public List<String> getDropdownNameList()
    {
-      return description;
+      return dropdownNameList;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for description
+    ** Setter for dropdownNameList
     **
     *******************************************************************************/
-   public void setDescription(String description)
+   public void setDropdownNameList(List<String> dropdownNameList)
    {
-      this.description = description;
+      this.dropdownNameList = dropdownNameList;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for description
+    ** Fluent setter for dropdownNameList
     **
     *******************************************************************************/
-   public LocationData withDescription(String description)
+   public QWidgetData withDropdownNameList(List<String> dropdownNameList)
    {
-      this.description = description;
+      this.dropdownNameList = dropdownNameList;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for footerText
+    ** Getter for dropdownDataList
     **
     *******************************************************************************/
-   public String getFooterText()
+   public List<List<Map<String, String>>> getDropdownDataList()
    {
-      return footerText;
+      return dropdownDataList;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for footerText
+    ** Setter for dropdownDataList
     **
     *******************************************************************************/
-   public void setFooterText(String footerText)
+   public void setDropdownDataList(List<List<Map<String, String>>> dropdownDataList)
    {
-      this.footerText = footerText;
+      this.dropdownDataList = dropdownDataList;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for footerText
+    ** Fluent setter for dropdownDataList
     **
     *******************************************************************************/
-   public LocationData withFooterText(String footerText)
+   public QWidgetData withDropdownDataList(List<List<Map<String, String>>> dropdownDataList)
    {
-      this.footerText = footerText;
+      this.dropdownDataList = dropdownDataList;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for title
+    ** Getter for dropdownNeedsSelectedText
     **
     *******************************************************************************/
-   public String getTitle()
+   public String getDropdownNeedsSelectedText()
    {
-      return title;
+      return dropdownNeedsSelectedText;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for title
+    ** Setter for dropdownNeedsSelectedText
     **
     *******************************************************************************/
-   public void setTitle(String title)
+   public void setDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
    {
-      this.title = title;
+      this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for title
+    ** Fluent setter for dropdownNeedsSelectedText
     **
     *******************************************************************************/
-   public LocationData withTitle(String title)
+   public QWidgetData withDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
    {
-      this.title = title;
-      return (this);
-
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for location
-    **
-    *******************************************************************************/
-   public String getLocation()
-   {
-      return location;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for location
-    **
-    *******************************************************************************/
-   public void setLocation(String location)
-   {
-      this.location = location;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for location
-    **
-    *******************************************************************************/
-   public LocationData withLocation(String location)
-   {
-      this.location = location;
+      this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
       return (this);
    }
-
 }

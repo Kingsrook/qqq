@@ -27,7 +27,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  ** TODO: this might just be an IFrameChart widget in the future
  **
  *******************************************************************************/
-public class QuickSightChart implements QWidget
+public class QuickSightChart extends QWidgetData
 {
    private String label;
    private String name;

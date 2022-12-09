@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
@@ -41,6 +43,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected Integer        gridColumns;
    protected QCodeReference codeReference;
 
+   private   List<WidgetDropdownData>  dropdowns;
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
 
@@ -296,6 +299,56 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
       this.defaultValues.put(key, value);
 
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for dropdowns
+    **
+    *******************************************************************************/
+   public List<WidgetDropdownData> getDropdowns()
+   {
+      return dropdowns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dropdowns
+    **
+    *******************************************************************************/
+   public void setDropdowns(List<WidgetDropdownData> dropdowns)
+   {
+      this.dropdowns = dropdowns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdowns
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withDropdowns(List<WidgetDropdownData> dropdowns)
+   {
+      this.dropdowns = dropdowns;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdowns
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withDropdown(WidgetDropdownData dropdown)
+   {
+      if(this.dropdowns == null)
+      {
+         this.dropdowns = new ArrayList<>();
+      }
+      this.dropdowns.add(dropdown);
       return (this);
    }
 

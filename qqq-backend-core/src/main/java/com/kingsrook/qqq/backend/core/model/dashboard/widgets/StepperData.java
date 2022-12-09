@@ -29,7 +29,7 @@ import java.util.List;
  ** Model containing datastructure expected by frontend stepper widget
  **
  *******************************************************************************/
-public class StepperData implements QWidget
+public class StepperData extends QWidgetData
 {
    private String     title;
    private int        activeStep;

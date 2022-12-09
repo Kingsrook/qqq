@@ -40,7 +40,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Model containing data structure expected by frontend FieldValueListData widget
  **
  *******************************************************************************/
-public class FieldValueListData implements QWidget
+public class FieldValueListData extends QWidgetData
 {
    private List<QFieldMetaData> fields;
    private QRecord              record;

@@ -26,7 +26,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  ** Model containing datastructure expected by frontend bar raw html widget
  **
  *******************************************************************************/
-public class RawHTML implements QWidget
+public class RawHTML extends QWidgetData
 {
    private String title;
    private String html;

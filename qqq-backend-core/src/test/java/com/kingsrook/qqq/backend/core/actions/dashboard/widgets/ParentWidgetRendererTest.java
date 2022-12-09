@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -75,17 +76,17 @@ class ParentWidgetRendererTest
 
       QWidgetMetaDataInterface parentWidget = new ParentWidgetMetaData()
          .withTitle("Parent")
-         .withDropdowns(
-            List.of(
-               new ParentWidgetMetaData.DropdownData()
-                  .withPossibleValueSourceName(TestUtils.defineStatesPossibleValueSource().getName()),
-               new ParentWidgetMetaData.DropdownData()
-                  .withPossibleValueSourceName(TestUtils.defineShapePossibleValueSource().getName())
-            )
-         )
          .withChildWidgetNameList(
             List.of(
                ProcessWidgetRenderer.class.getSimpleName()
+            )
+         )
+         .withDropdowns(
+            List.of(
+               new WidgetDropdownData()
+                  .withPossibleValueSourceName(TestUtils.defineStatesPossibleValueSource().getName()),
+               new WidgetDropdownData()
+                  .withPossibleValueSourceName(TestUtils.defineShapePossibleValueSource().getName())
             )
          )
          .withType(WidgetType.PARENT_WIDGET.getType())

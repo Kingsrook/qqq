@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.widgets;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidgetData;
 
 
 /*******************************************************************************
@@ -30,7 +31,7 @@ import java.io.Serializable;
  *******************************************************************************/
 public class RenderWidgetOutput implements Serializable
 {
-   public Object widgetData;
+   public QWidgetData widgetData;
 
 
 
@@ -38,7 +39,7 @@ public class RenderWidgetOutput implements Serializable
     ** constructor taking in widget data
     **
     *******************************************************************************/
-   public RenderWidgetOutput(Object widgetData)
+   public RenderWidgetOutput(QWidgetData widgetData)
    {
       this.widgetData = widgetData;
    }
@@ -49,7 +50,7 @@ public class RenderWidgetOutput implements Serializable
     ** Getter for widgetData
     **
     *******************************************************************************/
-   public Object getWidgetData()
+   public QWidgetData getWidgetData()
    {
       return widgetData;
    }
@@ -60,7 +61,7 @@ public class RenderWidgetOutput implements Serializable
     ** Setter for widgetData
     **
     *******************************************************************************/
-   public void setWidgetData(Object widgetData)
+   public void setWidgetData(QWidgetData widgetData)
    {
       this.widgetData = widgetData;
    }
@@ -71,7 +72,7 @@ public class RenderWidgetOutput implements Serializable
     ** Fluent setter for widgetData
     **
     *******************************************************************************/
-   public RenderWidgetOutput withWidgetData(Object widgetData)
+   public RenderWidgetOutput withWidgetData(QWidgetData widgetData)
    {
       this.widgetData = widgetData;
       return (this);

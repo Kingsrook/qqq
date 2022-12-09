@@ -29,7 +29,7 @@ import java.util.List;
  ** Model containing datastructure expected by frontend bar chart widget
  **
  *******************************************************************************/
-public class MultiStatisticsData implements QWidget
+public class MultiStatisticsData extends QWidgetData
 {
    private String                    title;
    private List<StatisticsGroupData> statisticsGroupData;

@@ -26,7 +26,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  ** Model containing datastructure expected by frontend divider widget
  **
  *******************************************************************************/
-public class DividerWidgetData implements QWidget
+public class DividerWidgetData extends QWidgetData
 {
    /*******************************************************************************
     **

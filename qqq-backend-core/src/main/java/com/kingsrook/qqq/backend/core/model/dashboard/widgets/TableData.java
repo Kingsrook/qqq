@@ -30,7 +30,7 @@ import java.util.Map;
  ** Model containing datastructure expected by frontend bar chart widget
  **
  *******************************************************************************/
-public class TableData implements QWidget
+public class TableData extends QWidgetData
 {
    private String                    title;
    private String                    linkText;

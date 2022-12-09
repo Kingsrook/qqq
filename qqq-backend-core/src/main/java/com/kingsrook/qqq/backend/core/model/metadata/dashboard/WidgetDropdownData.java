@@ -19,214 +19,153 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend location widget
+ ** inner class for specifying details about dropdown fields on a parent widget
  **
  *******************************************************************************/
-public class LocationData extends QWidgetData
+public class WidgetDropdownData
 {
-   private String imageUrl;
-   private String title;
-   private String description;
-   private String footerText;
-   private String location;
+   private String  possibleValueSourceName;
+   private String  foreignKeyFieldName;
+   private String  label;
+   private boolean isRequired;
 
 
 
    /*******************************************************************************
+    ** Getter for possibleValueSourceName
     **
     *******************************************************************************/
-   public LocationData(String imageUrl, String title, String description, String location, String footerText)
+   public String getPossibleValueSourceName()
    {
-      this.imageUrl = imageUrl;
-      this.title = title;
-      this.description = description;
-      this.location = location;
-      this.footerText = footerText;
+      return possibleValueSourceName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Setter for possibleValueSourceName
     **
     *******************************************************************************/
-   public String getType()
+   public void setPossibleValueSourceName(String possibleValueSourceName)
    {
-      return WidgetType.LOCATION.getType();
+      this.possibleValueSourceName = possibleValueSourceName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for imageUrl
+    ** Fluent setter for possibleValueSourceName
     **
     *******************************************************************************/
-   public String getImageUrl()
+   public WidgetDropdownData withPossibleValueSourceName(String possibleValueSourceName)
    {
-      return imageUrl;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for imageUrl
-    **
-    *******************************************************************************/
-   public void setImageUrl(String imageUrl)
-   {
-      this.imageUrl = imageUrl;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for imageUrl
-    **
-    *******************************************************************************/
-   public LocationData withImageUrl(String imageUrl)
-   {
-      this.imageUrl = imageUrl;
+      this.possibleValueSourceName = possibleValueSourceName;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for description
+    ** Getter for foreignKeyFieldName
     **
     *******************************************************************************/
-   public String getDescription()
+   public String getForeignKeyFieldName()
    {
-      return description;
+      return foreignKeyFieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for description
+    ** Setter for foreignKeyFieldName
     **
     *******************************************************************************/
-   public void setDescription(String description)
+   public void setForeignKeyFieldName(String foreignKeyFieldName)
    {
-      this.description = description;
+      this.foreignKeyFieldName = foreignKeyFieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for description
+    ** Fluent setter for foreignKeyFieldName
     **
     *******************************************************************************/
-   public LocationData withDescription(String description)
+   public WidgetDropdownData withForeignKeyFieldName(String foreignKeyFieldName)
    {
-      this.description = description;
+      this.foreignKeyFieldName = foreignKeyFieldName;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for footerText
+    ** Getter for label
     **
     *******************************************************************************/
-   public String getFooterText()
+   public String getLabel()
    {
-      return footerText;
+      return label;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for footerText
+    ** Setter for label
     **
     *******************************************************************************/
-   public void setFooterText(String footerText)
+   public void setLabel(String label)
    {
-      this.footerText = footerText;
+      this.label = label;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for footerText
+    ** Fluent setter for label
     **
     *******************************************************************************/
-   public LocationData withFooterText(String footerText)
+   public WidgetDropdownData withLabel(String label)
    {
-      this.footerText = footerText;
+      this.label = label;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for title
+    ** Getter for isRequired
     **
     *******************************************************************************/
-   public String getTitle()
+   public boolean getIsRequired()
    {
-      return title;
+      return isRequired;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for title
+    ** Setter for isRequired
     **
     *******************************************************************************/
-   public void setTitle(String title)
+   public void setIsRequired(boolean isRequired)
    {
-      this.title = title;
+      this.isRequired = isRequired;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for title
+    ** Fluent setter for isRequired
     **
     *******************************************************************************/
-   public LocationData withTitle(String title)
+   public WidgetDropdownData withIsRequired(boolean isRequired)
    {
-      this.title = title;
-      return (this);
-
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for location
-    **
-    *******************************************************************************/
-   public String getLocation()
-   {
-      return location;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for location
-    **
-    *******************************************************************************/
-   public void setLocation(String location)
-   {
-      this.location = location;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for location
-    **
-    *******************************************************************************/
-   public LocationData withLocation(String location)
-   {
-      this.location = location;
+      this.isRequired = isRequired;
       return (this);
    }
 

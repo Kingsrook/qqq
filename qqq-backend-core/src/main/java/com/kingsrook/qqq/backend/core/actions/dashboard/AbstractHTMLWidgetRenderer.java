@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -173,7 +174,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
    {
       String href = linkTableFilter(input, tableName, filter);
-      return ("<a href=\"" + href + "\">" + QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + " " + pluralize(noOfRecords, singularLabel, pluralLabel) + "</a>");
+      return ("<a href=\"" + href + "\">" + QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + " " + StringUtils.plural(noOfRecords, singularLabel, pluralLabel) + "</a>");
    }
 
 
@@ -263,21 +264,6 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String aHrefTableCreateChild(String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields)
    {
       return ("<a href=\"" + linkTableCreateChild(childTableName, defaultValues, defaultValues.keySet()) + "\">Create new</a>");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String pluralize(Integer count, String singular, String plural)
-   {
-      if(count != null && count.equals(1))
-      {
-         return (singular);
-      }
-
-      return (plural);
    }
 
 }

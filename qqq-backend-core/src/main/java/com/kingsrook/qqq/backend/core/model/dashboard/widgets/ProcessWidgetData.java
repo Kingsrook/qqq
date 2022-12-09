@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
  ** Model containing datastructure expected by frontend process widget
  **
  *******************************************************************************/
-public class ProcessWidgetData implements QWidget
+public class ProcessWidgetData extends QWidgetData
 {
    private QProcessMetaData          processMetaData;
    private Map<String, Serializable> defaultValues;
