@@ -68,13 +68,30 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Map<Serializable, QRecord> getForeignRecordMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName) throws QException
    {
+      return getForeignRecordMap(parentActionInput, sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTablePrimaryKeyName, new QQueryFilter());
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of sourceRecords,
+    ** lookup records in the foreignTableName,
+    ** that have their foreignTablePrimaryKeyName in the sourceTableForeignKeyFieldName on the sourceRecords.
+    **
+    ** e.g., for a list of orders (with a clientId field), build a map of client.id => client record
+    ** via getForeignRecordMap(input, orderList, "clientId", "client", "id")
+    *******************************************************************************/
+   public static Map<Serializable, QRecord> getForeignRecordMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName, QQueryFilter additionalFilter) throws QException
+   {
       Map<Serializable, QRecord> foreignRecordMap = new HashMap<>();
       QueryInput                 queryInput       = new QueryInput(parentActionInput.getInstance());
       queryInput.setSession(parentActionInput.getSession());
       queryInput.setTableName(foreignTableName);
       List<Serializable> foreignIds = new ArrayList<>(sourceRecords.stream().map(r -> r.getValue(sourceTableForeignKeyFieldName)).toList());
 
-      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(foreignTablePrimaryKeyName, QCriteriaOperator.IN, foreignIds)));
+      additionalFilter.addCriteria(new QFilterCriteria(foreignTablePrimaryKeyName, QCriteriaOperator.IN, foreignIds));
+      queryInput.setFilter(additionalFilter);
+
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       for(QRecord foreignRecord : queryOutput.getRecords())
       {

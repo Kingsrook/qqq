@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -87,6 +90,34 @@ class GeneralProcessUtilsTest
 
       assertEquals(2, foreignRecordMap.size());
       assertEquals(1, foreignRecordMap.get(1).getValueInteger("id"));
+      assertEquals(3, foreignRecordMap.get(3).getValueInteger("id"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetForeignRecordMapWithAdditionalFilter() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+
+      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+         new QRecord().withValue("favoriteShapeId", 3),
+         new QRecord().withValue("favoriteShapeId", 1)
+      ));
+      TestUtils.insertDefaultShapes(instance);
+
+      QueryInput queryInput = new QueryInput(instance);
+      queryInput.setSession(new QSession());
+      queryInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      QQueryFilter               additionalFilter = new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Circle"));
+      Map<Serializable, QRecord> foreignRecordMap = GeneralProcessUtils.getForeignRecordMap(queryInput, queryOutput.getRecords(), "favoriteShapeId", TestUtils.TABLE_NAME_SHAPE, "id", additionalFilter);
+
+      assertEquals(1, foreignRecordMap.size());
       assertEquals(3, foreignRecordMap.get(3).getValueInteger("id"));
    }
 
