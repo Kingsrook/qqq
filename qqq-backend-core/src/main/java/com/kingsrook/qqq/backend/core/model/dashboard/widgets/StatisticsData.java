@@ -42,7 +42,8 @@ public class StatisticsData extends QWidgetData
    private Number  count;
    private Number  percentageAmount;
    private String  percentageLabel;
-   private boolean isCurrency = false;
+   private boolean isCurrency     = false;
+   private boolean increaseIsGood = true;
 
 
 
@@ -235,6 +236,40 @@ public class StatisticsData extends QWidgetData
    public StatisticsData withIsCurrency(boolean isCurrency)
    {
       this.isCurrency = isCurrency;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for increaseIsGood
+    **
+    *******************************************************************************/
+   public boolean getIncreaseIsGood()
+   {
+      return increaseIsGood;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for increaseIsGood
+    **
+    *******************************************************************************/
+   public void setIncreaseIsGood(boolean increaseIsGood)
+   {
+      this.increaseIsGood = increaseIsGood;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for increaseIsGood
+    **
+    *******************************************************************************/
+   public StatisticsData withIncreaseIsGood(boolean increaseIsGood)
+   {
+      this.increaseIsGood = increaseIsGood;
       return (this);
    }
 
