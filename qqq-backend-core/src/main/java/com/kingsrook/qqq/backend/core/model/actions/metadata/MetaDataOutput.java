@@ -45,6 +45,7 @@ public class MetaDataOutput extends AbstractActionOutput
    private Map<String, QFrontendReportMetaData>  reports;
    private Map<String, QFrontendAppMetaData>     apps;
    private Map<String, QFrontendWidgetMetaData>  widgets;
+   private Map<String, String>                   environmentValues;
 
    private List<AppTreeNode> appTree;
    private QBrandingMetaData branding;
@@ -202,4 +203,27 @@ public class MetaDataOutput extends AbstractActionOutput
    {
       this.branding = branding;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for environmentValues
+    **
+    *******************************************************************************/
+   public Map<String, String> getEnvironmentValues()
+   {
+      return environmentValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for environmentValues
+    **
+    *******************************************************************************/
+   public void setEnvironmentValues(Map<String, String> environmentValues)
+   {
+      this.environmentValues = environmentValues;
+   }
+
 }

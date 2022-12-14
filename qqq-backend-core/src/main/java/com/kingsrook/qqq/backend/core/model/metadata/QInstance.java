@@ -50,6 +50,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import io.github.cdimascio.dotenv.Dotenv;
+import io.github.cdimascio.dotenv.DotenvEntry;
 
 
 /*******************************************************************************
@@ -83,6 +85,8 @@ public class QInstance
    private Map<String, QQueueProviderMetaData> queueProviders = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>         queues         = new LinkedHashMap<>();
 
+   private Map<String, String> environmentValues = new LinkedHashMap<>();
+
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
    @JsonIgnore
@@ -90,6 +94,51 @@ public class QInstance
 
    private Map<String, String> memoizedTablePaths   = new HashMap<>();
    private Map<String, String> memoizedProcessPaths = new HashMap<>();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QInstance()
+   {
+      loadEnvironmentValues();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void loadEnvironmentValues()
+   {
+      String prefix = "QQQ_ENV_";
+      for(String name : System.getenv().keySet())
+      {
+         String value = System.getenv(name);
+         addEnvironmentValueIfNameMatchesPrefix(prefix, name, value);
+      }
+
+      Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+      for(DotenvEntry entry : dotenv.entries())
+      {
+         addEnvironmentValueIfNameMatchesPrefix(prefix, entry.getKey(), entry.getValue());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void addEnvironmentValueIfNameMatchesPrefix(String prefix, String name, String value)
+   {
+      if(name.startsWith(prefix))
+      {
+         name = name.replaceFirst(prefix, "");
+         environmentValues.put(name, value);
+      }
+   }
 
 
 
@@ -935,6 +984,28 @@ public class QInstance
    public void setQueues(Map<String, QQueueMetaData> queues)
    {
       this.queues = queues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for environmentValues
+    **
+    *******************************************************************************/
+   public Map<String, String> getEnvironmentValues()
+   {
+      return environmentValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for environmentValues
+    **
+    *******************************************************************************/
+   public void setEnvironmentValues(Map<String, String> environmentValues)
+   {
+      this.environmentValues = environmentValues;
    }
 
 }

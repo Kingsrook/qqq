@@ -149,6 +149,8 @@ public class MetaDataAction
          metaDataOutput.setBranding(metaDataInput.getInstance().getBranding());
       }
 
+      metaDataOutput.setEnvironmentValues(metaDataInput.getInstance().getEnvironmentValues());
+
       // todo post-customization - can do whatever w/ the result if you want?
 
       return metaDataOutput;
