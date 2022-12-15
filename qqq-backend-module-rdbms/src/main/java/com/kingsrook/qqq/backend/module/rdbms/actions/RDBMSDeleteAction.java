@@ -190,7 +190,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       String sql = "DELETE FROM "
          + escapeIdentifier(tableName)
          + " WHERE "
-         + primaryKeyName + " = ?";
+         + escapeIdentifier(primaryKeyName) + " = ?";
 
       try
       {
@@ -266,7 +266,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
       // todo sql customization - can edit sql and/or param list?
       String sql = "DELETE FROM "
-         + tableName
+         + escapeIdentifier(tableName) + " AS " + escapeIdentifier(table.getName())
          + " WHERE "
          + whereClause;
 
