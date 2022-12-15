@@ -22,44 +22,40 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.util.List;
+
+
 /*******************************************************************************
- ** Possible values for widget type
+ ** Model containing datastructure expected by frontend pie chart widget
+ **
  *******************************************************************************/
-public enum WidgetType
+public class PieChartData extends ChartData
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PIE_CHART("pieChart"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   SIMPLE_STATISTICS("simpleStatistics"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap");
-
-
-   private final String type;
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public PieChartData()
+   {
+   }
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   WidgetType(String type)
+   public PieChartData(String label, String description, String seriesLabel, List<String> labels, List<Number> data)
    {
-      this.type = type;
+      setLabel(label);
+      setDescription(description);
+      setChartData(new ChartData.Data()
+         .withLabels(labels)
+         .withDatasets(List.of(
+            new ChartData.Data.Dataset()
+               .withLabel(seriesLabel)
+               .withData(data)
+         ))
+      );
+
    }
 
 
@@ -70,7 +66,6 @@ public enum WidgetType
     *******************************************************************************/
    public String getType()
    {
-      return type;
+      return WidgetType.PIE_CHART.getType();
    }
-
 }

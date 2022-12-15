@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -321,6 +322,22 @@ public class ChartData extends QWidgetData
       {
          this.datasets = datasets;
          return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for single dataset
+       **
+       *******************************************************************************/
+      public Dataset getDataset()
+      {
+         if(CollectionUtils.nullSafeHasContents(getDatasets()))
+         {
+            return (getDatasets().get(0));
+
+         }
+         return (null);
       }
 
 

@@ -32,7 +32,6 @@ import java.util.Map;
  *******************************************************************************/
 public class TableData extends QWidgetData
 {
-   private String                    title;
    private String                    linkText;
    private String                    linkURL;
    private String                    noRowsFoundHTML;
@@ -45,9 +44,9 @@ public class TableData extends QWidgetData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public TableData(String title, List<Column> columns, List<Map<String, Object>> rows, List<Map<String, String>> dropdownOptions)
+   public TableData(String label, List<Column> columns, List<Map<String, Object>> rows, List<Map<String, String>> dropdownOptions)
    {
-      setTitle(title);
+      setLabel(label);
       setColumns(columns);
       setRows(rows);
       setDropdownOptions(dropdownOptions);
@@ -61,41 +60,7 @@ public class TableData extends QWidgetData
     *******************************************************************************/
    public String getType()
    {
-      return "table";
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for title
-    **
-    *******************************************************************************/
-   public String getTitle()
-   {
-      return title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for title
-    **
-    *******************************************************************************/
-   public void setTitle(String title)
-   {
-      this.title = title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for title
-    **
-    *******************************************************************************/
-   public TableData withTitle(String title)
-   {
-      this.title = title;
-      return (this);
+      return WidgetType.TABLE.getType();
    }
 
 

@@ -19,58 +19,44 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
+
+
+import java.math.BigDecimal;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.USMapWidgetData;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ ** Generic widget for display a map of the us
  *******************************************************************************/
-public enum WidgetType
+public class USMapWidgetRenderer extends AbstractWidgetRenderer
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PIE_CHART("pieChart"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   SIMPLE_STATISTICS("simpleStatistics"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap");
-
-
-   private final String type;
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   WidgetType(String type)
+   @Override
+   public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
-      this.type = type;
+      return (new RenderWidgetOutput(
+         new USMapWidgetData()
+            .withHeight("250px")
+            .withMapMarkerList(generateMapMarkerList())
+      ));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
     **
     *******************************************************************************/
-   public String getType()
+   protected List<USMapWidgetData.MapMarker> generateMapMarkerList() throws QException
    {
-      return type;
+      return (List.of(new USMapWidgetData.MapMarker("maryville", new BigDecimal("38.725278"), new BigDecimal("-89.957778"))));
    }
 
 }

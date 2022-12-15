@@ -32,6 +32,8 @@ import java.util.Map;
  *******************************************************************************/
 public abstract class QWidgetData
 {
+
+   private String       label;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
 
@@ -49,6 +51,40 @@ public abstract class QWidgetData
     ** Getter for type
     *******************************************************************************/
    public abstract String getType();
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public QWidgetData withLabel(String label)
+   {
+      this.label = label;
+      return (this);
+   }
 
 
 
@@ -185,4 +221,5 @@ public abstract class QWidgetData
       this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
       return (this);
    }
+
 }

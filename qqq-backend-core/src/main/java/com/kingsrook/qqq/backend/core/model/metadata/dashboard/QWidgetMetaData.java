@@ -40,6 +40,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected String         icon;
    protected String         label;
    protected String         type;
+   protected boolean        isCard;
    protected Integer        gridColumns;
    protected QCodeReference codeReference;
 
@@ -349,6 +350,40 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
          this.dropdowns = new ArrayList<>();
       }
       this.dropdowns.add(dropdown);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isCard
+    **
+    *******************************************************************************/
+   public boolean getIsCard()
+   {
+      return isCard;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isCard
+    **
+    *******************************************************************************/
+   public void setIsCard(boolean isCard)
+   {
+      this.isCard = isCard;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isCard
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withIsCard(boolean isCard)
+   {
+      this.isCard = isCard;
       return (this);
    }
 

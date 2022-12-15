@@ -40,6 +40,7 @@ public class QFrontendWidgetMetaData
    private final String  type;
    private final String  icon;
    private final Integer gridColumns;
+   private final boolean isCard;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -57,6 +58,7 @@ public class QFrontendWidgetMetaData
       this.type = widgetMetaData.getType();
       this.icon = widgetMetaData.getIcon();
       this.gridColumns = widgetMetaData.getGridColumns();
+      this.isCard = widgetMetaData.getIsCard();
    }
 
 
@@ -101,6 +103,17 @@ public class QFrontendWidgetMetaData
    public Integer getGridColumns()
    {
       return gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isCard
+    **
+    *******************************************************************************/
+   public boolean getIsCard()
+   {
+      return isCard;
    }
 
 
