@@ -209,7 +209,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       ////////////////////////////////////////////////////////////////////////
       // try to delete the records without a foreign key that'll block them //
       ////////////////////////////////////////////////////////////////////////
-      deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(2, 4, 5))));
+      deleteInput.setQueryFilter(new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(2, 4, 5))));
 
       QueryManager.setCollectStatistics(true);
       QueryManager.resetStatistics();
@@ -255,7 +255,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // try to delete all of the child records - 2 should fail, because they are referenced by parent_table.child_id //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2, 3, 4, 5))));
+      deleteInput.setQueryFilter(new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2, 3, 4, 5))));
 
       QueryManager.setCollectStatistics(true);
       QueryManager.resetStatistics();
