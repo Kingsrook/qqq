@@ -262,12 +262,15 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
 
       DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // assert that 7 queries ran - the initial delete (which failed), then 1 to look up the ids from that query, and finally 5 deletes by id //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // assert that 8 queries ran - the initial delete (which failed), then 1 to look up the ids          //
+      // from that query, another to try to delete all those ids (also fails), and finally 5 deletes by id //
+      // todo - maybe we shouldn't do that 2nd "try to delete 'em all by id"...  why would it ever work,   //
+      // but the original filter query didn't (other than malformed SQL)?                                  //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
       QueryManager.setCollectStatistics(false);
       Map<String, Integer> queryStats = QueryManager.getStatistics();
-      assertEquals(7, queryStats.get(QueryManager.STAT_QUERIES_RAN), "Number of queries ran");
+      assertEquals(8, queryStats.get(QueryManager.STAT_QUERIES_RAN), "Number of queries ran");
 
       assertEquals(2, deleteResult.getRecordsWithErrors().size(), "Should get back the 2 records with errors");
       assertTrue(deleteResult.getRecordsWithErrors().stream().noneMatch(r -> r.getErrors().isEmpty()), "All we got back should have errors");
