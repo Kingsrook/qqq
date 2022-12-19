@@ -184,6 +184,7 @@ public class QJavalinImplementation
       service = Javalin.create().start(port);
       service.routes(getRoutes());
       service.before(QJavalinImplementation::hotSwapQInstance);
+      service.before((Context context) -> context.header("Content-Type", "application/json"));
    }
 
 
@@ -815,26 +816,9 @@ public class QJavalinImplementation
          String  filter    = context.queryParam("filter");
          Integer limit     = integerQueryParam(context, "limit");
 
-         /////////////////////////////////////////////////////////////////////////////////////////
-         // if a format query param wasn't given, then try to get file extension from file name //
-         /////////////////////////////////////////////////////////////////////////////////////////
-         if(!StringUtils.hasContent(format) && optionalFilename.isPresent() && StringUtils.hasContent(optionalFilename.get()))
+         ReportFormat reportFormat = getReportFormat(context, optionalFilename, format);
+         if(reportFormat == null)
          {
-            String filename = optionalFilename.get();
-            if(filename.contains("."))
-            {
-               format = filename.substring(filename.lastIndexOf(".") + 1);
-            }
-         }
-
-         ReportFormat reportFormat;
-         try
-         {
-            reportFormat = ReportFormat.fromString(format);
-         }
-         catch(QUserFacingException e)
-         {
-            handleException(HttpStatus.Code.BAD_REQUEST, context, e);
             return;
          }
 
@@ -861,60 +845,142 @@ public class QJavalinImplementation
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         // set up the I/O pipe streams.                                                                      //
-         // Critically, we must NOT open the outputStream in a try-with-resources.  The thread that writes to //
-         // the stream must close it when it's done writing.                                                  //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         PipedOutputStream pipedOutputStream = new PipedOutputStream();
-         PipedInputStream  pipedInputStream  = new PipedInputStream();
-         pipedOutputStream.connect(pipedInputStream);
-         exportInput.setReportOutputStream(pipedOutputStream);
-
-         ExportAction exportAction = new ExportAction();
-         exportAction.preExecute(exportInput);
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////////
-         // start the async job.                                                                            //
-         // Critically, this must happen before the pipedInputStream is passed to the javalin result method //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////
-         new AsyncJobManager().startJob("Javalin>ReportAction", (o) ->
+         UnsafeFunction<PipedOutputStream, ExportAction> preAction = (PipedOutputStream pos) ->
          {
-            try
-            {
-               exportAction.execute(exportInput);
-               return (true);
-            }
-            catch(Exception e)
-            {
-               pipedOutputStream.write(("Error generating report: " + e.getMessage()).getBytes());
-               pipedOutputStream.close();
-               return (false);
-            }
-         });
+            exportInput.setReportOutputStream(pos);
 
-         ////////////////////////////////////////////
-         // set the response content type & stream //
-         ////////////////////////////////////////////
-         context.contentType(reportFormat.getMimeType());
-         context.header("Content-Disposition", "filename=" + filename);
-         context.result(pipedInputStream);
+            ExportAction exportAction = new ExportAction();
+            exportAction.preExecute(exportInput);
+            return (exportAction);
+         };
 
-         ////////////////////////////////////////////////////////////////////////////////////////////
-         // we'd like to check to see if the job failed, and if so, to give the user an error...   //
-         // but if we "block" here, then piped streams seem to never flush, so we deadlock things. //
-         ////////////////////////////////////////////////////////////////////////////////////////////
-         // AsyncJobStatus asyncJobStatus = asyncJobManager.waitForJob(jobUUID);
-         // if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
-         // {
-         //    System.out.println("Well, here we are...");
-         //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
-         // }
+         UnsafeConsumer<ExportAction> execute = (ExportAction exportAction) ->
+         {
+            exportAction.execute(exportInput);
+         };
+
+         runStreamedExportOrReport(context, reportFormat, filename, preAction, execute);
       }
       catch(Exception e)
       {
          handleException(context, e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @FunctionalInterface
+   public interface UnsafeFunction<T, R>
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      R run(T t) throws Exception;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @FunctionalInterface
+   public interface UnsafeConsumer<T>
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      void run(T t) throws Exception;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T> void runStreamedExportOrReport(Context context, ReportFormat reportFormat, String filename, UnsafeFunction<PipedOutputStream, T> preAction, UnsafeConsumer<T> executor) throws Exception
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set up the I/O pipe streams.                                                                      //
+      // Critically, we must NOT open the outputStream in a try-with-resources.  The thread that writes to //
+      // the stream must close it when it's done writing.                                                  //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      PipedOutputStream pipedOutputStream = new PipedOutputStream();
+      PipedInputStream  pipedInputStream  = new PipedInputStream();
+      pipedOutputStream.connect(pipedInputStream);
+
+      T t = preAction.run(pipedOutputStream);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // start the async job.                                                                            //
+      // Critically, this must happen before the pipedInputStream is passed to the javalin result method //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      new AsyncJobManager().startJob("Javalin>ExportAction", (o) ->
+      {
+         try
+         {
+            executor.run(t);
+            return (true);
+         }
+         catch(Exception e)
+         {
+            pipedOutputStream.write(("Error generating report: " + e.getMessage()).getBytes());
+            pipedOutputStream.close();
+            return (false);
+         }
+      });
+
+      ////////////////////////////////////////////
+      // set the response content type & stream //
+      ////////////////////////////////////////////
+      context.contentType(reportFormat.getMimeType());
+      context.header("Content-Disposition", "filename=" + filename);
+      context.result(pipedInputStream);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // we'd like to check to see if the job failed, and if so, to give the user an error...   //
+      // but if we "block" here, then piped streams seem to never flush, so we deadlock things. //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // AsyncJobStatus asyncJobStatus = asyncJobManager.waitForJob(jobUUID);
+      // if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
+      // {
+      //    System.out.println("Well, here we are...");
+      //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
+      // }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ReportFormat getReportFormat(Context context, Optional<String> optionalFilename, String format)
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // if a format query param wasn't given, then try to get file extension from file name //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      if(!StringUtils.hasContent(format) && optionalFilename.isPresent() && StringUtils.hasContent(optionalFilename.get()))
+      {
+         String filename = optionalFilename.get();
+         if(filename.contains("."))
+         {
+            format = filename.substring(filename.lastIndexOf(".") + 1);
+         }
+      }
+
+      ReportFormat reportFormat;
+      try
+      {
+         reportFormat = ReportFormat.fromString(format);
+      }
+      catch(QUserFacingException e)
+      {
+         handleException(HttpStatus.Code.BAD_REQUEST, context, e);
+         return null;
+      }
+      return reportFormat;
    }
 
 
@@ -997,21 +1063,21 @@ public class QJavalinImplementation
       {
          if(userFacingException instanceof QNotFoundException)
          {
-            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND).getCode();
-            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND); // 404
+            respondWithError(context, statusCode, userFacingException.getMessage());
          }
          else
          {
             LOG.info("User-facing exception", e);
-            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
-            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR); // 500
+            respondWithError(context, statusCode, userFacingException.getMessage());
          }
       }
       else
       {
          if(e instanceof QAuthenticationException)
          {
-            context.status(HttpStatus.UNAUTHORIZED_401).result("{\"error\":\"" + e.getMessage() + "\"}");
+            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
             return;
          }
 
@@ -1019,9 +1085,19 @@ public class QJavalinImplementation
          // default exception handling //
          ////////////////////////////////
          LOG.warn("Exception in javalin request", e);
-         int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
-         context.status(code).result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
+         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")"); // 500
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage)
+   {
+      context.status(statusCode.getCode());
+      context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
    }
 
 

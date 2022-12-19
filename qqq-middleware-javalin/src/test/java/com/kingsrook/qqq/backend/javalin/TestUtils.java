@@ -30,6 +30,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -48,6 +51,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
@@ -66,6 +74,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *******************************************************************************/
 public class TestUtils
 {
+   public static final String TABLE_NAME_PERSON = "person";
+
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_SIMPLE_SLEEP             = "simpleSleep";
    public static final String PROCESS_NAME_SIMPLE_THROW             = "simpleThrow";
@@ -129,6 +139,7 @@ public class TestUtils
       qInstance.addProcess(defineProcessSimpleSleep());
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
+      qInstance.addReport(definePersonsReport());
       qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
       defineWidgets(qInstance);
 
@@ -210,7 +221,7 @@ public class TestUtils
    public static QTableMetaData defineTablePerson()
    {
       return new QTableMetaData()
-         .withName("person")
+         .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withRecordLabelFormat("%s %s")
          .withRecordLabelFields("firstName", "lastName")
@@ -222,7 +233,7 @@ public class TestUtils
          .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name"))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name"))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withBackendName("partner_person_id").withPossibleValueSourceName("person"))
+         .withField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withBackendName("partner_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER).withBackendName("test_script_id"))
          .withAssociatedScript(new AssociatedScript()
@@ -240,7 +251,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName("greet")
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
@@ -248,14 +259,14 @@ public class TestUtils
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -271,7 +282,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
 
          .addStep(new QFrontendStepMetaData()
             .withName("setup")
@@ -286,14 +297,14 @@ public class TestUtils
                .withCodeType(QCodeType.JAVA)
                .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName("person"))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName("person")
+                  .withTableName(TABLE_NAME_PERSON)
                   .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -313,9 +324,9 @@ public class TestUtils
    private static QPossibleValueSource definePossibleValueSourcePerson()
    {
       return (new QPossibleValueSource()
-         .withName("person")
+         .withName(TABLE_NAME_PERSON)
          .withType(QPossibleValueSourceType.TABLE)
-         .withTableName("person")
+         .withTableName(TABLE_NAME_PERSON)
          .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_PARENS_ID)
          .withOrderByField("id")
       );
@@ -467,6 +478,30 @@ public class TestUtils
             .withInputData(new QFunctionInputMetaData()
                .addField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData definePersonsReport()
+   {
+      return new QReportMetaData()
+         .withName("personsReport")
+         .withInputField(new QFieldMetaData("firstNamePrefix", QFieldType.STRING))
+         .withDataSource(new QReportDataSource()
+            .withSourceTable(TABLE_NAME_PERSON)
+            .withQueryFilter(new QQueryFilter(new QFilterCriteria("firstName", QCriteriaOperator.STARTS_WITH, "${input.firstNamePrefix}")))
+         )
+         .withView(new QReportView()
+            .withType(ReportType.TABLE)
+            .withColumns(List.of(
+               new QReportField("id"),
+               new QReportField("firstName"),
+               new QReportField("lastName")
+            ))
+         );
    }
 
 }

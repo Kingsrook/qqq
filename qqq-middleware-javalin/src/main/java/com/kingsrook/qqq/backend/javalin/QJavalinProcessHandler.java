@@ -27,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -45,15 +47,19 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -62,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
@@ -70,12 +77,14 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.http.HttpStatus;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
@@ -115,7 +124,127 @@ public class QJavalinProcessHandler
             });
          });
          get("/download/{file}", QJavalinProcessHandler::downloadFile);
+
+         path("/reports", () ->
+         {
+            path("/{reportName}", () ->
+            {
+               get("", QJavalinProcessHandler::reportWithoutFilename);
+               get("/{fileName}", QJavalinProcessHandler::reportWithFilename);
+            });
+         });
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void reportWithFilename(Context context)
+   {
+      String filename = context.pathParam("fileName");
+      report(context, Optional.of(filename));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void reportWithoutFilename(Context context)
+   {
+      report(context, Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void report(Context context, Optional<String> optionalFilename)
+   {
+      try
+      {
+         //////////////////////////////////////////
+         // read params from the request context //
+         //////////////////////////////////////////
+         String reportName = context.pathParam("reportName");
+         String format     = context.queryParam("format");
+
+         ReportFormat reportFormat = QJavalinImplementation.getReportFormat(context, optionalFilename, format);
+         if(reportFormat == null)
+         {
+            return;
+         }
+
+         String filename = optionalFilename.orElse(reportName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
+
+         /////////////////////////////////////////////
+         // set up the report action's input object //
+         /////////////////////////////////////////////
+         ReportInput reportInput = new ReportInput(QJavalinImplementation.qInstance);
+         QJavalinImplementation.setupSession(context, reportInput);
+         reportInput.setReportFormat(reportFormat);
+         reportInput.setReportName(reportName);
+         reportInput.setInputValues(null); // todo!
+         reportInput.setFilename(filename);
+
+         QReportMetaData report = QJavalinImplementation.qInstance.getReport(reportName);
+         if(report == null)
+         {
+            throw (new QNotFoundException("Report [" + reportName + "] is not found."));
+         }
+
+         //////////////////////////////////////////////////////////////
+         // process the report's input fields, from the query string //
+         //////////////////////////////////////////////////////////////
+         for(QFieldMetaData inputField : CollectionUtils.nonNullList(report.getInputFields()))
+         {
+            try
+            {
+               boolean setValue = false;
+               if(context.queryParamMap().containsKey(inputField.getName()))
+               {
+                  String       value      = context.queryParamMap().get(inputField.getName()).get(0);
+                  Serializable typedValue = ValueUtils.getValueAsFieldType(inputField.getType(), value);
+                  reportInput.addInputValue(inputField.getName(), typedValue);
+                  setValue = true;
+               }
+
+               if(inputField.getIsRequired() && !setValue)
+               {
+                  QJavalinImplementation.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Missing query param value for required input field: [" + inputField.getName() + "]");
+                  return;
+               }
+            }
+            catch(Exception e)
+            {
+               QJavalinImplementation.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Error processing query param [" + inputField.getName() + "]: " + e.getClass().getSimpleName() + " (" + e.getMessage() + ")");
+               return;
+            }
+         }
+
+         QJavalinImplementation.UnsafeFunction<PipedOutputStream, GenerateReportAction> preAction = (PipedOutputStream pos) ->
+         {
+            reportInput.setReportOutputStream(pos);
+
+            GenerateReportAction reportAction = new GenerateReportAction();
+            // any pre-action??  export uses this for "too many rows" checks...
+            return (reportAction);
+         };
+
+         QJavalinImplementation.UnsafeConsumer<GenerateReportAction> execute = (GenerateReportAction generateReportAction) ->
+         {
+            generateReportAction.execute(reportInput);
+         };
+
+         QJavalinImplementation.runStreamedExportOrReport(context, reportFormat, filename, preAction, execute);
+      }
+      catch(Exception e)
+      {
+         QJavalinImplementation.handleException(context, e);
+      }
    }
 
 

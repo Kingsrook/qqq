@@ -65,6 +65,7 @@ public class MockBackendStep implements BackendStep
       runBackendStepOutput.setValues(runBackendStepInput.getValues());
       runBackendStepOutput.addValue(FIELD_MOCK_VALUE, MOCK_VALUE);
       runBackendStepOutput.addValue("noOfPeopleGreeted", runBackendStepInput.getRecords().size());
+      runBackendStepOutput.addValue(RunProcessAction.BASEPULL_DID_QUERY_USING_TIMESTAMP_FIELD, true);
       runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
 
       if("there".equalsIgnoreCase(runBackendStepInput.getValueString(FIELD_GREETING_SUFFIX)))

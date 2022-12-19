@@ -104,38 +104,7 @@ public class QFrontendTableMetaData
       Set<Capability> enabledCapabilities = new HashSet<>();
       for(Capability capability : Capability.values())
       {
-         ///////////////////////////////////////////////
-         // by default, every table can do everything //
-         ///////////////////////////////////////////////
-         boolean hasCapability = true;
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // if the table's backend says the capability is disabled, then by default, then the capability is disabled... //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(backend.getDisabledCapabilities().contains(capability))
-         {
-            hasCapability = false;
-
-            /////////////////////////////////////////////////////////////////
-            // unless the table overrides that and says that it IS enabled //
-            /////////////////////////////////////////////////////////////////
-            if(table.getEnabledCapabilities().contains(capability))
-            {
-               hasCapability = true;
-            }
-         }
-         else
-         {
-            /////////////////////////////////////////////////////////////////////////////////////////
-            // if the backend doesn't specify the capability, then disable it if the table says so //
-            /////////////////////////////////////////////////////////////////////////////////////////
-            if(table.getDisabledCapabilities().contains(capability))
-            {
-               hasCapability = false;
-            }
-         }
-
-         if(hasCapability)
+         if(table.isCapabilityEnabled(backend, capability))
          {
             ///////////////////////////////////////
             // todo - check if user is allowed!! //

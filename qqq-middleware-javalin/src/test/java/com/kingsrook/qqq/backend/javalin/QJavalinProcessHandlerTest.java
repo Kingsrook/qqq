@@ -35,6 +35,7 @@ import kong.unirest.Unirest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -474,6 +475,61 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       getProcessRecords(processUUID, 5);
       getProcessRecords(processUUID, 1, 4, 5);
       getProcessRecords(processUUID, 0, 5, 5);
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a report
+    **
+    *******************************************************************************/
+   @Test
+   public void test_report()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/reports/personsReport?format=csv&firstNamePrefix=D").asString();
+      assertEquals(200, response.getStatus());
+      assertThat(response.getHeaders().get("Content-Type").get(0)).contains("text/csv");
+      assertThat(response.getHeaders().get("Content-Disposition").get(0)).contains("filename=personsReport.csv");
+      String csv = response.getBody();
+      System.out.println(csv);
+      assertThat(csv).contains("""
+         "Id","First Name","Last Name\"""");
+      assertThat(csv).contains("""
+         "1","Darin","Kelkhoff\"""");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a report
+    **
+    *******************************************************************************/
+   @Test
+   public void test_reportMissingFormat()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/reports/personsReport?firstNamePrefix=D").asString();
+      assertEquals(400, response.getStatus());
+      assertThat(response.getHeaders().get("Content-Type").get(0)).contains("application/json");
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertThat(jsonObject.getString("error")).contains("Report format was not specified");
+   }
+
+
+
+   /*******************************************************************************
+    ** test running a report by filename
+    **
+    *******************************************************************************/
+   @Test
+   public void test_reportWithFileName()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/reports/personsReport/myFile.json?firstNamePrefix=D").asString();
+      assertEquals(200, response.getStatus());
+      assertThat(response.getHeaders().get("Content-Type").get(0)).contains("application/json");
+      assertThat(response.getHeaders().get("Content-Disposition").get(0)).contains("filename=myFile.json");
+      // JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      // System.out.println(jsonObject);
+      JSONArray jsonArray = JsonUtils.toJSONArray(response.getBody());
    }
 
 }

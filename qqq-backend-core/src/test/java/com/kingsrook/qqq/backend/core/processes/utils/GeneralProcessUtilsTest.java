@@ -30,12 +30,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.testentities.Shape;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
@@ -46,7 +48,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -329,6 +333,11 @@ class GeneralProcessUtilsTest
       assertEquals(3, recordMapByFirstName.size());
       assertEquals(1, recordMapByFirstName.get("Darin").getValueInteger("id"));
       assertEquals(3, recordMapByFirstName.get("Tim").getValueInteger("id"));
+
+      Map<String, QRecord> recordMapByFirstNameAsString = GeneralProcessUtils.loadTableToMap(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, String.class, "firstName");
+      assertEquals(3, recordMapByFirstName.size());
+      assertEquals(1, recordMapByFirstName.get("Darin").getValueInteger("id"));
+      assertEquals(3, recordMapByFirstName.get("Tim").getValueInteger("id"));
    }
 
 
@@ -354,4 +363,123 @@ class GeneralProcessUtilsTest
       assertEquals(1, map.get("Darin").size());
       assertEquals(2, map.get("James").size());
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetRecordByFieldOrElseThrow() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(instance);
+
+      assertNotNull(GeneralProcessUtils.getRecordByFieldOrElseThrow(new AbstractActionInput(instance, new QSession()), TestUtils.TABLE_NAME_SHAPE, "name", "Triangle"));
+      assertThrows(QException.class, () -> GeneralProcessUtils.getRecordByFieldOrElseThrow(new AbstractActionInput(instance, new QSession()), TestUtils.TABLE_NAME_SHAPE, "name", "notAShape"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetRecordByPrimaryKey() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(instance);
+
+      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+      assertTrue(GeneralProcessUtils.getRecordByPrimaryKey(actionInput, TestUtils.TABLE_NAME_SHAPE, 1).isPresent());
+      assertFalse(GeneralProcessUtils.getRecordByPrimaryKey(actionInput, TestUtils.TABLE_NAME_SHAPE, -1).isPresent());
+      assertNotNull(GeneralProcessUtils.getRecordByPrimaryKeyOrElseThrow(actionInput, TestUtils.TABLE_NAME_SHAPE, 1));
+      assertThrows(QException.class, () -> GeneralProcessUtils.getRecordByPrimaryKeyOrElseThrow(actionInput, TestUtils.TABLE_NAME_SHAPE, -1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCount() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(instance);
+      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+
+      assertEquals(3, GeneralProcessUtils.count(actionInput, TestUtils.TABLE_NAME_SHAPE, null));
+      assertEquals(1, GeneralProcessUtils.count(actionInput, TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 2))));
+      assertEquals(0, GeneralProcessUtils.count(actionInput, TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.IS_BLANK))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetEntityByField() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(instance);
+      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+
+      assertEquals("Triangle", GeneralProcessUtils.getEntityByField(actionInput, TestUtils.TABLE_NAME_SHAPE, "name", "Triangle", Shape.class).get().getName());
+      assertFalse(GeneralProcessUtils.getEntityByField(actionInput, TestUtils.TABLE_NAME_SHAPE, "name", "notAShape", Shape.class).isPresent());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLoadTableAsEntities() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(instance);
+      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+
+      List<Shape> shapes = GeneralProcessUtils.loadTable(actionInput, TestUtils.TABLE_NAME_SHAPE, Shape.class);
+      assertEquals(3, shapes.size());
+      assertTrue(shapes.get(0) instanceof Shape);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLoadTableToMapAsEntities() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(instance);
+      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+
+      Map<Serializable, Shape> map = GeneralProcessUtils.loadTableToMap(actionInput, TestUtils.TABLE_NAME_SHAPE, "id", Shape.class);
+      assertEquals(3, map.size());
+      assertTrue(map.get(1) instanceof Shape);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordsToEntities() throws QException
+   {
+      List<Shape> shapes = GeneralProcessUtils.recordsToEntities(Shape.class, List.of(
+         new QRecord().withValue("id", 99).withValue("name", "round"),
+         new QRecord().withValue("id", 98).withValue("name", "flat")
+      ));
+
+      assertEquals(2, shapes.size());
+      assertEquals(99, shapes.get(0).getId());
+      assertEquals("round", shapes.get(0).getName());
+   }
+
 }

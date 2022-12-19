@@ -62,6 +62,8 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
       try
       {
+         runBackendStepInput.getAsyncJobCallback().updateStatus("Executing Process");
+
          ///////////////////////////////////////////////////////
          // set up the extract, transform, and load functions //
          ///////////////////////////////////////////////////////
@@ -137,6 +139,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          //////////////////////////////////////////////////////////////////////////////
          // set the flag to state that the basepull timestamp should be updated now. //
+         // (upstream will check if the process was running as a basepull)           //
          //////////////////////////////////////////////////////////////////////////////
          runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
 

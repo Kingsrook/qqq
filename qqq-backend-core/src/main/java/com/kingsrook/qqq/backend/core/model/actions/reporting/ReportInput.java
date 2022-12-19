@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -114,6 +115,20 @@ public class ReportInput extends AbstractTableActionInput
    public void setInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addInputValue(String key, Serializable value)
+   {
+      if(this.inputValues == null)
+      {
+         this.inputValues = new HashMap<>();
+      }
+      this.inputValues.put(key, value);
    }
 
 

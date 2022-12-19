@@ -203,10 +203,15 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Optional<QRecord> getRecordByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
    {
+      if(fieldValue == null)
+      {
+         return (Optional.empty());
+      }
+
       QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
       queryInput.setSession(parentActionInput.getSession());
       queryInput.setTableName(tableName);
-      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, List.of(fieldValue))));
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, fieldValue)));
       queryInput.setLimit(1);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords().stream().findFirst());
@@ -322,9 +327,25 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Map<Serializable, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName) throws QException
    {
+      return (loadTableToMap(parentActionInput, tableName, keyFieldName, (QQueryFilter) null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Load rows from a table matching the specified filter, into a map, keyed by the keyFieldName.
+    **
+    ** Note - null values from the key field are NOT put in the map.
+    **
+    ** If multiple values are found for the key, they'll squash each other, and only
+    ** one (random) value will appear.
+    *******************************************************************************/
+   public static Map<Serializable, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, QQueryFilter filter) throws QException
+   {
       QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
       queryInput.setSession(parentActionInput.getSession());
       queryInput.setTableName(tableName);
+      queryInput.setFilter(filter);
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
       List<QRecord> records     = queryOutput.getRecords();
 

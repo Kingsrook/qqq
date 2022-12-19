@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
 
 /*******************************************************************************
@@ -65,4 +66,16 @@ public class AbstractProcessMetaDataBuilder
          .filter(f -> f.getName().equals(fieldName)).findFirst()
          .ifPresent(f -> f.setDefaultValue(value));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+   {
+      processMetaData.setBasepullConfiguration(basepullConfiguration);
+      return (this);
+   }
+
 }

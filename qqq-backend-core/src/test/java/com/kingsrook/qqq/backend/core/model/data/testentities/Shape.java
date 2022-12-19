@@ -19,76 +19,94 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.tables;
+package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import java.time.Instant;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** A section of fields - a logical grouping.
- ** TODO - this class should be named QTableSection!
+ **
  *******************************************************************************/
-public class QFieldSection
+public class Shape extends QRecordEntity
 {
+   @QField()
+   private Integer id;
+
+   @QField()
+   private Instant createDate;
+
+   @QField()
+   private Instant modifyDate;
+
+   @QField()
    private String name;
-   private String label;
-   private Tier   tier;
 
-   private List<String> fieldNames;
-   private String       widgetName;
-   private QIcon        icon;
+   @QField()
+   private String type;
 
-   private boolean isHidden = false;
-   private Integer gridColumns;
+   @QField()
+   private Integer noOfSides;
+
+   @QField()
+   private Boolean isPolygon;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public QFieldSection()
+   public Shape()
    {
    }
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public QFieldSection(String name, String label, QIcon icon, Tier tier, List<String> fieldNames)
+   public Shape(QRecord record)
    {
-      this.name = name;
-      this.label = label;
-      this.icon = icon;
-      this.tier = tier;
-      this.fieldNames = fieldNames;
+      populateFromQRecord(record);
    }
 
 
 
    /*******************************************************************************
+    ** Getter for id
     **
     *******************************************************************************/
-   public QFieldSection(String name, QIcon icon, Tier tier, List<String> fieldNames)
+   public Integer getId()
    {
-      this.name = name;
-      this.icon = icon;
-      this.tier = tier;
-      this.fieldNames = fieldNames;
+      return id;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for id
     **
     *******************************************************************************/
-   public QFieldSection(String name, QIcon icon, Tier tier)
+   public void setId(Integer id)
    {
-      this.name = name;
-      this.icon = icon;
-      this.tier = tier;
+      this.id = id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for id
+    **
+    *******************************************************************************/
+   public Shape withId(Integer id)
+   {
+      this.id = id;
+      return (this);
    }
 
 
@@ -119,7 +137,7 @@ public class QFieldSection
     ** Fluent setter for name
     **
     *******************************************************************************/
-   public QFieldSection withName(String name)
+   public Shape withName(String name)
    {
       this.name = name;
       return (this);
@@ -128,238 +146,170 @@ public class QFieldSection
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Getter for createDate
     **
     *******************************************************************************/
-   public String getLabel()
+   public Instant getCreateDate()
    {
-      return label;
+      return createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Setter for createDate
     **
     *******************************************************************************/
-   public void setLabel(String label)
+   public void setCreateDate(Instant createDate)
    {
-      this.label = label;
+      this.createDate = createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for label
+    ** Fluent setter for createDate
     **
     *******************************************************************************/
-   public QFieldSection withLabel(String label)
+   public Shape withCreateDate(Instant createDate)
    {
-      this.label = label;
+      this.createDate = createDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for tier
+    ** Getter for modifyDate
     **
     *******************************************************************************/
-   public Tier getTier()
+   public Instant getModifyDate()
    {
-      return tier;
+      return modifyDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for tier
+    ** Setter for modifyDate
     **
     *******************************************************************************/
-   public void setTier(Tier tier)
+   public void setModifyDate(Instant modifyDate)
    {
-      this.tier = tier;
+      this.modifyDate = modifyDate;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for tier
+    ** Fluent setter for modifyDate
     **
     *******************************************************************************/
-   public QFieldSection withTier(Tier tier)
+   public Shape withModifyDate(Instant modifyDate)
    {
-      this.tier = tier;
+      this.modifyDate = modifyDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for fieldNames
+    ** Getter for type
     **
     *******************************************************************************/
-   public List<String> getFieldNames()
+   public String getType()
    {
-      return fieldNames;
+      return type;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldNames
+    ** Setter for type
     **
     *******************************************************************************/
-   public void setFieldNames(List<String> fieldNames)
+   public void setType(String type)
    {
-      this.fieldNames = fieldNames;
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for fieldNames
+    ** Fluent setter for type
     **
     *******************************************************************************/
-   public QFieldSection withFieldNames(List<String> fieldNames)
+   public Shape withType(String type)
    {
-      this.fieldNames = fieldNames;
+      this.type = type;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for icon
+    ** Getter for noOfSides
     **
     *******************************************************************************/
-   public QIcon getIcon()
+   public Integer getNoOfSides()
    {
-      return icon;
+      return noOfSides;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for icon
+    ** Setter for noOfSides
     **
     *******************************************************************************/
-   public void setIcon(QIcon icon)
+   public void setNoOfSides(Integer noOfSides)
    {
-      this.icon = icon;
+      this.noOfSides = noOfSides;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for icon
+    ** Fluent setter for noOfSides
     **
     *******************************************************************************/
-   public QFieldSection withIcon(QIcon icon)
+   public Shape withNoOfSides(Integer noOfSides)
    {
-      this.icon = icon;
+      this.noOfSides = noOfSides;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isHidden
+    ** Getter for isPolygon
     **
     *******************************************************************************/
-   public boolean getIsHidden()
+   public Boolean getIsPolygon()
    {
-      return (isHidden);
+      return isPolygon;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isHidden
+    ** Setter for isPolygon
     **
     *******************************************************************************/
-   public void setIsHidden(boolean isHidden)
+   public void setIsPolygon(Boolean isPolygon)
    {
-      this.isHidden = isHidden;
+      this.isPolygon = isPolygon;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent Setter for isHidden
+    ** Fluent setter for isPolygon
     **
     *******************************************************************************/
-   public QFieldSection withIsHidden(boolean isHidden)
+   public Shape withIsPolygon(Boolean isPolygon)
    {
-      this.isHidden = isHidden;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for widgetName
-    **
-    *******************************************************************************/
-   public String getWidgetName()
-   {
-      return widgetName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for widgetName
-    **
-    *******************************************************************************/
-   public void setWidgetName(String widgetName)
-   {
-      this.widgetName = widgetName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for widgetName
-    **
-    *******************************************************************************/
-   public QFieldSection withWidgetName(String widgetName)
-   {
-      this.widgetName = widgetName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for gridColumns
-    **
-    *******************************************************************************/
-   public Integer getGridColumns()
-   {
-      return gridColumns;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for gridColumns
-    **
-    *******************************************************************************/
-   public void setGridColumns(Integer gridColumns)
-   {
-      this.gridColumns = gridColumns;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for gridColumns
-    **
-    *******************************************************************************/
-   public QFieldSection withGridColumns(Integer gridColumns)
-   {
-      this.gridColumns = gridColumns;
+      this.isPolygon = isPolygon;
       return (this);
    }
 

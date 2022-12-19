@@ -193,9 +193,17 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          ////////////////////////////////////////////////////////////
          // find the join in the instance, to see the 'on' clause  //
          ////////////////////////////////////////////////////////////
-         List<String>  joinClauseList = new ArrayList<>();
-         String        leftTableName  = joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getLeftTableOrAlias());
-         QJoinMetaData joinMetaData   = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () -> findJoinMetaData(instance, leftTableName, queryJoin.getRightTable()));
+         List<String> joinClauseList = new ArrayList<>();
+         String       leftTableName  = joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getLeftTableOrAlias());
+         QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
+         {
+            QJoinMetaData found = findJoinMetaData(instance, leftTableName, queryJoin.getRightTable());
+            if(found == null)
+            {
+               throw (new RuntimeException("Could not find a join between tables [" + leftTableName + "][" + queryJoin.getRightTable() + "]"));
+            }
+            return (found);
+         });
          for(JoinOn joinOn : joinMetaData.getJoinOns())
          {
             QTableMetaData leftTable  = instance.getTable(joinMetaData.getLeftTable());

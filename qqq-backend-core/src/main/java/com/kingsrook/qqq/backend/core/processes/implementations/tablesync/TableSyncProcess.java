@@ -24,12 +24,14 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablesync;
 
 import java.util.Collections;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.ExtractViaBasepullQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertOrUpdateStep;
@@ -84,60 +86,28 @@ public class TableSyncProcess
 
 
       /*******************************************************************************
-       ** Fluent setter for sourceTableKeyField
-       **
-       *******************************************************************************/
-      public Builder withSourceTableKeyField(String sourceTableKeyField)
-      {
-         setInputFieldDefaultValue(FIELD_SOURCE_TABLE_KEY_FIELD, sourceTableKeyField);
-         return (this);
-      }
-
-
-
-      /*******************************************************************************
-       ** Fluent setter for destinationTableForeignKeyField
-       **
-       *******************************************************************************/
-      public Builder withDestinationTableForeignKeyField(String destinationTableForeignKeyField)
-      {
-         setInputFieldDefaultValue(FIELD_DESTINATION_TABLE_FOREIGN_KEY, destinationTableForeignKeyField);
-         return (this);
-      }
-
-
-
-      /*******************************************************************************
-       ** Fluent setter for transformStepClass
+       ** Fluent setter for transformStepClass.  Note - call this method also makes
+       ** sourceTable and destinationTable be set - by getting them from the
+       ** SyncProcessConfig record defined in the step class.
        **
        *******************************************************************************/
       public Builder withSyncTransformStepClass(Class<? extends AbstractTableSyncTransformStep> transformStepClass)
       {
          setInputFieldDefaultValue(StreamedETLWithFrontendProcess.FIELD_TRANSFORM_CODE, new QCodeReference(transformStepClass));
-         return (this);
-      }
+         AbstractTableSyncTransformStep.SyncProcessConfig config;
 
+         try
+         {
+            AbstractTableSyncTransformStep transformStep = transformStepClass.getConstructor().newInstance();
+            config = transformStep.getSyncProcessConfig();
+         }
+         catch(Exception e)
+         {
+            throw (new QRuntimeException("Error setting up process with transform step class: " + transformStepClass.getName(), e));
+         }
 
-
-      /*******************************************************************************
-       ** Fluent setter for sourceTable
-       **
-       *******************************************************************************/
-      public Builder withSourceTable(String sourceTable)
-      {
-         setInputFieldDefaultValue(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE, sourceTable);
-         return (this);
-      }
-
-
-
-      /*******************************************************************************
-       ** Fluent setter for destinationTable
-       **
-       *******************************************************************************/
-      public Builder withDestinationTable(String destinationTable)
-      {
-         setInputFieldDefaultValue(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, destinationTable);
+         setInputFieldDefaultValue(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE, config.sourceTable());
+         setInputFieldDefaultValue(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, config.destinationTable());
          return (this);
       }
 
@@ -202,6 +172,18 @@ public class TableSyncProcess
             reviewStep.withRecordListField(fieldMetaData);
          }
 
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public StreamedETLWithFrontendProcess.Builder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+      {
+         processMetaData.setBasepullConfiguration(basepullConfiguration);
          return (this);
       }
    }

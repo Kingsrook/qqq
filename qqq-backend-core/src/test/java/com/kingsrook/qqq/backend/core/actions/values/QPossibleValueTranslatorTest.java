@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +54,8 @@ public class QPossibleValueTranslatorTest
     **
     *******************************************************************************/
    @BeforeEach
-   void beforeEach()
+   @AfterEach
+   void beforeAndAfterEach()
    {
       MemoryRecordStore.getInstance().reset();
       MemoryRecordStore.resetStatistics();
@@ -164,6 +166,7 @@ public class QPossibleValueTranslatorTest
       ///////////////////////////////////////////////////////////
       possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
       MemoryRecordStore.setCollectStatistics(true);
+      MemoryRecordStore.resetStatistics();
       possibleValueTranslator.translatePossibleValue(shapeField, 1);
       possibleValueTranslator.translatePossibleValue(shapeField, 2);
       assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran 2 queries so far");

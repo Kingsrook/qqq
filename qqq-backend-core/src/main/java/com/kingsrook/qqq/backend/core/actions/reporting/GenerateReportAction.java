@@ -179,6 +179,17 @@ public class GenerateReportAction
       }
 
       outputSummaries(reportInput);
+
+      reportStreamer.finish();
+
+      try
+      {
+         reportInput.getReportOutputStream().close();
+      }
+      catch(Exception e)
+      {
+         throw (new QReportingException("Error completing report", e));
+      }
    }
 
 
@@ -527,8 +538,6 @@ public class GenerateReportAction
             reportStreamer.addTotalsRow(summaryOutput.totalRow);
          }
       }
-
-      reportStreamer.finish();
    }
 
 

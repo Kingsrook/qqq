@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
 
 /*******************************************************************************
@@ -387,6 +388,18 @@ public class StreamedETLWithFrontendProcess
             previewStep.getInputMetaData().withField(field);
          }
 
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+      {
+         processMetaData.setBasepullConfiguration(basepullConfiguration);
          return (this);
       }
    }

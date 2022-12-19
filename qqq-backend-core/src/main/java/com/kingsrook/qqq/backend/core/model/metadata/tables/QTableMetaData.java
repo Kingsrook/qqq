@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
@@ -1037,4 +1038,44 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isCapabilityEnabled(QBackendMetaData backend, Capability capability)
+   {
+      ///////////////////////////////////////////////
+      // by default, every table can do everything //
+      ///////////////////////////////////////////////
+      boolean hasCapability = true;
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the table's backend says the capability is disabled, then by default, then the capability is disabled... //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(backend.getDisabledCapabilities().contains(capability))
+      {
+         hasCapability = false;
+
+         /////////////////////////////////////////////////////////////////
+         // unless the table overrides that and says that it IS enabled //
+         /////////////////////////////////////////////////////////////////
+         if(getEnabledCapabilities().contains(capability))
+         {
+            hasCapability = true;
+         }
+      }
+      else
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // if the backend doesn't specify the capability, then disable it if the table says so //
+         /////////////////////////////////////////////////////////////////////////////////////////
+         if(getDisabledCapabilities().contains(capability))
+         {
+            hasCapability = false;
+         }
+      }
+
+      return (hasCapability);
+   }
 }

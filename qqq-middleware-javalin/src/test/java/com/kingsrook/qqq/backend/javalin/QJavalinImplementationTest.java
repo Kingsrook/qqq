@@ -471,7 +471,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/MyPersonExport.csv").asString();
       assertEquals(200, response.getStatus());
-      assertEquals("text/csv", response.getHeaders().get("Content-Type").get(0));
+      assertEquals("text/csv;charset=utf-8", response.getHeaders().get("Content-Type").get(0));
       assertEquals("filename=MyPersonExport.csv", response.getHeaders().get("Content-Disposition").get(0));
       String[] csvLines = response.getBody().split("\n");
       assertEquals(6, csvLines.length);
@@ -500,7 +500,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/export/?format=xlsx").asString();
       assertEquals(200, response.getStatus());
-      assertEquals(ReportFormat.XLSX.getMimeType(), response.getHeaders().get("Content-Type").get(0));
+      assertEquals(ReportFormat.XLSX.getMimeType() + ";charset=utf-8", response.getHeaders().get("Content-Type").get(0));
       assertEquals("filename=person.xlsx", response.getHeaders().get("Content-Disposition").get(0));
    }
 

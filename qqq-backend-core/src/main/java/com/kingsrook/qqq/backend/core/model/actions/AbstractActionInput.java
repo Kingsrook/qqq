@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  ** Base input class for all Q actions.
  **
  *******************************************************************************/
-public abstract class AbstractActionInput
+public class AbstractActionInput
 {
    private static final Logger LOG = LogManager.getLogger(AbstractActionInput.class);
 
@@ -65,6 +65,17 @@ public abstract class AbstractActionInput
    {
       this.instance = instance;
       validateInstance(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AbstractActionInput(QInstance instance, QSession session)
+   {
+      this(instance);
+      this.session = session;
    }
 
 
