@@ -31,8 +31,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.ExtractViaBasepullQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertOrUpdateStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
@@ -81,6 +83,17 @@ public class TableSyncProcess
       public Builder(QProcessMetaData processMetaData)
       {
          super(processMetaData);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for transformStepClass
+       **
+       *******************************************************************************/
+      public Builder withTransformStepClass(Class<? extends AbstractTransformStep> transformStepClass)
+      {
+         throw (new IllegalArgumentException("withTransformStepClass should not be called in a TableSyncProcess.  You probably meant withSyncTransformStepClass"));
       }
 
 
@@ -181,10 +194,23 @@ public class TableSyncProcess
        **
        *******************************************************************************/
       @Override
-      public StreamedETLWithFrontendProcess.Builder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+      public Builder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
       {
          processMetaData.setBasepullConfiguration(basepullConfiguration);
          return (this);
       }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withSchedule(QScheduleMetaData schedule)
+      {
+         processMetaData.setSchedule(schedule);
+         return (this);
+      }
+
    }
 }
