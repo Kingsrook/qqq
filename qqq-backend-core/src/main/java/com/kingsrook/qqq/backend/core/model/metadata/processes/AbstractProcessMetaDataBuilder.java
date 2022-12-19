@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
 
@@ -75,6 +76,17 @@ public class AbstractProcessMetaDataBuilder
    public AbstractProcessMetaDataBuilder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
    {
       processMetaData.setBasepullConfiguration(basepullConfiguration);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withSchedule(QScheduleMetaData schedule)
+   {
+      processMetaData.setSchedule(schedule);
       return (this);
    }
 
