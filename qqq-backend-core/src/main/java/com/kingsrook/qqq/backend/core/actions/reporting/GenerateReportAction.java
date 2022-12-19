@@ -291,7 +291,7 @@ public class GenerateReportAction
       {
          if(dataSource.getSourceTable() != null)
          {
-            QQueryFilter queryFilter = dataSource.getQueryFilter().clone();
+            QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
             setInputValuesInQueryFilter(reportInput, queryFilter);
 
             QueryInput queryInput = new QueryInput(reportInput.getInstance());
