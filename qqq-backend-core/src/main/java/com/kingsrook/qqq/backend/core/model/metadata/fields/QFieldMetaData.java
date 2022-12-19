@@ -64,7 +64,7 @@ public class QFieldMetaData implements Cloneable
    private Set<FieldBehavior> behaviors;
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   // w/ longer-term vision:                                                                                             //
+   // w/ longer-term vision for FieldBehaviors                                                                           //
    // - more enums that implement ValueTooLongBehavior e.g., NumberOutsideRangeBehavior or DecimalPrecisionErrorBehavior //
    // - QInstance.Set<FieldBehavior> defaultFieldBehaviors                                                               //
    // - QBackendMetaData.Set<FieldBehavior> defaultFieldBehaviors                                                        //
