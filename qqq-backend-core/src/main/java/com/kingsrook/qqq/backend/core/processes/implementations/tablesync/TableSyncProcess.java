@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.ExtractViaBasepullQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertOrUpdateStep;
@@ -61,7 +62,7 @@ public class TableSyncProcess
          null,
          LoadViaInsertOrUpdateStep.class,
          Collections.emptyMap()))
-         .withPreviewStepInputFields(List.of(
+         .withFields(List.of(
             new QFieldMetaData(FIELD_SOURCE_TABLE_KEY_FIELD, QFieldType.STRING),
             new QFieldMetaData(FIELD_DESTINATION_TABLE_FOREIGN_KEY, QFieldType.STRING)
          ))
@@ -94,6 +95,18 @@ public class TableSyncProcess
       public Builder withTransformStepClass(Class<? extends AbstractTransformStep> transformStepClass)
       {
          throw (new IllegalArgumentException("withTransformStepClass should not be called in a TableSyncProcess.  You probably meant withSyncTransformStepClass"));
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for loadStepClass
+       **
+       *******************************************************************************/
+      public Builder withLoadStepClass(Class<? extends AbstractLoadStep> loadStepClass)
+      {
+         super.withLoadStepClass(loadStepClass);
+         return (this);
       }
 
 
@@ -185,6 +198,17 @@ public class TableSyncProcess
             reviewStep.withRecordListField(fieldMetaData);
          }
 
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Attach more input fields to the process (to its first step)
+       *******************************************************************************/
+      public Builder withFields(List<QFieldMetaData> fieldList)
+      {
+         super.withFields(fieldList);
          return (this);
       }
 

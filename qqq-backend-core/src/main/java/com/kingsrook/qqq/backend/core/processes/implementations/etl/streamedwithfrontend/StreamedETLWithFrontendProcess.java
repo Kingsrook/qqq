@@ -379,9 +379,9 @@ public class StreamedETLWithFrontendProcess
 
 
       /*******************************************************************************
-       **
+       ** Attach more input fields to the process (to its first step)
        *******************************************************************************/
-      public Builder withPreviewStepInputFields(List<QFieldMetaData> fieldList)
+      public Builder withFields(List<QFieldMetaData> fieldList)
       {
          QBackendStepMetaData previewStep = processMetaData.getBackendStep(STEP_NAME_PREVIEW);
          for(QFieldMetaData field : fieldList)
@@ -415,5 +415,6 @@ public class StreamedETLWithFrontendProcess
          processMetaData.setSchedule(schedule);
          return (this);
       }
+
    }
 }

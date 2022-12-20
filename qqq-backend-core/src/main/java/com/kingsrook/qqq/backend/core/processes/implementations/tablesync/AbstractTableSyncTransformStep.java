@@ -163,11 +163,6 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
       this.runBackendStepInput = runBackendStepInput;
 
-      if(this.recordLookupHelper == null)
-      {
-         initializeRecordLookupHelper(runBackendStepInput);
-      }
-
       SyncProcessConfig config = getSyncProcessConfig();
 
       String sourceTableKeyField             = config.sourceTableKeyField;
@@ -199,6 +194,11 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          .filter(v -> !"".equals(v))
          .collect(Collectors.toList());
 
+      if(this.recordLookupHelper == null)
+      {
+         initializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
+      }
+
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,6 +208,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
          queryInput.setSession(runBackendStepInput.getSession());
          queryInput.setTableName(destinationTableName);
+         getTransaction().ifPresent(queryInput::setTransaction);
          QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
          queryInput.setFilter(filter);
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -286,7 +287,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    /*******************************************************************************
     ** If needed, init a record lookup helper for this process.
     *******************************************************************************/
-   protected void initializeRecordLookupHelper(RunBackendStepInput runBackendStepInput) throws QException
+   protected void initializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
    {
       this.recordLookupHelper = new RecordLookupHelper(runBackendStepInput);
 

@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -43,8 +44,8 @@ public class RecordLookupHelper
 {
    private final AbstractActionInput actionInput;
 
-   private Map<String, Map<Serializable, QRecord>> foreignRecordMaps = new HashMap<>();
-   private Set<String>                             preloadedKeys     = new HashSet<>();
+   private Map<String, Map<Serializable, QRecord>> recordMaps    = new HashMap<>();
+   private Set<String>                             preloadedKeys = new HashSet<>();
 
 
 
@@ -65,7 +66,7 @@ public class RecordLookupHelper
    public QRecord getRecordByKey(String tableName, String keyFieldName, Serializable key) throws QException
    {
       String                     mapKey    = tableName + "." + keyFieldName;
-      Map<Serializable, QRecord> recordMap = foreignRecordMaps.computeIfAbsent(mapKey, (k) -> new HashMap<>());
+      Map<Serializable, QRecord> recordMap = recordMaps.computeIfAbsent(mapKey, (k) -> new HashMap<>());
 
       if(!recordMap.containsKey(key))
       {
@@ -81,6 +82,10 @@ public class RecordLookupHelper
    /*******************************************************************************
     ** Optimization - to pre-load the records in a single query, which would otherwise
     ** have to be looked up one-by-one.
+    **
+    ** Note that when this method is called for a given pair of params (table/field),
+    ** a flag is set to avoid ever re-loading this pair (e.g., subsequent calls to this
+    ** method w/ a given input pair does a noop).
     *******************************************************************************/
    public void preloadRecords(String tableName, String keyFieldName) throws QException
    {
@@ -88,9 +93,26 @@ public class RecordLookupHelper
       if(!preloadedKeys.contains(mapKey))
       {
          Map<Serializable, QRecord> recordMap = GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName);
-         foreignRecordMaps.put(mapKey, recordMap);
+         recordMaps.put(mapKey, recordMap);
          preloadedKeys.add(mapKey);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Optimization - to pre-load some records in a single query, which would otherwise
+    ** have to be looked up one-by-one.
+    **
+    ** Note that this method is different from the overload that doesn't take a filter,
+    ** in that it doesn't set any flags to avoid re-running (the idea being, you'd pass
+    ** a unique filter in each time, so you'd always want it to re-run).
+    *******************************************************************************/
+   public void preloadRecords(String tableName, String keyFieldName, QQueryFilter filter) throws QException
+   {
+      String                     mapKey   = tableName + "." + keyFieldName;
+      Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
+      tableMap.putAll(GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName, filter));
    }
 
 
