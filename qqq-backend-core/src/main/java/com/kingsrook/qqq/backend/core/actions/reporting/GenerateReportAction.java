@@ -29,11 +29,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.reporting.customizers.DataSourceQueryInputCustomizer;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportViewCustomizer;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -68,6 +70,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -84,6 +88,8 @@ import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
  *******************************************************************************/
 public class GenerateReportAction
 {
+   private static final Logger LOG = LogManager.getLogger(GenerateReportAction.class);
+
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // summaryAggregates and varianceAggregates are multi-level maps, ala:                                     //
    // viewName > SummaryKey > fieldName > Aggregates                                                          //
@@ -214,38 +220,32 @@ public class GenerateReportAction
 
       JoinsContext joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins());
 
-      List<QFieldMetaData> fields;
-      if(CollectionUtils.nullSafeHasContents(reportView.getColumns()))
+      List<QFieldMetaData> fields = new ArrayList<>();
+      for(QReportField column : reportView.getColumns())
       {
-         fields = new ArrayList<>();
-         for(QReportField column : reportView.getColumns())
+         if(column.getIsVirtual())
          {
-            if(column.getIsVirtual())
+            fields.add(column.toField());
+         }
+         else
+         {
+            String                                effectiveFieldName       = Objects.requireNonNullElse(column.getSourceFieldName(), column.getName());
+            JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(effectiveFieldName);
+            if(fieldAndTableNameOrAlias.field() == null)
             {
-               fields.add(column.toField());
+               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] on table [" + table.getName() + "]");
             }
-            else
-            {
-               JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(column.getName());
-               if(fieldAndTableNameOrAlias.field() == null)
-               {
-                  throw new QReportingException("Could not find field named [" + column.getName() + "] on table [" + table.getName() + "]");
-               }
 
-               QFieldMetaData field = fieldAndTableNameOrAlias.field().clone();
-               field.setName(column.getName());
-               if(StringUtils.hasContent(column.getLabel()))
-               {
-                  field.setLabel(column.getLabel());
-               }
-               fields.add(field);
+            QFieldMetaData field = fieldAndTableNameOrAlias.field().clone();
+            field.setName(column.getName());
+            if(StringUtils.hasContent(column.getLabel()))
+            {
+               field.setLabel(column.getLabel());
             }
+            fields.add(field);
          }
       }
-      else
-      {
-         fields = new ArrayList<>(table.getFields().values());
-      }
+
       reportStreamer.setDisplayFormats(getDisplayFormatMap(fields));
       reportStreamer.start(exportInput, fields, reportView.getLabel());
    }
@@ -286,7 +286,7 @@ public class GenerateReportAction
       /////////////////////////////////////////////////////////////////
       // run a record pipe loop, over the query for this data source //
       /////////////////////////////////////////////////////////////////
-      RecordPipe recordPipe = new RecordPipe();
+      RecordPipe recordPipe = new BufferedRecordPipe(1000);
       new AsyncRecordPipeLoop().run("Report[" + reportInput.getReportName() + "]", null, recordPipe, (callback) ->
       {
          if(dataSource.getSourceTable() != null)
@@ -301,6 +301,13 @@ public class GenerateReportAction
             queryInput.setFilter(queryFilter);
             queryInput.setQueryJoins(dataSource.getQueryJoins());
             queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
+
+            if(dataSource.getQueryInputCustomizer() != null)
+            {
+               DataSourceQueryInputCustomizer queryInputCustomizer = QCodeLoader.getAdHoc(DataSourceQueryInputCustomizer.class, dataSource.getQueryInputCustomizer());
+               queryInput = queryInputCustomizer.run(reportInput, queryInput);
+            }
+
             return (new QueryAction().execute(queryInput));
          }
          else if(dataSource.getStaticDataSupplier() != null)
@@ -368,8 +375,9 @@ public class GenerateReportAction
 
             for(Serializable value : criterion.getValues())
             {
-               String       valueAsString    = ValueUtils.getValueAsString(value);
-               Serializable interpretedValue = variableInterpreter.interpret(valueAsString);
+               String valueAsString = ValueUtils.getValueAsString(value);
+               // Serializable interpretedValue = variableInterpreter.interpret(valueAsString);
+               Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
                newValues.add(interpretedValue);
             }
             criterion.setValues(newValues);
@@ -391,6 +399,22 @@ public class GenerateReportAction
       ////////////////////////////////////////////////////////////////////////////
       if(tableView != null)
       {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if any fields are 'showPossibleValueLabel', then move display values for them into the record's values map //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         for(QReportField column : tableView.getColumns())
+         {
+            if(column.getShowPossibleValueLabel())
+            {
+               String effectiveFieldName = Objects.requireNonNullElse(column.getSourceFieldName(), column.getName());
+               for(QRecord record : records)
+               {
+                  String displayValue = record.getDisplayValue(effectiveFieldName);
+                  record.setValue(column.getName(), displayValue);
+               }
+            }
+         }
+
          reportStreamer.addRecords(records);
       }
 

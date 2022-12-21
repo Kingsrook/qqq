@@ -92,6 +92,12 @@ public class RecordAutomationStatusUpdater
       {
          for(QRecord record : records)
          {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // todo - seems like there's some case here, where if an order was in PENDING_INSERT, but then some other job updated the record, that we'd  //
+            //  lose that pending status, which would be a Bad Thing™...                                                                                 //
+            //  problem is - we may not have the full record in here, so we can't necessarily check the record to see what status it's currently in...   //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
             record.setValue(automationDetails.getStatusTracking().getFieldName(), automationStatus.getId());
             // todo - another field - for the automation timestamp??
          }

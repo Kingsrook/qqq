@@ -43,6 +43,9 @@ public class QReportField
 
    private boolean isVirtual = false;
 
+   private boolean showPossibleValueLabel = false;
+   private String  sourceFieldName;
+
 
 
    /*******************************************************************************
@@ -281,4 +284,73 @@ public class QReportField
       this.isVirtual = isVirtual;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for sourceFieldName
+    **
+    *******************************************************************************/
+   public String getSourceFieldName()
+   {
+      return sourceFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceFieldName
+    **
+    *******************************************************************************/
+   public void setSourceFieldName(String sourceFieldName)
+   {
+      this.sourceFieldName = sourceFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceFieldName
+    **
+    *******************************************************************************/
+   public QReportField withSourceFieldName(String sourceFieldName)
+   {
+      this.sourceFieldName = sourceFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for showPossibleValueLabel
+    **
+    *******************************************************************************/
+   public boolean getShowPossibleValueLabel()
+   {
+      return showPossibleValueLabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for showPossibleValueLabel
+    **
+    *******************************************************************************/
+   public void setShowPossibleValueLabel(boolean showPossibleValueLabel)
+   {
+      this.showPossibleValueLabel = showPossibleValueLabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for showPossibleValueLabel
+    **
+    *******************************************************************************/
+   public QReportField withShowPossibleValueLabel(boolean showPossibleValueLabel)
+   {
+      this.showPossibleValueLabel = showPossibleValueLabel;
+      return (this);
+   }
+
 }

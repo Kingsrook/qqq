@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -1436,6 +1437,69 @@ class QInstanceValidatorTest
             dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class, null));
          },
          "is not of the expected type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportViewBasics()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setViews(null),
+         "At least 1 view must be defined in report");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setViews(new ArrayList<>()),
+         "At least 1 view must be defined in report");
+
+      /////////////////////////////////////////////////////////////////////////
+      // meh, enricher sets a default name, so, can't easily catch this one. //
+      /////////////////////////////////////////////////////////////////////////
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setName(null),
+      //    "Missing name for a view");
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setName(""),
+      //    "Missing name for a view");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setType(null),
+         "missing its type");
+
+      /////////////////////////////////////////////////////////////////////////
+      // meh, enricher sets a default name, so, can't easily catch this one. //
+      /////////////////////////////////////////////////////////////////////////
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setDataSourceName(null),
+      //    "missing a dataSourceName");
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setDataSourceName(""),
+      //    "missing a dataSourceName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setDataSourceName("notADataSource"),
+         "has an unrecognized dataSourceName");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportViewColumns()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setColumns(null),
+         "does not have any columns or a view customizer");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns().get(0).setName(null),
+         "has a column with no name");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns().get(0).setName(""),
+         "has a column with no name");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            List<QReportField> columns = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns();
+            columns.get(0).setName("id");
+            columns.get(1).setName("id");
+         },
+         "has multiple columns named: id");
 
    }
 

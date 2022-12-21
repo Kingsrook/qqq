@@ -188,7 +188,7 @@ public class QPossibleValueTranslatorTest
       );
       QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
       MemoryRecordStore.resetStatistics();
-      possibleValueTranslator.primePvsCache(personTable, personRecords);
+      possibleValueTranslator.primePvsCache(personTable, personRecords, null); // todo - test non-null queryJoins
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should only run 1 query");
       possibleValueTranslator.translatePossibleValue(shapeField, 1);
       possibleValueTranslator.translatePossibleValue(shapeField, 2);

@@ -182,6 +182,7 @@ class StringUtilsTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -246,4 +247,41 @@ class StringUtilsTest
       assertEquals("", StringUtils.plural(1, "", "es"));
       assertEquals("es", StringUtils.plural(2, "", "es"));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLcFirst()
+   {
+      assertNull(StringUtils.lcFirst(null));
+      assertEquals("", StringUtils.lcFirst(""));
+      assertEquals(" ", StringUtils.lcFirst(" "));
+      assertEquals("a", StringUtils.lcFirst("A"));
+      assertEquals("1", StringUtils.lcFirst("1"));
+      assertEquals("a", StringUtils.lcFirst("a"));
+      assertEquals("aB", StringUtils.lcFirst("AB"));
+      assertEquals("aBc", StringUtils.lcFirst("ABc"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUcFirst()
+   {
+      assertNull(StringUtils.ucFirst(null));
+      assertEquals("", StringUtils.ucFirst(""));
+      assertEquals(" ", StringUtils.ucFirst(" "));
+      assertEquals("A", StringUtils.ucFirst("A"));
+      assertEquals("1", StringUtils.ucFirst("1"));
+      assertEquals("A", StringUtils.ucFirst("a"));
+      assertEquals("Ab", StringUtils.ucFirst("ab"));
+      assertEquals("Abc", StringUtils.ucFirst("abc"));
+   }
+
 }

@@ -247,14 +247,6 @@ public class ExcelExportStreamer implements ExportStreamerInterface
       for(QFieldMetaData field : fields)
       {
          Serializable value = qRecord.getValue(field.getName());
-         if(field.getPossibleValueSourceName() != null)
-         {
-            String displayValue = qRecord.getDisplayValue(field.getName());
-            if(displayValue != null)
-            {
-               value = displayValue;
-            }
-         }
 
          if(value != null)
          {

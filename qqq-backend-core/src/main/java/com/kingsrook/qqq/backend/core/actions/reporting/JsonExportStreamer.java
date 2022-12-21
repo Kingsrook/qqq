@@ -24,14 +24,18 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,6 +53,7 @@ public class JsonExportStreamer implements ExportStreamerInterface
    private OutputStream         outputStream;
 
    private boolean needComma = false;
+   private boolean prettyPrint = true;
 
 
 
@@ -74,7 +79,7 @@ public class JsonExportStreamer implements ExportStreamerInterface
 
       try
       {
-         outputStream.write("[".getBytes(StandardCharsets.UTF_8));
+         outputStream.write('[');
       }
       catch(IOException e)
       {
@@ -109,11 +114,25 @@ public class JsonExportStreamer implements ExportStreamerInterface
       {
          if(needComma)
          {
-            outputStream.write(",".getBytes(StandardCharsets.UTF_8));
+            outputStream.write(',');
          }
 
-         String json = JsonUtils.toJson(qRecord);
+         Map<String, Serializable> mapForJson = new LinkedHashMap<>();
+         for(QFieldMetaData field : fields)
+         {
+            String labelForJson = StringUtils.lcFirst(field.getLabel().replace(" ", ""));
+            mapForJson.put(labelForJson, qRecord.getValue(field.getName()));
+         }
+
+         String json = prettyPrint ? JsonUtils.toPrettyJson(mapForJson) : JsonUtils.toJson(mapForJson);
+
+         if(prettyPrint)
+         {
+            outputStream.write('\n');
+         }
+
          outputStream.write(json.getBytes(StandardCharsets.UTF_8));
+
          outputStream.flush(); // todo - less often?
          needComma = true;
       }
@@ -144,7 +163,11 @@ public class JsonExportStreamer implements ExportStreamerInterface
    {
       try
       {
-         outputStream.write("]".getBytes(StandardCharsets.UTF_8));
+         if(prettyPrint)
+         {
+            outputStream.write('\n');
+         }
+         outputStream.write(']');
       }
       catch(IOException e)
       {

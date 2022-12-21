@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -58,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -984,7 +986,7 @@ public class QInstanceValidator
                      {
                         if(dataSource.getQueryFilter() != null)
                         {
-                           validateQueryFilter("In " + dataSourceErrorPrefix + "query filter - ", qInstance.getTable(dataSource.getSourceTable()), dataSource.getQueryFilter());
+                           validateQueryFilter(qInstance, "In " + dataSourceErrorPrefix + "query filter - ", qInstance.getTable(dataSource.getSourceTable()), dataSource.getQueryFilter(), dataSource.getQueryJoins());
                         }
                      }
                   }
@@ -999,9 +1001,9 @@ public class QInstanceValidator
                }
             }
 
-            ////////////////////////////////////////
-            // validate dataSources in the report //
-            ////////////////////////////////////////
+            //////////////////////////////////
+            // validate views in the report //
+            //////////////////////////////////
             if(assertCondition(CollectionUtils.nullSafeHasContents(report.getViews()), "At least 1 view must be defined in report " + reportName + "."))
             {
                int         index         = 0;
@@ -1015,19 +1017,30 @@ public class QInstanceValidator
                   usedViewNames.add(view.getName());
 
                   String viewErrorPrefix = "Report " + reportName + " view " + view.getName() + " ";
-                  assertCondition(view.getType() != null, viewErrorPrefix + " is missing its type.");
-                  if(assertCondition(StringUtils.hasContent(view.getDataSourceName()), viewErrorPrefix + " is missing a dataSourceName"))
+                  assertCondition(view.getType() != null, viewErrorPrefix + "is missing its type.");
+                  if(assertCondition(StringUtils.hasContent(view.getDataSourceName()), viewErrorPrefix + "is missing a dataSourceName"))
                   {
-                     assertCondition(usedDataSourceNames.contains(view.getDataSourceName()), viewErrorPrefix + " has an unrecognized dataSourceName: " + view.getDataSourceName());
+                     assertCondition(usedDataSourceNames.contains(view.getDataSourceName()), viewErrorPrefix + "has an unrecognized dataSourceName: " + view.getDataSourceName());
                   }
 
                   if(StringUtils.hasContent(view.getVarianceDataSourceName()))
                   {
-                     assertCondition(usedDataSourceNames.contains(view.getVarianceDataSourceName()), viewErrorPrefix + " has an unrecognized varianceDataSourceName: " + view.getVarianceDataSourceName());
+                     assertCondition(usedDataSourceNames.contains(view.getVarianceDataSourceName()), viewErrorPrefix + "has an unrecognized varianceDataSourceName: " + view.getVarianceDataSourceName());
                   }
 
-                  // actually, this is okay if there's a customizer, so...
-                  assertCondition(CollectionUtils.nullSafeHasContents(view.getColumns()), viewErrorPrefix + " does not have any columns.");
+                  boolean hasColumns = CollectionUtils.nullSafeHasContents(view.getColumns());
+                  boolean hasViewCustomizer = view.getViewCustomizer() != null;
+                  assertCondition(hasColumns || hasViewCustomizer, viewErrorPrefix + "does not have any columns or a view customizer.");
+
+                  Set<String> usedColumnNames = new HashSet<>();
+                  for(QReportField column : CollectionUtils.nonNullList(view.getColumns()))
+                  {
+                     assertCondition(StringUtils.hasContent(column.getName()), viewErrorPrefix + "has a column with no name.");
+                     assertCondition(!usedColumnNames.contains(column.getName()), viewErrorPrefix + "has multiple columns named: " + column.getName());
+                     usedColumnNames.add(column.getName());
+
+                     // todo - is field name valid?
+                  }
 
                   // todo - all these too...
                   // view.getPivotFields();
@@ -1047,30 +1060,70 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateQueryFilter(String context, QTableMetaData table, QQueryFilter queryFilter)
+   private void validateQueryFilter(QInstance qInstance, String context, QTableMetaData table, QQueryFilter queryFilter, List<QueryJoin> queryJoins)
    {
       for(QFilterCriteria criterion : CollectionUtils.nonNullList(queryFilter.getCriteria()))
       {
-         if(assertCondition(StringUtils.hasContent(criterion.getFieldName()), context + "Missing fieldName for a criteria"))
+         String fieldName = criterion.getFieldName();
+         if(assertCondition(StringUtils.hasContent(fieldName), context + "Missing fieldName for a criteria"))
          {
-            assertNoException(() -> table.getField(criterion.getFieldName()), context + "Criteria fieldName " + criterion.getFieldName() + " is not a field in this table.");
+            assertCondition(findField(qInstance, table, queryJoins, fieldName), context + "Criteria fieldName " + fieldName + " is not a field in this table (or in any given joins).");
          }
-         assertCondition(criterion.getOperator() != null, context + "Missing operator for a criteria on fieldName " + criterion.getFieldName());
-         assertCondition(criterion.getValues() != null, context + "Missing values for a criteria on fieldName " + criterion.getFieldName()); // todo - what about ops w/ no value (BLANK)
+         assertCondition(criterion.getOperator() != null, context + "Missing operator for a criteria on fieldName " + fieldName);
+         assertCondition(criterion.getValues() != null, context + "Missing values for a criteria on fieldName " + fieldName); // todo - what about ops w/ no value (BLANK)
       }
 
       for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(queryFilter.getOrderBys()))
       {
          if(assertCondition(StringUtils.hasContent(orderBy.getFieldName()), context + "Missing fieldName for an orderBy"))
          {
-            assertNoException(() -> table.getField(orderBy.getFieldName()), context + "OrderBy fieldName " + orderBy.getFieldName() + " is not a field in this table.");
+            assertCondition(findField(qInstance, table, queryJoins, orderBy.getFieldName()), context + "OrderBy fieldName " + orderBy.getFieldName() + " is not a field in this table (or in any given joins).");
          }
       }
 
       for(QQueryFilter subFilter : CollectionUtils.nonNullList(queryFilter.getSubFilters()))
       {
-         validateQueryFilter(context, table, subFilter);
+         validateQueryFilter(qInstance, context, table, subFilter, queryJoins);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Look for a field name in either a table, or the tables referenced in a list of query joins.
+    *******************************************************************************/
+   private static boolean findField(QInstance qInstance, QTableMetaData table, List<QueryJoin> queryJoins, String fieldName)
+   {
+      boolean foundField = false;
+      try
+      {
+         table.getField(fieldName);
+         foundField = true;
+      }
+      catch(Exception e)
+      {
+         if(fieldName.contains("."))
+         {
+            String fieldNameAfterDot = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+            for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
+            {
+               QTableMetaData joinTable = qInstance.getTable(queryJoin.getRightTable());
+               if(joinTable != null)
+               {
+                  try
+                  {
+                     joinTable.getField(fieldNameAfterDot);
+                     foundField = true;
+                  }
+                  catch(Exception e2)
+                  {
+                     continue;
+                  }
+               }
+            }
+         }
+      }
+      return foundField;
    }
 
 

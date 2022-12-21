@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -147,17 +148,18 @@ public class ExportAction
       //////////////////////////
       // set up a query input //
       //////////////////////////
-      QueryInterface queryInterface = backendModule.getQueryInterface();
-      QueryInput     queryInput     = new QueryInput(exportInput.getInstance());
+      QueryAction queryAction = new QueryAction();
+      QueryInput  queryInput  = new QueryInput(exportInput.getInstance());
       queryInput.setSession(exportInput.getSession());
       queryInput.setTableName(exportInput.getTableName());
       queryInput.setFilter(exportInput.getQueryFilter());
       queryInput.setLimit(exportInput.getLimit());
+      queryInput.setShouldTranslatePossibleValues(true);
 
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //
       /////////////////////////////////////////////////////////////////
-      RecordPipe recordPipe = new RecordPipe();
+      RecordPipe recordPipe = new BufferedRecordPipe(500);
       queryInput.setRecordPipe(recordPipe);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,13 +167,14 @@ public class ExportAction
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ReportFormat            reportFormat   = exportInput.getReportFormat();
       ExportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
-      reportStreamer.start(exportInput, getFields(exportInput), "Sheet 1");
+      List<QFieldMetaData>    fields         = getFields(exportInput);
+      reportStreamer.start(exportInput, fields, "Sheet 1");
 
       //////////////////////////////////////////
       // run the query action as an async job //
       //////////////////////////////////////////
       AsyncJobManager asyncJobManager = new AsyncJobManager();
-      String          queryJobUUID    = asyncJobManager.startJob("ReportAction>QueryAction", (status) -> (queryInterface.execute(queryInput)));
+      String          queryJobUUID    = asyncJobManager.startJob("ReportAction>QueryAction", (status) -> (queryAction.execute(queryInput)));
       LOG.info("Started query job [" + queryJobUUID + "] for report");
 
       AsyncJobState  queryJobState  = AsyncJobState.RUNNING;
@@ -209,7 +212,7 @@ public class ExportAction
             nextSleepMillis = INIT_SLEEP_MS;
 
             List<QRecord> records = recordPipe.consumeAvailableRecords();
-            reportStreamer.addRecords(records);
+            processRecords(reportStreamer, fields, records);
             recordCount += records.size();
 
             LOG.info(countFromPreExecute != null
@@ -238,7 +241,7 @@ public class ExportAction
       // send the final records to the report streamer //
       ///////////////////////////////////////////////////
       List<QRecord> records = recordPipe.consumeAvailableRecords();
-      reportStreamer.addRecords(records);
+      processRecords(reportStreamer, fields, records);
       recordCount += records.size();
 
       long reportEndTime = System.currentTimeMillis();
@@ -272,17 +275,56 @@ public class ExportAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void processRecords(ExportStreamerInterface reportStreamer, List<QFieldMetaData> fields, List<QRecord> records) throws QReportingException
+   {
+      for(QFieldMetaData field : fields)
+      {
+         if(field.getName().endsWith(":possibleValueLabel"))
+         {
+            String effectiveFieldName = field.getName().replace(":possibleValueLabel", "");
+            for(QRecord record : records)
+            {
+               String displayValue = record.getDisplayValue(effectiveFieldName);
+               record.setValue(field.getName(), displayValue);
+            }
+         }
+      }
+
+      reportStreamer.addRecords(records);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private List<QFieldMetaData> getFields(ExportInput exportInput)
    {
-      QTableMetaData table = exportInput.getTable();
+      List<QFieldMetaData> fieldList;
+      QTableMetaData       table = exportInput.getTable();
       if(exportInput.getFieldNames() != null)
       {
-         return (exportInput.getFieldNames().stream().map(table::getField).toList());
+         fieldList = exportInput.getFieldNames().stream().map(table::getField).toList();
       }
       else
       {
-         return (new ArrayList<>(table.getFields().values()));
+         fieldList = new ArrayList<>(table.getFields().values());
       }
+
+      //////////////////////////////////////////
+      // add fields for possible value labels //
+      //////////////////////////////////////////
+      List<QFieldMetaData> returnList = new ArrayList<>();
+      for(QFieldMetaData field : fieldList)
+      {
+         returnList.add(field);
+         if(StringUtils.hasContent(field.getPossibleValueSourceName()))
+         {
+            returnList.add(new QFieldMetaData(field.getName() + ":possibleValueLabel", QFieldType.STRING).withLabel(field.getLabel() + " Name"));
+         }
+      }
+
+      return (returnList);
    }
 
 

@@ -926,8 +926,7 @@ public class QJavalinImplementation
          }
          catch(Exception e)
          {
-            pipedOutputStream.write(("Error generating report: " + e.getMessage()).getBytes());
-            pipedOutputStream.close();
+            handleExportOrReportException(context, pipedOutputStream, e);
             return (false);
          }
       });
@@ -949,6 +948,41 @@ public class QJavalinImplementation
       //    System.out.println("Well, here we are...");
       //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
       // }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void handleExportOrReportException(Context context, PipedOutputStream pipedOutputStream, Exception e) throws IOException
+   {
+      HttpStatus.Code statusCode = HttpStatus.Code.INTERNAL_SERVER_ERROR; // 500
+      String          message    = e.getMessage();
+
+      QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
+      if(userFacingException != null)
+      {
+         LOG.info("User-facing exception", e);
+         statusCode = HttpStatus.Code.BAD_REQUEST; // 400
+         message = userFacingException.getMessage();
+      }
+      else
+      {
+         QAuthenticationException authenticationException = ExceptionUtils.findClassInRootChain(e, QAuthenticationException.class);
+         if(authenticationException != null)
+         {
+            statusCode = HttpStatus.Code.UNAUTHORIZED; // 401
+         }
+         else
+         {
+            LOG.warn("Unexpected exception in javalin report or export request", e);
+         }
+      }
+
+      context.status(statusCode.getCode());
+      pipedOutputStream.write(("Error generating report: " + message).getBytes());
+      pipedOutputStream.close();
    }
 
 

@@ -241,8 +241,8 @@ public class StringUtils
          return (null);
       }
 
-      StringBuilder rs = new StringBuilder();
-      int size = input.size();
+      StringBuilder rs   = new StringBuilder();
+      int           size = input.size();
 
       for(int i = 0; i < size; i++)
       {
@@ -359,6 +359,46 @@ public class StringUtils
    public static String plural(Integer size, String ifOne, String ifNotOne)
    {
       return (size != null && size.equals(1) ? ifOne : ifNotOne);
+   }
+
+
+
+   /*******************************************************************************
+    ** Lowercase the first char of a string.
+    *******************************************************************************/
+   public static String lcFirst(String s)
+   {
+      if(s == null)
+      {
+         return (null);
+      }
+
+      if(s.length() <= 1)
+      {
+         return (s.toLowerCase());
+      }
+
+      return (s.substring(0, 1).toLowerCase() + s.substring(1));
+   }
+
+
+
+   /*******************************************************************************
+    ** Uppercase the first char of a string.
+    *******************************************************************************/
+   public static String ucFirst(String s)
+   {
+      if(s == null)
+      {
+         return (null);
+      }
+
+      if(s.length() <= 1)
+      {
+         return (s.toUpperCase());
+      }
+
+      return (s.substring(0, 1).toUpperCase() + s.substring(1));
    }
 
 }

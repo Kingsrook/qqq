@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -36,6 +37,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -44,6 +47,8 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class QueryAction
 {
+   private static final Logger LOG = LogManager.getLogger(QueryAction.class);
+
    private Optional<AbstractPostQueryCustomizer> postQueryRecordCustomizer;
 
    private QueryInput               queryInput;
@@ -71,6 +76,11 @@ public class QueryAction
       // todo pre-customization - just get to modify the request?
       QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
       // todo post-customization - can do whatever w/ the result if you want
+
+      if(queryInput.getRecordPipe() instanceof BufferedRecordPipe bufferedRecordPipe)
+      {
+         bufferedRecordPipe.finalFlush();
+      }
 
       if(queryInput.getRecordPipe() == null)
       {
@@ -100,7 +110,7 @@ public class QueryAction
          {
             qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
          }
-         qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records);
+         qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records, queryInput.getQueryJoins());
       }
 
       if(queryInput.getShouldGenerateDisplayValues())

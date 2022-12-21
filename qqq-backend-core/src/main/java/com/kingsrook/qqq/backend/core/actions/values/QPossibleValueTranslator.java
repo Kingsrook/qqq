@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -50,6 +52,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,12 +96,23 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    public void translatePossibleValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
+      translatePossibleValuesInRecords(table, records, Collections.emptyList());
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of records, translate their possible values (populating their display values)
+    *******************************************************************************/
+   public void translatePossibleValuesInRecords(QTableMetaData table, List<QRecord> records, List<QueryJoin> queryJoins)
+   {
       if(records == null || table == null)
       {
          return;
       }
 
-      primePvsCache(table, records);
+      LOG.debug("Translating possible values in [" + records.size() + "] records from the [" + table.getName() + "] table.");
+      primePvsCache(table, records, queryJoins);
 
       for(QRecord record : records)
       {
@@ -108,6 +123,42 @@ public class QPossibleValueTranslator
                record.setDisplayValue(field.getName(), translatePossibleValue(field, record.getValue(field.getName())));
             }
          }
+
+         for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
+         {
+            if(queryJoin.getSelect())
+            {
+               try
+               {
+                  ////////////////////////////////////////////
+                  // todo - aliases aren't be handled right //
+                  ////////////////////////////////////////////
+                  QTableMetaData joinTable = qInstance.getTable(queryJoin.getRightTable());
+                  for(QFieldMetaData field : joinTable.getFields().values())
+                  {
+                     if(field.getPossibleValueSourceName() != null)
+                     {
+                        ///////////////////////////////////////////////
+                        // avoid circling-back upon the source table //
+                        ///////////////////////////////////////////////
+                        QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+                        if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()) && table.getName().equals(possibleValueSource.getTableName()))
+                        {
+                           continue;
+                        }
+
+                        String joinFieldName = joinTable.getName() + "." + field.getName();
+                        record.setDisplayValue(joinFieldName, translatePossibleValue(field, record.getValue(joinFieldName)));
+                     }
+                  }
+               }
+               catch(Exception e)
+               {
+                  LOG.warn("Error translating join table possible values", e);
+               }
+            }
+         }
+
       }
    }
 
@@ -244,8 +295,7 @@ public class QPossibleValueTranslator
       //////////////////////////////////////////////////////////////
       // look for cached value - if it's missing, call the primer //
       //////////////////////////////////////////////////////////////
-      possibleValueCache.putIfAbsent(possibleValueSource.getName(), new HashMap<>());
-      Map<Serializable, String> cacheForPvs = possibleValueCache.get(possibleValueSource.getName());
+      Map<Serializable, String> cacheForPvs = possibleValueCache.computeIfAbsent(possibleValueSource.getName(), x -> new HashMap<>());
       if(!cacheForPvs.containsKey(value))
       {
          primePvsCache(possibleValueSource.getTableName(), List.of(possibleValueSource), List.of(value));
@@ -329,21 +379,29 @@ public class QPossibleValueTranslator
 
    /*******************************************************************************
     ** prime the cache (e.g., by doing bulk-queries) for table-based PVS's
-    **
-    ** @param table the table that the records are from
+    **  @param table the table that the records are from
     ** @param records the records that have the possible value id's (e.g., foreign keys)
+    * @param queryJoins
     *******************************************************************************/
-   void primePvsCache(QTableMetaData table, List<QRecord> records)
+   void primePvsCache(QTableMetaData table, List<QRecord> records, List<QueryJoin> queryJoins)
    {
-      ListingHash<String, QFieldMetaData>       fieldsByPvsTable = new ListingHash<>();
-      ListingHash<String, QPossibleValueSource> pvsesByTable     = new ListingHash<>();
-      for(QFieldMetaData field : table.getFields().values())
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // this is a map of String(tableName - the PVS table) to Pair(String (either "" for main table in a query, or join-table + "."), field (from the table being selected from)) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ListingHash<String, Pair<String, QFieldMetaData>> fieldsByPvsTable = new ListingHash<>();
+
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // this is a map of String(tableName - the PVS table) to PossibleValueSource objects //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      ListingHash<String, QPossibleValueSource> pvsesByTable = new ListingHash<>();
+
+      primePvsCacheTableListingHashLoader(table, fieldsByPvsTable, pvsesByTable, "");
+      for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
       {
-         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
-         if(possibleValueSource != null && possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
+         if(queryJoin.getSelect())
          {
-            fieldsByPvsTable.add(possibleValueSource.getTableName(), field);
-            pvsesByTable.add(possibleValueSource.getTableName(), possibleValueSource);
+            // todo - aliases probably not handled right
+            primePvsCacheTableListingHashLoader(qInstance.getTable(queryJoin.getRightTable()), fieldsByPvsTable, pvsesByTable, queryJoin.getRightTable() + ".");
          }
       }
 
@@ -352,16 +410,24 @@ public class QPossibleValueTranslator
          Set<Serializable> values = new HashSet<>();
          for(QRecord record : records)
          {
-            for(QFieldMetaData field : fieldsByPvsTable.get(tableName))
+            for(Pair<String, QFieldMetaData> fieldPair : fieldsByPvsTable.get(tableName))
             {
-               Serializable fieldValue = record.getValue(field.getName());
+               String       fieldName  = fieldPair.getA() + fieldPair.getB().getName();
+               Serializable fieldValue = record.getValue(fieldName);
+
+               /////////////////////////////////////////
+               // ignore null and empty-string values //
+               /////////////////////////////////////////
+               if(!StringUtils.hasContent(ValueUtils.getValueAsString(fieldValue)))
+               {
+                  continue;
+               }
 
                //////////////////////////////////////
                // check if value is already cached //
                //////////////////////////////////////
                QPossibleValueSource possibleValueSource = pvsesByTable.get(tableName).get(0);
-               possibleValueCache.putIfAbsent(possibleValueSource.getName(), new HashMap<>());
-               Map<Serializable, String> cacheForPvs = possibleValueCache.get(possibleValueSource.getName());
+               Map<Serializable, String> cacheForPvs = possibleValueCache.computeIfAbsent(possibleValueSource.getName(), x -> new HashMap<>());
 
                if(!cacheForPvs.containsKey(fieldValue))
                {
@@ -373,6 +439,28 @@ public class QPossibleValueTranslator
          if(!values.isEmpty())
          {
             primePvsCache(tableName, pvsesByTable.get(tableName), values);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Helper for the primePvsCache method
+    *******************************************************************************/
+   private void primePvsCacheTableListingHashLoader(QTableMetaData table, ListingHash<String, Pair<String, QFieldMetaData>> fieldsByPvsTable, ListingHash<String, QPossibleValueSource> pvsesByTable, String fieldNamePrefix)
+   {
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+         if(possibleValueSource != null && possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
+         {
+            fieldsByPvsTable.add(possibleValueSource.getTableName(), Pair.of(fieldNamePrefix, field));
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // todo - optimization we can put the same PVS in this listing hash multiple times... either check for dupes, or change to a set, or something smarter. //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            pvsesByTable.add(possibleValueSource.getTableName(), possibleValueSource);
          }
       }
    }
@@ -408,10 +496,12 @@ public class QPossibleValueTranslator
             /////////////////////////////////////////////////////////////////////////////////////////
             if(notTooDeep())
             {
-               queryInput.setShouldTranslatePossibleValues(true);
+               // todo not commit...
+               // queryInput.setShouldTranslatePossibleValues(true);
                queryInput.setShouldGenerateDisplayValues(true);
             }
 
+            LOG.debug("Priming PVS cache for [" + page.size() + "] ids from [" + tableName + "] table.");
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
             ///////////////////////////////////////////////////////////////////////////////////
