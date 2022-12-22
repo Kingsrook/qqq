@@ -96,7 +96,7 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    public void translatePossibleValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
-      translatePossibleValuesInRecords(table, records, Collections.emptyList());
+      translatePossibleValuesInRecords(table, records, Collections.emptyList(), null);
    }
 
 
@@ -104,15 +104,21 @@ public class QPossibleValueTranslator
    /*******************************************************************************
     ** For a list of records, translate their possible values (populating their display values)
     *******************************************************************************/
-   public void translatePossibleValuesInRecords(QTableMetaData table, List<QRecord> records, List<QueryJoin> queryJoins)
+   public void translatePossibleValuesInRecords(QTableMetaData table, List<QRecord> records, List<QueryJoin> queryJoins, Set<String> limitedToFieldNames)
    {
       if(records == null || table == null)
       {
          return;
       }
 
+      if(limitedToFieldNames != null && limitedToFieldNames.isEmpty())
+      {
+         LOG.debug("We were asked to translate possible values, but then given an empty set of fields to translate, so noop.");
+         return;
+      }
+
       LOG.debug("Translating possible values in [" + records.size() + "] records from the [" + table.getName() + "] table.");
-      primePvsCache(table, records, queryJoins);
+      primePvsCache(table, records, queryJoins, limitedToFieldNames);
 
       for(QRecord record : records)
       {
@@ -120,7 +126,10 @@ public class QPossibleValueTranslator
          {
             if(field.getPossibleValueSourceName() != null)
             {
-               record.setDisplayValue(field.getName(), translatePossibleValue(field, record.getValue(field.getName())));
+               if(limitedToFieldNames == null || limitedToFieldNames.contains(field.getName()))
+               {
+                  record.setDisplayValue(field.getName(), translatePossibleValue(field, record.getValue(field.getName())));
+               }
             }
          }
 
@@ -130,25 +139,25 @@ public class QPossibleValueTranslator
             {
                try
                {
-                  ////////////////////////////////////////////
-                  // todo - aliases aren't be handled right //
-                  ////////////////////////////////////////////
-                  QTableMetaData joinTable = qInstance.getTable(queryJoin.getRightTable());
+                  QTableMetaData joinTable = qInstance.getTable(queryJoin.getJoinTable());
                   for(QFieldMetaData field : joinTable.getFields().values())
                   {
+                     String joinFieldName = Objects.requireNonNullElse(queryJoin.getAlias(), joinTable.getName()) + "." + field.getName();
                      if(field.getPossibleValueSourceName() != null)
                      {
-                        ///////////////////////////////////////////////
-                        // avoid circling-back upon the source table //
-                        ///////////////////////////////////////////////
-                        QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
-                        if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()) && table.getName().equals(possibleValueSource.getTableName()))
+                        if(limitedToFieldNames == null || limitedToFieldNames.contains(joinFieldName))
                         {
-                           continue;
-                        }
+                           ///////////////////////////////////////////////
+                           // avoid circling-back upon the source table //
+                           ///////////////////////////////////////////////
+                           QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+                           if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()) && table.getName().equals(possibleValueSource.getTableName()))
+                           {
+                              continue;
+                           }
 
-                        String joinFieldName = joinTable.getName() + "." + field.getName();
-                        record.setDisplayValue(joinFieldName, translatePossibleValue(field, record.getValue(joinFieldName)));
+                           record.setDisplayValue(joinFieldName, translatePossibleValue(field, record.getValue(joinFieldName)));
+                        }
                      }
                   }
                }
@@ -379,11 +388,13 @@ public class QPossibleValueTranslator
 
    /*******************************************************************************
     ** prime the cache (e.g., by doing bulk-queries) for table-based PVS's
-    **  @param table the table that the records are from
+    *
+    * @param table the table that the records are from
     ** @param records the records that have the possible value id's (e.g., foreign keys)
-    * @param queryJoins
+    * @param queryJoins joins that were used as part of the query that led to the records.
+    * @param limitedToFieldNames set of names that are the only fields that get translated (null means all fields).
     *******************************************************************************/
-   void primePvsCache(QTableMetaData table, List<QRecord> records, List<QueryJoin> queryJoins)
+   void primePvsCache(QTableMetaData table, List<QRecord> records, List<QueryJoin> queryJoins, Set<String> limitedToFieldNames)
    {
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // this is a map of String(tableName - the PVS table) to Pair(String (either "" for main table in a query, or join-table + "."), field (from the table being selected from)) //
@@ -395,13 +406,13 @@ public class QPossibleValueTranslator
       ///////////////////////////////////////////////////////////////////////////////////////
       ListingHash<String, QPossibleValueSource> pvsesByTable = new ListingHash<>();
 
-      primePvsCacheTableListingHashLoader(table, fieldsByPvsTable, pvsesByTable, "");
+      primePvsCacheTableListingHashLoader(table, fieldsByPvsTable, pvsesByTable, "", table.getName(), limitedToFieldNames);
       for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
       {
          if(queryJoin.getSelect())
          {
-            // todo - aliases probably not handled right
-            primePvsCacheTableListingHashLoader(qInstance.getTable(queryJoin.getRightTable()), fieldsByPvsTable, pvsesByTable, queryJoin.getRightTable() + ".");
+            String aliasOrTableName = Objects.requireNonNullElse(queryJoin.getAlias(), queryJoin.getJoinTable());
+            primePvsCacheTableListingHashLoader(qInstance.getTable(queryJoin.getJoinTable()), fieldsByPvsTable, pvsesByTable, aliasOrTableName + ".", queryJoin.getJoinTable(), limitedToFieldNames);
          }
       }
 
@@ -426,8 +437,8 @@ public class QPossibleValueTranslator
                //////////////////////////////////////
                // check if value is already cached //
                //////////////////////////////////////
-               QPossibleValueSource possibleValueSource = pvsesByTable.get(tableName).get(0);
-               Map<Serializable, String> cacheForPvs = possibleValueCache.computeIfAbsent(possibleValueSource.getName(), x -> new HashMap<>());
+               QPossibleValueSource      possibleValueSource = pvsesByTable.get(tableName).get(0);
+               Map<Serializable, String> cacheForPvs         = possibleValueCache.computeIfAbsent(possibleValueSource.getName(), x -> new HashMap<>());
 
                if(!cacheForPvs.containsKey(fieldValue))
                {
@@ -448,13 +459,19 @@ public class QPossibleValueTranslator
    /*******************************************************************************
     ** Helper for the primePvsCache method
     *******************************************************************************/
-   private void primePvsCacheTableListingHashLoader(QTableMetaData table, ListingHash<String, Pair<String, QFieldMetaData>> fieldsByPvsTable, ListingHash<String, QPossibleValueSource> pvsesByTable, String fieldNamePrefix)
+   private void primePvsCacheTableListingHashLoader(QTableMetaData table, ListingHash<String, Pair<String, QFieldMetaData>> fieldsByPvsTable, ListingHash<String, QPossibleValueSource> pvsesByTable, String fieldNamePrefix, String tableName, Set<String> limitedToFieldNames)
    {
       for(QFieldMetaData field : table.getFields().values())
       {
          QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
          if(possibleValueSource != null && possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
          {
+            if(limitedToFieldNames != null && !limitedToFieldNames.contains(fieldNamePrefix + field.getName()))
+            {
+               LOG.debug("Skipping cache priming for translation of possible value field [" + fieldNamePrefix + field.getName() + "] - it's not in the limitedToFieldNames set.");
+               continue;
+            }
+
             fieldsByPvsTable.add(possibleValueSource.getTableName(), Pair.of(fieldNamePrefix, field));
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -491,14 +508,38 @@ public class QPossibleValueTranslator
             queryInput.setTableName(tableName);
             queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, page)));
 
-            /////////////////////////////////////////////////////////////////////////////////////////
-            // this is needed to get record labels, which are what we use here... unclear if best! //
-            /////////////////////////////////////////////////////////////////////////////////////////
-            if(notTooDeep())
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // when querying for possible values, we do want to generate their display values, which makes record labels, which are usually used as PVS labels //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            queryInput.setShouldGenerateDisplayValues(true);
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // also, if this table uses any possible value fields as part of its own record label, then THOSE possible values need translated. //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            Set<String> possibleValueFieldsToTranslate = new HashSet<>();
+            for(QPossibleValueSource possibleValueSource : possibleValueSources)
             {
-               // todo not commit...
-               // queryInput.setShouldTranslatePossibleValues(true);
-               queryInput.setShouldGenerateDisplayValues(true);
+               if(possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
+               {
+                  QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+                  for(String recordLabelField : CollectionUtils.nonNullList(table.getRecordLabelFields()))
+                  {
+                     QFieldMetaData field = table.getField(recordLabelField);
+                     if(field.getPossibleValueSourceName() != null)
+                     {
+                        possibleValueFieldsToTranslate.add(field.getName());
+                     }
+                  }
+               }
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // an earlier version of this code got into stack overflows, so do a "cheap" check for recursion depth too... //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!possibleValueFieldsToTranslate.isEmpty() && notTooDeep())
+            {
+               queryInput.setShouldTranslatePossibleValues(true);
+               queryInput.setFieldsToTranslatePossibleValues(possibleValueFieldsToTranslate);
             }
 
             LOG.debug("Priming PVS cache for [" + page.size() + "] ids from [" + tableName + "] table.");

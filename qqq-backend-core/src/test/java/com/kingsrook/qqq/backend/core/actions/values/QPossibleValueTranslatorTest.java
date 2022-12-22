@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -188,7 +189,7 @@ public class QPossibleValueTranslatorTest
       );
       QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
       MemoryRecordStore.resetStatistics();
-      possibleValueTranslator.primePvsCache(personTable, personRecords, null); // todo - test non-null queryJoins
+      possibleValueTranslator.primePvsCache(personTable, personRecords, null, null); // todo - test non-null queryJoins
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should only run 1 query");
       possibleValueTranslator.translatePossibleValue(shapeField, 1);
       possibleValueTranslator.translatePossibleValue(shapeField, 2);
@@ -358,6 +359,103 @@ public class QPossibleValueTranslatorTest
 
       assertEquals("IL", records.get(0).getDisplayValue("homeStateId"));
       assertEquals("MO", records.get(1).getDisplayValue("homeStateId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueWithSecondaryPossibleValueLabel() throws QException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+
+      qInstance.addTable(new QTableMetaData()
+         .withName("city")
+         .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withField(new QFieldMetaData("regionId", QFieldType.INTEGER).withPossibleValueSourceName("region")));
+
+      qInstance.addTable(new QTableMetaData()
+         .withName("region")
+         .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withRecordLabelFormat("%s of %s")
+         .withRecordLabelFields("name", "countryId")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withField(new QFieldMetaData("countryId", QFieldType.INTEGER).withPossibleValueSourceName("country")));
+
+      qInstance.addTable(new QTableMetaData()
+         .withName("country")
+         .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("name")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING)));
+
+      qInstance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("region")
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName("region")
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
+
+      qInstance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("country")
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName("country")
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
+
+      List<QRecord> regions = List.of(new QRecord().withValue("id", 11).withValue("name", "Missouri").withValue("countryId", 111));
+      List<QRecord> countries = List.of(new QRecord().withValue("id", 111).withValue("name", "U.S.A"));
+
+      TestUtils.insertRecords(qInstance, qInstance.getTable("region"), regions);
+      TestUtils.insertRecords(qInstance, qInstance.getTable("country"), countries);
+
+      MemoryRecordStore.resetStatistics();
+      MemoryRecordStore.setCollectStatistics(true);
+
+      QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // verify that if we run w/ an empty set for the param limitedToFieldNames, that we do NOT translate the regionId //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         List<QRecord> cities = List.of(new QRecord().withValue("id", 1).withValue("name", "St. Louis").withValue("regionId", 11));
+         possibleValueTranslator.translatePossibleValuesInRecords(qInstance.getTable("city"), cities, null, Set.of());
+         assertNull(cities.get(0).getDisplayValue("regionId"));
+      }
+
+      ////////////////////////////////////////////////////////////////////////
+      // ditto a set that contains something, but not the field in question //
+      ////////////////////////////////////////////////////////////////////////
+      {
+         List<QRecord> cities = List.of(new QRecord().withValue("id", 1).withValue("name", "St. Louis").withValue("regionId", 11));
+         possibleValueTranslator.translatePossibleValuesInRecords(qInstance.getTable("city"), cities, null, Set.of("foobar"));
+         assertNull(cities.get(0).getDisplayValue("regionId"));
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now re-run, w/ regionId - and we should see it get translated - and - the possible-value that it uses (countryId) as part of its label also gets translated. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         List<QRecord> cities = List.of(new QRecord().withValue("id", 1).withValue("name", "St. Louis").withValue("regionId", 11));
+         possibleValueTranslator.translatePossibleValuesInRecords(qInstance.getTable("city"), cities, null, Set.of("regionId"));
+         assertEquals("Missouri of U.S.A", cities.get(0).getDisplayValue("regionId"));
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // finally, verify that a null limitedToFieldNames means to translate them all //
+      /////////////////////////////////////////////////////////////////////////////////
+      {
+         List<QRecord> cities = List.of(new QRecord().withValue("id", 1).withValue("name", "St. Louis").withValue("regionId", 11));
+         possibleValueTranslator.translatePossibleValuesInRecords(qInstance.getTable("city"), cities, null, null);
+         assertEquals("Missouri of U.S.A", cities.get(0).getDisplayValue("regionId"));
+      }
    }
 
 }

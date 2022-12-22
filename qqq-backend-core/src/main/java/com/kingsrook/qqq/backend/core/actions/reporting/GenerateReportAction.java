@@ -27,9 +27,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -119,6 +121,10 @@ public class GenerateReportAction
    {
       report = reportInput.getInstance().getReport(reportInput.getReportName());
       reportFormat = reportInput.getReportFormat();
+      if(reportFormat == null)
+      {
+         throw new QException("Report format was not specified.");
+      }
       reportStreamer = reportFormat.newReportStreamer();
 
       ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -300,7 +306,9 @@ public class GenerateReportAction
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
             queryInput.setQueryJoins(dataSource.getQueryJoins());
-            queryInput.setShouldTranslatePossibleValues(true); // todo - any limits or conditions on this?
+
+            queryInput.setShouldTranslatePossibleValues(true);
+            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins())));
 
             if(dataSource.getQueryInputCustomizer() != null)
             {
@@ -358,6 +366,45 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private Set<String> setupFieldsToTranslatePossibleValues(ReportInput reportInput, QReportDataSource dataSource, JoinsContext joinsContext)
+   {
+      Set<String> fieldsToTranslatePossibleValues = new HashSet<>();
+
+      for(QReportView view : report.getViews())
+      {
+         for(QReportField column : CollectionUtils.nonNullList(view.getColumns()))
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // if this is a column marked as ShowPossibleValueLabel, then we need to translate it //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            if(column.getShowPossibleValueLabel())
+            {
+               String effectiveFieldName = Objects.requireNonNullElse(column.getSourceFieldName(), column.getName());
+               fieldsToTranslatePossibleValues.add(effectiveFieldName);
+            }
+         }
+
+         for(String summaryField : CollectionUtils.nonNullList(view.getPivotFields()))
+         {
+            ///////////////////////////////////////////////////////////////////////////////
+            // all pivotFields that are possible value sources are implicitly translated //
+            ///////////////////////////////////////////////////////////////////////////////
+            QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
+            if(table.getField(summaryField).getPossibleValueSourceName() != null)
+            {
+               fieldsToTranslatePossibleValues.add(summaryField);
+            }
+         }
+      }
+
+      return (fieldsToTranslatePossibleValues);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void setInputValuesInQueryFilter(ReportInput reportInput, QQueryFilter queryFilter)
    {
       if(queryFilter == null || queryFilter.getCriteria() == null)
@@ -375,8 +422,7 @@ public class GenerateReportAction
 
             for(Serializable value : criterion.getValues())
             {
-               String valueAsString = ValueUtils.getValueAsString(value);
-               // Serializable interpretedValue = variableInterpreter.interpret(valueAsString);
+               String       valueAsString    = ValueUtils.getValueAsString(value);
                Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
                newValues.add(interpretedValue);
             }
@@ -476,6 +522,9 @@ public class GenerateReportAction
             Serializable summaryValue = record.getValue(summaryField);
             if(table.getField(summaryField).getPossibleValueSourceName() != null)
             {
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // so, this is kinda a thing - where we implicitly use possible-value labels (e.g., display values) for pivot fields... //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                summaryValue = record.getDisplayValue(summaryField);
             }
             key.add(summaryField, summaryValue);

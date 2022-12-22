@@ -47,7 +47,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
@@ -141,7 +140,8 @@ public class TestUtils
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
    public static final String TABLE_NAME_BASEPULL                   = "basepullTest";
    public static final String REPORT_NAME_SHAPES_PERSON             = "shapesPersonReport";
-   public static final String REPORT_NAME_PERSON_JOIN_SHAPE         = "simplePersonReport";
+   public static final String REPORT_NAME_PERSON_SIMPLE             = "simplePersonReport";
+   public static final String REPORT_NAME_PERSON_JOIN_SHAPE         = "personJoinShapeReport";
 
    public static final String POSSIBLE_VALUE_SOURCE_STATE             = "state"; // enum-type
    public static final String POSSIBLE_VALUE_SOURCE_SHAPE             = "shape"; // table-type
@@ -195,6 +195,7 @@ public class TestUtils
       qInstance.addReport(defineShapesPersonsReport());
       qInstance.addProcess(defineShapesPersonReportProcess());
       qInstance.addReport(definePersonJoinShapeReport());
+      qInstance.addReport(definePersonSimpleReport());
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
 
@@ -1109,6 +1110,32 @@ public class TestUtils
          .withReportName(REPORT_NAME_SHAPES_PERSON)
          .withTableName(TestUtils.TABLE_NAME_SHAPE)
          .getProcessMetaData();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData definePersonSimpleReport()
+   {
+      return new QReportMetaData()
+         .withName(REPORT_NAME_PERSON_SIMPLE)
+         .withDataSource(
+            new QReportDataSource()
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         )
+         .withView(new QReportView()
+            .withType(ReportType.TABLE)
+            .withLabel("Simple Report")
+            .withColumns(List.of(
+               new QReportField("id"),
+               new QReportField("firstName"),
+               new QReportField("lastName"),
+               new QReportField("homeStateId").withLabel("Home State Id"),
+               new QReportField("homeStateName").withSourceFieldName("homeStateId").withShowPossibleValueLabel(true).withLabel("Home State Name")
+            ))
+         );
    }
 
 

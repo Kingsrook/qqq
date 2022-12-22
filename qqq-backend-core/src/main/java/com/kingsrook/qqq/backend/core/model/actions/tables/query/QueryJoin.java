@@ -22,17 +22,38 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
  ** Part of query (or count, aggregate) input, to do a Join as part of a query.
+ **
+ ** Conceptually, when you're adding a QueryJoin to a query, you're adding a new
+ ** table to the query - this is named the `joinTable` in this class.  This table
+ ** can be given an alias, which can be referenced in the rest of the query.
+ **
+ ** Every joinTable needs to have a `baseTable` that it is "joined" with - e.g.,
+ ** the table that the joinOn clauses link up with.
+ **
+ ** However - the caller doesn't necessarily need to specify the `baseTable` -
+ ** as the framework will look for Joins defined in the qInstance, and if an
+ ** unambiguous one is found (between the joinTable and other tables in the
+ ** query), then it'll use the "other" table in that Join as the baseTable.
+ **
+ ** For use-cases where a baseTable has been included in a query multiple times,
+ ** with aliases, then the baseTableOrAlias field must be set to the appropriate alias.
+ **
+ ** If there are multiple Joins defined between the base & join tables, then the
+ ** specific joinMetaData to use must be set.  The joinMetaData field can also be
+ ** used instead of specify joinTable and baseTableOrAlias, but only for cases
+ ** where the baseTable is not an alias.
  *******************************************************************************/
 public class QueryJoin
 {
-   private String        leftTableOrAlias;
-   private String        rightTable;
+   private String        baseTableOrAlias;
+   private String        joinTable;
    private QJoinMetaData joinMetaData;
    private String        alias;
    private boolean       select = false;
@@ -59,19 +80,42 @@ public class QueryJoin
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Constructor that only takes a joinTable.  Unless you also set the baseTableOrAlias,
+    ** the framework will attempt to ascertain the baseTableOrAlias, based on Joins
+    ** defined in the instance and other tables in the query.
     **
     *******************************************************************************/
-   public QueryJoin(String leftTableOrAlias, String rightTable)
+   public QueryJoin(String joinTable)
    {
-      this.leftTableOrAlias = leftTableOrAlias;
-      this.rightTable = rightTable;
+      this.joinTable = joinTable;
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Constructor that takes baseTableOrAlias and joinTable.  Useful if it's not
+    ** explicitly clear what the base table should be just from the joinTable.  e.g.,
+    ** if the baseTable has an alias, or if there's more than 1 join in the instance
+    ** that matches the joinTable and the other tables in the query.
+    **
+    *******************************************************************************/
+   public QueryJoin(String baseTableOrAlias, String joinTable)
+   {
+      this.baseTableOrAlias = baseTableOrAlias;
+      this.joinTable = joinTable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor that takes a joinMetaData - the rightTable in the joinMetaData will
+    ** be used as the joinTable.  The leftTable in the joinMetaData will be used as
+    ** the baseTable.
+    **
+    ** This is probably (only?) what you want to use if you have a table that joins
+    ** more than once to another table (e.g., order.shipToCustomerId and order.billToCustomerId).
+    **
+    ** Alternatively, you could just do new QueryJoin("customer").withJoinMetaData("orderJoinShipToCustomer").
     **
     *******************************************************************************/
    public QueryJoin(QJoinMetaData joinMetaData)
@@ -82,68 +126,68 @@ public class QueryJoin
 
 
    /*******************************************************************************
-    ** Getter for leftTableOrAlias
+    ** Getter for baseTableOrAlias
     **
     *******************************************************************************/
-   public String getLeftTableOrAlias()
+   public String getBaseTableOrAlias()
    {
-      return leftTableOrAlias;
+      return baseTableOrAlias;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for leftTableOrAlias
+    ** Setter for baseTableOrAlias
     **
     *******************************************************************************/
-   public void setLeftTableOrAlias(String leftTableOrAlias)
+   public void setBaseTableOrAlias(String baseTableOrAlias)
    {
-      this.leftTableOrAlias = leftTableOrAlias;
+      this.baseTableOrAlias = baseTableOrAlias;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for leftTableOrAlias
+    ** Fluent setter for baseTableOrAlias
     **
     *******************************************************************************/
-   public QueryJoin withLeftTableOrAlias(String leftTableOrAlias)
+   public QueryJoin withBaseTableOrAlias(String baseTableOrAlias)
    {
-      this.leftTableOrAlias = leftTableOrAlias;
+      this.baseTableOrAlias = baseTableOrAlias;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for rightTable
+    ** Getter for joinTable
     **
     *******************************************************************************/
-   public String getRightTable()
+   public String getJoinTable()
    {
-      return rightTable;
+      return joinTable;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for rightTable
+    ** Setter for joinTable
     **
     *******************************************************************************/
-   public void setRightTable(String rightTable)
+   public void setJoinTable(String joinTable)
    {
-      this.rightTable = rightTable;
+      this.joinTable = joinTable;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for rightTable
+    ** Fluent setter for joinTable
     **
     *******************************************************************************/
-   public QueryJoin withRightTable(String rightTable)
+   public QueryJoin withJoinTable(String joinTable)
    {
-      this.rightTable = rightTable;
+      this.joinTable = joinTable;
       return (this);
    }
 
@@ -220,13 +264,13 @@ public class QueryJoin
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getAliasOrRightTable()
+   public String getJoinTableOrItsAlias()
    {
       if(StringUtils.hasContent(alias))
       {
          return (alias);
       }
-      return (rightTable);
+      return (joinTable);
    }
 
 
@@ -282,12 +326,13 @@ public class QueryJoin
     *******************************************************************************/
    public void setJoinMetaData(QJoinMetaData joinMetaData)
    {
+      Objects.requireNonNull(joinMetaData, "JoinMetaData was null.");
       this.joinMetaData = joinMetaData;
 
-      if(!StringUtils.hasContent(this.leftTableOrAlias) && !StringUtils.hasContent(this.rightTable))
+      if(!StringUtils.hasContent(this.baseTableOrAlias) && !StringUtils.hasContent(this.joinTable))
       {
-         setLeftTableOrAlias(joinMetaData.getLeftTable());
-         setRightTable(joinMetaData.getRightTable());
+         setBaseTableOrAlias(joinMetaData.getLeftTable());
+         setJoinTable(joinMetaData.getRightTable());
       }
    }
 

@@ -1107,7 +1107,7 @@ public class QInstanceValidator
             String fieldNameAfterDot = fieldName.substring(fieldName.lastIndexOf(".") + 1);
             for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
             {
-               QTableMetaData joinTable = qInstance.getTable(queryJoin.getRightTable());
+               QTableMetaData joinTable = qInstance.getTable(queryJoin.getJoinTable());
                if(joinTable != null)
                {
                   try

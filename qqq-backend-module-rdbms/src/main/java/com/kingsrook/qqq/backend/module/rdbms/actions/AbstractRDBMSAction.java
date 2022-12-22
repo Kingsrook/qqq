@@ -183,38 +183,48 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
       for(QueryJoin queryJoin : joinsContext.getQueryJoins())
       {
-         QTableMetaData joinTable        = instance.getTable(queryJoin.getRightTable());
-         String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+         QTableMetaData joinTable        = instance.getTable(queryJoin.getJoinTable());
+         String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
 
          rs.append(" ").append(queryJoin.getType()).append(" JOIN ")
             .append(escapeIdentifier(getTableName(joinTable)))
             .append(" AS ").append(escapeIdentifier(tableNameOrAlias));
 
          ////////////////////////////////////////////////////////////
-         // find the join in the instance, to see the 'on' clause  //
+         // find the join in the instance, to set the 'on' clause  //
          ////////////////////////////////////////////////////////////
          List<String> joinClauseList = new ArrayList<>();
-         String       leftTableName  = joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getLeftTableOrAlias());
+         String       baseTableName  = joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias());
          QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
          {
-            QJoinMetaData found = findJoinMetaData(instance, leftTableName, queryJoin.getRightTable());
+            QJoinMetaData found = findJoinMetaData(instance, joinsContext, baseTableName, queryJoin.getJoinTable());
             if(found == null)
             {
-               throw (new RuntimeException("Could not find a join between tables [" + leftTableName + "][" + queryJoin.getRightTable() + "]"));
+               throw (new RuntimeException("Could not find a join between tables [" + baseTableName + "][" + queryJoin.getJoinTable() + "]"));
             }
             return (found);
          });
+
          for(JoinOn joinOn : joinMetaData.getJoinOns())
          {
             QTableMetaData leftTable  = instance.getTable(joinMetaData.getLeftTable());
             QTableMetaData rightTable = instance.getTable(joinMetaData.getRightTable());
 
-            String leftTableOrAlias  = queryJoin.getLeftTableOrAlias();
-            String aliasOrRightTable = queryJoin.getAliasOrRightTable();
+            String baseTableOrAlias = queryJoin.getBaseTableOrAlias();
+            if(baseTableOrAlias == null)
+            {
+               baseTableOrAlias = leftTable.getName();
+               if(!joinsContext.hasAliasOrTable(baseTableOrAlias))
+               {
+                  throw (new RuntimeException("Could not find a table or alias [" + baseTableOrAlias + "] in query.  May need to be more specific setting up QueryJoins."));
+               }
+            }
 
-            joinClauseList.add(escapeIdentifier(leftTableOrAlias)
+            String joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
+
+            joinClauseList.add(escapeIdentifier(baseTableOrAlias)
                + "." + escapeIdentifier(getColumnName(leftTable.getField(joinOn.getLeftField())))
-               + " = " + escapeIdentifier(aliasOrRightTable)
+               + " = " + escapeIdentifier(joinTableOrAlias)
                + "." + escapeIdentifier(getColumnName((rightTable.getField(joinOn.getRightField())))));
          }
          rs.append(" ON ").append(StringUtils.join(" AND ", joinClauseList));
@@ -228,22 +238,49 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QJoinMetaData findJoinMetaData(QInstance instance, String leftTable, String rightTable)
+   private QJoinMetaData findJoinMetaData(QInstance instance, JoinsContext joinsContext, String baseTableName, String joinTableName)
    {
       List<QJoinMetaData> matches = new ArrayList<>();
-      for(QJoinMetaData join : instance.getJoins().values())
+      if(baseTableName != null)
       {
-         if(join.getLeftTable().equals(leftTable) && join.getRightTable().equals(rightTable))
+         ///////////////////////////////////////////////////////////////////////////
+         // if query specified a left-table, look for a join between left & right //
+         ///////////////////////////////////////////////////////////////////////////
+         for(QJoinMetaData join : instance.getJoins().values())
          {
-            matches.add(join);
-         }
+            if(join.getLeftTable().equals(baseTableName) && join.getRightTable().equals(joinTableName))
+            {
+               matches.add(join);
+            }
 
-         //////////////////////////////
-         // look in both directions! //
-         //////////////////////////////
-         if(join.getRightTable().equals(leftTable) && join.getLeftTable().equals(rightTable))
+            //////////////////////////////
+            // look in both directions! //
+            //////////////////////////////
+            if(join.getRightTable().equals(baseTableName) && join.getLeftTable().equals(joinTableName))
+            {
+               matches.add(join.flip());
+            }
+         }
+      }
+      else
+      {
+         /////////////////////////////////////////////////////////////////////////////////////
+         // if query didn't specify a left-table, then look for any join to the right table //
+         /////////////////////////////////////////////////////////////////////////////////////
+         for(QJoinMetaData join : instance.getJoins().values())
          {
-            matches.add(join.flip());
+            if(join.getRightTable().equals(joinTableName) && joinsContext.hasTable(join.getLeftTable()))
+            {
+               matches.add(join);
+            }
+
+            //////////////////////////////
+            // look in both directions! //
+            //////////////////////////////
+            if(join.getLeftTable().equals(joinTableName) && joinsContext.hasTable(join.getRightTable()))
+            {
+               matches.add(join.flip());
+            }
          }
       }
 
@@ -253,7 +290,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
       else if(matches.size() > 1)
       {
-         throw (new RuntimeException("More than 1 join was found between [" + leftTable + "] and [" + rightTable + "].  Specify which one in your QueryJoin."));
+         throw (new RuntimeException("More than 1 join was found between [" + baseTableName + "] and [" + joinTableName + "].  Specify which one in your QueryJoin."));
       }
 
       return (null);

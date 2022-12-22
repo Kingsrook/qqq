@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
@@ -46,6 +47,13 @@ public class QueryInput extends AbstractTableActionInput
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
+
+   /////////////////////////////////////////////////////////////////////////////////////////
+   // this field - only applies if shouldTranslatePossibleValues is true.                 //
+   // if this field is null, then ALL possible value fields get translated.               //
+   // if this field is non-null, then ONLY the fieldNames in this set will be translated. //
+   /////////////////////////////////////////////////////////////////////////////////////////
+   private Set<String> fieldsToTranslatePossibleValues;
 
    private List<QueryJoin> queryJoins = null;
 
@@ -292,6 +300,39 @@ public class QueryInput extends AbstractTableActionInput
          this.queryJoins = new ArrayList<>();
       }
       this.queryJoins.add(queryJoin);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldsToTranslatePossibleValues
+    **
+    *******************************************************************************/
+   public Set<String> getFieldsToTranslatePossibleValues()
+   {
+      return fieldsToTranslatePossibleValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldsToTranslatePossibleValues
+    **
+    *******************************************************************************/
+   public void setFieldsToTranslatePossibleValues(Set<String> fieldsToTranslatePossibleValues)
+   {
+      this.fieldsToTranslatePossibleValues = fieldsToTranslatePossibleValues;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldsToTranslatePossibleValues
+    **
+    *******************************************************************************/
+   public QueryInput withFieldsToTranslatePossibleValues(Set<String> fieldsToTranslatePossibleValues)
+   {
+      this.fieldsToTranslatePossibleValues = fieldsToTranslatePossibleValues;
       return (this);
    }
 

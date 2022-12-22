@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -611,7 +612,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void testOneToOneInnerJoinWithoutWhere() throws QException
    {
       QueryInput queryInput = initQueryRequest();
-      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withSelect(true));
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withSelect(true));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size(), "Join query should find 3 rows");
       assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Darin") && r.getValueString("personalIdCard.idNumber").equals("19800531"));
@@ -628,7 +629,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void testOneToOneLeftJoinWithoutWhere() throws QException
    {
       QueryInput queryInput = initQueryRequest();
-      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withType(QueryJoin.Type.LEFT).withSelect(true));
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withType(QueryJoin.Type.LEFT).withSelect(true));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(5, queryOutput.getRecords().size(), "Left Join query should find 5 rows");
       assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Darin") && r.getValueString("personalIdCard.idNumber").equals("19800531"));
@@ -647,7 +648,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void testOneToOneRightJoinWithoutWhere() throws QException
    {
       QueryInput queryInput = initQueryRequest();
-      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withType(QueryJoin.Type.RIGHT).withSelect(true));
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withType(QueryJoin.Type.RIGHT).withSelect(true));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(6, queryOutput.getRecords().size(), "Right Join query should find 6 rows");
       assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Darin") && r.getValueString("personalIdCard.idNumber").equals("19800531"));
@@ -667,7 +668,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void testOneToOneInnerJoinWithWhere() throws QException
    {
       QueryInput queryInput = initQueryRequest();
-      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withSelect(true));
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withSelect(true));
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber", QCriteriaOperator.STARTS_WITH, "1980")));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Join query should find 2 rows");
@@ -685,7 +686,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    {
       QInstance  qInstance  = TestUtils.defineInstance();
       QueryInput queryInput = initQueryRequest();
-      queryInput.withQueryJoin(new QueryJoin(qInstance.getJoin(TestUtils.TABLE_NAME_PERSON + "Join" + TestUtils.TABLE_NAME_PERSONAL_ID_CARD)).withSelect(true));
+      queryInput.withQueryJoin(new QueryJoin(qInstance.getJoin(TestUtils.TABLE_NAME_PERSON + "Join" + StringUtils.ucFirst(TestUtils.TABLE_NAME_PERSONAL_ID_CARD))).withSelect(true));
       queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber")));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size(), "Join query should find 3 rows");
@@ -755,7 +756,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
 
       QueryInput queryInput = new QueryInput(TestUtils.defineInstance(), new QSession());
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER_LINE);
-      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_LINE, TestUtils.TABLE_NAME_ORDER).withSelect(true));
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER).withSelect(true));
 
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(orderLineCount.get(), queryOutput.getRecords().size(), "# of rows found by query");
@@ -780,7 +781,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       /////////////////////////////////////////////////////
       // inner join on bill-to person should find 6 rows //
       /////////////////////////////////////////////////////
-      queryInput.withQueryJoins(List.of(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_PERSON).withJoinMetaData(instance.getJoin("orderJoinBillToPerson")).withSelect(true)));
+      queryInput.withQueryJoins(List.of(new QueryJoin(TestUtils.TABLE_NAME_PERSON).withJoinMetaData(instance.getJoin("orderJoinBillToPerson")).withSelect(true)));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(6, queryOutput.getRecords().size(), "# of rows found by query");
 
@@ -829,6 +830,42 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size(), "# of rows found by query");
       assertThat(queryOutput.getRecords().stream().map(r -> r.getValueString("billToPerson.firstName")).toList()).allMatch(p -> p.equals("Darin") || p.equals("James"));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // ensure we throw if either of the ambiguous joins from person to id-card doesn't specify its left-table //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.withQueryJoins(List.of(
+         new QueryJoin(instance.getJoin("orderJoinShipToPerson")).withAlias("shipToPerson").withSelect(true),
+         new QueryJoin(instance.getJoin("orderJoinBillToPerson")).withAlias("billToPerson").withSelect(true),
+         new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("billToIdCard").withSelect(true),
+         new QueryJoin("shipToPerson", TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("shipToIdCard").withSelect(true)
+      ));
+      assertThatThrownBy(() -> new QueryAction().execute(queryInput))
+         .hasRootCauseMessage("Could not find a table or alias [personTable] in query.  May need to be more specific setting up QueryJoins.");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // ensure we throw if either of the ambiguous joins from person to id-card doesn't specify its left-table //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.withQueryJoins(List.of(
+         new QueryJoin(instance.getJoin("orderJoinShipToPerson")).withAlias("shipToPerson").withSelect(true),
+         new QueryJoin(instance.getJoin("orderJoinBillToPerson")).withAlias("billToPerson").withSelect(true),
+         new QueryJoin("billToPerson", TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("billToIdCard").withSelect(true),
+         new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("shipToIdCard").withSelect(true)
+      ));
+      assertThatThrownBy(() -> new QueryAction().execute(queryInput))
+         .hasRootCauseMessage("Could not find a table or alias [personTable] in query.  May need to be more specific setting up QueryJoins.");
+
+      ////////////////////////////////////////////////////////////////////////
+      // ensure we throw if we have a bogus alias name given as a left-side //
+      ////////////////////////////////////////////////////////////////////////
+      queryInput.withQueryJoins(List.of(
+         new QueryJoin(instance.getJoin("orderJoinShipToPerson")).withAlias("shipToPerson").withSelect(true),
+         new QueryJoin(instance.getJoin("orderJoinBillToPerson")).withAlias("billToPerson").withSelect(true),
+         new QueryJoin("notATable", TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("billToIdCard").withSelect(true),
+         new QueryJoin("shipToPerson", TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("shipToIdCard").withSelect(true)
+      ));
+      assertThatThrownBy(() -> new QueryAction().execute(queryInput))
+         .hasRootCauseMessage("Could not find a join between tables [notATable][personalIdCard]");
    }
 
 

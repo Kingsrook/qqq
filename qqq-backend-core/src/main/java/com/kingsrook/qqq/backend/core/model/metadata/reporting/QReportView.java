@@ -467,6 +467,22 @@ public class QReportView implements Cloneable
 
 
    /*******************************************************************************
+    ** Fluent setter to add a single column
+    **
+    *******************************************************************************/
+   public QReportView withColumn(QReportField column)
+   {
+      if(this.columns == null)
+      {
+         this.columns = new ArrayList<>();
+      }
+      this.columns.add(column);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for orderByFields
     **
     *******************************************************************************/

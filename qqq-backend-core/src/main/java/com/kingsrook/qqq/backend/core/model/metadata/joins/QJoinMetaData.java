@@ -304,6 +304,6 @@ public class QJoinMetaData
       {
          throw (new IllegalStateException("Missing either a left or right table name when trying to set inferred name for join"));
       }
-      return (withName(getLeftTable() + "Join" + getRightTable()));
+      return (withName(getLeftTable() + "Join" + StringUtils.ucFirst(getRightTable())));
    }
 }

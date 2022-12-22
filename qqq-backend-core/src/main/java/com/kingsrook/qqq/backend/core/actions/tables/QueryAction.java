@@ -110,7 +110,7 @@ public class QueryAction
          {
             qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
          }
-         qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records, queryInput.getQueryJoins());
+         qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records, queryInput.getQueryJoins(), queryInput.getFieldsToTranslatePossibleValues());
       }
 
       if(queryInput.getShouldGenerateDisplayValues())
