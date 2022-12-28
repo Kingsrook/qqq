@@ -26,16 +26,20 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
@@ -59,7 +63,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -74,6 +78,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *******************************************************************************/
 public class TestUtils
 {
+   public static final String BACKEND_NAME_MEMORY = "memory";
+
    public static final String TABLE_NAME_PERSON = "person";
 
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
@@ -209,7 +215,7 @@ public class TestUtils
    {
       return new QBackendMetaData()
          .withBackendType("memory")
-         .withName("memory");
+         .withName(BACKEND_NAME_MEMORY);
    }
 
 
@@ -502,6 +508,20 @@ public class TestUtils
                new QReportField("lastName")
             ))
          );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
+   {
+      InsertInput insertInput = new InsertInput(qInstance);
+      insertInput.setSession(new QSession());
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(records);
+      new InsertAction().execute(insertInput);
    }
 
 }

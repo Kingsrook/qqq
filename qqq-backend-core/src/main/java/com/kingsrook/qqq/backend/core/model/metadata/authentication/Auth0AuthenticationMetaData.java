@@ -19,164 +19,141 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.authentication;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of an authentication provider (e.g., google, saml,
- ** etc) within a qqq instance
- **
+ ** Meta-data to provide details of an Auth0 Authentication module
  *******************************************************************************/
-public class QAuthenticationMetaData
+public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
 {
-   private String name;
-   private QAuthenticationType type;
+   private String baseUrl;
+   private String clientId;
 
-   @JsonFilter("secretsFilter")
-   private Map<String, String> values;
+   ////////////////////////////////////////////////////////////////////////////////////////
+   // keep this secret, on the server - don't let it be serialized and sent to a client! //
+   ////////////////////////////////////////////////////////////////////////////////////////
+   @JsonIgnore
+   private String clientSecret;
 
 
 
    /*******************************************************************************
-    **
+    ** Default Constructor.
     *******************************************************************************/
-   public String getValue(String key)
+   public Auth0AuthenticationMetaData()
    {
-      if(values == null)
-      {
-         return null;
-      }
-      return values.get(key);
+      super();
+      setType(QAuthenticationType.AUTH_0);
+
+      //////////////////////////////////////////////////////////
+      // ensure this module is registered with the dispatcher //
+      //////////////////////////////////////////////////////////
+      QAuthenticationModuleDispatcher.registerModule(QAuthenticationType.AUTH_0.getName(), Auth0AuthenticationModule.class.getName());
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter, override to help fluent flows
     *******************************************************************************/
-   public void setValue(String key, String value)
+   public Auth0AuthenticationMetaData withBaseUrl(String baseUrl)
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
+      setBaseUrl(baseUrl);
+      return this;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for baseUrl
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withValue(String key, String value)
+   public String getBaseUrl()
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
-      return (this);
+      return baseUrl;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for baseUrl
     **
     *******************************************************************************/
-   public String getName()
+   public void setBaseUrl(String baseUrl)
    {
-      return name;
+      this.baseUrl = baseUrl;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter, override to help fluent flows
     *******************************************************************************/
-   public void setName(String name)
+   public Auth0AuthenticationMetaData withClientId(String clientId)
    {
-      this.name = name;
+      setClientId(clientId);
+      return this;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for clientId
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withName(String name)
+   public String getClientId()
    {
-      this.name = name;
-      return (this);
+      return clientId;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Setter for clientId
     **
     *******************************************************************************/
-   public QAuthenticationType getType()
+   public void setClientId(String clientId)
    {
-      return type;
+      this.clientId = clientId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for type
-    **
+    ** Fluent setter, override to help fluent flows
     *******************************************************************************/
-   public void setType(QAuthenticationType type)
+   public Auth0AuthenticationMetaData withClientSecret(String clientSecret)
    {
-      this.type = type;
+      setClientSecret(clientSecret);
+      return this;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for clientSecret
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withType(QAuthenticationType type)
+   public String getClientSecret()
    {
-      this.type = type;
-      return (this);
+      return clientSecret;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for clientSecret
     **
     *******************************************************************************/
-   public Map<String, String> getValues()
+   public void setClientSecret(String clientSecret)
    {
-      return values;
+      this.clientSecret = clientSecret;
    }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setValues(Map<String, String> values)
-   {
-      this.values = values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QAuthenticationMetaData withVales(Map<String, String> values)
-   {
-      this.values = values;
-      return (this);
-   }
-
 }

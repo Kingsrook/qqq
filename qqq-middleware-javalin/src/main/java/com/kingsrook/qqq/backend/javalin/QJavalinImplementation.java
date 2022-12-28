@@ -88,7 +88,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -122,6 +121,7 @@ public class QJavalinImplementation
 
    private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
    private static final String SESSION_ID_COOKIE_NAME = "sessionId";
+   private static final String BASIC_AUTH_NAME        = "basicAuthString";
 
    static QInstance        qInstance;
    static QJavalinMetaData javalinMetaData = new QJavalinMetaData();
@@ -326,35 +326,55 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException
+   static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
 
+      boolean needToSetSessionIdCookie = false;
       try
       {
          Map<String, String> authenticationContext = new HashMap<>();
 
-         /////////////////////////////////////////////////////////////////////////////////
-         // look for a token in either the sessionId cookie, or an Authorization header //
-         /////////////////////////////////////////////////////////////////////////////////
-         String sessionIdCookieValue = context.cookie(SESSION_ID_COOKIE_NAME);
+         String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
+         String authorizationHeaderValue = context.header("Authorization");
+
          if(StringUtils.hasContent(sessionIdCookieValue))
          {
+            ////////////////////////////////////////
+            // first, look for a sessionId cookie //
+            ////////////////////////////////////////
             authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
+            needToSetSessionIdCookie = true;
+         }
+         else if(authorizationHeaderValue != null)
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            // second, look for the authorization header:                                                  //
+            // either with a "Basic " prefix (for a username:password pair)                                //
+            // or with a "Bearer " prefix (for a token that can be handled the same as a sessionId cookie) //
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            String basicPrefix  = "Basic ";
+            String bearerPrefix = "Bearer ";
+            if(authorizationHeaderValue.startsWith(basicPrefix))
+            {
+               authorizationHeaderValue = authorizationHeaderValue.replaceFirst(basicPrefix, "");
+               authenticationContext.put(BASIC_AUTH_NAME, authorizationHeaderValue);
+               needToSetSessionIdCookie = true;
+            }
+            else if(authorizationHeaderValue.startsWith(bearerPrefix))
+            {
+               authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
+               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
+            }
+            else
+            {
+               LOG.debug("Authorization header value did not have Basic or Bearer prefix. [" + authorizationHeaderValue + "]");
+            }
          }
          else
          {
-            String authorizationHeaderValue = context.header("Authorization");
-            if(authorizationHeaderValue != null)
-            {
-               String bearerPrefix = "Bearer ";
-               if(authorizationHeaderValue.startsWith(bearerPrefix))
-               {
-                  authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
-               }
-               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
-            }
+            LOG.debug("Neither [" + SESSION_ID_COOKIE_NAME + "] cookie nor [Authorization] header was present in request.");
          }
 
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
@@ -363,7 +383,7 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
          /////////////////////////////////////////////////////////////////////////////////
-         if(StringUtils.hasContent(sessionIdCookieValue))
+         if(needToSetSessionIdCookie)
          {
             context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
          }
@@ -375,10 +395,12 @@ public class QJavalinImplementation
          ////////////////////////////////////////////////////////////////////////////////
          // if exception caught, clear out the cookie so the frontend will reauthorize //
          ////////////////////////////////////////////////////////////////////////////////
-         if(authenticationModule instanceof Auth0AuthenticationModule)
+         if(needToSetSessionIdCookie)
          {
             context.removeCookie(SESSION_ID_COOKIE_NAME);
          }
+
+         throw (qae);
       }
    }
 

@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
+package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
 import java.time.Instant;
@@ -28,17 +28,17 @@ import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
-import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.AUTH0_ID_TOKEN_KEY;
-import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.COULD_NOT_DECODE_ERROR;
-import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
-import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
-import static com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.AUTH0_ID_TOKEN_KEY;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.COULD_NOT_DECODE_ERROR;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

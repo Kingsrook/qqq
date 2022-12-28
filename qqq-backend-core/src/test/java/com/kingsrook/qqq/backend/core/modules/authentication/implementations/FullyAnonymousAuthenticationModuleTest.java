@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
+package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
 import com.kingsrook.qqq.backend.core.model.session.QSession;

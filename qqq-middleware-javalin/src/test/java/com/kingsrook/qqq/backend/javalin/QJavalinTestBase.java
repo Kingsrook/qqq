@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.javalin;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -36,7 +39,19 @@ public class QJavalinTestBase
    private static final   int    PORT     = 6262;
    protected static final String BASE_URL = "http://localhost:" + PORT;
 
-   private static QJavalinImplementation qJavalinImplementation;
+   protected static QJavalinImplementation qJavalinImplementation;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   @AfterEach
+   void beforeAndAfterEach()
+   {
+      MemoryRecordStore.fullReset();
+   }
 
 
 
@@ -74,6 +89,22 @@ public class QJavalinTestBase
    public void beforeEach() throws Exception
    {
       TestUtils.primeTestDatabase();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static protected void restartServerWithInstance(QInstance qInstance) throws QInstanceValidationException
+   {
+      if(qJavalinImplementation != null)
+      {
+         qJavalinImplementation.stopJavalinServer();
+      }
+      qJavalinImplementation = new QJavalinImplementation(qInstance);
+      QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
+      qJavalinImplementation.startJavalinServer(PORT);
    }
 
 }

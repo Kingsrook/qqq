@@ -75,6 +75,18 @@ public class MemoryRecordStore
 
 
    /*******************************************************************************
+    ** forget all data AND statistics
+    *******************************************************************************/
+   public static void fullReset()
+   {
+      getInstance().reset();
+      resetStatistics();
+      setCollectStatistics(false);
+   }
+
+
+
+   /*******************************************************************************
     ** Forget all data in the memory store...
     *******************************************************************************/
    public void reset()

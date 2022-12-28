@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.FullyAnonymousAuthenticationModule;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
 
 
 /*******************************************************************************
@@ -38,20 +41,35 @@ import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthentic
  *******************************************************************************/
 public class QAuthenticationModuleDispatcher
 {
-   private final Map<String, String> authenticationTypeToModuleClassNameMap;
+   private static Map<String, String> authenticationTypeToModuleClassNameMap = Collections.synchronizedMap(new HashMap<>());
 
-
+   static
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // ensure our 2 default modules are registered.                                                             //
+      // Note that for "real" implementations, the pattern is for their MetaData class's constructor to register. //
+      // the idea being, any qInstance using such a module, surely will have some MetaData defined for it.        //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      registerModule(QAuthenticationType.MOCK.getName(), MockAuthenticationModule.class.getName());
+      registerModule(QAuthenticationType.FULLY_ANONYMOUS.getName(), FullyAnonymousAuthenticationModule.class.getName());
+   }
 
    /*******************************************************************************
     **
     *******************************************************************************/
    public QAuthenticationModuleDispatcher()
    {
-      authenticationTypeToModuleClassNameMap = new HashMap<>();
-      authenticationTypeToModuleClassNameMap.put(QAuthenticationType.MOCK.getName(), "com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule");
-      authenticationTypeToModuleClassNameMap.put(QAuthenticationType.FULLY_ANONYMOUS.getName(), "com.kingsrook.qqq.backend.core.modules.authentication.FullyAnonymousAuthenticationModule");
-      authenticationTypeToModuleClassNameMap.put(QAuthenticationType.AUTH_0.getName(), "com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule");
-      // todo - let user define custom type -> classes
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void registerModule(String name, String className)
+   {
+      authenticationTypeToModuleClassNameMap.putIfAbsent(name, className);
    }
 
 

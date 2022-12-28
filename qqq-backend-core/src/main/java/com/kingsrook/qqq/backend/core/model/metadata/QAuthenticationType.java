@@ -29,6 +29,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 public enum QAuthenticationType
 {
    AUTH_0("auth0"),
+   TABLE_BASED("tableBased"),
    FULLY_ANONYMOUS("fullyAnonymous"),
    MOCK("mock");
 

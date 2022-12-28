@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
+package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
 import java.nio.charset.StandardCharsets;
@@ -45,9 +45,10 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
@@ -93,15 +94,15 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       if(context.containsKey(BASIC_AUTH_KEY))
       {
          Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
-         AuthAPI auth = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
+         AuthAPI                     auth     = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
          try
          {
             /////////////////////////////////////////////////
             // decode the credentials from the header auth //
             /////////////////////////////////////////////////
             String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
-            byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
-            String credentials = new String(credDecoded, StandardCharsets.UTF_8);
+            byte[] credDecoded       = Base64.getDecoder().decode(base64Credentials);
+            String credentials       = new String(credDecoded, StandardCharsets.UTF_8);
 
             /////////////////////////////////////
             // call auth0 with a login request //
@@ -117,11 +118,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             ////////////////
             // ¯\_(ツ)_/¯ //
             ////////////////
-            String message = "An unknown error occurred during handling basic auth";
+            String message = "Error handling basic authentication: " + e.getMessage();
             LOG.error(message, e);
             throw (new QAuthenticationException(message));
          }
-
       }
 
       //////////////////////////////////////////////////
