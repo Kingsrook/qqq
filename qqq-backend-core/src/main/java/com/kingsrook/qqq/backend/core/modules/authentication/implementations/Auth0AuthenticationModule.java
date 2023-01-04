@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
@@ -49,8 +50,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0Authent
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
-import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
+import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -101,17 +102,8 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // decode the credentials from the header auth //
             /////////////////////////////////////////////////
             String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
-            byte[] credDecoded       = Base64.getDecoder().decode(base64Credentials);
-            String credentials       = new String(credDecoded, StandardCharsets.UTF_8);
-
-            /////////////////////////////////////
-            // call auth0 with a login request //
-            /////////////////////////////////////
-            TokenHolder result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
-               .setScope("openid email nickname")
-               .execute();
-
-            context.put(AUTH0_ID_TOKEN_KEY, result.getIdToken());
+            String idToken           = getIdTokenFromBase64BasicAuthCredentials(auth, base64Credentials);
+            context.put(AUTH0_ID_TOKEN_KEY, idToken);
          }
          catch(Auth0Exception e)
          {
@@ -159,7 +151,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // put now into state so we dont check until next interval passes //
          ///////////////////////////////////////////////////////////////////
          StateProviderInterface spi = getStateProvider();
-         Auth0StateKey          key = new Auth0StateKey(qSession.getIdReference());
+         SimpleStateKey<String> key = new SimpleStateKey<>(qSession.getIdReference());
          spi.put(key, Instant.now());
 
          return (qSession);
@@ -201,6 +193,47 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static String getIdTokenFromBase64BasicAuthCredentials(AuthAPI auth, String base64Credentials) throws Auth0Exception
+   {
+      ////////////////////////////////////////////////////////////////////////////////
+      // look for a fresh idToken in the state provider for this set of credentials //
+      ////////////////////////////////////////////////////////////////////////////////
+      SimpleStateKey<String> idTokenStateKey   = new SimpleStateKey<>(base64Credentials + ":idToken");
+      SimpleStateKey<String> timestampStateKey = new SimpleStateKey<>(base64Credentials + ":timestamp");
+      StateProviderInterface stateProvider     = getStateProvider();
+      Optional<String>       cachedIdToken     = stateProvider.get(String.class, idTokenStateKey);
+      Optional<Instant>      cachedTimestamp   = stateProvider.get(Instant.class, timestampStateKey);
+      if(cachedIdToken.isPresent() && cachedTimestamp.isPresent())
+      {
+         if(cachedTimestamp.get().isAfter(Instant.now().minus(1, ChronoUnit.MINUTES)))
+         {
+            return cachedIdToken.get();
+         }
+      }
+
+      byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
+      String credentials = new String(credDecoded, StandardCharsets.UTF_8);
+
+      /////////////////////////////////////
+      // call auth0 with a login request //
+      /////////////////////////////////////
+      TokenHolder result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
+         .setScope("openid email nickname")
+         .execute();
+
+      String idToken = result.getIdToken();
+
+      stateProvider.put(idTokenStateKey, idToken);
+      stateProvider.put(timestampStateKey, Instant.now());
+
+      return idToken;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public boolean isSessionValid(QInstance instance, QSession session)
    {
@@ -215,7 +248,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       }
 
       StateProviderInterface spi                     = getStateProvider();
-      Auth0StateKey          key                     = new Auth0StateKey(session.getIdReference());
+      SimpleStateKey<String> key                     = new SimpleStateKey<>(session.getIdReference());
       Optional<Instant>      lastTimeCheckedOptional = spi.get(Instant.class, key);
       if(lastTimeCheckedOptional.isPresent())
       {
@@ -336,78 +369,4 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       return (InMemoryStateProvider.getInstance());
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class Auth0StateKey extends AbstractStateKey
-   {
-      private final String key;
-
-
-
-      /*******************************************************************************
-       ** Constructor.
-       **
-       *******************************************************************************/
-      Auth0StateKey(String key)
-      {
-         this.key = key;
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public String toString()
-      {
-         return (this.key);
-      }
-
-
-
-      /*******************************************************************************
-       ** Make the key give a unique string to identify itself.
-       *
-       *******************************************************************************/
-      @Override
-      public String getUniqueIdentifier()
-      {
-         return (this.key);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public boolean equals(Object o)
-      {
-         if(this == o)
-         {
-            return true;
-         }
-         if(o == null || getClass() != o.getClass())
-         {
-            return false;
-         }
-         Auth0StateKey that = (Auth0StateKey) o;
-         return key.equals(that.key);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public int hashCode()
-      {
-         return key.hashCode();
-      }
-   }
 }

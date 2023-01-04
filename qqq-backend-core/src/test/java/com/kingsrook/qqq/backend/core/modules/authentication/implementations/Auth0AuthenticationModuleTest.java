@@ -24,17 +24,21 @@ package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
+import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.AUTH0_ID_TOKEN_KEY;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.BASIC_AUTH_KEY;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.COULD_NOT_DECODE_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
@@ -54,8 +58,6 @@ public class Auth0AuthenticationModuleTest
    private static final String INVALID_TOKEN     = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA-thismakesinvalid";
    private static final String EXPIRED_TOKEN     = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE4VDIxOjM4OjE1LjM4NloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MTgwNDc3LCJleHAiOjE2NTgyMTY0NzcsIm5vbmNlIjoiVkZkQlYzWmplR2hvY1cwMk9WZEtabHBLU0c1K1ZXbElhMEV3VkZaeFpVdEJVMDErZUZaT1RtMTNiZz09In0.fU7EwUgNrupOPz_PX_aQKON2xG1-LWD85xVo1Bn41WNEek-iMyJoch8l6NUihi7Bou14BoOfeWIG_sMqsLHqI2Pk7el7l1kigsjURx0wpiXadBt8piMxdIlxdToZEMuZCBzg7eJvXh4sM8tlV5cm0gPa6FT9Ih3VGJajNlXi5BcYS_JRpIvFvHn8-Bxj4KiAlZ5XPPkopjnDgP8kFfc4cMn_nxDkqWYlhj-5TaGW2xCLC9Qr_9UNxX0fm-CkKjYs3Z5ezbiXNkc-bxrCYvxeBeDPf8-T3EqrxCRVqCZSJ85BHdOc_E7UZC_g8bNj0umoplGwlCbzO4XIuOO-KlIaOg";
    private static final String UNDECODABLE_TOKEN = "UNDECODABLE";
-
-   public static final String AUTH0_BASE_URL = "https://kingsrook.us.auth0.com/";
 
 
 
@@ -109,7 +111,7 @@ public class Auth0AuthenticationModuleTest
       /////////////////////////////////////////////////////////////
       // put the input last-time-checked into the state provider //
       /////////////////////////////////////////////////////////////
-      Auth0AuthenticationModule.Auth0StateKey key = new Auth0AuthenticationModule.Auth0StateKey(token);
+      SimpleStateKey<String> key = new SimpleStateKey<>(token);
       InMemoryStateProvider.getInstance().put(key, lastTimeChecked);
 
       //////////////////////
@@ -242,18 +244,51 @@ public class Auth0AuthenticationModuleTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBasicAuthSuccess() throws QAuthenticationException
+   {
+      Map<String, String> context = new HashMap<>();
+      context.put(BASIC_AUTH_KEY, encodeBasicAuth("darin.kelkhoff@gmail.com", "6-EQ!XzBJ!F*LRVDK6VZY__92!"));
+
+      Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
+      auth0AuthenticationModule.createSession(getQInstance(), context);
+   }
+
+
+
+   /*******************************************************************************
     ** utility method to prime a qInstance for auth0 tests
     **
     *******************************************************************************/
    private QInstance getQInstance()
    {
+      String auth0BaseUrl      = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_BASE_URL}");
+      String auth0ClientId     = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_CLIENT_ID}");
+      String auth0ClientSecret = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_CLIENT_SECRET}");
+
       QAuthenticationMetaData authenticationMetaData = new Auth0AuthenticationMetaData()
-         .withBaseUrl(AUTH0_BASE_URL)
+         .withBaseUrl(auth0BaseUrl)
+         .withClientId(auth0ClientId)
+         .withClientSecret(auth0ClientSecret)
          .withName("auth0");
 
       QInstance qInstance = TestUtils.defineInstance();
       qInstance.setAuthentication(authenticationMetaData);
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String encodeBasicAuth(String username, String password)
+   {
+      Base64.Encoder encoder        = Base64.getEncoder();
+      String         originalString = username + ":" + password;
+      return (encoder.encodeToString(originalString.getBytes()));
    }
 
 }
