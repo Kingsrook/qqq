@@ -326,7 +326,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
+   public static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
