@@ -193,7 +193,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static String getIdTokenFromBase64BasicAuthCredentials(AuthAPI auth, String base64Credentials) throws Auth0Exception
+   private String getIdTokenFromBase64BasicAuthCredentials(AuthAPI auth, String base64Credentials) throws Auth0Exception
    {
       ////////////////////////////////////////////////////////////////////////////////
       // look for a fresh idToken in the state provider for this set of credentials //
@@ -211,9 +211,25 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          }
       }
 
+      //////////////////////////////////////////////////////////////////////////////
+      // not found in cache, make request to auth0 and cache the returned idToken //
+      //////////////////////////////////////////////////////////////////////////////
       byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
       String credentials = new String(credDecoded, StandardCharsets.UTF_8);
 
+      String idToken = getIdTokenFromAuth0(auth, credentials);
+      stateProvider.put(idTokenStateKey, idToken);
+      stateProvider.put(timestampStateKey, Instant.now());
+      return (idToken);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String getIdTokenFromAuth0(AuthAPI auth, String credentials) throws Auth0Exception
+   {
       /////////////////////////////////////
       // call auth0 with a login request //
       /////////////////////////////////////
@@ -221,12 +237,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          .setScope("openid email nickname")
          .execute();
 
-      String idToken = result.getIdToken();
-
-      stateProvider.put(idTokenStateKey, idToken);
-      stateProvider.put(timestampStateKey, Instant.now());
-
-      return idToken;
+      return (result.getIdToken());
    }
 
 

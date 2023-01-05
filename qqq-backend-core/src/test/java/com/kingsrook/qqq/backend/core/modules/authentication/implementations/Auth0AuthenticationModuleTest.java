@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import com.auth0.exception.Auth0Exception;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -47,6 +48,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 
 /*******************************************************************************
@@ -247,13 +252,16 @@ public class Auth0AuthenticationModuleTest
     **
     *******************************************************************************/
    @Test
-   void testBasicAuthSuccess() throws QAuthenticationException
+   void testBasicAuthSuccess() throws QAuthenticationException, Auth0Exception
    {
       Map<String, String> context = new HashMap<>();
       context.put(BASIC_AUTH_KEY, encodeBasicAuth("darin.kelkhoff@gmail.com", "6-EQ!XzBJ!F*LRVDK6VZY__92!"));
 
-      Auth0AuthenticationModule auth0AuthenticationModule = new Auth0AuthenticationModule();
-      auth0AuthenticationModule.createSession(getQInstance(), context);
+      Auth0AuthenticationModule auth0Spy = spy(Auth0AuthenticationModule.class);
+      auth0Spy.createSession(getQInstance(), context);
+      auth0Spy.createSession(getQInstance(), context);
+      auth0Spy.createSession(getQInstance(), context);
+      verify(auth0Spy, times(1)).getIdTokenFromAuth0(any(), any());
    }
 
 
