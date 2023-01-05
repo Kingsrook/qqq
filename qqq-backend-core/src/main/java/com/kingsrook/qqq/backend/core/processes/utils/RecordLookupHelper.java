@@ -25,13 +25,18 @@ package com.kingsrook.qqq.backend.core.processes.utils;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -67,6 +72,12 @@ public class RecordLookupHelper
    {
       String                     mapKey    = tableName + "." + keyFieldName;
       Map<Serializable, QRecord> recordMap = recordMaps.computeIfAbsent(mapKey, (k) -> new HashMap<>());
+
+      ////////////////////////////////////////////////////////////
+      // make sure we have they key object in the expected type //
+      ////////////////////////////////////////////////////////////
+      QFieldType type = actionInput.getInstance().getTable(tableName).getField(keyFieldName).getType();
+      key = ValueUtils.getValueAsFieldType(type, key);
 
       if(!recordMap.containsKey(key))
       {
@@ -113,6 +124,38 @@ public class RecordLookupHelper
       String                     mapKey   = tableName + "." + keyFieldName;
       Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
       tableMap.putAll(GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName, filter));
+   }
+
+
+
+   /*******************************************************************************
+    ** Optimization - to pre-load some records in a single IN-LIST query,
+    ** which would otherwise have to be looked up one-by-one - where - if the records
+    ** aren't found, then a null will be cached (for each element in the inList).
+    **
+    *******************************************************************************/
+   public void preloadRecords(String tableName, String keyFieldName, List<Serializable> inList) throws QException
+   {
+      if(CollectionUtils.nullSafeIsEmpty(inList))
+      {
+         return;
+      }
+
+      String                     mapKey   = tableName + "." + keyFieldName;
+      Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
+
+      QQueryFilter filter = new QQueryFilter(new QFilterCriteria(keyFieldName, QCriteriaOperator.IN, inList));
+      tableMap.putAll(GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName, filter));
+
+      QFieldType type = actionInput.getInstance().getTable(tableName).getField(keyFieldName).getType();
+      for(Serializable keyValue : inList)
+      {
+         if(!tableMap.containsKey(keyValue))
+         {
+            keyValue = ValueUtils.getValueAsFieldType(type, keyValue);
+            tableMap.put(keyValue, null);
+         }
+      }
    }
 
 

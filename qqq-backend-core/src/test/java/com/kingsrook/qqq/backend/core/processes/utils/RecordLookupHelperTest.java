@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.utils;
 
 
+import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -118,6 +119,39 @@ class RecordLookupHelperTest
       ///////////////////////////////////////////////////
       recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "id");
       assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWithPreloadInListToCacheMisses() throws QException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      TestUtils.insertDefaultShapes(qInstance);
+
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput(qInstance, new QSession()));
+      recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name", List.of("Triangle", "Square", "Circle", "Hexagon"));
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
+
+      //////////////////////////////////////////////
+      // assert we cached a record that was found //
+      //////////////////////////////////////////////
+      assertNotNull(recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Triangle"));
+      assertEquals(1, recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Triangle").getValueInteger("id"));
+      assertEquals("Triangle", recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Triangle").getValueString("name"));
+
+      //////////////////////////////////////////////////
+      // assert we cached a null for a name not found //
+      //////////////////////////////////////////////////
+      assertNull(recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Hexagon"));
+
+      /////////////////////////////////////////////////////
+      // all those gets should run no additional queries //
+      /////////////////////////////////////////////////////
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
    }
 
 }
