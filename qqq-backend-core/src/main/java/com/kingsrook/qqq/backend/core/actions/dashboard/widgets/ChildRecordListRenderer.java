@@ -187,7 +187,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
 
       QTableMetaData table       = input.getInstance().getTable(join.getRightTable());
       String         tablePath   = input.getInstance().getTablePath(input, table.getName());
-      String         viewAllLink = tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset());
+      String         viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
 
       ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, table, tablePath, viewAllLink);
 
