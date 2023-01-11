@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -177,6 +178,28 @@ public class RDBMSCountActionTest extends RDBMSActionTest
       countInput.setFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber", QCriteriaOperator.STARTS_WITH, "1980")));
       CountOutput countOutput = new CountAction().execute(countInput);
       assertEquals(2, countOutput.getCount(), "Right Join count should find 2 rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurity() throws QException
+   {
+      CountInput countInput = new CountInput();
+      countInput.setInstance(TestUtils.defineInstance());
+      countInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      countInput.setSession(new QSession());
+      assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(0);
+
+      countInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(8);
+
+      countInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(2, 3)));
+      assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(5);
    }
 
 }

@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -50,6 +51,8 @@ public class QFieldMetaData implements Cloneable
    private QFieldType type;
    private boolean    isRequired = false;
    private boolean    isEditable = true;
+
+   private FieldSecurityLock fieldSecurityLock;
 
    ///////////////////////////////////////////////////////////////////////////////////
    // if we need "only edit on insert" or "only edit on update" in the future,      //
@@ -688,5 +691,36 @@ public class QFieldMetaData implements Cloneable
       this.behaviors.add(behavior);
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for fieldSecurityLock
+    *******************************************************************************/
+   public FieldSecurityLock getFieldSecurityLock()
+   {
+      return (this.fieldSecurityLock);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldSecurityLock
+    *******************************************************************************/
+   public void setFieldSecurityLock(FieldSecurityLock fieldSecurityLock)
+   {
+      this.fieldSecurityLock = fieldSecurityLock;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldSecurityLock
+    *******************************************************************************/
+   public QFieldMetaData withFieldSecurityLock(FieldSecurityLock fieldSecurityLock)
+   {
+      this.fieldSecurityLock = fieldSecurityLock;
+      return (this);
+   }
+
 
 }

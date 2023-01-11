@@ -146,6 +146,7 @@ public class MemoryRecordStore
       }
 
       BackendQueryFilterUtils.sortRecordList(input.getFilter(), records);
+      records = BackendQueryFilterUtils.applySkipAndLimit(input, records);
 
       return (records);
    }

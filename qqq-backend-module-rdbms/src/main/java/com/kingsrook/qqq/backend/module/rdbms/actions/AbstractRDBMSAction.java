@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -51,7 +52,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -299,11 +303,35 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
 
    /*******************************************************************************
-    **
+    ** method that sub-classes should call to make a full WHERE clause, including
+    ** security clauses.
     *******************************************************************************/
-   protected String makeWhereClause(QInstance instance, QTableMetaData table, JoinsContext joinsContext, QQueryFilter filter, List<Serializable> params) throws IllegalArgumentException, QException
+   protected String makeWhereClause(QInstance instance, QSession session, QTableMetaData table, JoinsContext joinsContext, QQueryFilter filter, List<Serializable> params) throws IllegalArgumentException, QException
    {
-      String clause = makeSimpleWhereClause(instance, table, joinsContext, filter.getCriteria(), filter.getBooleanOperator(), params);
+      String       whereClauseWithoutSecurity = makeWhereClauseWithoutSecurity(instance, table, joinsContext, filter, params);
+      QQueryFilter securityFilter             = getSecurityFilter(instance, session, table, joinsContext);
+      if(securityFilter == null || CollectionUtils.nullSafeIsEmpty(securityFilter.getCriteria()))
+      {
+         return (whereClauseWithoutSecurity);
+      }
+      String securityWhereClause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(instance, table, joinsContext, securityFilter.getCriteria(), QQueryFilter.BooleanOperator.AND, params);
+      return ("(" + whereClauseWithoutSecurity + ") AND (" + securityWhereClause + ")");
+   }
+
+
+
+   /*******************************************************************************
+    ** private method for making the part of a where clause that gets AND'ed to the
+    ** security clause.  Recursively handles sub-clauses.
+    *******************************************************************************/
+   private String makeWhereClauseWithoutSecurity(QInstance instance, QTableMetaData table, JoinsContext joinsContext, QQueryFilter filter, List<Serializable> params) throws IllegalArgumentException, QException
+   {
+      if(filter == null || !filter.hasAnyCriteria())
+      {
+         return ("1 = 1");
+      }
+
+      String clause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(instance, table, joinsContext, filter.getCriteria(), filter.getBooleanOperator(), params);
       if(!CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
       {
          ///////////////////////////////////////////////////////////////
@@ -322,7 +350,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
       for(QQueryFilter subFilter : filter.getSubFilters())
       {
-         String subClause = makeWhereClause(instance, table, joinsContext, subFilter, params);
+         String subClause = makeWhereClauseWithoutSecurity(instance, table, joinsContext, subFilter, params);
          if(StringUtils.hasContent(subClause))
          {
             clauses.add("(" + subClause + ")");
@@ -334,9 +362,128 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
 
    /*******************************************************************************
+    ** Build a QQueryFilter to apply record-level security to the query.
+    ** Note, it may be empty, if there are no lock fields, or all are all-access.
+    *******************************************************************************/
+   private QQueryFilter getSecurityFilter(QInstance instance, QSession session, QTableMetaData table, JoinsContext joinsContext)
+   {
+      QQueryFilter newFilter = new QQueryFilter();
+      newFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
+      List<QFilterCriteria> securityCriteria = new ArrayList<>();
+      newFilter.setCriteria(securityCriteria);
+
+      for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+      {
+         addCriteriaForRecordSecurityLock(instance, session, table, securityCriteria, recordSecurityLock, joinsContext, table.getName());
+      }
+
+      for(QueryJoin queryJoin : CollectionUtils.nonNullList(joinsContext.getQueryJoins()))
+      {
+         QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
+         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
+         {
+            addCriteriaForRecordSecurityLock(instance, session, joinTable, securityCriteria, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias());
+         }
+      }
+
+      return (newFilter);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
-   private String makeSimpleWhereClause(QInstance instance, QTableMetaData table, JoinsContext joinsContext, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
+   private static void addCriteriaForRecordSecurityLock(QInstance instance, QSession session, QTableMetaData table, List<QFilterCriteria> securityCriteria, RecordSecurityLock recordSecurityLock, JoinsContext joinsContext, String tableNameOrAlias)
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QSecurityKeyType securityKeyType = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
+      if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
+      {
+         if(session.hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
+         {
+            ///////////////////////////////////////////////////////////////////////////////
+            // if we have all-access on this key, then we don't need a criterion for it. //
+            ///////////////////////////////////////////////////////////////////////////////
+            return;
+         }
+      }
+
+      if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinChain()))
+      {
+         for(String joinName : recordSecurityLock.getJoinChain())
+         {
+            QJoinMetaData joinMetaData = instance.getJoin(joinName);
+
+            /*
+            for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+            {
+               if(queryJoin.getJoinMetaData().getName().equals(joinName))
+               {
+                  joinMetaData = queryJoin.getJoinMetaData();
+                  break;
+               }
+            }
+            */
+
+            if(joinMetaData == null)
+            {
+               throw (new RuntimeException("Could not find joinMetaData for recordSecurityLock with joinChain member [" + joinName + "]"));
+            }
+
+            table = instance.getTable(joinMetaData.getRightTable());
+            tableNameOrAlias = table.getName();
+         }
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // else - get the key values from the session and decide what kind of criterion to build //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), table.getField(recordSecurityLock.getFieldName()).getType());
+      String fieldName = tableNameOrAlias + "." + recordSecurityLock.getFieldName();
+      if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // handle user with no values -- they can only see null values, and only iff the lock's null-value behavior is ALLOW //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         {
+            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // else, if no user/session values, and null-value behavior is deny, then setup a FALSE condition, to allow no rows.           //
+            // todo - make some explicit contradiction here - maybe even avoid running the whole query - as you're not allowed ANY records //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, Collections.emptyList()));
+         }
+      }
+      else
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // else, if user/session has some values, build an IN rule -                                                //
+         // noting that if the lock's null-value behavior is ALLOW, then we actually want IS_NULL_OR_IN, not just IN //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         {
+            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
+         }
+         else
+         {
+            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, securityKeyValues));
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(QInstance instance, QTableMetaData table, JoinsContext joinsContext, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
    {
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
@@ -366,10 +513,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             {
                if(values.isEmpty())
                {
-                  //////////////////////////////////////////////////////////////////////////////////
-                  // if there are no values, then we want a false here - so say column != column. //
-                  //////////////////////////////////////////////////////////////////////////////////
-                  clause += " != " + column;
+                  ///////////////////////////////////////////////////////
+                  // if there are no values, then we want a false here //
+                  ///////////////////////////////////////////////////////
+                  clause = " 0 = 1 ";
                }
                else
                {
@@ -377,14 +524,24 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                }
                break;
             }
+            case IS_NULL_OR_IN:
+            {
+               clause += " IS NULL ";
+
+               if(!values.isEmpty())
+               {
+                  clause += " OR " + column + " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
+               }
+               break;
+            }
             case NOT_IN:
             {
                if(values.isEmpty())
                {
-                  /////////////////////////////////////////////////////////////////////////////////
-                  // if there are no values, then we want a true here - so say column == column. //
-                  /////////////////////////////////////////////////////////////////////////////////
-                  clause += " = " + column;
+                  //////////////////////////////////////////////////////
+                  // if there are no values, then we want a true here //
+                  //////////////////////////////////////////////////////
+                  clause = " 1 = 1 ";
                }
                else
                {

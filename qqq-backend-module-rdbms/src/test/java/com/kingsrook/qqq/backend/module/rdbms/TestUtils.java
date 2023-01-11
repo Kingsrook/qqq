@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -35,8 +36,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -59,6 +61,8 @@ public class TestUtils
    public static final String TABLE_NAME_ORDER            = "order";
    public static final String TABLE_NAME_ITEM             = "item";
    public static final String TABLE_NAME_ORDER_LINE       = "orderLine";
+
+   public static final String SECURITY_KEY_STORE_ALL_ACCESS = "storeAllAccess";
 
 
 
@@ -219,21 +223,25 @@ public class TestUtils
       qInstance.addTable(defineBaseTable(TABLE_NAME_STORE, "store")
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("name")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("id"))
          .withField(new QFieldMetaData("name", QFieldType.STRING))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER, "order")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ITEM, "item")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER_LINE, "order_line")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
@@ -295,6 +303,11 @@ public class TestUtils
          .withTableName(TABLE_NAME_STORE)
          .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
       );
+
+      qInstance.addSecurityKeyType(new QSecurityKeyType()
+         .withName(TABLE_NAME_STORE)
+         .withAllAccessKeyName(SECURITY_KEY_STORE_ALL_ACCESS)
+         .withPossibleValueSourceName(TABLE_NAME_STORE));
    }
 
 

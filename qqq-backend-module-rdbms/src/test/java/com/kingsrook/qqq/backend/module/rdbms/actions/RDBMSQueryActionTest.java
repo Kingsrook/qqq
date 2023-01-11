@@ -22,8 +22,11 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -38,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
@@ -609,6 +613,38 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   void testNestedFilterAndTopLevelFilter() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 3))
+         .withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withSubFilters(List.of(
+            new QQueryFilter()
+               .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+               .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("James")))
+               .withCriteria(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, List.of("Tim"))),
+            new QQueryFilter()
+               .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+               .withCriteria(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, List.of("Kelkhoff")))
+               .withCriteria(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, List.of("Chamberlain")))
+         ))
+      );
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Complex query should find 1 row");
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueInteger("id").equals(3) && r.getValueString("firstName").equals("Tim") && r.getValueString("lastName").equals("Chamberlain"));
+
+      queryInput.getFilter().setCriteria(List.of(new QFilterCriteria("id", QCriteriaOperator.NOT_EQUALS, 3)));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(0, queryOutput.getRecords().size(), "Next complex query should find 0 rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testOneToOneInnerJoinWithoutWhere() throws QException
    {
       QueryInput queryInput = initQueryRequest();
@@ -712,7 +748,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testFiveTableOmsJoinFindMismatchedStoreId() throws Exception
    {
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance(), new QSession());
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance(), new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_STORE).withAlias("orderStore").withSelect(true));
       queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_ORDER_LINE).withSelect(true));
@@ -754,7 +790,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          orderLineCount.set(rs.getInt(1));
       });
 
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance(), new QSession());
+      QueryInput queryInput = new QueryInput(TestUtils.defineInstance(), new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER_LINE);
       queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER).withSelect(true));
 
@@ -775,7 +811,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void testOmsQueryByPersons() throws Exception
    {
       QInstance  instance   = TestUtils.defineInstance();
-      QueryInput queryInput = new QueryInput(instance, new QSession());
+      QueryInput queryInput = new QueryInput(instance, new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
       /////////////////////////////////////////////////////
@@ -877,7 +913,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void testOmsQueryByPersonsExtraKelkhoffOrder() throws Exception
    {
       QInstance  instance   = TestUtils.defineInstance();
-      QueryInput queryInput = new QueryInput(instance, new QSession());
+      QueryInput queryInput = new QueryInput(instance, new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -951,6 +987,332 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       ));
       assertThatThrownBy(() -> new QueryAction().execute(queryInput))
          .hasRootCauseMessage("Duplicate table name or alias: shipToPerson");
+   }
+
+
+
+   /*******************************************************************************
+    ** queries on the store table, where the primary key (id) is the security field
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityPrimaryKeyFieldNoFilters() throws QException
+   {
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_STORE);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(3);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(1)
+         .anyMatch(r -> r.getValueInteger("id").equals(1));
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(1)
+         .anyMatch(r -> r.getValueInteger("id").equals(2));
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 5));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(2)
+         .anyMatch(r -> r.getValueInteger("id").equals(1))
+         .anyMatch(r -> r.getValueInteger("id").equals(3));
+   }
+
+
+
+   /*******************************************************************************
+    ** not really expected to be any different from where we filter on the primary key,
+    ** but just good to make sure
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityForeignKeyFieldNoFilters() throws QException
+   {
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(8);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(3)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1));
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(2)
+         .allMatch(r -> r.getValueInteger("storeId").equals(2));
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 5));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(6)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1) || r.getValueInteger("storeId").equals(3));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityWithFilters() throws QException
+   {
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(6);
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(2)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1));
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 5));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeId", QCriteriaOperator.IN, List.of(1, 2))));
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(3)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityWithOrQueries() throws QException
+   {
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      queryInput.setFilter(new QQueryFilter(
+         new QFilterCriteria("billToPersonId", QCriteriaOperator.EQUALS, List.of(1)),
+         new QFilterCriteria("shipToPersonId", QCriteriaOperator.EQUALS, List.of(5))
+      ).withBooleanOperator(QQueryFilter.BooleanOperator.OR));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(5)
+         .allMatch(r -> Objects.equals(r.getValueInteger("billToPersonId"), 1) || Objects.equals(r.getValueInteger("shipToPersonId"), 5));
+
+      queryInput.setFilter(new QQueryFilter(
+         new QFilterCriteria("billToPersonId", QCriteriaOperator.EQUALS, List.of(1)),
+         new QFilterCriteria("shipToPersonId", QCriteriaOperator.EQUALS, List.of(5))
+      ).withBooleanOperator(QQueryFilter.BooleanOperator.OR));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(1)
+         .allMatch(r -> r.getValueInteger("storeId").equals(2))
+         .allMatch(r -> Objects.equals(r.getValueInteger("billToPersonId"), 1) || Objects.equals(r.getValueInteger("shipToPersonId"), 5));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityWithSubFilters() throws QException
+   {
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      queryInput.setFilter(new QQueryFilter()
+         .withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         .withSubFilters(List.of(
+            new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.GREATER_THAN_OR_EQUALS, 2), new QFilterCriteria("billToPersonId", QCriteriaOperator.EQUALS, 1)),
+            new QQueryFilter(new QFilterCriteria("billToPersonId", QCriteriaOperator.IS_BLANK), new QFilterCriteria("shipToPersonId", QCriteriaOperator.IS_BLANK)).withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         )));
+      Predicate<QRecord> p = r -> r.getValueInteger("billToPersonId") == null || r.getValueInteger("shipToPersonId") == null || (r.getValueInteger("id") >= 2 && r.getValueInteger("billToPersonId") == 1);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(4)
+         .allMatch(p);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(1)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1))
+         .allMatch(p);
+
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(3)
+         .allMatch(r -> r.getValueInteger("storeId").equals(3))
+         .allMatch(p);
+
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityNullValues() throws Exception
+   {
+      runTestSql("INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (9, NULL, 1, 6)", null);
+      runTestSql("INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (10, NULL, 6, 5)", null);
+
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      Predicate<QRecord> hasNullStoreId = r -> r.getValueInteger("storeId") == null;
+
+      ////////////////////////////////////////////
+      // all-access user should get all 10 rows //
+      ////////////////////////////////////////////
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(10)
+         .anyMatch(hasNullStoreId);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // no-values user should get 0 rows (given that default null-behavior on this key type is DENY) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // user with list of all ids shouldn't see the nulls (given that default null-behavior on this key type is DENY) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 2, 3, 4, 5)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(8)
+         .noneMatch(hasNullStoreId);
+
+      //////////////////////////////////////////////////////////////////////////
+      // specifically set the null behavior to deny - repeat the last 2 tests //
+      //////////////////////////////////////////////////////////////////////////
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().get(0).setNullValueBehavior(RecordSecurityLock.NullValueBehavior.DENY);
+
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 2, 3, 4, 5)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(8)
+         .noneMatch(hasNullStoreId);
+
+      ///////////////////////////////////
+      // change null behavior to ALLOW //
+      ///////////////////////////////////
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().get(0).setNullValueBehavior(RecordSecurityLock.NullValueBehavior.ALLOW);
+
+      /////////////////////////////////////////////
+      // all-access user should still get all 10 //
+      /////////////////////////////////////////////
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(10)
+         .anyMatch(hasNullStoreId);
+
+      /////////////////////////////////////////////////////
+      // no-values user should only get the rows w/ null //
+      /////////////////////////////////////////////////////
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(2)
+         .allMatch(hasNullStoreId);
+
+      ////////////////////////////////////////////////////
+      // user with list of all ids should see the nulls //
+      ////////////////////////////////////////////////////
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 2, 3, 4, 5)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(10)
+         .anyMatch(hasNullStoreId);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityWithLockFromJoinTable() throws QException
+   {
+      QInstance  qInstance  = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput(qInstance);
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // remove the normal lock on the order table - replace it with one from the joined store table //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().clear();
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withRecordSecurityLock(new RecordSecurityLock()
+         .withSecurityKeyType(TestUtils.TABLE_NAME_STORE)
+         .withJoinChain(List.of("orderJoinStore"))
+         .withFieldName("id"));
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(6);
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(2)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1));
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 5));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
+      queryInput.setSession(new QSession());
+      assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeId", QCriteriaOperator.IN, List.of(1, 2))));
+      queryInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(3)
+         .allMatch(r -> r.getValueInteger("storeId").equals(1));
    }
 
 }

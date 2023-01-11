@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -339,6 +340,43 @@ class MemoryBackendModuleTest
          assertThat(queryShapes(qInstance, table, session, filter)).anyMatch(r -> r.getValueString("name").equals("Circle") && r.getValueInteger("id").equals(3));
       }
 
+      //////////////////
+      // skip & limit //
+      //////////////////
+      {
+         QueryInput queryInput = new QueryInput(qInstance);
+         queryInput.setSession(session);
+         queryInput.setTableName(table.getName());
+         queryInput.setLimit(2);
+         assertEquals(2, new QueryAction().execute(queryInput).getRecords().size());
+
+         queryInput.setLimit(1);
+         assertEquals(1, new QueryAction().execute(queryInput).getRecords().size());
+
+         queryInput.setSkip(4);
+         queryInput.setLimit(3);
+         assertEquals(0, new QueryAction().execute(queryInput).getRecords().size());
+      }
+
+      ///////////
+      // order //
+      ///////////
+      {
+         QueryInput queryInput = new QueryInput(qInstance);
+         queryInput.setSession(session);
+         queryInput.setTableName(table.getName());
+         queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("name", true)));
+         assertEquals(List.of("Circle", "Square", "Triangle"), new QueryAction().execute(queryInput).getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+         queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("name", false)));
+         assertEquals(List.of("Triangle", "Square", "Circle"), new QueryAction().execute(queryInput).getRecords().stream().map(r -> r.getValueString("name")).toList());
+
+         queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id", true)));
+         assertEquals(List.of(1, 2, 3), new QueryAction().execute(queryInput).getRecords().stream().map(r -> r.getValueInteger("id")).toList());
+
+         queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id", false)));
+         assertEquals(List.of(3, 2, 1), new QueryAction().execute(queryInput).getRecords().stream().map(r -> r.getValueInteger("id")).toList());
+      }
    }
 
 
@@ -353,6 +391,9 @@ class MemoryBackendModuleTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private List<QRecord> queryShapes(QInstance qInstance, QTableMetaData table, QSession session, QQueryFilter filter) throws QException
    {
       QueryInput queryInput = new QueryInput(qInstance);

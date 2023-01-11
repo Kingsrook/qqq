@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -34,10 +36,12 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  ** MetaData definition of an App - an entity that organizes tables & processes
  ** and can be arranged hierarchically (e.g, apps can contain other apps).
  *******************************************************************************/
-public class QAppMetaData implements QAppChildMetaData
+public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRules
 {
    private String name;
    private String label;
+
+   private QPermissionRules permissionRules;
 
    private List<QAppChildMetaData> children;
 
@@ -374,6 +378,37 @@ public class QAppMetaData implements QAppChildMetaData
          }
       }
 
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for permissionRules
+    *******************************************************************************/
+   public QPermissionRules getPermissionRules()
+   {
+      return (this.permissionRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for permissionRules
+    *******************************************************************************/
+   public void setPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for permissionRules
+    *******************************************************************************/
+   public QAppMetaData withPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
       return (this);
    }
 

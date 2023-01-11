@@ -41,6 +41,9 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -54,6 +57,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
@@ -86,6 +90,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
@@ -331,7 +336,6 @@ public class QJavalinImplementation
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
 
-      boolean needToSetSessionIdCookie = false;
       try
       {
          Map<String, String> authenticationContext = new HashMap<>();
@@ -345,7 +349,6 @@ public class QJavalinImplementation
             // first, look for a sessionId cookie //
             ////////////////////////////////////////
             authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
-            needToSetSessionIdCookie = true;
          }
          else if(authorizationHeaderValue != null)
          {
@@ -360,7 +363,6 @@ public class QJavalinImplementation
             {
                authorizationHeaderValue = authorizationHeaderValue.replaceFirst(basicPrefix, "");
                authenticationContext.put(BASIC_AUTH_NAME, authorizationHeaderValue);
-               needToSetSessionIdCookie = true;
             }
             else if(authorizationHeaderValue.startsWith(bearerPrefix))
             {
@@ -383,7 +385,7 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
          /////////////////////////////////////////////////////////////////////////////////
-         if(needToSetSessionIdCookie)
+         if(authenticationModule.usesSessionIdCookie())
          {
             context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
          }
@@ -395,7 +397,7 @@ public class QJavalinImplementation
          ////////////////////////////////////////////////////////////////////////////////
          // if exception caught, clear out the cookie so the frontend will reauthorize //
          ////////////////////////////////////////////////////////////////////////////////
-         if(needToSetSessionIdCookie)
+         if(authenticationModule.usesSessionIdCookie())
          {
             context.removeCookie(SESSION_ID_COOKIE_NAME);
          }
@@ -446,6 +448,8 @@ public class QJavalinImplementation
          deleteInput.setTableName(table);
          deleteInput.setPrimaryKeys(primaryKeys);
 
+         PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);
+
          DeleteAction deleteAction = new DeleteAction();
          DeleteOutput deleteResult = deleteAction.execute(deleteInput);
 
@@ -466,7 +470,14 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String table = context.pathParam("table");
+
+         UpdateInput updateInput = new UpdateInput(qInstance);
+         setupSession(context, updateInput);
+         updateInput.setTableName(table);
+
+         PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
+
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(table);
@@ -494,12 +505,8 @@ public class QJavalinImplementation
          }
 
          QTableMetaData tableMetaData = qInstance.getTable(table);
-
          record.setValue(tableMetaData.getPrimaryKeyField(), context.pathParam("primaryKey"));
 
-         UpdateInput updateInput = new UpdateInput(qInstance);
-         setupSession(context, updateInput);
-         updateInput.setTableName(table);
          updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
@@ -522,7 +529,13 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String      table       = context.pathParam("table");
+         InsertInput insertInput = new InsertInput(qInstance);
+         setupSession(context, insertInput);
+         insertInput.setTableName(table);
+
+         PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(table);
@@ -536,10 +549,6 @@ public class QJavalinImplementation
                record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
             }
          }
-
-         InsertInput insertInput = new InsertInput(qInstance);
-         setupSession(context, insertInput);
-         insertInput.setTableName(table);
          insertInput.setRecords(recordList);
 
          InsertAction insertAction = new InsertAction();
@@ -576,6 +585,8 @@ public class QJavalinImplementation
          getInput.setTableName(tableName);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
+
+         PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
@@ -623,6 +634,8 @@ public class QJavalinImplementation
          CountInput countInput = new CountInput(qInstance);
          setupSession(context, countInput);
          countInput.setTableName(context.pathParam("table"));
+
+         PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 
          String filter = stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
@@ -672,6 +685,8 @@ public class QJavalinImplementation
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setSkip(integerQueryParam(context, "skip"));
          queryInput.setLimit(integerQueryParam(context, "limit"));
+
+         PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
          String filter = stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
@@ -727,7 +742,22 @@ public class QJavalinImplementation
       {
          TableMetaDataInput tableMetaDataInput = new TableMetaDataInput(qInstance);
          setupSession(context, tableMetaDataInput);
-         tableMetaDataInput.setTableName(context.pathParam("table"));
+
+         String         tableName = context.pathParam("table");
+         QTableMetaData table     = qInstance.getTable(tableName);
+         if(table == null)
+         {
+            throw (new QNotFoundException("Table [" + tableName + "] was not found."));
+         }
+
+         PermissionCheckResult permissionCheckResult = PermissionsHelper.getPermissionCheckResult(tableMetaDataInput, table);
+         if(permissionCheckResult.equals(PermissionCheckResult.DENY_HIDE))
+         {
+            // not found?  or permission denied... hmm
+            throw (new QNotFoundException("Table [" + tableName + "] was not found."));
+         }
+
+         tableMetaDataInput.setTableName(tableName);
          TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
          TableMetaDataOutput tableMetaDataOutput = tableMetaDataAction.execute(tableMetaDataInput);
 
@@ -750,7 +780,16 @@ public class QJavalinImplementation
       {
          ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput(qInstance);
          setupSession(context, processMetaDataInput);
-         processMetaDataInput.setProcessName(context.pathParam("processName"));
+
+         String           processName = context.pathParam("processName");
+         QProcessMetaData process     = qInstance.getProcess(processName);
+         if(process == null)
+         {
+            throw (new QNotFoundException("Process [" + processName + "] was not found."));
+         }
+         PermissionsHelper.checkProcessPermissionThrowing(processMetaDataInput, processName);
+
+         processMetaDataInput.setProcessName(processName);
          ProcessMetaDataAction processMetaDataAction = new ProcessMetaDataAction();
          ProcessMetaDataOutput processMetaDataOutput = processMetaDataAction.execute(processMetaDataInput);
 
@@ -777,6 +816,8 @@ public class QJavalinImplementation
          RenderWidgetInput input = new RenderWidgetInput(qInstance)
             .withSession(insertInput.getSession())
             .withWidgetMetaData(qInstance.getWidget(context.pathParam("name")));
+
+         // todo permission?
 
          //////////////////////////
          // process query string //
@@ -855,6 +896,8 @@ public class QJavalinImplementation
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(filename);
          exportInput.setLimit(limit);
+
+         PermissionsHelper.checkTablePermissionThrowing(exportInput, TablePermissionSubType.READ);
 
          String fields = stringQueryParam(context, "fields");
          if(StringUtils.hasContent(fields))
@@ -1134,6 +1177,12 @@ public class QJavalinImplementation
          if(e instanceof QAuthenticationException)
          {
             respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
+            return;
+         }
+
+         if(e instanceof QPermissionDeniedException)
+         {
+            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage()); // 403
             return;
          }
 

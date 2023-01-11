@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,13 +31,26 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -118,4 +132,217 @@ class MetaDataActionTest
       /////////////////////////////////////////////////////////////////////////////////
       assertThat(greetingsAppUnderPeopleFromTree.get().getChildren()).isNotEmpty();
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testHasAccessNoPermissionAndHide() throws QException
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // with 'hasAccess' set as the default instance rule, but no permissions in the session, //
+      // and the deny behavior as 'hide' we should have 0 of these                             //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
+      MetaDataInput input = new MetaDataInput(instance);
+      input.setSession(new QSession());
+      MetaDataOutput result = new MetaDataAction().execute(input);
+
+      assertEquals(0, result.getTables().size());
+      assertEquals(0, result.getProcesses().size());
+      assertEquals(0, result.getReports().size());
+      assertEquals(0, result.getWidgets().size());
+      assertEquals(0, result.getApps().size());
+      assertEquals(0, result.getAppTree().size());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the only kinds of app meta data we should find are other apps - no tables, processes, reports, etc //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QFrontendAppMetaData appMetaData : result.getApps().values())
+      {
+         assertThat(appMetaData.getClass()).isEqualTo(QFrontendAppMetaData.class);
+         for(AppTreeNode child : appMetaData.getChildren())
+         {
+            assertEquals(AppTreeNodeType.APP, child.getType());
+         }
+      }
+
+      List<AppTreeNode> toExplore = new ArrayList<>(result.getAppTree());
+      while(!toExplore.isEmpty())
+      {
+         AppTreeNode exploring = toExplore.remove(0);
+         if(exploring.getChildren() != null)
+         {
+            toExplore.addAll(exploring.getChildren());
+         }
+         assertEquals(AppTreeNodeType.APP, exploring.getType());
+      }
+
+      // todo -- assert about sections in those apps not having stuff
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testHasAccessNoPermissionAndDisable() throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // with 'hasAccess' set as the default instance rule, but no permissions in the session,           //
+      // and the deny behavior as 'disable', we should have lots of things, but all with no permissions. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION).withDenyBehavior(DenyBehavior.DISABLED));
+      MetaDataInput input = new MetaDataInput(instance);
+      input.setSession(new QSession());
+      MetaDataOutput result = new MetaDataAction().execute(input);
+
+      assertNotEquals(0, result.getTables().size());
+      assertNotEquals(0, result.getProcesses().size());
+      assertNotEquals(0, result.getReports().size());
+      assertNotEquals(0, result.getWidgets().size());
+      assertNotEquals(0, result.getApps().size());
+      assertNotEquals(0, result.getAppTree().size());
+
+      assertTrue(result.getTables().values().stream().allMatch(t -> !t.getDeletePermission() && !t.getReadPermission() && !t.getInsertPermission() && !t.getEditPermission()));
+      assertTrue(result.getProcesses().values().stream().noneMatch(QFrontendProcessMetaData::getHasPermission));
+      assertTrue(result.getReports().values().stream().noneMatch(QFrontendReportMetaData::getHasPermission));
+      assertTrue(result.getWidgets().values().stream().noneMatch(QFrontendWidgetMetaData::getHasPermission));
+      // todo ... apps...  uh...
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testHasAccessSomePermissionsAndHide() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
+      MetaDataInput input = new MetaDataInput(instance);
+      input.setSession(new QSession().withPermissions(
+         "person.hasAccess",
+         "increaseBirthdate.hasAccess",
+         "runShapesPersonReport.hasAccess",
+         "shapesPersonReport.hasAccess",
+         "personJoinShapeReport.hasAccess",
+         "simplePersonReport.hasAccess",
+         "PersonsByCreateDateBarChart.hasAccess"
+      ));
+      MetaDataOutput result = new MetaDataAction().execute(input);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // with several permissions set, we should see some things, and they should have permissions turned on //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(Set.of("person"), result.getTables().keySet());
+      assertEquals(Set.of("increaseBirthdate", "runShapesPersonReport"), result.getProcesses().keySet());
+      assertEquals(Set.of("shapesPersonReport", "personJoinShapeReport", "simplePersonReport"), result.getReports().keySet());
+      assertEquals(Set.of("PersonsByCreateDateBarChart"), result.getWidgets().keySet());
+
+      assertTrue(result.getTables().values().stream().allMatch(t -> t.getDeletePermission() && t.getReadPermission() && t.getInsertPermission() && t.getEditPermission()));
+      assertTrue(result.getProcesses().values().stream().allMatch(QFrontendProcessMetaData::getHasPermission));
+      assertTrue(result.getReports().values().stream().allMatch(QFrontendReportMetaData::getHasPermission));
+      assertTrue(result.getWidgets().values().stream().allMatch(QFrontendWidgetMetaData::getHasPermission));
+
+      // todo -- assert about apps & sections in those apps having just the right stuff
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testTableReadWritePermissions() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
+      MetaDataInput input = new MetaDataInput(instance);
+      input.setSession(new QSession().withPermissions(
+         "person.read",
+         "personFile.write",
+         "personMemory.read",
+         "personMemory.write",
+         "personMemoryCache.hasAccess", // this one should NOT come through.
+         "increaseBirthdate.hasAccess"
+      ));
+      MetaDataOutput result = new MetaDataAction().execute(input);
+
+      assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
+      assertEquals(Set.of("increaseBirthdate"), result.getProcesses().keySet());
+      assertEquals(Set.of(), result.getReports().keySet());
+      assertEquals(Set.of(), result.getWidgets().keySet());
+
+      QFrontendTableMetaData personTable = result.getTables().get("person");
+      assertTrue(personTable.getReadPermission());
+      assertFalse(personTable.getInsertPermission());
+      assertFalse(personTable.getEditPermission());
+      assertFalse(personTable.getDeletePermission());
+
+      QFrontendTableMetaData personFileTable = result.getTables().get("personFile");
+      assertFalse(personFileTable.getReadPermission());
+      assertTrue(personFileTable.getInsertPermission());
+      assertTrue(personFileTable.getEditPermission());
+      assertTrue(personFileTable.getDeletePermission());
+
+      QFrontendTableMetaData personMemoryTable = result.getTables().get("personMemory");
+      assertTrue(personMemoryTable.getReadPermission());
+      assertTrue(personMemoryTable.getInsertPermission());
+      assertTrue(personMemoryTable.getEditPermission());
+      assertTrue(personMemoryTable.getDeletePermission());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testTableReadInsertEditDeletePermissions() throws QException
+   {
+      QInstance instance = TestUtils.defineInstance();
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      MetaDataInput input = new MetaDataInput(instance);
+      input.setSession(new QSession().withPermissions(
+         "person.read",
+         "personFile.insert",
+         "personFile.edit",
+         "personMemory.read",
+         "personMemory.delete",
+         "personMemoryCache.hasAccess", // this one should NOT come through.
+         "increaseBirthdate.hasAccess"
+      ));
+      MetaDataOutput result = new MetaDataAction().execute(input);
+
+      assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
+      assertEquals(Set.of("increaseBirthdate"), result.getProcesses().keySet());
+      assertEquals(Set.of(), result.getReports().keySet());
+      assertEquals(Set.of(), result.getWidgets().keySet());
+
+      QFrontendTableMetaData personTable = result.getTables().get("person");
+      assertTrue(personTable.getReadPermission());
+      assertFalse(personTable.getInsertPermission());
+      assertFalse(personTable.getEditPermission());
+      assertFalse(personTable.getDeletePermission());
+
+      QFrontendTableMetaData personFileTable = result.getTables().get("personFile");
+      assertFalse(personFileTable.getReadPermission());
+      assertTrue(personFileTable.getInsertPermission());
+      assertTrue(personFileTable.getEditPermission());
+      assertFalse(personFileTable.getDeletePermission());
+
+      QFrontendTableMetaData personMemoryTable = result.getTables().get("personMemory");
+      assertTrue(personMemoryTable.getReadPermission());
+      assertFalse(personMemoryTable.getInsertPermission());
+      assertFalse(personMemoryTable.getEditPermission());
+      assertTrue(personMemoryTable.getDeletePermission());
+   }
+
 }

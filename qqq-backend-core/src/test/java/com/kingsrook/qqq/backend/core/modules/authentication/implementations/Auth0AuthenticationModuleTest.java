@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.auth0.exception.Auth0Exception;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
@@ -36,15 +37,18 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticat
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
-import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.AUTH0_ID_TOKEN_KEY;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.AUTH0_ACCESS_TOKEN_KEY;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.BASIC_AUTH_KEY;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.COULD_NOT_DECODE_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -139,7 +143,7 @@ public class Auth0AuthenticationModuleTest
    public void testInvalidToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ID_TOKEN_KEY, INVALID_TOKEN);
+      context.put(AUTH0_ACCESS_TOKEN_KEY, INVALID_TOKEN);
 
       try
       {
@@ -163,7 +167,7 @@ public class Auth0AuthenticationModuleTest
    public void testUndecodableToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ID_TOKEN_KEY, UNDECODABLE_TOKEN);
+      context.put(AUTH0_ACCESS_TOKEN_KEY, UNDECODABLE_TOKEN);
 
       try
       {
@@ -187,7 +191,7 @@ public class Auth0AuthenticationModuleTest
    public void testProperlyFormattedButExpiredToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ID_TOKEN_KEY, EXPIRED_TOKEN);
+      context.put(AUTH0_ACCESS_TOKEN_KEY, EXPIRED_TOKEN);
 
       try
       {
@@ -232,7 +236,7 @@ public class Auth0AuthenticationModuleTest
    public void testNullToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ID_TOKEN_KEY, null);
+      context.put(AUTH0_ACCESS_TOKEN_KEY, null);
 
       try
       {
@@ -257,11 +261,173 @@ public class Auth0AuthenticationModuleTest
       Map<String, String> context = new HashMap<>();
       context.put(BASIC_AUTH_KEY, encodeBasicAuth("darin.kelkhoff@gmail.com", "6-EQ!XzBJ!F*LRVDK6VZY__92!"));
 
+      QInstance qInstance = getQInstance();
+
       Auth0AuthenticationModule auth0Spy = spy(Auth0AuthenticationModule.class);
-      auth0Spy.createSession(getQInstance(), context);
-      auth0Spy.createSession(getQInstance(), context);
-      auth0Spy.createSession(getQInstance(), context);
-      verify(auth0Spy, times(1)).getIdTokenFromAuth0(any(), any());
+      auth0Spy.createSession(qInstance, context);
+      auth0Spy.createSession(qInstance, context);
+      auth0Spy.createSession(qInstance, context);
+      verify(auth0Spy, times(1)).getAccessTokenFromAuth0(any(), any(), any());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetPermissionsInSessionFromJwtPayload()
+   {
+      QSession qSession = new QSession();
+      JSONObject payload = new JSONObject("""
+         {
+           "com.kingsrook.qqq.client_metadata": {
+             "securityKeyValues:clientIdAllAccess": "true"
+           },
+           "iss": "https://kingsrook.us.auth0.com/",
+           "sub": "LRuqVS2awusyOyqTzMH6oPC00XXKJj@clients",
+           "aud": "https://www.kingsrook.com",
+           "iat": 1673379451,
+           "exp": 1675971451,
+           "azp": "LRuqVS2awOyqTFwzMH6oPC00XXKJj",
+           "gty": "client-credentials",
+           "permissions": [
+             "client.read",
+             "client.insert"
+          ]
+         }
+         """);
+      Auth0AuthenticationModule.setPermissionsInSessionFromJwtPayload(payload, qSession);
+      assertTrue(qSession.hasPermission("client.read"));
+      assertTrue(qSession.hasPermission("client.insert"));
+      assertEquals(2, qSession.getPermissions().size());
+
+      ///////////////////////////////
+      // test w/ empty permissions //
+      ///////////////////////////////
+      qSession = new QSession();
+      payload = new JSONObject("""
+         {
+           "iss": "https://kingsrook.us.auth0.com/",
+           "azp": "LRuqVS2awOyqTFwzMH6oPC00XXKJj",
+           "gty": "client-credentials",
+           "permissions": []
+         }
+         """);
+      Auth0AuthenticationModule.setPermissionsInSessionFromJwtPayload(payload, qSession);
+      assertTrue(qSession.getPermissions().isEmpty());
+
+      /////////////////////////////////
+      // test w/ missing permissions //
+      /////////////////////////////////
+      qSession = new QSession();
+      payload = new JSONObject("""
+         {
+           "iss": "https://kingsrook.us.auth0.com/",
+           "azp": "LRuqVS2awOyqTFwzMH6oPC00XXKJj",
+           "gty": "client-credentials"
+         }
+         """);
+      Auth0AuthenticationModule.setPermissionsInSessionFromJwtPayload(payload, qSession);
+      assertTrue(qSession.getPermissions().isEmpty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetSecurityKeysInSessionFromJwtPayload()
+   {
+      QInstance qInstance = getQInstance();
+      QSession  qSession  = new QSession();
+      JSONObject payload = new JSONObject("""
+         {
+           "com.kingsrook.qqq.client_metadata": {
+             "securityKeyValues:storeAllAccess": "true"
+           },
+           "iss": "https://kingsrook.us.auth0.com/",
+           "sub": "LRuqVS2awusyOyqTzMH6oPC00XXKJj@clients",
+           "iat": 1673379451
+         }
+         """);
+      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      assertEquals(List.of("true"), qSession.getSecurityKeyValues("storeAllAccess"));
+
+      /////////////////////////////////////////////
+      // app_metadata instead of client_metadata //
+      /////////////////////////////////////////////
+      qSession = new QSession();
+      payload = new JSONObject("""
+         {
+           "com.kingsrook.qqq.app_metadata": {
+             "securityKeyValues": {
+                "store": 2
+             }
+           },
+           "iss": "https://kingsrook.us.auth0.com/",
+           "sub": "LRuqVS2awusyOyqTzMH6oPC00XXKJj@clients",
+           "iat": 1673379451
+         }
+         """);
+      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      assertEquals(List.of("2"), qSession.getSecurityKeyValues("store"));
+
+      //////////////////////////
+      // list of values       //
+      // and, more than 1 key //
+      //////////////////////////
+      qSession = new QSession();
+      payload = new JSONObject("""
+         {
+           "com.kingsrook.qqq.app_metadata": {
+             "securityKeyValues": {
+                "store": [3, 4, 5],
+                "internalOrExternal": "internal"
+             }
+           },
+           "iss": "https://kingsrook.us.auth0.com/",
+           "sub": "LRuqVS2awusyOyqTzMH6oPC00XXKJj@clients",
+           "iat": 1673379451
+         }
+         """);
+      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      assertEquals(List.of("3", "4", "5"), qSession.getSecurityKeyValues("store"));
+      assertEquals(List.of("internal"), qSession.getSecurityKeyValues("internalOrExternal"));
+
+      ///////////////////////////////////////////
+      // missing meta data -> no security keys //
+      ///////////////////////////////////////////
+      qSession = new QSession();
+      payload = new JSONObject("""
+         {
+           "iss": "https://kingsrook.us.auth0.com/",
+           "sub": "LRuqVS2awusyOyqTzMH6oPC00XXKJj@clients",
+           "iat": 1673379451
+         }
+         """);
+      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      assertTrue(CollectionUtils.nullSafeIsEmpty(qSession.getSecurityKeyValues()));
+
+      /////////////////////////////////////////////////////
+      // unrecognized security key -> no keys in session //
+      /////////////////////////////////////////////////////
+      qSession = new QSession();
+      payload = new JSONObject("""
+         {
+           "com.kingsrook.qqq.app_metadata": {
+             "securityKeyValues": {
+                "notAKey": 47
+             }
+           },
+           "iss": "https://kingsrook.us.auth0.com/",
+           "sub": "LRuqVS2awusyOyqTzMH6oPC00XXKJj@clients",
+           "iat": 1673379451
+         }
+         """);
+      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      assertTrue(CollectionUtils.nullSafeIsEmpty(qSession.getSecurityKeyValues()));
    }
 
 
@@ -275,11 +441,13 @@ public class Auth0AuthenticationModuleTest
       String auth0BaseUrl      = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_BASE_URL}");
       String auth0ClientId     = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_CLIENT_ID}");
       String auth0ClientSecret = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_CLIENT_SECRET}");
+      String auth0Audience     = new QMetaDataVariableInterpreter().interpret("${env.AUTH0_AUDIENCE}");
 
       QAuthenticationMetaData authenticationMetaData = new Auth0AuthenticationMetaData()
          .withBaseUrl(auth0BaseUrl)
          .withClientId(auth0ClientId)
          .withClientSecret(auth0ClientSecret)
+         .withAudience(auth0Audience)
          .withName("auth0");
 
       QInstance qInstance = TestUtils.defineInstance();

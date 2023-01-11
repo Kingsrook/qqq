@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
 
 /*******************************************************************************
@@ -43,6 +44,8 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected boolean        isCard;
    protected Integer        gridColumns;
    protected QCodeReference codeReference;
+
+   private QPermissionRules permissionRules;
 
    private   List<WidgetDropdownData>  dropdowns;
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
@@ -384,6 +387,39 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withIsCard(boolean isCard)
    {
       this.isCard = isCard;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for permissionRules
+    *******************************************************************************/
+   @Override
+   public QPermissionRules getPermissionRules()
+   {
+      return (this.permissionRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for permissionRules
+    *******************************************************************************/
+   @Override
+   public void setPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for permissionRules
+    *******************************************************************************/
+   public QWidgetMetaData withPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
       return (this);
    }
 

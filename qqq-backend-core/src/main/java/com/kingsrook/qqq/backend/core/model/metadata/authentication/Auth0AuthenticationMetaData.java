@@ -35,6 +35,7 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
 {
    private String baseUrl;
    private String clientId;
+   private String audience;
 
    ////////////////////////////////////////////////////////////////////////////////////////
    // keep this secret, on the server - don't let it be serialized and sent to a client! //
@@ -156,4 +157,36 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    {
       this.clientSecret = clientSecret;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for audience
+    *******************************************************************************/
+   public String getAudience()
+   {
+      return (this.audience);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for audience
+    *******************************************************************************/
+   public void setAudience(String audience)
+   {
+      this.audience = audience;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for audience
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withAudience(String audience)
+   {
+      this.audience = audience;
+      return (this);
+   }
+
 }

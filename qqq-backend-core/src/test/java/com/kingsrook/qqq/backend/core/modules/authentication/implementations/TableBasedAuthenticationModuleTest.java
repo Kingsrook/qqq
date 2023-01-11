@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.TableBasedAu
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
+import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -191,7 +192,7 @@ public class TableBasedAuthenticationModuleTest
 
       QSession session = new QSession();
       session.setIdReference(uuid);
-      InMemoryStateProvider.getInstance().put(new TableBasedAuthenticationModule.SessionIdStateKey(session.getIdReference()), Instant.now());
+      InMemoryStateProvider.getInstance().put(new SimpleStateKey<>(session.getIdReference()), Instant.now());
       assertTrue(new TableBasedAuthenticationModule().isSessionValid(qInstance, session));
    }
 
@@ -318,7 +319,7 @@ public class TableBasedAuthenticationModuleTest
 
       assertTrue(new TableBasedAuthenticationModule().isSessionValid(qInstance, session));
 
-      InMemoryStateProvider.getInstance().put(new TableBasedAuthenticationModule.SessionIdStateKey(session.getIdReference()), Instant.now().minus(TableBasedAuthenticationModule.ID_TOKEN_VALIDATION_INTERVAL_SECONDS + 10, ChronoUnit.SECONDS));
+      InMemoryStateProvider.getInstance().put(new SimpleStateKey<>(session.getIdReference()), Instant.now().minus(TableBasedAuthenticationModule.ID_TOKEN_VALIDATION_INTERVAL_SECONDS + 10, ChronoUnit.SECONDS));
 
       MemoryRecordStore.setCollectStatistics(true);
       assertTrue(new TableBasedAuthenticationModule().isSessionValid(qInstance, session));

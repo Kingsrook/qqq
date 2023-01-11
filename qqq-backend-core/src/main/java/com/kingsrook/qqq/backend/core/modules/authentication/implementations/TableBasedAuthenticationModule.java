@@ -51,8 +51,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.TableBasedAu
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
-import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
+import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -84,6 +84,17 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
    {
 
    };
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean usesSessionIdCookie()
+   {
+      return (true);
+   }
 
 
 
@@ -203,7 +214,7 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
          // put now into state so we dont check until next interval passes //
          ///////////////////////////////////////////////////////////////////
          StateProviderInterface spi = getStateProvider();
-         SessionIdStateKey      key = new SessionIdStateKey(qSession.getIdReference());
+         SimpleStateKey<String> key = new SimpleStateKey<>(qSession.getIdReference());
          spi.put(key, Instant.now());
 
          return (qSession);
@@ -251,7 +262,7 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
       }
 
       StateProviderInterface stateProvider           = getStateProvider();
-      SessionIdStateKey      key                     = new SessionIdStateKey(session.getIdReference());
+      SimpleStateKey<String> key                     = new SimpleStateKey<>(session.getIdReference());
       Optional<Instant>      lastTimeCheckedOptional = stateProvider.get(Instant.class, key);
       if(lastTimeCheckedOptional.isPresent())
       {
@@ -388,81 +399,6 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
    {
       // TODO - read this from somewhere in meta data eh?
       return (InMemoryStateProvider.getInstance());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class SessionIdStateKey extends AbstractStateKey
-   {
-      private final String key;
-
-
-
-      /*******************************************************************************
-       ** Constructor.
-       **
-       *******************************************************************************/
-      SessionIdStateKey(String key)
-      {
-         this.key = key;
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public String toString()
-      {
-         return (this.key);
-      }
-
-
-
-      /*******************************************************************************
-       ** Make the key give a unique string to identify itself.
-       *
-       *******************************************************************************/
-      @Override
-      public String getUniqueIdentifier()
-      {
-         return (this.key);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public boolean equals(Object o)
-      {
-         if(this == o)
-         {
-            return true;
-         }
-         if(o == null || getClass() != o.getClass())
-         {
-            return false;
-         }
-         SessionIdStateKey that = (SessionIdStateKey) o;
-         return key.equals(that.key);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public int hashCode()
-      {
-         return key.hashCode();
-      }
    }
 
 

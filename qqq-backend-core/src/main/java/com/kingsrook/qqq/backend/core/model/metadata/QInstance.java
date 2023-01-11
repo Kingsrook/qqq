@@ -25,8 +25,10 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -42,13 +44,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
@@ -73,19 +78,20 @@ public class QInstance
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
    ////////////////////////////////////////////////////////////////////////////////////////////
-   private Map<String, QTableMetaData>       tables               = new LinkedHashMap<>();
-   private Map<String, QJoinMetaData>        joins                = new LinkedHashMap<>();
-   private Map<String, QPossibleValueSource> possibleValueSources = new LinkedHashMap<>();
-   private Map<String, QProcessMetaData>     processes            = new LinkedHashMap<>();
-   private Map<String, QAppMetaData>         apps                 = new LinkedHashMap<>();
-   private Map<String, QReportMetaData>      reports              = new LinkedHashMap<>();
-
-   private Map<String, QWidgetMetaDataInterface> widgets = new LinkedHashMap<>();
-
-   private Map<String, QQueueProviderMetaData> queueProviders = new LinkedHashMap<>();
-   private Map<String, QQueueMetaData>         queues         = new LinkedHashMap<>();
+   private Map<String, QTableMetaData>           tables               = new LinkedHashMap<>();
+   private Map<String, QJoinMetaData>            joins                = new LinkedHashMap<>();
+   private Map<String, QPossibleValueSource>     possibleValueSources = new LinkedHashMap<>();
+   private Map<String, QProcessMetaData>         processes            = new LinkedHashMap<>();
+   private Map<String, QAppMetaData>             apps                 = new LinkedHashMap<>();
+   private Map<String, QReportMetaData>          reports              = new LinkedHashMap<>();
+   private Map<String, QSecurityKeyType>         securityKeyTypes     = new LinkedHashMap<>();
+   private Map<String, QWidgetMetaDataInterface> widgets              = new LinkedHashMap<>();
+   private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
+   private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
    private Map<String, String> environmentValues = new LinkedHashMap<>();
+
+   private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -249,16 +255,7 @@ public class QInstance
     *******************************************************************************/
    public void addBackend(QBackendMetaData backend)
    {
-      addBackend(backend.getName(), backend);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addBackend(String name, QBackendMetaData backend)
-   {
+      String name = backend.getName();
       if(!StringUtils.hasContent(name))
       {
          throw (new IllegalArgumentException("Attempted to add a backend without a name."));
@@ -309,16 +306,7 @@ public class QInstance
     *******************************************************************************/
    public void addTable(QTableMetaData table)
    {
-      addTable(table.getName(), table);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addTable(String name, QTableMetaData table)
-   {
+      String name = table.getName();
       if(!StringUtils.hasContent(name))
       {
          throw (new IllegalArgumentException("Attempted to add a table without a name."));
@@ -374,16 +362,7 @@ public class QInstance
     *******************************************************************************/
    public void addJoin(QJoinMetaData join)
    {
-      addJoin(join.getName(), join);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addJoin(String name, QJoinMetaData join)
-   {
+      String name = join.getName();
       if(!StringUtils.hasContent(name))
       {
          throw (new IllegalArgumentException("Attempted to add a join without a name."));
@@ -439,16 +418,7 @@ public class QInstance
     *******************************************************************************/
    public void addPossibleValueSource(QPossibleValueSource possibleValueSource)
    {
-      this.addPossibleValueSource(possibleValueSource.getName(), possibleValueSource);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addPossibleValueSource(String name, QPossibleValueSource possibleValueSource)
-   {
+      String name = possibleValueSource.getName();
       if(!StringUtils.hasContent(name))
       {
          throw (new IllegalArgumentException("Attempted to add a possibleValueSource without a name."));
@@ -515,16 +485,7 @@ public class QInstance
     *******************************************************************************/
    public void addProcess(QProcessMetaData process)
    {
-      this.addProcess(process.getName(), process);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addProcess(String name, QProcessMetaData process)
-   {
+      String name = process.getName();
       if(!StringUtils.hasContent(name))
       {
          throw (new IllegalArgumentException("Attempted to add a process without a name."));
@@ -575,19 +536,10 @@ public class QInstance
     *******************************************************************************/
    public void addApp(QAppMetaData app)
    {
-      this.addApp(app.getName(), app);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addApp(String name, QAppMetaData app)
-   {
+      String name = app.getName();
       if(!StringUtils.hasContent(name))
       {
-         throw (new IllegalArgumentException("Attempted to add an app without a name."));
+         throw (new IllegalArgumentException("Attempted to add a app without a name."));
       }
       if(this.apps.containsKey(name))
       {
@@ -635,19 +587,10 @@ public class QInstance
     *******************************************************************************/
    public void addReport(QReportMetaData report)
    {
-      this.addReport(report.getName(), report);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addReport(String name, QReportMetaData report)
-   {
+      String name = report.getName();
       if(!StringUtils.hasContent(name))
       {
-         throw (new IllegalArgumentException("Attempted to add an report without a name."));
+         throw (new IllegalArgumentException("Attempted to add a report without a name."));
       }
       if(this.reports.containsKey(name))
       {
@@ -693,9 +636,14 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addAutomationProvider(QAutomationProviderMetaData automationProvider)
+   public void addSecurityKeyType(QSecurityKeyType securityKeyType)
    {
-      this.addAutomationProvider(automationProvider.getName(), automationProvider);
+      String name = securityKeyType.getName();
+      if(this.securityKeyTypes.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second securityKeyType with name: " + name));
+      }
+      this.securityKeyTypes.put(name, securityKeyType);
    }
 
 
@@ -703,8 +651,41 @@ public class QInstance
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addAutomationProvider(String name, QAutomationProviderMetaData automationProvider)
+   public QSecurityKeyType getSecurityKeyType(String name)
    {
+      return (this.securityKeyTypes.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for securityKeyTypes
+    **
+    *******************************************************************************/
+   public Map<String, QSecurityKeyType> getSecurityKeyTypes()
+   {
+      return securityKeyTypes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for securityKeyTypes
+    **
+    *******************************************************************************/
+   public void setSecurityKeyTypes(Map<String, QSecurityKeyType> securityKeyTypes)
+   {
+      this.securityKeyTypes = securityKeyTypes;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addAutomationProvider(QAutomationProviderMetaData automationProvider)
+   {
+      String name = automationProvider.getName();
       if(this.automationProviders.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second automationProvider with name: " + name));
@@ -839,16 +820,7 @@ public class QInstance
     *******************************************************************************/
    public void addWidget(QWidgetMetaDataInterface widget)
    {
-      this.addWidget(widget.getName(), widget);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addWidget(String name, QWidgetMetaDataInterface widget)
-   {
+      String name = widget.getName();
       if(this.widgets.containsKey(name))
       {
          throw (new IllegalArgumentException("Attempted to add a second widget with name: " + name));
@@ -873,19 +845,10 @@ public class QInstance
     *******************************************************************************/
    public void addQueueProvider(QQueueProviderMetaData queueProvider)
    {
-      this.addQueueProvider(queueProvider.getName(), queueProvider);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addQueueProvider(String name, QQueueProviderMetaData queueProvider)
-   {
+      String name = queueProvider.getName();
       if(!StringUtils.hasContent(name))
       {
-         throw (new IllegalArgumentException("Attempted to add an queueProvider without a name."));
+         throw (new IllegalArgumentException("Attempted to add a queueProvider without a name."));
       }
       if(this.queueProviders.containsKey(name))
       {
@@ -933,19 +896,10 @@ public class QInstance
     *******************************************************************************/
    public void addQueue(QQueueMetaData queue)
    {
-      this.addQueue(queue.getName(), queue);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addQueue(String name, QQueueMetaData queue)
-   {
+      String name = queue.getName();
       if(!StringUtils.hasContent(name))
       {
-         throw (new IllegalArgumentException("Attempted to add an queue without a name."));
+         throw (new IllegalArgumentException("Attempted to add a queue without a name."));
       }
       if(this.queues.containsKey(name))
       {
@@ -1006,6 +960,56 @@ public class QInstance
    public void setEnvironmentValues(Map<String, String> environmentValues)
    {
       this.environmentValues = environmentValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultPermissionRules
+    *******************************************************************************/
+   public QPermissionRules getDefaultPermissionRules()
+   {
+      return (this.defaultPermissionRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultPermissionRules
+    *******************************************************************************/
+   public void setDefaultPermissionRules(QPermissionRules defaultPermissionRules)
+   {
+      this.defaultPermissionRules = defaultPermissionRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultPermissionRules
+    *******************************************************************************/
+   public QInstance withDefaultPermissionRules(QPermissionRules defaultPermissionRules)
+   {
+      this.defaultPermissionRules = defaultPermissionRules;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Set<String> getAllowedSecurityKeyNames()
+   {
+      Set<String> rs = new LinkedHashSet<>();
+      for(QSecurityKeyType securityKeyType : CollectionUtils.nonNullMap(getSecurityKeyTypes()).values())
+      {
+         rs.add(securityKeyType.getName());
+         if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
+         {
+            rs.add(securityKeyType.getAllAccessKeyName());
+         }
+      }
+      return (rs);
    }
 
 }

@@ -186,4 +186,27 @@ public class AbstractActionInput
    {
       this.asyncJobCallback = asyncJobCallback;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for instance
+    *******************************************************************************/
+   public AbstractActionInput withInstance(QInstance instance)
+   {
+      this.instance = instance;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for session
+    *******************************************************************************/
+   public AbstractActionInput withSession(QSession session)
+   {
+      this.session = session;
+      return (this);
+   }
+
 }

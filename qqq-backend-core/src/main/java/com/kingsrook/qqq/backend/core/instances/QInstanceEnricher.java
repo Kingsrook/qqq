@@ -32,8 +32,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -42,6 +46,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
@@ -133,6 +139,21 @@ public class QInstanceEnricher
       {
          qInstance.getPossibleValueSources().values().forEach(this::enrichPossibleValueSource);
       }
+
+      if(qInstance.getWidgets() != null)
+      {
+         qInstance.getWidgets().values().forEach(this::enrichWidget);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichWidget(QWidgetMetaDataInterface widgetMetaData)
+   {
+      enrichPermissionRules(widgetMetaData);
    }
 
 
@@ -175,6 +196,60 @@ public class QInstanceEnricher
       {
          table.setRecordLabelFormat(String.join(" ", Collections.nCopies(table.getRecordLabelFields().size(), "%s")));
       }
+
+      enrichPermissionRules(table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichPermissionRules(MetaDataWithPermissionRules metaDataWithPermissionRules)
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // make sure there's a permissionsRule object in the metaData object //
+      ///////////////////////////////////////////////////////////////////////
+      if(metaDataWithPermissionRules.getPermissionRules() == null)
+      {
+         if(qInstance.getDefaultPermissionRules() != null)
+         {
+            metaDataWithPermissionRules.setPermissionRules(qInstance.getDefaultPermissionRules().clone());
+         }
+         else
+         {
+            metaDataWithPermissionRules.setPermissionRules(QPermissionRules.defaultInstance().clone());
+         }
+      }
+
+      QPermissionRules permissionRules = metaDataWithPermissionRules.getPermissionRules();
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // now make sure the required fields are all set in the permissionRules object //
+      /////////////////////////////////////////////////////////////////////////////////
+      if(permissionRules.getLevel() == null)
+      {
+         if(qInstance.getDefaultPermissionRules() != null && qInstance.getDefaultPermissionRules().getLevel() != null)
+         {
+            permissionRules.setLevel(qInstance.getDefaultPermissionRules().getLevel());
+         }
+         else
+         {
+            permissionRules.setLevel(QPermissionRules.defaultInstance().getLevel());
+         }
+      }
+
+      if(permissionRules.getDenyBehavior() == null)
+      {
+         if(qInstance.getDefaultPermissionRules() != null && qInstance.getDefaultPermissionRules().getDenyBehavior() != null)
+         {
+            permissionRules.setDenyBehavior(qInstance.getDefaultPermissionRules().getDenyBehavior());
+         }
+         else
+         {
+            permissionRules.setDenyBehavior(QPermissionRules.defaultInstance().getDenyBehavior());
+         }
+      }
    }
 
 
@@ -193,6 +268,8 @@ public class QInstanceEnricher
       {
          process.getStepList().forEach(this::enrichStep);
       }
+
+      enrichPermissionRules(process);
    }
 
 
@@ -323,6 +400,8 @@ public class QInstanceEnricher
       {
          enrichAppSection(section);
       }
+
+      enrichPermissionRules(app);
    }
 
 
@@ -411,6 +490,8 @@ public class QInstanceEnricher
             }
          }
       }
+
+      enrichPermissionRules(report);
    }
 
 
@@ -506,7 +587,9 @@ public class QInstanceEnricher
          .withName(processName)
          .withLabel(table.getLabel() + " Bulk Insert")
          .withTableName(table.getName())
-         .withIsHidden(true);
+         .withIsHidden(true)
+         .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
 
       List<QFieldMetaData> editableFields = new ArrayList<>();
       for(QFieldSection section : CollectionUtils.nonNullList(table.getSections()))
@@ -568,7 +651,9 @@ public class QInstanceEnricher
          .withName(processName)
          .withLabel(table.getLabel() + " Bulk Edit")
          .withTableName(table.getName())
-         .withIsHidden(true);
+         .withIsHidden(true)
+         .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
 
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
@@ -613,7 +698,9 @@ public class QInstanceEnricher
          .withName(processName)
          .withLabel(table.getLabel() + " Bulk Delete")
          .withTableName(table.getName())
-         .withIsHidden(true);
+         .withIsHidden(true)
+         .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
 
       List<QFieldMetaData> tableFields = table.getFields().values().stream().toList();
       process.getFrontendStep("review").setRecordListFields(tableFields);

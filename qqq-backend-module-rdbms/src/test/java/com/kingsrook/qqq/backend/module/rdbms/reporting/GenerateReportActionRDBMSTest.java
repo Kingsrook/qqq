@@ -196,7 +196,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    private String runReport(QInstance qInstance) throws QException
    {
       ReportInput reportInput = new ReportInput(qInstance);
-      reportInput.setSession(new QSession());
+      reportInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       reportInput.setReportName(TEST_REPORT);
       reportInput.setReportFormat(ReportFormat.CSV);
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

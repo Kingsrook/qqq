@@ -41,6 +41,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 
@@ -49,7 +52,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData implements QAppChildMetaData, Serializable
+public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules
 {
    private String name;
    private String label;
@@ -68,6 +71,9 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
    private Map<String, QFieldMetaData> fields;
    private List<UniqueKey>             uniqueKeys;
+
+   private List<RecordSecurityLock> recordSecurityLocks;
+   private QPermissionRules         permissionRules;
 
    private QTableBackendDetails    backendDetails;
    private QTableAutomationDetails automationDetails;
@@ -1041,7 +1047,12 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
 
    /*******************************************************************************
+    ** Test if a capability is enabled - checking both at the table level and
+    ** at the backend level.
     **
+    ** If backend says disabled, then disable - UNLESS - the table says enable.
+    ** If backend either doesn't specify, or says enable, return what the table says (if it says).
+    ** else, return the default (of enabled).
     *******************************************************************************/
    public boolean isCapabilityEnabled(QBackendMetaData backend, Capability capability)
    {
@@ -1078,4 +1089,82 @@ public class QTableMetaData implements QAppChildMetaData, Serializable
 
       return (hasCapability);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordSecurityLocks
+    *******************************************************************************/
+   public List<RecordSecurityLock> getRecordSecurityLocks()
+   {
+      return (this.recordSecurityLocks);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordSecurityLocks
+    *******************************************************************************/
+   public void setRecordSecurityLocks(List<RecordSecurityLock> recordSecurityLocks)
+   {
+      this.recordSecurityLocks = recordSecurityLocks;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordSecurityLocks
+    *******************************************************************************/
+   public QTableMetaData withRecordSecurityLocks(List<RecordSecurityLock> recordSecurityLocks)
+   {
+      this.recordSecurityLocks = recordSecurityLocks;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordSecurityLocks
+    *******************************************************************************/
+   public QTableMetaData withRecordSecurityLock(RecordSecurityLock recordSecurityLock)
+   {
+      if(this.recordSecurityLocks == null)
+      {
+         this.recordSecurityLocks = new ArrayList<>();
+      }
+      this.recordSecurityLocks.add(recordSecurityLock);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for permissionRules
+    *******************************************************************************/
+   public QPermissionRules getPermissionRules()
+   {
+      return (this.permissionRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for permissionRules
+    *******************************************************************************/
+   public void setPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for permissionRules
+    *******************************************************************************/
+   public QTableMetaData withPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
+      return (this);
+   }
+
 }

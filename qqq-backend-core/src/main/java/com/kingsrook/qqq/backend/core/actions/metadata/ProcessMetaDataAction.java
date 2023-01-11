@@ -52,7 +52,7 @@ public class ProcessMetaDataAction
       {
          throw (new QNotFoundException("Process [" + processMetaDataInput.getProcessName() + "] was not found."));
       }
-      processMetaDataOutput.setProcess(new QFrontendProcessMetaData(process, true));
+      processMetaDataOutput.setProcess(new QFrontendProcessMetaData(processMetaDataInput, process, true));
 
       // todo post-customization - can do whatever w/ the result if you want
 

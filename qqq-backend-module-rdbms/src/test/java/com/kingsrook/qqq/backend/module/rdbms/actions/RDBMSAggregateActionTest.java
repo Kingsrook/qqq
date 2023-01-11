@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -318,7 +319,18 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
 
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+      assertNull(aggregateResult.getAggregateValue(sumOfQuantity));
+
+      aggregateInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+      aggregateResult = aggregateOutput.getResults().get(0);
       Assertions.assertEquals(43, aggregateResult.getAggregateValue(sumOfQuantity));
+
+      aggregateInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+      aggregateResult = aggregateOutput.getResults().get(0);
+      // note - this would be 33, except for that one order line that has a contradictory store id...
+      Assertions.assertEquals(32, aggregateResult.getAggregateValue(sumOfQuantity));
    }
 
 
@@ -340,7 +352,10 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       aggregateInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_ORDER_LINE));
 
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
-      assertEquals(6, aggregateOutput.getResults().size());
+      assertEquals(0, aggregateOutput.getResults().size());
+
+      aggregateInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       assertSkuQuantity("QM-1", 30, aggregateOutput.getResults(), groupBy);
       assertSkuQuantity("QM-2", 1, aggregateOutput.getResults(), groupBy);
       assertSkuQuantity("QM-3", 1, aggregateOutput.getResults(), groupBy);

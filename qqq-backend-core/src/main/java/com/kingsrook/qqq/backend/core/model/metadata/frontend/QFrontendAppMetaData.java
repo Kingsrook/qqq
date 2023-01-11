@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -55,7 +56,7 @@ public class QFrontendAppMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendAppMetaData(QAppMetaData appMetaData)
+   public QFrontendAppMetaData(QAppMetaData appMetaData, MetaDataOutput metaDataOutput)
    {
       this.name = appMetaData.getName();
       this.label = appMetaData.getLabel();
@@ -65,14 +66,31 @@ public class QFrontendAppMetaData
          this.iconName = appMetaData.getIcon().getName();
       }
 
-      if(CollectionUtils.nullSafeHasContents(appMetaData.getWidgets()))
+      List<String> filteredWidgets = CollectionUtils.nonNullList(appMetaData.getWidgets()).stream().filter(n -> metaDataOutput.getWidgets().containsKey(n)).toList();
+      if(CollectionUtils.nullSafeHasContents(filteredWidgets))
       {
-         this.widgets = appMetaData.getWidgets();
+         this.widgets = filteredWidgets;
       }
 
-      if(CollectionUtils.nullSafeHasContents(appMetaData.getSections()))
+      List<QAppSection> filteredSections = new ArrayList<>();
+      for(QAppSection section : CollectionUtils.nonNullList(appMetaData.getSections()))
       {
-         this.sections = appMetaData.getSections();
+         List<String> filteredTables    = CollectionUtils.nonNullList(section.getTables()).stream().filter(n -> metaDataOutput.getTables().containsKey(n)).toList();
+         List<String> filteredProcesses = CollectionUtils.nonNullList(section.getProcesses()).stream().filter(n -> metaDataOutput.getProcesses().containsKey(n)).toList();
+         List<String> filteredReports   = CollectionUtils.nonNullList(section.getReports()).stream().filter(n -> metaDataOutput.getReports().containsKey(n)).toList();
+         if(!filteredTables.isEmpty() || !filteredProcesses.isEmpty() || !filteredReports.isEmpty())
+         {
+            QAppSection clonedSection = section.clone();
+            clonedSection.setTables(filteredTables);
+            clonedSection.setProcesses(filteredProcesses);
+            clonedSection.setReports(filteredReports);
+            filteredSections.add(clonedSection);
+         }
+      }
+
+      if(CollectionUtils.nullSafeHasContents(filteredSections))
+      {
+         this.sections = filteredSections;
       }
    }
 

@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
@@ -53,7 +54,9 @@ import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
@@ -185,6 +188,8 @@ public class QJavalinProcessHandler
          /////////////////////////////////////////////
          ReportInput reportInput = new ReportInput(QJavalinImplementation.qInstance);
          QJavalinImplementation.setupSession(context, reportInput);
+         PermissionsHelper.checkReportPermissionThrowing(reportInput, reportName);
+
          reportInput.setReportFormat(reportFormat);
          reportInput.setReportName(reportName);
          reportInput.setInputValues(null); // todo!
@@ -293,11 +298,18 @@ public class QJavalinProcessHandler
 
          RunProcessInput runProcessInput = new RunProcessInput(QJavalinImplementation.qInstance);
          QJavalinImplementation.setupSession(context, runProcessInput);
+
          runProcessInput.setProcessName(processName);
          runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
          runProcessInput.setProcessUUID(processUUID);
          runProcessInput.setStartAfterStep(startAfterStep);
          populateRunProcessRequestWithValuesFromContext(context, runProcessInput);
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         // important to do this check AFTER the runProcessInput is populated with values from context - //
+         // e.g., in case things like a reportName are set in here                                       //
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         PermissionsHelper.checkProcessPermissionThrowing(runProcessInput, processName);
 
          ////////////////////////////////////////
          // run the process as an async action //
@@ -320,6 +332,10 @@ public class QJavalinProcessHandler
       catch(JobGoingAsyncException jgae)
       {
          resultForCaller.put("jobUUID", jgae.getJobUUID());
+      }
+      catch(QPermissionDeniedException pde)
+      {
+         QJavalinImplementation.handleException(context, pde);
       }
       catch(Exception e)
       {
@@ -549,55 +565,68 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processStatus(Context context)
    {
-      String processUUID = context.pathParam("processUUID");
-      String jobUUID     = context.pathParam("jobUUID");
-
       Map<String, Object> resultForCaller = new HashMap<>();
-      resultForCaller.put("processUUID", processUUID);
 
-      LOG.debug("Request for status of process " + processUUID + ", job " + jobUUID);
-      Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
-      if(optionalJobStatus.isEmpty())
+      try
       {
-         serializeRunProcessExceptionForCaller(resultForCaller, new RuntimeException("Could not find status of process step job"));
-      }
-      else
-      {
-         AsyncJobStatus jobStatus = optionalJobStatus.get();
+         AbstractActionInput input = new AbstractActionInput(QJavalinImplementation.qInstance);
+         QJavalinImplementation.setupSession(context, input);
 
-         resultForCaller.put("jobStatus", jobStatus);
-         LOG.debug("Job status is " + jobStatus.getState() + " for " + jobUUID);
+         // todo... get process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
 
-         if(jobStatus.getState().equals(AsyncJobState.COMPLETE))
+         String processUUID = context.pathParam("processUUID");
+         String jobUUID     = context.pathParam("jobUUID");
+
+         resultForCaller.put("processUUID", processUUID);
+
+         LOG.debug("Request for status of process " + processUUID + ", job " + jobUUID);
+         Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
+         if(optionalJobStatus.isEmpty())
          {
-            ///////////////////////////////////////////////////////////////////////////////////////
-            // if the job is complete, get the process result from state provider, and return it //
-            // this output should look like it did if the job finished synchronously!!           //
-            ///////////////////////////////////////////////////////////////////////////////////////
-            Optional<ProcessState> processState = RunProcessAction.getState(processUUID);
-            if(processState.isPresent())
+            serializeRunProcessExceptionForCaller(resultForCaller, new RuntimeException("Could not find status of process step job"));
+         }
+         else
+         {
+            AsyncJobStatus jobStatus = optionalJobStatus.get();
+
+            resultForCaller.put("jobStatus", jobStatus);
+            LOG.debug("Job status is " + jobStatus.getState() + " for " + jobUUID);
+
+            if(jobStatus.getState().equals(AsyncJobState.COMPLETE))
             {
-               RunProcessOutput runProcessOutput = new RunProcessOutput(processState.get());
-               serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);
+               ///////////////////////////////////////////////////////////////////////////////////////
+               // if the job is complete, get the process result from state provider, and return it //
+               // this output should look like it did if the job finished synchronously!!           //
+               ///////////////////////////////////////////////////////////////////////////////////////
+               Optional<ProcessState> processState = RunProcessAction.getState(processUUID);
+               if(processState.isPresent())
+               {
+                  RunProcessOutput runProcessOutput = new RunProcessOutput(processState.get());
+                  serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);
+               }
+               else
+               {
+                  serializeRunProcessExceptionForCaller(resultForCaller, new RuntimeException("Could not find results for process " + processUUID));
+               }
             }
-            else
+            else if(jobStatus.getState().equals(AsyncJobState.ERROR))
             {
-               serializeRunProcessExceptionForCaller(resultForCaller, new RuntimeException("Could not find results for process " + processUUID));
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if the job had an error (e.g., a process step threw), "nicely" serialize its exception for the caller //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(jobStatus.getCaughtException() != null)
+               {
+                  serializeRunProcessExceptionForCaller(resultForCaller, jobStatus.getCaughtException());
+               }
             }
          }
-         else if(jobStatus.getState().equals(AsyncJobState.ERROR))
-         {
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // if the job had an error (e.g., a process step threw), "nicely" serialize its exception for the caller //
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(jobStatus.getCaughtException() != null)
-            {
-               serializeRunProcessExceptionForCaller(resultForCaller, jobStatus.getCaughtException());
-            }
-         }
-      }
 
-      context.result(JsonUtils.toJson(resultForCaller));
+         context.result(JsonUtils.toJson(resultForCaller));
+      }
+      catch(Exception e)
+      {
+         serializeRunProcessExceptionForCaller(resultForCaller, e);
+      }
    }
 
 
@@ -609,6 +638,10 @@ public class QJavalinProcessHandler
    {
       try
       {
+         AbstractActionInput input = new AbstractActionInput(QJavalinImplementation.qInstance);
+         QJavalinImplementation.setupSession(context, input);
+         // todo - need process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
+
          String  processUUID = context.pathParam("processUUID");
          Integer skip        = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "skip"), 0);
          Integer limit       = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "limit"), 20);

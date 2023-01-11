@@ -1,0 +1,579 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.core.actions.permissions;
+
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithName;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
+/*******************************************************************************
+ **
+ *******************************************************************************/
+public class PermissionsHelper
+{
+   private static final Logger LOG = LogManager.getLogger(PermissionsHelper.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void checkTablePermissionThrowing(AbstractTableActionInput tableActionInput, TablePermissionSubType permissionSubType) throws QPermissionDeniedException
+   {
+      checkTablePermissionThrowing(tableActionInput, tableActionInput.getTableName(), permissionSubType);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void checkTablePermissionThrowing(AbstractActionInput actionInput, String tableName, TablePermissionSubType permissionSubType) throws QPermissionDeniedException
+   {
+      warnAboutPermissionSubTypeForTables(permissionSubType);
+      QTableMetaData table = actionInput.getInstance().getTable(tableName);
+
+      commonCheckPermissionThrowing(getEffectivePermissionRules(table, actionInput.getInstance()), permissionSubType, table.getName(), actionInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean hasTablePermission(AbstractActionInput actionInput, String tableName, TablePermissionSubType permissionSubType)
+   {
+      try
+      {
+         checkTablePermissionThrowing(actionInput, tableName, permissionSubType);
+         return (true);
+      }
+      catch(QPermissionDeniedException e)
+      {
+         return (false);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static PermissionCheckResult getPermissionCheckResult(AbstractActionInput actionInput, MetaDataWithPermissionRules metaDataWithPermissionRules)
+   {
+      QPermissionRules rules              = getEffectivePermissionRules(metaDataWithPermissionRules, actionInput.getInstance());
+      String           permissionBaseName = getEffectivePermissionBaseName(rules, metaDataWithPermissionRules.getName());
+
+      switch(rules.getLevel())
+      {
+         case NOT_PROTECTED:
+         {
+            /////////////////////////////////////////////////
+            // if the entity isn't protected, always ALLOW //
+            /////////////////////////////////////////////////
+            return PermissionCheckResult.ALLOW;
+         }
+         case HAS_ACCESS_PERMISSION:
+         {
+            ////////////////////////////////////////////////////////////////////////
+            // if the entity just has a 'has access', then check for 'has access' //
+            ////////////////////////////////////////////////////////////////////////
+            return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.HAS_ACCESS);
+         }
+         case READ_WRITE_PERMISSIONS:
+         {
+            ////////////////////////////////////////////////////////////////
+            // if the table is configured w/ read/write, check for either //
+            ////////////////////////////////////////////////////////////////
+            if(metaDataWithPermissionRules instanceof QTableMetaData)
+            {
+               return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.READ, PrivatePermissionSubType.WRITE);
+            }
+            return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.HAS_ACCESS);
+         }
+         case READ_INSERT_EDIT_DELETE_PERMISSIONS:
+         {
+            //////////////////////////////////////////////////////////////////////////
+            // if the table is configured w/ read/insert/edit/delete, check for any //
+            //////////////////////////////////////////////////////////////////////////
+            if(metaDataWithPermissionRules instanceof QTableMetaData)
+            {
+               return getPermissionCheckResult(actionInput, rules, permissionBaseName, TablePermissionSubType.READ, TablePermissionSubType.INSERT, TablePermissionSubType.EDIT, TablePermissionSubType.DELETE);
+            }
+            return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.HAS_ACCESS);
+         }
+         default:
+         {
+            return getPermissionDeniedCheckResult(rules);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void checkProcessPermissionThrowing(AbstractActionInput actionInput, String processName) throws QPermissionDeniedException
+   {
+      checkProcessPermissionThrowing(actionInput, processName, Collections.emptyMap());
+   }
+
+
+
+   static Map<String, CustomPermissionChecker> customPermissionCheckerMap = new HashMap<>();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void checkProcessPermissionThrowing(AbstractActionInput actionInput, String processName, Map<String, Serializable> processValues) throws QPermissionDeniedException
+   {
+      QProcessMetaData process                  = actionInput.getInstance().getProcess(processName);
+      QPermissionRules effectivePermissionRules = getEffectivePermissionRules(process, actionInput.getInstance());
+
+      if(effectivePermissionRules.getCustomPermissionChecker() != null)
+      {
+         /////////////////////////////////////
+         // todo - avoid stack overflows... //
+         /////////////////////////////////////
+         if(!customPermissionCheckerMap.containsKey(effectivePermissionRules.getCustomPermissionChecker().getName()))
+         {
+            CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, effectivePermissionRules.getCustomPermissionChecker());
+            customPermissionCheckerMap.put(effectivePermissionRules.getCustomPermissionChecker().getName(), customPermissionChecker);
+         }
+         CustomPermissionChecker customPermissionChecker = customPermissionCheckerMap.get(effectivePermissionRules.getCustomPermissionChecker().getName());
+         customPermissionChecker.checkPermissionsThrowing(actionInput, process);
+         return;
+      }
+
+      commonCheckPermissionThrowing(effectivePermissionRules, PrivatePermissionSubType.HAS_ACCESS, process.getName(), actionInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean hasProcessPermission(AbstractActionInput actionInput, String processName)
+   {
+      try
+      {
+         checkProcessPermissionThrowing(actionInput, processName);
+         return (true);
+      }
+      catch(QPermissionDeniedException e)
+      {
+         return (false);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void checkAppPermissionThrowing(AbstractActionInput actionInput, String appName) throws QPermissionDeniedException
+   {
+      QAppMetaData app = actionInput.getInstance().getApp(appName);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(app, actionInput.getInstance()), PrivatePermissionSubType.HAS_ACCESS, app.getName(), actionInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean hasAppPermission(AbstractActionInput actionInput, String appName)
+   {
+      try
+      {
+         checkAppPermissionThrowing(actionInput, appName);
+         return (true);
+      }
+      catch(QPermissionDeniedException e)
+      {
+         return (false);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void checkReportPermissionThrowing(AbstractActionInput actionInput, String reportName) throws QPermissionDeniedException
+   {
+      QReportMetaData report = actionInput.getInstance().getReport(reportName);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(report, actionInput.getInstance()), PrivatePermissionSubType.HAS_ACCESS, report.getName(), actionInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean hasReportPermission(AbstractActionInput actionInput, String reportName)
+   {
+      try
+      {
+         checkReportPermissionThrowing(actionInput, reportName);
+         return (true);
+      }
+      catch(QPermissionDeniedException e)
+      {
+         return (false);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void checkWidgetPermissionThrowing(AbstractActionInput actionInput, String widgetName) throws QPermissionDeniedException
+   {
+      QWidgetMetaDataInterface widget = actionInput.getInstance().getWidget(widgetName);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(widget, actionInput.getInstance()), PrivatePermissionSubType.HAS_ACCESS, widget.getName(), actionInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean hasWidgetPermission(AbstractActionInput actionInput, String widgetName)
+   {
+      try
+      {
+         checkWidgetPermissionThrowing(actionInput, widgetName);
+         return (true);
+      }
+      catch(QPermissionDeniedException e)
+      {
+         return (false);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Collection<String> getAllAvailablePermissionNames(QInstance instance)
+   {
+      return (getAllAvailablePermissions(instance).stream()
+         .map(AvailablePermission::getName)
+         .collect(Collectors.toCollection(LinkedHashSet::new)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Collection<AvailablePermission> getAllAvailablePermissions(QInstance instance)
+   {
+      Collection<AvailablePermission> rs = new LinkedHashSet<>();
+
+      for(QTableMetaData tableMetaData : instance.getTables().values())
+      {
+         if(tableMetaData.getIsHidden())
+         {
+            continue;
+         }
+
+         QPermissionRules rules    = getEffectivePermissionRules(tableMetaData, instance);
+         String           baseName = getEffectivePermissionBaseName(rules, tableMetaData.getName());
+
+         for(TablePermissionSubType permissionSubType : TablePermissionSubType.values())
+         {
+            addEffectiveAvailablePermission(rules, permissionSubType, rs, baseName, tableMetaData, "Table");
+         }
+      }
+
+      for(QProcessMetaData processMetaData : instance.getProcesses().values())
+      {
+         if(processMetaData.getIsHidden())
+         {
+            continue;
+         }
+
+         QPermissionRules rules    = getEffectivePermissionRules(processMetaData, instance);
+         String           baseName = getEffectivePermissionBaseName(rules, processMetaData.getName());
+         addEffectiveAvailablePermission(rules, PrivatePermissionSubType.HAS_ACCESS, rs, baseName, processMetaData, "Process");
+      }
+
+      for(QAppMetaData appMetaData : instance.getApps().values())
+      {
+         QPermissionRules rules    = getEffectivePermissionRules(appMetaData, instance);
+         String           baseName = getEffectivePermissionBaseName(rules, appMetaData.getName());
+         addEffectiveAvailablePermission(rules, PrivatePermissionSubType.HAS_ACCESS, rs, baseName, appMetaData, "App");
+      }
+
+      for(QReportMetaData reportMetaData : instance.getReports().values())
+      {
+         QPermissionRules rules    = getEffectivePermissionRules(reportMetaData, instance);
+         String           baseName = getEffectivePermissionBaseName(rules, reportMetaData.getName());
+         addEffectiveAvailablePermission(rules, PrivatePermissionSubType.HAS_ACCESS, rs, baseName, reportMetaData, "Report");
+      }
+
+      for(QWidgetMetaDataInterface widgetMetaData : instance.getWidgets().values())
+      {
+         QPermissionRules rules    = getEffectivePermissionRules(widgetMetaData, instance);
+         String           baseName = getEffectivePermissionBaseName(rules, widgetMetaData.getName());
+         addEffectiveAvailablePermission(rules, PrivatePermissionSubType.HAS_ACCESS, rs, baseName, widgetMetaData, "Widget");
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void addEffectiveAvailablePermission(QPermissionRules rules, PermissionSubType permissionSubType, Collection<AvailablePermission> rs, String baseName, MetaDataWithName metaDataWithName, String objectType)
+   {
+      PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
+      if(effectivePermissionSubType != null)
+      {
+         rs.add(new AvailablePermission()
+            .withName(getPermissionName(baseName, effectivePermissionSubType))
+            .withObjectName(metaDataWithName.getLabel())
+            .withPermissionType(effectivePermissionSubType.toString())
+            .withObjectType(objectType));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QPermissionRules getEffectivePermissionRules(MetaDataWithPermissionRules metaDataWithPermissionRules, QInstance instance)
+   {
+      return (metaDataWithPermissionRules.getPermissionRules());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static boolean hasPermission(QSession session, String permissionBaseName, PermissionSubType permissionSubType)
+   {
+      if(permissionSubType == null)
+      {
+         return (true);
+      }
+
+      String permissionName = getPermissionName(permissionBaseName, permissionSubType);
+      return (session.hasPermission(permissionName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static PermissionCheckResult getPermissionCheckResult(AbstractActionInput actionInput, QPermissionRules rules, String permissionBaseName, PermissionSubType... permissionSubTypes)
+   {
+      for(PermissionSubType permissionSubType : permissionSubTypes)
+      {
+         PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
+         if(hasPermission(actionInput.getSession(), permissionBaseName, effectivePermissionSubType))
+         {
+            return (PermissionCheckResult.ALLOW);
+         }
+      }
+
+      return (getPermissionDeniedCheckResult(rules));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static String getEffectivePermissionBaseName(QPermissionRules rules, String standardName)
+   {
+      if(rules != null && StringUtils.hasContent(rules.getPermissionBaseName()))
+      {
+         return (rules.getPermissionBaseName());
+      }
+
+      return (standardName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   static PermissionSubType getEffectivePermissionSubType(QPermissionRules rules, PermissionSubType originalPermissionSubType)
+   {
+      if(rules == null || rules.getLevel() == null)
+      {
+         return (originalPermissionSubType);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the original permission sub-type is "hasAccess" - then this is a check for a process/report/widget. //
+      // in that case - never return the table-level read/write/insert/edit/delete options                      //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(PrivatePermissionSubType.HAS_ACCESS.equals(originalPermissionSubType))
+      {
+         return switch(rules.getLevel())
+            {
+               case NOT_PROTECTED -> null;
+               default -> PrivatePermissionSubType.HAS_ACCESS;
+            };
+      }
+      else
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // else, this is a table check - so - based on the rules being used for this table, map the requested //
+         // permission sub-type to what we expect to be set for the table                                      //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return switch(rules.getLevel())
+            {
+               case NOT_PROTECTED -> null;
+               case HAS_ACCESS_PERMISSION -> PrivatePermissionSubType.HAS_ACCESS;
+               case READ_WRITE_PERMISSIONS ->
+               {
+                  if(PrivatePermissionSubType.READ.equals(originalPermissionSubType) || PrivatePermissionSubType.WRITE.equals(originalPermissionSubType))
+                  {
+                     yield (originalPermissionSubType);
+                  }
+                  else if(TablePermissionSubType.INSERT.equals(originalPermissionSubType) || TablePermissionSubType.EDIT.equals(originalPermissionSubType) || TablePermissionSubType.DELETE.equals(originalPermissionSubType))
+                  {
+                     yield (PrivatePermissionSubType.WRITE);
+                  }
+                  else if(TablePermissionSubType.READ.equals(originalPermissionSubType))
+                  {
+                     yield (PrivatePermissionSubType.READ);
+                  }
+                  else
+                  {
+                     throw new IllegalStateException("Unexpected permissionSubType: " + originalPermissionSubType);
+                  }
+               }
+               case READ_INSERT_EDIT_DELETE_PERMISSIONS -> originalPermissionSubType;
+            };
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void commonCheckPermissionThrowing(QPermissionRules rules, PermissionSubType permissionSubType, String name, AbstractActionInput actionInput) throws QPermissionDeniedException
+   {
+      PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
+      String            permissionBaseName         = getEffectivePermissionBaseName(rules, name);
+
+      if(effectivePermissionSubType == null)
+      {
+         return;
+      }
+
+      if(!hasPermission(actionInput.getSession(), permissionBaseName, effectivePermissionSubType))
+      {
+         LOG.debug("Throwing permission denied for: " + getPermissionName(permissionBaseName, effectivePermissionSubType) + " for " + actionInput.getSession().getUser());
+         throw (new QPermissionDeniedException("Permission denied."));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static String getPermissionName(String permissionBaseName, PermissionSubType permissionSubType)
+   {
+      return permissionBaseName + "." + permissionSubType.getPermissionSuffix();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static PermissionCheckResult getPermissionDeniedCheckResult(QPermissionRules rules)
+   {
+      if(rules == null || rules.getDenyBehavior() == null || rules.getDenyBehavior().equals(DenyBehavior.HIDDEN))
+      {
+         return (PermissionCheckResult.DENY_HIDE);
+      }
+      else
+      {
+         return (PermissionCheckResult.DENY_DISABLE);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void warnAboutPermissionSubTypeForTables(PermissionSubType permissionSubType)
+   {
+      if(permissionSubType == null)
+      {
+         return;
+      }
+
+      if(permissionSubType == PrivatePermissionSubType.HAS_ACCESS)
+      {
+         LOG.warn("PermissionSubType.HAS_ACCESS should not be checked for a table");
+      }
+   }
+
+}

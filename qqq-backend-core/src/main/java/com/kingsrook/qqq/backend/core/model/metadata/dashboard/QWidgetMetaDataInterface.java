@@ -25,13 +25,15 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
 
 /*******************************************************************************
  ** Interface for qqq widget meta data
  **
  *******************************************************************************/
-public interface QWidgetMetaDataInterface
+public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
 {
    /*******************************************************************************
     ** Getter for name
@@ -147,6 +149,18 @@ public interface QWidgetMetaDataInterface
     ** Fluent setter for a single defaultValue
     *******************************************************************************/
    QWidgetMetaData withDefaultValue(String key, Serializable value);
+
+
+   /*******************************************************************************
+    ** Getter for permissionRules
+    *******************************************************************************/
+   QPermissionRules getPermissionRules();
+
+
+   /*******************************************************************************
+    ** Setter for permissionRules
+    *******************************************************************************/
+   void setPermissionRules(QPermissionRules permissionRules);
 
 }
 

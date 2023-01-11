@@ -73,4 +73,15 @@ public class QUser
    {
       this.fullName = fullName;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return ("QUser{" + idReference + "," + fullName + "}");
+   }
 }
