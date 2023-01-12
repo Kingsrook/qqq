@@ -224,7 +224,11 @@ public class GenerateReportAction
       exportInput.setIncludeHeaderRow(reportView.getIncludeHeaderRow());
       exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
-      JoinsContext joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins());
+      JoinsContext joinsContext = null;
+      if(StringUtils.hasContent(dataSource.getSourceTable()))
+      {
+         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins());
+      }
 
       List<QFieldMetaData> fields = new ArrayList<>();
       for(QReportField column : reportView.getColumns())
@@ -236,10 +240,10 @@ public class GenerateReportAction
          else
          {
             String                                effectiveFieldName       = Objects.requireNonNullElse(column.getSourceFieldName(), column.getName());
-            JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(effectiveFieldName);
-            if(fieldAndTableNameOrAlias.field() == null)
+            JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext == null ? null : joinsContext.getFieldAndTableNameOrAlias(effectiveFieldName);
+            if(fieldAndTableNameOrAlias == null || fieldAndTableNameOrAlias.field() == null)
             {
-               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] on table [" + table.getName() + "]");
+               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] in dataSource [" + dataSource.getName() + "]");
             }
 
             QFieldMetaData field = fieldAndTableNameOrAlias.field().clone();
