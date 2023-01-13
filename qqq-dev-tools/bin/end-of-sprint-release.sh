@@ -2,7 +2,6 @@
 
 ############################################################################
 ## Script to run the release process on qqq at the end of a sprint.
-## It's a good idea to run it from a fresh clone, but that's not strictly needed.
 ## Uses gum for CLI UI.
 ############################################################################
 
@@ -24,9 +23,22 @@ function gumConfirmProceed
    fi
 }
 
+QQQ_RELEASE_DIR=/tmp/qqq-release
+QQQ_DEV_TOOLS_DIR=${}QQQ_RELEASE_DIR}/qqq/qqq-dev-tools
+
+mkdir -p $QQQ_RELEASE_DIR/qqq
+cd $QQQ_RELEASE_DIR/qqq || exit
 gumBanner "Making sure you have a clean git checkout"
-git status
-gumConfirmProceed "Can we Proceed, or do you need to clean up your checkout (git stash -u)?" "Proceed" "I need to clean up my checkout"
+git status 2>&1 > /dev/null 2>&1
+if [ "$?" != "0" ]; then
+   gumConfirmProceed "No git checkout found, create a clean checkout at [$QQQ_RELEASE_DIR]?" "Proceed" "No, please quit"
+   cd $QQQ_RELEASE_DIR || exit
+   git clone git@github.com:Kingsrook/qqq.git
+   git clone git@github.com:Kingsrook/qqq-frontend-material-dashboard.git
+   git clone git@github.com:Kingsrook/qqq-frontend-core.git
+else
+   gumConfirmProceed "Existing git checkouts found at [$QQQ_RELEASE_DIR], continue?" "Yes, use those" "I need to go delete it and start over"
+fi
 
 gumBanner "Checking for open PR's..."
 gh pr list
@@ -38,17 +50,16 @@ git checkout main && git pull && git checkout dev && git pull
 if [ ! -e "qqq-sample-project/.env" ]; then
    dir=$(realpath .)
    gumBanner "Installing .env file -- for qqq" "Tell it your qqq is at:" "$dir"
-   setup-environments.sh --qqq --quiet
+   setup-environments.sh --qqq --quiet --is-for-release
 fi
 
 ###################################
 ## go back to root qqq directory ##
 ###################################
-cd ~/git/kingsrook/qqq/
+cd $QQQ_RELEASE_DIR/qqq || exit
 
 MVN_VERIFY_LOG=/tmp/mvn-verify.log
 gumBanner "Doing clean build (logging to $MVN_VERIFY_LOG)"
-cp ~/git/kingsrook/qqq/qqq-sample-project/.env qqq-sample-project
 mvn clean verify > $MVN_VERIFY_LOG 2>&1
 tail -30 $MVN_VERIFY_LOG
 gumConfirmProceed "Can we Proceed, or are there build errors to fix?" "Proceed" "There are build errors to fix"
@@ -69,7 +80,7 @@ mvn gitflow:release-finish
 gumBanner "Updating qqq-dev-tools/CURRENT-SNAPSHOT-VERSION"
 CURRENT_SNAPSHOT_VERSION=$(grep '<revision>' pom.xml | sed 's/<.\?revision>//g;s/-SNAPSHOT//;s/ //g;')
 echo $CURRENT_SNAPSHOT_VERSION > $QQQ_DEV_TOOLS_DIR/CURRENT-SNAPSHOT-VERSION
-cd $QQQ_DEV_TOOLS_DIR
+cd $QQQ_DEV_TOOLS_DIR || exit
 git commit -m "Updating to $CURRENT_SNAPSHOT_VERSION" CURRENT-SNAPSHOT-VERSION
 git push
 

@@ -9,7 +9,7 @@
 
 function usage()
 {
-   echo "Usage: $0 [--nf-one|--qqq] [-q|--quiet]"
+   echo "Usage: $0 [--nf-one|--qqq] [-q|--quiet] [-r|--is-for-release]"
    echo "By default, all environments are set up.  Give an option to just do nf-one or qqq."
    exit 1;
 }
@@ -17,6 +17,7 @@ function usage()
 DO_NF_ONE=0
 DO_QQQ=0
 QUIET=0
+IS_FOR_RELEASE=0
 
 if [ -z "$1" ]; then
    DO_NF_ONE=1
@@ -29,6 +30,8 @@ else
          DO_QQQ=1
       elif [ "$arg" == "-q" -o "$arg" == "--quiet" ]; then
          QUIET=1
+      elif [ "$arg" == "-r" -o "$arg" == "--is-for-release" ]; then
+         IS_FOR_RELEASE=1
       else
          usage
       fi
@@ -144,10 +147,15 @@ function setupRepoEnvironment
    repoName=$1
    isNutrifreshOneRepo=$2
 
+   repoSearchRoot=${HOME}/git
+   if [ "$IS_FOR_RELEASE" == "1" ]; then
+     repoSearchRoot="/tmp/qqq-release"
+   fi
+
    #############################################################
    ## try to automatically find the proper git repo directory ##
    #############################################################
-   repoLocation=$(find ${HOME}/git -maxdepth 5 -type d -path "*${repoName}/.git" | sed 's/\/\.git//')
+   repoLocation=$(find ${repoSearchRoot} -maxdepth 5 -type d -path "*${repoName}/.git" | sed 's/\/\.git//')
 
    if [ "$repoLocation" != "" ]; then
 
