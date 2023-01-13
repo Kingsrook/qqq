@@ -28,6 +28,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -76,7 +77,7 @@ public class JoinsContext
       ///////////////////////////////////////////////////////////////
       for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks()))
       {
-         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinChain()))
+         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
          {
             if(this.queryJoins.stream().anyMatch(qj -> qj.getJoinMetaData().getName().equals(joinName)))
             {
@@ -86,7 +87,12 @@ public class JoinsContext
             }
             else
             {
-               this.queryJoins.add(new QueryJoin().withJoinMetaData(instance.getJoin(joinName)).withType(QueryJoin.Type.INNER)); // todo aliases?  probably.
+               QJoinMetaData join = instance.getJoin(joinName);
+               if(tableName.equals(join.getRightTable()))
+               {
+                  join = join.flip();
+               }
+               this.queryJoins.add(new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER)); // todo aliases?  probably.
             }
          }
       }

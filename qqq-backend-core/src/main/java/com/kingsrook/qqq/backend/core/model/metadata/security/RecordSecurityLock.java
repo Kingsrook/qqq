@@ -34,7 +34,7 @@ public class RecordSecurityLock
 {
    private String            securityKeyType;
    private String            fieldName;
-   private List<String>      joinChain; // todo - add validation in validator!!
+   private List<String>      joinNameChain; // todo - add validation in validator!!
    private NullValueBehavior nullValueBehavior = NullValueBehavior.DENY;
 
 
@@ -152,34 +152,34 @@ public class RecordSecurityLock
    }
 
 
+
    /*******************************************************************************
-    ** Getter for joinChain
+    ** Getter for joinNameChain
     *******************************************************************************/
-   public List<String> getJoinChain()
+   public List<String> getJoinNameChain()
    {
-      return (this.joinChain);
+      return (this.joinNameChain);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for joinChain
+    ** Setter for joinNameChain
     *******************************************************************************/
-   public void setJoinChain(List<String> joinChain)
+   public void setJoinNameChain(List<String> joinNameChain)
    {
-      this.joinChain = joinChain;
+      this.joinNameChain = joinNameChain;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for joinChain
+    ** Fluent setter for joinNameChain
     *******************************************************************************/
-   public RecordSecurityLock withJoinChain(List<String> joinChain)
+   public RecordSecurityLock withJoinNameChain(List<String> joinNameChain)
    {
-      this.joinChain = joinChain;
+      this.joinNameChain = joinNameChain;
       return (this);
    }
-
 
 }

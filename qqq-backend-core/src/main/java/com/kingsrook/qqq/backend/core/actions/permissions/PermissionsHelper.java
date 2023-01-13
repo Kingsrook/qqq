@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.actions.permissions;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -121,7 +120,7 @@ public class PermissionsHelper
             ////////////////////////////////////////////////////////////////////////
             // if the entity just has a 'has access', then check for 'has access' //
             ////////////////////////////////////////////////////////////////////////
-            return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.HAS_ACCESS);
+            return getPermissionCheckResult(actionInput, rules, permissionBaseName, metaDataWithPermissionRules, PrivatePermissionSubType.HAS_ACCESS);
          }
          case READ_WRITE_PERMISSIONS:
          {
@@ -130,9 +129,9 @@ public class PermissionsHelper
             ////////////////////////////////////////////////////////////////
             if(metaDataWithPermissionRules instanceof QTableMetaData)
             {
-               return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.READ, PrivatePermissionSubType.WRITE);
+               return getPermissionCheckResult(actionInput, rules, permissionBaseName, metaDataWithPermissionRules, PrivatePermissionSubType.READ, PrivatePermissionSubType.WRITE);
             }
-            return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.HAS_ACCESS);
+            return getPermissionCheckResult(actionInput, rules, permissionBaseName, metaDataWithPermissionRules, PrivatePermissionSubType.HAS_ACCESS);
          }
          case READ_INSERT_EDIT_DELETE_PERMISSIONS:
          {
@@ -141,9 +140,9 @@ public class PermissionsHelper
             //////////////////////////////////////////////////////////////////////////
             if(metaDataWithPermissionRules instanceof QTableMetaData)
             {
-               return getPermissionCheckResult(actionInput, rules, permissionBaseName, TablePermissionSubType.READ, TablePermissionSubType.INSERT, TablePermissionSubType.EDIT, TablePermissionSubType.DELETE);
+               return getPermissionCheckResult(actionInput, rules, permissionBaseName, metaDataWithPermissionRules, TablePermissionSubType.READ, TablePermissionSubType.INSERT, TablePermissionSubType.EDIT, TablePermissionSubType.DELETE);
             }
-            return getPermissionCheckResult(actionInput, rules, permissionBaseName, PrivatePermissionSubType.HAS_ACCESS);
+            return getPermissionCheckResult(actionInput, rules, permissionBaseName, metaDataWithPermissionRules, PrivatePermissionSubType.HAS_ACCESS);
          }
          default:
          {
@@ -164,10 +163,6 @@ public class PermissionsHelper
 
 
 
-   static Map<String, CustomPermissionChecker> customPermissionCheckerMap = new HashMap<>();
-
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -181,12 +176,7 @@ public class PermissionsHelper
          /////////////////////////////////////
          // todo - avoid stack overflows... //
          /////////////////////////////////////
-         if(!customPermissionCheckerMap.containsKey(effectivePermissionRules.getCustomPermissionChecker().getName()))
-         {
-            CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, effectivePermissionRules.getCustomPermissionChecker());
-            customPermissionCheckerMap.put(effectivePermissionRules.getCustomPermissionChecker().getName(), customPermissionChecker);
-         }
-         CustomPermissionChecker customPermissionChecker = customPermissionCheckerMap.get(effectivePermissionRules.getCustomPermissionChecker().getName());
+         CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, effectivePermissionRules.getCustomPermissionChecker());
          customPermissionChecker.checkPermissionsThrowing(actionInput, process);
          return;
       }
@@ -421,11 +411,26 @@ public class PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   static PermissionCheckResult getPermissionCheckResult(AbstractActionInput actionInput, QPermissionRules rules, String permissionBaseName, PermissionSubType... permissionSubTypes)
+   static PermissionCheckResult getPermissionCheckResult(AbstractActionInput actionInput, QPermissionRules rules, String permissionBaseName, MetaDataWithPermissionRules metaDataWithPermissionRules, PermissionSubType... permissionSubTypes)
    {
       for(PermissionSubType permissionSubType : permissionSubTypes)
       {
          PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
+
+         if(rules.getCustomPermissionChecker() != null)
+         {
+            try
+            {
+               CustomPermissionChecker customPermissionChecker = QCodeLoader.getAdHoc(CustomPermissionChecker.class, rules.getCustomPermissionChecker());
+               customPermissionChecker.checkPermissionsThrowing(actionInput, metaDataWithPermissionRules);
+               return (PermissionCheckResult.ALLOW);
+            }
+            catch(QPermissionDeniedException e)
+            {
+               return (getPermissionDeniedCheckResult(rules));
+            }
+         }
+
          if(hasPermission(actionInput.getSession(), permissionBaseName, effectivePermissionSubType))
          {
             return (PermissionCheckResult.ALLOW);
@@ -526,7 +531,7 @@ public class PermissionsHelper
 
       if(!hasPermission(actionInput.getSession(), permissionBaseName, effectivePermissionSubType))
       {
-         LOG.debug("Throwing permission denied for: " + getPermissionName(permissionBaseName, effectivePermissionSubType) + " for " + actionInput.getSession().getUser());
+         // LOG.debug("Throwing permission denied for: " + getPermissionName(permissionBaseName, effectivePermissionSubType) + " for " + actionInput.getSession().getUser());
          throw (new QPermissionDeniedException("Permission denied."));
       }
    }

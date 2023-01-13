@@ -80,8 +80,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private Map<String, QCodeReference> customizers;
 
-   private String parentAppName;
-   private QIcon  icon;
+   private QIcon icon;
 
    private String       recordLabelFormat;
    private List<String> recordLabelFields;
@@ -534,30 +533,6 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    {
       this.customizers = customizers;
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public String getParentAppName()
-   {
-      return parentAppName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public void setParentAppName(String parentAppName)
-   {
-      this.parentAppName = parentAppName;
    }
 
 

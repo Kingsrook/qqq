@@ -169,7 +169,11 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
          this.children = new ArrayList<>();
       }
       this.children.add(child);
-      child.setParentAppName(this.getName());
+
+      if(child instanceof QAppMetaData childApp)
+      {
+         childApp.setParentAppName(this.getName());
+      }
    }
 
 
@@ -202,7 +206,6 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
     ** Getter for parentAppName
     **
     *******************************************************************************/
-   @Override
    public String getParentAppName()
    {
       return parentAppName;
@@ -214,7 +217,6 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
     ** Setter for parentAppName
     **
     *******************************************************************************/
-   @Override
    public void setParentAppName(String parentAppName)
    {
       this.parentAppName = parentAppName;

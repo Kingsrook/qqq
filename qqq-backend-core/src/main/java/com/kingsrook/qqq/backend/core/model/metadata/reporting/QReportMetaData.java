@@ -48,8 +48,7 @@ public class QReportMetaData implements QAppChildMetaData, MetaDataWithPermissio
    private List<QReportDataSource> dataSources;
    private List<QReportView>       views;
 
-   private String parentAppName;
-   private QIcon  icon;
+   private QIcon icon;
 
 
 
@@ -300,28 +299,6 @@ public class QReportMetaData implements QAppChildMetaData, MetaDataWithPermissio
       }
       this.views.add(view);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void setParentAppName(String parentAppName)
-   {
-      this.parentAppName = parentAppName;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String getParentAppName()
-   {
-      return (this.parentAppName);
    }
 
 

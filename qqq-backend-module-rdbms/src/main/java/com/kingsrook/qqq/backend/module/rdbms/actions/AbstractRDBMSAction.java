@@ -310,11 +310,11 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    {
       String       whereClauseWithoutSecurity = makeWhereClauseWithoutSecurity(instance, table, joinsContext, filter, params);
       QQueryFilter securityFilter             = getSecurityFilter(instance, session, table, joinsContext);
-      if(securityFilter == null || CollectionUtils.nullSafeIsEmpty(securityFilter.getCriteria()))
+      if(!securityFilter.hasAnyCriteria())
       {
          return (whereClauseWithoutSecurity);
       }
-      String securityWhereClause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(instance, table, joinsContext, securityFilter.getCriteria(), QQueryFilter.BooleanOperator.AND, params);
+      String securityWhereClause = makeWhereClauseWithoutSecurity(instance, table, joinsContext, securityFilter, params);
       return ("(" + whereClauseWithoutSecurity + ") AND (" + securityWhereClause + ")");
    }
 
@@ -367,14 +367,14 @@ public abstract class AbstractRDBMSAction implements QActionInterface
     *******************************************************************************/
    private QQueryFilter getSecurityFilter(QInstance instance, QSession session, QTableMetaData table, JoinsContext joinsContext)
    {
-      QQueryFilter newFilter = new QQueryFilter();
-      newFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
-      List<QFilterCriteria> securityCriteria = new ArrayList<>();
-      newFilter.setCriteria(securityCriteria);
+      QQueryFilter securityFilter = new QQueryFilter();
+      securityFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
 
       for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
       {
-         addCriteriaForRecordSecurityLock(instance, session, table, securityCriteria, recordSecurityLock, joinsContext, table.getName());
+         // todo - uh, if it's a RIGHT (or FULL) join, then, this should be isOuter = true, right?
+         boolean isOuter = false;
+         addSubFilterForRecordSecurityLock(instance, session, table, securityFilter, recordSecurityLock, joinsContext, table.getName(), isOuter);
       }
 
       for(QueryJoin queryJoin : CollectionUtils.nonNullList(joinsContext.getQueryJoins()))
@@ -382,11 +382,12 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
          for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
          {
-            addCriteriaForRecordSecurityLock(instance, session, joinTable, securityCriteria, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias());
+            boolean isOuter = queryJoin.getType().equals(QueryJoin.Type.LEFT); // todo full?
+            addSubFilterForRecordSecurityLock(instance, session, joinTable, securityFilter, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias(), isOuter);
          }
       }
 
-      return (newFilter);
+      return (securityFilter);
    }
 
 
@@ -394,7 +395,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void addCriteriaForRecordSecurityLock(QInstance instance, QSession session, QTableMetaData table, List<QFilterCriteria> securityCriteria, RecordSecurityLock recordSecurityLock, JoinsContext joinsContext, String tableNameOrAlias)
+   private static void addSubFilterForRecordSecurityLock(QInstance instance, QSession session, QTableMetaData table, QQueryFilter securityFilter, RecordSecurityLock recordSecurityLock, JoinsContext joinsContext, String tableNameOrAlias, boolean isOuter)
    {
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
@@ -411,9 +412,12 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          }
       }
 
-      if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinChain()))
+      String fieldName                   = tableNameOrAlias + "." + recordSecurityLock.getFieldName();
+      String fieldNameWithoutTablePrefix = recordSecurityLock.getFieldName().replaceFirst(".*\\.", "");
+      String fieldNameTablePrefix        = recordSecurityLock.getFieldName().replaceFirst("\\..*", "");
+      if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()))
       {
-         for(String joinName : recordSecurityLock.getJoinChain())
+         for(String joinName : recordSecurityLock.getJoinNameChain())
          {
             QJoinMetaData joinMetaData = instance.getJoin(joinName);
 
@@ -433,16 +437,27 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                throw (new RuntimeException("Could not find joinMetaData for recordSecurityLock with joinChain member [" + joinName + "]"));
             }
 
-            table = instance.getTable(joinMetaData.getRightTable());
+            if(fieldNameTablePrefix.equals(joinMetaData.getLeftTable()))
+            {
+               table = instance.getTable(joinMetaData.getLeftTable());
+            }
+            else
+            {
+               table = instance.getTable(joinMetaData.getRightTable());
+            }
+
             tableNameOrAlias = table.getName();
+            fieldName = tableNameOrAlias + "." + fieldNameWithoutTablePrefix;
          }
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////
       // else - get the key values from the session and decide what kind of criterion to build //
       ///////////////////////////////////////////////////////////////////////////////////////////
-      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), table.getField(recordSecurityLock.getFieldName()).getType());
-      String fieldName = tableNameOrAlias + "." + recordSecurityLock.getFieldName();
+      QQueryFilter          lockFilter   = new QQueryFilter();
+      List<QFilterCriteria> lockCriteria = new ArrayList<>();
+      lockFilter.setCriteria(lockCriteria);
+      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), table.getField(fieldNameWithoutTablePrefix).getType());
       if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
       {
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -450,7 +465,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
          {
-            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
          }
          else
          {
@@ -458,7 +473,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             // else, if no user/session values, and null-value behavior is deny, then setup a FALSE condition, to allow no rows.           //
             // todo - make some explicit contradiction here - maybe even avoid running the whole query - as you're not allowed ANY records //
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, Collections.emptyList()));
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, Collections.emptyList()));
          }
       }
       else
@@ -469,13 +484,26 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
          {
-            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
          }
          else
          {
-            securityCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, securityKeyValues));
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, securityKeyValues));
          }
       }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if this field is on the outer side of an outer join, then if we do a straight filter on it, then we're basically      //
+      // nullifying the outer join... so for an outer join use-case, OR the security field criteria with a primary-key IS NULL //
+      // which will make missing rows from the join be found.                                                                  //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(isOuter)
+      {
+         lockFilter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
+         lockFilter.addCriteria(new QFilterCriteria(tableNameOrAlias + "." + table.getPrimaryKeyField(), QCriteriaOperator.IS_BLANK));
+      }
+
+      securityFilter.addSubFilter(lockFilter);
    }
 
 

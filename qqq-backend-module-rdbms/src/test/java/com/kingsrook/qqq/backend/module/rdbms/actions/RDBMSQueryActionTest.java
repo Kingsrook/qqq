@@ -1287,8 +1287,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().clear();
       qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withRecordSecurityLock(new RecordSecurityLock()
          .withSecurityKeyType(TestUtils.TABLE_NAME_STORE)
-         .withJoinChain(List.of("orderJoinStore"))
-         .withFieldName("id"));
+         .withJoinNameChain(List.of("orderJoinStore"))
+         .withFieldName("store.id"));
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.BETWEEN, List.of(2, 7))));
       queryInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));

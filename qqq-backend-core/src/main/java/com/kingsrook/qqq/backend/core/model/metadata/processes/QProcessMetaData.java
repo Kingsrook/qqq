@@ -54,8 +54,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
-   private String parentAppName;
-   private QIcon  icon;
+   private QIcon icon;
 
    private QScheduleMetaData schedule;
 
@@ -384,30 +383,6 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    {
       this.isHidden = isHidden;
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public String getParentAppName()
-   {
-      return parentAppName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public void setParentAppName(String parentAppName)
-   {
-      this.parentAppName = parentAppName;
    }
 
 

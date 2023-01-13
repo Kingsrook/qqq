@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
@@ -356,7 +357,6 @@ public class QInstanceValidator
          qInstance.getTables().forEach((tableName, table) ->
          {
             assertCondition(Objects.equals(tableName, table.getName()), "Inconsistent naming for table: " + tableName + "/" + table.getName() + ".");
-            validateAppChildHasValidParentAppName(qInstance, table);
 
             ////////////////////////////////////////
             // validate the backend for the table //
@@ -465,10 +465,37 @@ public class QInstanceValidator
 
          prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
 
-         String fieldName = recordSecurityLock.getFieldName();
-         if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName"))
+         boolean hasAnyBadJoins = false;
+         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
          {
-            assertCondition(findField(qInstance, table, null, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+            if(!assertCondition(qInstance.getJoin(joinName) != null, prefix + "has an unrecognized joinName: " + joinName))
+            {
+               hasAnyBadJoins = true;
+            }
+         }
+
+         String fieldName = recordSecurityLock.getFieldName();
+
+         ////////////////////////////////////////////////////////////////////////////////
+         // don't bother trying to validate field names if we know we have a bad join. //
+         ////////////////////////////////////////////////////////////////////////////////
+         if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName") && !hasAnyBadJoins)
+         {
+            List<QueryJoin> joins = new ArrayList<>();
+            for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+            {
+               QJoinMetaData join = qInstance.getJoin(joinName);
+               if(join.getLeftTable().equals(table.getName()))
+               {
+                  joins.add(new QueryJoin(join));
+               }
+               else if(join.getRightTable().equals(table.getName()))
+               {
+                  joins.add(new QueryJoin(join.flip()));
+               }
+            }
+
+            assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
          }
 
          assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
@@ -960,8 +987,6 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(processName, process.getName()), "Inconsistent naming for process: " + processName + "/" + process.getName() + ".");
 
-            validateAppChildHasValidParentAppName(qInstance, process);
-
             /////////////////////////////////////////////
             // validate the table name for the process //
             /////////////////////////////////////////////
@@ -1015,7 +1040,6 @@ public class QInstanceValidator
          qInstance.getReports().forEach((reportName, report) ->
          {
             assertCondition(Objects.equals(reportName, report.getName()), "Inconsistent naming for report: " + reportName + "/" + report.getName() + ".");
-            validateAppChildHasValidParentAppName(qInstance, report);
 
             ////////////////////////////////////////
             // validate dataSources in the report //
@@ -1172,6 +1196,7 @@ public class QInstanceValidator
                      {
                         joinTable.getField(fieldNameAfterDot);
                         foundField = true;
+                        break;
                      }
                      catch(Exception e2)
                      {
@@ -1216,7 +1241,10 @@ public class QInstanceValidator
                Set<String> childNames = new HashSet<>();
                for(QAppChildMetaData child : app.getChildren())
                {
-                  assertCondition(Objects.equals(appName, child.getParentAppName()), "Child " + child.getName() + " of app " + appName + " does not have its parent app properly set.");
+                  if(child instanceof QAppMetaData childApp)
+                  {
+                     assertCondition(Objects.equals(appName, childApp.getParentAppName()), "Child app " + child.getName() + " of app " + appName + " does not have its parent app properly set.");
+                  }
                   assertCondition(!childNames.contains(child.getName()), "App " + appName + " contains more than one child named " + child.getName());
                   childNames.add(child.getName());
                }
@@ -1442,7 +1470,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateAppChildHasValidParentAppName(QInstance qInstance, QAppChildMetaData appChild)
+   private void validateAppChildHasValidParentAppName(QInstance qInstance, QAppMetaData appChild)
    {
       if(appChild.getParentAppName() != null)
       {

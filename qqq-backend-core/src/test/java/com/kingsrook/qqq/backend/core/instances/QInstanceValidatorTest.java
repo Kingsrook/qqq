@@ -504,8 +504,6 @@ class QInstanceValidatorTest
    void testChildrenWithBadParentAppName()
    {
       String[] reasons = new String[] { "Unrecognized parent app", "does not have its parent app properly set" };
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).setParentAppName("notAnApp"), reasons);
-      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setParentAppName("notAnApp"), reasons);
       assertValidationFailureReasons((qInstance) -> qInstance.getApp(TestUtils.APP_NAME_GREETINGS).setParentAppName("notAnApp"), reasons);
    }
 

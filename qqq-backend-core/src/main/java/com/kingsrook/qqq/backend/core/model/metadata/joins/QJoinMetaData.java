@@ -300,10 +300,20 @@ public class QJoinMetaData
     *******************************************************************************/
    public QJoinMetaData withInferredName()
    {
-      if(!StringUtils.hasContent(getLeftTable()) || !StringUtils.hasContent(getRightTable()))
+      return (withName(makeInferredJoinName(getLeftTable(), getRightTable())));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String makeInferredJoinName(String leftTable, String rightTable)
+   {
+      if(!StringUtils.hasContent(leftTable) || !StringUtils.hasContent(rightTable))
       {
          throw (new IllegalStateException("Missing either a left or right table name when trying to set inferred name for join"));
       }
-      return (withName(getLeftTable() + "Join" + StringUtils.ucFirst(getRightTable())));
+      return (leftTable + "Join" + StringUtils.ucFirst(rightTable));
    }
 }
