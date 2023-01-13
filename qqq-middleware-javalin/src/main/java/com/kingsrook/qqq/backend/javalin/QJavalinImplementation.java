@@ -292,7 +292,9 @@ public class QJavalinImplementation
             get("/count", QJavalinImplementation::dataCount);
             post("/count", QJavalinImplementation::dataCount);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
+            post("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
+            post("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
             get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
 
             // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
@@ -357,26 +359,19 @@ public class QJavalinImplementation
             // either with a "Basic " prefix (for a username:password pair)                                //
             // or with a "Bearer " prefix (for a token that can be handled the same as a sessionId cookie) //
             /////////////////////////////////////////////////////////////////////////////////////////////////
-            String basicPrefix  = "Basic ";
-            String bearerPrefix = "Bearer ";
-            if(authorizationHeaderValue.startsWith(basicPrefix))
-            {
-               authorizationHeaderValue = authorizationHeaderValue.replaceFirst(basicPrefix, "");
-               authenticationContext.put(BASIC_AUTH_NAME, authorizationHeaderValue);
-            }
-            else if(authorizationHeaderValue.startsWith(bearerPrefix))
-            {
-               authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
-               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
-            }
-            else
-            {
-               LOG.debug("Authorization header value did not have Basic or Bearer prefix. [" + authorizationHeaderValue + "]");
-            }
+            processAuthorizationValue(authenticationContext, authorizationHeaderValue);
          }
          else
          {
-            LOG.debug("Neither [" + SESSION_ID_COOKIE_NAME + "] cookie nor [Authorization] header was present in request.");
+            String authorizationFormValue = context.formParam("Authorization");
+            if(StringUtils.hasContent(authorizationFormValue))
+            {
+               processAuthorizationValue(authenticationContext, authorizationFormValue);
+            }
+            else
+            {
+               LOG.debug("Neither [" + SESSION_ID_COOKIE_NAME + "] cookie nor [Authorization] header was present in request.");
+            }
          }
 
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
@@ -403,6 +398,31 @@ public class QJavalinImplementation
          }
 
          throw (qae);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processAuthorizationValue(Map<String, String> authenticationContext, String authorizationHeaderValue)
+   {
+      String basicPrefix  = "Basic ";
+      String bearerPrefix = "Bearer ";
+      if(authorizationHeaderValue.startsWith(basicPrefix))
+      {
+         authorizationHeaderValue = authorizationHeaderValue.replaceFirst(basicPrefix, "");
+         authenticationContext.put(BASIC_AUTH_NAME, authorizationHeaderValue);
+      }
+      else if(authorizationHeaderValue.startsWith(bearerPrefix))
+      {
+         authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
+         authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
+      }
+      else
+      {
+         LOG.debug("Authorization value did not have Basic or Bearer prefix. [" + authorizationHeaderValue + "]");
       }
    }
 
