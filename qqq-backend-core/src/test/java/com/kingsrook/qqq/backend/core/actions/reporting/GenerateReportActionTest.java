@@ -554,4 +554,33 @@ public class GenerateReportActionTest
       assertThat(row).containsOnlyKeys("Birth Date");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportWithPossibleValueColumns() throws QException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+
+      insertPersonRecords(qInstance);
+
+      ReportInput reportInput = new ReportInput(qInstance);
+      reportInput.setSession(new QSession());
+      reportInput.setReportName(TestUtils.REPORT_NAME_PERSON_SIMPLE);
+      reportInput.setReportFormat(ReportFormat.LIST_OF_MAPS);
+      reportInput.setReportOutputStream(new ByteArrayOutputStream());
+      new GenerateReportAction().execute(reportInput);
+
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("Simple Report");
+      Iterator<Map<String, String>> iterator = list.iterator();
+      Map<String, String>           row      = iterator.next();
+      assertThat(row).containsKeys("Id", "First Name", "Last Name", "Home State Id", "Home State Name");
+
+      row = iterator.next();
+      assertThat(row.get("Home State Id")).isEqualTo("1");
+      assertThat(row.get("Home State Name")).isEqualTo("IL");
+   }
+
 }

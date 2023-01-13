@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
@@ -55,9 +58,12 @@ public class QFrontendTableMetaData
    private Map<String, QFrontendFieldMetaData> fields;
    private List<QFieldSection>                 sections;
 
-   private List<String> widgets;
-
    private Set<String> capabilities;
+
+   private boolean readPermission;
+   private boolean insertPermission;
+   private boolean editPermission;
+   private boolean deletePermission;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -68,7 +74,7 @@ public class QFrontendTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendTableMetaData(QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFields)
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFields)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
@@ -92,6 +98,11 @@ public class QFrontendTableMetaData
       }
 
       setCapabilities(backendForTable, tableMetaData);
+
+      readPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.READ);
+      insertPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.INSERT);
+      editPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.EDIT);
+      deletePermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.DELETE);
    }
 
 
@@ -104,38 +115,7 @@ public class QFrontendTableMetaData
       Set<Capability> enabledCapabilities = new HashSet<>();
       for(Capability capability : Capability.values())
       {
-         ///////////////////////////////////////////////
-         // by default, every table can do everything //
-         ///////////////////////////////////////////////
-         boolean hasCapability = true;
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // if the table's backend says the capability is disabled, then by default, then the capability is disabled... //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(backend.getDisabledCapabilities().contains(capability))
-         {
-            hasCapability = false;
-
-            /////////////////////////////////////////////////////////////////
-            // unless the table overrides that and says that it IS enabled //
-            /////////////////////////////////////////////////////////////////
-            if(table.getEnabledCapabilities().contains(capability))
-            {
-               hasCapability = true;
-            }
-         }
-         else
-         {
-            /////////////////////////////////////////////////////////////////////////////////////////
-            // if the backend doesn't specify the capability, then disable it if the table says so //
-            /////////////////////////////////////////////////////////////////////////////////////////
-            if(table.getDisabledCapabilities().contains(capability))
-            {
-               hasCapability = false;
-            }
-         }
-
-         if(hasCapability)
+         if(table.isCapabilityEnabled(backend, capability))
          {
             ///////////////////////////////////////
             // todo - check if user is allowed!! //
@@ -228,17 +208,6 @@ public class QFrontendTableMetaData
 
 
    /*******************************************************************************
-    ** Getter for widgets
-    **
-    *******************************************************************************/
-   public List<String> getWidgets()
-   {
-      return widgets;
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for capabilities
     **
     *******************************************************************************/
@@ -247,4 +216,47 @@ public class QFrontendTableMetaData
       return capabilities;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for readPermission
+    **
+    *******************************************************************************/
+   public boolean getReadPermission()
+   {
+      return readPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for insertPermission
+    **
+    *******************************************************************************/
+   public boolean getInsertPermission()
+   {
+      return insertPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for editPermission
+    **
+    *******************************************************************************/
+   public boolean getEditPermission()
+   {
+      return editPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for deletePermission
+    **
+    *******************************************************************************/
+   public boolean getDeletePermission()
+   {
+      return deletePermission;
+   }
 }

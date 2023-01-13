@@ -27,13 +27,18 @@ import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -56,6 +61,8 @@ public class TestUtils
    public static final String TABLE_NAME_ORDER            = "order";
    public static final String TABLE_NAME_ITEM             = "item";
    public static final String TABLE_NAME_ORDER_LINE       = "orderLine";
+
+   public static final String SECURITY_KEY_STORE_ALL_ACCESS = "storeAllAccess";
 
 
 
@@ -90,6 +97,7 @@ public class TestUtils
       QInstance qInstance = new QInstance();
       qInstance.addBackend(defineBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addPossibleValueSource(definePvsPerson());
       qInstance.addTable(defineTablePersonalIdCard());
       qInstance.addJoin(defineJoinPersonAndPersonalIdCard());
       addOmsTablesAndJoins(qInstance);
@@ -135,6 +143,8 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("firstName", "lastName")
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
@@ -149,6 +159,21 @@ public class TestUtils
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked"))
          .withBackendDetails(new RDBMSTableBackendDetails()
             .withTableName("person"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource definePvsPerson()
+   {
+      return (new QPossibleValueSource()
+         .withName(TABLE_NAME_PERSON)
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TABLE_NAME_PERSON)
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
+      );
    }
 
 
@@ -196,24 +221,30 @@ public class TestUtils
    private static void addOmsTablesAndJoins(QInstance qInstance)
    {
       qInstance.addTable(defineBaseTable(TABLE_NAME_STORE, "store")
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("name")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("id"))
          .withField(new QFieldMetaData("name", QFieldType.STRING))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER, "order")
-         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
-         .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id"))
-         .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id"))
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
+         .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
+         .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ITEM, "item")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
-         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER_LINE, "order_line")
+         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
-         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("quantity", QFieldType.INTEGER))
       );
 
@@ -266,6 +297,17 @@ public class TestUtils
          .withJoinOn(new JoinOn("storeId", "storeId"))
       );
 
+      qInstance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("store")
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TABLE_NAME_STORE)
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
+      );
+
+      qInstance.addSecurityKeyType(new QSecurityKeyType()
+         .withName(TABLE_NAME_STORE)
+         .withAllAccessKeyName(SECURITY_KEY_STORE_ALL_ACCESS)
+         .withPossibleValueSourceName(TABLE_NAME_STORE));
    }
 
 

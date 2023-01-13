@@ -77,10 +77,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
 
-         if(filter != null && filter.hasAnyCriteria())
-         {
-            sql.append(" WHERE ").append(makeWhereClause(queryInput.getInstance(), table, joinsContext, filter, params));
-         }
+         sql.append(" WHERE ").append(makeWhereClause(queryInput.getInstance(), queryInput.getSession(), table, joinsContext, filter, params));
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
@@ -121,8 +118,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          {
             if(queryJoin.getSelect())
             {
-               QTableMetaData joinTable        = queryInput.getInstance().getTable(queryJoin.getRightTable());
-               String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+               QTableMetaData joinTable        = queryInput.getInstance().getTable(queryJoin.getJoinTable());
+               String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
                for(QFieldMetaData joinField : joinTable.getFields().values())
                {
                   fieldList.add(joinField.clone().withName(tableNameOrAlias + "." + joinField.getName()));
@@ -201,11 +198,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       {
          if(queryJoin.getSelect())
          {
-            QTableMetaData joinTable        = instance.getTable(queryJoin.getRightTable());
-            String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+            QTableMetaData joinTable        = instance.getTable(queryJoin.getJoinTable());
+            String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
             if(joinTable == null)
             {
-               throw new QException("Requested join table [" + queryJoin.getRightTable() + "] is not a defined table.");
+               throw new QException("Requested join table [" + queryJoin.getJoinTable() + "] is not a defined table.");
             }
 
             List<QFieldMetaData> joinFieldList = new ArrayList<>(joinTable.getFields().values());

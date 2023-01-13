@@ -40,6 +40,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -211,6 +213,28 @@ class ExportActionTest
       {
          new ExportAction().preExecute(exportInput);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testJSON() throws Exception
+   {
+      int    recordCount = 1000;
+      String filename    = "/tmp/ReportActionTest.json";
+
+      runReport(recordCount, filename, ReportFormat.JSON, false);
+
+      File file = new File(filename);
+      @SuppressWarnings("unchecked")
+      String fileContent = FileUtils.readFileToString(file, StandardCharsets.UTF_8.name());
+      JSONArray jsonArray = new JSONArray(fileContent);
+      assertEquals(recordCount, jsonArray.length());
+      JSONObject row0 = jsonArray.getJSONObject(0);
+      assertNotNull(row0.optString("lastName"));
    }
 
 }

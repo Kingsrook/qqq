@@ -74,10 +74,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          QQueryFilter       filter = aggregateInput.getFilter();
          List<Serializable> params = new ArrayList<>();
-         if(filter != null && filter.hasAnyCriteria())
-         {
-            sql += " WHERE " + makeWhereClause(aggregateInput.getInstance(), table, joinsContext, filter, params);
-         }
+         sql += " WHERE " + makeWhereClause(aggregateInput.getInstance(), aggregateInput.getSession(), table, joinsContext, filter, params);
 
          if(CollectionUtils.nullSafeHasContents(aggregateInput.getGroupBys()))
          {

@@ -19,38 +19,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
-
-
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+package com.kingsrook.qqq.backend.core.utils.lambdas;
 
 
 /*******************************************************************************
- ** Unit test for the FullyAnonymousAuthenticationModule
+ **
  *******************************************************************************/
-public class FullyAnonymousAuthenticationModuleTest
+@FunctionalInterface
+public interface VoidVoidMethod
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Test
-   public void test()
-   {
-      FullyAnonymousAuthenticationModule fullyAnonymousAuthenticationModule = new FullyAnonymousAuthenticationModule();
-
-      QSession session = fullyAnonymousAuthenticationModule.createSession(null, null);
-
-      assertNotNull(session, "Session should not be null");
-      assertNotNull(session.getIdReference(), "Session id ref should not be null");
-      assertNotNull(session.getUser(), "Session User should not be null");
-      assertNotNull(session.getUser().getIdReference(), "Session User id ref should not be null");
-      assertTrue(fullyAnonymousAuthenticationModule.isSessionValid(null, session), "Any session should be valid");
-      assertFalse(fullyAnonymousAuthenticationModule.isSessionValid(null, null), "null should be not valid");
-   }
+   void run();
 
 }

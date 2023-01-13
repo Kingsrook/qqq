@@ -46,7 +46,7 @@ public class SleepUtils
          try
          {
             long millisToSleep = end - System.currentTimeMillis();
-            Thread.sleep(millisToSleep);
+            Thread.sleep(Math.max(0, millisToSleep)); // avoid negative sleep, which fails.
          }
          catch(InterruptedException e)
          {

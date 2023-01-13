@@ -51,6 +51,7 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
       try
       {
          queryFilter = super.getQueryFilter(runBackendStepInput);
+         return (queryFilter);
       }
       catch(QException qe)
       {
@@ -76,6 +77,12 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
          .withValues(List.of(getThisRunTimeString(runBackendStepInput))));
 
       queryFilter.addOrderBy(new QFilterOrderBy(runBackendStepInput.getValueString(RunProcessAction.BASEPULL_TIMESTAMP_FIELD)));
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // put a flag in the process's values, to note that we did use the timestamp field //
+      // this will later be checked to see if we should update the timestamp too.        //
+      /////////////////////////////////////////////////////////////////////////////////////
+      runBackendStepInput.addValue(RunProcessAction.BASEPULL_DID_QUERY_USING_TIMESTAMP_FIELD, true);
 
       return (queryFilter);
    }

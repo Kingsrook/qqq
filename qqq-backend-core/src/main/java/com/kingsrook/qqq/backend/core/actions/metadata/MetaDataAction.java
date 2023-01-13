@@ -27,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -40,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMeta
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -70,10 +73,18 @@ public class MetaDataAction
       Map<String, QFrontendTableMetaData> tables = new LinkedHashMap<>();
       for(Map.Entry<String, QTableMetaData> entry : metaDataInput.getInstance().getTables().entrySet())
       {
-         String           tableName       = entry.getKey();
+         String         tableName = entry.getKey();
+         QTableMetaData table     = entry.getValue();
+
+         PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, table);
+         if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
+         {
+            continue;
+         }
+
          QBackendMetaData backendForTable = metaDataInput.getInstance().getBackendForTable(tableName);
-         tables.put(tableName, new QFrontendTableMetaData(backendForTable, entry.getValue(), false));
-         treeNodes.put(tableName, new AppTreeNode(entry.getValue()));
+         tables.put(tableName, new QFrontendTableMetaData(metaDataInput, backendForTable, table, false));
+         treeNodes.put(tableName, new AppTreeNode(table));
       }
       metaDataOutput.setTables(tables);
 
@@ -83,8 +94,17 @@ public class MetaDataAction
       Map<String, QFrontendProcessMetaData> processes = new LinkedHashMap<>();
       for(Map.Entry<String, QProcessMetaData> entry : metaDataInput.getInstance().getProcesses().entrySet())
       {
-         processes.put(entry.getKey(), new QFrontendProcessMetaData(entry.getValue(), false));
-         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
+         String           processName = entry.getKey();
+         QProcessMetaData process     = entry.getValue();
+
+         PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, process);
+         if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
+         {
+            continue;
+         }
+
+         processes.put(processName, new QFrontendProcessMetaData(metaDataInput, process, false));
+         treeNodes.put(processName, new AppTreeNode(process));
       }
       metaDataOutput.setProcesses(processes);
 
@@ -94,8 +114,17 @@ public class MetaDataAction
       Map<String, QFrontendReportMetaData> reports = new LinkedHashMap<>();
       for(Map.Entry<String, QReportMetaData> entry : metaDataInput.getInstance().getReports().entrySet())
       {
-         reports.put(entry.getKey(), new QFrontendReportMetaData(entry.getValue(), false));
-         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
+         String          reportName = entry.getKey();
+         QReportMetaData report     = entry.getValue();
+
+         PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, report);
+         if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
+         {
+            continue;
+         }
+
+         reports.put(reportName, new QFrontendReportMetaData(metaDataInput, report, false));
+         treeNodes.put(reportName, new AppTreeNode(report));
       }
       metaDataOutput.setReports(reports);
 
@@ -105,7 +134,16 @@ public class MetaDataAction
       Map<String, QFrontendWidgetMetaData> widgets = new LinkedHashMap<>();
       for(Map.Entry<String, QWidgetMetaDataInterface> entry : metaDataInput.getInstance().getWidgets().entrySet())
       {
-         widgets.put(entry.getKey(), new QFrontendWidgetMetaData(entry.getValue()));
+         String                   widgetName = entry.getKey();
+         QWidgetMetaDataInterface widget     = entry.getValue();
+
+         PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, widget);
+         if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
+         {
+            continue;
+         }
+
+         widgets.put(widgetName, new QFrontendWidgetMetaData(metaDataInput, widget));
       }
       metaDataOutput.setWidgets(widgets);
 
@@ -115,14 +153,32 @@ public class MetaDataAction
       Map<String, QFrontendAppMetaData> apps = new LinkedHashMap<>();
       for(Map.Entry<String, QAppMetaData> entry : metaDataInput.getInstance().getApps().entrySet())
       {
-         apps.put(entry.getKey(), new QFrontendAppMetaData(entry.getValue()));
-         treeNodes.put(entry.getKey(), new AppTreeNode(entry.getValue()));
+         String       appName = entry.getKey();
+         QAppMetaData app     = entry.getValue();
 
-         if(CollectionUtils.nullSafeHasContents(entry.getValue().getChildren()))
+         PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, app);
+         if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
          {
-            for(QAppChildMetaData child : entry.getValue().getChildren())
+            continue;
+         }
+
+         apps.put(appName, new QFrontendAppMetaData(app, metaDataOutput));
+         treeNodes.put(appName, new AppTreeNode(app));
+
+         if(CollectionUtils.nullSafeHasContents(app.getChildren()))
+         {
+            for(QAppChildMetaData child : app.getChildren())
             {
-               apps.get(entry.getKey()).addChild(new AppTreeNode(child));
+               if(child instanceof MetaDataWithPermissionRules metaDataWithPermissionRules)
+               {
+                  PermissionCheckResult childPermissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, metaDataWithPermissionRules);
+                  if(childPermissionResult.equals(PermissionCheckResult.DENY_HIDE))
+                  {
+                     continue;
+                  }
+               }
+
+               apps.get(appName).addChild(new AppTreeNode(child));
             }
          }
       }
@@ -136,7 +192,7 @@ public class MetaDataAction
       {
          if(appMetaData.getParentAppName() == null)
          {
-            buildAppTree(treeNodes, appTree, appMetaData);
+            buildAppTree(metaDataInput, treeNodes, appTree, appMetaData);
          }
       }
       metaDataOutput.setAppTree(appTree);
@@ -161,7 +217,7 @@ public class MetaDataAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void buildAppTree(Map<String, AppTreeNode> treeNodes, List<AppTreeNode> nodeList, QAppChildMetaData childMetaData)
+   private void buildAppTree(MetaDataInput metaDataInput, Map<String, AppTreeNode> treeNodes, List<AppTreeNode> nodeList, QAppChildMetaData childMetaData)
    {
       AppTreeNode treeNode = treeNodes.get(childMetaData.getName());
       if(treeNode == null)
@@ -176,7 +232,16 @@ public class MetaDataAction
          {
             for(QAppChildMetaData child : app.getChildren())
             {
-               buildAppTree(treeNodes, treeNode.getChildren(), child);
+               if(child instanceof MetaDataWithPermissionRules metaDataWithPermissionRules)
+               {
+                  PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, metaDataWithPermissionRules);
+                  if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
+                  {
+                     continue;
+                  }
+               }
+
+               buildAppTree(metaDataInput, treeNodes, treeNode.getChildren(), child);
             }
          }
       }

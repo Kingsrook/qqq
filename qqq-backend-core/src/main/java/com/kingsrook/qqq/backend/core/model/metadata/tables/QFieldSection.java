@@ -41,6 +41,7 @@ public class QFieldSection
    private QIcon        icon;
 
    private boolean isHidden = false;
+   private Integer gridColumns;
 
 
 
@@ -325,6 +326,40 @@ public class QFieldSection
    public QFieldSection withWidgetName(String widgetName)
    {
       this.widgetName = widgetName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for gridColumns
+    **
+    *******************************************************************************/
+   public Integer getGridColumns()
+   {
+      return gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for gridColumns
+    **
+    *******************************************************************************/
+   public void setGridColumns(Integer gridColumns)
+   {
+      this.gridColumns = gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for gridColumns
+    **
+    *******************************************************************************/
+   public QFieldSection withGridColumns(Integer gridColumns)
+   {
+      this.gridColumns = gridColumns;
       return (this);
    }
 

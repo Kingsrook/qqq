@@ -44,4 +44,14 @@ public interface QAuthenticationModuleInterface
     **
     *******************************************************************************/
    boolean isSessionValid(QInstance instance, QSession session);
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default boolean usesSessionIdCookie()
+   {
+      return (false);
+   }
+
 }

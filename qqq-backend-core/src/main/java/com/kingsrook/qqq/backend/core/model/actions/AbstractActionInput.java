@@ -28,8 +28,8 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  ** Base input class for all Q actions.
  **
  *******************************************************************************/
-public abstract class AbstractActionInput
+public class AbstractActionInput
 {
    private static final Logger LOG = LogManager.getLogger(AbstractActionInput.class);
 
@@ -65,6 +65,17 @@ public abstract class AbstractActionInput
    {
       this.instance = instance;
       validateInstance(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AbstractActionInput(QInstance instance, QSession session)
+   {
+      this(instance);
+      this.session = session;
    }
 
 
@@ -175,4 +186,27 @@ public abstract class AbstractActionInput
    {
       this.asyncJobCallback = asyncJobCallback;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for instance
+    *******************************************************************************/
+   public AbstractActionInput withInstance(QInstance instance)
+   {
+      this.instance = instance;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for session
+    *******************************************************************************/
+   public AbstractActionInput withSession(QSession session)
+   {
+      this.session = session;
+      return (this);
+   }
+
 }

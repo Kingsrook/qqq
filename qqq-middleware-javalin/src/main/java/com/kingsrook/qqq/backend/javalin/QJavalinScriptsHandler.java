@@ -29,10 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.scripts.StoreAssociatedScriptAction;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptInput;
@@ -75,6 +78,7 @@ public class QJavalinScriptsHandler
     *******************************************************************************/
    public static void defineRecordRoutes()
    {
+      // todo - do we want some generic "developer mode" permission??
       get("/developer", QJavalinScriptsHandler::getRecordDeveloperMode);
       post("/developer/associatedScript/{fieldName}", QJavalinScriptsHandler::storeRecordAssociatedScript);
       get("/developer/associatedScript/{fieldName}/{scriptRevisionId}/logs", QJavalinScriptsHandler::getAssociatedScriptLogs);
@@ -99,6 +103,8 @@ public class QJavalinScriptsHandler
          getInput.setTableName(tableName);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
+
+         PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
@@ -217,6 +223,8 @@ public class QJavalinScriptsHandler
    {
       try
       {
+         getReferencedRecordToEnsureAccess(context);
+
          String scriptRevisionId = context.pathParam("scriptRevisionId");
 
          QueryInput queryInput = new QueryInput(QJavalinImplementation.qInstance);
@@ -250,6 +258,40 @@ public class QJavalinScriptsHandler
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void getReferencedRecordToEnsureAccess(Context context) throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////////////
+      // make sure user can get the record they're trying to do a related action for //
+      /////////////////////////////////////////////////////////////////////////////////
+      String         tableName = context.pathParam("table");
+      QTableMetaData table     = QJavalinImplementation.qInstance.getTable(tableName);
+      GetInput       getInput  = new GetInput(QJavalinImplementation.qInstance);
+      getInput.setTableName(tableName);
+      QJavalinImplementation.setupSession(context, getInput);
+      PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
+
+      String primaryKey = context.pathParam("primaryKey");
+      getInput.setPrimaryKey(primaryKey);
+
+      GetAction getAction = new GetAction();
+      GetOutput getOutput = getAction.execute(getInput);
+
+      ///////////////////////////////////////////////////////
+      // throw a not found error if the record isn't found //
+      ///////////////////////////////////////////////////////
+      QRecord record = getOutput.getRecord();
+      if(record == null)
+      {
+         throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
+            + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void storeRecordAssociatedScript(Context context)
    {
       context.contentType(ContentType.APPLICATION_JSON);
@@ -258,11 +300,14 @@ public class QJavalinScriptsHandler
       {
          StoreAssociatedScriptInput input = new StoreAssociatedScriptInput(QJavalinImplementation.qInstance);
          QJavalinImplementation.setupSession(context, input);
+
          input.setCode(context.formParam("contents"));
          input.setCommitMessage(context.formParam("commitMessage"));
          input.setFieldName(context.pathParam("fieldName"));
          input.setTableName(context.pathParam("table"));
          input.setRecordPrimaryKey(context.pathParam("primaryKey"));
+
+         PermissionsHelper.checkTablePermissionThrowing(input, TablePermissionSubType.EDIT); // todo ... is this enough??
 
          StoreAssociatedScriptOutput output = new StoreAssociatedScriptOutput();
 
@@ -288,6 +333,8 @@ public class QJavalinScriptsHandler
 
       try
       {
+         getReferencedRecordToEnsureAccess(context);
+
          TestScriptInput input = new TestScriptInput(QJavalinImplementation.qInstance);
          QJavalinImplementation.setupSession(context, input);
 

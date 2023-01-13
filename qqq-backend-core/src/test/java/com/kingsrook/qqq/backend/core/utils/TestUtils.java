@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.PollingAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -85,6 +86,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
@@ -95,8 +99,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEv
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.MockAuthenticationModule;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
@@ -140,17 +143,25 @@ public class TestUtils
    public static final String TABLE_NAME_ID_AND_NAME_ONLY           = "idAndNameOnly";
    public static final String TABLE_NAME_BASEPULL                   = "basepullTest";
    public static final String REPORT_NAME_SHAPES_PERSON             = "shapesPersonReport";
+   public static final String REPORT_NAME_PERSON_SIMPLE             = "simplePersonReport";
+   public static final String REPORT_NAME_PERSON_JOIN_SHAPE         = "personJoinShapeReport";
 
-   public static final String POSSIBLE_VALUE_SOURCE_STATE             = "state"; // enum-type
-   public static final String POSSIBLE_VALUE_SOURCE_SHAPE             = "shape"; // table-type
-   public static final String POSSIBLE_VALUE_SOURCE_CUSTOM            = "custom"; // custom-type
-   public static final String POSSIBLE_VALUE_SOURCE_AUTOMATION_STATUS = "automationStatus";
+   public static final String POSSIBLE_VALUE_SOURCE_STATE                = "state"; // enum-type
+   public static final String POSSIBLE_VALUE_SOURCE_SHAPE                = "shape"; // table-type
+   public static final String POSSIBLE_VALUE_SOURCE_CUSTOM               = "custom"; // custom-type
+   public static final String POSSIBLE_VALUE_SOURCE_AUTOMATION_STATUS    = "automationStatus";
+   public static final String POSSIBLE_VALUE_SOURCE_STORE                = "store";
+   public static final String POSSIBLE_VALUE_SOURCE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
    public static final String POLLING_AUTOMATION     = "polling";
    public static final String DEFAULT_QUEUE_PROVIDER = "defaultQueueProvider";
 
    public static final String BASEPULL_KEY_FIELD_NAME           = "processName";
    public static final String BASEPULL_LAST_RUN_TIME_FIELD_NAME = "lastRunTime";
+
+   public static final String SECURITY_KEY_TYPE_STORE                = "store";
+   public static final String SECURITY_KEY_TYPE_STORE_ALL_ACCESS     = "storeAllAccess";
+   public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
 
 
@@ -181,6 +192,11 @@ public class TestUtils
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
       qInstance.addPossibleValueSource(defineShapePossibleValueSource());
       qInstance.addPossibleValueSource(defineCustomPossibleValueSource());
+      qInstance.addPossibleValueSource(defineStorePossibleValueSource());
+      qInstance.addPossibleValueSource(defineStorePossibleValueInternalOrExternal());
+
+      qInstance.addSecurityKeyType(defineStoreSecurityKeyType());
+      qInstance.addSecurityKeyType(defineInternalOrExternalSecurityKeyType());
 
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
@@ -192,6 +208,8 @@ public class TestUtils
 
       qInstance.addReport(defineShapesPersonsReport());
       qInstance.addProcess(defineShapesPersonReportProcess());
+      qInstance.addReport(definePersonJoinShapeReport());
+      qInstance.addReport(definePersonSimpleReport());
 
       qInstance.addAutomationProvider(definePollingAutomationProvider());
 
@@ -395,6 +413,57 @@ public class TestUtils
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource defineStorePossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_STORE)
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(List.of(new QPossibleValue<>(1, "Q-Mart"), new QPossibleValue<>(2, "Tar-que")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource defineStorePossibleValueInternalOrExternal()
+   {
+      return new QPossibleValueSource()
+         .withName(POSSIBLE_VALUE_SOURCE_INTERNAL_OR_EXTERNAL)
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(List.of(new QPossibleValue<>("internal", "Internal"), new QPossibleValue<>("external", "External")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QSecurityKeyType defineStoreSecurityKeyType()
+   {
+      return new QSecurityKeyType()
+         .withName(SECURITY_KEY_TYPE_STORE)
+         .withAllAccessKeyName(SECURITY_KEY_TYPE_STORE_ALL_ACCESS)
+         .withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STORE);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QSecurityKeyType defineInternalOrExternalSecurityKeyType()
+   {
+      return new QSecurityKeyType()
+         .withName(SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL)
+         .withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_INTERNAL_OR_EXTERNAL);
+   }
+
+
+
+   /*******************************************************************************
     ** Define the authentication used in standard tests - using 'mock' type.
     **
     *******************************************************************************/
@@ -468,11 +537,19 @@ public class TestUtils
          .withName(TABLE_NAME_ORDER)
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
+         .withRecordSecurityLock(new RecordSecurityLock()
+            .withSecurityKeyType(SECURITY_KEY_TYPE_STORE)
+            .withFieldName("storeId"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
-         .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY));
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY).withFieldSecurityLock(new FieldSecurityLock()
+            .withSecurityKeyType(SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL)
+            .withDefaultBehavior(FieldSecurityLock.Behavior.DENY)
+            .withOverrideValues(List.of("internal"))
+         ));
    }
 
 
@@ -1108,4 +1185,52 @@ public class TestUtils
          .getProcessMetaData();
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData definePersonSimpleReport()
+   {
+      return new QReportMetaData()
+         .withName(REPORT_NAME_PERSON_SIMPLE)
+         .withDataSource(
+            new QReportDataSource()
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         )
+         .withView(new QReportView()
+            .withType(ReportType.TABLE)
+            .withLabel("Simple Report")
+            .withColumns(List.of(
+               new QReportField("id"),
+               new QReportField("firstName"),
+               new QReportField("lastName"),
+               new QReportField("homeStateId").withLabel("Home State Id"),
+               new QReportField("homeStateName").withSourceFieldName("homeStateId").withShowPossibleValueLabel(true).withLabel("Home State Name")
+            ))
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData definePersonJoinShapeReport()
+   {
+      return new QReportMetaData()
+         .withName(REPORT_NAME_PERSON_JOIN_SHAPE)
+         .withDataSource(
+            new QReportDataSource()
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         )
+         .withView(new QReportView()
+            .withType(ReportType.TABLE)
+            .withColumns(List.of(
+               new QReportField("id"),
+               new QReportField("firstName"),
+               new QReportField("lastName")
+            ))
+         );
+   }
 }

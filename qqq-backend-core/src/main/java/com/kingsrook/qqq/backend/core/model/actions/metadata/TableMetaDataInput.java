@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
@@ -30,11 +30,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
  ** Input for meta-data for a table.
  **
  *******************************************************************************/
-public class TableMetaDataInput extends AbstractActionInput
+public class TableMetaDataInput extends AbstractTableActionInput
 {
-   private String tableName;
-
-
 
    /*******************************************************************************
     **
@@ -53,25 +50,4 @@ public class TableMetaDataInput extends AbstractActionInput
       super(instance);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for tableName
-    **
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    **
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
 }

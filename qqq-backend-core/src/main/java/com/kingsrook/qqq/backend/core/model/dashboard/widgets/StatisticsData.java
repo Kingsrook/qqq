@@ -23,22 +23,11 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend bar chart widget
+ ** Model containing datastructure expected by frontend statistics widget
  **
  *******************************************************************************/
 public class StatisticsData extends QWidgetData
 {
-   /*
-      interface BarChartData{
-         labels: string[];
-         datasets: {
-            label: string;
-            data: number[];
-         }[];
-      }
-    */
-
-   private String  title;
    private Number  count;
    private Number  percentageAmount;
    private String  percentageLabel;
@@ -50,9 +39,8 @@ public class StatisticsData extends QWidgetData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public StatisticsData(String title, Number count, Number percentageAmount, String percentageLabel)
+   public StatisticsData(Number count, Number percentageAmount, String percentageLabel)
    {
-      this.title = title;
       this.count = count;
       this.percentageLabel = percentageLabel;
       this.percentageAmount = percentageAmount;
@@ -67,40 +55,6 @@ public class StatisticsData extends QWidgetData
    public String getType()
    {
       return "statistics";
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for title
-    **
-    *******************************************************************************/
-   public String getTitle()
-   {
-      return title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for title
-    **
-    *******************************************************************************/
-   public void setTitle(String title)
-   {
-      this.title = title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for title
-    **
-    *******************************************************************************/
-   public StatisticsData withTitle(String title)
-   {
-      this.title = title;
-      return (this);
    }
 
 

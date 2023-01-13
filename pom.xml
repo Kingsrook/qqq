@@ -39,10 +39,11 @@
       <module>qqq-middleware-lambda</module>
       <module>qqq-utility-lambdas</module>
       <module>qqq-sample-project</module>
+      <module>qqq-middleware-slack</module>
    </modules>
 
    <properties>
-      <revision>0.9.0</revision>
+      <revision>0.10.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

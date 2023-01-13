@@ -28,6 +28,8 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -38,9 +40,13 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class JoinsContext
 {
-   private final QInstance           instance;
-   private final String              mainTableName;
-   private final List<QueryJoin>     queryJoins;
+   private final QInstance       instance;
+   private final String          mainTableName;
+   private final List<QueryJoin> queryJoins;
+
+   ////////////////////////////////////////////////////////////////
+   // note - will have entries for all tables, not just aliases. //
+   ////////////////////////////////////////////////////////////////
    private final Map<String, String> aliasToTableNameMap = new HashMap<>();
 
 
@@ -57,14 +63,50 @@ public class JoinsContext
 
       for(QueryJoin queryJoin : this.queryJoins)
       {
-         QTableMetaData joinTable        = instance.getTable(queryJoin.getRightTable());
-         String         tableNameOrAlias = queryJoin.getAliasOrRightTable();
+         QTableMetaData joinTable        = instance.getTable(queryJoin.getJoinTable());
+         String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
          if(aliasToTableNameMap.containsKey(tableNameOrAlias))
          {
             throw (new QException("Duplicate table name or alias: " + tableNameOrAlias));
          }
          aliasToTableNameMap.put(tableNameOrAlias, joinTable.getName());
       }
+
+      ///////////////////////////////////////////////////////////////
+      // ensure any joins that contribute a recordLock are present //
+      ///////////////////////////////////////////////////////////////
+      for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks()))
+      {
+         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+         {
+            if(this.queryJoins.stream().anyMatch(qj -> qj.getJoinMetaData().getName().equals(joinName)))
+            {
+               ///////////////////////////////////////////////////////
+               // we're good - we're already joining on this table! //
+               ///////////////////////////////////////////////////////
+            }
+            else
+            {
+               QJoinMetaData join = instance.getJoin(joinName);
+               if(tableName.equals(join.getRightTable()))
+               {
+                  join = join.flip();
+               }
+               this.queryJoins.add(new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER)); // todo aliases?  probably.
+            }
+         }
+      }
+
+      /* todo!!
+      for(QueryJoin queryJoin : queryJoins)
+      {
+         QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
+         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
+         {
+            // addCriteriaForRecordSecurityLock(instance, session, joinTable, securityCriteria, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias());
+         }
+      }
+       */
    }
 
 
@@ -81,7 +123,8 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    **
+    ** For a given name (whether that's a table name or an alias in the query),
+    ** get the actual table name (e.g., that could be passed to qInstance.getTable())
     *******************************************************************************/
    public String resolveTableNameOrAliasToTableName(String nameOrAlias)
    {
@@ -95,7 +138,8 @@ public class JoinsContext
 
 
    /*******************************************************************************
-    **
+    ** For a given fieldName, which we expect may start with a tableNameOrAlias + '.',
+    ** find the QFieldMetaData and the tableNameOrAlias that it corresponds to.
     *******************************************************************************/
    public FieldAndTableNameOrAlias getFieldAndTableNameOrAlias(String fieldName)
    {
@@ -120,6 +164,40 @@ public class JoinsContext
       }
 
       return new FieldAndTableNameOrAlias(instance.getTable(mainTableName).getField(fieldName), mainTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Check if the given table name exists in the query - but that name may NOT
+    ** be an alias - it must be an actual table name.
+    **
+    ** e.g., Given:
+    **   FROM `order` INNER JOIN line_item li
+    ** hasAliasOrTable("order") => true
+    ** hasAliasOrTable("li") => false
+    ** hasAliasOrTable("line_item") => true
+    *******************************************************************************/
+   public boolean hasTable(String table)
+   {
+      return (mainTableName.equals(table) || aliasToTableNameMap.containsValue(table));
+   }
+
+
+
+   /*******************************************************************************
+    ** Check if the given tableOrAlias exists in the query - but note, if a table
+    ** is in the query, but with an alias, then it would not be found by this method.
+    **
+    ** e.g., Given:
+    **   FROM `order` INNER JOIN line_item li
+    ** hasAliasOrTable("order") => false
+    ** hasAliasOrTable("li") => true
+    ** hasAliasOrTable("line_item") => false
+    *******************************************************************************/
+   public boolean hasAliasOrTable(String tableOrAlias)
+   {
+      return (mainTableName.equals(tableOrAlias) || aliasToTableNameMap.containsKey(tableOrAlias));
    }
 
 

@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablesync;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,11 +44,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.StandardProcessSummaryLineProducer;
-import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
+import com.kingsrook.qqq.backend.core.processes.utils.RecordLookupHelper;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -69,43 +72,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       .withSingularPastMessage("was not synced, because it is ")
       .withPluralPastMessage("were not synced, because they are ");
 
-   private RunBackendStepInput runBackendStepInput = null;
+   protected RunBackendStepInput runBackendStepInput = null;
+   protected RecordLookupHelper  recordLookupHelper  = null;
 
    private QPossibleValueTranslator possibleValueTranslator;
-
-   private Map<String, Map<Serializable, QRecord>> tableMaps = new HashMap<>();
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected QRecord getRecord(String tableName, String fieldName, Serializable value) throws QException
-   {
-      if(!tableMaps.containsKey(tableName))
-      {
-         Map<Serializable, QRecord> recordMap = GeneralProcessUtils.loadTableToMap(runBackendStepInput, tableName, fieldName);
-         tableMaps.put(tableName, recordMap);
-      }
-
-      return (tableMaps.get(tableName).get(value));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected Serializable getRecordField(String tableName, String fieldName, Serializable value, String outputField) throws QException
-   {
-      QRecord record = getRecord(tableName, fieldName, value);
-      if(record == null)
-      {
-         return (null);
-      }
-
-      return (record.getValue(outputField));
-   }
 
 
 
@@ -121,9 +91,62 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
 
    /*******************************************************************************
+    ** Map a record from the source table to the destination table.   e.g., put
+    ** values into the destinationRecord, from the sourceRecord.
     **
+    ** The destinationRecord will already be constructed, and will actually already
+    ** be the record being updated, in the case of an update.  It'll be empty (newly
+    ** constructed) for an insert.
     *******************************************************************************/
    public abstract QRecord populateRecordToStore(RunBackendStepInput runBackendStepInput, QRecord destinationRecord, QRecord sourceRecord) throws QException;
+
+
+
+   /*******************************************************************************
+    ** Specify a list of tableName/keyColumnName pairs to run through
+    ** the preloadRecords method of the recordLookupHelper.
+    *******************************************************************************/
+   protected List<Pair<String, String>> getLookupsToPreLoad()
+   {
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the query filter to find existing records.  e.g., for determining
+    ** insert vs. update.  Subclasses may override this to customize the behavior,
+    ** e.g., in case an additional field is needed in the query.
+    *******************************************************************************/
+   protected QQueryFilter getExistingRecordQueryFilter(RunBackendStepInput runBackendStepInput, List<Serializable> sourceKeyList)
+   {
+      String destinationTableForeignKeyField = getSyncProcessConfig().destinationTableForeignKey;
+      return new QQueryFilter().withCriteria(new QFilterCriteria(destinationTableForeignKeyField, QCriteriaOperator.IN, sourceKeyList));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the config for this process - e.g., what fields & tables are used.
+    *******************************************************************************/
+   protected abstract SyncProcessConfig getSyncProcessConfig();
+
+
+
+   /*******************************************************************************
+    ** Record to store the config for this process - e.g., what fields & tables are used.
+    *******************************************************************************/
+   public record SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
+   {
+      /*******************************************************************************
+       ** artificial method, here to make jacoco see that this class is indeed
+       ** included in test coverage...
+       *******************************************************************************/
+      void noop()
+      {
+         System.out.println("noop");
+      }
+   }
 
 
 
@@ -139,9 +162,28 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       }
 
       this.runBackendStepInput = runBackendStepInput;
-      String sourceTableKeyField             = runBackendStepInput.getValueString(TableSyncProcess.FIELD_SOURCE_TABLE_KEY_FIELD);
-      String destinationTableForeignKeyField = runBackendStepInput.getValueString(TableSyncProcess.FIELD_DESTINATION_TABLE_FOREIGN_KEY);
-      String destinationTableName            = runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE);
+
+      SyncProcessConfig config = getSyncProcessConfig();
+
+      String sourceTableKeyField             = config.sourceTableKeyField;
+      String destinationTableForeignKeyField = config.destinationTableForeignKey;
+      String destinationTableName            = config.destinationTable;
+      runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, destinationTableName);
+
+      if(!StringUtils.hasContent(sourceTableKeyField))
+      {
+         throw (new IllegalStateException("Missing sourceTableKeyField in config for " + getClass().getSimpleName()));
+      }
+
+      if(!StringUtils.hasContent(destinationTableForeignKeyField))
+      {
+         throw (new IllegalStateException("Missing destinationTableForeignKey in config for " + getClass().getSimpleName()));
+      }
+
+      if(!StringUtils.hasContent(destinationTableName))
+      {
+         throw (new IllegalStateException("Missing destinationTable in config for " + getClass().getSimpleName()));
+      }
 
       //////////////////////////////////////
       // extract keys from source records //
@@ -152,6 +194,11 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          .filter(v -> !"".equals(v))
          .collect(Collectors.toList());
 
+      if(this.recordLookupHelper == null)
+      {
+         initializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
+      }
+
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,9 +208,9 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
          queryInput.setSession(runBackendStepInput.getSession());
          queryInput.setTableName(destinationTableName);
-         queryInput.setFilter(new QQueryFilter()
-            .withCriteria(new QFilterCriteria(destinationTableForeignKeyField, QCriteriaOperator.IN, sourceKeyList))
-         );
+         getTransaction().ifPresent(queryInput::setTransaction);
+         QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
+         queryInput.setFilter(filter);
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
          existingRecordsByForeignKey = CollectionUtils.recordsToMap(queryOutput.getRecords(), destinationTableForeignKeyField);
       }
@@ -171,10 +218,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       /////////////////////////////////////////////////////////////////
       // foreach source record, build the record we'll insert/update //
       /////////////////////////////////////////////////////////////////
+      QFieldMetaData destinationForeignKeyField = runBackendStepInput.getInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
       for(QRecord sourceRecord : runBackendStepInput.getRecords())
       {
          Serializable sourceKeyValue = sourceRecord.getValue(sourceTableKeyField);
-         QRecord      existingRecord = existingRecordsByForeignKey.get(sourceKeyValue);
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {
@@ -193,6 +240,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
             continue;
          }
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // look for the existing record - note - we may need to type-convert here, the sourceKey value //
+         // from the source table to the destinationKey.  e.g., if source table had an integer, and the //
+         // destination has a string.                                                                   //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         Serializable sourceKeyValueInTargetFieldType = ValueUtils.getValueAsFieldType(destinationForeignKeyField.getType(), sourceKeyValue);
+         QRecord      existingRecord                  = existingRecordsByForeignKey.get(sourceKeyValueInTargetFieldType);
 
          QRecord recordToStore;
          if(existingRecord != null)
@@ -223,6 +278,27 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             }
 
             possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** If needed, init a record lookup helper for this process.
+    *******************************************************************************/
+   protected void initializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
+   {
+      this.recordLookupHelper = new RecordLookupHelper(runBackendStepInput);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's only 1 record, don't bother preloading all records - just do the single lookup by the single needed key. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(runBackendStepInput.getRecords().size() > 1)
+      {
+         for(Pair<String, String> pair : CollectionUtils.nonNullList(getLookupsToPreLoad()))
+         {
+            recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
       }
    }

@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 
 
@@ -42,6 +44,8 @@ public class QFrontendWidgetMetaData
    private final Integer gridColumns;
    private final boolean isCard;
 
+   private boolean hasPermission;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +55,7 @@ public class QFrontendWidgetMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendWidgetMetaData(QWidgetMetaDataInterface widgetMetaData)
+   public QFrontendWidgetMetaData(AbstractActionInput actionInput, QWidgetMetaDataInterface widgetMetaData)
    {
       this.name = widgetMetaData.getName();
       this.label = widgetMetaData.getLabel();
@@ -59,6 +63,8 @@ public class QFrontendWidgetMetaData
       this.icon = widgetMetaData.getIcon();
       this.gridColumns = widgetMetaData.getGridColumns();
       this.isCard = widgetMetaData.getIsCard();
+
+      hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
 
 
@@ -125,6 +131,17 @@ public class QFrontendWidgetMetaData
    public String getIcon()
    {
       return icon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasPermission
+    **
+    *******************************************************************************/
+   public boolean getHasPermission()
+   {
+      return hasPermission;
    }
 
 }

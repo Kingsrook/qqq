@@ -32,7 +32,11 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +58,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       Integer limit = PROCESS_OUTPUT_RECORD_LIST_LIMIT; // todo - use a field instead of hard-coded here?
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Preview");
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the do-full-validation flag has already been set, then do the validation step instead of this one //
@@ -69,7 +74,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
 
       if(runBackendStepInput.getFrontendStepBehavior() != null && runBackendStepInput.getFrontendStepBehavior().equals(RunProcessInput.FrontendStepBehavior.SKIP))
       {
-         LOG.debug("Skipping preview because frontent behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
+         LOG.debug("Skipping preview because frontend behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
          return;
       }
 
@@ -91,8 +96,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       extractStep.setRecordPipe(recordPipe);
       extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
-      Integer recordCount = extractStep.doCount(runBackendStepInput);
-      runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+      countRecords(runBackendStepInput, runBackendStepOutput, extractStep);
 
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
@@ -122,6 +126,26 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       runBackendStepOutput.setRecords(previewRecordList);
 
       transformStep.postRun(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void countRecords(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, AbstractExtractStep extractStep) throws QException
+   {
+      String         sourceTableName = runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE);
+      QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(sourceTableName);
+      if(StringUtils.hasContent(sourceTableName))
+      {
+         QBackendMetaData sourceTableBackend = runBackendStepInput.getInstance().getBackendForTable(sourceTableName);
+         if(sourceTable.isCapabilityEnabled(sourceTableBackend, Capability.TABLE_COUNT))
+         {
+            Integer recordCount = extractStep.doCount(runBackendStepInput);
+            runBackendStepOutput.addValue(StreamedETLProcess.FIELD_RECORD_COUNT, recordCount);
+         }
+      }
    }
 
 

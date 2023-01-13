@@ -19,42 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
-
-
-import java.util.Map;
-import java.util.UUID;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.model.session.QUser;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package com.kingsrook.qqq.backend.core.state;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class MockAuthenticationModule implements QAuthenticationModuleInterface
+public class SimpleStateKey<T> extends AbstractStateKey
 {
-   private static final Logger logger = LogManager.getLogger(MockAuthenticationModule.class);
-   private static final int USER_ID_MODULO = 10_000;
+   private final T key;
+
 
 
    /*******************************************************************************
+    ** Constructor.
     **
     *******************************************************************************/
-   @Override
-   public QSession createSession(QInstance qInstance, Map<String, String> context)
+   public SimpleStateKey(T key)
    {
-      QUser qUser = new QUser();
-      qUser.setIdReference("User:" + (System.currentTimeMillis() % USER_ID_MODULO));
-      qUser.setFullName("John Smith");
-
-      QSession qSession = new QSession();
-      qSession.setIdReference("Session:" + UUID.randomUUID());
-      qSession.setUser(qUser);
-
-      return (qSession);
+      this.key = key;
    }
 
 
@@ -63,20 +46,51 @@ public class MockAuthenticationModule implements QAuthenticationModuleInterface
     **
     *******************************************************************************/
    @Override
-   public boolean isSessionValid(QInstance instance, QSession session)
+   public String toString()
    {
-      if(session == null)
-      {
-         logger.info("Session is null, which is not valid.");
-         return (false);
-      }
+      return (String.valueOf(this.key));
+   }
 
-      if(session.getValue("isInvalid") != null)
-      {
-         logger.info("Session contains the valid 'isInvalid', which is not valid.");
-         return (false);
-      }
 
-      return (true);
+
+   /*******************************************************************************
+    ** Make the key give a unique string to identify itself.
+    *
+    *******************************************************************************/
+   @Override
+   public String getUniqueIdentifier()
+   {
+      return (String.valueOf(this.key));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      SimpleStateKey<?> that = (SimpleStateKey<?>) o;
+      return key.equals(that.key);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return key.hashCode();
    }
 }

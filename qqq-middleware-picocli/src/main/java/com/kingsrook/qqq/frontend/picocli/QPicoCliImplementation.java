@@ -82,9 +82,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -676,7 +676,7 @@ public class QPicoCliImplementation
    {
       QQueryFilter filter = new QQueryFilter();
 
-      String[] criteria = subParseResult.matchedOptionValue("criteria", new String[] {});
+      String[] criteria = subParseResult.matchedOptionValue("criteria", new String[] { });
       for(String criterion : criteria)
       {
          // todo - parse!
@@ -803,7 +803,7 @@ public class QPicoCliImplementation
       boolean       anyFields       = false;
 
       String   primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
-      String[] criteria         = subParseResult.matchedOptionValue("criteria", new String[] {});
+      String[] criteria         = subParseResult.matchedOptionValue("criteria", new String[] { });
 
       if(StringUtils.hasContent(primaryKeyOption))
       {
@@ -896,7 +896,7 @@ public class QPicoCliImplementation
       // get the pKeys that the user specified //
       /////////////////////////////////////////////
       String   primaryKeyOption = subParseResult.matchedOptionValue("--primaryKey", "");
-      String[] criteria         = subParseResult.matchedOptionValue("criteria", new String[] {});
+      String[] criteria         = subParseResult.matchedOptionValue("criteria", new String[] { });
 
       if(StringUtils.hasContent(primaryKeyOption))
       {

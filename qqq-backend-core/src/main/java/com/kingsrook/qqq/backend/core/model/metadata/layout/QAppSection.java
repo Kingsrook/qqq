@@ -29,7 +29,7 @@ import java.util.List;
 /*******************************************************************************
  ** A section of apps/tables/processes - a logical grouping.
  *******************************************************************************/
-public class QAppSection
+public class QAppSection implements Cloneable
 {
    private String name;
    private String label;
@@ -61,6 +61,25 @@ public class QAppSection
       this.tables = tables;
       this.processes = processes;
       this.reports = reports;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QAppSection clone()
+   {
+      try
+      {
+         QAppSection clone = (QAppSection) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 
@@ -314,5 +333,4 @@ public class QAppSection
       this.icon = icon;
       return (this);
    }
-
 }

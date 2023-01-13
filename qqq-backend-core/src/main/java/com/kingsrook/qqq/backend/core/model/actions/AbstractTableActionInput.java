@@ -25,13 +25,14 @@ package com.kingsrook.qqq.backend.core.model.actions;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
  ** Base class for input for any qqq action that works against a table.
  **
  *******************************************************************************/
-public abstract class AbstractTableActionInput extends AbstractActionInput
+public class AbstractTableActionInput extends AbstractActionInput
 {
    private String tableName;
 
@@ -95,4 +96,28 @@ public abstract class AbstractTableActionInput extends AbstractActionInput
    {
       this.tableName = tableName;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    *******************************************************************************/
+   public AbstractTableActionInput withTableName(String tableName)
+   {
+      this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for session
+    *******************************************************************************/
+   @Override
+   public AbstractTableActionInput withSession(QSession session)
+   {
+      super.withSession(session);
+      return (this);
+   }
+
 }

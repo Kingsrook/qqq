@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -39,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 
 
 /*******************************************************************************
@@ -53,9 +55,11 @@ public class MemoryRecordStore
 
    private static boolean collectStatistics = false;
 
+   public static final String STAT_QUERIES_RAN = "queriesRan";
+
    private static final Map<String, Integer> statistics = Collections.synchronizedMap(new HashMap<>());
 
-   public static final String STAT_QUERIES_RAN = "queriesRan";
+   public static final ListingHash<Class<? extends AbstractActionInput>, AbstractActionInput> actionInputs = new ListingHash<>();
 
 
 
@@ -66,6 +70,18 @@ public class MemoryRecordStore
    {
       data = new HashMap<>();
       nextSerials = new HashMap<>();
+   }
+
+
+
+   /*******************************************************************************
+    ** forget all data AND statistics
+    *******************************************************************************/
+   public static void fullReset()
+   {
+      getInstance().reset();
+      resetStatistics();
+      setCollectStatistics(false);
    }
 
 
@@ -114,7 +130,7 @@ public class MemoryRecordStore
     *******************************************************************************/
    public List<QRecord> query(QueryInput input)
    {
-      incrementStatistic(STAT_QUERIES_RAN);
+      incrementStatistic(input);
 
       Map<Serializable, QRecord> tableData = getTableData(input.getTable());
       List<QRecord>              records   = new ArrayList<>();
@@ -130,6 +146,7 @@ public class MemoryRecordStore
       }
 
       BackendQueryFilterUtils.sortRecordList(input.getFilter(), records);
+      records = BackendQueryFilterUtils.applySkipAndLimit(input, records);
 
       return (records);
    }
@@ -299,6 +316,24 @@ public class MemoryRecordStore
     ** Increment a statistic
     **
     *******************************************************************************/
+   public static void incrementStatistic(AbstractActionInput input)
+   {
+      if(collectStatistics)
+      {
+         actionInputs.add(input.getClass(), input);
+         if(input instanceof QueryInput)
+         {
+            incrementStatistic(STAT_QUERIES_RAN);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Increment a statistic
+    **
+    *******************************************************************************/
    public static void incrementStatistic(String statName)
    {
       if(collectStatistics)
@@ -317,6 +352,7 @@ public class MemoryRecordStore
    public static void resetStatistics()
    {
       statistics.clear();
+      actionInputs.clear();
    }
 
 
@@ -328,6 +364,17 @@ public class MemoryRecordStore
    public static Map<String, Integer> getStatistics()
    {
       return statistics;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for the actionInputs that were recorded - only while collectStatistics
+    ** was true.
+    *******************************************************************************/
+   public static ListingHash<Class<? extends AbstractActionInput>, AbstractActionInput> getActionInputs()
+   {
+      return (actionInputs);
    }
 
 }

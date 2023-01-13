@@ -80,6 +80,7 @@ public class RunProcessAction
    // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
    ////////////////////////////////////////////////////////////////////////////////////////////////
    public static final String BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD = "basepullReadyToUpdateTimestamp";
+   public static final String BASEPULL_DID_QUERY_USING_TIMESTAMP_FIELD = "basepullDidQueryUsingTimestamp";
 
 
 
@@ -190,11 +191,14 @@ public class RunProcessAction
             }
          }
 
-         ////////////////////////////////////////////////////////////////////////////////////
-         // if 'basepull' style process, update the stored basepull timestamp              //
-         // but only when we've been signaled to do so - i.e., after an Execute step runs. //
-         ////////////////////////////////////////////////////////////////////////////////////
-         if(basepullConfiguration != null && BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(runProcessInput.getValue(BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD))))
+         ///////////////////////////////////////////////////////////////////////////
+         // if 'basepull' style process, update the stored basepull timestamp     //
+         // but only when we've been signaled to do so - i.e., only if we did our //
+         // query using the timestamp field, and only after an Execute step runs. //
+         ///////////////////////////////////////////////////////////////////////////
+         if(basepullConfiguration != null
+            && BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(runProcessInput.getValue(BASEPULL_DID_QUERY_USING_TIMESTAMP_FIELD)))
+            && BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(runProcessInput.getValue(BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD))))
          {
             storeLastRunTime(runProcessInput, process, basepullConfiguration);
          }

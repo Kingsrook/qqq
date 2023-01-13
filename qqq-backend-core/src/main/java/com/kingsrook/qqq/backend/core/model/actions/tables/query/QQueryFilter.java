@@ -340,7 +340,7 @@ public class QQueryFilter implements Serializable, Cloneable
       {
          for(QFilterCriteria criterion : CollectionUtils.nonNullList(criteria))
          {
-            rs.append(criterion).append(" ").append(getBooleanOperator());
+            rs.append(criterion).append(" ").append(getBooleanOperator()).append(" ");
          }
 
          for(QQueryFilter subFilter : CollectionUtils.nonNullList(subFilters))

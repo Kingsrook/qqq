@@ -19,7 +19,9 @@
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --
 
+DROP TABLE IF EXISTS parent_table;
 DROP TABLE IF EXISTS child_table;
+
 CREATE TABLE child_table
 (
    id INT AUTO_INCREMENT primary key,
@@ -32,7 +34,6 @@ INSERT INTO child_table (id, name) VALUES (3, 'Johnny');
 INSERT INTO child_table (id, name) VALUES (4, 'Gracie');
 INSERT INTO child_table (id, name) VALUES (5, 'Suzie');
 
-DROP TABLE IF EXISTS parent_table;
 CREATE TABLE parent_table
 (
    id INT AUTO_INCREMENT PRIMARY KEY,

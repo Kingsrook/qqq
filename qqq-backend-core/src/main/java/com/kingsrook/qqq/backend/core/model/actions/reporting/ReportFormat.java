@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.reporting.CsvExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExcelExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.JsonExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ListOfMapsExportStreamer;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -39,6 +40,7 @@ import org.dhatim.fastexcel.Worksheet;
 public enum ReportFormat
 {
    XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+   JSON(null, null, JsonExportStreamer::new, "application/json"),
    CSV(null, null, CsvExportStreamer::new, "text/csv"),
    LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null);
 

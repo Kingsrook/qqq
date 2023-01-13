@@ -41,6 +41,9 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -54,6 +57,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
@@ -86,9 +90,9 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.authentication.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -122,6 +126,7 @@ public class QJavalinImplementation
 
    private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
    private static final String SESSION_ID_COOKIE_NAME = "sessionId";
+   private static final String BASIC_AUTH_NAME        = "basicAuthString";
 
    static QInstance        qInstance;
    static QJavalinMetaData javalinMetaData = new QJavalinMetaData();
@@ -184,6 +189,7 @@ public class QJavalinImplementation
       service = Javalin.create().start(port);
       service.routes(getRoutes());
       service.before(QJavalinImplementation::hotSwapQInstance);
+      service.before((Context context) -> context.header("Content-Type", "application/json"));
    }
 
 
@@ -325,7 +331,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException
+   public static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
@@ -334,26 +340,43 @@ public class QJavalinImplementation
       {
          Map<String, String> authenticationContext = new HashMap<>();
 
-         /////////////////////////////////////////////////////////////////////////////////
-         // look for a token in either the sessionId cookie, or an Authorization header //
-         /////////////////////////////////////////////////////////////////////////////////
-         String sessionIdCookieValue = context.cookie(SESSION_ID_COOKIE_NAME);
+         String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
+         String authorizationHeaderValue = context.header("Authorization");
+
          if(StringUtils.hasContent(sessionIdCookieValue))
          {
+            ////////////////////////////////////////
+            // first, look for a sessionId cookie //
+            ////////////////////////////////////////
             authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
+         }
+         else if(authorizationHeaderValue != null)
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            // second, look for the authorization header:                                                  //
+            // either with a "Basic " prefix (for a username:password pair)                                //
+            // or with a "Bearer " prefix (for a token that can be handled the same as a sessionId cookie) //
+            /////////////////////////////////////////////////////////////////////////////////////////////////
+            String basicPrefix  = "Basic ";
+            String bearerPrefix = "Bearer ";
+            if(authorizationHeaderValue.startsWith(basicPrefix))
+            {
+               authorizationHeaderValue = authorizationHeaderValue.replaceFirst(basicPrefix, "");
+               authenticationContext.put(BASIC_AUTH_NAME, authorizationHeaderValue);
+            }
+            else if(authorizationHeaderValue.startsWith(bearerPrefix))
+            {
+               authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
+               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
+            }
+            else
+            {
+               LOG.debug("Authorization header value did not have Basic or Bearer prefix. [" + authorizationHeaderValue + "]");
+            }
          }
          else
          {
-            String authorizationHeaderValue = context.header("Authorization");
-            if(authorizationHeaderValue != null)
-            {
-               String bearerPrefix = "Bearer ";
-               if(authorizationHeaderValue.startsWith(bearerPrefix))
-               {
-                  authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
-               }
-               authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
-            }
+            LOG.debug("Neither [" + SESSION_ID_COOKIE_NAME + "] cookie nor [Authorization] header was present in request.");
          }
 
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
@@ -362,7 +385,7 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
          /////////////////////////////////////////////////////////////////////////////////
-         if(StringUtils.hasContent(sessionIdCookieValue))
+         if(authenticationModule.usesSessionIdCookie())
          {
             context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
          }
@@ -374,10 +397,12 @@ public class QJavalinImplementation
          ////////////////////////////////////////////////////////////////////////////////
          // if exception caught, clear out the cookie so the frontend will reauthorize //
          ////////////////////////////////////////////////////////////////////////////////
-         if(authenticationModule instanceof Auth0AuthenticationModule)
+         if(authenticationModule.usesSessionIdCookie())
          {
             context.removeCookie(SESSION_ID_COOKIE_NAME);
          }
+
+         throw (qae);
       }
    }
 
@@ -423,6 +448,8 @@ public class QJavalinImplementation
          deleteInput.setTableName(table);
          deleteInput.setPrimaryKeys(primaryKeys);
 
+         PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);
+
          DeleteAction deleteAction = new DeleteAction();
          DeleteOutput deleteResult = deleteAction.execute(deleteInput);
 
@@ -443,7 +470,14 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String table = context.pathParam("table");
+
+         UpdateInput updateInput = new UpdateInput(qInstance);
+         setupSession(context, updateInput);
+         updateInput.setTableName(table);
+
+         PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
+
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(table);
@@ -471,12 +505,8 @@ public class QJavalinImplementation
          }
 
          QTableMetaData tableMetaData = qInstance.getTable(table);
-
          record.setValue(tableMetaData.getPrimaryKeyField(), context.pathParam("primaryKey"));
 
-         UpdateInput updateInput = new UpdateInput(qInstance);
-         setupSession(context, updateInput);
-         updateInput.setTableName(table);
          updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
@@ -499,7 +529,13 @@ public class QJavalinImplementation
    {
       try
       {
-         String        table      = context.pathParam("table");
+         String      table       = context.pathParam("table");
+         InsertInput insertInput = new InsertInput(qInstance);
+         setupSession(context, insertInput);
+         insertInput.setTableName(table);
+
+         PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(table);
@@ -513,10 +549,6 @@ public class QJavalinImplementation
                record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
             }
          }
-
-         InsertInput insertInput = new InsertInput(qInstance);
-         setupSession(context, insertInput);
-         insertInput.setTableName(table);
          insertInput.setRecords(recordList);
 
          InsertAction insertAction = new InsertAction();
@@ -553,6 +585,8 @@ public class QJavalinImplementation
          getInput.setTableName(tableName);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
+
+         PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
@@ -600,6 +634,8 @@ public class QJavalinImplementation
          CountInput countInput = new CountInput(qInstance);
          setupSession(context, countInput);
          countInput.setTableName(context.pathParam("table"));
+
+         PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 
          String filter = stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
@@ -649,6 +685,8 @@ public class QJavalinImplementation
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setSkip(integerQueryParam(context, "skip"));
          queryInput.setLimit(integerQueryParam(context, "limit"));
+
+         PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
          String filter = stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
@@ -704,7 +742,22 @@ public class QJavalinImplementation
       {
          TableMetaDataInput tableMetaDataInput = new TableMetaDataInput(qInstance);
          setupSession(context, tableMetaDataInput);
-         tableMetaDataInput.setTableName(context.pathParam("table"));
+
+         String         tableName = context.pathParam("table");
+         QTableMetaData table     = qInstance.getTable(tableName);
+         if(table == null)
+         {
+            throw (new QNotFoundException("Table [" + tableName + "] was not found."));
+         }
+
+         PermissionCheckResult permissionCheckResult = PermissionsHelper.getPermissionCheckResult(tableMetaDataInput, table);
+         if(permissionCheckResult.equals(PermissionCheckResult.DENY_HIDE))
+         {
+            // not found?  or permission denied... hmm
+            throw (new QNotFoundException("Table [" + tableName + "] was not found."));
+         }
+
+         tableMetaDataInput.setTableName(tableName);
          TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
          TableMetaDataOutput tableMetaDataOutput = tableMetaDataAction.execute(tableMetaDataInput);
 
@@ -727,7 +780,16 @@ public class QJavalinImplementation
       {
          ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput(qInstance);
          setupSession(context, processMetaDataInput);
-         processMetaDataInput.setProcessName(context.pathParam("processName"));
+
+         String           processName = context.pathParam("processName");
+         QProcessMetaData process     = qInstance.getProcess(processName);
+         if(process == null)
+         {
+            throw (new QNotFoundException("Process [" + processName + "] was not found."));
+         }
+         PermissionsHelper.checkProcessPermissionThrowing(processMetaDataInput, processName);
+
+         processMetaDataInput.setProcessName(processName);
          ProcessMetaDataAction processMetaDataAction = new ProcessMetaDataAction();
          ProcessMetaDataOutput processMetaDataOutput = processMetaDataAction.execute(processMetaDataInput);
 
@@ -754,6 +816,8 @@ public class QJavalinImplementation
          RenderWidgetInput input = new RenderWidgetInput(qInstance)
             .withSession(insertInput.getSession())
             .withWidgetMetaData(qInstance.getWidget(context.pathParam("name")));
+
+         // todo permission?
 
          //////////////////////////
          // process query string //
@@ -815,26 +879,9 @@ public class QJavalinImplementation
          String  filter    = context.queryParam("filter");
          Integer limit     = integerQueryParam(context, "limit");
 
-         /////////////////////////////////////////////////////////////////////////////////////////
-         // if a format query param wasn't given, then try to get file extension from file name //
-         /////////////////////////////////////////////////////////////////////////////////////////
-         if(!StringUtils.hasContent(format) && optionalFilename.isPresent() && StringUtils.hasContent(optionalFilename.get()))
+         ReportFormat reportFormat = getReportFormat(context, optionalFilename, format);
+         if(reportFormat == null)
          {
-            String filename = optionalFilename.get();
-            if(filename.contains("."))
-            {
-               format = filename.substring(filename.lastIndexOf(".") + 1);
-            }
-         }
-
-         ReportFormat reportFormat;
-         try
-         {
-            reportFormat = ReportFormat.fromString(format);
-         }
-         catch(QUserFacingException e)
-         {
-            handleException(HttpStatus.Code.BAD_REQUEST, context, e);
             return;
          }
 
@@ -850,6 +897,8 @@ public class QJavalinImplementation
          exportInput.setFilename(filename);
          exportInput.setLimit(limit);
 
+         PermissionsHelper.checkTablePermissionThrowing(exportInput, TablePermissionSubType.READ);
+
          String fields = stringQueryParam(context, "fields");
          if(StringUtils.hasContent(fields))
          {
@@ -861,60 +910,176 @@ public class QJavalinImplementation
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         // set up the I/O pipe streams.                                                                      //
-         // Critically, we must NOT open the outputStream in a try-with-resources.  The thread that writes to //
-         // the stream must close it when it's done writing.                                                  //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         PipedOutputStream pipedOutputStream = new PipedOutputStream();
-         PipedInputStream  pipedInputStream  = new PipedInputStream();
-         pipedOutputStream.connect(pipedInputStream);
-         exportInput.setReportOutputStream(pipedOutputStream);
-
-         ExportAction exportAction = new ExportAction();
-         exportAction.preExecute(exportInput);
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////////
-         // start the async job.                                                                            //
-         // Critically, this must happen before the pipedInputStream is passed to the javalin result method //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////
-         new AsyncJobManager().startJob("Javalin>ReportAction", (o) ->
+         UnsafeFunction<PipedOutputStream, ExportAction> preAction = (PipedOutputStream pos) ->
          {
-            try
-            {
-               exportAction.execute(exportInput);
-               return (true);
-            }
-            catch(Exception e)
-            {
-               pipedOutputStream.write(("Error generating report: " + e.getMessage()).getBytes());
-               pipedOutputStream.close();
-               return (false);
-            }
-         });
+            exportInput.setReportOutputStream(pos);
 
-         ////////////////////////////////////////////
-         // set the response content type & stream //
-         ////////////////////////////////////////////
-         context.contentType(reportFormat.getMimeType());
-         context.header("Content-Disposition", "filename=" + filename);
-         context.result(pipedInputStream);
+            ExportAction exportAction = new ExportAction();
+            exportAction.preExecute(exportInput);
+            return (exportAction);
+         };
 
-         ////////////////////////////////////////////////////////////////////////////////////////////
-         // we'd like to check to see if the job failed, and if so, to give the user an error...   //
-         // but if we "block" here, then piped streams seem to never flush, so we deadlock things. //
-         ////////////////////////////////////////////////////////////////////////////////////////////
-         // AsyncJobStatus asyncJobStatus = asyncJobManager.waitForJob(jobUUID);
-         // if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
-         // {
-         //    System.out.println("Well, here we are...");
-         //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
-         // }
+         UnsafeConsumer<ExportAction> execute = (ExportAction exportAction) ->
+         {
+            exportAction.execute(exportInput);
+         };
+
+         runStreamedExportOrReport(context, reportFormat, filename, preAction, execute);
       }
       catch(Exception e)
       {
          handleException(context, e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @FunctionalInterface
+   public interface UnsafeFunction<T, R>
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      R run(T t) throws Exception;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @FunctionalInterface
+   public interface UnsafeConsumer<T>
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      void run(T t) throws Exception;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T> void runStreamedExportOrReport(Context context, ReportFormat reportFormat, String filename, UnsafeFunction<PipedOutputStream, T> preAction, UnsafeConsumer<T> executor) throws Exception
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set up the I/O pipe streams.                                                                      //
+      // Critically, we must NOT open the outputStream in a try-with-resources.  The thread that writes to //
+      // the stream must close it when it's done writing.                                                  //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      PipedOutputStream pipedOutputStream = new PipedOutputStream();
+      PipedInputStream  pipedInputStream  = new PipedInputStream();
+      pipedOutputStream.connect(pipedInputStream);
+
+      T t = preAction.run(pipedOutputStream);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // start the async job.                                                                            //
+      // Critically, this must happen before the pipedInputStream is passed to the javalin result method //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      new AsyncJobManager().startJob("Javalin>ExportAction", (o) ->
+      {
+         try
+         {
+            executor.run(t);
+            return (true);
+         }
+         catch(Exception e)
+         {
+            handleExportOrReportException(context, pipedOutputStream, e);
+            return (false);
+         }
+      });
+
+      ////////////////////////////////////////////
+      // set the response content type & stream //
+      ////////////////////////////////////////////
+      context.contentType(reportFormat.getMimeType());
+      context.header("Content-Disposition", "filename=" + filename);
+      context.result(pipedInputStream);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // we'd like to check to see if the job failed, and if so, to give the user an error...   //
+      // but if we "block" here, then piped streams seem to never flush, so we deadlock things. //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // AsyncJobStatus asyncJobStatus = asyncJobManager.waitForJob(jobUUID);
+      // if(asyncJobStatus.getState().equals(AsyncJobState.ERROR))
+      // {
+      //    System.out.println("Well, here we are...");
+      //    throw (new QUserFacingException("Error running report: " + asyncJobStatus.getCaughtException().getMessage()));
+      // }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void handleExportOrReportException(Context context, PipedOutputStream pipedOutputStream, Exception e) throws IOException
+   {
+      HttpStatus.Code statusCode = HttpStatus.Code.INTERNAL_SERVER_ERROR; // 500
+      String          message    = e.getMessage();
+
+      QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
+      if(userFacingException != null)
+      {
+         LOG.info("User-facing exception", e);
+         statusCode = HttpStatus.Code.BAD_REQUEST; // 400
+         message = userFacingException.getMessage();
+      }
+      else
+      {
+         QAuthenticationException authenticationException = ExceptionUtils.findClassInRootChain(e, QAuthenticationException.class);
+         if(authenticationException != null)
+         {
+            statusCode = HttpStatus.Code.UNAUTHORIZED; // 401
+         }
+         else
+         {
+            LOG.warn("Unexpected exception in javalin report or export request", e);
+         }
+      }
+
+      context.status(statusCode.getCode());
+      pipedOutputStream.write(("Error generating report: " + message).getBytes());
+      pipedOutputStream.close();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ReportFormat getReportFormat(Context context, Optional<String> optionalFilename, String format)
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // if a format query param wasn't given, then try to get file extension from file name //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      if(!StringUtils.hasContent(format) && optionalFilename.isPresent() && StringUtils.hasContent(optionalFilename.get()))
+      {
+         String filename = optionalFilename.get();
+         if(filename.contains("."))
+         {
+            format = filename.substring(filename.lastIndexOf(".") + 1);
+         }
+      }
+
+      ReportFormat reportFormat;
+      try
+      {
+         reportFormat = ReportFormat.fromString(format);
+      }
+      catch(QUserFacingException e)
+      {
+         handleException(HttpStatus.Code.BAD_REQUEST, context, e);
+         return null;
+      }
+      return reportFormat;
    }
 
 
@@ -997,21 +1162,27 @@ public class QJavalinImplementation
       {
          if(userFacingException instanceof QNotFoundException)
          {
-            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND).getCode();
-            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND); // 404
+            respondWithError(context, statusCode, userFacingException.getMessage());
          }
          else
          {
             LOG.info("User-facing exception", e);
-            int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
-            context.status(code).result("{\"error\":\"" + userFacingException.getMessage() + "\"}");
+            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR); // 500
+            respondWithError(context, statusCode, userFacingException.getMessage());
          }
       }
       else
       {
          if(e instanceof QAuthenticationException)
          {
-            context.status(HttpStatus.UNAUTHORIZED_401).result("{\"error\":\"" + e.getMessage() + "\"}");
+            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
+            return;
+         }
+
+         if(e instanceof QPermissionDeniedException)
+         {
+            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage()); // 403
             return;
          }
 
@@ -1019,9 +1190,19 @@ public class QJavalinImplementation
          // default exception handling //
          ////////////////////////////////
          LOG.warn("Exception in javalin request", e);
-         int code = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR).getCode();
-         context.status(code).result("{\"error\":\"" + e.getClass().getSimpleName() + " (" + e.getMessage() + ")\"}");
+         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")"); // 500
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage)
+   {
+      context.status(statusCode.getCode());
+      context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
    }
 
 

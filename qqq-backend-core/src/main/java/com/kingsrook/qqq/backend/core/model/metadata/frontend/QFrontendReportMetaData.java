@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
@@ -41,6 +43,8 @@ public class QFrontendReportMetaData
 
    private String iconName;
 
+   private boolean hasPermission;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +54,7 @@ public class QFrontendReportMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendReportMetaData(QReportMetaData reportMetaData, boolean includeSteps)
+   public QFrontendReportMetaData(AbstractActionInput actionInput, QReportMetaData reportMetaData, boolean includeSteps)
    {
       this.name = reportMetaData.getName();
       this.label = reportMetaData.getLabel();
@@ -60,6 +64,8 @@ public class QFrontendReportMetaData
       {
          this.iconName = reportMetaData.getIcon().getName();
       }
+
+      hasPermission = PermissionsHelper.hasReportPermission(actionInput, name);
    }
 
 
@@ -104,6 +110,17 @@ public class QFrontendReportMetaData
    public String getIconName()
    {
       return iconName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasPermission
+    **
+    *******************************************************************************/
+   public boolean getHasPermission()
+   {
+      return hasPermission;
    }
 
 }

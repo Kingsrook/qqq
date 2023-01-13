@@ -82,6 +82,7 @@ public class BackendQueryFilterUtils
                case IS_NOT_BLANK -> !testBlank(criterion, value);
                case CONTAINS -> testContains(criterion, fieldName, value);
                case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
+               case IS_NULL_OR_IN -> testBlank(criterion, value) || testIn(criterion, value);
                case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
                case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
                case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
@@ -438,13 +439,13 @@ public class BackendQueryFilterUtils
             {
                continue;
             }
-            else if(isGreaterThan(valueA, valueB) && orderBy.getIsAscending())
+            else if(isGreaterThan(valueA, valueB))
             {
-               return (-1);
+               return (orderBy.getIsAscending() ? -1 : 1);
             }
-            else
+            else // Less Than
             {
-               return (1);
+               return (orderBy.getIsAscending() ? 1 : -1);
             }
          }
 

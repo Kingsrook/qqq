@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -49,6 +51,8 @@ public class QFrontendProcessMetaData
 
    private List<QFrontendStepMetaData> frontendSteps;
 
+   private boolean hasPermission;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +62,7 @@ public class QFrontendProcessMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendProcessMetaData(QProcessMetaData processMetaData, boolean includeSteps)
+   public QFrontendProcessMetaData(AbstractActionInput actionInput, QProcessMetaData processMetaData, boolean includeSteps)
    {
       this.name = processMetaData.getName();
       this.label = processMetaData.getLabel();
@@ -84,6 +88,8 @@ public class QFrontendProcessMetaData
       {
          this.iconName = processMetaData.getIcon().getName();
       }
+
+      hasPermission = PermissionsHelper.hasProcessPermission(actionInput, name);
    }
 
 
@@ -161,6 +167,17 @@ public class QFrontendProcessMetaData
    public String getIconName()
    {
       return iconName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasPermission
+    **
+    *******************************************************************************/
+   public boolean getHasPermission()
+   {
+      return hasPermission;
    }
 
 }

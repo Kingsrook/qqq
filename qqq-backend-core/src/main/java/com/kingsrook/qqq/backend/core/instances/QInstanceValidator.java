@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -50,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
@@ -58,7 +60,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -136,6 +141,7 @@ public class QInstanceValidator
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
+         validateSecurityKeyTypes(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
       }
@@ -150,6 +156,35 @@ public class QInstanceValidator
       }
 
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateSecurityKeyTypes(QInstance qInstance)
+   {
+      Set<String> usedNames = new HashSet<>();
+      qInstance.getSecurityKeyTypes().forEach((name, securityKeyType) ->
+      {
+         if(assertCondition(StringUtils.hasContent(securityKeyType.getName()), "Missing name for a securityKeyType"))
+         {
+            assertCondition(Objects.equals(name, securityKeyType.getName()), "Inconsistent naming for securityKeyType: " + name + "/" + securityKeyType.getName() + ".");
+            assertCondition(!usedNames.contains(name), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + name);
+            usedNames.add(name);
+            if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
+            {
+               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + securityKeyType.getAllAccessKeyName());
+               usedNames.add(securityKeyType.getAllAccessKeyName());
+            }
+
+            if(StringUtils.hasContent(securityKeyType.getPossibleValueSourceName()))
+            {
+               assertCondition(qInstance.getPossibleValueSource(securityKeyType.getPossibleValueSourceName()) != null, "Unrecognized possibleValueSourceName in securityKeyType: " + name);
+            }
+         }
+      });
    }
 
 
@@ -322,7 +357,6 @@ public class QInstanceValidator
          qInstance.getTables().forEach((tableName, table) ->
          {
             assertCondition(Objects.equals(tableName, table.getName()), "Inconsistent naming for table: " + tableName + "/" + table.getName() + ".");
-            validateAppChildHasValidParentAppName(qInstance, table);
 
             ////////////////////////////////////////
             // validate the backend for the table //
@@ -385,17 +419,11 @@ public class QInstanceValidator
                }
             }
 
-            if(CollectionUtils.nullSafeHasContents(table.getFields()))
+            for(String fieldName : CollectionUtils.nonNullMap(table.getFields()).keySet())
             {
-               for(String fieldName : table.getFields().keySet())
-               {
-                  assertCondition(fieldNamesInSections.contains(fieldName), "Table " + tableName + " field " + fieldName + " is not listed in any field sections.");
-               }
+               assertCondition(fieldNamesInSections.contains(fieldName), "Table " + tableName + " field " + fieldName + " is not listed in any field sections.");
             }
 
-            ///////////////////////////////
-            // validate the record label //
-            ///////////////////////////////
             if(table.getRecordLabelFields() != null && table.getFields() != null)
             {
                for(String recordLabelField : table.getRecordLabelFields())
@@ -404,46 +432,73 @@ public class QInstanceValidator
                }
             }
 
-            if(table.getCustomizers() != null)
+            for(Map.Entry<String, QCodeReference> entry : CollectionUtils.nonNullMap(table.getCustomizers()).entrySet())
             {
-               for(Map.Entry<String, QCodeReference> entry : table.getCustomizers().entrySet())
+               validateTableCustomizer(tableName, entry.getKey(), entry.getValue());
+            }
+
+            validateTableAutomationDetails(qInstance, table);
+            validateTableUniqueKeys(table);
+            validateAssociatedScripts(table);
+            validateTableCacheOf(qInstance, table);
+            validateTableRecordSecurityLocks(qInstance, table);
+         });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableRecordSecurityLocks(QInstance qInstance, QTableMetaData table)
+   {
+      String prefix = "Table " + table.getName() + " ";
+
+      for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+      {
+         String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
+         if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
+         {
+            assertCondition(qInstance.getSecurityKeyType(securityKeyTypeName) != null, prefix + "has a recordSecurityLock with an unrecognized securityKeyType: " + securityKeyTypeName);
+         }
+
+         prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
+
+         boolean hasAnyBadJoins = false;
+         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+         {
+            if(!assertCondition(qInstance.getJoin(joinName) != null, prefix + "has an unrecognized joinName: " + joinName))
+            {
+               hasAnyBadJoins = true;
+            }
+         }
+
+         String fieldName = recordSecurityLock.getFieldName();
+
+         ////////////////////////////////////////////////////////////////////////////////
+         // don't bother trying to validate field names if we know we have a bad join. //
+         ////////////////////////////////////////////////////////////////////////////////
+         if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName") && !hasAnyBadJoins)
+         {
+            List<QueryJoin> joins = new ArrayList<>();
+            for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+            {
+               QJoinMetaData join = qInstance.getJoin(joinName);
+               if(join.getLeftTable().equals(table.getName()))
                {
-                  validateTableCustomizer(tableName, entry.getKey(), entry.getValue());
+                  joins.add(new QueryJoin(join));
+               }
+               else if(join.getRightTable().equals(table.getName()))
+               {
+                  joins.add(new QueryJoin(join.flip()));
                }
             }
 
-            //////////////////////////////////////
-            // validate the table's automations //
-            //////////////////////////////////////
-            if(table.getAutomationDetails() != null)
-            {
-               validateTableAutomationDetails(qInstance, table);
-            }
+            assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+         }
 
-            //////////////////////////////////////
-            // validate the table's unique keys //
-            //////////////////////////////////////
-            if(table.getUniqueKeys() != null)
-            {
-               validateTableUniqueKeys(table);
-            }
-
-            /////////////////////////////////////////////
-            // validate the table's associated scripts //
-            /////////////////////////////////////////////
-            if(table.getAssociatedScripts() != null)
-            {
-               validateAssociatedScripts(table);
-            }
-
-            //////////////////////
-            // validate cacheOf //
-            //////////////////////
-            if(table.getCacheOf() != null)
-            {
-               validateTableCacheOf(qInstance, table);
-            }
-         });
+         assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
       }
    }
 
@@ -463,16 +518,36 @@ public class QInstanceValidator
             "Unrecognized possibleValueSourceName " + field.getPossibleValueSourceName() + " in table " + tableName + " for field " + fieldName + ".");
       }
 
+      String prefix = "Field " + fieldName + " in table " + tableName + " ";
+
       ValueTooLongBehavior behavior = field.getBehavior(qInstance, ValueTooLongBehavior.class);
       if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
       {
-         assertCondition(field.getMaxLength() != null, "Field " + fieldName + " in table " + tableName + " specifies a ValueTooLongBehavior, but not a maxLength.");
+         assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
       }
 
       if(field.getMaxLength() != null)
       {
-         assertCondition(field.getMaxLength() > 0, "Field " + fieldName + " in table " + tableName + " has an invalid maxLength (" + field.getMaxLength() + ") - must be greater than 0.");
-         assertCondition(field.getType().isStringLike(), "Field " + fieldName + " in table " + tableName + " has maxLength, but is not of a supported type (" + field.getType() + ") - must be a string-like type.");
+         assertCondition(field.getMaxLength() > 0, prefix + "has an invalid maxLength (" + field.getMaxLength() + ") - must be greater than 0.");
+         assertCondition(field.getType().isStringLike(), prefix + "has maxLength, but is not of a supported type (" + field.getType() + ") - must be a string-like type.");
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // this condition doesn't make sense/apply - because the default value-too-long behavior is pass-through, so, idk, just omit //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // assertCondition(behavior != null, prefix + "specifies a maxLength, but no ValueTooLongBehavior.");
+      }
+
+      FieldSecurityLock fieldSecurityLock = field.getFieldSecurityLock();
+      if(fieldSecurityLock != null)
+      {
+         String securityKeyTypeName = fieldSecurityLock.getSecurityKeyType();
+         if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a fieldSecurityLock that is missing a securityKeyType"))
+         {
+            assertCondition(qInstance.getSecurityKeyType(securityKeyTypeName) != null, prefix + "has a fieldSecurityLock with an unrecognized securityKeyType: " + securityKeyTypeName);
+         }
+
+         assertCondition(fieldSecurityLock.getDefaultBehavior() != null, prefix + "has a fieldSecurityLock that is missing a defaultBehavior");
+         assertCondition(CollectionUtils.nullSafeHasContents(fieldSecurityLock.getOverrideValues()), prefix + "has a fieldSecurityLock that is missing overrideValues");
       }
    }
 
@@ -483,9 +558,14 @@ public class QInstanceValidator
     *******************************************************************************/
    private void validateTableCacheOf(QInstance qInstance, QTableMetaData table)
    {
-      CacheOf cacheOf         = table.getCacheOf();
-      String  prefix          = "Table " + table.getName() + " cacheOf ";
-      String  sourceTableName = cacheOf.getSourceTable();
+      CacheOf cacheOf = table.getCacheOf();
+      if(cacheOf == null)
+      {
+         return;
+      }
+
+      String prefix          = "Table " + table.getName() + " cacheOf ";
+      String sourceTableName = cacheOf.getSourceTable();
       if(assertCondition(StringUtils.hasContent(sourceTableName), prefix + "is missing a sourceTable name"))
       {
          assertCondition(qInstance.getTable(sourceTableName) != null, prefix + "is referencing an unknown sourceTable: " + sourceTableName);
@@ -517,7 +597,7 @@ public class QInstanceValidator
    private void validateAssociatedScripts(QTableMetaData table)
    {
       Set<String> usedFieldNames = new HashSet<>();
-      for(AssociatedScript associatedScript : table.getAssociatedScripts())
+      for(AssociatedScript associatedScript : CollectionUtils.nonNullList(table.getAssociatedScripts()))
       {
          if(assertCondition(StringUtils.hasContent(associatedScript.getFieldName()), "Table " + table.getName() + " has an associatedScript without a fieldName"))
          {
@@ -546,7 +626,7 @@ public class QInstanceValidator
    private void validateTableUniqueKeys(QTableMetaData table)
    {
       Set<Set<String>> ukSets = new HashSet<>();
-      for(UniqueKey uniqueKey : table.getUniqueKeys())
+      for(UniqueKey uniqueKey : CollectionUtils.nonNullList(table.getUniqueKeys()))
       {
          if(assertCondition(CollectionUtils.nullSafeHasContents(uniqueKey.getFieldNames()), table.getName() + " has a uniqueKey with no fields"))
          {
@@ -571,10 +651,14 @@ public class QInstanceValidator
     *******************************************************************************/
    private void validateTableAutomationDetails(QInstance qInstance, QTableMetaData table)
    {
+      QTableAutomationDetails automationDetails = table.getAutomationDetails();
+      if(automationDetails == null)
+      {
+         return;
+      }
+
       String tableName = table.getName();
       String prefix    = "Table " + tableName + " automationDetails ";
-
-      QTableAutomationDetails automationDetails = table.getAutomationDetails();
 
       //////////////////////////////////////
       // validate the automation provider //
@@ -903,8 +987,6 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(processName, process.getName()), "Inconsistent naming for process: " + processName + "/" + process.getName() + ".");
 
-            validateAppChildHasValidParentAppName(qInstance, process);
-
             /////////////////////////////////////////////
             // validate the table name for the process //
             /////////////////////////////////////////////
@@ -958,7 +1040,6 @@ public class QInstanceValidator
          qInstance.getReports().forEach((reportName, report) ->
          {
             assertCondition(Objects.equals(reportName, report.getName()), "Inconsistent naming for report: " + reportName + "/" + report.getName() + ".");
-            validateAppChildHasValidParentAppName(qInstance, report);
 
             ////////////////////////////////////////
             // validate dataSources in the report //
@@ -984,7 +1065,7 @@ public class QInstanceValidator
                      {
                         if(dataSource.getQueryFilter() != null)
                         {
-                           validateQueryFilter("In " + dataSourceErrorPrefix + "query filter - ", qInstance.getTable(dataSource.getSourceTable()), dataSource.getQueryFilter());
+                           validateQueryFilter(qInstance, "In " + dataSourceErrorPrefix + "query filter - ", qInstance.getTable(dataSource.getSourceTable()), dataSource.getQueryFilter(), dataSource.getQueryJoins());
                         }
                      }
                   }
@@ -999,9 +1080,9 @@ public class QInstanceValidator
                }
             }
 
-            ////////////////////////////////////////
-            // validate dataSources in the report //
-            ////////////////////////////////////////
+            //////////////////////////////////
+            // validate views in the report //
+            //////////////////////////////////
             if(assertCondition(CollectionUtils.nullSafeHasContents(report.getViews()), "At least 1 view must be defined in report " + reportName + "."))
             {
                int         index         = 0;
@@ -1015,19 +1096,30 @@ public class QInstanceValidator
                   usedViewNames.add(view.getName());
 
                   String viewErrorPrefix = "Report " + reportName + " view " + view.getName() + " ";
-                  assertCondition(view.getType() != null, viewErrorPrefix + " is missing its type.");
-                  if(assertCondition(StringUtils.hasContent(view.getDataSourceName()), viewErrorPrefix + " is missing a dataSourceName"))
+                  assertCondition(view.getType() != null, viewErrorPrefix + "is missing its type.");
+                  if(assertCondition(StringUtils.hasContent(view.getDataSourceName()), viewErrorPrefix + "is missing a dataSourceName"))
                   {
-                     assertCondition(usedDataSourceNames.contains(view.getDataSourceName()), viewErrorPrefix + " has an unrecognized dataSourceName: " + view.getDataSourceName());
+                     assertCondition(usedDataSourceNames.contains(view.getDataSourceName()), viewErrorPrefix + "has an unrecognized dataSourceName: " + view.getDataSourceName());
                   }
 
                   if(StringUtils.hasContent(view.getVarianceDataSourceName()))
                   {
-                     assertCondition(usedDataSourceNames.contains(view.getVarianceDataSourceName()), viewErrorPrefix + " has an unrecognized varianceDataSourceName: " + view.getVarianceDataSourceName());
+                     assertCondition(usedDataSourceNames.contains(view.getVarianceDataSourceName()), viewErrorPrefix + "has an unrecognized varianceDataSourceName: " + view.getVarianceDataSourceName());
                   }
 
-                  // actually, this is okay if there's a customizer, so...
-                  assertCondition(CollectionUtils.nullSafeHasContents(view.getColumns()), viewErrorPrefix + " does not have any columns.");
+                  boolean hasColumns        = CollectionUtils.nullSafeHasContents(view.getColumns());
+                  boolean hasViewCustomizer = view.getViewCustomizer() != null;
+                  assertCondition(hasColumns || hasViewCustomizer, viewErrorPrefix + "does not have any columns or a view customizer.");
+
+                  Set<String> usedColumnNames = new HashSet<>();
+                  for(QReportField column : CollectionUtils.nonNullList(view.getColumns()))
+                  {
+                     assertCondition(StringUtils.hasContent(column.getName()), viewErrorPrefix + "has a column with no name.");
+                     assertCondition(!usedColumnNames.contains(column.getName()), viewErrorPrefix + "has multiple columns named: " + column.getName());
+                     usedColumnNames.add(column.getName());
+
+                     // todo - is field name valid?
+                  }
 
                   // todo - all these too...
                   // view.getPivotFields();
@@ -1047,30 +1139,83 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateQueryFilter(String context, QTableMetaData table, QQueryFilter queryFilter)
+   private void validateQueryFilter(QInstance qInstance, String context, QTableMetaData table, QQueryFilter queryFilter, List<QueryJoin> queryJoins)
    {
       for(QFilterCriteria criterion : CollectionUtils.nonNullList(queryFilter.getCriteria()))
       {
-         if(assertCondition(StringUtils.hasContent(criterion.getFieldName()), context + "Missing fieldName for a criteria"))
+         String fieldName = criterion.getFieldName();
+         if(assertCondition(StringUtils.hasContent(fieldName), context + "Missing fieldName for a criteria"))
          {
-            assertNoException(() -> table.getField(criterion.getFieldName()), context + "Criteria fieldName " + criterion.getFieldName() + " is not a field in this table.");
+            assertCondition(findField(qInstance, table, queryJoins, fieldName), context + "Criteria fieldName " + fieldName + " is not a field in this table (or in any given joins).");
          }
-         assertCondition(criterion.getOperator() != null, context + "Missing operator for a criteria on fieldName " + criterion.getFieldName());
-         assertCondition(criterion.getValues() != null, context + "Missing values for a criteria on fieldName " + criterion.getFieldName()); // todo - what about ops w/ no value (BLANK)
+         assertCondition(criterion.getOperator() != null, context + "Missing operator for a criteria on fieldName " + fieldName);
+         assertCondition(criterion.getValues() != null, context + "Missing values for a criteria on fieldName " + fieldName); // todo - what about ops w/ no value (BLANK)
       }
 
       for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(queryFilter.getOrderBys()))
       {
          if(assertCondition(StringUtils.hasContent(orderBy.getFieldName()), context + "Missing fieldName for an orderBy"))
          {
-            assertNoException(() -> table.getField(orderBy.getFieldName()), context + "OrderBy fieldName " + orderBy.getFieldName() + " is not a field in this table.");
+            assertCondition(findField(qInstance, table, queryJoins, orderBy.getFieldName()), context + "OrderBy fieldName " + orderBy.getFieldName() + " is not a field in this table (or in any given joins).");
          }
       }
 
       for(QQueryFilter subFilter : CollectionUtils.nonNullList(queryFilter.getSubFilters()))
       {
-         validateQueryFilter(context, table, subFilter);
+         validateQueryFilter(qInstance, context, table, subFilter, queryJoins);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Look for a field name in either a table, or the tables referenced in a list of query joins.
+    *******************************************************************************/
+   private boolean findField(QInstance qInstance, QTableMetaData table, List<QueryJoin> queryJoins, String fieldName)
+   {
+      boolean foundField = false;
+      try
+      {
+         table.getField(fieldName);
+         foundField = true;
+      }
+      catch(Exception e)
+      {
+         if(fieldName.contains("."))
+         {
+            String fieldNameAfterDot = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+
+            if(CollectionUtils.nullSafeHasContents(queryJoins))
+            {
+               for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
+               {
+                  QTableMetaData joinTable = qInstance.getTable(queryJoin.getJoinTable());
+                  if(joinTable != null)
+                  {
+                     try
+                     {
+                        joinTable.getField(fieldNameAfterDot);
+                        foundField = true;
+                        break;
+                     }
+                     catch(Exception e2)
+                     {
+                        continue;
+                     }
+                  }
+               }
+            }
+            else
+            {
+               errors.add("QInstanceValidator does not yet support finding a field that looks like a join field, but isn't associated with a query.");
+               return (true);
+               // todo! for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
+               // {
+               // }
+            }
+         }
+      }
+      return foundField;
    }
 
 
@@ -1096,7 +1241,10 @@ public class QInstanceValidator
                Set<String> childNames = new HashSet<>();
                for(QAppChildMetaData child : app.getChildren())
                {
-                  assertCondition(Objects.equals(appName, child.getParentAppName()), "Child " + child.getName() + " of app " + appName + " does not have its parent app properly set.");
+                  if(child instanceof QAppMetaData childApp)
+                  {
+                     assertCondition(Objects.equals(appName, childApp.getParentAppName()), "Child app " + child.getName() + " of app " + appName + " does not have its parent app properly set.");
+                  }
                   assertCondition(!childNames.contains(child.getName()), "App " + appName + " contains more than one child named " + child.getName());
                   childNames.add(child.getName());
                }
@@ -1322,7 +1470,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateAppChildHasValidParentAppName(QInstance qInstance, QAppChildMetaData appChild)
+   private void validateAppChildHasValidParentAppName(QInstance qInstance, QAppMetaData appChild)
    {
       if(appChild.getParentAppName() != null)
       {

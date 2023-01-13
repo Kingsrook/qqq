@@ -32,6 +32,7 @@ public enum QCriteriaOperator
    NOT_EQUALS,
    IN,
    NOT_IN,
+   IS_NULL_OR_IN,
    STARTS_WITH,
    ENDS_WITH,
    CONTAINS,

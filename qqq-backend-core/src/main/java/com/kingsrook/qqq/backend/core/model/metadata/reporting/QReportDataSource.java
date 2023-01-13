@@ -42,6 +42,7 @@ public class QReportDataSource
    private List<QueryJoin> queryJoins = null;
 
 
+   private QCodeReference queryInputCustomizer;
    private QCodeReference staticDataSupplier;
 
 
@@ -227,6 +228,40 @@ public class QReportDataSource
          this.queryJoins = new ArrayList<>();
       }
       this.queryJoins.add(queryJoin);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryInputCustomizer
+    **
+    *******************************************************************************/
+   public QCodeReference getQueryInputCustomizer()
+   {
+      return queryInputCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryInputCustomizer
+    **
+    *******************************************************************************/
+   public void setQueryInputCustomizer(QCodeReference queryInputCustomizer)
+   {
+      this.queryInputCustomizer = queryInputCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryInputCustomizer
+    **
+    *******************************************************************************/
+   public QReportDataSource withQueryInputCustomizer(QCodeReference queryInputCustomizer)
+   {
+      this.queryInputCustomizer = queryInputCustomizer;
       return (this);
    }
 

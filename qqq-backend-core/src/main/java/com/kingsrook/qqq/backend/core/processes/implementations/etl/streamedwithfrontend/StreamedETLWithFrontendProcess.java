@@ -41,6 +41,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
 
 /*******************************************************************************
@@ -377,9 +379,9 @@ public class StreamedETLWithFrontendProcess
 
 
       /*******************************************************************************
-       **
+       ** Attach more input fields to the process (to its first step)
        *******************************************************************************/
-      public Builder withPreviewStepInputFields(List<QFieldMetaData> fieldList)
+      public Builder withFields(List<QFieldMetaData> fieldList)
       {
          QBackendStepMetaData previewStep = processMetaData.getBackendStep(STEP_NAME_PREVIEW);
          for(QFieldMetaData field : fieldList)
@@ -389,5 +391,30 @@ public class StreamedETLWithFrontendProcess
 
          return (this);
       }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
+      {
+         processMetaData.setBasepullConfiguration(basepullConfiguration);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withSchedule(QScheduleMetaData schedule)
+      {
+         processMetaData.setSchedule(schedule);
+         return (this);
+      }
+
    }
 }

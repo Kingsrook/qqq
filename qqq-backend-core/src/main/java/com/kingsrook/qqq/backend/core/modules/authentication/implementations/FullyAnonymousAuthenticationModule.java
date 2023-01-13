@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
+package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
 import java.util.Map;
@@ -27,6 +27,7 @@ import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 
 
 /*******************************************************************************

@@ -55,7 +55,7 @@ class TableSyncProcessTest
     **
     *******************************************************************************/
    @Test
-   void test() throws QException
+   void test() throws Exception
    {
       QInstance qInstance = TestUtils.defineInstance();
 
@@ -86,10 +86,6 @@ class TableSyncProcessTest
       qInstance.addProcess(TableSyncProcess.processMetaDataBuilder(false)
          .withName(PROCESS_NAME)
          .withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withDestinationTable(TABLE_NAME_PEOPLE_SYNC)
-         .withSourceTableKeyField("id")
-         .withDestinationTableForeignKeyField("sourcePersonId")
          .withSyncTransformStepClass(PersonTransformClass.class)
          .getProcessMetaData());
 
@@ -140,6 +136,16 @@ class TableSyncProcessTest
          destinationRecord.setValue("firstName", sourceRecord.getValue("firstName"));
          destinationRecord.setValue("lastName", sourceRecord.getValue("lastName"));
          return (destinationRecord);
+      }
+
+
+
+      @Override
+      protected SyncProcessConfig getSyncProcessConfig()
+      {
+         SyncProcessConfig syncProcessConfig = new SyncProcessConfig(TestUtils.TABLE_NAME_PERSON_MEMORY, "id", "peopleSync", "sourcePersonId");
+         syncProcessConfig.noop();
+         return (syncProcessConfig);
       }
 
    }

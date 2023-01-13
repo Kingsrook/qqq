@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
@@ -46,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
@@ -55,7 +57,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -68,6 +74,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -497,8 +504,6 @@ class QInstanceValidatorTest
    void testChildrenWithBadParentAppName()
    {
       String[] reasons = new String[] { "Unrecognized parent app", "does not have its parent app properly set" };
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).setParentAppName("notAnApp"), reasons);
-      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).setParentAppName("notAnApp"), reasons);
       assertValidationFailureReasons((qInstance) -> qInstance.getApp(TestUtils.APP_NAME_GREETINGS).setParentAppName("notAnApp"), reasons);
    }
 
@@ -1436,7 +1441,187 @@ class QInstanceValidatorTest
             dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class, null));
          },
          "is not of the expected type");
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportViewBasics()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setViews(null),
+         "At least 1 view must be defined in report");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setViews(new ArrayList<>()),
+         "At least 1 view must be defined in report");
+
+      /////////////////////////////////////////////////////////////////////////
+      // meh, enricher sets a default name, so, can't easily catch this one. //
+      /////////////////////////////////////////////////////////////////////////
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setName(null),
+      //    "Missing name for a view");
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setName(""),
+      //    "Missing name for a view");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setType(null),
+         "missing its type");
+
+      /////////////////////////////////////////////////////////////////////////
+      // meh, enricher sets a default name, so, can't easily catch this one. //
+      /////////////////////////////////////////////////////////////////////////
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setDataSourceName(null),
+      //    "missing a dataSourceName");
+      // assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setDataSourceName(""),
+      //    "missing a dataSourceName");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setDataSourceName("notADataSource"),
+         "has an unrecognized dataSourceName");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportViewColumns()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).setColumns(null),
+         "does not have any columns or a view customizer");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns().get(0).setName(null),
+         "has a column with no name");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns().get(0).setName(""),
+         "has a column with no name");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            List<QReportField> columns = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns();
+            columns.get(0).setName("id");
+            columns.get(1).setName("id");
+         },
+         "has multiple columns named: id");
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldValueTooLongBehavior()
+   {
+      Function<QInstance, QFieldMetaData> fieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("firstName");
+
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.ERROR)), "specifies a ValueTooLongBehavior, but not a maxLength");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.TRUNCATE)), "specifies a ValueTooLongBehavior, but not a maxLength");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS)), "specifies a ValueTooLongBehavior, but not a maxLength");
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.PASS_THROUGH)));
+
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.ERROR).withMaxLength(0)), "invalid maxLength");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.ERROR).withMaxLength(-1)), "invalid maxLength");
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.ERROR).withMaxLength(1)));
+
+      Function<QInstance, QFieldMetaData> idFieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("id");
+      assertValidationFailureReasons((qInstance -> idFieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.ERROR).withMaxLength(1)), "maxLength, but is not of a supported type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecurityKeyTypes()
+   {
+      assertValidationFailureReasons((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType())),
+         "Missing name for a securityKeyType");
+
+      assertValidationFailureReasons((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType().withName(""))),
+         "Missing name for a securityKeyType");
+
+      assertThatThrownBy(() ->
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId"));
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId"));
+      }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Attempted to add a second securityKeyType with name: clientId");
+
+      assertValidationFailureReasons((qInstance ->
+      {
+         QSecurityKeyType securityKeyType1 = new QSecurityKeyType().withName("clientId");
+         QSecurityKeyType securityKeyType2 = new QSecurityKeyType().withName("notClientId");
+         qInstance.addSecurityKeyType(securityKeyType1);
+         qInstance.addSecurityKeyType(securityKeyType2);
+         securityKeyType2.setName("clientId");
+      }), "Inconsistent naming for securityKeyType");
+
+      assertValidationFailureReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("clientId"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: clientId");
+
+      assertValidationFailureReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("allAccess"));
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("warehouseId").withAllAccessKeyName("allAccess"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: allAccess");
+
+      assertValidationFailureReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("allAccess"));
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("allAccess"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: allAccess");
+
+      assertValidationFailureReasons((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withPossibleValueSourceName("nonPVS"))),
+         "Unrecognized possibleValueSourceName in securityKeyType");
+
+      assertValidationSuccess((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withPossibleValueSourceName(TestUtils.POSSIBLE_VALUE_SOURCE_STATE))));
+      assertValidationSuccess((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("clientAllAccess"))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityLocks()
+   {
+      Function<QInstance, RecordSecurityLock> lockExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().get(0);
+
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType(null)), "missing a securityKeyType");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType(" ")), "missing a securityKeyType");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType("notAKeyType")), "unrecognized securityKeyType");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName(null)), "missing a fieldName");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("")), "missing a fieldName");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("notAField")), "unrecognized field");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setNullValueBehavior(null)), "missing a nullValueBehavior");
+
+      // todo - remove once implemented
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("join.field")), "does not yet support finding a field that looks like a join field");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldSecurityLocks()
+   {
+      Function<QInstance, FieldSecurityLock> lockExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("total").getFieldSecurityLock();
+
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType(null)), "missing a securityKeyType");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType(" ")), "missing a securityKeyType");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType("notAKeyType")), "unrecognized securityKeyType");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setDefaultBehavior(null)), "missing a defaultBehavior");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setOverrideValues(null)), "missing overrideValues");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setOverrideValues(Collections.emptyList())), "missing overrideValues");
    }
 
 

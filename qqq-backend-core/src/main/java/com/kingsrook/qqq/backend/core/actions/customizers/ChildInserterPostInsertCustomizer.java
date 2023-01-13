@@ -117,6 +117,7 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          insertInput.setSession(getInsertInput().getSession());
          insertInput.setTableName(getChildTableName());
          insertInput.setRecords(childrenToInsert);
+         insertInput.setTransaction(this.insertInput.getTransaction());
          InsertOutput      insertOutput           = new InsertAction().execute(insertInput);
          Iterator<QRecord> insertedRecordIterator = insertOutput.getRecords().iterator();
 
@@ -148,6 +149,7 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          updateInput.setSession(getInsertInput().getSession());
          updateInput.setTableName(getInsertInput().getTableName());
          updateInput.setRecords(recordsToUpdate);
+         updateInput.setTransaction(this.insertInput.getTransaction());
          new UpdateAction().execute(updateInput);
 
          return (rs);

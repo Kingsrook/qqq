@@ -32,6 +32,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
@@ -40,19 +42,19 @@ import com.kingsrook.qqq.backend.core.processes.implementations.basepull.Basepul
  ** Meta-Data to define a process in a QQQ instance.
  **
  *******************************************************************************/
-public class QProcessMetaData implements QAppChildMetaData
+public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissionRules
 {
    private String                name;
    private String                label;
    private String                tableName;
    private boolean               isHidden = false;
    private BasepullConfiguration basepullConfiguration;
+   private QPermissionRules      permissionRules;
 
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
-   private String parentAppName;
-   private QIcon  icon;
+   private QIcon icon;
 
    private QScheduleMetaData schedule;
 
@@ -386,30 +388,6 @@ public class QProcessMetaData implements QAppChildMetaData
 
 
    /*******************************************************************************
-    ** Getter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public String getParentAppName()
-   {
-      return parentAppName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for parentAppName
-    **
-    *******************************************************************************/
-   @Override
-   public void setParentAppName(String parentAppName)
-   {
-      this.parentAppName = parentAppName;
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for icon
     **
     *******************************************************************************/
@@ -506,6 +484,37 @@ public class QProcessMetaData implements QAppChildMetaData
    public QProcessMetaData withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
    {
       this.basepullConfiguration = basepullConfiguration;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for permissionRules
+    *******************************************************************************/
+   public QPermissionRules getPermissionRules()
+   {
+      return (this.permissionRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for permissionRules
+    *******************************************************************************/
+   public void setPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for permissionRules
+    *******************************************************************************/
+   public QProcessMetaData withPermissionRules(QPermissionRules permissionRules)
+   {
+      this.permissionRules = permissionRules;
       return (this);
    }
 

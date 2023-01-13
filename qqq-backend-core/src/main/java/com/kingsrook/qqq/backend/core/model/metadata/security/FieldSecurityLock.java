@@ -19,134 +19,136 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import java.io.Serializable;
+import java.util.List;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of an Auth0 Authentication module
+ ** Define, for a field, a lock that controls if users can or cannot see the field.
  *******************************************************************************/
-public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
+public class FieldSecurityLock
 {
-   private String baseUrl;
-   private String clientId;
-
-   ////////////////////////////////////////////////////////////////////////////////////////
-   // keep this secret, on the server - don't let it be serialized and sent to a client! //
-   ////////////////////////////////////////////////////////////////////////////////////////
-   @JsonIgnore
-   private String clientSecret;
+   private String             securityKeyType;
+   private Behavior           defaultBehavior = Behavior.DENY;
+   private List<Serializable> overrideValues;
 
 
 
    /*******************************************************************************
-    ** Default Constructor.
-    *******************************************************************************/
-   public Auth0AuthenticationMetaData()
-   {
-      super();
-      setType(QAuthenticationType.AUTH_0);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter, override to help fluent flows
-    *******************************************************************************/
-   public Auth0AuthenticationMetaData withBaseUrl(String baseUrl)
-   {
-      setBaseUrl(baseUrl);
-      return this;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for baseUrl
+    ** Constructor
     **
     *******************************************************************************/
-   public String getBaseUrl()
+   public FieldSecurityLock()
    {
-      return baseUrl;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for baseUrl
     **
     *******************************************************************************/
-   public void setBaseUrl(String baseUrl)
+   public enum Behavior
    {
-      this.baseUrl = baseUrl;
+      ALLOW,
+      DENY
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter, override to help fluent flows
+    ** Getter for securityKeyType
     *******************************************************************************/
-   public Auth0AuthenticationMetaData withClientId(String clientId)
+   public String getSecurityKeyType()
    {
-      setClientId(clientId);
-      return this;
+      return (this.securityKeyType);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for clientId
-    **
+    ** Setter for securityKeyType
     *******************************************************************************/
-   public String getClientId()
+   public void setSecurityKeyType(String securityKeyType)
    {
-      return clientId;
+      this.securityKeyType = securityKeyType;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for clientId
-    **
+    ** Fluent setter for securityKeyType
     *******************************************************************************/
-   public void setClientId(String clientId)
+   public FieldSecurityLock withSecurityKeyType(String securityKeyType)
    {
-      this.clientId = clientId;
+      this.securityKeyType = securityKeyType;
+      return (this);
+   }
+
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultBehavior
+    *******************************************************************************/
+   public Behavior getDefaultBehavior()
+   {
+      return (this.defaultBehavior);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter, override to help fluent flows
+    ** Setter for defaultBehavior
     *******************************************************************************/
-   public Auth0AuthenticationMetaData withClientSecret(String clientSecret)
+   public void setDefaultBehavior(Behavior defaultBehavior)
    {
-      setClientSecret(clientSecret);
-      return this;
+      this.defaultBehavior = defaultBehavior;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for clientSecret
-    **
+    ** Fluent setter for defaultBehavior
     *******************************************************************************/
-   public String getClientSecret()
+   public FieldSecurityLock withDefaultBehavior(Behavior defaultBehavior)
    {
-      return clientSecret;
+      this.defaultBehavior = defaultBehavior;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for clientSecret
-    **
+    ** Getter for overrideValues
     *******************************************************************************/
-   public void setClientSecret(String clientSecret)
+   public List<Serializable> getOverrideValues()
    {
-      this.clientSecret = clientSecret;
+      return (this.overrideValues);
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideValues
+    *******************************************************************************/
+   public void setOverrideValues(List<Serializable> overrideValues)
+   {
+      this.overrideValues = overrideValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideValues
+    *******************************************************************************/
+   public FieldSecurityLock withOverrideValues(List<Serializable> overrideValues)
+   {
+      this.overrideValues = overrideValues;
+      return (this);
+   }
+
+
 }

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,68 +19,125 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.permissions;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- ** Meta-data to provide details of an authentication provider (e.g., google, saml,
- ** etc) within a qqq instance
  **
  *******************************************************************************/
-public class QAuthenticationMetaData
+public class QPermissionRules implements Cloneable
 {
-   private String name;
-   private QAuthenticationType type;
+   private PermissionLevel level;
+   private DenyBehavior    denyBehavior;
+   private String          permissionBaseName;
 
-   @JsonFilter("secretsFilter")
-   private Map<String, String> values;
+   private QCodeReference customPermissionChecker;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getValue(String key)
+   public static QPermissionRules defaultInstance()
    {
-      if(values == null)
-      {
-         return null;
-      }
-      return values.get(key);
+      return new QPermissionRules()
+         .withLevel(PermissionLevel.NOT_PROTECTED)
+         .withDenyBehavior(DenyBehavior.HIDDEN);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for level
     *******************************************************************************/
-   public void setValue(String key, String value)
+   public PermissionLevel getLevel()
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
+      return (this.level);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for level
     *******************************************************************************/
-   public QAuthenticationMetaData withValue(String key, String value)
+   public void setLevel(PermissionLevel level)
    {
-      if(values == null)
-      {
-         values = new HashMap<>();
-      }
-      values.put(key, value);
+      this.level = level;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for level
+    *******************************************************************************/
+   public QPermissionRules withLevel(PermissionLevel level)
+   {
+      this.level = level;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for denyBehavior
+    *******************************************************************************/
+   public DenyBehavior getDenyBehavior()
+   {
+      return (this.denyBehavior);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for denyBehavior
+    *******************************************************************************/
+   public void setDenyBehavior(DenyBehavior denyBehavior)
+   {
+      this.denyBehavior = denyBehavior;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for denyBehavior
+    *******************************************************************************/
+   public QPermissionRules withDenyBehavior(DenyBehavior denyBehavior)
+   {
+      this.denyBehavior = denyBehavior;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for permissionBaseName
+    *******************************************************************************/
+   public String getPermissionBaseName()
+   {
+      return (this.permissionBaseName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for permissionBaseName
+    *******************************************************************************/
+   public void setPermissionBaseName(String permissionBaseName)
+   {
+      this.permissionBaseName = permissionBaseName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for permissionBaseName
+    *******************************************************************************/
+   public QPermissionRules withPermissionBaseName(String permissionBaseName)
+   {
+      this.permissionBaseName = permissionBaseName;
       return (this);
    }
 
@@ -89,93 +146,48 @@ public class QAuthenticationMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getName()
+   @Override
+   public QPermissionRules clone()
    {
-      return name;
+      try
+      {
+         QPermissionRules clone = (QPermissionRules) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for customPermissionChecker
     *******************************************************************************/
-   public void setName(String name)
+   public QCodeReference getCustomPermissionChecker()
    {
-      this.name = name;
+      return (this.customPermissionChecker);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for customPermissionChecker
     *******************************************************************************/
-   public QAuthenticationMetaData withName(String name)
+   public void setCustomPermissionChecker(QCodeReference customPermissionChecker)
    {
-      this.name = name;
-      return (this);
+      this.customPermissionChecker = customPermissionChecker;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
+    ** Fluent setter for customPermissionChecker
     *******************************************************************************/
-   public QAuthenticationType getType()
+   public QPermissionRules withCustomPermissionChecker(QCodeReference customPermissionChecker)
    {
-      return type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    **
-    *******************************************************************************/
-   public void setType(QAuthenticationType type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QAuthenticationMetaData withType(QAuthenticationType type)
-   {
-      this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Map<String, String> getValues()
-   {
-      return values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void setValues(Map<String, String> values)
-   {
-      this.values = values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QAuthenticationMetaData withVales(Map<String, String> values)
-   {
-      this.values = values;
+      this.customPermissionChecker = customPermissionChecker;
       return (this);
    }
 

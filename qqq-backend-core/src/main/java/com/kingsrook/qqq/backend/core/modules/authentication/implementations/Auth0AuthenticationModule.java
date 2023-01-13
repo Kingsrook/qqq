@@ -19,16 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
+package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
@@ -45,14 +49,17 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
-import com.kingsrook.qqq.backend.core.modules.authentication.metadata.Auth0AuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
+import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -68,11 +75,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    public static final int ID_TOKEN_VALIDATION_INTERVAL_SECONDS = 1800;
 
-   public static final String AUTH0_ID_TOKEN_KEY = "sessionId";
-   public static final String BASIC_AUTH_KEY     = "basicAuthString";
+   public static final String AUTH0_ACCESS_TOKEN_KEY = "sessionId";
+   public static final String BASIC_AUTH_KEY         = "basicAuthString";
 
-   public static final String TOKEN_NOT_PROVIDED_ERROR = "Id Token was not provided";
-   public static final String COULD_NOT_DECODE_ERROR   = "Unable to decode id token";
+   public static final String TOKEN_NOT_PROVIDED_ERROR = "Access Token was not provided";
+   public static final String COULD_NOT_DECODE_ERROR   = "Unable to decode access token";
    public static final String EXPIRED_TOKEN_ERROR      = "Token has expired";
    public static final String INVALID_TOKEN_ERROR      = "An invalid token was provided";
 
@@ -93,42 +100,32 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       if(context.containsKey(BASIC_AUTH_KEY))
       {
          Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
-         AuthAPI auth = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
+         AuthAPI                     auth     = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
          try
          {
             /////////////////////////////////////////////////
             // decode the credentials from the header auth //
             /////////////////////////////////////////////////
             String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
-            byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
-            String credentials = new String(credDecoded, StandardCharsets.UTF_8);
-
-            /////////////////////////////////////
-            // call auth0 with a login request //
-            /////////////////////////////////////
-            TokenHolder result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
-               .setScope("openid email nickname")
-               .execute();
-
-            context.put(AUTH0_ID_TOKEN_KEY, result.getIdToken());
+            String accessToken       = getAccessTokenFromBase64BasicAuthCredentials(metaData, auth, base64Credentials);
+            context.put(AUTH0_ACCESS_TOKEN_KEY, accessToken);
          }
          catch(Auth0Exception e)
          {
             ////////////////
             // ¯\_(ツ)_/¯ //
             ////////////////
-            String message = "An unknown error occurred during handling basic auth";
+            String message = "Error handling basic authentication: " + e.getMessage();
             LOG.error(message, e);
             throw (new QAuthenticationException(message));
          }
-
       }
 
-      //////////////////////////////////////////////////
-      // get the jwt id token from the context object //
-      //////////////////////////////////////////////////
-      String idToken = context.get(AUTH0_ID_TOKEN_KEY);
-      if(idToken == null)
+      //////////////////////////////////////////////////////
+      // get the jwt access token from the context object //
+      //////////////////////////////////////////////////////
+      String accessToken = context.get(AUTH0_ACCESS_TOKEN_KEY);
+      if(accessToken == null)
       {
          LOG.warn(TOKEN_NOT_PROVIDED_ERROR);
          throw (new QAuthenticationException(TOKEN_NOT_PROVIDED_ERROR));
@@ -143,7 +140,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // try to build session to see if still valid      //
          // then call method to check more session validity //
          /////////////////////////////////////////////////////
-         QSession qSession = buildQSessionFromToken(idToken);
+         QSession qSession = buildQSessionFromToken(accessToken, qInstance);
          if(isSessionValid(qInstance, qSession))
          {
             return (qSession);
@@ -153,13 +150,13 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // if we make it here it means we have never validated this token or its been a long //
          // enough duration so we need to re-verify the token                                 //
          ///////////////////////////////////////////////////////////////////////////////////////
-         qSession = revalidateToken(qInstance, idToken);
+         qSession = revalidateToken(qInstance, accessToken);
 
          ////////////////////////////////////////////////////////////////////
          // put now into state so we dont check until next interval passes //
          ///////////////////////////////////////////////////////////////////
          StateProviderInterface spi = getStateProvider();
-         Auth0StateKey          key = new Auth0StateKey(qSession.getIdReference());
+         SimpleStateKey<String> key = new SimpleStateKey<>(qSession.getIdReference());
          spi.put(key, Instant.now());
 
          return (qSession);
@@ -201,6 +198,59 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   private String getAccessTokenFromBase64BasicAuthCredentials(Auth0AuthenticationMetaData metaData, AuthAPI auth, String base64Credentials) throws Auth0Exception
+   {
+      ////////////////////////////////////////////////////////////////////////////////////
+      // look for a fresh accessToken in the state provider for this set of credentials //
+      ////////////////////////////////////////////////////////////////////////////////////
+      SimpleStateKey<String> accessTokenStateKey = new SimpleStateKey<>(base64Credentials + ":accessToken");
+      SimpleStateKey<String> timestampStateKey   = new SimpleStateKey<>(base64Credentials + ":timestamp");
+      StateProviderInterface stateProvider       = getStateProvider();
+      Optional<String>       cachedAccessToken   = stateProvider.get(String.class, accessTokenStateKey);
+      Optional<Instant>      cachedTimestamp     = stateProvider.get(Instant.class, timestampStateKey);
+      if(cachedAccessToken.isPresent() && cachedTimestamp.isPresent())
+      {
+         if(cachedTimestamp.get().isAfter(Instant.now().minus(1, ChronoUnit.MINUTES)))
+         {
+            return cachedAccessToken.get();
+         }
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////
+      // not found in cache, make request to auth0 and cache the returned accessToken //
+      //////////////////////////////////////////////////////////////////////////////////
+      byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
+      String credentials = new String(credDecoded, StandardCharsets.UTF_8);
+
+      String accessToken = getAccessTokenFromAuth0(metaData, auth, credentials);
+      stateProvider.put(accessTokenStateKey, accessToken);
+      stateProvider.put(timestampStateKey, Instant.now());
+      return (accessToken);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String getAccessTokenFromAuth0(Auth0AuthenticationMetaData metaData, AuthAPI auth, String credentials) throws Auth0Exception
+   {
+      /////////////////////////////////////
+      // call auth0 with a login request //
+      /////////////////////////////////////
+      TokenHolder result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
+         .setScope("openid email nickname")
+         .setAudience(metaData.getAudience())
+         .execute();
+
+      return (result.getAccessToken());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public boolean isSessionValid(QInstance instance, QSession session)
    {
@@ -215,7 +265,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       }
 
       StateProviderInterface spi                     = getStateProvider();
-      Auth0StateKey          key                     = new Auth0StateKey(session.getIdReference());
+      SimpleStateKey<String> key                     = new SimpleStateKey<>(session.getIdReference());
       Optional<Instant>      lastTimeCheckedOptional = spi.get(Instant.class, key);
       if(lastTimeCheckedOptional.isPresent())
       {
@@ -259,11 +309,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     ** makes request to check if a token is still valid and build new qSession if it is
     **
     *******************************************************************************/
-   private QSession revalidateToken(QInstance qInstance, String idToken) throws JwkException
+   private QSession revalidateToken(QInstance qInstance, String accessToken) throws JwkException
    {
       Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
 
-      DecodedJWT  jwt       = JWT.decode(idToken);
+      DecodedJWT  jwt       = JWT.decode(accessToken);
       JwkProvider provider  = new UrlJwkProvider(metaData.getBaseUrl());
       Jwk         jwk       = provider.get(jwt.getKeyId());
       Algorithm   algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
@@ -274,9 +324,9 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       ///////////////////////////////////
       // make call to verify the token //
       ///////////////////////////////////
-      verifier.verify(idToken);
+      verifier.verify(accessToken);
 
-      return (buildQSessionFromToken(idToken));
+      return (buildQSessionFromToken(accessToken, qInstance));
    }
 
 
@@ -285,43 +335,172 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     ** extracts info from token creating a QSession
     **
     *******************************************************************************/
-   private QSession buildQSessionFromToken(String idToken) throws JwkException
+   private QSession buildQSessionFromToken(String accessToken, QInstance qInstance) throws JwkException
    {
       ////////////////////////////////////
       // decode and extract the payload //
       ////////////////////////////////////
-      DecodedJWT     jwt           = JWT.decode(idToken);
+      DecodedJWT     jwt           = JWT.decode(accessToken);
       Base64.Decoder decoder       = Base64.getUrlDecoder();
       String         payloadString = new String(decoder.decode(jwt.getPayload()));
       JSONObject     payload       = new JSONObject(payloadString);
 
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // create user object.  look for multiple possible keys in the jwt payload where the name & email may be //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       QUser qUser = new QUser();
-      if(payload.has("name"))
+      qUser.setFullName("Unknown");
+      for(String key : List.of("name", "com.kingsrook.qqq.name"))
       {
-         qUser.setFullName(payload.getString("name"));
-      }
-      else
-      {
-         qUser.setFullName("Unknown");
-      }
-
-      if(payload.has("email"))
-      {
-         qUser.setIdReference(payload.getString("email"));
-      }
-      else
-      {
-         if(payload.has("sub"))
+         if(payload.has(key))
          {
-            qUser.setIdReference(payload.getString("sub"));
+            qUser.setFullName(payload.getString(key));
+            break;
          }
       }
 
+      for(String key : List.of("email", "com.kingsrook.qqq.email", "sub"))
+      {
+         if(payload.has(key))
+         {
+            qUser.setIdReference(payload.getString(key));
+            break;
+         }
+      }
+
+      /////////////////////////////////////////////////////////
+      // create session object - link to access token & user //
+      /////////////////////////////////////////////////////////
       QSession qSession = new QSession();
-      qSession.setIdReference(idToken);
+      qSession.setIdReference(accessToken);
       qSession.setUser(qUser);
 
+      /////////////////////////////////////////////////
+      // set permissions in the session from the JWT //
+      /////////////////////////////////////////////////
+      setPermissionsInSessionFromJwtPayload(payload, qSession);
+
+      ///////////////////////////////////////////////////
+      // set security keys in the session from the JWT //
+      ///////////////////////////////////////////////////
+      setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+
       return (qSession);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void setPermissionsInSessionFromJwtPayload(JSONObject payload, QSession qSession)
+   {
+      HashSet<String> permissions = new HashSet<>();
+      if(payload.has("permissions"))
+      {
+         try
+         {
+            JSONArray jwtPermissions = payload.getJSONArray("permissions");
+            for(int i = 0; i < jwtPermissions.length(); i++)
+            {
+               permissions.add(jwtPermissions.optString(i));
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.error("Error getting permissions from JWT", e);
+         }
+      }
+      qSession.setPermissions(permissions);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void setSecurityKeysInSessionFromJwtPayload(QInstance qInstance, JSONObject payload, QSession qSession)
+   {
+      for(String payloadKey : List.of("com.kingsrook.qqq.app_metadata", "com.kingsrook.qqq.client_metadata"))
+      {
+         if(!payload.has(payloadKey))
+         {
+            continue;
+         }
+
+         try
+         {
+            JSONObject  appMetadata             = payload.getJSONObject(payloadKey);
+            Set<String> allowedSecurityKeyNames = qInstance.getAllowedSecurityKeyNames();
+
+            //////////////////////////////////////////////////////////////////////////////////
+            // for users, they will have a map of securityKeyValues (in their app_metadata) //
+            //////////////////////////////////////////////////////////////////////////////////
+            JSONObject securityKeyValues = appMetadata.optJSONObject("securityKeyValues");
+            if(securityKeyValues != null)
+            {
+               for(String keyName : securityKeyValues.keySet())
+               {
+                  setSecurityKeyValuesFromToken(allowedSecurityKeyNames, qSession, keyName, securityKeyValues, keyName);
+               }
+            }
+            else
+            {
+               //////////////////////////////////////////////////////////////////////////////////////////////////
+               // for system-logins, there will be keys prefixed by securityKeyValues: (under client_metadata) //
+               //////////////////////////////////////////////////////////////////////////////////////////////////
+               for(String appMetaDataKey : appMetadata.keySet())
+               {
+                  if(appMetaDataKey.startsWith("securityKeyValues:"))
+                  {
+                     String securityKeyName = appMetaDataKey.replace("securityKeyValues:", "");
+                     setSecurityKeyValuesFromToken(allowedSecurityKeyNames, qSession, securityKeyName, appMetadata, appMetaDataKey);
+                  }
+               }
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.error("Error getting securityKey values from app_metadata from JWT", e);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setSecurityKeyValuesFromToken(Set<String> allowedSecurityKeyNames, QSession qSession, String securityKeyName, JSONObject securityKeyValues, String jsonKey)
+   {
+      if(!allowedSecurityKeyNames.contains(securityKeyName))
+      {
+         QUser user = qSession.getUser();
+         LOG.warn("Unrecognized security key name [" + securityKeyName + "] when creating session for user [" + user + "].  Allowed key names are: " + allowedSecurityKeyNames);
+         return;
+      }
+
+      JSONArray valueArray = securityKeyValues.optJSONArray(jsonKey);
+      if(valueArray != null)
+      {
+         // todo - types?
+         for(int i = 0; i < valueArray.length(); i++)
+         {
+            Object optValue = valueArray.opt(i);
+            if(optValue != null)
+            {
+               qSession.withSecurityKeyValue(securityKeyName, ValueUtils.getValueAsString(optValue));
+            }
+         }
+      }
+      else
+      {
+         String value = securityKeyValues.optString(jsonKey);
+         if(value != null)
+         {
+            qSession.withSecurityKeyValue(securityKeyName, value);
+         }
+      }
    }
 
 
@@ -330,84 +509,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     ** Load an instance of the appropriate state provider
     **
     *******************************************************************************/
-   public static StateProviderInterface getStateProvider()
+   private static StateProviderInterface getStateProvider()
    {
       // TODO - read this from somewhere in meta data eh?
       return (InMemoryStateProvider.getInstance());
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class Auth0StateKey extends AbstractStateKey
-   {
-      private final String key;
-
-
-
-      /*******************************************************************************
-       ** Constructor.
-       **
-       *******************************************************************************/
-      Auth0StateKey(String key)
-      {
-         this.key = key;
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public String toString()
-      {
-         return (this.key);
-      }
-
-
-
-      /*******************************************************************************
-       ** Make the key give a unique string to identify itself.
-       *
-       *******************************************************************************/
-      @Override
-      public String getUniqueIdentifier()
-      {
-         return (this.key);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public boolean equals(Object o)
-      {
-         if(this == o)
-         {
-            return true;
-         }
-         if(o == null || getClass() != o.getClass())
-         {
-            return false;
-         }
-         Auth0StateKey that = (Auth0StateKey) o;
-         return key.equals(that.key);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      @Override
-      public int hashCode()
-      {
-         return key.hashCode();
-      }
-   }
 }
