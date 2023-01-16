@@ -102,7 +102,7 @@ public class DeleteAction
          QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
          QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
 
-         QueryInput queryInput = new QueryInput(deleteInput.getInstance(), deleteInput.getSession());
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(deleteInput.getTableName());
          queryInput.setFilter(deleteInput.getQueryFilter());
          QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);

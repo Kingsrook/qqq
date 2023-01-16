@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.sql.Connection;
+import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -32,7 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RDBMSActionTest
+public class RDBMSActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -55,7 +56,6 @@ public class RDBMSActionTest
    {
       TestUtils.primeTestDatabase("prime-test-database.sql");
    }
-
 
 
 

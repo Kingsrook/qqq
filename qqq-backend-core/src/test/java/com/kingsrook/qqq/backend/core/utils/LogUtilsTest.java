@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.math.BigDecimal;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.utils.LogUtils
  *******************************************************************************/
-class LogUtilsTest
+class LogUtilsTest extends BaseTest
 {
    private static final Logger LOG = LogManager.getLogger(LogUtilsTest.class);
 

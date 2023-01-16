@@ -70,8 +70,7 @@ public class RunAssociatedScriptAction
 
       ScriptRevision scriptRevision = getCurrentScriptRevision(input, script.getCurrentScriptRevisionId());
 
-      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput(input.getInstance());
-      executeCodeInput.setSession(input.getSession());
+      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setInput(new HashMap<>(input.getInputValues()));
       executeCodeInput.setContext(new HashMap<>());
       if(input.getOutputObject() != null)
@@ -93,8 +92,7 @@ public class RunAssociatedScriptAction
     *******************************************************************************/
    private ScriptRevision getCurrentScriptRevision(RunAssociatedScriptInput input, Serializable scriptRevisionId) throws QException
    {
-      GetInput getInput = new GetInput(input.getInstance());
-      getInput.setSession(input.getSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName("scriptRevision");
       getInput.setPrimaryKey(scriptRevisionId);
       GetOutput getOutput = new GetAction().execute(getInput);
@@ -114,8 +112,7 @@ public class RunAssociatedScriptAction
     *******************************************************************************/
    private Script getScript(RunAssociatedScriptInput input, Serializable scriptId) throws QException
    {
-      GetInput getInput = new GetInput(input.getInstance());
-      getInput.setSession(input.getSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName("script");
       getInput.setPrimaryKey(scriptId);
       GetOutput getOutput = new GetAction().execute(getInput);
@@ -136,8 +133,7 @@ public class RunAssociatedScriptAction
     *******************************************************************************/
    private Serializable getScriptId(RunAssociatedScriptInput input) throws QException
    {
-      GetInput getInput = new GetInput(input.getInstance());
-      getInput.setSession(input.getSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(input.getCodeReference().getRecordTable());
       getInput.setPrimaryKey(input.getCodeReference().getRecordPrimaryKey());
       GetOutput getOutput = new GetAction().execute(getInput);

@@ -186,7 +186,7 @@ public class QJavalinProcessHandler
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ReportInput reportInput = new ReportInput(QJavalinImplementation.qInstance);
+         ReportInput reportInput = new ReportInput();
          QJavalinImplementation.setupSession(context, reportInput);
          PermissionsHelper.checkReportPermissionThrowing(reportInput, reportName);
 
@@ -296,7 +296,7 @@ public class QJavalinProcessHandler
          LOG.info(startAfterStep == null ? "Initiating process [" + processName + "] [" + processUUID + "]"
             : "Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
 
-         RunProcessInput runProcessInput = new RunProcessInput(QJavalinImplementation.qInstance);
+         RunProcessInput runProcessInput = new RunProcessInput();
          QJavalinImplementation.setupSession(context, runProcessInput);
 
          runProcessInput.setProcessName(processName);
@@ -484,8 +484,7 @@ public class QJavalinProcessHandler
          + File.separator + runProcessInput.getProcessName()
          + File.separator + qUploadedFile.getFilename();
 
-      InsertInput insertInput = new InsertInput(QJavalinImplementation.qInstance);
-      insertInput.setSession(runProcessInput.getSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName());
       insertInput.setRecords(List.of(new QRecord()
          .withValue("fileName", fileName)
@@ -569,7 +568,7 @@ public class QJavalinProcessHandler
 
       try
       {
-         AbstractActionInput input = new AbstractActionInput(QJavalinImplementation.qInstance);
+         AbstractActionInput input = new AbstractActionInput();
          QJavalinImplementation.setupSession(context, input);
 
          // todo... get process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
@@ -638,7 +637,7 @@ public class QJavalinProcessHandler
    {
       try
       {
-         AbstractActionInput input = new AbstractActionInput(QJavalinImplementation.qInstance);
+         AbstractActionInput input = new AbstractActionInput();
          QJavalinImplementation.setupSession(context, input);
          // todo - need process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
 

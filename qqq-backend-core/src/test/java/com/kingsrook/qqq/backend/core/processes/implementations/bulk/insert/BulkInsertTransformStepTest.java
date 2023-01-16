@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -36,7 +37,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for BulkInsertTransformStep
  *******************************************************************************/
-class BulkInsertTransformStepTest
+class BulkInsertTransformStepTest extends BaseTest
 {
    public static final String TABLE_NAME = "ukTest";
 
@@ -81,6 +81,8 @@ class BulkInsertTransformStepTest
          .withUniqueKey(new UniqueKey().withFieldName("uuid"))
          .withUniqueKey(new UniqueKey().withFieldName("sku").withFieldName("storeId")), instance);
 
+      reInitInstanceInContext(instance);
+
       ////////////////////////////////////////////////////////////
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
@@ -94,10 +96,9 @@ class BulkInsertTransformStepTest
       // setup & run the bulk insert transform //
       ///////////////////////////////////////////
       BulkInsertTransformStep bulkInsertTransformStep = new BulkInsertTransformStep();
-      RunBackendStepInput     input                   = new RunBackendStepInput(instance);
+      RunBackendStepInput     input                   = new RunBackendStepInput();
       RunBackendStepOutput    output                  = new RunBackendStepOutput();
 
-      input.setSession(new QSession());
       input.setTableName(TABLE_NAME);
       input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
       input.setRecords(List.of(
@@ -162,6 +163,7 @@ class BulkInsertTransformStepTest
       QTableMetaData table = defineTable(new QTableMetaData()
          .withName(TABLE_NAME)
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME), instance);
+      reInitInstanceInContext(instance);
 
       ////////////////////////////////////////////////////////////
       // insert some records that will cause some UK violations //
@@ -176,10 +178,9 @@ class BulkInsertTransformStepTest
       // setup & run the bulk insert transform //
       ///////////////////////////////////////////
       BulkInsertTransformStep bulkInsertTransformStep = new BulkInsertTransformStep();
-      RunBackendStepInput     input                   = new RunBackendStepInput(instance);
+      RunBackendStepInput     input                   = new RunBackendStepInput();
       RunBackendStepOutput    output                  = new RunBackendStepOutput();
 
-      input.setSession(new QSession());
       input.setTableName(TABLE_NAME);
       input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
       input.setRecords(List.of(

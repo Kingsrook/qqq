@@ -76,6 +76,8 @@ public class QPossibleValueTranslator
    ///////////////////////////////////////////////////////
    private Map<String, Map<Serializable, String>> possibleValueCache;
 
+   // todo not commit - remove instance & session - use Context
+
 
 
    /*******************************************************************************
@@ -503,8 +505,7 @@ public class QPossibleValueTranslator
 
          for(List<Serializable> page : CollectionUtils.getPages(values, 1000))
          {
-            QueryInput queryInput = new QueryInput(qInstance);
-            queryInput.setSession(session);
+            QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
             queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, page)));
 

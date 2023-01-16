@@ -26,18 +26,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.templates.ConvertHtmlToPdfInput;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  ** Unit test for ConvertHtmlToPdfAction
  *******************************************************************************/
-class ConvertHtmlToPdfActionTest
+class ConvertHtmlToPdfActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -46,9 +46,8 @@ class ConvertHtmlToPdfActionTest
    @Test
    void test() throws QException, IOException
    {
-      QInstance             instance = TestUtils.defineInstance();
-      ConvertHtmlToPdfInput input    = new ConvertHtmlToPdfInput(instance);
-      input.setSession(new QSession());
+      QInstance             instance = QContext.getQInstance();
+      ConvertHtmlToPdfInput input    = new ConvertHtmlToPdfInput();
 
       input.setHtml("""
          <html>

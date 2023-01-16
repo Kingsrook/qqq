@@ -23,12 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  ** Unit test for DeleteAction
  **
  *******************************************************************************/
-class DeleteActionTest
+class DeleteActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -51,8 +51,7 @@ class DeleteActionTest
    @Test
    public void test() throws QException
    {
-      DeleteInput request = new DeleteInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      DeleteInput request = new DeleteInput();
       request.setTableName("person");
       request.setPrimaryKeys(List.of(1, 2));
       DeleteOutput result = new DeleteAction().execute(request);
@@ -69,8 +68,7 @@ class DeleteActionTest
    @Test
    void testErrorIfBothPrimaryKeysAndFilter()
    {
-      DeleteInput request = new DeleteInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      DeleteInput request = new DeleteInput();
       request.setTableName("person");
       request.setPrimaryKeys(List.of(1, 2));
       request.setQueryFilter(new QQueryFilter());

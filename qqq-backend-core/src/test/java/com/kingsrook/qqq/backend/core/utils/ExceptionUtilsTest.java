@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  ** Unit test for ExceptionUtils
  **
  *******************************************************************************/
-class ExceptionUtilsTest
+class ExceptionUtilsTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -67,7 +68,7 @@ class ExceptionUtilsTest
       assertSame(root, ExceptionUtils.getRootException(container));
 
       Exception middle = new Exception("middle", root);
-      Exception top = new Exception("top", middle);
+      Exception top    = new Exception("top", middle);
       assertSame(root, ExceptionUtils.getRootException(top));
 
       ////////////////////////////////////////////////////////////////////////////////////////

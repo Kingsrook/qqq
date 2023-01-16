@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.adapters;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  ** Unit test for JsonToQFieldMappingAdapter
  **
  *******************************************************************************/
-class JsonToQFieldMappingAdapterTest
+class JsonToQFieldMappingAdapterTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -141,7 +142,7 @@ class JsonToQFieldMappingAdapterTest
       QIndexBasedFieldMapping original = new QIndexBasedFieldMapping()
          .withMapping("foo", 0)
          .withMapping("bar", 1);
-      String json = JsonUtils.toJson(original);
+      String                   json         = JsonUtils.toJson(original);
       AbstractQFieldMapping<?> deserialized = new JsonToQFieldMappingAdapter().buildMappingFromJson(json);
       Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(original);
    }
@@ -157,7 +158,7 @@ class JsonToQFieldMappingAdapterTest
       QKeyBasedFieldMapping original = new QKeyBasedFieldMapping()
          .withMapping("foo", "Fu")
          .withMapping("bar", "Bahr");
-      String json = JsonUtils.toJson(original);
+      String                   json         = JsonUtils.toJson(original);
       AbstractQFieldMapping<?> deserialized = new JsonToQFieldMappingAdapter().buildMappingFromJson(json);
       Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(original);
    }

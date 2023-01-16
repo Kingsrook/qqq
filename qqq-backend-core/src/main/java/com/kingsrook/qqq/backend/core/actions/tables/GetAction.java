@@ -123,8 +123,7 @@ public class GetAction
             {
                QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
 
-               InsertInput insertInput = new InsertInput(getInput.getInstance());
-               insertInput.setSession(getInput.getSession());
+               InsertInput insertInput = new InsertInput();
                insertInput.setTableName(getInput.getTableName());
                insertInput.setRecords(List.of(recordToCache));
                InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -190,8 +189,7 @@ public class GetAction
                QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
                recordToCache.setValue(table.getPrimaryKeyField(), cachedRecord.getValue(table.getPrimaryKeyField()));
 
-               UpdateInput updateInput = new UpdateInput(getInput.getInstance());
-               updateInput.setSession(getInput.getSession());
+               UpdateInput updateInput = new UpdateInput();
                updateInput.setTableName(getInput.getTableName());
                updateInput.setRecords(List.of(recordToCache));
                UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
@@ -203,8 +201,7 @@ public class GetAction
                /////////////////////////////////////////////////////////////////////////////
                // if the record is no longer in the source, then remove it from the cache //
                /////////////////////////////////////////////////////////////////////////////
-               DeleteInput deleteInput = new DeleteInput(getInput.getInstance());
-               deleteInput.setSession(getInput.getSession());
+               DeleteInput deleteInput = new DeleteInput();
                deleteInput.setTableName(getInput.getTableName());
                deleteInput.setPrimaryKeys(List.of(getOutput.getRecord().getValue(table.getPrimaryKeyField())));
                new DeleteAction().execute(deleteInput);
@@ -252,8 +249,7 @@ public class GetAction
       /////////////////////////////////////////////////////
       // do a Get on the source table, by the unique key //
       /////////////////////////////////////////////////////
-      GetInput sourceGetInput = new GetInput(getInput.getInstance());
-      sourceGetInput.setSession(getInput.getSession());
+      GetInput sourceGetInput = new GetInput();
       sourceGetInput.setTableName(sourceTableName);
       sourceGetInput.setUniqueKey(getInput.getUniqueKey());
       GetOutput sourceGetOutput = new GetAction().execute(sourceGetInput);
@@ -270,8 +266,7 @@ public class GetAction
       @Override
       public GetOutput execute(GetInput getInput) throws QException
       {
-         QueryInput queryInput = new QueryInput(getInput.getInstance());
-         queryInput.setSession(getInput.getSession());
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(getInput.getTableName());
 
          //////////////////////////////////////////////////

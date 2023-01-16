@@ -287,7 +287,7 @@ public class QSlackImplementation
     *******************************************************************************/
    private static void buildSlackMetaData(Context context) throws QException
    {
-      MetaDataInput metaDataInput = new MetaDataInput(qInstance);
+      MetaDataInput metaDataInput = new MetaDataInput();
       setupSession(context, metaDataInput);
       MetaDataAction metaDataAction = new MetaDataAction();
       MetaDataOutput metaDataOutput = metaDataAction.execute(metaDataInput);
@@ -384,7 +384,7 @@ public class QSlackImplementation
    {
       try
       {
-         QueryInput queryInput = new QueryInput(qInstance);
+         QueryInput queryInput = new QueryInput();
          queryInput.setLimit(10);
          queryInput.setTableName(tableName);
          setupSession(context, queryInput);
@@ -426,7 +426,7 @@ public class QSlackImplementation
    {
       try(ByteArrayOutputStream baos = new ByteArrayOutputStream())
       {
-         ExportInput exportInput = new ExportInput(qInstance);
+         ExportInput exportInput = new ExportInput();
          exportInput.setLimit(1000);
          exportInput.setTableName(tableName);
          exportInput.setReportFormat(ReportFormat.valueOf(format));
@@ -471,7 +471,7 @@ public class QSlackImplementation
       {
          QTableMetaData tableMetaData = qInstance.getTable(tableName);
 
-         GetInput getInput = new GetInput(qInstance);
+         GetInput getInput = new GetInput();
          getInput.setPrimaryKey(id);
          getInput.setTableName(tableName);
          setupSession(context, getInput);
@@ -520,7 +520,7 @@ public class QSlackImplementation
 
          QWidgetMetaDataInterface widgetMetaData = qInstance.getWidget(widgetName);
 
-         RenderWidgetInput input = new RenderWidgetInput(qInstance)
+         RenderWidgetInput input = new RenderWidgetInput()
             .withWidgetMetaData(widgetMetaData);
          setupSession(context, input);
          RenderWidgetOutput output = new RenderWidgetAction().execute(input);
@@ -729,7 +729,6 @@ public class QSlackImplementation
          }
 
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
-         input.setSession(session);
 
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //

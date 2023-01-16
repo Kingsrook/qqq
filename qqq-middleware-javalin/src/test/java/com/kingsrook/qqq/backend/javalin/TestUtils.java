@@ -517,8 +517,7 @@ public class TestUtils
     *******************************************************************************/
    public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
    {
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(records);
       new InsertAction().execute(insertInput);

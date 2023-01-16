@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.auth0.exception.Auth0Exception;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -38,7 +40,6 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.AUTH0_ACCESS_TOKEN_KEY;
@@ -61,7 +62,7 @@ import static org.mockito.Mockito.verify;
 /*******************************************************************************
  ** Unit test for the FullyAnonymousAuthenticationModule
  *******************************************************************************/
-public class Auth0AuthenticationModuleTest
+public class Auth0AuthenticationModuleTest extends BaseTest
 {
    private static final String VALID_TOKEN       = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA";
    private static final String INVALID_TOKEN     = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IllrY2FkWTA0Q3RFVUFxQUdLNTk3ayJ9.eyJnaXZlbl9uYW1lIjoiVGltIiwiZmFtaWx5X25hbWUiOiJDaGFtYmVybGFpbiIsIm5pY2tuYW1lIjoidGltLmNoYW1iZXJsYWluIiwibmFtZSI6IlRpbSBDaGFtYmVybGFpbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS0vQUZkWnVjcXVSaUFvTzk1RG9URklnbUtseVA1akVBVnZmWXFnS0lHTkVubzE9czk2LWMiLCJsb2NhbGUiOiJlbiIsInVwZGF0ZWRfYXQiOiIyMDIyLTA3LTE5VDE2OjI0OjQ1LjgyMloiLCJlbWFpbCI6InRpbS5jaGFtYmVybGFpbkBraW5nc3Jvb2suY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8va2luZ3Nyb29rLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODk2NDEyNjE3MjY1NzAzNDg2NyIsImF1ZCI6InNwQ1NtczAzcHpVZGRYN1BocHN4ZDlUd2FLMDlZZmNxIiwiaWF0IjoxNjU4MjQ3OTAyLCJleHAiOjE2NTgyODM5MDIsIm5vbmNlIjoiZUhOdFMxbEtUR2N5ZG5KS1VVY3RkRTFVT0ZKNmJFNUxVVkEwZEdsRGVXOXZkVkl4UW41eVRrUlJlZz09In0.hib7JR8NDU2kx8Fj1bnzo3IUuabE6Hb-Z7HHZAJPQuF_Zdg3L1KDypn6SY7HAd_dsz2N8RkXfvQto-Y2g2ukuz7FxzNFgcVL99cyEO3YqmyCa6JTOTCrxdeaIE8QZpCEKvC28oeJBv0wO1Dwc--OVJMsK2vSzyxj1WNok64YYjWKLL4c0dFf-nj0KWFr1IU-tMiyWLDDiJw2Sa8M4YxXZYqdlkgNmrBPExgcm9l9SiT2l3Ts3Sgc_IyMVyMrnV8XX50EWdsm6vuCOSUcqf0XhjDQ7urZveoVwVLnYq3GcLhVBcy1Hr9RL8zPdPynOzsbX6uCww2Esrv6iwWrgQ5zBA-thismakesinvalid";
@@ -450,7 +451,7 @@ public class Auth0AuthenticationModuleTest
          .withAudience(auth0Audience)
          .withName("auth0");
 
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       qInstance.setAuthentication(authenticationMetaData);
       return (qInstance);
    }

@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
@@ -49,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  ** so a rule of "every time we insert a person, if they aren't already pointed at
  ** a favoriteShape, insert a new shape for them".
  *******************************************************************************/
-class ChildInserterPostInsertCustomizerTest
+class ChildInserterPostInsertCustomizerTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -69,11 +71,10 @@ class ChildInserterPostInsertCustomizerTest
    @Test
    void testEmptyCases() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       addPostInsertActionToTable(qInstance);
 
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of());
 
@@ -110,13 +111,12 @@ class ChildInserterPostInsertCustomizerTest
    @Test
    void testSimpleCase() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       addPostInsertActionToTable(qInstance);
 
       assertEquals(0, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_SHAPE).size());
 
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("firstName", "Darin")
@@ -139,13 +139,12 @@ class ChildInserterPostInsertCustomizerTest
    @Test
    void testComplexCase() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       addPostInsertActionToTable(qInstance);
 
       assertEquals(0, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_SHAPE).size());
 
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("firstName", "Darin"),

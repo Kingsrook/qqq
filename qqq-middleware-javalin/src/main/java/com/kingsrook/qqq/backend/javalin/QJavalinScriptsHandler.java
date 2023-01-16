@@ -97,7 +97,7 @@ public class QJavalinScriptsHandler
          String         tableName  = context.pathParam("table");
          QTableMetaData table      = QJavalinImplementation.qInstance.getTable(tableName);
          String         primaryKey = context.pathParam("primaryKey");
-         GetInput       getInput   = new GetInput(QJavalinImplementation.qInstance);
+         GetInput       getInput   = new GetInput();
 
          QJavalinImplementation.setupSession(context, getInput);
          getInput.setTableName(tableName);
@@ -150,7 +150,7 @@ public class QJavalinScriptsHandler
             Serializable scriptId  = record.getValue(fieldName);
             if(scriptId != null)
             {
-               GetInput getScriptInput = new GetInput(QJavalinImplementation.qInstance);
+               GetInput getScriptInput = new GetInput();
                QJavalinImplementation.setupSession(context, getScriptInput);
                getScriptInput.setTableName("script");
                getScriptInput.setPrimaryKey(scriptId);
@@ -159,7 +159,7 @@ public class QJavalinScriptsHandler
                {
                   thisScriptData.put("script", getScriptOutput.getRecord());
 
-                  QueryInput queryInput = new QueryInput(QJavalinImplementation.qInstance);
+                  QueryInput queryInput = new QueryInput();
                   QJavalinImplementation.setupSession(context, queryInput);
                   queryInput.setTableName("scriptRevision");
                   queryInput.setFilter(new QQueryFilter()
@@ -227,7 +227,7 @@ public class QJavalinScriptsHandler
 
          String scriptRevisionId = context.pathParam("scriptRevisionId");
 
-         QueryInput queryInput = new QueryInput(QJavalinImplementation.qInstance);
+         QueryInput queryInput = new QueryInput();
          QJavalinImplementation.setupSession(context, queryInput);
          queryInput.setTableName("scriptLog");
          queryInput.setFilter(new QQueryFilter()
@@ -265,7 +265,7 @@ public class QJavalinScriptsHandler
       /////////////////////////////////////////////////////////////////////////////////
       String         tableName = context.pathParam("table");
       QTableMetaData table     = QJavalinImplementation.qInstance.getTable(tableName);
-      GetInput       getInput  = new GetInput(QJavalinImplementation.qInstance);
+      GetInput       getInput  = new GetInput();
       getInput.setTableName(tableName);
       QJavalinImplementation.setupSession(context, getInput);
       PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
@@ -298,7 +298,7 @@ public class QJavalinScriptsHandler
 
       try
       {
-         StoreAssociatedScriptInput input = new StoreAssociatedScriptInput(QJavalinImplementation.qInstance);
+         StoreAssociatedScriptInput input = new StoreAssociatedScriptInput();
          QJavalinImplementation.setupSession(context, input);
 
          input.setCode(context.formParam("contents"));
@@ -335,7 +335,7 @@ public class QJavalinScriptsHandler
       {
          getReferencedRecordToEnsureAccess(context);
 
-         TestScriptInput input = new TestScriptInput(QJavalinImplementation.qInstance);
+         TestScriptInput input = new TestScriptInput();
          QJavalinImplementation.setupSession(context, input);
 
          // todo delete? input.setRecordPrimaryKey(context.pathParam("primaryKey"));

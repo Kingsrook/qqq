@@ -22,10 +22,10 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  ** Unit test for CountAction
  **
  *******************************************************************************/
-class CountActionTest
+class CountActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -45,8 +45,7 @@ class CountActionTest
    @Test
    public void test() throws QException
    {
-      CountInput request = new CountInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      CountInput request = new CountInput();
       request.setTableName("person");
       CountOutput result = new CountAction().execute(request);
       assertNotNull(result);

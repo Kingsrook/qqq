@@ -23,10 +23,11 @@ package com.kingsrook.qqq.backend.core.processes.utils;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for RecordLookupHelper
  *******************************************************************************/
-class RecordLookupHelperTest
+class RecordLookupHelperTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -62,9 +63,9 @@ class RecordLookupHelperTest
    @Test
    void testWithoutPreload() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(qInstance);
-      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput(qInstance, new QSession()));
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput());
 
       MemoryRecordStore.setCollectStatistics(true);
       assertEquals(2, recordLookupHelper.getRecordId(TestUtils.TABLE_NAME_SHAPE, "name", "Square"));
@@ -88,10 +89,10 @@ class RecordLookupHelperTest
    @Test
    void testWithPreload() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(qInstance);
 
-      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput(qInstance, new QSession()));
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput());
       recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name");
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
 
@@ -129,10 +130,10 @@ class RecordLookupHelperTest
    @Test
    void testWithPreloadInListToCacheMisses() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(qInstance);
 
-      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput(qInstance, new QSession()));
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput());
       recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name", List.of("Triangle", "Square", "Circle", "Hexagon"));
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
 

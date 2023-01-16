@@ -52,8 +52,7 @@ public class BulkTableActionProcessPermissionChecker implements CustomPermission
          String   tableName      = parts[0];
          String   bulkActionName = parts[1];
 
-         AbstractTableActionInput tableActionInput = new AbstractTableActionInput(actionInput.getInstance());
-         tableActionInput.setSession(actionInput.getSession());
+         AbstractTableActionInput tableActionInput = new AbstractTableActionInput();
          tableActionInput.setTableName(tableName);
 
          switch(bulkActionName)

@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.scheduler;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
@@ -37,7 +39,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for ScheduleManager
  *******************************************************************************/
-class ScheduleManagerTest
+class ScheduleManagerTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -67,7 +68,7 @@ class ScheduleManagerTest
    @Test
    void testStartAndStop()
    {
-      QInstance       qInstance       = TestUtils.defineInstance();
+      QInstance       qInstance       = QContext.getQInstance();
       ScheduleManager scheduleManager = ScheduleManager.getInstance(qInstance);
       scheduleManager.start();
 
@@ -84,7 +85,7 @@ class ScheduleManagerTest
    @Test
    void testScheduledProcess() throws QInstanceValidationException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       new QInstanceValidator().validate(qInstance);
       qInstance.getAutomationProviders().clear();
       qInstance.getQueueProviders().clear();

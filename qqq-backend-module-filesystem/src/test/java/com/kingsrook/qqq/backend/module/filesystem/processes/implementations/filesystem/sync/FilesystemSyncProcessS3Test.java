@@ -30,12 +30,12 @@ import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
@@ -83,6 +83,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       QProcessMetaData     process = new FilesystemSyncProcess().defineProcessMetaData();
       QBackendStepMetaData step    = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
       qInstance.addProcess(process);
+      reInitInstanceInContext(qInstance);
 
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
@@ -102,10 +103,9 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       //////////////////
       // run the step //
       //////////////////
-      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.setStepName(step.getName());
       runBackendStepInput.setProcessName(process.getName());
-      runBackendStepInput.setSession(TestUtils.getMockSession());
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
       RunBackendStepOutput runBackendStepOutput = runFunctionAction.execute(runBackendStepInput);
@@ -143,9 +143,10 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       QTableMetaData archiveTable    = defineTable(qInstance, "archive", localBackend, "archive", "*/l3/*.csv");
       QTableMetaData processingTable = defineTable(qInstance, "processing", localBackend, "processing", "**/*.csv");
 
-      QProcessMetaData     process  = new FilesystemSyncProcess().defineProcessMetaData();
-      QBackendStepMetaData step = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
+      QProcessMetaData     process = new FilesystemSyncProcess().defineProcessMetaData();
+      QBackendStepMetaData step    = process.getBackendStep(FilesystemSyncStep.STEP_NAME);
       qInstance.addProcess(process);
+      reInitInstanceInContext(qInstance);
 
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_SOURCE_TABLE).setDefaultValue(sourceTable.getName());
       step.getInputMetaData().getFieldThrowing(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE).setDefaultValue(archiveTable.getName());
@@ -165,10 +166,9 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       //////////////////
       // run the step //
       //////////////////
-      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.setStepName(step.getName());
       runBackendStepInput.setProcessName(process.getName());
-      runBackendStepInput.setSession(TestUtils.getMockSession());
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
       RunBackendStepOutput runBackendStepOutput = runFunctionAction.execute(runBackendStepInput);

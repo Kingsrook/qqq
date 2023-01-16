@@ -26,7 +26,6 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -47,16 +46,6 @@ public class InsertInput extends AbstractTableActionInput
     *******************************************************************************/
    public InsertInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public InsertInput(QInstance instance)
-   {
-      super(instance);
    }
 
 

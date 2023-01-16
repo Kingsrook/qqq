@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -31,7 +32,6 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for NoopTransformStep
  *******************************************************************************/
-class NoopTransformStepTest
+class NoopTransformStepTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -49,8 +49,7 @@ class NoopTransformStepTest
    @Test
    void test() throws QException
    {
-      RunBackendStepInput input = new RunBackendStepInput(TestUtils.defineInstance());
-      input.setSession(new QSession());
+      RunBackendStepInput input = new RunBackendStepInput();
       input.setTableName(TestUtils.TABLE_NAME_PERSON);
       input.setRecords(List.of(new QRecord().withValue("id", 47)));
 

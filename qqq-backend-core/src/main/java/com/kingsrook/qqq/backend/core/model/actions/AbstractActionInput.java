@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -42,9 +43,6 @@ public class AbstractActionInput
 {
    private static final Logger LOG = LogManager.getLogger(AbstractActionInput.class);
 
-   protected QInstance instance;
-   protected QSession  session;
-
    private AsyncJobCallback asyncJobCallback;
 
 
@@ -59,29 +57,8 @@ public class AbstractActionInput
 
 
    /*******************************************************************************
-    **
-    *******************************************************************************/
-   public AbstractActionInput(QInstance instance)
-   {
-      this.instance = instance;
-      validateInstance(instance);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public AbstractActionInput(QInstance instance, QSession session)
-   {
-      this(instance);
-      this.session = session;
-   }
-
-
-
-   /*******************************************************************************
     ** performance instance validation (if not previously done).
+    * // todo - verify this is happening (e.g., when context is set i guess)
     *******************************************************************************/
    private void validateInstance(QInstance instance)
    {
@@ -110,7 +87,7 @@ public class AbstractActionInput
     *******************************************************************************/
    public QAuthenticationMetaData getAuthenticationMetaData()
    {
-      return (instance.getAuthentication());
+      return (getInstance().getAuthentication());
    }
 
 
@@ -121,19 +98,7 @@ public class AbstractActionInput
     *******************************************************************************/
    public QInstance getInstance()
    {
-      return instance;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for instance
-    **
-    *******************************************************************************/
-   public void setInstance(QInstance instance)
-   {
-      validateInstance(instance);
-      this.instance = instance;
+      return (QContext.getQInstance());
    }
 
 
@@ -144,18 +109,7 @@ public class AbstractActionInput
     *******************************************************************************/
    public QSession getSession()
    {
-      return session;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for session
-    **
-    *******************************************************************************/
-   public void setSession(QSession session)
-   {
-      this.session = session;
+      return (QContext.getQSession());
    }
 
 
@@ -194,18 +148,6 @@ public class AbstractActionInput
     *******************************************************************************/
    public AbstractActionInput withInstance(QInstance instance)
    {
-      this.instance = instance;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for session
-    *******************************************************************************/
-   public AbstractActionInput withSession(QSession session)
-   {
-      this.session = session;
       return (this);
    }
 

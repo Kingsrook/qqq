@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
@@ -46,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /*******************************************************************************
  ** Unit test for full bulk insert process
  *******************************************************************************/
-class BulkInsertTest
+class BulkInsertTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -81,8 +82,7 @@ class BulkInsertTest
       UUIDAndTypeStateKey uploadedFileKey = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
       TempFileStateProvider.getInstance().put(uploadedFileKey, qUploadedFile);
 
-      RunProcessInput runProcessInput = new RunProcessInput(TestUtils.defineInstance());
-      runProcessInput.setSession(TestUtils.getMockSession());
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkInsert");
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
       String           processUUID      = runProcessOutput.getProcessUUID();

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -39,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for QValueFormatter
  *******************************************************************************/
-class QValueFormatterTest
+class QValueFormatterTest extends BaseTest
 {
 
    /*******************************************************************************

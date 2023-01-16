@@ -24,12 +24,13 @@ package com.kingsrook.qqq.backend.core.actions.scripts.logging;
 
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for StoreScriptLogAndScriptLogLineExecutionLogger
  *******************************************************************************/
-class StoreScriptLogAndScriptLogLineExecutionLoggerTest
+class StoreScriptLogAndScriptLogLineExecutionLoggerTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -65,10 +66,9 @@ class StoreScriptLogAndScriptLogLineExecutionLoggerTest
    @Test
    void test() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       new ScriptsMetaDataProvider().defineAll(instance, TestUtils.MEMORY_BACKEND_NAME, null);
-      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput(instance);
-      executeCodeInput.setSession(new QSession());
+      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setInput(Map.of("a", 1));
 
       StoreScriptLogAndScriptLogLineExecutionLogger logger = new StoreScriptLogAndScriptLogLineExecutionLogger(9999, 8888);

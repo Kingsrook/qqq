@@ -154,8 +154,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       // fetch the record that we're getting children for.  //
       // e.g., the left-side of the join, with the input id //
       ////////////////////////////////////////////////////////
-      GetInput getInput = new GetInput(input.getInstance());
-      getInput.setSession(input.getSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(join.getLeftTable());
       getInput.setPrimaryKey(id);
       GetOutput getOutput = new GetAction().execute(getInput);
@@ -177,8 +176,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       }
       filter.setOrderBys(join.getOrderBys());
 
-      QueryInput queryInput = new QueryInput(input.getInstance());
-      queryInput.setSession(input.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(join.getRightTable());
       queryInput.setShouldTranslatePossibleValues(true);
       queryInput.setShouldGenerateDisplayValues(true);

@@ -29,6 +29,8 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
@@ -235,16 +237,18 @@ public class ScheduleManager
     *******************************************************************************/
    private void startProcess(QProcessMetaData process)
    {
+      CapturedContext capturedContext = QContext.capture();
+
       Runnable runProcess = () ->
       {
+         QContext.init(capturedContext);
          String originalThreadName = Thread.currentThread().getName();
          Thread.currentThread().setName("ScheduledProcess>" + process.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
          LOG.debug("Running Scheduled Process [" + process.getName() + "]");
 
          try
          {
-            RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-            runProcessInput.setSession(sessionSupplier.get());
+            RunProcessInput runProcessInput = new RunProcessInput();
             runProcessInput.setProcessName(process.getName());
             runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
 
@@ -258,6 +262,7 @@ public class ScheduleManager
          finally
          {
             Thread.currentThread().setName(originalThreadName);
+            QContext.clear();
          }
       };
 

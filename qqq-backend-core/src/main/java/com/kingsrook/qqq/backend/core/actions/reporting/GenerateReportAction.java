@@ -216,8 +216,7 @@ public class GenerateReportAction
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", reportInput.getInputValues());
 
-      ExportInput exportInput = new ExportInput(reportInput.getInstance());
-      exportInput.setSession(reportInput.getSession());
+      ExportInput exportInput = new ExportInput();
       exportInput.setReportFormat(reportFormat);
       exportInput.setFilename(reportInput.getFilename());
       exportInput.setTitleRow(getTitle(reportView, variableInterpreter));
@@ -277,8 +276,7 @@ public class GenerateReportAction
       {
          transformStep = QCodeLoader.getBackendStep(AbstractTransformStep.class, tableView.getRecordTransformStep());
 
-         transformStepInput = new RunBackendStepInput(reportInput.getInstance());
-         transformStepInput.setSession(reportInput.getSession());
+         transformStepInput = new RunBackendStepInput();
          transformStepInput.setValues(reportInput.getInputValues());
 
          transformStepOutput = new RunBackendStepOutput();
@@ -304,8 +302,7 @@ public class GenerateReportAction
             QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
             setInputValuesInQueryFilter(reportInput, queryFilter);
 
-            QueryInput queryInput = new QueryInput(reportInput.getInstance());
-            queryInput.setSession(reportInput.getSession());
+            QueryInput queryInput = new QueryInput();
             queryInput.setRecordPipe(recordPipe);
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
@@ -597,8 +594,7 @@ public class GenerateReportAction
          QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
          SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
 
-         ExportInput exportInput = new ExportInput(reportInput.getInstance());
-         exportInput.setSession(reportInput.getSession());
+         ExportInput exportInput = new ExportInput();
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(reportInput.getFilename());
          exportInput.setTitleRow(summaryOutput.titleRow);

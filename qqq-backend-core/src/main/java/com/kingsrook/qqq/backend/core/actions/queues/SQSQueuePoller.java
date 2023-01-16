@@ -35,6 +35,7 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -70,6 +71,8 @@ public class SQSQueuePoller implements Runnable
    @Override
    public void run()
    {
+      QContext.init(qInstance, sessionSupplier.get());
+
       String originalThreadName = Thread.currentThread().getName();
       Thread.currentThread().setName("SQSPoller>" + queueMetaData.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
       LOG.debug("Running " + this.getClass().getSimpleName() + "[" + queueMetaData.getName() + "]");
@@ -125,8 +128,7 @@ public class SQSQueuePoller implements Runnable
             /////////////////////////////////////////////////////////////////////////////////////
             try
             {
-               RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-               runProcessInput.setSession(sessionSupplier.get());
+               RunProcessInput runProcessInput = new RunProcessInput();
                runProcessInput.setProcessName(queueMetaData.getProcessName());
                runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
                runProcessInput.addValue("bodies", bodies);
@@ -165,6 +167,7 @@ public class SQSQueuePoller implements Runnable
       finally
       {
          Thread.currentThread().setName(originalThreadName);
+         QContext.clear();
       }
    }
 

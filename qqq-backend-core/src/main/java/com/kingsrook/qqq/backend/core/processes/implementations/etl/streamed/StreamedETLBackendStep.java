@@ -112,9 +112,8 @@ public class StreamedETLBackendStep implements BackendStep
     *******************************************************************************/
    private QBackendTransaction openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
+      InsertInput insertInput = new InsertInput();
 
-      insertInput.setSession(runBackendStepInput.getSession());
       insertInput.setTableName(runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE));
 
       return new InsertAction().openTransaction(insertInput);

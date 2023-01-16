@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -47,9 +46,8 @@ public class ConvertHtmlToPdfInput extends AbstractActionInput
     ** Constructor
     **
     *******************************************************************************/
-   public ConvertHtmlToPdfInput(QInstance instance)
+   public ConvertHtmlToPdfInput()
    {
-      super(instance);
    }
 
 

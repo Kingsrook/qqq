@@ -164,7 +164,6 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    private InsertInput initInsertRequest()
    {
       InsertInput insertInput = new InsertInput();
-      insertInput.setInstance(TestUtils.defineInstance());
       insertInput.setTableName(TestUtils.defineTablePerson().getName());
       return insertInput;
    }

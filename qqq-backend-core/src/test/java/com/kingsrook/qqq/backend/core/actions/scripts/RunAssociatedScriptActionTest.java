@@ -25,8 +25,10 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAssociatedScriptInput;
@@ -44,7 +46,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /*******************************************************************************
  ** Unit test for RunAssociatedScriptAction
  *******************************************************************************/
-class RunAssociatedScriptActionTest
+class RunAssociatedScriptActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -68,8 +69,7 @@ class RunAssociatedScriptActionTest
          return "Hello";
          """);
 
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
-      runAssociatedScriptInput.setSession(new QSession());
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
       runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
@@ -95,7 +95,7 @@ class RunAssociatedScriptActionTest
     *******************************************************************************/
    private QInstance setupInstance() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER))
          .withAssociatedScript(new AssociatedScript()
@@ -126,8 +126,7 @@ class RunAssociatedScriptActionTest
    {
       QInstance instance = setupInstance();
 
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
-      runAssociatedScriptInput.setSession(new QSession());
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
       runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
@@ -152,8 +151,7 @@ class RunAssociatedScriptActionTest
    {
       QInstance instance = setupInstance();
 
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
-      runAssociatedScriptInput.setSession(new QSession());
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
       runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
@@ -178,14 +176,12 @@ class RunAssociatedScriptActionTest
    {
       QInstance instance = setupInstance();
 
-      UpdateInput updateInput = new UpdateInput(instance);
-      updateInput.setSession(new QSession());
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("testScriptId", -9998)));
       new UpdateAction().execute(updateInput);
 
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
-      runAssociatedScriptInput.setSession(new QSession());
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
       runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
@@ -214,21 +210,18 @@ class RunAssociatedScriptActionTest
          return "Hello";
          """);
 
-      GetInput getInput = new GetInput(instance);
-      getInput.setSession(new QSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       getInput.setPrimaryKey(1);
       GetOutput getOutput = new GetAction().execute(getInput);
       Integer   scriptId  = getOutput.getRecord().getValueInteger("testScriptId");
 
-      UpdateInput updateInput = new UpdateInput(instance);
-      updateInput.setSession(new QSession());
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName("script");
       updateInput.setRecords(List.of(new QRecord().withValue("id", scriptId).withValue("currentScriptRevisionId", null)));
       new UpdateAction().execute(updateInput);
 
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
-      runAssociatedScriptInput.setSession(new QSession());
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
       runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
@@ -257,21 +250,18 @@ class RunAssociatedScriptActionTest
          return "Hello";
          """);
 
-      GetInput getInput = new GetInput(instance);
-      getInput.setSession(new QSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       getInput.setPrimaryKey(1);
       GetOutput getOutput = new GetAction().execute(getInput);
       Integer   scriptId  = getOutput.getRecord().getValueInteger("testScriptId");
 
-      UpdateInput updateInput = new UpdateInput(instance);
-      updateInput.setSession(new QSession());
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName("script");
       updateInput.setRecords(List.of(new QRecord().withValue("id", scriptId).withValue("currentScriptRevisionId", 9997)));
       new UpdateAction().execute(updateInput);
 
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput(instance);
-      runAssociatedScriptInput.setSession(new QSession());
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
       runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
@@ -293,8 +283,7 @@ class RunAssociatedScriptActionTest
     *******************************************************************************/
    private void insertScript(QInstance instance, Serializable recordId, String code) throws QException
    {
-      StoreAssociatedScriptInput storeAssociatedScriptInput = new StoreAssociatedScriptInput(instance);
-      storeAssociatedScriptInput.setSession(new QSession());
+      StoreAssociatedScriptInput storeAssociatedScriptInput = new StoreAssociatedScriptInput();
       storeAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       storeAssociatedScriptInput.setRecordPrimaryKey(recordId);
       storeAssociatedScriptInput.setCode(code);

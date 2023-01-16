@@ -40,10 +40,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -56,7 +55,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInterface
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSUpdateAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSUpdateAction.class);
 
    private int statusCounter = 0;
 

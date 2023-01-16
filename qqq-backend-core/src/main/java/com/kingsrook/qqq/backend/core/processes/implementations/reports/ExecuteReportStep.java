@@ -64,8 +64,7 @@ public class ExecuteReportStep implements BackendStep
 
          try(FileOutputStream reportOutputStream = new FileOutputStream(tmpFile))
          {
-            ReportInput reportInput = new ReportInput(runBackendStepInput.getInstance());
-            reportInput.setSession(runBackendStepInput.getSession());
+            ReportInput reportInput = new ReportInput();
             reportInput.setReportName(reportName);
             reportInput.setReportFormat(ReportFormat.XLSX); // todo - variable
             reportInput.setReportOutputStream(reportOutputStream);

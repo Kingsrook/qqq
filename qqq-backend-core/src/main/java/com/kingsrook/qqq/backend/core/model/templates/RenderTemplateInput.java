@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.model.templates;
 
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -42,9 +41,8 @@ public class RenderTemplateInput extends AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RenderTemplateInput(QInstance instance)
+   public RenderTemplateInput()
    {
-      super(instance);
    }
 
 

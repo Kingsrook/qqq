@@ -66,8 +66,7 @@ public class StoreScriptLogAndScriptLogLineExecutionLogger extends BuildScriptLo
       {
          super.acceptExecutionStart(executeCodeInput);
 
-         InsertInput insertInput = new InsertInput(executeCodeInput.getInstance());
-         insertInput.setSession(executeCodeInput.getSession());
+         InsertInput insertInput = new InsertInput();
          insertInput.setTableName("scriptLog");
          insertInput.setRecords(List.of(getScriptLog()));
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -112,16 +111,14 @@ public class StoreScriptLogAndScriptLogLineExecutionLogger extends BuildScriptLo
       try
       {
          updateHeaderAtEnd(output, exception);
-         UpdateInput updateInput = new UpdateInput(executeCodeInput.getInstance());
-         updateInput.setSession(executeCodeInput.getSession());
+         UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName("scriptLog");
          updateInput.setRecords(List.of(getScriptLog()));
          new UpdateAction().execute(updateInput);
 
          if(CollectionUtils.nullSafeHasContents(getScriptLogLines()))
          {
-            InsertInput insertInput = new InsertInput(executeCodeInput.getInstance());
-            insertInput.setSession(executeCodeInput.getSession());
+            InsertInput insertInput = new InsertInput();
             insertInput.setTableName("scriptLogLine");
             insertInput.setRecords(getScriptLogLines());
             new InsertAction().execute(insertInput);

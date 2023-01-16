@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -39,7 +41,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Shape;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -57,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for GeneralProcessUtils
  *******************************************************************************/
-class GeneralProcessUtilsTest
+class GeneralProcessUtilsTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -77,7 +78,7 @@ class GeneralProcessUtilsTest
    @Test
    void testGetForeignRecordMap() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("favoriteShapeId", 3),
@@ -85,8 +86,7 @@ class GeneralProcessUtilsTest
       ));
       TestUtils.insertDefaultShapes(instance);
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -105,7 +105,7 @@ class GeneralProcessUtilsTest
    @Test
    void testGetForeignRecordMapWithAdditionalFilter() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("favoriteShapeId", 3),
@@ -113,8 +113,7 @@ class GeneralProcessUtilsTest
       ));
       TestUtils.insertDefaultShapes(instance);
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -133,7 +132,7 @@ class GeneralProcessUtilsTest
    @Test
    void testGetForeignRecordListingHashMap() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("favoriteShapeId", 3),
@@ -142,8 +141,7 @@ class GeneralProcessUtilsTest
       ));
       TestUtils.insertDefaultShapes(instance);
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -166,7 +164,7 @@ class GeneralProcessUtilsTest
    @Test
    void testAddForeignRecordsToRecordList() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("favoriteShapeId", 3),
@@ -174,8 +172,7 @@ class GeneralProcessUtilsTest
       ));
       TestUtils.insertDefaultShapes(instance);
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -195,7 +192,7 @@ class GeneralProcessUtilsTest
    @Test
    void testAddForeignRecordsListToRecordList() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("favoriteShapeId", 3),
@@ -204,8 +201,7 @@ class GeneralProcessUtilsTest
       ));
       TestUtils.insertDefaultShapes(instance);
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -241,7 +237,7 @@ class GeneralProcessUtilsTest
    @Test
    void testGetRecordListByField() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("favoriteShapeId", 3),
@@ -249,9 +245,8 @@ class GeneralProcessUtilsTest
          new QRecord().withValue("id", 3).withValue("favoriteShapeId", 1)
       ));
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
-      List<QRecord> records = GeneralProcessUtils.getRecordListByField(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "favoriteShapeId", 3);
+      QueryInput    queryInput = new QueryInput();
+      List<QRecord> records    = GeneralProcessUtils.getRecordListByField(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "favoriteShapeId", 3);
       assertEquals(2, records.size());
       assertTrue(records.stream().anyMatch(r -> r.getValue("id").equals(1)));
       assertTrue(records.stream().anyMatch(r -> r.getValue("id").equals(2)));
@@ -266,7 +261,7 @@ class GeneralProcessUtilsTest
    @Test
    void testGetRecordById() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
@@ -274,9 +269,8 @@ class GeneralProcessUtilsTest
          new QRecord().withValue("id", 3).withValue("firstName", "Tim")
       ));
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
-      Optional<QRecord> record = GeneralProcessUtils.getRecordByField(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName", "James");
+      QueryInput        queryInput = new QueryInput();
+      Optional<QRecord> record     = GeneralProcessUtils.getRecordByField(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName", "James");
       assertTrue(record.isPresent());
       assertEquals(2, record.get().getValueInteger("id"));
 
@@ -292,7 +286,7 @@ class GeneralProcessUtilsTest
    @Test
    void testLoadTable() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
@@ -300,9 +294,8 @@ class GeneralProcessUtilsTest
          new QRecord().withValue("id", 3).withValue("firstName", "Tim")
       ));
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
-      List<QRecord> records = GeneralProcessUtils.loadTable(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY);
+      QueryInput    queryInput = new QueryInput();
+      List<QRecord> records    = GeneralProcessUtils.loadTable(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY);
       assertEquals(3, records.size());
    }
 
@@ -314,7 +307,7 @@ class GeneralProcessUtilsTest
    @Test
    void testLoadTableToMap() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
@@ -322,8 +315,7 @@ class GeneralProcessUtilsTest
          new QRecord().withValue("id", 3).withValue("firstName", "Tim")
       ));
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput                 queryInput    = new QueryInput();
       Map<Serializable, QRecord> recordMapById = GeneralProcessUtils.loadTableToMap(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "id");
       assertEquals(3, recordMapById.size());
       assertEquals("Darin", recordMapById.get(1).getValueString("firstName"));
@@ -348,7 +340,7 @@ class GeneralProcessUtilsTest
    @Test
    void testLoadTableToListingHash() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff"),
@@ -356,9 +348,8 @@ class GeneralProcessUtilsTest
          new QRecord().withValue("id", 3).withValue("firstName", "James").withValue("lastName", "Brown")
       ));
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
-      ListingHash<Serializable, QRecord> map = GeneralProcessUtils.loadTableToListingHash(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName");
+      QueryInput                         queryInput = new QueryInput();
+      ListingHash<Serializable, QRecord> map        = GeneralProcessUtils.loadTableToListingHash(queryInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "firstName");
       assertEquals(2, map.size());
       assertEquals(1, map.get("Darin").size());
       assertEquals(2, map.get("James").size());
@@ -372,11 +363,11 @@ class GeneralProcessUtilsTest
    @Test
    void testGetRecordByFieldOrElseThrow() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
 
-      assertNotNull(GeneralProcessUtils.getRecordByFieldOrElseThrow(new AbstractActionInput(instance, new QSession()), TestUtils.TABLE_NAME_SHAPE, "name", "Triangle"));
-      assertThrows(QException.class, () -> GeneralProcessUtils.getRecordByFieldOrElseThrow(new AbstractActionInput(instance, new QSession()), TestUtils.TABLE_NAME_SHAPE, "name", "notAShape"));
+      assertNotNull(GeneralProcessUtils.getRecordByFieldOrElseThrow(new AbstractActionInput(), TestUtils.TABLE_NAME_SHAPE, "name", "Triangle"));
+      assertThrows(QException.class, () -> GeneralProcessUtils.getRecordByFieldOrElseThrow(new AbstractActionInput(), TestUtils.TABLE_NAME_SHAPE, "name", "notAShape"));
    }
 
 
@@ -387,10 +378,10 @@ class GeneralProcessUtilsTest
    @Test
    void testGetRecordByPrimaryKey() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
 
-      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+      AbstractActionInput actionInput = new AbstractActionInput();
       assertTrue(GeneralProcessUtils.getRecordByPrimaryKey(actionInput, TestUtils.TABLE_NAME_SHAPE, 1).isPresent());
       assertFalse(GeneralProcessUtils.getRecordByPrimaryKey(actionInput, TestUtils.TABLE_NAME_SHAPE, -1).isPresent());
       assertNotNull(GeneralProcessUtils.getRecordByPrimaryKeyOrElseThrow(actionInput, TestUtils.TABLE_NAME_SHAPE, 1));
@@ -405,9 +396,9 @@ class GeneralProcessUtilsTest
    @Test
    void testCount() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
-      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+      AbstractActionInput actionInput = new AbstractActionInput();
 
       assertEquals(3, GeneralProcessUtils.count(actionInput, TestUtils.TABLE_NAME_SHAPE, null));
       assertEquals(1, GeneralProcessUtils.count(actionInput, TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 2))));
@@ -422,9 +413,9 @@ class GeneralProcessUtilsTest
    @Test
    void testGetEntityByField() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
-      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+      AbstractActionInput actionInput = new AbstractActionInput();
 
       assertEquals("Triangle", GeneralProcessUtils.getEntityByField(actionInput, TestUtils.TABLE_NAME_SHAPE, "name", "Triangle", Shape.class).get().getName());
       assertFalse(GeneralProcessUtils.getEntityByField(actionInput, TestUtils.TABLE_NAME_SHAPE, "name", "notAShape", Shape.class).isPresent());
@@ -438,9 +429,9 @@ class GeneralProcessUtilsTest
    @Test
    void testLoadTableAsEntities() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
-      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+      AbstractActionInput actionInput = new AbstractActionInput();
 
       List<Shape> shapes = GeneralProcessUtils.loadTable(actionInput, TestUtils.TABLE_NAME_SHAPE, Shape.class);
       assertEquals(3, shapes.size());
@@ -455,9 +446,9 @@ class GeneralProcessUtilsTest
    @Test
    void testLoadTableToMapAsEntities() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
-      AbstractActionInput actionInput = new AbstractActionInput(instance, new QSession());
+      AbstractActionInput actionInput = new AbstractActionInput();
 
       Map<Serializable, Shape> map = GeneralProcessUtils.loadTableToMap(actionInput, TestUtils.TABLE_NAME_SHAPE, "id", Shape.class);
       assertEquals(3, map.size());

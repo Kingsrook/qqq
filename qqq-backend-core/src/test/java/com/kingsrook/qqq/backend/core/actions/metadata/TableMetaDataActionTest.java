@@ -22,11 +22,11 @@
 package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  ** Unit test for TableMetaDataAction
  **
  *******************************************************************************/
-class TableMetaDataActionTest
+class TableMetaDataActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -47,8 +47,7 @@ class TableMetaDataActionTest
    @Test
    public void test() throws QException
    {
-      TableMetaDataInput request = new TableMetaDataInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      TableMetaDataInput request = new TableMetaDataInput();
       request.setTableName("person");
       TableMetaDataOutput result = new TableMetaDataAction().execute(request);
       assertNotNull(result);
@@ -67,8 +66,7 @@ class TableMetaDataActionTest
    public void test_notFound()
    {
       assertThrows(QUserFacingException.class, () -> {
-         TableMetaDataInput request = new TableMetaDataInput(TestUtils.defineInstance());
-         request.setSession(TestUtils.getMockSession());
+         TableMetaDataInput request = new TableMetaDataInput();
          request.setTableName("willNotBeFound");
          new TableMetaDataAction().execute(request);
       });

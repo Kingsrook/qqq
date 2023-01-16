@@ -26,6 +26,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
@@ -35,8 +37,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for TestScriptActionInterface
  *******************************************************************************/
-class TestScriptActionInterfaceTest
+class TestScriptActionInterfaceTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -56,10 +56,9 @@ class TestScriptActionInterfaceTest
    @Test
    void test() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
-      TestScriptInput testScriptInput = new TestScriptInput(qInstance);
-      testScriptInput.setSession(new QSession());
+      TestScriptInput testScriptInput = new TestScriptInput();
       testScriptInput.setInputValues(Map.of("name", "Darin", "age", 42));
       testScriptInput.setCodeReference(new QCodeReference(SampleScript.class, QCodeUsage.CUSTOMIZER));
       TestScriptOutput testScriptOutput = new TestScriptOutput();

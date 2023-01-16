@@ -205,8 +205,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       Map<Serializable, QRecord> existingRecordsByForeignKey = Collections.emptyMap();
       if(!sourceKeyList.isEmpty())
       {
-         QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-         queryInput.setSession(runBackendStepInput.getSession());
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(destinationTableName);
          getTransaction().ifPresent(queryInput::setTransaction);
          QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);

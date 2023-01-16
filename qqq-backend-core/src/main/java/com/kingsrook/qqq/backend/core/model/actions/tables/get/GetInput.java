@@ -26,8 +26,6 @@ import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -51,27 +49,6 @@ public class GetInput extends AbstractTableActionInput
     *******************************************************************************/
    public GetInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public GetInput(QInstance instance)
-   {
-      super(instance);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public GetInput(QInstance instance, QSession session)
-   {
-      super(instance);
-      setSession(session);
    }
 
 

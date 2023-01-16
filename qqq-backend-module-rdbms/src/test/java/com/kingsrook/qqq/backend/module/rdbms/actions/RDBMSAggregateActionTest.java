@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
@@ -310,9 +311,8 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
    @Test
    void testOmsJoinAggregate() throws Exception
    {
-      AggregateInput aggregateInput = new AggregateInput(TestUtils.defineInstance());
+      AggregateInput aggregateInput = new AggregateInput();
       Aggregate      sumOfQuantity  = new Aggregate(TestUtils.TABLE_NAME_ORDER_LINE + ".quantity", AggregateOperator.SUM);
-      aggregateInput.setSession(new QSession());
       aggregateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       aggregateInput.withAggregate(sumOfQuantity);
       aggregateInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER, TestUtils.TABLE_NAME_ORDER_LINE));
@@ -321,12 +321,12 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
       assertNull(aggregateResult.getAggregateValue(sumOfQuantity));
 
-      aggregateInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       aggregateResult = aggregateOutput.getResults().get(0);
       Assertions.assertEquals(43, aggregateResult.getAggregateValue(sumOfQuantity));
 
-      aggregateInput.setSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       aggregateResult = aggregateOutput.getResults().get(0);
       // note - this would be 33, except for that one order line that has a contradictory store id...
@@ -343,9 +343,8 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
    {
       GroupBy groupBy = new GroupBy(QFieldType.STRING, TestUtils.TABLE_NAME_ORDER_LINE + ".sku", null);
 
-      AggregateInput aggregateInput = new AggregateInput(TestUtils.defineInstance());
+      AggregateInput aggregateInput = new AggregateInput();
       Aggregate      sumOfQuantity  = new Aggregate(TestUtils.TABLE_NAME_ORDER_LINE + ".quantity", AggregateOperator.SUM);
-      aggregateInput.setSession(new QSession());
       aggregateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       aggregateInput.withAggregate(sumOfQuantity);
       aggregateInput.withGroupBy(groupBy);
@@ -354,7 +353,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       assertEquals(0, aggregateOutput.getResults().size());
 
-      aggregateInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       assertSkuQuantity("QM-1", 30, aggregateOutput.getResults(), groupBy);
       assertSkuQuantity("QM-2", 1, aggregateOutput.getResults(), groupBy);
@@ -390,8 +389,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
     *******************************************************************************/
    private static void insertExtraPersonRecords() throws QException
    {
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.defineTablePerson().getName());
       insertInput.setRecords(List.of(
          new QRecord().withValue("lastName", "Kelkhoff").withValue("firstName", "Trevor").withValue("email", "tk@kr.com").withValue("daysWorked", 1024),
@@ -410,7 +408,6 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
    private AggregateInput initAggregateRequest()
    {
       AggregateInput aggregateInput = new AggregateInput();
-      aggregateInput.setInstance(TestUtils.defineInstance());
       aggregateInput.setTableName(TestUtils.defineTablePerson().getName());
       return aggregateInput;
    }

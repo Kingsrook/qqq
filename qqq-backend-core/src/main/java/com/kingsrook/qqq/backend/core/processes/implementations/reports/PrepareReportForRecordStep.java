@@ -94,8 +94,7 @@ public class PrepareReportForRecordStep extends PrepareReportStep
          }
       }
 
-      GetInput getInput = new GetInput(runBackendStepInput.getInstance());
-      getInput.setSession(runBackendStepInput.getSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(runBackendStepInput.getTableName());
       getInput.setPrimaryKey(recordId);
       getInput.setShouldGenerateDisplayValues(true);

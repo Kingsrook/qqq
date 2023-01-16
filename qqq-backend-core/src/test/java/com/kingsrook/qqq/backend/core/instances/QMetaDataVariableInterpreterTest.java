@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.instances;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /*******************************************************************************
  ** Unit test for QSecretReader
  *******************************************************************************/
-class QMetaDataVariableInterpreterTest
+class QMetaDataVariableInterpreterTest extends BaseTest
 {
 
    /*******************************************************************************

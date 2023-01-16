@@ -23,13 +23,14 @@ package com.kingsrook.qqq.backend.core.utils.collections;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.utils.collections.MutableList
  *******************************************************************************/
-class MutableListTest
+class MutableListTest extends BaseTest
 {
 
    /*******************************************************************************

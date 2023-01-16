@@ -28,8 +28,6 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -64,27 +62,6 @@ public class QueryInput extends AbstractTableActionInput
     *******************************************************************************/
    public QueryInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QueryInput(QInstance instance)
-   {
-      super(instance);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QueryInput(QInstance instance, QSession session)
-   {
-      super(instance);
-      setSession(session);
    }
 
 
@@ -324,6 +301,7 @@ public class QueryInput extends AbstractTableActionInput
    {
       this.fieldsToTranslatePossibleValues = fieldsToTranslatePossibleValues;
    }
+
 
 
    /*******************************************************************************

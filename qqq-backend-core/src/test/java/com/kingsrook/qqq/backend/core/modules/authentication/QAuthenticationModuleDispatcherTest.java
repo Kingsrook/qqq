@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  ** Unit test for QModuleDispatcher
  **
  *******************************************************************************/
-class QAuthenticationModuleDispatcherTest
+class QAuthenticationModuleDispatcherTest extends BaseTest
 {
 
    /*******************************************************************************

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.api.model.metadata;
 
 
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.module.api.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for APIBackendMetaData
  *******************************************************************************/
-class APIBackendMetaDataTest
+class APIBackendMetaDataTest extends BaseTest
 {
 
    /*******************************************************************************

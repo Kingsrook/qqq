@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import org.assertj.core.data.Offset;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for FormulaInterpreter
  *******************************************************************************/
-class FormulaInterpreterTest
+class FormulaInterpreterTest extends BaseTest
 {
    public static final Offset<BigDecimal> ZERO_OFFSET = Offset.offset(BigDecimal.ZERO);
 

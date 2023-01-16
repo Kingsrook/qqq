@@ -158,8 +158,7 @@ public class MemoryRecordStore
     *******************************************************************************/
    public Integer count(CountInput input)
    {
-      QueryInput queryInput = new QueryInput(input.getInstance());
-      queryInput.setSession(input.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
       queryInput.setFilter(input.getFilter());
       List<QRecord> queryResult = query(queryInput);

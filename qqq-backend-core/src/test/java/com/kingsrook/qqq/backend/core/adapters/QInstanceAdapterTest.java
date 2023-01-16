@@ -24,8 +24,9 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 import java.io.File;
 import java.io.IOException;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
-class QInstanceAdapterTest
+class QInstanceAdapterTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -45,8 +46,8 @@ class QInstanceAdapterTest
    @Test
    void qInstanceToJson()
    {
-      QInstance qInstance = TestUtils.defineInstance();
-      String json = new QInstanceAdapter().qInstanceToJson(qInstance);
+      QInstance qInstance = QContext.getQInstance();
+      String    json      = new QInstanceAdapter().qInstanceToJson(qInstance);
       System.out.println(json);
    }
 
@@ -58,8 +59,8 @@ class QInstanceAdapterTest
    @Test
    void qInstanceToJsonIncludingBackend()
    {
-      QInstance qInstance = TestUtils.defineInstance();
-      String json = new QInstanceAdapter().qInstanceToJsonIncludingBackend(qInstance);
+      QInstance qInstance = QContext.getQInstance();
+      String    json      = new QInstanceAdapter().qInstanceToJsonIncludingBackend(qInstance);
       System.out.println(json);
    }
 
@@ -72,7 +73,7 @@ class QInstanceAdapterTest
    @Disabled("Pending custom deserializer on QStepMetaData")
    void jsonToQInstance() throws IOException
    {
-      String json = FileUtils.readFileToString(new File("src/test/resources/personQInstance.json"));
+      String    json      = FileUtils.readFileToString(new File("src/test/resources/personQInstance.json"));
       QInstance qInstance = new QInstanceAdapter().jsonToQInstance(json);
       System.out.println(qInstance);
    }
@@ -86,7 +87,7 @@ class QInstanceAdapterTest
    @Disabled("Pending custom deserializer on QStepMetaData")
    void jsonToQInstanceIncludingBackend() throws IOException
    {
-      String json = FileUtils.readFileToString(new File("src/test/resources/personQInstanceIncludingBackend.json"));
+      String    json      = FileUtils.readFileToString(new File("src/test/resources/personQInstanceIncludingBackend.json"));
       QInstance qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(json);
       System.out.println(qInstance);
       assertNotNull(qInstance.getBackends());

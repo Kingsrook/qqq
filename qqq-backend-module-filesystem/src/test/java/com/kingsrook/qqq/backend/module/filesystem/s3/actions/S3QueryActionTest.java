@@ -62,7 +62,6 @@ public class S3QueryActionTest extends BaseS3Test
    private QueryInput initQueryRequest() throws QException
    {
       QueryInput queryInput = new QueryInput();
-      queryInput.setInstance(TestUtils.defineInstance());
       queryInput.setTableName(TestUtils.defineS3CSVPersonTable().getName());
       return queryInput;
    }

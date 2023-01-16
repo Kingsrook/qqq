@@ -54,8 +54,7 @@ public class BasicETLExtractFunction implements BackendStep
       String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
       LOG.debug("Start query on table: " + tableName);
 
-      QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-      queryInput.setSession(runBackendStepInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
 
       // queryRequest.setSkip(integerQueryParam(context, "skip"));

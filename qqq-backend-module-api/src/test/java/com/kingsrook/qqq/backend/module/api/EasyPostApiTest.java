@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  **
  *******************************************************************************/
 @DisabledOnOs(OS.LINUX)
-public class EasyPostApiTest
+public class EasyPostApiTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -67,8 +67,7 @@ public class EasyPostApiTest
          .withValue("carrier", "USPS")
          .withValue("trackingNo", "EZ4000000004");
 
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("easypostTracker");
       insertInput.setRecords(List.of(record));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -88,8 +87,7 @@ public class EasyPostApiTest
       QRecord record1 = new QRecord().withValue("carrier", "USPS").withValue("trackingNo", "EZ1000000001");
       QRecord record2 = new QRecord().withValue("carrier", "USPS").withValue("trackingNo", "EZ2000000002");
 
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("easypostTracker");
       insertInput.setRecords(List.of(record1, record2));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -109,8 +107,7 @@ public class EasyPostApiTest
    @Test
    void testPostTrackerEmptyInput() throws QException
    {
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("easypostTracker");
       insertInput.setRecords(List.of());
       new InsertAction().execute(insertInput);
@@ -131,13 +128,13 @@ public class EasyPostApiTest
       QInstance        instance = TestUtils.defineInstance();
       QBackendMetaData backend  = instance.getBackend(TestUtils.EASYPOST_BACKEND_NAME);
       ((APIBackendMetaData) backend).setApiKey("not-valid");
+      reInitInstanceInContext(instance);
 
       QRecord record = new QRecord()
          .withValue("carrier", "USPS")
          .withValue("trackingNo", "EZ1000000001");
 
-      InsertInput insertInput = new InsertInput(instance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("easypostTracker");
       insertInput.setRecords(List.of(record));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -159,8 +156,7 @@ public class EasyPostApiTest
          .withValue("carrier", "USPS")
          .withValue("trackingNo", "Not-Valid-Tracking-No");
 
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("easypostTracker");
       insertInput.setRecords(List.of(record));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);

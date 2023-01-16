@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.model.actions.metadata;
 
 
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -38,16 +37,6 @@ public class TableMetaDataInput extends AbstractTableActionInput
     *******************************************************************************/
    public TableMetaDataInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public TableMetaDataInput(QInstance instance)
-   {
-      super(instance);
    }
 
 }

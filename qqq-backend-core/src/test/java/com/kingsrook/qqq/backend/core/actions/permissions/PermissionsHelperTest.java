@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.actions.permissions;
 
 import java.util.List;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
@@ -58,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for PermissionsHelper
  *******************************************************************************/
-class PermissionsHelperTest
+class PermissionsHelperTest extends BaseTest
 {
    private static final String TABLE_NAME   = "testTable";
    private static final String PROCESS_NAME = "testProcess";
@@ -107,8 +109,7 @@ class PermissionsHelperTest
    void testTableWithHasAccessLevelAndWithPermission() throws QPermissionDeniedException
    {
       QInstance instance = newQInstance();
-      instance.getTable(TABLE_NAME).setPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
+      instance.getTable(TABLE_NAME).setPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
       enrich(instance);
 
       assertFullTableAccess(instance, new QSession().withPermission(TABLE_NAME + ".hasAccess"));
@@ -123,8 +124,7 @@ class PermissionsHelperTest
    void testTableWithReadWriteLevelAndWithoutPermission()
    {
       QInstance instance = newQInstance();
-      instance.setDefaultPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
       enrich(instance);
 
       assertNoTableAccess(instance, new QSession());
@@ -139,13 +139,14 @@ class PermissionsHelperTest
    void testTableWithReadWriteLevelWithLimitedPermissions() throws QPermissionDeniedException
    {
       QInstance instance = newQInstance();
-      instance.setDefaultPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
+      enrich(instance);
 
       {
-         QSession                 session     = new QSession().withPermissions(TABLE_NAME + ".read");
-         AbstractTableActionInput actionInput = new InsertInput(instance).withSession(session).withTableName(TABLE_NAME);
-         enrich(instance);
+         QSession session = new QSession().withPermissions(TABLE_NAME + ".read");
+         QContext.setQSession(session);
+
+         AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
          assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
          assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
@@ -159,9 +160,10 @@ class PermissionsHelperTest
       }
 
       {
-         QSession                 session     = new QSession().withPermissions(TABLE_NAME + ".write");
-         AbstractTableActionInput actionInput = new InsertInput(instance).withSession(session).withTableName(TABLE_NAME);
-         enrich(instance);
+         QSession session = new QSession().withPermissions(TABLE_NAME + ".write");
+         QContext.setQSession(session);
+
+         AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
          assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
          assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
@@ -184,8 +186,8 @@ class PermissionsHelperTest
    void testTableWithReadWriteLevelAndWithPermission() throws QPermissionDeniedException
    {
       QInstance instance = newQInstance();
-      instance.setDefaultPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
+      enrich(instance);
 
       assertFullTableAccess(instance, new QSession().withPermissions(TABLE_NAME + ".read", TABLE_NAME + ".write"));
    }
@@ -199,8 +201,8 @@ class PermissionsHelperTest
    void testTableWithReadInsertEditDeleteLevelAndWithoutPermission()
    {
       QInstance instance = newQInstance();
-      instance.getTable(TABLE_NAME).setPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      instance.getTable(TABLE_NAME).setPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      enrich(instance);
 
       assertNoTableAccess(instance, new QSession());
    }
@@ -214,8 +216,8 @@ class PermissionsHelperTest
    void testTableWithReadInsertEditDeleteLevelAndWithPermission() throws QPermissionDeniedException
    {
       QInstance instance = newQInstance();
-      instance.getTable(TABLE_NAME).setPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      instance.getTable(TABLE_NAME).setPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      enrich(instance);
 
       assertFullTableAccess(instance, new QSession().withPermissions(TABLE_NAME + ".read", TABLE_NAME + ".insert", TABLE_NAME + ".edit", TABLE_NAME + ".delete"));
    }
@@ -229,13 +231,14 @@ class PermissionsHelperTest
    void testTableWithReadInsertEditDeleteLevelWithLimitedPermissions() throws QPermissionDeniedException
    {
       QInstance instance = newQInstance();
-      instance.setDefaultPermissionRules(new QPermissionRules()
-         .withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
+      enrich(instance);
 
       {
-         QSession                 session     = new QSession().withPermissions(TABLE_NAME + ".read");
-         AbstractTableActionInput actionInput = new InsertInput(instance).withSession(session).withTableName(TABLE_NAME);
-         enrich(instance);
+         QSession session = new QSession().withPermissions(TABLE_NAME + ".read");
+         QContext.setQSession(session);
+
+         AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
          assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
          assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
@@ -249,9 +252,10 @@ class PermissionsHelperTest
       }
 
       {
-         QSession                 session     = new QSession().withPermissions(TABLE_NAME + ".insert");
-         AbstractTableActionInput actionInput = new InsertInput(instance).withSession(session).withTableName(TABLE_NAME);
-         enrich(instance);
+         QSession session = new QSession().withPermissions(TABLE_NAME + ".insert");
+         QContext.setQSession(session);
+
+         AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
          assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
          assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
@@ -273,10 +277,13 @@ class PermissionsHelperTest
    @Test
    void testProcessNoPermissionsMetaDataMeansFullAccess() throws QPermissionDeniedException
    {
-      QInstance           instance    = newQInstance();
-      QSession            session     = new QSession();
-      AbstractActionInput actionInput = new AbstractActionInput(instance, session);
+      QInstance instance = newQInstance();
       enrich(instance);
+
+      QSession session = new QSession();
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
       assertTrue(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
       PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME);
    }
@@ -295,10 +302,12 @@ class PermissionsHelperTest
             .withLevel(PermissionLevel.HAS_ACCESS_PERMISSION)
             .withDenyBehavior(DenyBehavior.DISABLED)
          );
-
-      QSession            session     = new QSession();
-      AbstractActionInput actionInput = new AbstractActionInput(instance, session);
       enrich(instance);
+
+      QSession session = new QSession();
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
       assertFalse(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
       assertThatThrownBy(() -> PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME)).isInstanceOf(QPermissionDeniedException.class);
       assertEquals(PermissionCheckResult.DENY_DISABLE, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getProcess(PROCESS_NAME)));
@@ -315,10 +324,12 @@ class PermissionsHelperTest
       QInstance instance = newQInstance();
       instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
       instance.getProcess(PROCESS_NAME);
-
-      QSession            session     = new QSession().withPermission(PROCESS_NAME + ".hasAccess");
-      AbstractActionInput actionInput = new AbstractActionInput(instance, session);
       enrich(instance);
+
+      QSession session = new QSession().withPermission(PROCESS_NAME + ".hasAccess");
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
       assertTrue(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
       PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME);
       assertEquals(PermissionCheckResult.ALLOW, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getProcess(PROCESS_NAME)));
@@ -336,10 +347,12 @@ class PermissionsHelperTest
          QInstance instance = newQInstance();
          instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
          instance.getProcess(PROCESS_NAME);
-
-         QSession            session     = new QSession().withPermission(PROCESS_NAME + ".hasAccess");
-         AbstractActionInput actionInput = new AbstractActionInput(instance, session);
          enrich(instance);
+
+         QSession session = new QSession().withPermission(PROCESS_NAME + ".hasAccess");
+         QContext.setQSession(session);
+
+         AbstractActionInput actionInput = new AbstractActionInput();
          assertTrue(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
          PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME);
          assertEquals(PermissionCheckResult.ALLOW, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getProcess(PROCESS_NAME)));
@@ -349,10 +362,12 @@ class PermissionsHelperTest
          QInstance instance = newQInstance();
          instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
          instance.getProcess(PROCESS_NAME);
-
-         QSession            session     = new QSession();
-         AbstractActionInput actionInput = new AbstractActionInput(instance, session);
          enrich(instance);
+
+         QSession session = new QSession();
+         QContext.setQSession(session);
+
+         AbstractActionInput actionInput = new AbstractActionInput();
          assertFalse(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
          assertThatThrownBy(() -> PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME)).isInstanceOf(QPermissionDeniedException.class);
          assertEquals(PermissionCheckResult.DENY_HIDE, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getProcess(PROCESS_NAME)));
@@ -374,14 +389,16 @@ class PermissionsHelperTest
             .withDenyBehavior(instance.getDefaultPermissionRules().getDenyBehavior())
             .withPermissionBaseName("someProcess")
          );
+      enrich(instance);
 
       {
          //////////////////////////////////////////////////////
          // make sure we FAIL with the processName.hasAccess //
          //////////////////////////////////////////////////////
-         QSession            session     = new QSession();
-         AbstractActionInput actionInput = new AbstractActionInput(instance, session);
-         enrich(instance);
+         QSession session = new QSession();
+         QContext.setQSession(session);
+
+         AbstractActionInput actionInput = new AbstractActionInput();
          assertFalse(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
          assertThatThrownBy(() -> PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME)).isInstanceOf(QPermissionDeniedException.class);
          assertEquals(PermissionCheckResult.DENY_HIDE, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getProcess(PROCESS_NAME)));
@@ -391,9 +408,10 @@ class PermissionsHelperTest
          ////////////////////////////////////////////////////////////////////////
          // make sure we PASS with the override (permissionBaseName).hasAccess //
          ////////////////////////////////////////////////////////////////////////
-         QSession            session     = new QSession().withPermission("someProcess.hasAccess");
-         AbstractActionInput actionInput = new AbstractActionInput(instance, session);
-         enrich(instance);
+         QSession session = new QSession().withPermission("someProcess.hasAccess");
+         QContext.setQSession(session);
+
+         AbstractActionInput actionInput = new AbstractActionInput();
          assertTrue(PermissionsHelper.hasProcessPermission(actionInput, PROCESS_NAME));
          PermissionsHelper.checkProcessPermissionThrowing(actionInput, PROCESS_NAME);
          assertEquals(PermissionCheckResult.ALLOW, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getProcess(PROCESS_NAME)));
@@ -412,20 +430,23 @@ class PermissionsHelperTest
       instance.getReport(REPORT_NAME)
          .setPermissionRules(new QPermissionRules()
             .withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
+      enrich(instance);
 
       {
-         QSession            session     = new QSession();
-         AbstractActionInput actionInput = new AbstractActionInput(instance, session);
-         enrich(instance);
+         QSession session = new QSession();
+         QContext.setQSession(session);
+
+         AbstractActionInput actionInput = new AbstractActionInput();
          assertFalse(PermissionsHelper.hasReportPermission(actionInput, REPORT_NAME));
          assertThatThrownBy(() -> PermissionsHelper.checkReportPermissionThrowing(actionInput, REPORT_NAME)).isInstanceOf(QPermissionDeniedException.class);
          assertEquals(PermissionCheckResult.DENY_HIDE, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getReport(REPORT_NAME)));
       }
 
       {
-         QSession            session     = new QSession().withPermission(REPORT_NAME + ".hasAccess");
-         AbstractActionInput actionInput = new AbstractActionInput(instance, session);
-         enrich(instance);
+         QSession session = new QSession().withPermission(REPORT_NAME + ".hasAccess");
+         QContext.setQSession(session);
+
+         AbstractActionInput actionInput = new AbstractActionInput();
          assertTrue(PermissionsHelper.hasReportPermission(actionInput, REPORT_NAME));
          PermissionsHelper.checkReportPermissionThrowing(actionInput, REPORT_NAME);
          assertEquals(PermissionCheckResult.ALLOW, PermissionsHelper.getPermissionCheckResult(actionInput, instance.getReport(REPORT_NAME)));
@@ -440,10 +461,13 @@ class PermissionsHelperTest
    @Test
    void testWidgetWithNoProtection() throws QPermissionDeniedException
    {
-      QInstance           instance    = newQInstance();
-      QSession            session     = new QSession();
-      AbstractActionInput actionInput = new AbstractActionInput(instance, session);
+      QInstance instance = newQInstance();
       enrich(instance);
+
+      QSession session = new QSession();
+      QContext.setQSession(session);
+
+      AbstractActionInput actionInput = new AbstractActionInput();
 
       assertTrue(PermissionsHelper.hasWidgetPermission(actionInput, WIDGET_NAME));
       PermissionsHelper.checkWidgetPermissionThrowing(actionInput, WIDGET_NAME);
@@ -482,6 +506,7 @@ class PermissionsHelperTest
     *******************************************************************************/
    private static void enrich(QInstance instance)
    {
+      reInitInstanceInContext(instance);
       new QInstanceEnricher(instance).enrich();
    }
 
@@ -528,7 +553,8 @@ class PermissionsHelperTest
     *******************************************************************************/
    private static void assertFullTableAccess(QInstance instance, QSession session) throws QPermissionDeniedException
    {
-      AbstractTableActionInput actionInput = new InsertInput(instance).withSession(session).withTableName(TABLE_NAME);
+      QContext.setQSession(session);
+      AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
       for(TablePermissionSubType permissionSubType : TablePermissionSubType.values())
       {
@@ -546,7 +572,8 @@ class PermissionsHelperTest
     *******************************************************************************/
    private void assertNoTableAccess(QInstance instance, QSession session)
    {
-      AbstractTableActionInput actionInput = new InsertInput(instance).withSession(session).withTableName(TABLE_NAME);
+      QContext.setQSession(session);
+      AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
       for(TablePermissionSubType permissionSubType : TablePermissionSubType.values())
       {

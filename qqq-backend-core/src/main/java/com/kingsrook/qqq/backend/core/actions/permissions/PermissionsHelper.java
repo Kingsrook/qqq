@@ -387,6 +387,11 @@ public class PermissionsHelper
     *******************************************************************************/
    public static QPermissionRules getEffectivePermissionRules(MetaDataWithPermissionRules metaDataWithPermissionRules, QInstance instance)
    {
+      if(metaDataWithPermissionRules.getPermissionRules() == null)
+      {
+         LOG.warn("Null permission rules on meta data object [" + metaDataWithPermissionRules.getClass().getSimpleName() + "][" + metaDataWithPermissionRules.getName() + "] - does the instance need enriched?  Returning instance default rules.");
+         return (instance.getDefaultPermissionRules());
+      }
       return (metaDataWithPermissionRules.getPermissionRules());
    }
 

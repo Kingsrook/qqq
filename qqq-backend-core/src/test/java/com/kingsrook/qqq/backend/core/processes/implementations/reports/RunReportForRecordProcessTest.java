@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.reports;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
@@ -34,7 +36,7 @@ import org.junit.jupiter.api.Test;
 /*******************************************************************************
  ** Unit test for BasicRunReportProcess
  *******************************************************************************/
-class RunReportForRecordProcessTest
+class RunReportForRecordProcessTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -42,11 +44,10 @@ class RunReportForRecordProcessTest
    @Test
    void testRunReport() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(instance);
 
-      RunProcessInput runProcessInput = new RunProcessInput(instance);
-      runProcessInput.setSession(TestUtils.getMockSession());
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.PROCESS_NAME_RUN_SHAPES_PERSON_REPORT);
       runProcessInput.addValue(BasicRunReportProcess.FIELD_REPORT_NAME, TestUtils.REPORT_NAME_SHAPES_PERSON);
       runProcessInput.addValue("recordsParam", "recordIds");

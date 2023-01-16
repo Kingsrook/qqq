@@ -23,12 +23,13 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertOrUpdateStep
  *******************************************************************************/
-class LoadViaInsertOrUpdateStepTest
+class LoadViaInsertOrUpdateStepTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -61,7 +62,7 @@ class LoadViaInsertOrUpdateStepTest
    @Test
    void test() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       List<QRecord> existingRecordList = List.of(
          new QRecord().withValue("id", 47).withValue("firstName", "Tom")
       );
@@ -71,8 +72,7 @@ class LoadViaInsertOrUpdateStepTest
          new QRecord().withValue("id", 47).withValue("firstName", "Tim"),
          new QRecord().withValue("firstName", "John")
       );
-      RunBackendStepInput input = new RunBackendStepInput(qInstance);
-      input.setSession(new QSession());
+      RunBackendStepInput input = new RunBackendStepInput();
       input.setRecords(inputRecordList);
       input.addValue(LoadViaInsertOrUpdateStep.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_MEMORY);
       RunBackendStepOutput output = new RunBackendStepOutput();

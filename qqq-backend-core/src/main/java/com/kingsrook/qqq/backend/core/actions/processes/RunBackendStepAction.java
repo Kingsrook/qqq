@@ -107,7 +107,7 @@ public class RunBackendStepAction
          return;
       }
 
-      List<QFieldMetaData> fieldsToGet = new ArrayList<>();
+      List<QFieldMetaData> fieldsToGet           = new ArrayList<>();
       List<QFieldMetaData> requiredFieldsMissing = new ArrayList<>();
       for(QFieldMetaData field : inputMetaData.getFieldList())
       {
@@ -175,8 +175,7 @@ public class RunBackendStepAction
       {
          if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
          {
-            QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-            queryInput.setSession(runBackendStepInput.getSession());
+            QueryInput queryInput = new QueryInput();
             queryInput.setTableName(inputMetaData.getRecordListMetaData().getTableName());
 
             // todo - handle this being async (e.g., http)

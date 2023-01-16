@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
@@ -47,9 +46,8 @@ public class ExecuteCodeInput extends AbstractActionInput
     ** Constructor
     **
     *******************************************************************************/
-   public ExecuteCodeInput(QInstance qInstance)
+   public ExecuteCodeInput()
    {
-      super(qInstance);
    }
 
 

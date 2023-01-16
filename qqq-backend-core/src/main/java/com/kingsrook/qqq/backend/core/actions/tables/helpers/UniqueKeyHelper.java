@@ -61,8 +61,7 @@ public class UniqueKeyHelper
       Set<List<Serializable>> existingRecords = new HashSet<>();
       if(ukFieldNames != null)
       {
-         QueryInput queryInput = new QueryInput(actionInput.getInstance());
-         queryInput.setSession(actionInput.getSession());
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(table.getName());
          queryInput.setTransaction(transaction);
 

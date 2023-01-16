@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -117,8 +118,6 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    private CountInput initCountRequest()
    {
       CountInput countInput = new CountInput();
-      countInput.setInstance(TestUtils.defineInstance());
-      countInput.setSession(new QSession());
       countInput.setTableName(TestUtils.defineTablePerson().getName());
       return countInput;
    }
@@ -189,16 +188,15 @@ public class RDBMSCountActionTest extends RDBMSActionTest
    void testRecordSecurity() throws QException
    {
       CountInput countInput = new CountInput();
-      countInput.setInstance(TestUtils.defineInstance());
       countInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
-      countInput.setSession(new QSession());
+      QContext.setQSession(new QSession());
       assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(0);
 
-      countInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(8);
 
-      countInput.setSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(2, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(2, 3)));
       assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(5);
    }
 

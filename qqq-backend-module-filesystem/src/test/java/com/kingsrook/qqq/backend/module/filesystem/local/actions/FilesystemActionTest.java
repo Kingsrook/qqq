@@ -24,7 +24,10 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 import java.io.File;
 import java.io.IOException;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -39,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  **
  ** Knows how to set up the filesystem for the tests.
  *******************************************************************************/
-public class FilesystemActionTest
+public class FilesystemActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -49,6 +52,7 @@ public class FilesystemActionTest
    public void beforeEach() throws Exception
    {
       primeFilesystem();
+      QContext.init(TestUtils.defineInstance(), new QSession());
    }
 
 

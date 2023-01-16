@@ -76,7 +76,7 @@ public class RecordAutomationStatusUpdater
             String className = stackTraceElement.getClassName();
             if(className.contains("com.kingsrook.qqq.backend.core.actions.automation") && !className.equals(RecordAutomationStatusUpdater.class.getName()) && !className.endsWith("Test"))
             {
-               LOG.debug(session, "Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
+               LOG.debug("Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
                return (false);
             }
          }
@@ -143,8 +143,7 @@ public class RecordAutomationStatusUpdater
          boolean didSetStatusField = setAutomationStatusInRecords(session, table, records, automationStatus);
          if(didSetStatusField)
          {
-            UpdateInput updateInput = new UpdateInput(instance);
-            updateInput.setSession(session);
+            UpdateInput updateInput = new UpdateInput();
             updateInput.setTableName(table.getName());
 
             /////////////////////////////////////////////////////////////////////////////////////

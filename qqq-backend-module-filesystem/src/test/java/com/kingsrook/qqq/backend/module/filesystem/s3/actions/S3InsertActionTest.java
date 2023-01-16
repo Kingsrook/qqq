@@ -57,8 +57,7 @@ public class S3InsertActionTest extends BaseS3Test
    {
       QInstance qInstance = TestUtils.defineInstance();
 
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_BLOB_S3);
       insertInput.setRecords(List.of(
          new QRecord().withValue("fileName", "file2.txt").withValue("contents", "Hi, Bob.")
@@ -86,8 +85,7 @@ public class S3InsertActionTest extends BaseS3Test
    public void testCardinalityMany() throws QException, IOException
    {
       QInstance   qInstance   = TestUtils.defineInstance();
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_S3);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", "1").withValue("firstName", "Bob")

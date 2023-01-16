@@ -36,7 +36,6 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.lambda.model.QLambdaRequest;
 import com.kingsrook.qqq.lambda.model.QLambdaResponse;
@@ -72,7 +71,6 @@ public class QStandardLambdaHandler extends QAbstractLambdaHandler
     *******************************************************************************/
    protected void setupSession(QLambdaRequest request, AbstractActionInput actionInput)
    {
-      actionInput.setSession(new QSession());
    }
 
 
@@ -187,7 +185,7 @@ public class QStandardLambdaHandler extends QAbstractLambdaHandler
          log(startAfterStep == null ? "Initiating process [" + processName + "] [" + processUUID + "]"
             : "Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
 
-         RunProcessInput runProcessInput = new RunProcessInput(qInstance);
+         RunProcessInput runProcessInput = new RunProcessInput();
          setupSession(request, runProcessInput);
          runProcessInput.setProcessName(processName);
          runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);

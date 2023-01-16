@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
@@ -52,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for the ReportAction
  *******************************************************************************/
-class ExportActionTest
+class ExportActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -122,7 +124,7 @@ class ExportActionTest
    {
       try(FileOutputStream outputStream = new FileOutputStream(filename))
       {
-         ExportInput exportInput = new ExportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
+         ExportInput exportInput = new ExportInput();
          exportInput.setTableName("person");
          QTableMetaData table = exportInput.getTable();
 
@@ -149,7 +151,7 @@ class ExportActionTest
    @Test
    void testBadFieldNames()
    {
-      ExportInput exportInput = new ExportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
+      ExportInput exportInput = new ExportInput();
       exportInput.setTableName("person");
       exportInput.setFieldNames(List.of("Foo", "Bar", "Baz"));
       assertThrows(QUserFacingException.class, () ->
@@ -166,7 +168,7 @@ class ExportActionTest
    @Test
    void testPreExecuteCount() throws QException
    {
-      ExportInput exportInput = new ExportInput(TestUtils.defineInstance(), TestUtils.getMockSession());
+      ExportInput exportInput = new ExportInput();
       exportInput.setTableName("person");
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,10 +200,10 @@ class ExportActionTest
          wideTable.addField(new QFieldMetaData("field" + i, QFieldType.STRING));
       }
 
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       qInstance.addTable(wideTable);
 
-      ExportInput exportInput = new ExportInput(qInstance, TestUtils.getMockSession());
+      ExportInput exportInput = new ExportInput();
       exportInput.setTableName("wide");
 
       ////////////////////////////////////////////////////////////////

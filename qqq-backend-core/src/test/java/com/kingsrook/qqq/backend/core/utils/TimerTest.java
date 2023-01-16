@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
 /*******************************************************************************
  ** Unit test for Timer
  *******************************************************************************/
-class TimerTest
+class TimerTest extends BaseTest
 {
 
    /*******************************************************************************

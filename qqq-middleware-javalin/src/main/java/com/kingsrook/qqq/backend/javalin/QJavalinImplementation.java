@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
@@ -190,6 +191,17 @@ public class QJavalinImplementation
       service.routes(getRoutes());
       service.before(QJavalinImplementation::hotSwapQInstance);
       service.before((Context context) -> context.header("Content-Type", "application/json"));
+      service.after(QJavalinImplementation::clearQContext);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void clearQContext(Context context)
+   {
+      QContext.clear();
    }
 
 
@@ -336,7 +348,7 @@ public class QJavalinImplementation
    public static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
 
       try
       {
@@ -374,8 +386,9 @@ public class QJavalinImplementation
             }
          }
 
+         QContext.init(qInstance, null); // hmm...
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
-         input.setSession(session);
+         QContext.init(qInstance, session, null, input);
 
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
@@ -463,7 +476,7 @@ public class QJavalinImplementation
          List<Serializable> primaryKeys = new ArrayList<>();
          primaryKeys.add(context.pathParam("primaryKey"));
 
-         DeleteInput deleteInput = new DeleteInput(qInstance);
+         DeleteInput deleteInput = new DeleteInput();
          setupSession(context, deleteInput);
          deleteInput.setTableName(table);
          deleteInput.setPrimaryKeys(primaryKeys);
@@ -492,7 +505,7 @@ public class QJavalinImplementation
       {
          String table = context.pathParam("table");
 
-         UpdateInput updateInput = new UpdateInput(qInstance);
+         UpdateInput updateInput = new UpdateInput();
          setupSession(context, updateInput);
          updateInput.setTableName(table);
 
@@ -550,7 +563,7 @@ public class QJavalinImplementation
       try
       {
          String      table       = context.pathParam("table");
-         InsertInput insertInput = new InsertInput(qInstance);
+         InsertInput insertInput = new InsertInput();
          setupSession(context, insertInput);
          insertInput.setTableName(table);
 
@@ -599,7 +612,7 @@ public class QJavalinImplementation
          String         tableName  = context.pathParam("table");
          QTableMetaData table      = qInstance.getTable(tableName);
          String         primaryKey = context.pathParam("primaryKey");
-         GetInput       getInput   = new GetInput(qInstance);
+         GetInput       getInput   = new GetInput();
 
          setupSession(context, getInput);
          getInput.setTableName(tableName);
@@ -651,7 +664,7 @@ public class QJavalinImplementation
    {
       try
       {
-         CountInput countInput = new CountInput(qInstance);
+         CountInput countInput = new CountInput();
          setupSession(context, countInput);
          countInput.setTableName(context.pathParam("table"));
 
@@ -698,7 +711,7 @@ public class QJavalinImplementation
    {
       try
       {
-         QueryInput queryInput = new QueryInput(qInstance);
+         QueryInput queryInput = new QueryInput();
          setupSession(context, queryInput);
          queryInput.setTableName(context.pathParam("table"));
          queryInput.setShouldGenerateDisplayValues(true);
@@ -738,7 +751,7 @@ public class QJavalinImplementation
    {
       try
       {
-         MetaDataInput metaDataInput = new MetaDataInput(qInstance);
+         MetaDataInput metaDataInput = new MetaDataInput();
          setupSession(context, metaDataInput);
          MetaDataAction metaDataAction = new MetaDataAction();
          MetaDataOutput metaDataOutput = metaDataAction.execute(metaDataInput);
@@ -760,7 +773,7 @@ public class QJavalinImplementation
    {
       try
       {
-         TableMetaDataInput tableMetaDataInput = new TableMetaDataInput(qInstance);
+         TableMetaDataInput tableMetaDataInput = new TableMetaDataInput();
          setupSession(context, tableMetaDataInput);
 
          String         tableName = context.pathParam("table");
@@ -798,7 +811,7 @@ public class QJavalinImplementation
    {
       try
       {
-         ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput(qInstance);
+         ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput();
          setupSession(context, processMetaDataInput);
 
          String           processName = context.pathParam("processName");
@@ -830,11 +843,10 @@ public class QJavalinImplementation
    {
       try
       {
-         InsertInput insertInput = new InsertInput(qInstance);
+         InsertInput insertInput = new InsertInput();
          setupSession(context, insertInput);
 
-         RenderWidgetInput input = new RenderWidgetInput(qInstance)
-            .withSession(insertInput.getSession())
+         RenderWidgetInput input = new RenderWidgetInput()
             .withWidgetMetaData(qInstance.getWidget(context.pathParam("name")));
 
          // todo permission?
@@ -910,7 +922,7 @@ public class QJavalinImplementation
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ExportInput exportInput = new ExportInput(qInstance);
+         ExportInput exportInput = new ExportInput();
          setupSession(context, exportInput);
          exportInput.setTableName(tableName);
          exportInput.setReportFormat(reportFormat);
@@ -1137,7 +1149,7 @@ public class QJavalinImplementation
             throw (new QNotFoundException("Field " + fieldName + " in table " + tableName + " is not associated with a possible value source."));
          }
 
-         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(qInstance);
+         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
          setupSession(context, input);
          input.setPossibleValueSourceName(field.getPossibleValueSourceName());
          input.setSearchTerm(searchTerm);

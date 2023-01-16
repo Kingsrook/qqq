@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,9 +64,9 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void debug(QSession session, String message)
+   public void debug(String message)
    {
-      logger.debug(wrapMessage(session, message));
+      logger.debug(wrapMessage(message));
    }
 
 
@@ -73,9 +74,9 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void info(QSession session, String message)
+   public void info(String message)
    {
-      logger.info(wrapMessage(session, message));
+      logger.info(wrapMessage(message));
    }
 
 
@@ -83,9 +84,9 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void warn(QSession session, String message)
+   public void warn(String message)
    {
-      logger.warn(wrapMessage(session, message));
+      logger.warn(wrapMessage(message));
    }
 
 
@@ -93,9 +94,9 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void warn(QSession session, String message, Throwable t)
+   public void warn(String message, Throwable t)
    {
-      logger.warn(wrapMessage(session, message), t);
+      logger.warn(wrapMessage(message), t);
    }
 
 
@@ -103,9 +104,9 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void error(QSession session, String message)
+   public void error(String message)
    {
-      logger.error(wrapMessage(session, message));
+      logger.error(wrapMessage(message));
    }
 
 
@@ -113,9 +114,9 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void error(QSession session, String message, Throwable t)
+   public void error(String message, Throwable t)
    {
-      logger.error(wrapMessage(session, message), t);
+      logger.error(wrapMessage(message), t);
    }
 
 
@@ -123,7 +124,7 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String wrapMessage(QSession session, String message)
+   private String wrapMessage(String message)
    {
       String propertyName  = "qqq.logger.logSessionId.disabled";
       String propertyValue = System.getProperty(propertyName, "");
@@ -132,7 +133,8 @@ public class QLogger
          return (message);
       }
 
-      String sessionString = (session != null) ? session.getUuid() : "Not provided";
+      QSession session       = QContext.getQSession();
+      String   sessionString = (session != null) ? session.getUuid() : "Not provided";
       return ("Session [" + sessionString + "] | " + message);
    }
 }

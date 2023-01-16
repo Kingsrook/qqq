@@ -54,8 +54,7 @@ public class LoadViaDeleteStep extends AbstractLoadStep
    {
       QTableMetaData table = runBackendStepInput.getTable();
 
-      DeleteInput deleteInput = new DeleteInput(runBackendStepInput.getInstance());
-      deleteInput.setSession(runBackendStepInput.getSession());
+      DeleteInput deleteInput = new DeleteInput();
       deleteInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       deleteInput.setPrimaryKeys(runBackendStepInput.getRecords().stream().map(r -> r.getValue(table.getPrimaryKeyField())).collect(Collectors.toList()));
       deleteInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
@@ -72,8 +71,7 @@ public class LoadViaDeleteStep extends AbstractLoadStep
    @Override
    public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
-      insertInput.setSession(runBackendStepInput.getSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
 
       return (Optional.of(new InsertAction().openTransaction(insertInput)));

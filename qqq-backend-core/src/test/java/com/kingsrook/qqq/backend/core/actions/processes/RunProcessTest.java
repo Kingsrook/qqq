@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -73,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunProcessTest
+public class RunProcessTest extends BaseTest
 {
    private static final Logger LOG = LogManager.getLogger(RunProcessTest.class);
 
@@ -86,8 +88,7 @@ public class RunProcessTest
    public void testBasepull() throws QException
    {
       TestCallback    callback = new TestCallback();
-      RunProcessInput request  = new RunProcessInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request  = new RunProcessInput();
       request.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
       request.setCallback(callback);
       RunProcessOutput result = new RunProcessAction().execute(request);
@@ -137,12 +138,11 @@ public class RunProcessTest
     *******************************************************************************/
    private Instant getBasepullLastRunTime() throws QException
    {
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
+      QueryInput queryInput = new QueryInput();
       queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria()
          .withFieldName(TestUtils.BASEPULL_KEY_FIELD_NAME)
          .withOperator(QCriteriaOperator.EQUALS)
          .withValues(List.of(TestUtils.PROCESS_NAME_BASEPULL))));
-      queryInput.setSession(TestUtils.getMockSession());
       queryInput.setTableName(TestUtils.TABLE_NAME_BASEPULL);
 
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -160,8 +160,7 @@ public class RunProcessTest
    public void test() throws QException
    {
       TestCallback    callback = new TestCallback();
-      RunProcessInput request  = new RunProcessInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request  = new RunProcessInput();
       request.setProcessName("addToPeoplesAge");
       request.setCallback(callback);
       RunProcessOutput result = new RunProcessAction().execute(request);
@@ -182,11 +181,10 @@ public class RunProcessTest
    public void testBreakOnFrontendSteps() throws QException
    {
       TestCallback    callback    = new TestCallback();
-      QInstance       instance    = TestUtils.defineInstance();
-      RunProcessInput request     = new RunProcessInput(instance);
+      QInstance       instance    = QContext.getQInstance();
+      RunProcessInput request     = new RunProcessInput();
       String          processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
 
-      request.setSession(TestUtils.getMockSession());
       request.setProcessName(processName);
       request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
       request.setCallback(callback);
@@ -227,11 +225,9 @@ public class RunProcessTest
    public void testSkipFrontendSteps() throws QException
    {
       TestCallback    callback    = new TestCallback();
-      QInstance       instance    = TestUtils.defineInstance();
-      RunProcessInput request     = new RunProcessInput(instance);
+      RunProcessInput request     = new RunProcessInput();
       String          processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
 
-      request.setSession(TestUtils.getMockSession());
       request.setProcessName(processName);
       request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
       request.setCallback(callback);
@@ -251,11 +247,9 @@ public class RunProcessTest
    public void testFailOnFrontendSteps()
    {
       TestCallback    callback    = new TestCallback();
-      QInstance       instance    = TestUtils.defineInstance();
-      RunProcessInput request     = new RunProcessInput(instance);
+      RunProcessInput request     = new RunProcessInput();
       String          processName = TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE;
 
-      request.setSession(TestUtils.getMockSession());
       request.setProcessName(processName);
       request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.FAIL);
       request.setCallback(callback);
@@ -284,7 +278,7 @@ public class RunProcessTest
       ////////////////////////////////////////////////////////////////////////////////
       RunProcessInput     runProcessInput = new RunProcessInput();
       UUIDAndTypeStateKey stateKey        = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS);
-      QProcessMetaData    process         = TestUtils.defineInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+      QProcessMetaData    process         = QContext.getQInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
       ProcessState        processState    = new RunProcessAction().primeProcessState(runProcessInput, stateKey, process);
       assertNotNull(processState);
    }
@@ -295,7 +289,7 @@ public class RunProcessTest
     **
     *******************************************************************************/
    @Test
-   void testPrimeProcessRequestAttemptToContinueButStateNotFound() throws QException
+   void testPrimeProcessRequestAttemptToContinueButStateNotFound()
    {
       ////////////////////////////////////////////////////////////////////////////////////////////////
       // this is a flow where it's a continue, but we don't have a state stored, so it should throw //
@@ -303,7 +297,7 @@ public class RunProcessTest
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setStartAfterStep("setupStep");
       UUIDAndTypeStateKey stateKey = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS);
-      QProcessMetaData    process  = TestUtils.defineInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+      QProcessMetaData    process  = QContext.getQInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
 
       assertThrows(QException.class, () ->
       {
@@ -336,7 +330,7 @@ public class RunProcessTest
       oldProcessState.getValues().put("foo", "fubu");
       RunProcessAction.getStateProvider().put(stateKey, oldProcessState);
 
-      QProcessMetaData process            = TestUtils.defineInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+      QProcessMetaData process            = QContext.getQInstance().getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE);
       ProcessState     primedProcessState = new RunProcessAction().primeProcessState(runProcessInput, stateKey, process);
       assertEquals("myValue", primedProcessState.getValues().get("key"));
 
@@ -355,7 +349,7 @@ public class RunProcessTest
    @Test
    void testCustomRoutingAddFrontendStep() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       QStepMetaData back1 = new QBackendStepMetaData()
          .withName("back1")
@@ -379,8 +373,7 @@ public class RunProcessTest
       ////////////////////////////////////////////////////////////
       // make sure that if we run by default, we get to the end //
       ////////////////////////////////////////////////////////////
-      RunProcessInput request = new RunProcessInput(qInstance);
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request = new RunProcessInput();
       request.setProcessName(processName);
       request.setCallback(new TestCallback());
       request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
@@ -428,7 +421,7 @@ public class RunProcessTest
    @Test
    void testCustomRoutingRemoveSteps() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       QStepMetaData back1 = new QBackendStepMetaData()
          .withName("back1")
@@ -458,8 +451,7 @@ public class RunProcessTest
       ////////////////////////////////////////////////////////////////////////////////
       // make sure that if we run by default, we get stopped on both frontend steps //
       ////////////////////////////////////////////////////////////////////////////////
-      RunProcessInput request = new RunProcessInput(qInstance);
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request = new RunProcessInput();
       request.setProcessName(processName);
       request.setCallback(new TestCallback());
       request.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);

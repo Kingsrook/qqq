@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
@@ -49,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for full bulk edit process
  *******************************************************************************/
-class BulkEditTest
+class BulkEditTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -73,7 +75,7 @@ class BulkEditTest
       //////////////////////////////
       // insert some test records //
       //////////////////////////////
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff").withValue("email", "darin.kelkhoff@kingsrook.com"),
          new QRecord().withValue("id", 2).withValue("firstName", "Tim").withValue("lastName", "Chamberlain").withValue("email", "tim.chamberlain@kingsrook.com"),
@@ -83,8 +85,7 @@ class BulkEditTest
       //////////////////////////////////
       // set up the run-process input //
       //////////////////////////////////
-      RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-      runProcessInput.setSession(TestUtils.getMockSession());
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkEdit");
       runProcessInput.addValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER,
          new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2))));

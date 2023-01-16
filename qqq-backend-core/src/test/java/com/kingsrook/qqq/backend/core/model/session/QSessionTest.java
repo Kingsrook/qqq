@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.session;
 
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for QSession
  *******************************************************************************/
-class QSessionTest
+class QSessionTest extends BaseTest
 {
 
    /*******************************************************************************

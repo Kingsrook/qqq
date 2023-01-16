@@ -24,11 +24,11 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  ** Unit test for UpdateAction
  **
  *******************************************************************************/
-class UpdateActionTest
+class UpdateActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -48,11 +48,10 @@ class UpdateActionTest
    @Test
    public void test() throws QException
    {
-      UpdateInput request = new UpdateInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      UpdateInput request = new UpdateInput();
       request.setTableName("person");
-      List<QRecord> records =new ArrayList<>();
-      QRecord record = new QRecord();
+      List<QRecord> records = new ArrayList<>();
+      QRecord       record  = new QRecord();
       record.setValue("id", "47");
       record.setValue("firstName", "James");
       records.add(record);

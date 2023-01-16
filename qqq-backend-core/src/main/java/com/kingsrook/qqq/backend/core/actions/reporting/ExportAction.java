@@ -149,8 +149,7 @@ public class ExportAction
       // set up a query input //
       //////////////////////////
       QueryAction queryAction = new QueryAction();
-      QueryInput  queryInput  = new QueryInput(exportInput.getInstance());
-      queryInput.setSession(exportInput.getSession());
+      QueryInput  queryInput  = new QueryInput();
       queryInput.setTableName(exportInput.getTableName());
       queryInput.setFilter(exportInput.getQueryFilter());
       queryInput.setLimit(exportInput.getLimit());
@@ -350,8 +349,7 @@ public class ExportAction
          if(exportInput.getLimit() == null || exportInput.getLimit() > reportFormat.getMaxRows())
          {
             CountInterface countInterface = backendModule.getCountInterface();
-            CountInput     countInput     = new CountInput(exportInput.getInstance());
-            countInput.setSession(exportInput.getSession());
+            CountInput     countInput     = new CountInput();
             countInput.setTableName(exportInput.getTableName());
             countInput.setFilter(exportInput.getQueryFilter());
             CountOutput countOutput = countInterface.execute(countInput);

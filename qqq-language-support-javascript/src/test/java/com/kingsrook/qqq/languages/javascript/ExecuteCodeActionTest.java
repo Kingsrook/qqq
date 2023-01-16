@@ -32,7 +32,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for ExecuteCodeAction
  *******************************************************************************/
-class ExecuteCodeActionTest
+class ExecuteCodeActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -53,7 +52,7 @@ class ExecuteCodeActionTest
    @Test
    void testHelloWorld() throws QException
    {
-      ExecuteCodeInput input = new ExecuteCodeInput(TestUtils.defineInstance())
+      ExecuteCodeInput input = new ExecuteCodeInput()
          .withCodeReference(new QCodeReference("helloWorld.js", QCodeType.JAVA_SCRIPT, QCodeUsage.CUSTOMIZER)
             .withInlineCode("""
                return "Hello, " + input"""))
@@ -256,8 +255,7 @@ class ExecuteCodeActionTest
 
       TestOutput testOutput = new TestOutput();
 
-      ExecuteCodeInput input = new ExecuteCodeInput(instance);
-      input.setSession(new QSession());
+      ExecuteCodeInput input = new ExecuteCodeInput();
       input.setCodeReference(new QCodeReference("test.js", QCodeType.JAVA_SCRIPT, QCodeUsage.CUSTOMIZER).withInlineCode(code));
       input.withContext("input", testInput);
       input.withContext("output", testOutput);

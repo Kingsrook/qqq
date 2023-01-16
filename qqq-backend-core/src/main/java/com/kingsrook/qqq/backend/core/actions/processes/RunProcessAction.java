@@ -295,11 +295,10 @@ public class RunProcessAction
     *******************************************************************************/
    private void runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
    {
-      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(runProcessInput.getInstance(), processState);
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(processState);
       runBackendStepInput.setProcessName(process.getName());
       runBackendStepInput.setStepName(backendStep.getName());
       runBackendStepInput.setTableName(process.getTableName());
-      runBackendStepInput.setSession(runProcessInput.getSession());
       runBackendStepInput.setCallback(runProcessInput.getCallback());
       runBackendStepInput.setFrontendStepBehavior(runProcessInput.getFrontendStepBehavior());
       runBackendStepInput.setAsyncJobCallback(runProcessInput.getAsyncJobCallback());
@@ -444,8 +443,7 @@ public class RunProcessAction
       ///////////////////////////////////////
       // get the stored basepull timestamp //
       ///////////////////////////////////////
-      QueryInput queryInput = new QueryInput(runProcessInput.getInstance());
-      queryInput.setSession(runProcessInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(basepullTableName);
       queryInput.setFilter(new QQueryFilter().withCriteria(
          new QFilterCriteria()
@@ -473,8 +471,7 @@ public class RunProcessAction
          ////////////
          // update //
          ////////////
-         UpdateInput updateInput = new UpdateInput(runProcessInput.getInstance());
-         updateInput.setSession(runProcessInput.getSession());
+         UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName(basepullTableName);
          updateInput.setRecords(List.of(basepullRecord));
          new UpdateAction().execute(updateInput);
@@ -488,8 +485,7 @@ public class RunProcessAction
          ////////////////////////////////
          // insert new basepull record //
          ////////////////////////////////
-         InsertInput insertInput = new InsertInput(runProcessInput.getInstance());
-         insertInput.setSession(runProcessInput.getSession());
+         InsertInput insertInput = new InsertInput();
          insertInput.setTableName(basepullTableName);
          insertInput.setRecords(List.of(basepullRecord));
          new InsertAction().execute(insertInput);
@@ -527,8 +523,7 @@ public class RunProcessAction
       ///////////////////////////////////////
       // get the stored basepull timestamp //
       ///////////////////////////////////////
-      QueryInput queryInput = new QueryInput(runProcessInput.getInstance());
-      queryInput.setSession(runProcessInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(basepullTableName);
       queryInput.setFilter(new QQueryFilter().withCriteria(
          new QFilterCriteria()

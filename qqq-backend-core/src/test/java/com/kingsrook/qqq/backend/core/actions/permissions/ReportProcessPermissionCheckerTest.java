@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.actions.permissions;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
@@ -38,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /*******************************************************************************
  ** Unit test for ReportProcessPermissionChecker
  *******************************************************************************/
-class ReportProcessPermissionCheckerTest
+class ReportProcessPermissionCheckerTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -47,8 +49,8 @@ class ReportProcessPermissionCheckerTest
    @Test
    void test() throws Exception
    {
-      QInstance       qInstance       = TestUtils.defineInstance();
-      RunProcessInput runProcessInput = new RunProcessInput(qInstance);
+      QInstance       qInstance       = QContext.getQInstance();
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.addValue("reportName", TestUtils.REPORT_NAME_SHAPES_PERSON);
 
       qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON)
@@ -63,13 +65,13 @@ class ReportProcessPermissionCheckerTest
       ///////////////////////////////////////////////////////
       // without permission in our session, we should fail //
       ///////////////////////////////////////////////////////
-      runProcessInput.setSession(new QSession());
+      QContext.setQSession(new QSession());
       assertThrows(QPermissionDeniedException.class, () -> new ReportProcessPermissionChecker().checkPermissionsThrowing(runProcessInput, process));
 
       /////////////////////////////////////////////////////////////////////////
       // add the permission - assert that we have access (e.g., don't throw) //
       /////////////////////////////////////////////////////////////////////////
-      runProcessInput.setSession(new QSession().withPermission(TestUtils.REPORT_NAME_SHAPES_PERSON + ".hasAccess"));
+      QContext.setQSession(new QSession().withPermission(TestUtils.REPORT_NAME_SHAPES_PERSON + ".hasAccess"));
       new ReportProcessPermissionChecker().checkPermissionsThrowing(runProcessInput, process);
    }
 

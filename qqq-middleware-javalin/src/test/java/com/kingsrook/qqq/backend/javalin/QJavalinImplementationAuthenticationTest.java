@@ -26,10 +26,12 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.TableBasedAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.TableBasedAuthenticationModule;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
@@ -192,6 +194,7 @@ public class QJavalinImplementationAuthenticationTest extends QJavalinTestBase
       TableBasedAuthenticationMetaData tableBasedAuthenticationMetaData = new TableBasedAuthenticationMetaData();
       qInstance.addTable(tableBasedAuthenticationMetaData.defineStandardUserTable(TestUtils.BACKEND_NAME_MEMORY));
       qInstance.addTable(tableBasedAuthenticationMetaData.defineStandardSessionTable(TestUtils.BACKEND_NAME_MEMORY));
+      QContext.init(qInstance, new QSession());
 
       try
       {
@@ -202,7 +205,7 @@ public class QJavalinImplementationAuthenticationTest extends QJavalinTestBase
       }
       catch(Exception e)
       {
-         fail("Error inserting test user.");
+         fail("Error inserting test user.", e);
       }
 
       qInstance.setAuthentication(tableBasedAuthenticationMetaData);

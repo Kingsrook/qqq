@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for QTableMetaData
  *******************************************************************************/
-class QTableMetaDataTest
+class QTableMetaDataTest extends BaseTest
 {
 
    /*******************************************************************************

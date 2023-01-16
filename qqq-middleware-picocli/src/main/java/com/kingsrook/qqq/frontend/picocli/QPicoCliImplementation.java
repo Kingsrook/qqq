@@ -451,9 +451,8 @@ public class QPicoCliImplementation
    {
       String           processName = processParseResult.commandSpec().name();
       QProcessMetaData process     = qInstance.getProcess(processName);
-      RunProcessInput  request     = new RunProcessInput(qInstance);
+      RunProcessInput  request     = new RunProcessInput();
 
-      request.setSession(session);
       request.setProcessName(processName);
       request.setCallback(new PicoCliProcessCallback(subCommandLine));
 
@@ -498,8 +497,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableMetaData(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
-      TableMetaDataInput tableMetaDataInput = new TableMetaDataInput(qInstance);
-      tableMetaDataInput.setSession(session);
+      TableMetaDataInput tableMetaDataInput = new TableMetaDataInput();
       tableMetaDataInput.setTableName(tableName);
       TableMetaDataAction tableMetaDataAction = new TableMetaDataAction();
       TableMetaDataOutput tableMetaDataOutput = tableMetaDataAction.execute(tableMetaDataInput);
@@ -514,8 +512,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableCount(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
-      CountInput countInput = new CountInput(qInstance);
-      countInput.setSession(session);
+      CountInput countInput = new CountInput();
       countInput.setTableName(tableName);
       countInput.setFilter(generateQueryFilter(subParseResult));
 
@@ -532,8 +529,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableGet(CommandLine commandLine, String tableName, ParseResult subParseResult, CommandLine subCommandLine) throws QException
    {
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
 
@@ -579,8 +575,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableQuery(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
       queryInput.setLimit(subParseResult.matchedOptionValue("limit", null));
@@ -633,8 +628,7 @@ public class QPicoCliImplementation
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ExportInput exportInput = new ExportInput(qInstance);
-         exportInput.setSession(session);
+         ExportInput exportInput = new ExportInput();
          exportInput.setTableName(tableName);
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(filename);
@@ -698,8 +692,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableInsert(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(session);
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(tableName);
       QTableMetaData table = qInstance.getTable(tableName);
 
@@ -794,8 +787,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableUpdate(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
-      UpdateInput updateInput = new UpdateInput(qInstance);
-      updateInput.setSession(session);
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName(tableName);
       QTableMetaData table = qInstance.getTable(tableName);
 
@@ -888,8 +880,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private int runTableDelete(CommandLine commandLine, String tableName, ParseResult subParseResult) throws QException
    {
-      DeleteInput deleteInput = new DeleteInput(qInstance);
-      deleteInput.setSession(session);
+      DeleteInput deleteInput = new DeleteInput();
       deleteInput.setTableName(tableName);
 
       /////////////////////////////////////////////
@@ -929,8 +920,7 @@ public class QPicoCliImplementation
    {
       if(parseResult.hasMatchedOption("--meta-data"))
       {
-         MetaDataInput metaDataInput = new MetaDataInput(qInstance);
-         metaDataInput.setSession(session);
+         MetaDataInput  metaDataInput  = new MetaDataInput();
          MetaDataAction metaDataAction = new MetaDataAction();
          MetaDataOutput metaDataOutput = metaDataAction.execute(metaDataInput);
          commandLine.getOut().println(JsonUtils.toPrettyJson(metaDataOutput));
@@ -948,8 +938,7 @@ public class QPicoCliImplementation
     *******************************************************************************/
    private List<QRecord> executeQuery(String tableName, ParseResult subParseResult) throws QException
    {
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setFilter(generateQueryFilter(subParseResult));
 

@@ -30,6 +30,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
@@ -72,8 +74,10 @@ public class AsyncJobManager
 
       try
       {
+         CapturedContext capturedContext = QContext.capture();
          CompletableFuture<T> future = CompletableFuture.supplyAsync(() ->
          {
+            QContext.init(capturedContext);
             return (runAsyncJob(jobName, asyncJob, uuidAndTypeStateKey, asyncJobStatus));
          });
 
@@ -153,6 +157,7 @@ public class AsyncJobManager
       finally
       {
          Thread.currentThread().setName(originalThreadName);
+         QContext.clear();
       }
    }
 

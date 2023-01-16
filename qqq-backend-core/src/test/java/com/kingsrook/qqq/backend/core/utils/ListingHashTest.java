@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  ** Unit test for ListingHash
  **
  *******************************************************************************/
-class ListingHashTest
+class ListingHashTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -171,8 +172,8 @@ class ListingHashTest
    @Test
    void test_entrySet()
    {
-      ListingHash<String, String> listingHash = makeDefaultTestListingHash();
-      Set<Map.Entry<String, List<String>>> entrySet = listingHash.entrySet();
+      ListingHash<String, String>          listingHash = makeDefaultTestListingHash();
+      Set<Map.Entry<String, List<String>>> entrySet    = listingHash.entrySet();
       assertEquals(2, entrySet.size());
    }
 
@@ -204,7 +205,7 @@ class ListingHashTest
    void test_get()
    {
       ListingHash<String, String> listingHash = makeDefaultTestListingHash();
-      List<String> aList = listingHash.get("A");
+      List<String>                aList       = listingHash.get("A");
       assertEquals(2, aList.size());
       assertEquals("Apple", aList.get(0));
       assertEquals("Acorn", aList.get(1));
@@ -255,7 +256,7 @@ class ListingHashTest
    void test_keySet()
    {
       ListingHash<String, String> listingHash = makeDefaultTestListingHash();
-      Set<String> keySet = listingHash.keySet();
+      Set<String>                 keySet      = listingHash.keySet();
       assertEquals(2, keySet.size());
       assertTrue(keySet.contains("A"));
       assertTrue(keySet.contains("B"));
@@ -346,7 +347,7 @@ class ListingHashTest
    void test_values()
    {
       ListingHash<String, String> listingHash = makeDefaultTestListingHash();
-      Collection<List<String>> values = listingHash.values();
+      Collection<List<String>>    values      = listingHash.values();
       assertEquals(2, values.size());
       assertTrue(values.contains(List.of("Apple", "Acorn")));
       assertTrue(values.contains(List.of("Ball")));

@@ -30,9 +30,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
@@ -54,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for StandardScheduledExecutor
  *******************************************************************************/
-class StandardScheduledExecutorTest
+class StandardScheduledExecutorTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -75,13 +77,12 @@ class StandardScheduledExecutorTest
    @Test
    void testInsert() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       /////////////////////////////////////////////////////////////////////////////
       // insert 2 people - one who should be updated by the check-age automation //
       /////////////////////////////////////////////////////////////////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "John").withValue("birthDate", LocalDate.of(1970, Month.JANUARY, 1)),
@@ -121,7 +122,7 @@ class StandardScheduledExecutorTest
    @Test
    void testSessionSupplier() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       //////////////////////////////////////////////////////////////////////
       // make the person-memory table's insert-action run a class in here //
@@ -134,8 +135,7 @@ class StandardScheduledExecutorTest
       ////////////////////////////////////////////////////////////
       // insert a person that will trigger the on-insert action //
       ////////////////////////////////////////////////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.now())

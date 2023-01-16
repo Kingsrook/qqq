@@ -38,6 +38,7 @@ import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -112,8 +113,11 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
       ///////////////////////////////////////////////////////////
       if(context.containsKey(BASIC_AUTH_KEY))
       {
+         QSession contextSessionBefore = QContext.getQSession();
          try
          {
+            QContext.setQSession(chickenAndEggSession);
+
             /////////////////////////////////////////////////
             // decode the credentials from the header auth //
             /////////////////////////////////////////////////
@@ -124,8 +128,7 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
             ///////////////////////////
             // fetch the user record //
             ///////////////////////////
-            GetInput getInput = new GetInput(qInstance);
-            getInput.setSession(chickenAndEggSession);
+            GetInput getInput = new GetInput();
             getInput.setTableName(metaData.getUserTableName());
             getInput.setUniqueKey(Map.of(metaData.getUserTableUsernameField(), credentials.split(":")[0]));
             GetOutput getOutput = new GetAction().execute(getInput);
@@ -155,8 +158,7 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
                .withValue(metaData.getSessionTableUuidField(), sessionUuid)
                .withValue(metaData.getSessionTableAccessTimestampField(), Instant.now())
                .withValue(metaData.getSessionTableUserIdField(), user.getValue(metaData.getUserTablePrimaryKeyField()));
-            InsertInput insertInput = new InsertInput(qInstance);
-            insertInput.setSession(chickenAndEggSession);
+            InsertInput insertInput = new InsertInput();
             insertInput.setTableName(metaData.getSessionTableName());
             insertInput.setRecords(List.of(sessionRecord));
             InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -180,6 +182,10 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
             String message = "Error handling basic authentication: " + e.getMessage();
             LOG.error(message, e);
             throw (new QAuthenticationException(message));
+         }
+         finally
+         {
+            QContext.setQSession(contextSessionBefore);
          }
       }
 
@@ -310,42 +316,50 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
     *******************************************************************************/
    private QSession revalidateSession(QInstance qInstance, String sessionUuid) throws QException
    {
-      TableBasedAuthenticationMetaData metaData = (TableBasedAuthenticationMetaData) qInstance.getAuthentication();
-
-      GetInput getSessionInput = new GetInput(qInstance);
-      getSessionInput.setSession(chickenAndEggSession);
-      getSessionInput.setTableName(metaData.getSessionTableName());
-      getSessionInput.setUniqueKey(Map.of(metaData.getSessionTableUuidField(), sessionUuid));
-      GetOutput getSessionOutput = new GetAction().execute(getSessionInput);
-      if(getSessionOutput.getRecord() == null)
+      QSession contextSessionBefore = QContext.getQSession();
+      try
       {
-         throw (new QAuthenticationException("Session not found."));
-      }
-      QRecord sessionRecord = getSessionOutput.getRecord();
-      Instant lastAccess    = sessionRecord.getValueInstant(metaData.getSessionTableAccessTimestampField());
+         QContext.setQSession(chickenAndEggSession);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////
-      // returns negative int if less than compared duration, 0 if equal, positive int if greater than //
-      // - so this is basically saying, if the time between the last time the session was marked as    //
-      // active, and right now is more than the timeout seconds, then the session is expired          //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////
-      if(lastAccess.plus(Duration.ofSeconds(metaData.getInactivityTimeoutSeconds())).isBefore(Instant.now()))
+         TableBasedAuthenticationMetaData metaData = (TableBasedAuthenticationMetaData) qInstance.getAuthentication();
+
+         GetInput getSessionInput = new GetInput();
+         getSessionInput.setTableName(metaData.getSessionTableName());
+         getSessionInput.setUniqueKey(Map.of(metaData.getSessionTableUuidField(), sessionUuid));
+         GetOutput getSessionOutput = new GetAction().execute(getSessionInput);
+         if(getSessionOutput.getRecord() == null)
+         {
+            throw (new QAuthenticationException("Session not found."));
+         }
+         QRecord sessionRecord = getSessionOutput.getRecord();
+         Instant lastAccess    = sessionRecord.getValueInstant(metaData.getSessionTableAccessTimestampField());
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // returns negative int if less than compared duration, 0 if equal, positive int if greater than //
+         // - so this is basically saying, if the time between the last time the session was marked as    //
+         // active, and right now is more than the timeout seconds, then the session is expired          //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         if(lastAccess.plus(Duration.ofSeconds(metaData.getInactivityTimeoutSeconds())).isBefore(Instant.now()))
+         {
+            throw (new QAuthenticationException("Session is expired."));
+         }
+
+         ///////////////////////////////////////////////
+         // update the timestamp in the session table //
+         ///////////////////////////////////////////////
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(metaData.getSessionTableName());
+         updateInput.setRecords(List.of(new QRecord()
+            .withValue(metaData.getSessionTablePrimaryKeyField(), sessionRecord.getValue(metaData.getSessionTablePrimaryKeyField()))
+            .withValue(metaData.getSessionTableAccessTimestampField(), Instant.now())));
+         new UpdateAction().execute(updateInput);
+
+         return (buildQSessionFromUuid(qInstance, metaData, sessionUuid));
+      }
+      finally
       {
-         throw (new QAuthenticationException("Session is expired."));
+         QContext.setQSession(contextSessionBefore);
       }
-
-      ///////////////////////////////////////////////
-      // update the timestamp in the session table //
-      ///////////////////////////////////////////////
-      UpdateInput updateInput = new UpdateInput(qInstance);
-      updateInput.setSession(chickenAndEggSession);
-      updateInput.setTableName(metaData.getSessionTableName());
-      updateInput.setRecords(List.of(new QRecord()
-         .withValue(metaData.getSessionTablePrimaryKeyField(), sessionRecord.getValue(metaData.getSessionTablePrimaryKeyField()))
-         .withValue(metaData.getSessionTableAccessTimestampField(), Instant.now())));
-      new UpdateAction().execute(updateInput);
-
-      return (buildQSessionFromUuid(qInstance, metaData, sessionUuid));
    }
 
 
@@ -356,37 +370,46 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
     *******************************************************************************/
    private QSession buildQSessionFromUuid(QInstance qInstance, TableBasedAuthenticationMetaData metaData, String sessionUuid) throws QException
    {
-      GetInput getSessionInput = new GetInput(qInstance);
-      getSessionInput.setSession(chickenAndEggSession);
-      getSessionInput.setTableName(metaData.getSessionTableName());
-      getSessionInput.setUniqueKey(Map.of(metaData.getSessionTableUuidField(), sessionUuid));
-      GetOutput getSessionOutput = new GetAction().execute(getSessionInput);
-      if(getSessionOutput.getRecord() == null)
+      QSession contextSessionBefore = QContext.getQSession();
+
+      try
       {
-         throw (new QAuthenticationException("Session not found."));
-      }
-      QRecord sessionRecord = getSessionOutput.getRecord();
+         QContext.setQSession(chickenAndEggSession);
 
-      GetInput getUserInput = new GetInput(qInstance);
-      getUserInput.setSession(chickenAndEggSession);
-      getUserInput.setTableName(metaData.getUserTableName());
-      getUserInput.setPrimaryKey(sessionRecord.getValue(metaData.getSessionTableUserIdField()));
-      GetOutput getUserOutput = new GetAction().execute(getUserInput);
-      if(getUserOutput.getRecord() == null)
+         GetInput getSessionInput = new GetInput();
+         getSessionInput.setTableName(metaData.getSessionTableName());
+         getSessionInput.setUniqueKey(Map.of(metaData.getSessionTableUuidField(), sessionUuid));
+         GetOutput getSessionOutput = new GetAction().execute(getSessionInput);
+         if(getSessionOutput.getRecord() == null)
+         {
+            throw (new QAuthenticationException("Session not found."));
+         }
+         QRecord sessionRecord = getSessionOutput.getRecord();
+
+         GetInput getUserInput = new GetInput();
+         getUserInput.setTableName(metaData.getUserTableName());
+         getUserInput.setPrimaryKey(sessionRecord.getValue(metaData.getSessionTableUserIdField()));
+         GetOutput getUserOutput = new GetAction().execute(getUserInput);
+         if(getUserOutput.getRecord() == null)
+         {
+            throw (new QAuthenticationException("User for session not found."));
+         }
+         QRecord userRecord = getUserOutput.getRecord();
+
+         QUser qUser = new QUser();
+         qUser.setFullName(userRecord.getValueString(metaData.getUserTableFullNameField()));
+         qUser.setIdReference(userRecord.getValueString(metaData.getUserTableUsernameField()));
+
+         QSession qSession = new QSession();
+         qSession.setIdReference(sessionUuid);
+         qSession.setUser(qUser);
+
+         return (qSession);
+      }
+      finally
       {
-         throw (new QAuthenticationException("User for session not found."));
+         QContext.setQSession(contextSessionBefore);
       }
-      QRecord userRecord = getUserOutput.getRecord();
-
-      QUser qUser = new QUser();
-      qUser.setFullName(userRecord.getValueString(metaData.getUserTableFullNameField()));
-      qUser.setIdReference(userRecord.getValueString(metaData.getUserTableUsernameField()));
-
-      QSession qSession = new QSession();
-      qSession.setIdReference(sessionUuid);
-      qSession.setUser(qUser);
-
-      return (qSession);
    }
 
 

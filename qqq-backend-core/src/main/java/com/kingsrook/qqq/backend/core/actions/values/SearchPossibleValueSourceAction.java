@@ -153,8 +153,7 @@ public class SearchPossibleValueSourceAction
    {
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceOutput();
 
-      QueryInput queryInput = new QueryInput(input.getInstance());
-      queryInput.setSession(input.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(possibleValueSource.getTableName());
 
       QTableMetaData table = input.getInstance().getTable(possibleValueSource.getTableName());

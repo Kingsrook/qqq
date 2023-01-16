@@ -22,20 +22,20 @@
 package com.kingsrook.qqq.backend.core.modules.backend;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 /*******************************************************************************
  ** Unit test for QModuleDispatcher
  **
  *******************************************************************************/
-class QBackendModuleDispatcherTest
+class QBackendModuleDispatcherTest extends BaseTest
 {
 
    /*******************************************************************************

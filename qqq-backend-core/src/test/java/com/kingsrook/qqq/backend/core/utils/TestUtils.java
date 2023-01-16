@@ -271,8 +271,7 @@ public class TestUtils
     *******************************************************************************/
    public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
    {
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(records);
       new InsertAction().execute(insertInput);
@@ -306,8 +305,7 @@ public class TestUtils
             }
          }
 
-         UpdateInput updateInput = new UpdateInput(runBackendStepInput.getInstance());
-         updateInput.setSession(runBackendStepInput.getSession());
+         UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName(TABLE_NAME_PERSON_MEMORY);
          updateInput.setRecords(recordsToUpdate);
          new UpdateAction().execute(updateInput);
@@ -776,8 +774,7 @@ public class TestUtils
 
          if(!recordsToUpdate.isEmpty())
          {
-            UpdateInput updateInput = new UpdateInput(recordAutomationInput.getInstance());
-            updateInput.setSession(recordAutomationInput.getSession());
+            UpdateInput updateInput = new UpdateInput();
             updateInput.setTableName(recordAutomationInput.getTableName());
             updateInput.setRecords(recordsToUpdate);
             new UpdateAction().execute(updateInput);
@@ -1009,8 +1006,7 @@ public class TestUtils
     *******************************************************************************/
    public static List<QRecord> queryTable(QInstance instance, String tableName) throws QException
    {
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(TestUtils.getMockSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords());
@@ -1028,8 +1024,7 @@ public class TestUtils
          new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 2).withValue("name", "Square"),
          new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 3).withValue("name", "Circle"));
 
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TABLE_NAME_SHAPE);
       insertInput.setRecords(shapeRecords);
       new InsertAction().execute(insertInput);
