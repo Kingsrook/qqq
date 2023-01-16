@@ -48,10 +48,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -67,7 +66,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class ExportAction
 {
-   private static final Logger LOG = LogManager.getLogger(ExportAction.class);
+   private static final QLogger LOG = QLogger.getLogger(ExportAction.class);
 
    private boolean preExecuteRan       = false;
    private Integer countFromPreExecute = null;

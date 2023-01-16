@@ -29,8 +29,7 @@ import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QContext
 {
-   private static final Logger LOG = LogManager.getLogger(QContext.class);
+   private static final QLogger LOG = QLogger.getLogger(QContext.class);
 
    private static ThreadLocal<QInstance>                  qInstanceThreadLocal           = new ThreadLocal<>();
    private static ThreadLocal<QSession>                   qSessionThreadLocal            = new ThreadLocal<>();

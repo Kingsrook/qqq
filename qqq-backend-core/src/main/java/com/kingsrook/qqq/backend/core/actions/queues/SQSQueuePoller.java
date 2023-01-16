@@ -43,8 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class SQSQueuePoller implements Runnable
 {
-   private static final Logger LOG = LogManager.getLogger(SQSQueuePoller.class);
+   private static final QLogger LOG = QLogger.getLogger(SQSQueuePoller.class);
 
    ///////////////////////////////////////////////
    // todo - move these 2 to a "QBaseRunnable"? //

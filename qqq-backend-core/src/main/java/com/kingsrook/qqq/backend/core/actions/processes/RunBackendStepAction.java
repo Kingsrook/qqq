@@ -42,8 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RunBackendStepAction
 {
-   private static final Logger LOG = LogManager.getLogger(RunBackendStepAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RunBackendStepAction.class);
 
 
 

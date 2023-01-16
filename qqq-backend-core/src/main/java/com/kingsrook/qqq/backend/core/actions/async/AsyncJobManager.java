@@ -37,8 +37,7 @@ import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class AsyncJobManager
 {
-   private static final Logger LOG = LogManager.getLogger(AsyncJobManager.class);
+   private static final QLogger LOG = QLogger.getLogger(AsyncJobManager.class);
 
 
 

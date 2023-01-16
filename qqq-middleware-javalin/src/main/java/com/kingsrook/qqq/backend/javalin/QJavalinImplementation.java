@@ -99,14 +99,13 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpStatus;
 import static io.javalin.apibuilder.ApiBuilder.delete;
 import static io.javalin.apibuilder.ApiBuilder.get;
@@ -123,7 +122,7 @@ import static io.javalin.apibuilder.ApiBuilder.put;
  *******************************************************************************/
 public class QJavalinImplementation
 {
-   private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
+   private static final QLogger LOG = QLogger.getLogger(QJavalinImplementation.class);
 
    private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
    private static final String SESSION_ID_COOKIE_NAME = "sessionId";

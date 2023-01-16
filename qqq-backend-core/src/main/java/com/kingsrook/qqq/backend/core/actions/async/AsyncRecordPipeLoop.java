@@ -27,9 +27,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class AsyncRecordPipeLoop
 {
-   private static final Logger LOG = LogManager.getLogger(AsyncRecordPipeLoop.class);
+   private static final QLogger LOG = QLogger.getLogger(AsyncRecordPipeLoop.class);
 
    private static final int TIMEOUT_AFTER_NO_RECORDS_MS = 10 * 60 * 1000;
 

@@ -29,10 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -42,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecutionLoggerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(BuildScriptLogAndScriptLogLineExecutionLogger.class);
+   private static final QLogger LOG = QLogger.getLogger(BuildScriptLogAndScriptLogLineExecutionLogger.class);
 
    private   QRecord          scriptLog;
    private   List<QRecord>    scriptLogLines = new ArrayList<>();

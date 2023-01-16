@@ -56,10 +56,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,7 +76,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  *******************************************************************************/
 public class RunProcessTest extends BaseTest
 {
-   private static final Logger LOG = LogManager.getLogger(RunProcessTest.class);
+   private static final QLogger LOG = QLogger.getLogger(RunProcessTest.class);
 
 
 

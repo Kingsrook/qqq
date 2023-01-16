@@ -40,8 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -56,7 +55,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class ScheduleManager
 {
-   private static final Logger LOG = LogManager.getLogger(ScheduleManager.class);
+   private static final QLogger LOG = QLogger.getLogger(ScheduleManager.class);
 
    private static ScheduleManager scheduleManager = null;
    private final  QInstance       qInstance;

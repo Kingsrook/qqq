@@ -53,10 +53,9 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -65,7 +64,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QPossibleValueTranslator
 {
-   private static final Logger LOG = LogManager.getLogger(QPossibleValueTranslator.class);
+   private static final QLogger LOG = QLogger.getLogger(QPossibleValueTranslator.class);
 
    private final QInstance qInstance;
    private final QSession  session;

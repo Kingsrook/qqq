@@ -35,9 +35,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -45,14 +44,14 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class JsonExportStreamer implements ExportStreamerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(JsonExportStreamer.class);
+   private static final QLogger LOG = QLogger.getLogger(JsonExportStreamer.class);
 
    private ExportInput          exportInput;
    private QTableMetaData       table;
    private List<QFieldMetaData> fields;
    private OutputStream         outputStream;
 
-   private boolean needComma = false;
+   private boolean needComma   = false;
    private boolean prettyPrint = true;
 
 

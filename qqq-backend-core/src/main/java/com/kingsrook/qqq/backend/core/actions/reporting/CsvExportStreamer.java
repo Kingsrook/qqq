@@ -31,9 +31,8 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class CsvExportStreamer implements ExportStreamerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(CsvExportStreamer.class);
+   private static final QLogger LOG = QLogger.getLogger(CsvExportStreamer.class);
 
    private final QRecordToCsvAdapter qRecordToCsvAdapter;
 

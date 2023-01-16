@@ -43,9 +43,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -53,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class PermissionsHelper
 {
-   private static final Logger LOG = LogManager.getLogger(PermissionsHelper.class);
+   private static final QLogger LOG = QLogger.getLogger(PermissionsHelper.class);
 
 
 

@@ -79,14 +79,13 @@ import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpStatus;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
@@ -98,7 +97,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
  *******************************************************************************/
 public class QJavalinProcessHandler
 {
-   private static final Logger LOG = LogManager.getLogger(QJavalinProcessHandler.class);
+   private static final QLogger LOG = QLogger.getLogger(QJavalinProcessHandler.class);
 
    private static int ASYNC_STEP_TIMEOUT_MILLIS = 3_000;
 

@@ -35,8 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -45,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class DeleteAction
 {
-   private static final Logger LOG = LogManager.getLogger(DeleteAction.class);
+   private static final QLogger LOG = QLogger.getLogger(DeleteAction.class);
 
 
 

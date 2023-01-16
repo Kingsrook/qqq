@@ -56,8 +56,7 @@ import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -65,7 +64,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class TableBasedAuthenticationModule implements QAuthenticationModuleInterface
 {
-   private static final Logger LOG = LogManager.getLogger(TableBasedAuthenticationModule.class);
+   private static final QLogger LOG = QLogger.getLogger(TableBasedAuthenticationModule.class);
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // 30 minutes - ideally this would be lower, but right now we've been dealing with re-validation issues... //

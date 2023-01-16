@@ -67,13 +67,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -90,7 +89,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class GenerateReportAction
 {
-   private static final Logger LOG = LogManager.getLogger(GenerateReportAction.class);
+   private static final QLogger LOG = QLogger.getLogger(GenerateReportAction.class);
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // summaryAggregates and varianceAggregates are multi-level maps, ala:                                     //

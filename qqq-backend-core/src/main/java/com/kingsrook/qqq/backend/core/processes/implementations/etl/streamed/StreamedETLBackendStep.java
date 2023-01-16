@@ -37,8 +37,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLLoadFunction;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLTransformFunction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StreamedETLBackendStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(StreamedETLBackendStep.class);
+   private static final QLogger LOG = QLogger.getLogger(StreamedETLBackendStep.class);
 
    private static final int TIMEOUT_AFTER_NO_RECORDS_MS = 10 * 60 * 1000;
 

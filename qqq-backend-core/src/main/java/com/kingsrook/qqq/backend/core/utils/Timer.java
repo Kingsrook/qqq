@@ -23,8 +23,6 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -32,7 +30,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class Timer
 {
-   private static final Logger LOG = LogManager.getLogger(Timer.class);
+   private static final QLogger LOG = QLogger.getLogger(Timer.class);
 
    private String name;
    private long   start;

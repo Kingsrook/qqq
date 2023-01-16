@@ -56,9 +56,8 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -68,7 +67,7 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 {
-   private static final Logger LOG = LogManager.getLogger(Auth0AuthenticationModule.class);
+   private static final QLogger LOG = QLogger.getLogger(Auth0AuthenticationModule.class);
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // 30 minutes - ideally this would be lower, but right now we've been dealing with re-validation issues... //

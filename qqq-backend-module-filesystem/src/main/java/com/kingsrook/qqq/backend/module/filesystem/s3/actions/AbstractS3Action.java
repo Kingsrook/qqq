@@ -33,14 +33,13 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -48,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSummary>
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractS3Action.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractS3Action.class);
 
    private S3Utils s3Utils;
 

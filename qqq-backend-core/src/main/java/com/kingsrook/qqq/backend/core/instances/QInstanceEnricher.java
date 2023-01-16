@@ -71,9 +71,8 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -83,7 +82,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QInstanceEnricher
 {
-   private static final Logger LOG = LogManager.getLogger(QInstanceEnricher.class);
+   private static final QLogger LOG = QLogger.getLogger(QInstanceEnricher.class);
 
    private final QInstance qInstance;
 

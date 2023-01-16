@@ -75,9 +75,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAut
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -92,7 +91,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QInstanceValidator
 {
-   private static final Logger LOG = LogManager.getLogger(QInstanceValidator.class);
+   private static final QLogger LOG = QLogger.getLogger(QInstanceValidator.class);
 
    private boolean printWarnings = false;
 

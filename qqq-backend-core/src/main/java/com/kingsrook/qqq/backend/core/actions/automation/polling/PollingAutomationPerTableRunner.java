@@ -59,10 +59,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEv
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -76,7 +75,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class PollingAutomationPerTableRunner implements Runnable
 {
-   private static final Logger LOG = LogManager.getLogger(PollingAutomationPerTableRunner.class);
+   private static final QLogger LOG = QLogger.getLogger(PollingAutomationPerTableRunner.class);
 
    private final TableActions tableActions;
    private final String       name;

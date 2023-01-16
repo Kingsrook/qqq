@@ -31,8 +31,7 @@ import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class AbstractActionInput
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractActionInput.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractActionInput.class);
 
    private AsyncJobCallback asyncJobCallback;
 

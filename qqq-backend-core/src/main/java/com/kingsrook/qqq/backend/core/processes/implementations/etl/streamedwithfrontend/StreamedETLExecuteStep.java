@@ -34,8 +34,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -45,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StreamedETLExecuteStep extends BaseStreamedETLStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(StreamedETLExecuteStep.class);
+   private static final QLogger LOG = QLogger.getLogger(StreamedETLExecuteStep.class);
 
    private int currentRowCount = 1;
 

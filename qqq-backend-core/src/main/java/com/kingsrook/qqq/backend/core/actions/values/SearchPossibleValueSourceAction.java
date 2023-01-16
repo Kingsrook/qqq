@@ -42,11 +42,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -55,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class SearchPossibleValueSourceAction
 {
-   private static final Logger LOG = LogManager.getLogger(SearchPossibleValueSourceAction.class);
+   private static final QLogger LOG = QLogger.getLogger(SearchPossibleValueSourceAction.class);
 
    private QPossibleValueTranslator possibleValueTranslator;
 

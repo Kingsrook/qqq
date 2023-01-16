@@ -29,11 +29,10 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -49,7 +48,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QMetaDataVariableInterpreter
 {
-   private static final Logger LOG = LogManager.getLogger(QMetaDataVariableInterpreter.class);
+   private static final QLogger LOG = QLogger.getLogger(QMetaDataVariableInterpreter.class);
 
    private Map<String, String>                    environmentOverrides;
    private Map<String, Map<String, Serializable>> valueMaps;

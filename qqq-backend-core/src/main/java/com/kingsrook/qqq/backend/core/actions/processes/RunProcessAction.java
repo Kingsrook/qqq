@@ -58,10 +58,9 @@ import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.BooleanUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -70,7 +69,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RunProcessAction
 {
-   private static final Logger LOG = LogManager.getLogger(RunProcessAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RunProcessAction.class);
 
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";

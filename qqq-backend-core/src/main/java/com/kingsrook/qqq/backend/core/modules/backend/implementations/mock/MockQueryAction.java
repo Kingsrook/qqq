@@ -35,8 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -45,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class MockQueryAction implements QueryInterface
 {
-   private static final Logger LOG = LogManager.getLogger(MockQueryAction.class);
+   private static final QLogger LOG = QLogger.getLogger(MockQueryAction.class);
 
 
 

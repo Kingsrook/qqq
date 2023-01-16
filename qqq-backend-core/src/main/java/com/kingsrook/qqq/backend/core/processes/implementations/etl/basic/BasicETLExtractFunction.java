@@ -30,8 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -39,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BasicETLExtractFunction implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(BasicETLExtractFunction.class);
+   private static final QLogger LOG = QLogger.getLogger(BasicETLExtractFunction.class);
 
    private RecordPipe recordPipe = null;
 

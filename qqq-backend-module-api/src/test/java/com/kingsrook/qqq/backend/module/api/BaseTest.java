@@ -8,8 +8,7 @@ package com.kingsrook.qqq.backend.module.api;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
  *******************************************************************************/
 public class BaseTest
 {
-   private static final Logger LOG = LogManager.getLogger(BaseTest.class);
+   private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
 
 
 

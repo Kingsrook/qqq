@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
@@ -41,8 +42,6 @@ import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQuery
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemUpdateAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -50,7 +49,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class FilesystemBackendModule implements QBackendModuleInterface, FilesystemBackendModuleInterface
 {
-   private static final Logger LOG = LogManager.getLogger(FilesystemBackendModule.class);
+   private static final QLogger LOG = QLogger.getLogger(FilesystemBackendModule.class);
 
 
 
@@ -107,6 +106,7 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
    {
       return new FilesystemQueryAction();
    }
+
 
 
    /*******************************************************************************

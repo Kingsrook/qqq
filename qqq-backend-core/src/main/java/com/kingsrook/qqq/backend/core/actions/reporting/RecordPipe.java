@@ -28,9 +28,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -39,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RecordPipe
 {
-   private static final Logger LOG = LogManager.getLogger(RecordPipe.class);
+   private static final QLogger LOG = QLogger.getLogger(RecordPipe.class);
 
    private static final long BLOCKING_SLEEP_MILLIS = 100;
    private static final long MAX_SLEEP_LOOP_MILLIS = 300_000; // 5 minutes

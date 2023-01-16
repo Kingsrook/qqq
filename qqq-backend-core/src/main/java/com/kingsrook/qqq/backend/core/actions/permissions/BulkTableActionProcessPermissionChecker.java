@@ -26,8 +26,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -35,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BulkTableActionProcessPermissionChecker implements CustomPermissionChecker
 {
-   private static final Logger LOG = LogManager.getLogger(BulkTableActionProcessPermissionChecker.class);
+   private static final QLogger LOG = QLogger.getLogger(BulkTableActionProcessPermissionChecker.class);
 
 
 

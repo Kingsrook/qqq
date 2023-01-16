@@ -34,8 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -43,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BasicETLLoadFunction implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
+   private static final QLogger LOG = QLogger.getLogger(BasicETLLoadFunction.class);
 
    private QBackendTransaction transaction;
    private boolean             returnStoredRecords = true;

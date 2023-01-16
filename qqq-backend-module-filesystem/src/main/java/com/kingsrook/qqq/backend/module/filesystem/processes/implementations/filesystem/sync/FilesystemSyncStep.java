@@ -35,10 +35,9 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -49,7 +48,7 @@ import org.apache.logging.log4j.Logger;
 @SuppressWarnings("unchecked")
 public class FilesystemSyncStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(FilesystemSyncStep.class);
+   private static final QLogger LOG = QLogger.getLogger(FilesystemSyncStep.class);
 
    public static final String STEP_NAME = "sync";
 
@@ -82,8 +81,8 @@ public class FilesystemSyncStep implements BackendStep
       AbstractBaseFilesystemAction     processingActionBase = processingModule.getActionBase();
       processingActionBase.preAction(processingBackend);
 
-      Integer maxFilesToSync = runBackendStepInput.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
-      int syncedFileCount = 0;
+      Integer maxFilesToSync  = runBackendStepInput.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
+      int     syncedFileCount = 0;
       for(Map.Entry<String, Object> sourceEntry : sourceFiles.entrySet())
       {
          try

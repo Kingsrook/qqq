@@ -36,9 +36,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StreamedETLPreviewStep extends BaseStreamedETLStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(StreamedETLPreviewStep.class);
+   private static final QLogger LOG = QLogger.getLogger(StreamedETLPreviewStep.class);
 
 
 

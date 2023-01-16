@@ -25,8 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -34,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 class QueryOutputRecordPipe implements QueryOutputStorageInterface
 {
-   private static final Logger LOG = LogManager.getLogger(QueryOutputRecordPipe.class);
+   private static final QLogger LOG = QLogger.getLogger(QueryOutputRecordPipe.class);
 
    private RecordPipe recordPipe;
 

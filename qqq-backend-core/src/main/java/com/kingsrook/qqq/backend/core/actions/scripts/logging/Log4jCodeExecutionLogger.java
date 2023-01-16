@@ -26,10 +26,9 @@ import java.io.Serializable;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -37,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(Log4jCodeExecutionLogger.class);
+   private static final QLogger LOG = QLogger.getLogger(Log4jCodeExecutionLogger.class);
 
    private QCodeReference qCodeReference;
    private String         uuid = UUID.randomUUID().toString();

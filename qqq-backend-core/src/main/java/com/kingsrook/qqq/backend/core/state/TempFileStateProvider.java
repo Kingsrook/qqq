@@ -28,9 +28,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -38,7 +37,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class TempFileStateProvider implements StateProviderInterface
 {
-   private static final Logger LOG = LogManager.getLogger(TempFileStateProvider.class);
+   private static final QLogger LOG = QLogger.getLogger(TempFileStateProvider.class);
 
    private static TempFileStateProvider instance;
 

@@ -57,14 +57,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -72,7 +71,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public abstract class AbstractRDBMSAction implements QActionInterface
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractRDBMSAction.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractRDBMSAction.class);
 
 
 

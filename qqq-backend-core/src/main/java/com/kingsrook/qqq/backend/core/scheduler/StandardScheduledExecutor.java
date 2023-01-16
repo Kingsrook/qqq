@@ -29,8 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StandardScheduledExecutor
 {
-   private static final Logger LOG = LogManager.getLogger(StandardScheduledExecutor.class);
+   private static final QLogger LOG = QLogger.getLogger(StandardScheduledExecutor.class);
 
    private Integer initialDelayMillis = 3000;
    private Integer delayMillis        = 1000;

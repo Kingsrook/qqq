@@ -37,10 +37,9 @@ import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class S3Utils
 {
-   private static final Logger LOG = LogManager.getLogger(S3Utils.class);
+   private static final QLogger LOG = QLogger.getLogger(S3Utils.class);
 
    private AmazonS3 amazonS3;
 
@@ -99,8 +98,8 @@ public class S3Utils
          }
       }
 
-      String pathMatcherArg = AbstractFilesystemAction.stripDuplicatedSlashes("glob:/" + path + "/" + glob);
-      PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher(pathMatcherArg);
+      String      pathMatcherArg = AbstractFilesystemAction.stripDuplicatedSlashes("glob:/" + path + "/" + glob);
+      PathMatcher pathMatcher    = FileSystems.getDefault().getPathMatcher(pathMatcherArg);
 
       ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request()
          .withBucketName(bucketName)

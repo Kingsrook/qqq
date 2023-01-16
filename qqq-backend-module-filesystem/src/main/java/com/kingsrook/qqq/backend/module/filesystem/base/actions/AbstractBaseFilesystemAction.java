@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
@@ -51,8 +52,6 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinali
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -63,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public abstract class AbstractBaseFilesystemAction<FILE>
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractBaseFilesystemAction.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractBaseFilesystemAction.class);
 
 
 

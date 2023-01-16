@@ -31,8 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StoreScriptLogAndScriptLogLineExecutionLogger extends BuildScriptLogAndScriptLogLineExecutionLogger
 {
-   private static final Logger LOG = LogManager.getLogger(StoreScriptLogAndScriptLogLineExecutionLogger.class);
+   private static final QLogger LOG = QLogger.getLogger(StoreScriptLogAndScriptLogLineExecutionLogger.class);
 
 
 

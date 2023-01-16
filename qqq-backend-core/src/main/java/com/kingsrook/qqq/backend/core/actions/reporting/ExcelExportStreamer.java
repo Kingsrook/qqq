@@ -43,10 +43,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.dhatim.fastexcel.StyleSetter;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
@@ -57,7 +56,7 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public class ExcelExportStreamer implements ExportStreamerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(ExcelExportStreamer.class);
+   private static final QLogger LOG = QLogger.getLogger(ExcelExportStreamer.class);
 
    private ExportInput          exportInput;
    private QTableMetaData       table;

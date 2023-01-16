@@ -37,9 +37,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -47,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInterface
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSDeleteAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSDeleteAction.class);
 
 
 

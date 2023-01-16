@@ -33,8 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -42,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QCodeLoader
 {
-   private static final Logger LOG = LogManager.getLogger(QCodeLoader.class);
+   private static final QLogger LOG = QLogger.getLogger(QCodeLoader.class);
 
 
 

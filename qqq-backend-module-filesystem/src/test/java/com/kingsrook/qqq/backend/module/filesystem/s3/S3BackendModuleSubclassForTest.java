@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3;
 
 
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import cloud.localstack.awssdkv1.TestUtils;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;

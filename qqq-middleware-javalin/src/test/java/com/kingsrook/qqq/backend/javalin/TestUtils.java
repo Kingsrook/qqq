@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;

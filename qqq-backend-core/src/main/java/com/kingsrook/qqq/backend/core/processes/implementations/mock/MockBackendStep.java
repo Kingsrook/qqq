@@ -27,8 +27,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -38,7 +37,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class MockBackendStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(MockBackendStep.class);
+   private static final QLogger LOG = QLogger.getLogger(MockBackendStep.class);
 
    public static final String FIELD_GREETING_PREFIX = "greetingPrefix";
    public static final String FIELD_GREETING_SUFFIX = "greetingSuffix";

@@ -107,8 +107,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.reports.RunReportForRecordProcess;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -117,7 +115,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class TestUtils
 {
-   private static final Logger LOG = LogManager.getLogger(TestUtils.class);
+   private static final QLogger LOG = QLogger.getLogger(TestUtils.class);
 
    public static final String DEFAULT_BACKEND_NAME = "default";
    public static final String MEMORY_BACKEND_NAME  = "memory";

@@ -48,8 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -58,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOutput>
 {
-   private static final Logger LOG = LogManager.getLogger(InsertAction.class);
+   private static final QLogger LOG = QLogger.getLogger(InsertAction.class);
 
 
 

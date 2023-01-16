@@ -30,8 +30,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class ListOfMapsExportStreamer implements ExportStreamerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(ListOfMapsExportStreamer.class);
+   private static final QLogger LOG = QLogger.getLogger(ListOfMapsExportStreamer.class);
 
    private ExportInput          exportInput;
    private List<QFieldMetaData> fields;

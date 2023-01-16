@@ -65,6 +65,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.slack.api.Slack;
@@ -76,8 +77,6 @@ import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static io.javalin.apibuilder.ApiBuilder.path;
@@ -91,7 +90,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
  *******************************************************************************/
 public class QSlackImplementation
 {
-   private static final Logger LOG = LogManager.getLogger(QSlackImplementation.class);
+   private static final QLogger LOG = QLogger.getLogger(QSlackImplementation.class);
 
    static QInstance qInstance;
 
