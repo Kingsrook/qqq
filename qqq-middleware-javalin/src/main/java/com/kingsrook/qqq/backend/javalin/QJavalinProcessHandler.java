@@ -127,6 +127,7 @@ public class QJavalinProcessHandler
             });
          });
          get("/download/{file}", QJavalinProcessHandler::downloadFile);
+         post("/download/{file}", QJavalinProcessHandler::downloadFile);
 
          path("/reports", () ->
          {
