@@ -47,7 +47,8 @@ public enum WidgetType
    SIMPLE_STATISTICS("simpleStatistics"),
    STEPPER("stepper"),
    TABLE("table"),
-   USA_MAP("usaMap");
+   USA_MAP("usaMap"),
+   DATA_BAG_VIEWER("dataBagViewer");
 
 
    private final String type;

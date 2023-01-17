@@ -107,6 +107,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.http.HttpStatus;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static io.javalin.apibuilder.ApiBuilder.delete;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.patch;
@@ -708,11 +709,15 @@ public class QJavalinImplementation
     *******************************************************************************/
    static void dataQuery(Context context)
    {
+      String table = context.pathParam("table");
+
       try
       {
          QueryInput queryInput = new QueryInput();
          setupSession(context, queryInput);
-         queryInput.setTableName(context.pathParam("table"));
+         QJavalinAccessLogger.logStart("query", logPair("table", table));
+
+         queryInput.setTableName(table);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setSkip(integerQueryParam(context, "skip"));
@@ -733,10 +738,13 @@ public class QJavalinImplementation
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
 
+         QJavalinAccessLogger.logEndSuccess(logPair("table", table), logPair("recordCount", queryOutput.getRecords().size()));
+
          context.result(JsonUtils.toJson(queryOutput));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e, logPair("table", table));
          handleException(context, e);
       }
    }

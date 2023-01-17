@@ -22,13 +22,20 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
+import com.kingsrook.qqq.backend.core.logging.LogUtils;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -37,10 +44,20 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QLogger
 {
-   private static Map<String, QLogger> loggerMap = new HashMap<>();
-   private        Logger               logger;
+   private static Map<String, QLogger> loggerMap           = Collections.synchronizedMap(new HashMap<>());
+   private static boolean              logSessionIdEnabled = true;
 
+   private Logger logger;
 
+   static
+   {
+      String propertyName  = "qqq.logger.logSessionId.disabled";
+      String propertyValue = System.getProperty(propertyName, "");
+      if(propertyValue.equals("true"))
+      {
+         logSessionIdEnabled = false;
+      }
+   }
 
    /*******************************************************************************
     **
@@ -67,7 +84,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message)
    {
-      logger.log(level, wrapMessage(message));
+      logger.log(level, messageToJsonString(message));
    }
 
 
@@ -77,7 +94,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message, Throwable t)
    {
-      logger.log(level, wrapMessage(message), t);
+      logger.log(level, messageToJsonString(message), t);
    }
 
 
@@ -97,7 +114,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message)
    {
-      logger.trace(wrapMessage(message));
+      logger.trace(messageToJsonString(message));
    }
 
 
@@ -107,7 +124,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, Object... values)
    {
-      logger.trace(wrapMessage(message), values);
+      logger.trace(messageToJsonString(message), values);
    }
 
 
@@ -117,7 +134,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, Throwable t)
    {
-      logger.trace(wrapMessage(message), t);
+      logger.trace(messageToJsonString(message), t);
    }
 
 
@@ -137,7 +154,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message)
    {
-      logger.debug(wrapMessage(message));
+      logger.debug(messageToJsonString(message));
    }
 
 
@@ -147,7 +164,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, Object... values)
    {
-      logger.debug(wrapMessage(message), values);
+      logger.debug(messageToJsonString(message), values);
    }
 
 
@@ -157,7 +174,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, Throwable t)
    {
-      logger.debug(wrapMessage(message), t);
+      logger.debug(messageToJsonString(message), t);
    }
 
 
@@ -177,7 +194,27 @@ public class QLogger
     *******************************************************************************/
    public void info(String message)
    {
-      logger.info(wrapMessage(message));
+      logger.info(messageToJsonString(message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void info(LogPair... logPairs)
+   {
+      logger.info(LogUtils.jsonLog(addSessionLogPair(Arrays.asList(logPairs))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void info(List<LogPair> logPairList)
+   {
+      logger.info(LogUtils.jsonLog(addSessionLogPair(logPairList)));
    }
 
 
@@ -187,7 +224,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, Object... values)
    {
-      logger.info(wrapMessage(message), values);
+      logger.info(messageToJsonString(message), values);
    }
 
 
@@ -197,7 +234,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, Throwable t)
    {
-      logger.info(wrapMessage(message), t);
+      logger.info(messageToJsonString(message), t);
    }
 
 
@@ -217,7 +254,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message)
    {
-      logger.warn(wrapMessage(message));
+      logger.warn(messageToJsonString(message));
    }
 
 
@@ -227,7 +264,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Object... values)
    {
-      logger.warn(wrapMessage(message), values);
+      logger.warn(messageToJsonString(message), values);
    }
 
 
@@ -237,7 +274,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Throwable t)
    {
-      logger.warn(wrapMessage(message), t);
+      logger.warn(messageToJsonString(message), t);
    }
 
 
@@ -257,7 +294,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message)
    {
-      logger.error(wrapMessage(message));
+      logger.error(messageToJsonString(message));
    }
 
 
@@ -267,7 +304,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Object... values)
    {
-      logger.error(wrapMessage(message), values);
+      logger.error(messageToJsonString(message), values);
    }
 
 
@@ -277,7 +314,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Throwable t)
    {
-      logger.error(wrapMessage(message), t);
+      logger.error(messageToJsonString(message), t);
    }
 
 
@@ -295,17 +332,54 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String wrapMessage(String message)
+   private String messageToJsonString(String message)
    {
-      String propertyName  = "qqq.logger.logSessionId.disabled";
-      String propertyValue = System.getProperty(propertyName, "");
-      if(propertyValue.equals("true"))
-      {
-         return (message);
-      }
+      List<LogPair> logPairList = new ArrayList<>();
+      logPairList.add(logPair("message", message));
+      addSessionLogPair(logPairList);
 
-      QSession session       = QContext.getQSession();
-      String   sessionString = (session != null) ? session.getUuid() : "Not provided";
-      return ("Session [" + sessionString + "] | " + message);
+      return (LogUtils.jsonLog(logPairList));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<LogPair> addSessionLogPair(List<LogPair> logPairList)
+   {
+      if(logSessionIdEnabled)
+      {
+         QSession session = QContext.getQSession();
+         LogPair  sessionLogPair;
+
+         if(session == null)
+         {
+            sessionLogPair = logPair("session", "unknown");
+         }
+         else
+         {
+            String user = "unknown";
+            if(session.getUser() != null)
+            {
+               user = session.getUser().getIdReference();
+            }
+            sessionLogPair = logPair("session", logPair("id", session.getUuid()), logPair("user", user));
+         }
+
+         try
+         {
+            logPairList.add(sessionLogPair);
+         }
+         catch(Exception e)
+         {
+            //////////////////////////////////////
+            // deal with not-modifiable list... //
+            //////////////////////////////////////
+            logPairList = new ArrayList<>(logPairList);
+            logPairList.add(sessionLogPair);
+         }
+      }
+      return (logPairList);
    }
 }

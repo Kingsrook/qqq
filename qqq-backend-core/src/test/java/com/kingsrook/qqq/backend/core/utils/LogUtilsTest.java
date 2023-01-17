@@ -24,14 +24,15 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.math.BigDecimal;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import org.junit.jupiter.api.Test;
-import static com.kingsrook.qqq.backend.core.utils.LogUtils.jsonLog;
-import static com.kingsrook.qqq.backend.core.utils.LogUtils.logPair;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.jsonLog;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Unit test for com.kingsrook.qqq.backend.core.utils.LogUtils
+ ** Unit test for com.kingsrook.qqq.backend.core.logging.LogUtils
  *******************************************************************************/
 class LogUtilsTest extends BaseTest
 {
@@ -49,12 +50,12 @@ class LogUtilsTest extends BaseTest
       // null cases //
       ////////////////
       assertEquals("{}", jsonLog());
-      assertEquals("{}", jsonLog((LogUtils.LogPair) null));
-      assertEquals("{}", jsonLog((LogUtils.LogPair[]) null));
+      assertEquals("{}", jsonLog((LogPair) null));
+      assertEquals("{}", jsonLog((LogPair[]) null));
       assertEquals("""
-         {"null":null}""", jsonLog(logPair(null, (LogUtils.LogPair) null)));
+         {"null":null}""", jsonLog(logPair(null, (LogPair) null)));
       assertEquals("""
-         {"null":null}""", jsonLog(logPair(null, (LogUtils.LogPair[]) null)));
+         {"null":null}""", jsonLog(logPair(null, (LogPair[]) null)));
 
       //////////////
       // escaping //
