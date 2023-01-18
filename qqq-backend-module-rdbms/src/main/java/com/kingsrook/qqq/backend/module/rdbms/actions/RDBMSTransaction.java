@@ -26,7 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 
 
 /*******************************************************************************

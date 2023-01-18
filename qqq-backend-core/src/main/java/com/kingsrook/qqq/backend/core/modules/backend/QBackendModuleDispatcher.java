@@ -25,8 +25,8 @@ package com.kingsrook.qqq.backend.core.modules.backend;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************

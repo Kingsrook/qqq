@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.utils;
+package com.kingsrook.qqq.backend.core.logging;
 
 
 import java.util.ArrayList;
@@ -29,9 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.logging.LogPair;
-import com.kingsrook.qqq.backend.core.logging.LogUtils;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,18 +39,22 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- ** Utility class for logging
+ ** Wrapper for
  **
  *******************************************************************************/
 public class QLogger
 {
-   private static Map<String, QLogger> loggerMap           = Collections.synchronizedMap(new HashMap<>());
-   private static boolean              logSessionIdEnabled = true;
+   private static Map<String, QLogger> loggerMap = Collections.synchronizedMap(new HashMap<>());
+
+   private static boolean logSessionIdEnabled = true;
 
    private Logger logger;
 
    static
    {
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // read the property to see if sessionIds in log messages is enabled, just once, statically //
+      //////////////////////////////////////////////////////////////////////////////////////////////
       String propertyName  = "qqq.logger.logSessionId.disabled";
       String propertyValue = System.getProperty(propertyName, "");
       if(propertyValue.equals("true"))
@@ -84,7 +88,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message)
    {
-      logger.log(level, messageToJsonString(message));
+      logger.log(level, makeJsonString(message));
    }
 
 
@@ -94,7 +98,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message, Throwable t)
    {
-      logger.log(level, messageToJsonString(message), t);
+      logger.log(level, makeJsonString(message, t));
    }
 
 
@@ -104,7 +108,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, Throwable t)
    {
-      logger.log(level, t);
+      logger.log(level, makeJsonString(null, t));
    }
 
 
@@ -114,7 +118,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message)
    {
-      logger.trace(messageToJsonString(message));
+      logger.trace(makeJsonString(message));
    }
 
 
@@ -124,7 +128,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, Object... values)
    {
-      logger.trace(messageToJsonString(message), values);
+      logger.trace(makeJsonString(message), values);
    }
 
 
@@ -134,7 +138,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, Throwable t)
    {
-      logger.trace(messageToJsonString(message), t);
+      logger.trace(makeJsonString(message, t));
    }
 
 
@@ -144,7 +148,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(Throwable t)
    {
-      logger.trace(t);
+      logger.trace(makeJsonString(null, t));
    }
 
 
@@ -154,7 +158,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message)
    {
-      logger.debug(messageToJsonString(message));
+      logger.debug(makeJsonString(message));
    }
 
 
@@ -164,7 +168,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, Object... values)
    {
-      logger.debug(messageToJsonString(message), values);
+      logger.debug(makeJsonString(message), values);
    }
 
 
@@ -174,7 +178,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, Throwable t)
    {
-      logger.debug(messageToJsonString(message), t);
+      logger.debug(makeJsonString(message, t));
    }
 
 
@@ -184,7 +188,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(Throwable t)
    {
-      logger.debug(t);
+      logger.debug(makeJsonString(null, t));
    }
 
 
@@ -194,7 +198,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message)
    {
-      logger.info(messageToJsonString(message));
+      logger.info(makeJsonString(message));
    }
 
 
@@ -224,7 +228,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, Object... values)
    {
-      logger.info(messageToJsonString(message), values);
+      logger.info(makeJsonString(message), values);
    }
 
 
@@ -234,7 +238,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, Throwable t)
    {
-      logger.info(messageToJsonString(message), t);
+      logger.info(makeJsonString(message, t));
    }
 
 
@@ -244,7 +248,7 @@ public class QLogger
     *******************************************************************************/
    public void info(Throwable t)
    {
-      logger.info(t);
+      logger.info(makeJsonString(null, t));
    }
 
 
@@ -254,7 +258,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message)
    {
-      logger.warn(messageToJsonString(message));
+      logger.warn(makeJsonString(message));
    }
 
 
@@ -264,7 +268,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Object... values)
    {
-      logger.warn(messageToJsonString(message), values);
+      logger.warn(makeJsonString(message), values);
    }
 
 
@@ -274,7 +278,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Throwable t)
    {
-      logger.warn(messageToJsonString(message), t);
+      logger.warn(makeJsonString(message, t));
    }
 
 
@@ -284,7 +288,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(Throwable t)
    {
-      logger.warn(t);
+      logger.warn(makeJsonString(null, t));
    }
 
 
@@ -294,7 +298,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message)
    {
-      logger.error(messageToJsonString(message));
+      logger.error(makeJsonString(message));
    }
 
 
@@ -304,7 +308,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Object... values)
    {
-      logger.error(messageToJsonString(message), values);
+      logger.error(makeJsonString(message), values);
    }
 
 
@@ -314,7 +318,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Throwable t)
    {
-      logger.error(messageToJsonString(message), t);
+      logger.error(makeJsonString(message, t));
    }
 
 
@@ -324,7 +328,7 @@ public class QLogger
     *******************************************************************************/
    public void error(Throwable t)
    {
-      logger.error(t);
+      logger.error(makeJsonString(null, t));
    }
 
 
@@ -332,11 +336,31 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String messageToJsonString(String message)
+   private String makeJsonString(String message)
+   {
+      return (makeJsonString(message, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String makeJsonString(String message, Throwable t)
    {
       List<LogPair> logPairList = new ArrayList<>();
-      logPairList.add(logPair("message", message));
+
+      if(StringUtils.hasContent(message))
+      {
+         logPairList.add(logPair("message", message));
+      }
+
       addSessionLogPair(logPairList);
+
+      if(t != null)
+      {
+         logPairList.add(logPair("stackTrace", LogUtils.filterStackTrace(ExceptionUtils.getStackTrace(t))));
+      }
 
       return (LogUtils.jsonLog(logPairList));
    }
@@ -355,7 +379,11 @@ public class QLogger
 
          if(session == null)
          {
-            sessionLogPair = logPair("session", "unknown");
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // note - being careful here to make the same json structure whether session is known or unknown //
+            // (e.g., not a string in one case and an object in another case) - to help loggly.              //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            sessionLogPair = logPair("session", logPair("id", "unknown"));
          }
          else
          {

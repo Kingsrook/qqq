@@ -24,8 +24,8 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
 
 
 /*******************************************************************************
