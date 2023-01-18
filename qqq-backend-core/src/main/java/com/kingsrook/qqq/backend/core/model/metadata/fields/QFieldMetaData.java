@@ -51,6 +51,7 @@ public class QFieldMetaData implements Cloneable
    private QFieldType type;
    private boolean    isRequired = false;
    private boolean    isEditable = true;
+   private boolean    isHeavy    = false;
 
    private FieldSecurityLock fieldSecurityLock;
 
@@ -693,6 +694,7 @@ public class QFieldMetaData implements Cloneable
    }
 
 
+
    /*******************************************************************************
     ** Getter for fieldSecurityLock
     *******************************************************************************/
@@ -722,5 +724,35 @@ public class QFieldMetaData implements Cloneable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for isHeavy
+    *******************************************************************************/
+   public boolean getIsHeavy()
+   {
+      return (this.isHeavy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHeavy
+    *******************************************************************************/
+   public void setIsHeavy(boolean isHeavy)
+   {
+      this.isHeavy = isHeavy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isHeavy
+    *******************************************************************************/
+   public QFieldMetaData withIsHeavy(boolean isHeavy)
+   {
+      this.isHeavy = isHeavy;
+      return (this);
+   }
 
 }

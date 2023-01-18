@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -44,7 +45,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
@@ -68,7 +68,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          QTableMetaData table     = queryInput.getTable();
          String         tableName = queryInput.getTableName();
 
-         StringBuilder sql = new StringBuilder("SELECT ").append(makeSelectClause(queryInput.getInstance(), tableName, queryInput.getQueryJoins()));
+         StringBuilder sql = new StringBuilder("SELECT ").append(makeSelectClause(queryInput));
 
          JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins());
          sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext));
@@ -112,7 +112,9 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          ////////////////////////////////////////////////////////////////////////////
          // build the list of fields that will be processed in the result-set loop //
          ////////////////////////////////////////////////////////////////////////////
-         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
+         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values().stream()
+            .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
+            .toList());
          for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryInput.getQueryJoins()))
          {
             if(queryJoin.getSelect())
@@ -121,7 +123,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
                for(QFieldMetaData joinField : joinTable.getFields().values())
                {
-                  fieldList.add(joinField.clone().withName(tableNameOrAlias + "." + joinField.getName()));
+                  if(filterOutHeavyFieldsIfNeeded(joinField, queryInput.getShouldFetchHeavyFields()))
+                  {
+                     fieldList.add(joinField.clone().withName(tableNameOrAlias + "." + joinField.getName()));
+                  }
                }
             }
          }
@@ -132,7 +137,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             // execute the query - iterate over results //
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
-            System.out.println(sql);
+            // System.out.println(sql);
             PreparedStatement statement = createStatement(connection, sql.toString(), queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
@@ -184,11 +189,16 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String makeSelectClause(QInstance instance, String tableName, List<QueryJoin> queryJoins) throws QException
+   private String makeSelectClause(QueryInput queryInput) throws QException
    {
+      QInstance       instance   = queryInput.getInstance();
+      String          tableName  = queryInput.getTableName();
+      List<QueryJoin> queryJoins = queryInput.getQueryJoins();
+
       QTableMetaData       table     = instance.getTable(tableName);
       List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
       String columns = fieldList.stream()
+         .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
          .map(field -> escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field)))
          .collect(Collectors.joining(", "));
       StringBuilder rs = new StringBuilder(columns);
@@ -206,6 +216,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
             List<QFieldMetaData> joinFieldList = new ArrayList<>(joinTable.getFields().values());
             String joinColumns = joinFieldList.stream()
+               .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
                .map(field -> escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field)))
                .collect(Collectors.joining(", "));
             rs.append(", ").append(joinColumns);
@@ -213,6 +224,20 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       }
 
       return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean filterOutHeavyFieldsIfNeeded(QFieldMetaData field, boolean shouldFetchHeavyFields)
+   {
+      if(!shouldFetchHeavyFields && field.getIsHeavy())
+      {
+         return (false);
+      }
+      return (true);
    }
 
 

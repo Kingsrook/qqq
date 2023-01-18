@@ -45,6 +45,7 @@ public class QueryInput extends AbstractTableActionInput
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
+   private boolean shouldFetchHeavyFields        = false;
 
    /////////////////////////////////////////////////////////////////////////////////////////
    // this field - only applies if shouldTranslatePossibleValues is true.                 //
@@ -194,6 +195,28 @@ public class QueryInput extends AbstractTableActionInput
    public void setShouldGenerateDisplayValues(boolean shouldGenerateDisplayValues)
    {
       this.shouldGenerateDisplayValues = shouldGenerateDisplayValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldFetchHeavyFields
+    **
+    *******************************************************************************/
+   public boolean getShouldFetchHeavyFields()
+   {
+      return shouldFetchHeavyFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldFetchHeavyFields
+    **
+    *******************************************************************************/
+   public void setShouldFetchHeavyFields(boolean shouldFetchHeavyFields)
+   {
+      this.shouldFetchHeavyFields = shouldFetchHeavyFields;
    }
 
 

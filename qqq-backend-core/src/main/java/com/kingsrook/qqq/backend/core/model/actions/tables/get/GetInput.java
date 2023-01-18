@@ -41,6 +41,7 @@ public class GetInput extends AbstractTableActionInput
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
+   private boolean shouldFetchHeavyFields        = true;
 
 
 
@@ -194,6 +195,37 @@ public class GetInput extends AbstractTableActionInput
    public GetInput withTransaction(QBackendTransaction transaction)
    {
       this.transaction = transaction;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldFetchHeavyFields
+    *******************************************************************************/
+   public boolean getShouldFetchHeavyFields()
+   {
+      return (this.shouldFetchHeavyFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldFetchHeavyFields
+    *******************************************************************************/
+   public void setShouldFetchHeavyFields(boolean shouldFetchHeavyFields)
+   {
+      this.shouldFetchHeavyFields = shouldFetchHeavyFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldFetchHeavyFields
+    *******************************************************************************/
+   public GetInput withShouldFetchHeavyFields(boolean shouldFetchHeavyFields)
+   {
+      this.shouldFetchHeavyFields = shouldFetchHeavyFields;
       return (this);
    }
 
