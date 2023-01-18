@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 
 
 /*******************************************************************************
@@ -78,6 +79,23 @@ public class LogUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static LogPair logPair(String key, UnsafeSupplier<Object, Exception> valueSupplier)
+   {
+      try
+      {
+         return (new LogPair(key, valueSupplier.get()));
+      }
+      catch(Exception e)
+      {
+         return (new LogPair(key, "exceptionLoggingValue: " + e.getMessage()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static LogPair logPair(String key, LogPair... values)
    {
       return (new LogPair(key, values));
@@ -88,13 +106,84 @@ public class LogUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @FunctionalInterface
-   public interface UnsafeSupplier
+   static String filterStackTrace(String stackTrace)
    {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      Object get() throws Exception;
-   }
+      try
+      {
+         String        packagesToKeep = "com.kingsrook|com.nutrifresh"; // todo - parameterize!!
+         StringBuilder rs             = new StringBuilder();
+         String[]      lines          = stackTrace.split("\n");
 
+         int    indexWithinSubStack = 0;
+         int    skipsInThisPackage  = 0;
+         String packageBeingSkipped = null;
+
+         for(String line : lines)
+         {
+            boolean keepLine = true;
+
+            if(line.matches("^\\s+at .*"))
+            {
+               keepLine = false;
+               indexWithinSubStack++;
+               if(line.matches("^\\s+at (" + packagesToKeep + ").*"))
+               {
+                  keepLine = true;
+               }
+               if(indexWithinSubStack == 1)
+               {
+                  keepLine = true;
+               }
+            }
+            else
+            {
+               indexWithinSubStack = 0;
+
+               if(skipsInThisPackage > 0)
+               {
+                  rs.append("\t... ").append(skipsInThisPackage).append(" in ").append(packageBeingSkipped).append("\n");
+                  skipsInThisPackage = 0;
+               }
+            }
+
+            if(keepLine)
+            {
+               rs.append(line).append("\n");
+            }
+            else
+            {
+               String thisPackage = line.replaceFirst("\\s+at ", "").replaceFirst("(\\w+\\.\\w+).*", "$1");
+               if(Objects.equals(thisPackage, packageBeingSkipped))
+               {
+                  skipsInThisPackage++;
+               }
+               else
+               {
+                  if(skipsInThisPackage > 0)
+                  {
+                     rs.append("\t... ").append(skipsInThisPackage).append(" in ").append(packageBeingSkipped).append("\n");
+                  }
+                  skipsInThisPackage = 1;
+               }
+               packageBeingSkipped = thisPackage;
+            }
+         }
+
+         if(rs.length() > 0)
+         {
+            rs.deleteCharAt(rs.length() - 1);
+         }
+
+         return (rs.toString());
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+
+         ///////////////////////////////////////////////
+         // upon any exception, just return the input //
+         ///////////////////////////////////////////////
+         return (stackTrace);
+      }
+   }
 }
