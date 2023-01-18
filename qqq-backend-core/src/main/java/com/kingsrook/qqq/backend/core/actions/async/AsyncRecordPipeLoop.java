@@ -27,8 +27,10 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 
 
 /*******************************************************************************
@@ -61,7 +63,7 @@ public class AsyncRecordPipeLoop
     ** @param consumer lambda that consumes records from the pipe
     *                  e.g., a transform/load step.
     *******************************************************************************/
-   public int run(String jobName, Integer recordLimit, RecordPipe recordPipe, UnsafeFunction<AsyncJobCallback, ? extends Serializable> supplier, UnsafeSupplier<Integer> consumer) throws QException
+   public int run(String jobName, Integer recordLimit, RecordPipe recordPipe, UnsafeFunction<AsyncJobCallback, ? extends Serializable, QException> supplier, UnsafeSupplier<Integer, QException> consumer) throws QException
    {
       ///////////////////////////////////////////////////
       // start the extraction function as an async job //
@@ -172,34 +174,6 @@ public class AsyncRecordPipeLoop
       }
 
       return (recordCount);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @FunctionalInterface
-   public interface UnsafeFunction<T, R>
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      R apply(T t) throws QException;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @FunctionalInterface
-   public interface UnsafeSupplier<T>
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      T get() throws QException;
    }
 
 }

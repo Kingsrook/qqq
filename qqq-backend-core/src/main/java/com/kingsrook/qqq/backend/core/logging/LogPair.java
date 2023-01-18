@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.logging;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 
 
 /*******************************************************************************
@@ -81,7 +82,7 @@ public class LogPair
          String subLogPairsString = Arrays.stream(subLogPairs).map(LogPair::toString).collect(Collectors.joining(","));
          valueString = '{' + subLogPairsString + '}';
       }
-      else if(value instanceof LogUtils.UnsafeSupplier us)
+      else if(value instanceof UnsafeSupplier<?, ?> us)
       {
          try
          {
@@ -103,4 +104,67 @@ public class LogPair
       }
       return valueString;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for key
+    *******************************************************************************/
+   public String getKey()
+   {
+      return (this.key);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for key
+    *******************************************************************************/
+   public void setKey(String key)
+   {
+      this.key = key;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for key
+    *******************************************************************************/
+   public LogPair withKey(String key)
+   {
+      this.key = key;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for value
+    *******************************************************************************/
+   public Object getValue()
+   {
+      return (this.value);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for value
+    *******************************************************************************/
+   public void setValue(Object value)
+   {
+      this.value = value;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for value
+    *******************************************************************************/
+   public LogPair withValue(Object value)
+   {
+      this.value = value;
+      return (this);
+   }
+
 }
