@@ -26,20 +26,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
+ ** Access-Logger used for QJavalin handlers.
  **
+ ** Can be disabled through the JavalinMetaData in the QJavalinImplementation -
+ ** See one of those 2 places for details (e.g., system properties).
+ **
+ ** Note - when working in this class - be overly aggressive with wrapping
+ ** everything in try-catch, and not allowing exceptions to bubble.  There isn't
+ ** much more of a disappointment then when logging code breaks user actions...
  *******************************************************************************/
 public class QJavalinAccessLogger
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinAccessLogger.class);
 
-   private static ThreadLocal<Long>   requestStartTime  = new ThreadLocal<>();
-   private static ThreadLocal<String> requestActionName = new ThreadLocal<>();
+   private static ThreadLocal<Long>      requestStartTime  = new ThreadLocal<>();
+   private static ThreadLocal<String>    requestActionName = new ThreadLocal<>();
+   private static ThreadLocal<LogPair[]> requestLogPairs   = new ThreadLocal<>();
 
 
 
@@ -48,12 +60,98 @@ public class QJavalinAccessLogger
     *******************************************************************************/
    static void logStart(String actionName, LogPair... logPairs)
    {
-      requestStartTime.set(System.currentTimeMillis());
-      requestActionName.set(actionName);
-      List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
-      pairList.add(0, logPair("access", "start"));
-      pairList.add(1, logPair("action", actionName));
-      LOG.info(pairList);
+      try
+      {
+         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessStarts() && !QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            /////////////////////////////////////////////////////
+            // if we're not to log starts or ends, just return //
+            /////////////////////////////////////////////////////
+            return;
+         }
+
+         setThreadLocals(actionName, logPairs);
+
+         if(QJavalinImplementation.javalinMetaData.getLogAllAccessStarts())
+         {
+            List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
+            pairList.add(0, logPair("action", actionName));
+            pairList.add(0, logPair("access", "start"));
+            LOG.info(pairList);
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void logStartSilent(String actionName)
+   {
+      setThreadLocals(actionName, null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setThreadLocals(String actionName, LogPair[] logPairs)
+   {
+      try
+      {
+         ////////////////////////////////////////////////////////
+         // only set the thread locals if we're doing log-ends //
+         ////////////////////////////////////////////////////////
+         if(QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            requestActionName.set(actionName);
+            requestStartTime.set(System.currentTimeMillis());
+            requestLogPairs.set(logPairs);
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void logEndSuccessIfSlow(long slowThreshold, LogPair... logPairs)
+   {
+      try
+      {
+         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            return;
+         }
+
+         Long startTime = requestStartTime.get();
+         Long millis    = null;
+         if(startTime != null)
+         {
+            long endTime = System.currentTimeMillis();
+            millis = endTime - startTime;
+         }
+
+         if(millis != null && millis > slowThreshold)
+         {
+            logEnd("success", new ArrayList<>(Arrays.asList(logPairs)));
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
    }
 
 
@@ -63,9 +161,20 @@ public class QJavalinAccessLogger
     *******************************************************************************/
    static void logEndSuccess(LogPair... logPairs)
    {
-      List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
-      pairList.add(0, logPair("access", "end-ok"));
-      accessLogEnd(pairList);
+      try
+      {
+         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            return;
+         }
+
+         List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
+         logEnd("success", pairList);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
    }
 
 
@@ -75,11 +184,22 @@ public class QJavalinAccessLogger
     *******************************************************************************/
    static void logEndFail(Throwable t, LogPair... logPairs)
    {
-      List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
-      pairList.add(0, logPair("access", "end-fail"));
-      pairList.add(1, logPair("exceptionType", t.getClass().getSimpleName()));
-      pairList.add(2, logPair("exceptionMessage", t.getMessage()));
-      accessLogEnd(pairList);
+      try
+      {
+         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            return;
+         }
+
+         List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
+         // pairList.add(0, logPair("exceptionMessage", t.getMessage()));
+         // pairList.add(0, logPair("exceptionType", t.getClass().getSimpleName()));
+         logEnd("failure", pairList);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
    }
 
 
@@ -87,23 +207,178 @@ public class QJavalinAccessLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void accessLogEnd(List<LogPair> pairList)
+   private static void logEnd(String accessType, List<LogPair> pairList)
    {
-      String actionName = requestActionName.get();
-      requestActionName.remove();
-      if(StringUtils.hasContent(actionName))
+      try
       {
-         pairList.add(1, logPair("action", actionName));
-      }
+         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            return;
+         }
 
-      Long startTime = requestStartTime.get();
-      requestStartTime.remove();
-      if(startTime != null)
-      {
-         long endTime = System.currentTimeMillis();
-         pairList.add(logPair("millis", (endTime - startTime)));
+         LogPair[] logPairsFromStart = requestLogPairs.get();
+         if(logPairsFromStart != null)
+         {
+            for(int i = logPairsFromStart.length - 1; i >= 0; i--)
+            {
+               pairList.add(0, logPairsFromStart[i]);
+            }
+         }
+
+         String actionName = requestActionName.get();
+         requestActionName.remove();
+         if(StringUtils.hasContent(actionName))
+         {
+            pairList.add(0, logPair("action", actionName));
+         }
+
+         pairList.add(0, logPair("access", accessType));
+
+         Long startTime = requestStartTime.get();
+         requestStartTime.remove();
+         Long millis;
+         if(startTime != null)
+         {
+            long endTime = System.currentTimeMillis();
+            millis = endTime - startTime;
+            pairList.add(logPair("millis", millis));
+         }
+         else
+         {
+            //////////////////////////////////////////////////////////////////////
+            // done so var can be effectively null, and be used in lambda below //
+            //////////////////////////////////////////////////////////////////////
+            millis = null;
+         }
+
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // filter out any LogPairIfSlow objects we have, for in case the request was not slow //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         pairList.removeIf(logPair ->
+         {
+            if(logPair instanceof LogPairIfSlow logPairIfSlow)
+            {
+               if(millis != null && millis < logPairIfSlow.getSlowThreshold())
+               {
+                  return (true);
+               }
+            }
+            return (false);
+         });
+
+         LOG.info(pairList);
       }
-      LOG.info(pairList);
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static LogPairIfSlow logPairIfSlow(String key, Object value, long slowThreshold)
+   {
+      return (new LogPairIfSlow(key, value, slowThreshold));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void logProcessSummary(String processName, String processUUID, RunProcessOutput runProcessOutput)
+   {
+      try
+      {
+         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         {
+            return;
+         }
+
+         List<LogPair> logPairs = new ArrayList<>();
+         logPairs.add(logPair("processName", processName));
+         logPairs.add(logPair("processUUID", processUUID));
+
+         if(runProcessOutput != null)
+         {
+            runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> logPairs.add(logPair("nextStep", nextStep)));
+
+            try
+            {
+               if(runProcessOutput.getValues().containsKey(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY))
+               {
+                  List<ProcessSummaryLineInterface> processSummaryLines = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY);
+                  processSummaryListToLogPairs(logPairs, processSummaryLines);
+               }
+               else if(runProcessOutput.getValues().containsKey(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY))
+               {
+                  List<ProcessSummaryLineInterface> processSummaryLines = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY);
+                  processSummaryListToLogPairs(logPairs, processSummaryLines);
+               }
+            }
+            catch(Exception e)
+            {
+               logPairs.add(logPair("errorLoggingSummary", e.getMessage()));
+            }
+         }
+
+         logEnd("processSummary", logPairs);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error in javalin access logger", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processSummaryListToLogPairs(List<LogPair> logPairs, List<ProcessSummaryLineInterface> processSummaryLines)
+   {
+      int i = 0;
+      for(ProcessSummaryLineInterface processSummaryLine : CollectionUtils.nonNullList(processSummaryLines))
+      {
+         LogPair logPair = processSummaryLine.toLogPair();
+         logPair.setKey(logPair.getKey() + i++);
+         logPairs.add(logPair);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class LogPairIfSlow extends LogPair
+   {
+      private final long slowThreshold;
+
+
+
+      /*******************************************************************************
+       ** Constructor
+       **
+       *******************************************************************************/
+      public LogPairIfSlow(String key, Object value, long slowThreshold)
+      {
+         super(key, value);
+         this.slowThreshold = slowThreshold;
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for slowThreshold
+       **
+       *******************************************************************************/
+      public long getSlowThreshold()
+      {
+         return slowThreshold;
+      }
+   }
 }
