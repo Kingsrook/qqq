@@ -5,3 +5,4 @@
 ## Tries to automatically resove pom conflicts by putting SNAPSHOT back
 ############################################################################
 gsed -i "/Updated upstream/,/=======/d;/Stashed/d" pom.xml
+git add pom.xml
