@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 
 
 /*******************************************************************************
@@ -47,4 +48,8 @@ public interface ProcessSummaryLineInterface extends Serializable
 
    }
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   LogPair toLogPair();
 }

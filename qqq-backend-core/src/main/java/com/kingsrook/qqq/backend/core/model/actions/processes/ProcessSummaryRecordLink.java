@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -46,6 +48,18 @@ public class ProcessSummaryRecordLink implements ProcessSummaryLineInterface
     *******************************************************************************/
    public ProcessSummaryRecordLink()
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public LogPair toLogPair()
+   {
+      return (logPair("ProcessSummary", logPair("status", status), logPair("tableName", tableName), logPair("recordId", recordId),
+         logPair("linkPreText", linkPreText), logPair("linkText", linkText), logPair("linkPostText", linkPostText)));
    }
 
 
