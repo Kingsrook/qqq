@@ -67,7 +67,6 @@ public class GetAction
    private Optional<AbstractPostQueryCustomizer> postGetRecordCustomizer;
 
    private GetInput                 getInput;
-   private QValueFormatter          qValueFormatter;
    private QPossibleValueTranslator qPossibleValueTranslator;
 
 
@@ -297,6 +296,7 @@ public class GetAction
          }
 
          queryInput.setFilter(filter);
+         queryInput.setShouldFetchHeavyFields(getInput.getShouldFetchHeavyFields());
 
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -334,12 +334,12 @@ public class GetAction
 
       if(getInput.getShouldGenerateDisplayValues())
       {
-         if(qValueFormatter == null)
-         {
-            qValueFormatter = new QValueFormatter();
-         }
-         qValueFormatter.setDisplayValuesInRecords(getInput.getTable(), List.of(returnRecord));
+         QValueFormatter.setDisplayValuesInRecords(getInput.getTable(), List.of(returnRecord));
       }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // note - shouldFetchHeavyFields should be handled by the underlying action //
+      //////////////////////////////////////////////////////////////////////////////
 
       return (returnRecord);
    }
