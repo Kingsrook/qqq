@@ -25,9 +25,12 @@ package com.kingsrook.qqq.backend.core.actions;
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 
@@ -43,9 +46,22 @@ public class ActionHelper
     *******************************************************************************/
    public static void validateSession(AbstractActionInput request) throws QException
    {
+      QInstance qInstance = QContext.getQInstance();
+      QSession  qSession  = QContext.getQSession();
+
+      if(qInstance == null)
+      {
+         throw (new QException("QInstance was not set in QContext."));
+      }
+
+      if(qSession == null)
+      {
+         throw (new QException("QSession was not set in QContext."));
+      }
+
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(request.getAuthenticationMetaData());
-      if(!authenticationModule.isSessionValid(request.getInstance(), request.getSession()))
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
+      if(!authenticationModule.isSessionValid(qInstance, qSession))
       {
          throw new QAuthenticationException("Invalid session in request");
       }
