@@ -168,10 +168,19 @@ public abstract class AbstractRDBMSAction implements QActionInterface
     *******************************************************************************/
    protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
    {
-      QFieldMetaData field = table.getField(fieldName);
-      if(field != null)
+      try
       {
-         record.setValue(fieldName, value);
+         QFieldMetaData field = table.getField(fieldName);
+         if(field != null)
+         {
+            record.setValue(fieldName, value);
+         }
+      }
+      catch(Exception e)
+      {
+         /////////////////////////////////////////////////
+         // this means field doesn't exist, so, ignore. //
+         /////////////////////////////////////////////////
       }
    }
 
