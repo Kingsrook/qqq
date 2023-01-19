@@ -79,6 +79,11 @@ public class GetAction
       ActionHelper.validateSession(getInput);
 
       QTableMetaData table = getInput.getTable();
+      if(table == null)
+      {
+         throw (new QException("Requested to Get a record from an unrecognized table: " + getInput.getTableName()));
+      }
+
       postGetRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.getInput = getInput;
 
