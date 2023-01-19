@@ -416,6 +416,22 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** Returns the input array, unless it was null - in which case a new (empty) array is returned.
+    **
+    ** Meant to help avoid null checks on foreach loops.
+    *******************************************************************************/
+   public static <T> T[] nonNullArray(T[] array)
+   {
+      if(array == null)
+      {
+         return (T[]) new ArrayList<T>().toArray();
+      }
+      return (array);
+   }
+
+
+
+   /*******************************************************************************
     ** Returns the input list, unless it was null - in which case a new array list is returned.
     **
     ** Meant to help avoid null checks on foreach loops.
@@ -511,6 +527,27 @@ public class CollectionUtils
          .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
       return (mapper.convertValue(o, Map.class));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T> List<T> mergeLists(List<T>... lists)
+   {
+      List<T> rs = new ArrayList<>();
+      if(lists != null)
+      {
+         for(List<T> list : lists)
+         {
+            if(list != null)
+            {
+               rs.addAll(list);
+            }
+         }
+      }
+      return (rs);
    }
 
 }

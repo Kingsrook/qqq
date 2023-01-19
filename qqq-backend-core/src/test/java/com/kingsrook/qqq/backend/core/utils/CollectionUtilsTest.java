@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -497,6 +498,50 @@ class CollectionUtilsTest extends BaseTest
       }
       assertEquals(4, pageCount);
       assertEquals(list, accumulator);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNonNullArray()
+   {
+      assertArrayEquals(new Integer[] { }, CollectionUtils.nonNullArray(null));
+      assertArrayEquals(new Integer[] { }, CollectionUtils.nonNullArray(new Integer[] { }));
+      assertArrayEquals(new Integer[] { 1, 2, 3 }, CollectionUtils.nonNullArray(new Integer[] { 1, 2, 3 }));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNonNullList()
+   {
+      assertEquals(List.of(), CollectionUtils.nonNullList(null));
+      assertEquals(List.of(), CollectionUtils.nonNullList(List.of()));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.nonNullList(List.of(1, 2, 3)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMergeLists()
+   {
+      assertEquals(List.of(), CollectionUtils.mergeLists());
+      assertEquals(List.of(), CollectionUtils.mergeLists((List<Object>) null));
+      assertEquals(List.of(), CollectionUtils.mergeLists((List<Object>[]) null));
+      assertEquals(List.of(), CollectionUtils.mergeLists(List.of()));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2, 3)));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2), List.of(3)));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2), null, List.of(3)));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(null, List.of(1, 2, 3), null));
    }
 
 }
