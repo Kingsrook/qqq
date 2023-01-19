@@ -452,4 +452,15 @@ public class QSession implements Serializable
       return (this.permissions);
    }
 
+
+   /*******************************************************************************
+    ** Fluent setter for user
+    *******************************************************************************/
+   public QSession withUser(QUser user)
+   {
+      this.user = user;
+      return (this);
+   }
+
+
 }
