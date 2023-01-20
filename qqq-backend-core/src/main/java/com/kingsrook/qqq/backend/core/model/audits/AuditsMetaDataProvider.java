@@ -30,6 +30,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -40,6 +43,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
  *******************************************************************************/
 public class AuditsMetaDataProvider
 {
+   public static final String TABLE_NAME_AUDIT_TABLE = "auditTable";
+   public static final String TABLE_NAME_AUDIT_USER = "auditUser";
+   public static final String TABLE_NAME_AUDIT = "audit";
+
+
 
    /*******************************************************************************
     **
@@ -48,6 +56,30 @@ public class AuditsMetaDataProvider
    {
       defineStandardAuditTables(instance, backendName, backendDetailEnricher);
       defineStandardAuditPossibleValueSources(instance);
+      defineStandardAuditJoins(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void defineStandardAuditJoins(QInstance instance)
+   {
+      instance.addJoin(new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_AUDIT)
+         .withRightTable(TABLE_NAME_AUDIT_TABLE)
+         .withInferredName()
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("auditTableId", "id")));
+
+      instance.addJoin(new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_AUDIT)
+         .withRightTable(TABLE_NAME_AUDIT_USER)
+         .withInferredName()
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("auditUserId", "id")));
+
    }
 
 
@@ -71,13 +103,13 @@ public class AuditsMetaDataProvider
    public void defineStandardAuditPossibleValueSources(QInstance instance)
    {
       instance.addPossibleValueSource(new QPossibleValueSource()
-         .withName("auditTable")
-         .withTableName("auditTable")
+         .withName(TABLE_NAME_AUDIT_TABLE)
+         .withTableName(TABLE_NAME_AUDIT_TABLE)
       );
 
       instance.addPossibleValueSource(new QPossibleValueSource()
-         .withName("auditUser")
-         .withTableName("auditUser")
+         .withName(TABLE_NAME_AUDIT_USER)
+         .withTableName(TABLE_NAME_AUDIT_USER)
       );
    }
 
@@ -117,7 +149,7 @@ public class AuditsMetaDataProvider
    private QTableMetaData defineAuditTableTable(String backendName)
    {
       return new QTableMetaData()
-         .withName("auditTable")
+         .withName(TABLE_NAME_AUDIT_TABLE)
          .withBackendName(backendName)
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
@@ -138,7 +170,7 @@ public class AuditsMetaDataProvider
    private QTableMetaData defineAuditUserTable(String backendName)
    {
       return new QTableMetaData()
-         .withName("auditUser")
+         .withName(TABLE_NAME_AUDIT_USER)
          .withBackendName(backendName)
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("name")
@@ -158,13 +190,14 @@ public class AuditsMetaDataProvider
    private QTableMetaData defineAuditTable(String backendName)
    {
       return new QTableMetaData()
-         .withName("audit")
+         .withName(TABLE_NAME_AUDIT)
          .withBackendName(backendName)
-         .withRecordLabelFormat("%s")
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("auditTableId", "recordId")
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("auditTableId", QFieldType.INTEGER).withPossibleValueSourceName("auditTable"))
-         .withField(new QFieldMetaData("auditUserId", QFieldType.INTEGER).withPossibleValueSourceName("auditUser"))
+         .withField(new QFieldMetaData("auditTableId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT_TABLE))
+         .withField(new QFieldMetaData("auditUserId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT_USER))
          .withField(new QFieldMetaData("recordId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
          .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME));
