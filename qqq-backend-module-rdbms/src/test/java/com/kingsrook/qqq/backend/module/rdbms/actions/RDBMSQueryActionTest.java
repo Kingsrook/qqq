@@ -643,6 +643,21 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   void testFilterFromJoinTableImplicitly() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("personalIdCard.idNumber", QCriteriaOperator.EQUALS, "19800531")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Query should find 1 rows");
+      assertThat(queryOutput.getRecords()).anyMatch(r -> r.getValueString("firstName").equals("Darin"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testOneToOneInnerJoinWithoutWhere() throws QException
    {
       QueryInput queryInput = initQueryRequest();
@@ -999,7 +1014,6 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testRecordSecurityPrimaryKeyFieldNoFilters() throws QException
    {
-      QInstance  qInstance  = TestUtils.defineInstance();
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_STORE);
 
@@ -1044,7 +1058,6 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testRecordSecurityForeignKeyFieldNoFilters() throws QException
    {
-      QInstance  qInstance  = TestUtils.defineInstance();
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
@@ -1087,7 +1100,6 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testRecordSecurityWithFilters() throws QException
    {
-      QInstance  qInstance  = TestUtils.defineInstance();
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
@@ -1124,7 +1136,6 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testRecordSecurityWithOrQueries() throws QException
    {
-      QInstance  qInstance  = TestUtils.defineInstance();
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
@@ -1156,7 +1167,6 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testRecordSecurityWithSubFilters() throws QException
    {
-      QInstance  qInstance  = TestUtils.defineInstance();
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 

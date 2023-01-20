@@ -70,7 +70,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          StringBuilder sql = new StringBuilder("SELECT ").append(makeSelectClause(queryInput));
 
-         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins());
+         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), queryInput.getFilter());
          sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext));
 
          QQueryFilter       filter = queryInput.getFilter();

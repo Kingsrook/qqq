@@ -260,7 +260,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       QTableMetaData     table  = deleteInput.getTable();
 
       String       tableName    = getTableName(table);
-      JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), Collections.emptyList());
+      JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), Collections.emptyList(), deleteInput.getQueryFilter());
       String       whereClause  = makeWhereClause(deleteInput.getInstance(), deleteInput.getSession(), table, joinsContext, filter, params);
 
       // todo sql customization - can edit sql and/or param list?

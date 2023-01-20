@@ -64,7 +64,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       {
          QTableMetaData table = aggregateInput.getTable();
 
-         JoinsContext joinsContext  = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins());
+         JoinsContext joinsContext  = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins(), aggregateInput.getFilter());
          String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext);
          List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
 

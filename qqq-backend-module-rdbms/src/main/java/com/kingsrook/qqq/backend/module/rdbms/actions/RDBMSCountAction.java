@@ -56,7 +56,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
       {
          QTableMetaData table = countInput.getTable();
 
-         JoinsContext joinsContext = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins());
+         JoinsContext joinsContext = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), countInput.getFilter());
 
          String sql = "SELECT count(*) as record_count FROM "
             + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);

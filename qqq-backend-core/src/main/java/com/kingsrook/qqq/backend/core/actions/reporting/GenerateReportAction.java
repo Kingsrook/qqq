@@ -225,7 +225,7 @@ public class GenerateReportAction
       JoinsContext joinsContext = null;
       if(StringUtils.hasContent(dataSource.getSourceTable()))
       {
-         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins());
+         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
       }
 
       List<QFieldMetaData> fields = new ArrayList<>();
@@ -308,7 +308,7 @@ public class GenerateReportAction
             queryInput.setQueryJoins(dataSource.getQueryJoins());
 
             queryInput.setShouldTranslatePossibleValues(true);
-            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins())));
+            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
 
             if(dataSource.getQueryInputCustomizer() != null)
             {
