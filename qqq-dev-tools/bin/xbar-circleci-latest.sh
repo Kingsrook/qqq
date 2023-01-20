@@ -8,7 +8,7 @@
 ## - create a symlink under $HOME/Library/Application Support/xbar/plugins/
 ##   pointed at this script - with a filename that indicates how frequently
 ##   you want it to run.  e.g., every-10-seconds (10s) as:
-##     ln -s $QQQ_DEV_TOOLS_DIR/bin/xbar-circleci-latest.sh "$HOME/Library/Application Support/xbar/plugins/xbar-circleci-latest.10s.sh
+##     ln -s $QQQ_DEV_TOOLS_DIR/bin/xbar-circleci-latest.sh "$HOME/Library/Application Support/xbar/plugins/xbar-circleci-latest.10s.sh"
 ##   Then, in xbar, go to Plugin Browser, refresh, and :fingerscrossed:
 ############################################################################
 . ~/.bashrc
@@ -39,7 +39,7 @@ checkBuild()
    curl $avatarUrl > /tmp/avatar.jpg
    sips -s dpiHeight 96 -s dpiWidth 96 /tmp/avatar.jpg -o /tmp/avatar-96dpi.jpg > /dev/null
    sips -z 20 20 /tmp/avatar-96dpi.jpg -o /tmp/avatar-20.jpg > /dev/null
-   base64 /tmp/avatar-20.jpg > /tmp/avatar.b64
+   base64 -i /tmp/avatar-20.jpg > /tmp/avatar.b64
    avatarB64=$(cat /tmp/avatar.b64)
 
    shortRepo="$repo"
