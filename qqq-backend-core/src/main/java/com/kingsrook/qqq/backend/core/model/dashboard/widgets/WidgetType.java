@@ -45,6 +45,7 @@ public enum WidgetType
    QUICK_SIGHT_CHART("quickSightChart"),
    STATISTICS("statistics"),
    SIMPLE_STATISTICS("simpleStatistics"),
+   STACKED_BAR_CHART("stackedBarChart"),
    STEPPER("stepper"),
    TABLE("table"),
    USA_MAP("usaMap"),

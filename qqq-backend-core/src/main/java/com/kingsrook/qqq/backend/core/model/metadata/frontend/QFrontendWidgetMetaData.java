@@ -43,6 +43,7 @@ public class QFrontendWidgetMetaData
    private final String  icon;
    private final Integer gridColumns;
    private final boolean isCard;
+   private final boolean storeDropdownSelections;
 
    private boolean hasPermission;
 
@@ -63,6 +64,7 @@ public class QFrontendWidgetMetaData
       this.icon = widgetMetaData.getIcon();
       this.gridColumns = widgetMetaData.getGridColumns();
       this.isCard = widgetMetaData.getIsCard();
+      this.storeDropdownSelections = widgetMetaData.getStoreDropdownSelections();
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -142,6 +144,17 @@ public class QFrontendWidgetMetaData
    public boolean getHasPermission()
    {
       return hasPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for storeDropdownSelections
+    **
+    *******************************************************************************/
+   public boolean getStoreDropdownSelections()
+   {
+      return storeDropdownSelections;
    }
 
 }

@@ -29,6 +29,8 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 public class StatisticsData extends QWidgetData
 {
    private Number  count;
+   private String  countFontSize;
+   private String  countURL;
    private Number  percentageAmount;
    private String  percentageLabel;
    private boolean isCurrency     = false;
@@ -55,6 +57,74 @@ public class StatisticsData extends QWidgetData
    public String getType()
    {
       return "statistics";
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for countURL
+    **
+    *******************************************************************************/
+   public String getCountURL()
+   {
+      return countURL;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for countURL
+    **
+    *******************************************************************************/
+   public void setCountURL(String countURL)
+   {
+      this.countURL = countURL;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for countURL
+    **
+    *******************************************************************************/
+   public StatisticsData withCountURL(String countURL)
+   {
+      this.countURL = countURL;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for countFontSize
+    **
+    *******************************************************************************/
+   public String getCountFontSize()
+   {
+      return countFontSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for countFontSize
+    **
+    *******************************************************************************/
+   public void setCountFontSize(String countFontSize)
+   {
+      this.countFontSize = countFontSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for countFontSize
+    **
+    *******************************************************************************/
+   public StatisticsData withCountFontSize(String countFontSize)
+   {
+      this.countFontSize = countFontSize;
+      return (this);
    }
 
 

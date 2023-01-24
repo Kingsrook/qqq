@@ -126,9 +126,20 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
    boolean getIsCard();
 
    /*******************************************************************************
-    ** Setter for type
+    ** Setter for isCard
     *******************************************************************************/
    void setIsCard(boolean isCard);
+
+
+   /*******************************************************************************
+    ** Getter for storeDropdownSelections
+    *******************************************************************************/
+   boolean getStoreDropdownSelections();
+
+   /*******************************************************************************
+    ** Setter for storeDropdownSelections
+    *******************************************************************************/
+   void setStoreDropdownSelections(boolean storeDropdownSelections);
 
    /*******************************************************************************
     ** Getter for defaultValues

@@ -350,6 +350,8 @@ public class ChartData extends QWidgetData
          private String       label;
          private List<Number> data;
          private String       color;
+         private String       backgroundColor;
+         private List<String> urls;
 
 
 
@@ -376,12 +378,35 @@ public class ChartData extends QWidgetData
 
 
          /*******************************************************************************
-          ** Getter for color
+          ** Getter for backgroundColor
           **
           *******************************************************************************/
-         public String getColor()
+         public String getBackgroundColor()
          {
-            return color;
+            return backgroundColor;
+         }
+
+
+
+         /*******************************************************************************
+          ** Setter for backgroundColor
+          **
+          *******************************************************************************/
+         public void setBackgroundColor(String backgroundColor)
+         {
+            this.backgroundColor = backgroundColor;
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for backgroundColor
+          **
+          *******************************************************************************/
+         public Dataset withBackgroundColor(String backgroundColor)
+         {
+            this.backgroundColor = backgroundColor;
+            return (this);
          }
 
 
@@ -450,6 +475,40 @@ public class ChartData extends QWidgetData
          public Dataset withData(List<Number> data)
          {
             this.data = data;
+            return (this);
+         }
+
+
+
+         /*******************************************************************************
+          ** Getter for urls
+          **
+          *******************************************************************************/
+         public List<String> getUrls()
+         {
+            return urls;
+         }
+
+
+
+         /*******************************************************************************
+          ** Setter for urls
+          **
+          *******************************************************************************/
+         public void setUrls(List<String> urls)
+         {
+            this.urls = urls;
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for urls
+          **
+          *******************************************************************************/
+         public Dataset withUrls(List<String> urls)
+         {
+            this.urls = urls;
             return (this);
          }
       }
