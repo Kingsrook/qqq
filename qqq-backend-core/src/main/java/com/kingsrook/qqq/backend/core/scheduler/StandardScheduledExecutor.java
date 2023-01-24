@@ -260,4 +260,14 @@ public class StandardScheduledExecutor
       STOPPING,
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for name
+    **
+    *******************************************************************************/
+   public String getName()
+   {
+      return name;
+   }
 }

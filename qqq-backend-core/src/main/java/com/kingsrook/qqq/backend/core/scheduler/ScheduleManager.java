@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -101,10 +102,19 @@ public class ScheduleManager
    public void start()
    {
       String propertyName  = "qqq.scheduleManager.enabled";
-      String propertyValue = System.getProperty(propertyName, "");
-      if(propertyValue.equals("false"))
+      String propertyValue = System.getProperty(propertyName);
+      if("false".equals(propertyValue))
       {
-         LOG.warn("Not starting ScheduleManager (per system property [" + propertyName + "=" + propertyValue + "]).");
+         LOG.warn("Not starting ScheduleManager (per system property] [" + propertyName + "=" + propertyValue + "]).");
+         return;
+      }
+
+      QMetaDataVariableInterpreter qMetaDataVariableInterpreter = new QMetaDataVariableInterpreter();
+      String envName = "QQQ_SCHEDULE_MANAGER_ENABLED";
+      String envValue = qMetaDataVariableInterpreter.interpret("${env." + envName + "}");
+      if("false".equals(envValue))
+      {
+         LOG.warn("Not starting ScheduleManager (per environment variable] [" + envName + "=" + envValue + "]).");
          return;
       }
 
@@ -150,7 +160,10 @@ public class ScheduleManager
 
             executor.setName(runner.getName());
             setScheduleInExecutor(schedule, executor);
-            executor.start();
+            if(!executor.start())
+            {
+               LOG.warn("executor.start return false for: " + executor.getName());
+            }
 
             executors.add(executor);
          }
@@ -222,7 +235,10 @@ public class ScheduleManager
 
             executor.setName(queue.getName());
             setScheduleInExecutor(schedule, executor);
-            executor.start();
+            if(!executor.start())
+            {
+               LOG.warn("executor.start return false for: " + executor.getName());
+            }
 
             executors.add(executor);
          }
@@ -268,7 +284,10 @@ public class ScheduleManager
       StandardScheduledExecutor executor = new StandardScheduledExecutor(runProcess);
       executor.setName("process:" + process.getName());
       setScheduleInExecutor(process.getSchedule(), executor);
-      executor.start();
+      if(!executor.start())
+      {
+         LOG.warn("executor.start return false for: " + executor.getName());
+      }
 
       executors.add(executor);
    }
