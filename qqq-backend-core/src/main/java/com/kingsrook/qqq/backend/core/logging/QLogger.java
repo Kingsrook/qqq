@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -48,6 +49,11 @@ public class QLogger
 
    private static boolean logSessionIdEnabled = true;
 
+   //////////////////////////////////////////////////////////////////////
+   // note - read in LogUtils, where log pairs are made into a string. //
+   //////////////////////////////////////////////////////////////////////
+   static String processTagLogPairJson = null;
+
    private Logger logger;
 
    static
@@ -55,11 +61,39 @@ public class QLogger
       //////////////////////////////////////////////////////////////////////////////////////////////
       // read the property to see if sessionIds in log messages is enabled, just once, statically //
       //////////////////////////////////////////////////////////////////////////////////////////////
-      String propertyName  = "qqq.logger.logSessionId.disabled";
-      String propertyValue = System.getProperty(propertyName, "");
-      if(propertyValue.equals("true"))
+      try
       {
-         logSessionIdEnabled = false;
+         String propertyName  = "qqq.logger.logSessionId.disabled";
+         String propertyValue = System.getProperty(propertyName, "");
+         if(propertyValue.equals("true"))
+         {
+            logSessionIdEnabled = false;
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // read the property (or env var) to see if there's a "processTag" to put on all messages //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         String processTag = System.getProperty("qqq.logger.processTag");
+         if(processTag == null)
+         {
+            processTag = new QMetaDataVariableInterpreter().interpret("${env.QQQ_LOGGER_PROCESS_TAG}");
+         }
+
+         if(StringUtils.hasContent(processTag))
+         {
+            processTagLogPairJson = "\"processTag\":\"" + processTag + "\"";
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
       }
    }
 
@@ -228,7 +262,7 @@ public class QLogger
     *******************************************************************************/
    public void info(LogPair... logPairs)
    {
-      logger.info(LogUtils.jsonLog(addSessionLogPair(Arrays.asList(logPairs))));
+      logger.info(makeJsonString(null, null, logPairs));
    }
 
 
@@ -238,7 +272,7 @@ public class QLogger
     *******************************************************************************/
    public void info(List<LogPair> logPairList)
    {
-      logger.info(LogUtils.jsonLog(addSessionLogPair(logPairList)));
+      logger.info(makeJsonString(null, null, logPairList));
    }
 
 
@@ -398,7 +432,7 @@ public class QLogger
     *******************************************************************************/
    private String makeJsonString(String message, Throwable t)
    {
-      return (makeJsonString(message, t, null));
+      return (makeJsonString(message, t, (List<LogPair>) null));
    }
 
 
@@ -412,6 +446,21 @@ public class QLogger
       if(logPairs != null)
       {
          logPairList.addAll(Arrays.stream(logPairs).toList());
+      }
+
+      return (makeJsonString(message, t, logPairList));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String makeJsonString(String message, Throwable t, List<LogPair> logPairList)
+   {
+      if(logPairList == null)
+      {
+         logPairList = new ArrayList<>();
       }
 
       if(StringUtils.hasContent(message))
@@ -434,7 +483,7 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<LogPair> addSessionLogPair(List<LogPair> logPairList)
+   private static void addSessionLogPair(List<LogPair> logPairList)
    {
       if(logSessionIdEnabled)
       {
@@ -472,6 +521,5 @@ public class QLogger
             logPairList.add(sessionLogPair);
          }
       }
-      return (logPairList);
    }
 }

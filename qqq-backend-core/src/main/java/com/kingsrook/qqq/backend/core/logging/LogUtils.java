@@ -43,10 +43,18 @@ public class LogUtils
       List<LogPair> filteredList = logPairs.stream().filter(Objects::nonNull).toList();
       if(filteredList.isEmpty())
       {
-         return ("{}");
+         if(QLogger.processTagLogPairJson != null)
+         {
+            return ("{" + QLogger.processTagLogPairJson + "}");
+         }
+         else
+         {
+            return ("{}");
+         }
       }
 
-      return ('{' + filteredList.stream().map(LogPair::toString).collect(Collectors.joining(",")) + '}');
+      return ('{' + filteredList.stream().map(LogPair::toString).collect(Collectors.joining(","))
+         + (QLogger.processTagLogPairJson != null ? (',' + QLogger.processTagLogPairJson) : "") + '}');
    }
 
 
