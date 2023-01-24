@@ -126,6 +126,16 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void trace(String message, LogPair... logPairs)
+   {
+      logger.trace(makeJsonString(message, null, logPairs));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void trace(String message, Object... values)
    {
       logger.trace(makeJsonString(message), values);
@@ -159,6 +169,16 @@ public class QLogger
    public void debug(String message)
    {
       logger.debug(makeJsonString(message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void debug(String message, LogPair... logPairs)
+   {
+      logger.debug(makeJsonString(message, null, logPairs));
    }
 
 
@@ -226,6 +246,16 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void info(String message, LogPair... logPairs)
+   {
+      logger.info(makeJsonString(message, null, logPairs));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void info(String message, Object... values)
    {
       logger.info(makeJsonString(message), values);
@@ -266,6 +296,16 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void warn(String message, LogPair... logPairs)
+   {
+      logger.warn(makeJsonString(message, null, logPairs));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void warn(String message, Object... values)
    {
       logger.warn(makeJsonString(message), values);
@@ -299,6 +339,16 @@ public class QLogger
    public void error(String message)
    {
       logger.error(makeJsonString(message));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void error(String message, LogPair... logPairs)
+   {
+      logger.error(makeJsonString(message, null, logPairs));
    }
 
 
@@ -348,11 +398,25 @@ public class QLogger
     *******************************************************************************/
    private String makeJsonString(String message, Throwable t)
    {
+      return (makeJsonString(message, t, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String makeJsonString(String message, Throwable t, LogPair[] logPairs)
+   {
       List<LogPair> logPairList = new ArrayList<>();
+      if(logPairs != null)
+      {
+         logPairList.addAll(Arrays.stream(logPairs).toList());
+      }
 
       if(StringUtils.hasContent(message))
       {
-         logPairList.add(logPair("message", message));
+         logPairList.add(0, logPair("message", message));
       }
 
       addSessionLogPair(logPairList);
