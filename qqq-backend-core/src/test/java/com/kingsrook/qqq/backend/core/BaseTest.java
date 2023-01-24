@@ -31,8 +31,7 @@ public class BaseTest
    void baseBeforeEach()
    {
       QContext.init(TestUtils.defineInstance(), new QSession());
-      MemoryRecordStore.getInstance().reset();
-      MemoryRecordStore.resetStatistics();
+      resetMemoryRecordStore();
    }
 
 
@@ -44,8 +43,19 @@ public class BaseTest
    void baseAfterEach()
    {
       QContext.clear();
+      resetMemoryRecordStore();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void resetMemoryRecordStore()
+   {
       MemoryRecordStore.getInstance().reset();
       MemoryRecordStore.resetStatistics();
+      MemoryRecordStore.setCollectStatistics(false);
    }
 
 
