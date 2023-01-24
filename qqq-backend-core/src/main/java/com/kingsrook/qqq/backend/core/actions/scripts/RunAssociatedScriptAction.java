@@ -24,7 +24,11 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.ScriptExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -35,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAssociatedScriptI
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAssociatedScriptOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.code.AssociatedScriptCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
@@ -46,6 +51,8 @@ import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
  *******************************************************************************/
 public class RunAssociatedScriptAction
 {
+   private Map<AssociatedScriptCodeReference, ScriptRevision> scriptRevisionCache = new HashMap<>();
+
 
    /*******************************************************************************
     **
@@ -54,21 +61,7 @@ public class RunAssociatedScriptAction
    {
       ActionHelper.validateSession(input);
 
-      Serializable scriptId = getScriptId(input);
-      if(scriptId == null)
-      {
-         throw (new QNotFoundException("The input record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey()
-            + "] does not have a script specified for [" + input.getCodeReference().getFieldName() + "]"));
-      }
-
-      Script script = getScript(input, scriptId);
-      if(script.getCurrentScriptRevisionId() == null)
-      {
-         throw (new QNotFoundException("The script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey()
-            + "] (scriptId=" + scriptId + ") does not have a current version."));
-      }
-
-      ScriptRevision scriptRevision = getCurrentScriptRevision(input, script.getCurrentScriptRevisionId());
+      ScriptRevision scriptRevision = getScriptRevision(input);
 
       ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setInput(new HashMap<>(input.getInputValues()));
@@ -78,11 +71,55 @@ public class RunAssociatedScriptAction
          executeCodeInput.getContext().put("output", input.getOutputObject());
       }
       executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
-      executeCodeInput.setExecutionLogger(new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // let caller supply a logger, or by default use StoreScriptLogAndScriptLogLineExecutionLogger //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      QCodeExecutionLoggerInterface executionLogger = Objects.requireNonNullElseGet(input.getLogger(), () -> new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
+      executeCodeInput.setExecutionLogger(executionLogger);
+      if(executionLogger instanceof ScriptExecutionLoggerInterface scriptExecutionLoggerInterface)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if logger is aware of scripts (as opposed to a generic CodeExecution logger), give it the ids. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         scriptExecutionLoggerInterface.setScriptId(scriptRevision.getScriptId());
+         scriptExecutionLoggerInterface.setScriptRevisionId(scriptRevision.getId());
+      }
+
       ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
 
       output.setOutput(executeCodeOutput.getOutput());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private ScriptRevision getScriptRevision(RunAssociatedScriptInput input) throws QException
+   {
+      if(!scriptRevisionCache.containsKey(input.getCodeReference()))
+      {
+         Serializable scriptId = getScriptId(input);
+         if(scriptId == null)
+         {
+            throw (new QNotFoundException("The input record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey()
+               + "] does not have a script specified for [" + input.getCodeReference().getFieldName() + "]"));
+         }
+
+         Script script = getScript(input, scriptId);
+         if(script.getCurrentScriptRevisionId() == null)
+         {
+            throw (new QNotFoundException("The script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey()
+               + "] (scriptId=" + scriptId + ") does not have a current version."));
+         }
+
+         ScriptRevision scriptRevision = getCurrentScriptRevision(input, script.getCurrentScriptRevisionId());
+         scriptRevisionCache.put(input.getCodeReference(), scriptRevision);
+      }
+
+      return scriptRevisionCache.get(input.getCodeReference());
    }
 
 

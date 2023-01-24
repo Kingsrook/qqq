@@ -39,7 +39,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  ** scriptLogLine records - but doesn't insert them.  e.g., useful for testing
  ** (both in junit, and for users in-app).
  *******************************************************************************/
-public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecutionLoggerInterface
+public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecutionLoggerInterface, ScriptExecutionLoggerInterface
 {
    private static final QLogger LOG = QLogger.getLogger(BuildScriptLogAndScriptLogLineExecutionLogger.class);
 
@@ -216,5 +216,38 @@ public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecu
    protected void setScriptLog(QRecord scriptLog)
    {
       this.scriptLog = scriptLog;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptLogLines
+    **
+    *******************************************************************************/
+   protected void setScriptLogLines(List<QRecord> scriptLogLines)
+   {
+      this.scriptLogLines = scriptLogLines;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void setScriptId(Integer scriptId)
+   {
+      this.scriptId = scriptId;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void setScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
    }
 }

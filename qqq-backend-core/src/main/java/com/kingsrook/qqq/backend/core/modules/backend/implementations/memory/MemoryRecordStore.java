@@ -56,6 +56,7 @@ public class MemoryRecordStore
    private static boolean collectStatistics = false;
 
    public static final String STAT_QUERIES_RAN = "queriesRan";
+   public static final String STAT_INSERTS_RAN = "insertsRan";
 
    private static final Map<String, Integer> statistics = Collections.synchronizedMap(new HashMap<>());
 
@@ -173,6 +174,8 @@ public class MemoryRecordStore
     *******************************************************************************/
    public List<QRecord> insert(InsertInput input, boolean returnInsertedRecords)
    {
+      incrementStatistic(input);
+
       if(input.getRecords() == null)
       {
          return (new ArrayList<>());
@@ -323,6 +326,10 @@ public class MemoryRecordStore
          if(input instanceof QueryInput)
          {
             incrementStatistic(STAT_QUERIES_RAN);
+         }
+         else if(input instanceof InsertInput)
+         {
+            incrementStatistic(STAT_INSERTS_RAN);
          }
       }
    }

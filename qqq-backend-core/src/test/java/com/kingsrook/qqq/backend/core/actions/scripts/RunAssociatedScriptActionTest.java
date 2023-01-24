@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.AccumulatingBuildScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -45,10 +46,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptLog;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -60,12 +67,25 @@ class RunAssociatedScriptActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @BeforeEach
+   @AfterEach
+   void beforeAndAfterEach()
+   {
+      MemoryRecordStore.getInstance().reset();
+      MemoryRecordStore.resetStatistics();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Test
    void test() throws QException
    {
-      QInstance instance = setupInstance();
+      setupInstance();
 
-      insertScript(instance, 1, """
+      insertScript(1, """
          return "Hello";
          """);
 
@@ -86,6 +106,11 @@ class RunAssociatedScriptActionTest extends BaseTest
          .isInstanceOf(QException.class)
          .hasRootCauseInstanceOf(ClassNotFoundException.class)
          .hasRootCauseMessage("com.kingsrook.qqq.languages.javascript.QJavaScriptExecutor");
+
+      /////////////////////////////////////
+      // assert that a log was generated //
+      /////////////////////////////////////
+      assertEquals(1, TestUtils.queryTable(ScriptLog.TABLE_NAME).size());
    }
 
 
@@ -93,7 +118,61 @@ class RunAssociatedScriptActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QInstance setupInstance() throws QException
+   @Test
+   void testOverridingLoggerAndCachingScriptLookups() throws QException
+   {
+      setupInstance();
+
+      insertScript(1, """
+         return "Hello";
+         """);
+
+      AccumulatingBuildScriptLogAndScriptLogLineExecutionLogger scriptLogger = new AccumulatingBuildScriptLogAndScriptLogLineExecutionLogger();
+
+      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
+      runAssociatedScriptInput.setInputValues(Map.of());
+      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAssociatedScriptInput.setLogger(scriptLogger);
+      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
+         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withRecordPrimaryKey(1)
+         .withFieldName("testScriptId")
+      );
+      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
+
+      MemoryRecordStore.setCollectStatistics(true);
+      RunAssociatedScriptAction runAssociatedScriptAction = new RunAssociatedScriptAction();
+
+      int N = 10;
+      for(int i = 0; i < N; i++)
+      {
+         assertThatThrownBy(() -> runAssociatedScriptAction.run(runAssociatedScriptInput, runAssociatedScriptOutput));
+      }
+
+      scriptLogger.storeAndClear();
+
+      /////////////////////////////////////
+      // assert that logs were generated //
+      /////////////////////////////////////
+      assertEquals(N, TestUtils.queryTable(ScriptLog.TABLE_NAME).size());
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // and we should have just ran 2 inserts - for the log & logLines (even though empty) //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_INSERTS_RAN));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // and we shouldn't have run N queries (which we would have (at least), if we would have built a new Action object inside the loop) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThat(MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN)).isLessThan(N);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void setupInstance() throws QException
    {
       QInstance instance = QContext.getQInstance();
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
@@ -113,7 +192,6 @@ class RunAssociatedScriptActionTest extends BaseTest
       TestUtils.insertRecords(instance, instance.getTable("scriptType"), List.of(
          new QRecord().withValue("id", 1).withValue("name", "Test Script Type")
       ));
-      return instance;
    }
 
 
@@ -124,7 +202,7 @@ class RunAssociatedScriptActionTest extends BaseTest
    @Test
    void testRecordNotFound() throws QException
    {
-      QInstance instance = setupInstance();
+      setupInstance();
 
       RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
@@ -149,7 +227,7 @@ class RunAssociatedScriptActionTest extends BaseTest
    @Test
    void testNoScriptInRecord() throws QException
    {
-      QInstance instance = setupInstance();
+      setupInstance();
 
       RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
       runAssociatedScriptInput.setInputValues(Map.of());
@@ -174,7 +252,7 @@ class RunAssociatedScriptActionTest extends BaseTest
    @Test
    void testBadScriptIdInRecord() throws QException
    {
-      QInstance instance = setupInstance();
+      setupInstance();
 
       UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -204,9 +282,9 @@ class RunAssociatedScriptActionTest extends BaseTest
    @Test
    void testNoCurrentScriptRevisionOnScript() throws QException
    {
-      QInstance instance = setupInstance();
+      setupInstance();
 
-      insertScript(instance, 1, """
+      insertScript(1, """
          return "Hello";
          """);
 
@@ -244,9 +322,9 @@ class RunAssociatedScriptActionTest extends BaseTest
    @Test
    void testBadCurrentScriptRevisionOnScript() throws QException
    {
-      QInstance instance = setupInstance();
+      setupInstance();
 
-      insertScript(instance, 1, """
+      insertScript(1, """
          return "Hello";
          """);
 
@@ -281,7 +359,7 @@ class RunAssociatedScriptActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void insertScript(QInstance instance, Serializable recordId, String code) throws QException
+   private void insertScript(Serializable recordId, String code) throws QException
    {
       StoreAssociatedScriptInput storeAssociatedScriptInput = new StoreAssociatedScriptInput();
       storeAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
