@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -156,6 +157,10 @@ public class SearchPossibleValueSourceAction
    private List<Object> convertInputIdsToEnumIdType(QPossibleValueSource possibleValueSource, List<Serializable> inputIdList)
    {
       List<Object> rs = new ArrayList<>();
+      if(CollectionUtils.nullSafeIsEmpty(inputIdList))
+      {
+         return (rs);
+      }
 
       Object anIdFromTheEnum = possibleValueSource.getEnumValues().get(0).getId();
 
