@@ -188,6 +188,7 @@ public class BaseAPIActionUtil
                request.setEntity(recordToEntity(table, record));
 
                QHttpResponse response = makeRequest(table, request);
+               validateResponse(response);
                record = processPostResponse(table, record, response);
                insertOutput.addRecord(record);
             }
