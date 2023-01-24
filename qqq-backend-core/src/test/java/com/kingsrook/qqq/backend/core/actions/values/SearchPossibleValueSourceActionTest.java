@@ -120,6 +120,19 @@ class SearchPossibleValueSourceActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testSearchPvsAction_enumByIdWrongType() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById("2", TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("MO"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testSearchPvsAction_enumByIdNotFound() throws QException
    {
       SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById(-1, TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
@@ -166,6 +179,19 @@ class SearchPossibleValueSourceActionTest extends BaseTest
    void testSearchPvsAction_tableById() throws QException
    {
       SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById(2, TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("Square"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_tableByIdWrongType() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById("2", TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
       assertEquals(1, output.getResults().size());
       assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("Square"));
    }

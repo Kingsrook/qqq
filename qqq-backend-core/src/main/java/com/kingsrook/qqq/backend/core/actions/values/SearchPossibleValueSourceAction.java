@@ -104,13 +104,15 @@ public class SearchPossibleValueSourceAction
       SearchPossibleValueSourceOutput output      = new SearchPossibleValueSourceOutput();
       List<Serializable>              matchingIds = new ArrayList<>();
 
+      List<?> inputIdsAsCorrectType = convertInputIdsToEnumIdType(possibleValueSource, input.getIdList());
+
       for(QPossibleValue<?> possibleValue : possibleValueSource.getEnumValues())
       {
          boolean match = false;
 
          if(input.getIdList() != null)
          {
-            if(input.getIdList().contains(possibleValue.getId()))
+            if(inputIdsAsCorrectType.contains(possibleValue.getId()))
             {
                match = true;
             }
@@ -141,6 +143,40 @@ public class SearchPossibleValueSourceAction
       output.setResults(qPossibleValues);
 
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    ** The input list of ids might come through as a type that isn't the same as
+    ** the type of the ids in the enum (e.g., strings from a frontend, integers
+    ** in an enum).  So, this method looks at the first id in the enum, and then
+    ** maps all the inputIds to be of the same type.
+    *******************************************************************************/
+   private List<Object> convertInputIdsToEnumIdType(QPossibleValueSource possibleValueSource, List<Serializable> inputIdList)
+   {
+      List<Object> rs = new ArrayList<>();
+
+      Object anIdFromTheEnum = possibleValueSource.getEnumValues().get(0).getId();
+
+      if(anIdFromTheEnum instanceof Integer)
+      {
+         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsInteger(id)));
+      }
+      else if(anIdFromTheEnum instanceof String)
+      {
+         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsString(id)));
+      }
+      else if(anIdFromTheEnum instanceof Boolean)
+      {
+         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsBoolean(id)));
+      }
+      else
+      {
+         LOG.warn("Unexpected type [" + anIdFromTheEnum.getClass().getSimpleName() + "] for ids in enum: " + possibleValueSource.getName());
+      }
+
+      return (rs);
    }
 
 
