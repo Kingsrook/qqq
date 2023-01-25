@@ -737,7 +737,11 @@ public class QJavalinProcessHandler
       Integer timeout = QJavalinImplementation.integerQueryParam(context, "_qStepTimeoutMillis");
       if(timeout == null)
       {
-         timeout = ASYNC_STEP_TIMEOUT_MILLIS;
+         timeout = QJavalinImplementation.integerFormParam(context, "_qStepTimeoutMillis");
+         if(timeout == null)
+         {
+            timeout = ASYNC_STEP_TIMEOUT_MILLIS;
+         }
       }
       return timeout;
    }

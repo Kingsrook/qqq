@@ -1296,6 +1296,24 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
+    ** Returns Integer if context has a valid int form parameter by the given name,
+    **  Returns null if no param (or empty value).
+    **  Throws QValueException for malformed numbers.
+    *******************************************************************************/
+   public static Integer integerFormParam(Context context, String name) throws QValueException
+   {
+      String value = context.formParam(name);
+      if(StringUtils.hasContent(value))
+      {
+         return (ValueUtils.getValueAsInteger(value));
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
     ** Returns String if context has a valid query parameter by the given name,
     *  Returns null if no param (or empty value).
     *******************************************************************************/
