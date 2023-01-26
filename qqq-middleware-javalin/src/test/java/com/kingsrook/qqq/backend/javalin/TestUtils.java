@@ -402,6 +402,7 @@ public class TestUtils
          try
          {
             Thread.sleep(runBackendStepInput.getValueInteger(FIELD_SLEEP_MILLIS));
+            runBackendStepOutput.addValue("didSleep", true);
          }
          catch(InterruptedException e)
          {

@@ -70,6 +70,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
    {
       return (new Builder(new QWidgetMetaData()
          .withName(join.getName())
+         .withIsCard(true)
          .withCodeReference(new QCodeReference(ChildRecordListRenderer.class, null))
          .withType(WidgetType.CHILD_RECORD_LIST.getType())
          .withDefaultValue("joinName", join.getName())));

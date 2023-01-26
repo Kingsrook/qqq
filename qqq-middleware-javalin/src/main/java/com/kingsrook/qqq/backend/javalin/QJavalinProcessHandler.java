@@ -50,8 +50,6 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -118,6 +116,9 @@ public class QJavalinProcessHandler
             {
                get("/init", QJavalinProcessHandler::processInit);
                post("/init", QJavalinProcessHandler::processInit);
+
+               get("/run", QJavalinProcessHandler::processRun);
+               post("/run", QJavalinProcessHandler::processRun);
 
                path("/{processUUID}", () ->
                {
@@ -290,9 +291,23 @@ public class QJavalinProcessHandler
     ** Init a process (named in path param :process)
     **
     *******************************************************************************/
-   public static void processInit(Context context) throws QException
+   public static void processInit(Context context)
    {
-      doProcessInitOrStep(context, null, null);
+      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.BREAK);
+   }
+
+
+
+   /*******************************************************************************
+    ** Run a process (named in path param :process) - that is - fully run, not
+    ** breaking on frontend steps.  Note, we may still go Async - use query or
+    ** form body param `_qStepTimeoutMillis` to set a higher timeout to get more
+    ** synchronous-like behavior.
+    **
+    *******************************************************************************/
+   public static void processRun(Context context)
+   {
+      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.SKIP);
    }
 
 
@@ -300,7 +315,7 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep)
+   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep, RunProcessInput.FrontendStepBehavior frontendStepBehavior)
    {
       Map<String, Object> resultForCaller    = new HashMap<>();
       Exception           returningException = null;
@@ -321,7 +336,7 @@ public class QJavalinProcessHandler
          QJavalinImplementation.setupSession(context, runProcessInput);
 
          runProcessInput.setProcessName(processName);
-         runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
+         runProcessInput.setFrontendStepBehavior(frontendStepBehavior);
          runProcessInput.setProcessUUID(processUUID);
          runProcessInput.setStartAfterStep(startAfterStep);
          populateRunProcessRequestWithValuesFromContext(context, runProcessInput);
@@ -518,7 +533,7 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    private static void archiveUploadedFile(RunProcessInput runProcessInput, QUploadedFile qUploadedFile)
    {
-      String fileName = new QValueFormatter().formatDate(LocalDate.now())
+      String fileName = QValueFormatter.formatDate(LocalDate.now())
          + File.separator + runProcessInput.getProcessName()
          + File.separator + qUploadedFile.getFilename();
 
@@ -588,11 +603,11 @@ public class QJavalinProcessHandler
     ** Run a step in a process (named in path param :processName)
     **
     *******************************************************************************/
-   public static void processStep(Context context) throws QModuleDispatchException
+   public static void processStep(Context context)
    {
       String processUUID = context.pathParam("processUUID");
       String lastStep    = context.pathParam("step");
-      doProcessInitOrStep(context, processUUID, lastStep);
+      doProcessInitOrStep(context, processUUID, lastStep, RunProcessInput.FrontendStepBehavior.BREAK);
    }
 
 
