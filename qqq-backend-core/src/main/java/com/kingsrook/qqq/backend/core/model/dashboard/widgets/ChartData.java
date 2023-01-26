@@ -265,6 +265,7 @@ public class ChartData extends QWidgetData
    public static class Data
    {
       private List<String>  labels;
+      private List<String>  urls;
       private List<Dataset> datasets;
 
 
@@ -298,6 +299,40 @@ public class ChartData extends QWidgetData
       public Data withLabels(List<String> labels)
       {
          this.labels = labels;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for urls
+       **
+       *******************************************************************************/
+      public List<String> getUrls()
+      {
+         return urls;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for urls
+       **
+       *******************************************************************************/
+      public void setUrls(List<String> urls)
+      {
+         this.urls = urls;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for urls
+       **
+       *******************************************************************************/
+      public Data withUrls(List<String> urls)
+      {
+         this.urls = urls;
          return (this);
       }
 
