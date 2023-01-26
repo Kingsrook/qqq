@@ -70,6 +70,12 @@ public class RunAssociatedScriptAction
       {
          executeCodeInput.getContext().put("output", input.getOutputObject());
       }
+
+      if(input.getScriptUtils() != null)
+      {
+         executeCodeInput.getContext().put("scriptUtils", input.getScriptUtils());
+      }
+
       executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
 
       /////////////////////////////////////////////////////////////////////////////////////////////////

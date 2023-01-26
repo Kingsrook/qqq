@@ -40,6 +40,8 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
 
    private Serializable outputObject;
 
+   private Serializable scriptUtils;
+
 
 
    /*******************************************************************************
@@ -152,6 +154,7 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
    }
 
 
+
    /*******************************************************************************
     ** Getter for logger
     *******************************************************************************/
@@ -182,4 +185,24 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for scriptUtils
+    **
+    *******************************************************************************/
+   public Serializable getScriptUtils()
+   {
+      return scriptUtils;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptUtils
+    **
+    *******************************************************************************/
+   public void setScriptUtils(Serializable scriptUtils)
+   {
+      this.scriptUtils = scriptUtils;
+   }
 }
