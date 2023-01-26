@@ -57,6 +57,12 @@
          <artifactId>quicksight</artifactId>
       </dependency>
       <dependency>
+         <groupId>com.amazonaws</groupId>
+         <artifactId>aws-java-sdk-secretsmanager</artifactId>
+         <version>1.12.385</version>
+      </dependency>
+
+      <dependency>
          <groupId>com.fasterxml.jackson.core</groupId>
          <artifactId>jackson-databind</artifactId>
          <version>2.14.0-rc1</version>
@@ -69,7 +75,7 @@
       <dependency>
          <groupId>org.json</groupId>
          <artifactId>json</artifactId>
-         <version>20210307</version>
+         <version>20220320</version>
       </dependency>
       <dependency>
          <groupId>org.apache.commons</groupId>
