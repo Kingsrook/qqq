@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -110,6 +112,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.http.HttpStatus;
+import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger.logPairIfSlow;
 import static io.javalin.apibuilder.ApiBuilder.delete;
@@ -146,6 +149,8 @@ public class QJavalinImplementation
 
    private static Javalin service;
 
+   private static long startTime = 0;
+
 
 
    /*******************************************************************************
@@ -180,6 +185,7 @@ public class QJavalinImplementation
       QJavalinImplementation.qInstance = qInstance;
       QJavalinImplementation.javalinMetaData = javalinMetaData;
       new QInstanceValidator().validate(qInstance);
+      this.startTime = System.currentTimeMillis();
    }
 
 
@@ -340,11 +346,33 @@ public class QJavalinImplementation
 
          get("/widget/{name}", QJavalinImplementation::widget); // todo - can we just do a slow log here?
 
+         get("/serverInfo", QJavalinImplementation::serverInfo);
+
          ////////////////////
          // process routes //
          ////////////////////
          path("", QJavalinProcessHandler.getRoutes());
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void serverInfo(Context context)
+   {
+      JSONObject serverInfo = new JSONObject();
+      serverInfo.put("startTimeMillis", startTime);
+      serverInfo.put("startTimeHuman", Instant.ofEpochMilli(startTime));
+
+      long uptime = System.currentTimeMillis() - startTime;
+      serverInfo.put("uptimeMillis", uptime);
+      serverInfo.put("uptimeHuman", Duration.ofMillis(uptime));
+
+      serverInfo.put("buildId", System.getProperty("buildId", "Unspecified"));
+
+      context.result(serverInfo.toString());
    }
 
 

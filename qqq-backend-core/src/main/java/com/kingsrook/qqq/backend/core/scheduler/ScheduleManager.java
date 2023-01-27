@@ -29,7 +29,6 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
-import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -105,16 +104,16 @@ public class ScheduleManager
       String propertyValue = System.getProperty(propertyName);
       if("false".equals(propertyValue))
       {
-         LOG.warn("Not starting ScheduleManager (per system property] [" + propertyName + "=" + propertyValue + "]).");
+         LOG.info("Not starting ScheduleManager (per system property] [" + propertyName + "=" + propertyValue + "]).");
          return;
       }
 
       QMetaDataVariableInterpreter qMetaDataVariableInterpreter = new QMetaDataVariableInterpreter();
-      String envName = "QQQ_SCHEDULE_MANAGER_ENABLED";
-      String envValue = qMetaDataVariableInterpreter.interpret("${env." + envName + "}");
+      String                       envName                      = "QQQ_SCHEDULE_MANAGER_ENABLED";
+      String                       envValue                     = qMetaDataVariableInterpreter.interpret("${env." + envName + "}");
       if("false".equals(envValue))
       {
-         LOG.warn("Not starting ScheduleManager (per environment variable] [" + envName + "=" + envValue + "]).");
+         LOG.info("Not starting ScheduleManager (per environment variable] [" + envName + "=" + envValue + "]).");
          return;
       }
 
@@ -252,17 +251,16 @@ public class ScheduleManager
     *******************************************************************************/
    private void startProcess(QProcessMetaData process)
    {
-      CapturedContext capturedContext = QContext.capture();
-
       Runnable runProcess = () ->
       {
-         QContext.init(capturedContext);
          String originalThreadName = Thread.currentThread().getName();
-         Thread.currentThread().setName("ScheduledProcess>" + process.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
-         LOG.debug("Running Scheduled Process [" + process.getName() + "]");
 
          try
          {
+            QContext.init(qInstance, sessionSupplier.get());
+            Thread.currentThread().setName("ScheduledProcess>" + process.getName());
+            LOG.debug("Running Scheduled Process [" + process.getName() + "]");
+
             RunProcessInput runProcessInput = new RunProcessInput();
             runProcessInput.setProcessName(process.getName());
             runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);

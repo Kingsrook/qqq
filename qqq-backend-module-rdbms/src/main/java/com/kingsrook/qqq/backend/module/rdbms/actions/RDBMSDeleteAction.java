@@ -108,7 +108,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
                catch(Exception e)
                {
                   deleteInput.getAsyncJobCallback().updateStatus("Error running bulk delete via filter.  Fetching keys for individual deletes.");
-                  LOG.info("Exception trying to delete by filter query.  Moving on to deleting by id now.");
+                  LOG.info("Exception trying to delete by filter query.  Moving on to deleting by id now.", e);
                   deleteInput.setPrimaryKeys(DeleteAction.getPrimaryKeysFromQueryFilter(deleteInput));
                }
             }

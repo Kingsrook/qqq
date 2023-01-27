@@ -43,7 +43,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
 
 
 /*******************************************************************************
@@ -73,7 +72,7 @@ public class SQSQueuePoller implements Runnable
       QContext.init(qInstance, sessionSupplier.get());
 
       String originalThreadName = Thread.currentThread().getName();
-      Thread.currentThread().setName("SQSPoller>" + queueMetaData.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
+      Thread.currentThread().setName("SQSPoller>" + queueMetaData.getName());
       LOG.debug("Running " + this.getClass().getSimpleName() + "[" + queueMetaData.getName() + "]");
 
       try
