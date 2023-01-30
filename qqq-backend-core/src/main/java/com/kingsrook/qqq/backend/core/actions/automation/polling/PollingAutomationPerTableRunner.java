@@ -178,7 +178,7 @@ public class PollingAutomationPerTableRunner implements Runnable
 
       String originalThreadName = Thread.currentThread().getName();
       Thread.currentThread().setName(name);
-      LOG.info("Running " + this.getClass().getSimpleName() + "[" + name + "]");
+      LOG.debug("Running " + this.getClass().getSimpleName() + "[" + name + "]");
 
       try
       {
@@ -208,7 +208,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          return;
       }
 
-      LOG.info("  Query for records " + automationStatus + " in " + table);
+      LOG.debug("  Query for records " + automationStatus + " in " + table);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // run an async-pipe loop - that will query for records in PENDING - put them in a pipe - then apply actions to them //
@@ -276,10 +276,10 @@ public class PollingAutomationPerTableRunner implements Runnable
             // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////
             List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(session, table, records, action);
-            LOG.info("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
+            LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
             if(CollectionUtils.nullSafeHasContents(matchingQRecords))
             {
-               LOG.info("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
+               LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
                applyActionToMatchingRecords(instance, session, table, matchingQRecords, action);
             }
          }
