@@ -80,8 +80,7 @@ public interface TestScriptActionInterface
     *******************************************************************************/
    default void execute(TestScriptInput input, TestScriptOutput output) throws QException
    {
-      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput(input.getInstance());
-      executeCodeInput.setSession(input.getSession());
+      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setContext(new HashMap<>());
 
       executeCodeInput.setCodeReference(input.getCodeReference());

@@ -29,14 +29,13 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -44,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterface
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSCountAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSCountAction.class);
 
 
 
@@ -57,7 +56,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
       {
          QTableMetaData table = countInput.getTable();
 
-         JoinsContext joinsContext = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins());
+         JoinsContext joinsContext = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), countInput.getFilter());
 
          String sql = "SELECT count(*) as record_count FROM "
             + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);

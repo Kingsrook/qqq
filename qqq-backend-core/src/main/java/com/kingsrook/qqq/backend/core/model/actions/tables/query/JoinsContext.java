@@ -23,8 +23,12 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -55,7 +59,7 @@ public class JoinsContext
     ** Constructor
     **
     *******************************************************************************/
-   public JoinsContext(QInstance instance, String tableName, List<QueryJoin> queryJoins) throws QException
+   public JoinsContext(QInstance instance, String tableName, List<QueryJoin> queryJoins, QQueryFilter filter) throws QException
    {
       this.instance = instance;
       this.mainTableName = tableName;
@@ -63,13 +67,7 @@ public class JoinsContext
 
       for(QueryJoin queryJoin : this.queryJoins)
       {
-         QTableMetaData joinTable        = instance.getTable(queryJoin.getJoinTable());
-         String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
-         if(aliasToTableNameMap.containsKey(tableNameOrAlias))
-         {
-            throw (new QException("Duplicate table name or alias: " + tableNameOrAlias));
-         }
-         aliasToTableNameMap.put(tableNameOrAlias, joinTable.getName());
+         processQueryJoin(queryJoin);
       }
 
       ///////////////////////////////////////////////////////////////
@@ -92,10 +90,15 @@ public class JoinsContext
                {
                   join = join.flip();
                }
-               this.queryJoins.add(new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER)); // todo aliases?  probably.
+
+               QueryJoin queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
+               this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
+               processQueryJoin(queryJoin);
             }
          }
       }
+
+      ensureFilterIsRepresented(filter);
 
       /* todo!!
       for(QueryJoin queryJoin : queryJoins)
@@ -107,6 +110,22 @@ public class JoinsContext
          }
       }
        */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void processQueryJoin(QueryJoin queryJoin) throws QException
+   {
+      QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+      String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
+      if(aliasToTableNameMap.containsKey(tableNameOrAlias))
+      {
+         throw (new QException("Duplicate table name or alias: " + tableNameOrAlias));
+      }
+      aliasToTableNameMap.put(tableNameOrAlias, joinTable.getName());
    }
 
 
@@ -198,6 +217,82 @@ public class JoinsContext
    public boolean hasAliasOrTable(String tableOrAlias)
    {
       return (mainTableName.equals(tableOrAlias) || aliasToTableNameMap.containsKey(tableOrAlias));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void ensureFilterIsRepresented(QQueryFilter filter) throws QException
+   {
+      Set<String> filterTables = new HashSet<>();
+      populateFilterTablesSet(filter, filterTables);
+
+      for(String filterTable : filterTables)
+      {
+         if(!aliasToTableNameMap.containsKey(filterTable) && !Objects.equals(mainTableName, filterTable))
+         {
+            for(QJoinMetaData join : CollectionUtils.nonNullMap(QContext.getQInstance().getJoins()).values())
+            {
+               QueryJoin queryJoin = null;
+               if(join.getLeftTable().equals(mainTableName) && join.getRightTable().equals(filterTable))
+               {
+                  queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
+               }
+               else
+               {
+                  join = join.flip();
+                  if(join.getLeftTable().equals(mainTableName) && join.getRightTable().equals(filterTable))
+                  {
+                     queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
+                  }
+               }
+
+               if(queryJoin != null)
+               {
+                  this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
+                  processQueryJoin(queryJoin);
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void populateFilterTablesSet(QQueryFilter filter, Set<String> filterTables)
+   {
+      if(filter != null)
+      {
+         for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
+         {
+            getTableNameFromFieldNameAndAddToSet(criteria.getFieldName(), filterTables);
+            getTableNameFromFieldNameAndAddToSet(criteria.getOtherFieldName(), filterTables);
+         }
+
+         for(QQueryFilter subFilter : CollectionUtils.nonNullList(filter.getSubFilters()))
+         {
+            populateFilterTablesSet(subFilter, filterTables);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void getTableNameFromFieldNameAndAddToSet(String fieldName, Set<String> filterTables)
+   {
+      if(fieldName != null && fieldName.contains("."))
+      {
+         String tableName = fieldName.replaceFirst("\\..*", "");
+         filterTables.add(tableName);
+      }
    }
 
 

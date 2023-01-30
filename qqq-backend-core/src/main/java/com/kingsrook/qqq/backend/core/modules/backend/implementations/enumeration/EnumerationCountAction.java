@@ -43,12 +43,11 @@ public class EnumerationCountAction implements CountInterface
    @Override
    public CountOutput execute(CountInput countInput) throws QException
    {
-      QueryInput queryInput = new QueryInput(countInput.getInstance());
-      queryInput.setSession(countInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(countInput.getTableName());
       queryInput.setFilter(countInput.getFilter());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
-     
+
       CountOutput countOutput = new CountOutput();
       countOutput.setCount(queryOutput.getRecords().size());
       return (countOutput);

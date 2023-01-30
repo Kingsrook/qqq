@@ -24,6 +24,7 @@ package com.kingsrook.sampleapp.processes.clonepeople;
 
 import java.util.ArrayList;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -82,10 +83,10 @@ class ClonePeopleTransformStepTest
    void testProcessStep() throws QException
    {
       QInstance qInstance = SampleMetaDataProvider.defineInstance();
+      QContext.init(qInstance, new QSession());
 
-      QueryInput queryInput = new QueryInput(qInstance);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(SampleMetaDataProvider.TABLE_NAME_PERSON);
-      queryInput.setSession(new QSession());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
       RunBackendStepInput      input                    = new RunBackendStepInput();

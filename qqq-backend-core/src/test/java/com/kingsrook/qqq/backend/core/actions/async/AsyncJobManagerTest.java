@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.async;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /*******************************************************************************
  ** Unit test for AsyncJobManager
  *******************************************************************************/
-class AsyncJobManagerTest
+class AsyncJobManagerTest extends BaseTest
 {
    public static final int ANSWER = 42;
 

@@ -138,7 +138,6 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    private DeleteInput initStandardPersonDeleteRequest()
    {
       DeleteInput deleteInput = new DeleteInput();
-      deleteInput.setInstance(TestUtils.defineInstance());
       deleteInput.setTableName(TestUtils.defineTablePerson().getName());
       return deleteInput;
    }
@@ -319,9 +318,11 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
          .withBackendDetails(new RDBMSTableBackendDetails()
             .withTableName("parent_table")));
 
+      reInitInstanceInContext(qInstance);
+
       DeleteInput deleteInput = new DeleteInput();
-      deleteInput.setInstance(qInstance);
       deleteInput.setTableName(childTableName);
+
       return deleteInput;
    }
 }

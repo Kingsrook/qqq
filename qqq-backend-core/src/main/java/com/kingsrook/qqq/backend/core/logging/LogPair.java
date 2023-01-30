@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,33 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.utils;
+package com.kingsrook.qqq.backend.core.logging;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 
 
 /*******************************************************************************
- ** Utility class for logging
  **
  *******************************************************************************/
-public class QLogger
+public class LogPair
 {
-   private static Map<String, QLogger> loggerMap = new HashMap<>();
-   private        Logger               logger;
+   private String key;
+   private Object value;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public QLogger(Logger logger)
+   public LogPair(String key, Object value)
    {
-      this.logger = logger;
+      this.key = key;
+      this.value = value;
    }
 
 
@@ -53,9 +53,12 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QLogger getLogger(Class<?> c)
+   @Override
+   public String toString()
    {
-      return (loggerMap.computeIfAbsent(c.getName(), x -> new QLogger(LogManager.getLogger(c))));
+      String valueString = getValueString(value);
+
+      return "\"" + Objects.requireNonNullElse(key, "null").replace('"', '.') + "\":" + valueString;
    }
 
 
@@ -63,76 +66,105 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void debug(QSession session, String message)
+   private String getValueString(Object value)
    {
-      logger.debug(wrapMessage(session, message));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void info(QSession session, String message)
-   {
-      logger.info(wrapMessage(session, message));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void warn(QSession session, String message)
-   {
-      logger.warn(wrapMessage(session, message));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void warn(QSession session, String message, Throwable t)
-   {
-      logger.warn(wrapMessage(session, message), t);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void error(QSession session, String message)
-   {
-      logger.error(wrapMessage(session, message));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void error(QSession session, String message, Throwable t)
-   {
-      logger.error(wrapMessage(session, message), t);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String wrapMessage(QSession session, String message)
-   {
-      String propertyName  = "qqq.logger.logSessionId.disabled";
-      String propertyValue = System.getProperty(propertyName, "");
-      if(propertyValue.equals("true"))
+      String valueString;
+      if(value == null)
       {
-         return (message);
+         valueString = "null";
       }
-
-      String sessionString = (session != null) ? session.getUuid() : "Not provided";
-      return ("Session [" + sessionString + "] | " + message);
+      else if(value instanceof LogPair subLogPair)
+      {
+         valueString = '{' + subLogPair.toString() + '}';
+      }
+      else if(value instanceof LogPair[] subLogPairs)
+      {
+         String subLogPairsString = Arrays.stream(subLogPairs).map(LogPair::toString).collect(Collectors.joining(","));
+         valueString = '{' + subLogPairsString + '}';
+      }
+      else if(value instanceof UnsafeSupplier<?, ?> us)
+      {
+         try
+         {
+            Object o = us.get();
+            return getValueString(o);
+         }
+         catch(Exception e)
+         {
+            valueString = "LogValueError";
+         }
+      }
+      else if(value instanceof Number n)
+      {
+         valueString = String.valueOf(n);
+      }
+      else
+      {
+         valueString = '"' + String.valueOf(value).replace("\"", "\\\"") + '"';
+      }
+      return valueString;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for key
+    *******************************************************************************/
+   public String getKey()
+   {
+      return (this.key);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for key
+    *******************************************************************************/
+   public void setKey(String key)
+   {
+      this.key = key;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for key
+    *******************************************************************************/
+   public LogPair withKey(String key)
+   {
+      this.key = key;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for value
+    *******************************************************************************/
+   public Object getValue()
+   {
+      return (this.value);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for value
+    *******************************************************************************/
+   public void setValue(Object value)
+   {
+      this.value = value;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for value
+    *******************************************************************************/
+   public LogPair withValue(Object value)
+   {
+      this.value = value;
+      return (this);
+   }
+
 }

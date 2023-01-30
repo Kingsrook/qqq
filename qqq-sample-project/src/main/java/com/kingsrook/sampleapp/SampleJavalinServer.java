@@ -22,12 +22,11 @@
 package com.kingsrook.sampleapp;
 
 
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.Javalin;
 import io.javalin.plugin.bundled.CorsPluginConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -35,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class SampleJavalinServer
 {
-   private static final Logger LOG = LogManager.getLogger(SampleJavalinServer.class);
+   private static final QLogger LOG = QLogger.getLogger(SampleJavalinServer.class);
 
    private static final int PORT = 8000;
 

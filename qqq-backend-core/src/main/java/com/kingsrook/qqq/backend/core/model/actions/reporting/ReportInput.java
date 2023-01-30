@@ -27,8 +27,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -50,27 +48,6 @@ public class ReportInput extends AbstractTableActionInput
     *******************************************************************************/
    public ReportInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public ReportInput(QInstance instance)
-   {
-      super(instance);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public ReportInput(QInstance instance, QSession session)
-   {
-      super(instance);
-      setSession(session);
    }
 
 

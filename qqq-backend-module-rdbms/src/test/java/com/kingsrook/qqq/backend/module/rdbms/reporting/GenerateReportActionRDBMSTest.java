@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.reporting;
 
 import java.io.ByteArrayOutputStream;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
@@ -94,6 +95,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
             .withColumn(new QReportField("shipToPersonName").withShowPossibleValueLabel(true).withSourceFieldName("billToPersonId"))
          );
       qInstance.addReport(report);
+      reInitInstanceInContext(qInstance);
 
       String csv = runReport(qInstance);
       // System.out.println(csv);
@@ -135,6 +137,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
             .withColumn(new QReportField("order.storeName").withShowPossibleValueLabel(true).withSourceFieldName("order.storeId").withLabel("Order Store Name"))
          );
       qInstance.addReport(report);
+      reInitInstanceInContext(qInstance);
 
       String csv = runReport(qInstance);
       // System.out.println(csv);
@@ -168,6 +171,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
             .withColumn(new QReportField("i.storeName").withShowPossibleValueLabel(true).withSourceFieldName("i.storeId").withLabel("Item Store Name"))
          );
       qInstance.addReport(report);
+      reInitInstanceInContext(qInstance);
 
       String csv = runReport(qInstance);
       System.out.println(csv);
@@ -195,8 +199,8 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
     *******************************************************************************/
    private String runReport(QInstance qInstance) throws QException
    {
-      ReportInput reportInput = new ReportInput(qInstance);
-      reportInput.setSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      ReportInput reportInput = new ReportInput();
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       reportInput.setReportName(TEST_REPORT);
       reportInput.setReportFormat(ReportFormat.CSV);
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

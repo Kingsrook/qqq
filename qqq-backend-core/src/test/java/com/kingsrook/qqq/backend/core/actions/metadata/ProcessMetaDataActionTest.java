@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInput;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  ** Unit test for ProcessMetaDataAction
  **
  *******************************************************************************/
-class ProcessMetaDataActionTest
+class ProcessMetaDataActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -47,8 +48,7 @@ class ProcessMetaDataActionTest
    @Test
    public void test() throws QException
    {
-      ProcessMetaDataInput request = new ProcessMetaDataInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      ProcessMetaDataInput request = new ProcessMetaDataInput();
       request.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE);
       ProcessMetaDataOutput result = new ProcessMetaDataAction().execute(request);
       assertNotNull(result);
@@ -68,8 +68,7 @@ class ProcessMetaDataActionTest
    public void test_notFound()
    {
       assertThrows(QNotFoundException.class, () -> {
-         ProcessMetaDataInput request = new ProcessMetaDataInput(TestUtils.defineInstance());
-         request.setSession(TestUtils.getMockSession());
+         ProcessMetaDataInput request = new ProcessMetaDataInput();
          request.setProcessName("willNotBeFound");
          new ProcessMetaDataAction().execute(request);
       });

@@ -28,11 +28,10 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StreamedETLValidateStep extends BaseStreamedETLStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(StreamedETLValidateStep.class);
+   private static final QLogger LOG = QLogger.getLogger(StreamedETLValidateStep.class);
 
    private int currentRowCount = 1;
 

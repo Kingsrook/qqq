@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  ** Unit test for ConnectionManager
  *******************************************************************************/
 @Disabled("This was okay for POC, but shouldn't run in CI")
-class ConnectionManagerTest
+class ConnectionManagerTest extends BaseTest
 {
    @Test
    public void test() throws SQLException
@@ -102,13 +103,13 @@ class ConnectionManagerTest
 
    private RDBMSBackendMetaData getAuroraBacked()
    {
-      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
-      String vendor = interpreter.interpret("${env.RDBMS_VENDOR}");
-      String hostname = interpreter.interpret("${env.RDBMS_HOSTNAME}");
-      Integer port = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
-      String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
-      String username = interpreter.interpret("${env.RDBMS_USERNAME}");
-      String password= interpreter.interpret("${env.RDBMS_PASSWORD}");
+      QMetaDataVariableInterpreter interpreter  = new QMetaDataVariableInterpreter();
+      String                       vendor       = interpreter.interpret("${env.RDBMS_VENDOR}");
+      String                       hostname     = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+      Integer                      port         = Integer.valueOf(interpreter.interpret("${env.RDBMS_PORT}"));
+      String                       databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+      String                       username     = interpreter.interpret("${env.RDBMS_USERNAME}");
+      String                       password     = interpreter.interpret("${env.RDBMS_PASSWORD}");
 
       return new RDBMSBackendMetaData()
          .withName("aurora-test")

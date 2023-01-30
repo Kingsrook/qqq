@@ -23,17 +23,21 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
  ** Unit test for JsonToQRecordAdapter
  **
  *******************************************************************************/
-class JsonToQRecordAdapterTest
+class JsonToQRecordAdapterTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -88,7 +92,7 @@ class JsonToQRecordAdapterTest
       try
       {
          JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
-         List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson(json, TestUtils.defineTablePerson(), null);
+         List<QRecord>        qRecords             = jsonToQRecordAdapter.buildRecordsFromJson(json, TestUtils.defineTablePerson(), null);
          System.out.println(qRecords);
       }
       catch(IllegalArgumentException iae)
@@ -109,7 +113,7 @@ class JsonToQRecordAdapterTest
    public void test_buildRecordsFromJson_emptyList()
    {
       JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
-      List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson("[]", TestUtils.defineTablePerson(), null);
+      List<QRecord>        qRecords             = jsonToQRecordAdapter.buildRecordsFromJson("[]", TestUtils.defineTablePerson(), null);
       assertNotNull(qRecords);
       assertTrue(qRecords.isEmpty());
    }

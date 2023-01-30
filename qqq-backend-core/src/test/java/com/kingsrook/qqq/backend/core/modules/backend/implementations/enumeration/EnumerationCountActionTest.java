@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.enumerati
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -36,8 +38,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for EnumerationCountAction
  *******************************************************************************/
-class EnumerationCountActionTest
+class EnumerationCountActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -56,8 +56,7 @@ class EnumerationCountActionTest
    {
       QInstance instance = defineQInstance();
 
-      CountInput countInput = new CountInput(instance);
-      countInput.setSession(new QSession());
+      CountInput countInput = new CountInput();
       countInput.setTableName("statesEnum");
       CountOutput countOutput = new CountAction().execute(countInput);
       assertEquals(2, countOutput.getCount());
@@ -73,8 +72,7 @@ class EnumerationCountActionTest
    {
       QInstance instance = defineQInstance();
 
-      CountInput countInput = new CountInput(instance);
-      countInput.setSession(new QSession());
+      CountInput countInput = new CountInput();
       countInput.setTableName("statesEnum");
       countInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("population", QCriteriaOperator.GREATER_THAN, List.of(20_000_000))));
       CountOutput countOutput = new CountAction().execute(countInput);
@@ -88,7 +86,7 @@ class EnumerationCountActionTest
     *******************************************************************************/
    private QInstance defineQInstance()
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       instance.addBackend(new QBackendMetaData()
          .withName("enum")
          .withBackendType("enum")

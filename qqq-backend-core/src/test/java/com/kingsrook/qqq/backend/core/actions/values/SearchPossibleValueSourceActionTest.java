@@ -24,10 +24,11 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -43,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for SearchPossibleValueSourceAction
  *******************************************************************************/
-class SearchPossibleValueSourceActionTest
+class SearchPossibleValueSourceActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -54,7 +55,7 @@ class SearchPossibleValueSourceActionTest
    void beforeAndAfterEach() throws QException
    {
       MemoryRecordStore.getInstance().reset();
-      TestUtils.insertDefaultShapes(TestUtils.defineInstance());
+      TestUtils.insertDefaultShapes(QContext.getQInstance());
    }
 
 
@@ -109,6 +110,19 @@ class SearchPossibleValueSourceActionTest
    void testSearchPvsAction_enumById() throws QException
    {
       SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById(2, TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("MO"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_enumByIdWrongType() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById("2", TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
       assertEquals(1, output.getResults().size());
       assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("MO"));
    }
@@ -175,6 +189,19 @@ class SearchPossibleValueSourceActionTest
     **
     *******************************************************************************/
    @Test
+   void testSearchPvsAction_tableByIdWrongType() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById("2", TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("Square"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testSearchPvsAction_tableByIds() throws QException
    {
       SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByIds(List.of(2, 3), TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
@@ -202,8 +229,7 @@ class SearchPossibleValueSourceActionTest
     *******************************************************************************/
    private SearchPossibleValueSourceOutput getSearchPossibleValueSourceOutput(String searchTerm, String possibleValueSourceName) throws QException
    {
-      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(TestUtils.defineInstance());
-      input.setSession(new QSession());
+      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       input.setSearchTerm(searchTerm);
       input.setPossibleValueSourceName(possibleValueSourceName);
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
@@ -217,8 +243,7 @@ class SearchPossibleValueSourceActionTest
     *******************************************************************************/
    private SearchPossibleValueSourceOutput getSearchPossibleValueSourceOutputById(Serializable id, String possibleValueSourceName) throws QException
    {
-      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(TestUtils.defineInstance());
-      input.setSession(new QSession());
+      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       input.setIdList(List.of(id));
       input.setPossibleValueSourceName(possibleValueSourceName);
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
@@ -232,8 +257,7 @@ class SearchPossibleValueSourceActionTest
     *******************************************************************************/
    private SearchPossibleValueSourceOutput getSearchPossibleValueSourceOutputByIds(List<Serializable> ids, String possibleValueSourceName) throws QException
    {
-      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(TestUtils.defineInstance());
-      input.setSession(new QSession());
+      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       input.setIdList(ids);
       input.setPossibleValueSourceName(possibleValueSourceName);
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);

@@ -22,11 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
 
 
 /*******************************************************************************
@@ -37,14 +39,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataIn
 @JsonInclude(Include.NON_NULL)
 public class QFrontendWidgetMetaData
 {
-   private final String  name;
-   private final String  label;
-   private final String  type;
-   private final String  icon;
-   private final Integer gridColumns;
-   private final boolean isCard;
+   private final String                   name;
+   private final String                   label;
+   private final String                   type;
+   private final String                   icon;
+   private final Integer                  gridColumns;
+   private final boolean                  isCard;
+   private final boolean                  storeDropdownSelections;
+   private final List<WidgetDropdownData> dropdowns;
 
-   private boolean hasPermission;
+   private final boolean hasPermission;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -63,6 +67,8 @@ public class QFrontendWidgetMetaData
       this.icon = widgetMetaData.getIcon();
       this.gridColumns = widgetMetaData.getGridColumns();
       this.isCard = widgetMetaData.getIsCard();
+      this.dropdowns = widgetMetaData.getDropdowns();
+      this.storeDropdownSelections = widgetMetaData.getStoreDropdownSelections();
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -125,6 +131,17 @@ public class QFrontendWidgetMetaData
 
 
    /*******************************************************************************
+    ** Getter for isCard
+    **
+    *******************************************************************************/
+   public List<WidgetDropdownData> getDropdowns()
+   {
+      return dropdowns;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for icon
     **
     *******************************************************************************/
@@ -142,6 +159,17 @@ public class QFrontendWidgetMetaData
    public boolean getHasPermission()
    {
       return hasPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for storeDropdownSelections
+    **
+    *******************************************************************************/
+   public boolean getStoreDropdownSelections()
+   {
+      return storeDropdownSelections;
    }
 
 }

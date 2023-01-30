@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for BasicETLTransformFunction
  *******************************************************************************/
-class BasicETLTransformFunctionTest
+class BasicETLTransformFunctionTest extends BaseTest
 {
 
    /*******************************************************************************

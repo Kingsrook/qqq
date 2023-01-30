@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
@@ -51,11 +50,10 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
@@ -81,13 +79,14 @@ import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpStatus;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
@@ -98,7 +97,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
  *******************************************************************************/
 public class QJavalinProcessHandler
 {
-   private static final Logger LOG = LogManager.getLogger(QJavalinProcessHandler.class);
+   private static final QLogger LOG = QLogger.getLogger(QJavalinProcessHandler.class);
 
    private static int ASYNC_STEP_TIMEOUT_MILLIS = 3_000;
 
@@ -118,6 +117,9 @@ public class QJavalinProcessHandler
                get("/init", QJavalinProcessHandler::processInit);
                post("/init", QJavalinProcessHandler::processInit);
 
+               get("/run", QJavalinProcessHandler::processRun);
+               post("/run", QJavalinProcessHandler::processRun);
+
                path("/{processUUID}", () ->
                {
                   post("/step/{step}", QJavalinProcessHandler::processStep);
@@ -127,6 +129,7 @@ public class QJavalinProcessHandler
             });
          });
          get("/download/{file}", QJavalinProcessHandler::downloadFile);
+         post("/download/{file}", QJavalinProcessHandler::downloadFile);
 
          path("/reports", () ->
          {
@@ -186,7 +189,7 @@ public class QJavalinProcessHandler
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ReportInput reportInput = new ReportInput(QJavalinImplementation.qInstance);
+         ReportInput reportInput = new ReportInput();
          QJavalinImplementation.setupSession(context, reportInput);
          PermissionsHelper.checkReportPermissionThrowing(reportInput, reportName);
 
@@ -230,7 +233,7 @@ public class QJavalinProcessHandler
             }
          }
 
-         QJavalinImplementation.UnsafeFunction<PipedOutputStream, GenerateReportAction> preAction = (PipedOutputStream pos) ->
+         UnsafeFunction<PipedOutputStream, GenerateReportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
             reportInput.setReportOutputStream(pos);
 
@@ -239,9 +242,19 @@ public class QJavalinProcessHandler
             return (reportAction);
          };
 
-         QJavalinImplementation.UnsafeConsumer<GenerateReportAction> execute = (GenerateReportAction generateReportAction) ->
+         UnsafeConsumer<GenerateReportAction, Exception> execute = (GenerateReportAction generateReportAction) ->
          {
-            generateReportAction.execute(reportInput);
+            QJavalinAccessLogger.logStart("report", logPair("reportName", reportName), logPair("format", reportFormat));
+            try
+            {
+               generateReportAction.execute(reportInput);
+               QJavalinAccessLogger.logEndSuccess();
+            }
+            catch(Exception e)
+            {
+               QJavalinAccessLogger.logEndFail(e);
+               throw (e);
+            }
          };
 
          QJavalinImplementation.runStreamedExportOrReport(context, reportFormat, filename, preAction, execute);
@@ -257,11 +270,19 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void downloadFile(Context context) throws FileNotFoundException
+   private static void downloadFile(Context context)
    {
-      // todo context.contentType(reportFormat.getMimeType());
-      context.header("Content-Disposition", "filename=" + context.pathParam("file"));
-      context.result(new FileInputStream(context.queryParam("filePath")));
+      try
+      {
+         QJavalinImplementation.setupSession(context, new AbstractActionInput());
+         // todo context.contentType(reportFormat.getMimeType());
+         context.header("Content-Disposition", "filename=" + context.pathParam("file"));
+         context.result(new FileInputStream(context.queryParam("filePath")));
+      }
+      catch(Exception e)
+      {
+         QJavalinImplementation.handleException(context, e);
+      }
    }
 
 
@@ -270,9 +291,23 @@ public class QJavalinProcessHandler
     ** Init a process (named in path param :process)
     **
     *******************************************************************************/
-   public static void processInit(Context context) throws QException
+   public static void processInit(Context context)
    {
-      doProcessInitOrStep(context, null, null);
+      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.BREAK);
+   }
+
+
+
+   /*******************************************************************************
+    ** Run a process (named in path param :process) - that is - fully run, not
+    ** breaking on frontend steps.  Note, we may still go Async - use query or
+    ** form body param `_qStepTimeoutMillis` to set a higher timeout to get more
+    ** synchronous-like behavior.
+    **
+    *******************************************************************************/
+   public static void processRun(Context context)
+   {
+      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.SKIP);
    }
 
 
@@ -280,9 +315,10 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep)
+   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep, RunProcessInput.FrontendStepBehavior frontendStepBehavior)
    {
-      Map<String, Object> resultForCaller = new HashMap<>();
+      Map<String, Object> resultForCaller    = new HashMap<>();
+      Exception           returningException = null;
 
       try
       {
@@ -296,14 +332,19 @@ public class QJavalinProcessHandler
          LOG.info(startAfterStep == null ? "Initiating process [" + processName + "] [" + processUUID + "]"
             : "Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
 
-         RunProcessInput runProcessInput = new RunProcessInput(QJavalinImplementation.qInstance);
+         RunProcessInput runProcessInput = new RunProcessInput();
          QJavalinImplementation.setupSession(context, runProcessInput);
 
          runProcessInput.setProcessName(processName);
-         runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
+         runProcessInput.setFrontendStepBehavior(frontendStepBehavior);
          runProcessInput.setProcessUUID(processUUID);
          runProcessInput.setStartAfterStep(startAfterStep);
          populateRunProcessRequestWithValuesFromContext(context, runProcessInput);
+
+         String reportName = ValueUtils.getValueAsString(runProcessInput.getValue("reportName"));
+         QJavalinAccessLogger.logStart(startAfterStep == null ? "processInit" : "processStep", logPair("processName", processName), logPair("processUUID", processUUID),
+            StringUtils.hasContent(startAfterStep) ? logPair("startAfterStep", startAfterStep) : null,
+            StringUtils.hasContent(reportName) ? logPair("reportName", reportName) : null);
 
          //////////////////////////////////////////////////////////////////////////////////////////////////
          // important to do this check AFTER the runProcessInput is populated with values from context - //
@@ -328,6 +369,7 @@ public class QJavalinProcessHandler
          }
 
          serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);
+         QJavalinAccessLogger.logProcessSummary(processName, processUUID, runProcessOutput);
       }
       catch(JobGoingAsyncException jgae)
       {
@@ -335,6 +377,7 @@ public class QJavalinProcessHandler
       }
       catch(QPermissionDeniedException pde)
       {
+         returningException = pde;
          QJavalinImplementation.handleException(context, pde);
       }
       catch(Exception e)
@@ -345,7 +388,17 @@ public class QJavalinProcessHandler
          // but - other process-step actions, they always return a 200, just with an //
          // optional error message - so - keep all of the processes consistent.      //
          //////////////////////////////////////////////////////////////////////////////
+         returningException = e;
          serializeRunProcessExceptionForCaller(resultForCaller, e);
+      }
+
+      if(returningException != null)
+      {
+         QJavalinAccessLogger.logEndFail(returningException);
+      }
+      else
+      {
+         QJavalinAccessLogger.logEndSuccess();
       }
 
       context.result(JsonUtils.toJson(resultForCaller));
@@ -480,12 +533,11 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    private static void archiveUploadedFile(RunProcessInput runProcessInput, QUploadedFile qUploadedFile)
    {
-      String fileName = new QValueFormatter().formatDate(LocalDate.now())
+      String fileName = QValueFormatter.formatDate(LocalDate.now())
          + File.separator + runProcessInput.getProcessName()
          + File.separator + qUploadedFile.getFilename();
 
-      InsertInput insertInput = new InsertInput(QJavalinImplementation.qInstance);
-      insertInput.setSession(runProcessInput.getSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName());
       insertInput.setRecords(List.of(new QRecord()
          .withValue("fileName", fileName)
@@ -551,11 +603,11 @@ public class QJavalinProcessHandler
     ** Run a step in a process (named in path param :processName)
     **
     *******************************************************************************/
-   public static void processStep(Context context) throws QModuleDispatchException
+   public static void processStep(Context context)
    {
       String processUUID = context.pathParam("processUUID");
       String lastStep    = context.pathParam("step");
-      doProcessInitOrStep(context, processUUID, lastStep);
+      doProcessInitOrStep(context, processUUID, lastStep, RunProcessInput.FrontendStepBehavior.BREAK);
    }
 
 
@@ -569,11 +621,12 @@ public class QJavalinProcessHandler
 
       try
       {
-         AbstractActionInput input = new AbstractActionInput(QJavalinImplementation.qInstance);
+         AbstractActionInput input = new AbstractActionInput();
          QJavalinImplementation.setupSession(context, input);
 
          // todo... get process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
 
+         String processName = context.pathParam("processName");
          String processUUID = context.pathParam("processUUID");
          String jobUUID     = context.pathParam("jobUUID");
 
@@ -603,6 +656,7 @@ public class QJavalinProcessHandler
                {
                   RunProcessOutput runProcessOutput = new RunProcessOutput(processState.get());
                   serializeRunProcessResultForCaller(resultForCaller, runProcessOutput);
+                  QJavalinAccessLogger.logProcessSummary(processName, processUUID, runProcessOutput);
                }
                else
                {
@@ -638,7 +692,7 @@ public class QJavalinProcessHandler
    {
       try
       {
-         AbstractActionInput input = new AbstractActionInput(QJavalinImplementation.qInstance);
+         AbstractActionInput input = new AbstractActionInput();
          QJavalinImplementation.setupSession(context, input);
          // todo - need process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
 
@@ -698,7 +752,11 @@ public class QJavalinProcessHandler
       Integer timeout = QJavalinImplementation.integerQueryParam(context, "_qStepTimeoutMillis");
       if(timeout == null)
       {
-         timeout = ASYNC_STEP_TIMEOUT_MILLIS;
+         timeout = QJavalinImplementation.integerFormParam(context, "_qStepTimeoutMillis");
+         if(timeout == null)
+         {
+            timeout = ASYNC_STEP_TIMEOUT_MILLIS;
+         }
       }
       return timeout;
    }

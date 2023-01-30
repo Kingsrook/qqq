@@ -28,8 +28,6 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -47,6 +45,7 @@ public class QueryInput extends AbstractTableActionInput
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
+   private boolean shouldFetchHeavyFields        = false;
 
    /////////////////////////////////////////////////////////////////////////////////////////
    // this field - only applies if shouldTranslatePossibleValues is true.                 //
@@ -64,27 +63,6 @@ public class QueryInput extends AbstractTableActionInput
     *******************************************************************************/
    public QueryInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QueryInput(QInstance instance)
-   {
-      super(instance);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QueryInput(QInstance instance, QSession session)
-   {
-      super(instance);
-      setSession(session);
    }
 
 
@@ -222,6 +200,28 @@ public class QueryInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
+    ** Getter for shouldFetchHeavyFields
+    **
+    *******************************************************************************/
+   public boolean getShouldFetchHeavyFields()
+   {
+      return shouldFetchHeavyFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldFetchHeavyFields
+    **
+    *******************************************************************************/
+   public void setShouldFetchHeavyFields(boolean shouldFetchHeavyFields)
+   {
+      this.shouldFetchHeavyFields = shouldFetchHeavyFields;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for transaction
     **
     *******************************************************************************/
@@ -324,6 +324,7 @@ public class QueryInput extends AbstractTableActionInput
    {
       this.fieldsToTranslatePossibleValues = fieldsToTranslatePossibleValues;
    }
+
 
 
    /*******************************************************************************

@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 import java.io.Serializable;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -44,9 +43,8 @@ public class StoreAssociatedScriptInput extends AbstractTableActionInput
     ** Constructor
     **
     *******************************************************************************/
-   public StoreAssociatedScriptInput(QInstance instance)
+   public StoreAssociatedScriptInput()
    {
-      super(instance);
    }
 
 

@@ -22,13 +22,14 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /*******************************************************************************
  ** Unit test for RenderWidgetAction
  *******************************************************************************/
-class RenderWidgetActionTest
+class RenderWidgetActionTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -46,9 +47,8 @@ class RenderWidgetActionTest
    @Test
    void test() throws QException
    {
-      QInstance testQInstance = TestUtils.defineInstance();
-      RenderWidgetInput input = new RenderWidgetInput(testQInstance)
-         .withSession(TestUtils.getMockSession())
+      QInstance testQInstance = QContext.getQInstance();
+      RenderWidgetInput input = new RenderWidgetInput()
          .withWidgetMetaData(testQInstance.getWidget(PersonsByCreateDateBarChart.class.getSimpleName()));
 
       RenderWidgetOutput output = new RenderWidgetAction().execute(input);

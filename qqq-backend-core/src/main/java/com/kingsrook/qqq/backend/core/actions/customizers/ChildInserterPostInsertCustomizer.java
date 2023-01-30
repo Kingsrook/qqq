@@ -113,8 +113,7 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          /////////////////////////
          // insert the children //
          /////////////////////////
-         InsertInput insertInput = new InsertInput(getInsertInput().getInstance());
-         insertInput.setSession(getInsertInput().getSession());
+         InsertInput insertInput = new InsertInput();
          insertInput.setTableName(getChildTableName());
          insertInput.setRecords(childrenToInsert);
          insertInput.setTransaction(this.insertInput.getTransaction());
@@ -145,8 +144,7 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          ////////////////////////////////////////////////////////////////////////////
          // update the originally inserted records to reference their new children //
          ////////////////////////////////////////////////////////////////////////////
-         UpdateInput updateInput = new UpdateInput(insertInput.getInstance());
-         updateInput.setSession(getInsertInput().getSession());
+         UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName(getInsertInput().getTableName());
          updateInput.setRecords(recordsToUpdate);
          updateInput.setTransaction(this.insertInput.getTransaction());

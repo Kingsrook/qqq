@@ -31,7 +31,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import org.apache.commons.io.FileUtils;
@@ -55,8 +54,7 @@ public class FilesystemInsertActionTest extends FilesystemActionTest
    public void testCardinalityOne() throws QException, IOException
    {
       QInstance   qInstance   = TestUtils.defineInstance();
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_BLOB_LOCAL_FS);
       insertInput.setRecords(List.of(
          new QRecord().withValue("fileName", "file1.txt").withValue("contents", "Hello, World")
@@ -78,8 +76,7 @@ public class FilesystemInsertActionTest extends FilesystemActionTest
    public void testCardinalityMany() throws QException, IOException
    {
       QInstance   qInstance   = TestUtils.defineInstance();
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", "1").withValue("firstName", "Bob")

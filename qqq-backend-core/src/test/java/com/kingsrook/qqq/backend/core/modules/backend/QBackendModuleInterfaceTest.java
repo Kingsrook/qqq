@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.backend;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  ** Unit test for QBackendModuleInterface
  **
  *******************************************************************************/
-class QBackendModuleInterfaceTest
+class QBackendModuleInterfaceTest extends BaseTest
 {
    /*******************************************************************************
     **

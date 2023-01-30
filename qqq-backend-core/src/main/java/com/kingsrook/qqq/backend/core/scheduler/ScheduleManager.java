@@ -29,6 +29,9 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
@@ -38,8 +41,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -54,7 +55,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class ScheduleManager
 {
-   private static final Logger LOG = LogManager.getLogger(ScheduleManager.class);
+   private static final QLogger LOG = QLogger.getLogger(ScheduleManager.class);
 
    private static ScheduleManager scheduleManager = null;
    private final  QInstance       qInstance;
@@ -100,10 +101,19 @@ public class ScheduleManager
    public void start()
    {
       String propertyName  = "qqq.scheduleManager.enabled";
-      String propertyValue = System.getProperty(propertyName, "");
-      if(propertyValue.equals("false"))
+      String propertyValue = System.getProperty(propertyName);
+      if("false".equals(propertyValue))
       {
-         LOG.warn("Not starting ScheduleManager (per system property [" + propertyName + "=" + propertyValue + "]).");
+         LOG.info("Not starting ScheduleManager (per system property] [" + propertyName + "=" + propertyValue + "]).");
+         return;
+      }
+
+      QMetaDataVariableInterpreter qMetaDataVariableInterpreter = new QMetaDataVariableInterpreter();
+      String                       envName                      = "QQQ_SCHEDULE_MANAGER_ENABLED";
+      String                       envValue                     = qMetaDataVariableInterpreter.interpret("${env." + envName + "}");
+      if("false".equals(envValue))
+      {
+         LOG.info("Not starting ScheduleManager (per environment variable] [" + envName + "=" + envValue + "]).");
          return;
       }
 
@@ -149,7 +159,10 @@ public class ScheduleManager
 
             executor.setName(runner.getName());
             setScheduleInExecutor(schedule, executor);
-            executor.start();
+            if(!executor.start())
+            {
+               LOG.warn("executor.start return false for: " + executor.getName());
+            }
 
             executors.add(executor);
          }
@@ -221,7 +234,10 @@ public class ScheduleManager
 
             executor.setName(queue.getName());
             setScheduleInExecutor(schedule, executor);
-            executor.start();
+            if(!executor.start())
+            {
+               LOG.warn("executor.start return false for: " + executor.getName());
+            }
 
             executors.add(executor);
          }
@@ -238,13 +254,14 @@ public class ScheduleManager
       Runnable runProcess = () ->
       {
          String originalThreadName = Thread.currentThread().getName();
-         Thread.currentThread().setName("ScheduledProcess>" + process.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
-         LOG.debug("Running Scheduled Process [" + process.getName() + "]");
 
          try
          {
-            RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-            runProcessInput.setSession(sessionSupplier.get());
+            QContext.init(qInstance, sessionSupplier.get());
+            Thread.currentThread().setName("ScheduledProcess>" + process.getName());
+            LOG.debug("Running Scheduled Process [" + process.getName() + "]");
+
+            RunProcessInput runProcessInput = new RunProcessInput();
             runProcessInput.setProcessName(process.getName());
             runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
 
@@ -258,13 +275,17 @@ public class ScheduleManager
          finally
          {
             Thread.currentThread().setName(originalThreadName);
+            QContext.clear();
          }
       };
 
       StandardScheduledExecutor executor = new StandardScheduledExecutor(runProcess);
       executor.setName("process:" + process.getName());
       setScheduleInExecutor(process.getSchedule(), executor);
-      executor.start();
+      if(!executor.start())
+      {
+         LOG.warn("executor.start return false for: " + executor.getName());
+      }
 
       executors.add(executor);
    }

@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.enumerati
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -37,8 +39,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for EnumerationQueryAction
  *******************************************************************************/
-class EnumerationQueryActionTest
+class EnumerationQueryActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -57,8 +57,7 @@ class EnumerationQueryActionTest
    {
       QInstance instance = defineQInstance();
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName("statesEnum");
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size());
@@ -84,8 +83,7 @@ class EnumerationQueryActionTest
    {
       QInstance instance = defineQInstance();
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName("statesEnum");
       queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("population", QCriteriaOperator.GREATER_THAN, List.of(20_000_000))));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -106,8 +104,7 @@ class EnumerationQueryActionTest
    {
       QInstance instance = defineQInstance();
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName("statesEnum");
 
       queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("name")));
@@ -129,8 +126,7 @@ class EnumerationQueryActionTest
    {
       QInstance instance = defineQInstance();
 
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName("statesEnum");
       queryInput.setSkip(0);
       queryInput.setLimit(null);
@@ -175,7 +171,7 @@ class EnumerationQueryActionTest
     *******************************************************************************/
    private QInstance defineQInstance()
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       instance.addBackend(new QBackendMetaData()
          .withName("enum")
          .withBackendType("enum")

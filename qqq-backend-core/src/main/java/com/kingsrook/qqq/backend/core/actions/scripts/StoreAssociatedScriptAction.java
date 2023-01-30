@@ -83,8 +83,7 @@ public class StoreAssociatedScriptAction
       /////////////////////////////////////////////////////////////
       QRecord associatedRecord;
       {
-         GetInput getInput = new GetInput(input.getInstance());
-         getInput.setSession(input.getSession());
+         GetInput getInput = new GetInput();
          getInput.setTableName(input.getTableName());
          getInput.setPrimaryKey(input.getRecordPrimaryKey());
          getInput.setShouldGenerateDisplayValues(true);
@@ -107,8 +106,7 @@ public class StoreAssociatedScriptAction
          ////////////////////////////////////////////////////////////////////
          // get the script type - that'll be part of the new script's name //
          ////////////////////////////////////////////////////////////////////
-         GetInput getInput = new GetInput(input.getInstance());
-         getInput.setSession(input.getSession());
+         GetInput getInput = new GetInput();
          getInput.setTableName("scriptType");
          getInput.setPrimaryKey(associatedScript.getScriptTypeId());
          getInput.setShouldGenerateDisplayValues(true);
@@ -125,8 +123,7 @@ public class StoreAssociatedScriptAction
          script = new QRecord();
          script.setValue("scriptTypeId", associatedScript.getScriptTypeId());
          script.setValue("name", associatedRecord.getRecordLabel() + " - " + scriptType.getRecordLabel());
-         InsertInput insertInput = new InsertInput(input.getInstance());
-         insertInput.setSession(input.getSession());
+         InsertInput insertInput = new InsertInput();
          insertInput.setTableName("script");
          insertInput.setRecords(List.of(script));
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -135,8 +132,7 @@ public class StoreAssociatedScriptAction
          /////////////////////////////////////////////////////////////
          // update the associated record to point at the new script //
          /////////////////////////////////////////////////////////////
-         UpdateInput updateInput = new UpdateInput(input.getInstance());
-         updateInput.setSession(input.getSession());
+         UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName(input.getTableName());
          updateInput.setRecords(List.of(new QRecord()
             .withValue(table.getPrimaryKeyField(), associatedRecord.getValue(table.getPrimaryKeyField()))
@@ -149,15 +145,13 @@ public class StoreAssociatedScriptAction
          ////////////////////////////////////////
          // get the existing script, to update //
          ////////////////////////////////////////
-         GetInput getInput = new GetInput(input.getInstance());
-         getInput.setSession(input.getSession());
+         GetInput getInput = new GetInput();
          getInput.setTableName("script");
          getInput.setPrimaryKey(existingScriptId);
          GetOutput getOutput = new GetAction().execute(getInput);
          script = getOutput.getRecord();
 
-         QueryInput queryInput = new QueryInput(input.getInstance());
-         queryInput.setSession(input.getSession());
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName("scriptRevision");
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria("scriptId", QCriteriaOperator.EQUALS, List.of(script.getValue("id"))))
@@ -202,8 +196,7 @@ public class StoreAssociatedScriptAction
          scriptRevision.setValue("author", "Unknown");
       }
 
-      InsertInput insertInput = new InsertInput(input.getInstance());
-      insertInput.setSession(input.getSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("scriptRevision");
       insertInput.setRecords(List.of(scriptRevision));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -213,8 +206,7 @@ public class StoreAssociatedScriptAction
       // update the script to point at the new revision //
       ////////////////////////////////////////////////////
       script.setValue("currentScriptRevisionId", scriptRevision.getValue("id"));
-      UpdateInput updateInput = new UpdateInput(input.getInstance());
-      updateInput.setSession(input.getSession());
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName("script");
       updateInput.setRecords(List.of(script));
       new UpdateAction().execute(updateInput);

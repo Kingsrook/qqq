@@ -250,6 +250,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       String     nextStep    = jsonObject.getString("nextStep");
       assertNotNull(processUUID, "Process UUID should not be null.");
       assertNotNull(nextStep, "There should be a next step");
+      assertFalse(jsonObject.getJSONObject("values").has("didSleep"), "There should not (yet) be a value from the backend step");
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // second, run the 'nextStep' (the backend step, that sleeps). run it with a long enough sleep so that it'll go async //
@@ -274,6 +275,31 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       String nextStep2 = jsonObject.getString("nextStep");
       assertNotNull(nextStep2, "There be one more next step");
       assertNotEquals(nextStep, nextStep2, "The next step should be different this time.");
+      assertTrue(jsonObject.getJSONObject("values").has("didSleep"), "There should be a value from the backend step");
+   }
+
+
+
+   /*******************************************************************************
+    ** test fully running a process that has frontend steps - and observing that we
+    ** don't stop on them.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_processRunWithoutBreakingForFrontendSteps() throws InterruptedException
+   {
+      /////////////////////////////////////////////
+      // first init the process, to get its UUID //
+      /////////////////////////////////////////////
+      String processBasePath = BASE_URL + "/processes/" + TestUtils.PROCESS_NAME_SLEEP_INTERACTIVE;
+      HttpResponse<String> response = Unirest.post(processBasePath + "/run?" + TestUtils.SleeperStep.FIELD_SLEEP_MILLIS + "=" + LESS_THAN_TIMEOUT)
+         .header("Content-Type", "application/json").asString();
+
+      JSONObject jsonObject  = assertProcessStepCompleteResponse(response);
+      String     processUUID = jsonObject.getString("processUUID");
+      assertNotNull(processUUID, "Process UUID should not be null.");
+      assertFalse(jsonObject.has("nextStep"), "There should not be a next step");
+      assertTrue(jsonObject.getJSONObject("values").has("didSleep"), "There should be a value from the backend step");
    }
 
 

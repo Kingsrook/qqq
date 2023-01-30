@@ -23,12 +23,11 @@ package com.kingsrook.qqq.backend.core.actions.templates;
 
 
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateInput;
 import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for RenderTemplateAction
  *******************************************************************************/
-class RenderTemplateActionTest
+class RenderTemplateActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -46,8 +45,7 @@ class RenderTemplateActionTest
    @Test
    void test() throws QException
    {
-      RenderTemplateInput renderTemplateInput = new RenderTemplateInput(TestUtils.defineInstance());
-      renderTemplateInput.setSession(new QSession());
+      RenderTemplateInput renderTemplateInput = new RenderTemplateInput();
       renderTemplateInput.setCode("""
          Hello, $name""");
       renderTemplateInput.setContext(Map.of("name", "Darin"));
@@ -64,8 +62,7 @@ class RenderTemplateActionTest
    @Test
    void testConvenientWrapper() throws QException
    {
-      RenderTemplateInput parentActionInput = new RenderTemplateInput(TestUtils.defineInstance());
-      parentActionInput.setSession(new QSession());
+      RenderTemplateInput parentActionInput = new RenderTemplateInput();
 
       String template = "Hello, $name";
       assertEquals("Hello, Darin", RenderTemplateAction.renderVelocity(parentActionInput, Map.of("name", "Darin"), template));
@@ -85,8 +82,7 @@ class RenderTemplateActionTest
    @Test
    void testMissingType()
    {
-      RenderTemplateInput parentActionInput = new RenderTemplateInput(TestUtils.defineInstance());
-      parentActionInput.setSession(new QSession());
+      RenderTemplateInput parentActionInput = new RenderTemplateInput();
 
       assertThatThrownBy(() -> RenderTemplateAction.render(parentActionInput, null, Map.of("name", "Darin"), "Hello, $name"))
          .isInstanceOf(QException.class)

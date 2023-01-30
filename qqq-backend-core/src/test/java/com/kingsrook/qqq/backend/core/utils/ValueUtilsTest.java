@@ -33,6 +33,7 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for ValueUtils
  *******************************************************************************/
-class ValueUtilsTest
+class ValueUtilsTest extends BaseTest
 {
 
    /*******************************************************************************

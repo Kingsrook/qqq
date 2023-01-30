@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -42,8 +43,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -56,7 +55,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInterface
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSUpdateAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSUpdateAction.class);
 
    private int statusCounter = 0;
 

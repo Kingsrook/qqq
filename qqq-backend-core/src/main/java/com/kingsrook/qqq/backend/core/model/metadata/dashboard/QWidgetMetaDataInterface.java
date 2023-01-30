@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
@@ -126,9 +127,20 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
    boolean getIsCard();
 
    /*******************************************************************************
-    ** Setter for type
+    ** Setter for isCard
     *******************************************************************************/
    void setIsCard(boolean isCard);
+
+
+   /*******************************************************************************
+    ** Getter for storeDropdownSelections
+    *******************************************************************************/
+   boolean getStoreDropdownSelections();
+
+   /*******************************************************************************
+    ** Setter for storeDropdownSelections
+    *******************************************************************************/
+   void setStoreDropdownSelections(boolean storeDropdownSelections);
 
    /*******************************************************************************
     ** Getter for defaultValues
@@ -162,5 +174,28 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
     *******************************************************************************/
    void setPermissionRules(QPermissionRules permissionRules);
 
+
+   /*******************************************************************************
+    ** Getter for dropdowns
+    *******************************************************************************/
+   List<WidgetDropdownData> getDropdowns();
+
+
+   /*******************************************************************************
+    ** Setter for dropdowns
+    *******************************************************************************/
+   void setDropdowns(List<WidgetDropdownData> dropdowns);
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdowns
+    *******************************************************************************/
+   QWidgetMetaData withDropdowns(List<WidgetDropdownData> dropdowns);
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdowns
+    *******************************************************************************/
+   QWidgetMetaData withDropdown(WidgetDropdownData dropdown);
 }
 

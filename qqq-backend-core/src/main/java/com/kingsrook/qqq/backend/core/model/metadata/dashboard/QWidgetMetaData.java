@@ -47,7 +47,9 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
    private QPermissionRules permissionRules;
 
-   private   List<WidgetDropdownData>  dropdowns;
+   private List<WidgetDropdownData> dropdowns;
+   private boolean                  storeDropdownSelections;
+
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
 
@@ -337,6 +339,40 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withDropdowns(List<WidgetDropdownData> dropdowns)
    {
       this.dropdowns = dropdowns;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for storeDropdownSelections
+    **
+    *******************************************************************************/
+   public boolean getStoreDropdownSelections()
+   {
+      return storeDropdownSelections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for storeDropdownSelections
+    **
+    *******************************************************************************/
+   public void setStoreDropdownSelections(boolean storeDropdownSelections)
+   {
+      this.storeDropdownSelections = storeDropdownSelections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for storeDropdownSelections
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withStoreDropdownSelections(boolean storeDropdownSelections)
+   {
+      this.storeDropdownSelections = storeDropdownSelections;
       return (this);
    }
 

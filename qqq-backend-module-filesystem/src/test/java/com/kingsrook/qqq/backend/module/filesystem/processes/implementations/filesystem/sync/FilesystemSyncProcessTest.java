@@ -27,12 +27,13 @@ import java.io.IOException;
 import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -43,7 +44,7 @@ import org.junit.jupiter.api.Test;
 /*******************************************************************************
  ** Unit test for FilesystemSyncProcess
  *******************************************************************************/
-class FilesystemSyncProcessTest
+class FilesystemSyncProcessTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -70,6 +71,7 @@ class FilesystemSyncProcessTest
       qInstance.addTable(archiveTable);
       qInstance.addTable(processingTable);
       qInstance.addProcess(process);
+      reInitInstanceInContext(qInstance);
 
       ///////////////////////////
       // write some test files //
@@ -83,10 +85,9 @@ class FilesystemSyncProcessTest
       //////////////////////
       // run the step //
       //////////////////////
-      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.setStepName(step.getName());
       runBackendStepInput.setProcessName(process.getName());
-      runBackendStepInput.setSession(TestUtils.getMockSession());
 
       RunBackendStepAction runFunctionAction    = new RunBackendStepAction();
       RunBackendStepOutput runBackendStepOutput = runFunctionAction.execute(runBackendStepInput);

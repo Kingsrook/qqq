@@ -24,8 +24,8 @@ package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 import java.io.Serializable;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AssociatedScriptCodeReference;
 
 
@@ -36,17 +36,19 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
 {
    private AssociatedScriptCodeReference codeReference;
    private Map<String, Serializable>     inputValues;
+   private QCodeExecutionLoggerInterface logger;
 
    private Serializable outputObject;
+
+   private Serializable scriptUtils;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunAssociatedScriptInput(QInstance qInstance)
+   public RunAssociatedScriptInput()
    {
-      super(qInstance);
    }
 
 
@@ -151,4 +153,56 @@ public class RunAssociatedScriptInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for logger
+    *******************************************************************************/
+   public QCodeExecutionLoggerInterface getLogger()
+   {
+      return (this.logger);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for logger
+    *******************************************************************************/
+   public void setLogger(QCodeExecutionLoggerInterface logger)
+   {
+      this.logger = logger;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for logger
+    *******************************************************************************/
+   public RunAssociatedScriptInput withLogger(QCodeExecutionLoggerInterface logger)
+   {
+      this.logger = logger;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptUtils
+    **
+    *******************************************************************************/
+   public Serializable getScriptUtils()
+   {
+      return scriptUtils;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptUtils
+    **
+    *******************************************************************************/
+   public void setScriptUtils(Serializable scriptUtils)
+   {
+      this.scriptUtils = scriptUtils;
+   }
 }

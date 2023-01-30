@@ -28,8 +28,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -59,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for StreamedETLWithFrontendProcess
  *******************************************************************************/
-public class StreamedETLWithFrontendProcessTest
+public class StreamedETLWithFrontendProcessTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -80,7 +82,7 @@ public class StreamedETLWithFrontendProcessTest
    @Test
    void testSimpleSmallQueryTransformInsert() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Persons //
@@ -117,7 +119,7 @@ public class StreamedETLWithFrontendProcessTest
    @Test
    void testLoadViaInsertOrUpdate() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       /////////////////////////////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Shapes - inserting 1, updating 2 //
@@ -156,7 +158,7 @@ public class StreamedETLWithFrontendProcessTest
    @Test
    void testSimpleSmallQueryTransformUpdate() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Shapes //
@@ -190,7 +192,7 @@ public class StreamedETLWithFrontendProcessTest
    @Test
    void testWithDefaultQueryFilter() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Shapes //
@@ -232,7 +234,7 @@ public class StreamedETLWithFrontendProcessTest
    @Test
    void testBig() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // define the process - an ELT from Persons to Persons - using the mock backend, and set to do very many records //
@@ -262,7 +264,7 @@ public class StreamedETLWithFrontendProcessTest
    @Test
    void testWithValidationStep() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Persons //
@@ -293,8 +295,7 @@ public class StreamedETLWithFrontendProcessTest
       ////////////////////////////////////////////////////////
       // continue the process - telling it to do validation //
       ////////////////////////////////////////////////////////
-      RunProcessInput runProcessInput = new RunProcessInput(instance);
-      runProcessInput.setSession(TestUtils.getMockSession());
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(process.getName());
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.BREAK);
       runProcessInput.setProcessUUID(runProcessOutput.getProcessUUID());
@@ -356,8 +357,7 @@ public class StreamedETLWithFrontendProcessTest
     *******************************************************************************/
    private RunProcessOutput runProcess(QInstance instance, QProcessMetaData process, Map<String, Serializable> values, QProcessCallback callback, RunProcessInput.FrontendStepBehavior frontendStepBehavior) throws QException
    {
-      RunProcessInput request = new RunProcessInput(instance);
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request = new RunProcessInput();
       request.setProcessName(process.getName());
       //////////////////////////////////////////////////////////////
       // wrap the map here, in case it was given as un-modifiable //

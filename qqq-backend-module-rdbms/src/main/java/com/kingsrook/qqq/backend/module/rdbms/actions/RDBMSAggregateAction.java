@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
@@ -43,8 +44,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSAggregateAction extends AbstractRDBMSAction implements AggregateInterface
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSAggregateAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSAggregateAction.class);
 
 
 
@@ -65,7 +64,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       {
          QTableMetaData table = aggregateInput.getTable();
 
-         JoinsContext joinsContext  = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins());
+         JoinsContext joinsContext  = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins(), aggregateInput.getFilter());
          String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext);
          List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
 

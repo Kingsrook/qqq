@@ -22,15 +22,13 @@
 package com.kingsrook.qqq.backend.core.scheduler;
 
 
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -40,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StandardScheduledExecutor
 {
-   private static final Logger LOG = LogManager.getLogger(StandardScheduledExecutor.class);
+   private static final QLogger LOG = QLogger.getLogger(StandardScheduledExecutor.class);
 
    private Integer initialDelayMillis = 3000;
    private Integer delayMillis        = 1000;
@@ -69,16 +67,6 @@ public class StandardScheduledExecutor
     **
     *******************************************************************************/
    private Runnable runnable;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String newThreadNameRandomSuffix()
-   {
-      return (":" + UUID.randomUUID().toString().split("-")[0]);
-   }
 
 
 
@@ -261,4 +249,14 @@ public class StandardScheduledExecutor
       STOPPING,
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for name
+    **
+    *******************************************************************************/
+   public String getName()
+   {
+      return name;
+   }
 }

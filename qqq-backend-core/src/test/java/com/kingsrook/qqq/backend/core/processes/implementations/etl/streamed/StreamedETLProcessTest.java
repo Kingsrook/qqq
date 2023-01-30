@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for BasicETLProcess
  *******************************************************************************/
-class StreamedETLProcessTest
+class StreamedETLProcessTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -46,8 +47,7 @@ class StreamedETLProcessTest
    @Test
    public void test() throws QException
    {
-      RunProcessInput request = new RunProcessInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request = new RunProcessInput();
       request.setProcessName(StreamedETLProcess.PROCESS_NAME);
       request.addValue(StreamedETLProcess.FIELD_SOURCE_TABLE, TestUtils.defineTablePerson().getName());
       request.addValue(StreamedETLProcess.FIELD_DESTINATION_TABLE, TestUtils.definePersonFileTable().getName());
@@ -70,8 +70,7 @@ class StreamedETLProcessTest
    @Test
    public void testMappingTransformation() throws QException
    {
-      RunProcessInput request = new RunProcessInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      RunProcessInput request = new RunProcessInput();
       request.setProcessName(StreamedETLProcess.PROCESS_NAME);
       request.addValue(StreamedETLProcess.FIELD_SOURCE_TABLE, TestUtils.definePersonFileTable().getName());
       request.addValue(StreamedETLProcess.FIELD_DESTINATION_TABLE, TestUtils.defineTableIdAndNameOnly().getName());

@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
@@ -63,8 +64,6 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -72,7 +71,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public abstract class AbstractRDBMSAction implements QActionInterface
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractRDBMSAction.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractRDBMSAction.class);
 
 
 
@@ -169,10 +168,19 @@ public abstract class AbstractRDBMSAction implements QActionInterface
     *******************************************************************************/
    protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
    {
-      QFieldMetaData field = table.getField(fieldName);
-      if(field != null)
+      try
       {
-         record.setValue(fieldName, value);
+         QFieldMetaData field = table.getField(fieldName);
+         if(field != null)
+         {
+            record.setValue(fieldName, value);
+         }
+      }
+      catch(Exception e)
+      {
+         /////////////////////////////////////////////////
+         // this means field doesn't exist, so, ignore. //
+         /////////////////////////////////////////////////
       }
    }
 

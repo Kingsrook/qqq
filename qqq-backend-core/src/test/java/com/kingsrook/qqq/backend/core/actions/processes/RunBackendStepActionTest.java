@@ -27,12 +27,12 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunBackendStepActionTest
+public class RunBackendStepActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -52,8 +52,7 @@ public class RunBackendStepActionTest
    public void test() throws QException
    {
       TestCallback        callback = new TestCallback();
-      RunBackendStepInput request  = new RunBackendStepInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      RunBackendStepInput request  = new RunBackendStepInput();
       request.setProcessName("greet");
       request.setStepName("prepare");
       request.setCallback(callback);
@@ -75,6 +74,8 @@ public class RunBackendStepActionTest
    {
       private boolean wasCalledForQueryFilter = false;
       private boolean wasCalledForFieldValues = false;
+
+
 
       /*******************************************************************************
        **

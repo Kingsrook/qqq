@@ -82,8 +82,7 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
     *******************************************************************************/
    public static String render(AbstractActionInput parentActionInput, TemplateType templateType, Map<String, Object> context, String code) throws QException
    {
-      RenderTemplateInput renderTemplateInput = new RenderTemplateInput(parentActionInput.getInstance());
-      renderTemplateInput.setSession(parentActionInput.getSession());
+      RenderTemplateInput renderTemplateInput = new RenderTemplateInput();
       renderTemplateInput.setCode(code);
       renderTemplateInput.setContext(context);
       renderTemplateInput.setTemplateType(templateType);

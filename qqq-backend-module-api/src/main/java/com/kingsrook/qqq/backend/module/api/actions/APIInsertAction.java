@@ -24,11 +24,10 @@ package com.kingsrook.qqq.backend.module.api.actions;
 
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -36,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class APIInsertAction extends AbstractAPIAction implements InsertInterface
 {
-   private static final Logger LOG = LogManager.getLogger(APIInsertAction.class);
+   private static final QLogger LOG = QLogger.getLogger(APIInsertAction.class);
 
 
 

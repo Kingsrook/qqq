@@ -26,10 +26,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -38,7 +37,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QFilterCriteria implements Serializable, Cloneable
 {
-   private static final Logger LOG = LogManager.getLogger(QFilterCriteria.class);
+   private static final QLogger LOG = QLogger.getLogger(QFilterCriteria.class);
 
    private String             fieldName;
    private QCriteriaOperator  operator;

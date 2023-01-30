@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -42,8 +43,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RunBackendStepAction
 {
-   private static final Logger LOG = LogManager.getLogger(RunBackendStepAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RunBackendStepAction.class);
 
 
 
@@ -107,7 +106,7 @@ public class RunBackendStepAction
          return;
       }
 
-      List<QFieldMetaData> fieldsToGet = new ArrayList<>();
+      List<QFieldMetaData> fieldsToGet           = new ArrayList<>();
       List<QFieldMetaData> requiredFieldsMissing = new ArrayList<>();
       for(QFieldMetaData field : inputMetaData.getFieldList())
       {
@@ -175,8 +174,7 @@ public class RunBackendStepAction
       {
          if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
          {
-            QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-            queryInput.setSession(runBackendStepInput.getSession());
+            QueryInput queryInput = new QueryInput();
             queryInput.setTableName(inputMetaData.getRecordListMetaData().getTableName());
 
             // todo - handle this being async (e.g., http)

@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptOutput;
@@ -37,7 +39,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /*******************************************************************************
  ** Unit test for StoreAssociatedScriptAction
  *******************************************************************************/
-class StoreAssociatedScriptActionTest
+class StoreAssociatedScriptActionTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -70,7 +71,7 @@ class StoreAssociatedScriptActionTest
    @Test
    void test() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER))
          .withAssociatedScript(new AssociatedScript()
@@ -96,8 +97,7 @@ class StoreAssociatedScriptActionTest
          new QRecord().withValue("id", 2).withValue("name", "Other Script")
       ));
 
-      StoreAssociatedScriptInput storeAssociatedScriptInput = new StoreAssociatedScriptInput(instance);
-      storeAssociatedScriptInput.setSession(new QSession());
+      StoreAssociatedScriptInput storeAssociatedScriptInput = new StoreAssociatedScriptInput();
       storeAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       storeAssociatedScriptInput.setRecordPrimaryKey(1);
       storeAssociatedScriptInput.setCode("var i = 0;");
@@ -156,8 +156,7 @@ class StoreAssociatedScriptActionTest
     *******************************************************************************/
    private void assertValueInField(QInstance instance, String tableName, Serializable recordId, String fieldName, Serializable value) throws QException
    {
-      GetInput getInput = new GetInput(instance);
-      getInput.setSession(new QSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
       getInput.setPrimaryKey(recordId);
       GetOutput getOutput = new GetAction().execute(getInput);

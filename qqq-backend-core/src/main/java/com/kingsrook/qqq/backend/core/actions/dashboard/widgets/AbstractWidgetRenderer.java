@@ -89,8 +89,7 @@ public abstract class AbstractWidgetRenderer
          pvsLabels.add(pvsLabel);
          pvsNames.add(possibleValueSourceName);
 
-         SearchPossibleValueSourceInput pvsInput = new SearchPossibleValueSourceInput(input.getInstance());
-         pvsInput.setSession(input.getSession());
+         SearchPossibleValueSourceInput pvsInput = new SearchPossibleValueSourceInput();
          pvsInput.setPossibleValueSourceName(possibleValueSourceName);
 
          if(dropdownData.getForeignKeyFieldName() != null)

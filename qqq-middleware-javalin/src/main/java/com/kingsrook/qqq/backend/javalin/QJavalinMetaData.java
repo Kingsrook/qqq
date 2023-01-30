@@ -29,6 +29,21 @@ public class QJavalinMetaData
 {
    private String uploadedFileArchiveTableName;
 
+   private boolean logAllAccessStarts = true;
+   private boolean logAllAccessEnds   = true;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public QJavalinMetaData()
+   {
+      logAllAccessStarts = System.getProperty("qqq.javalin.logAllAccessStarts", "true").equals("true");
+      logAllAccessEnds = System.getProperty("qqq.javalin.logAllAccessEnds", "true").equals("true");
+   }
+
 
 
    /*******************************************************************************
@@ -60,6 +75,68 @@ public class QJavalinMetaData
    public QJavalinMetaData withUploadedFileArchiveTableName(String uploadedFileArchiveTableName)
    {
       this.uploadedFileArchiveTableName = uploadedFileArchiveTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for logAllAccessStarts
+    *******************************************************************************/
+   public boolean getLogAllAccessStarts()
+   {
+      return (this.logAllAccessStarts);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for logAllAccessStarts
+    *******************************************************************************/
+   public void setLogAllAccessStarts(boolean logAllAccessStarts)
+   {
+      this.logAllAccessStarts = logAllAccessStarts;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for logAllAccessStarts
+    *******************************************************************************/
+   public QJavalinMetaData withLogAllAccessStarts(boolean logAllAccessStarts)
+   {
+      this.logAllAccessStarts = logAllAccessStarts;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for logAllAccessEnds
+    *******************************************************************************/
+   public boolean getLogAllAccessEnds()
+   {
+      return (this.logAllAccessEnds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for logAllAccessEnds
+    *******************************************************************************/
+   public void setLogAllAccessEnds(boolean logAllAccessEnds)
+   {
+      this.logAllAccessEnds = logAllAccessEnds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for logAllAccessEnds
+    *******************************************************************************/
+   public QJavalinMetaData withLogAllAccessEnds(boolean logAllAccessEnds)
+   {
+      this.logAllAccessEnds = logAllAccessEnds;
       return (this);
    }
 

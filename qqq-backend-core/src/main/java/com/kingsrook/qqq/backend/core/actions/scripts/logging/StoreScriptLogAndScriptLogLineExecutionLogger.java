@@ -26,13 +26,12 @@ import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StoreScriptLogAndScriptLogLineExecutionLogger extends BuildScriptLogAndScriptLogLineExecutionLogger
 {
-   private static final Logger LOG = LogManager.getLogger(StoreScriptLogAndScriptLogLineExecutionLogger.class);
+   private static final QLogger LOG = QLogger.getLogger(StoreScriptLogAndScriptLogLineExecutionLogger.class);
 
 
 
@@ -66,8 +65,7 @@ public class StoreScriptLogAndScriptLogLineExecutionLogger extends BuildScriptLo
       {
          super.acceptExecutionStart(executeCodeInput);
 
-         InsertInput insertInput = new InsertInput(executeCodeInput.getInstance());
-         insertInput.setSession(executeCodeInput.getSession());
+         InsertInput insertInput = new InsertInput();
          insertInput.setTableName("scriptLog");
          insertInput.setRecords(List.of(getScriptLog()));
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -112,16 +110,14 @@ public class StoreScriptLogAndScriptLogLineExecutionLogger extends BuildScriptLo
       try
       {
          updateHeaderAtEnd(output, exception);
-         UpdateInput updateInput = new UpdateInput(executeCodeInput.getInstance());
-         updateInput.setSession(executeCodeInput.getSession());
+         UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName("scriptLog");
          updateInput.setRecords(List.of(getScriptLog()));
          new UpdateAction().execute(updateInput);
 
          if(CollectionUtils.nullSafeHasContents(getScriptLogLines()))
          {
-            InsertInput insertInput = new InsertInput(executeCodeInput.getInstance());
-            insertInput.setSession(executeCodeInput.getSession());
+            InsertInput insertInput = new InsertInput();
             insertInput.setTableName("scriptLogLine");
             insertInput.setRecords(getScriptLogLines());
             new InsertAction().execute(insertInput);

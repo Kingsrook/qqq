@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -42,11 +43,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -55,7 +55,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class SearchPossibleValueSourceAction
 {
-   private static final Logger LOG = LogManager.getLogger(SearchPossibleValueSourceAction.class);
+   private static final QLogger LOG = QLogger.getLogger(SearchPossibleValueSourceAction.class);
 
    private QPossibleValueTranslator possibleValueTranslator;
 
@@ -105,13 +105,15 @@ public class SearchPossibleValueSourceAction
       SearchPossibleValueSourceOutput output      = new SearchPossibleValueSourceOutput();
       List<Serializable>              matchingIds = new ArrayList<>();
 
+      List<?> inputIdsAsCorrectType = convertInputIdsToEnumIdType(possibleValueSource, input.getIdList());
+
       for(QPossibleValue<?> possibleValue : possibleValueSource.getEnumValues())
       {
          boolean match = false;
 
          if(input.getIdList() != null)
          {
-            if(input.getIdList().contains(possibleValue.getId()))
+            if(inputIdsAsCorrectType.contains(possibleValue.getId()))
             {
                match = true;
             }
@@ -147,14 +149,51 @@ public class SearchPossibleValueSourceAction
 
 
    /*******************************************************************************
+    ** The input list of ids might come through as a type that isn't the same as
+    ** the type of the ids in the enum (e.g., strings from a frontend, integers
+    ** in an enum).  So, this method looks at the first id in the enum, and then
+    ** maps all the inputIds to be of the same type.
+    *******************************************************************************/
+   private List<Object> convertInputIdsToEnumIdType(QPossibleValueSource possibleValueSource, List<Serializable> inputIdList)
+   {
+      List<Object> rs = new ArrayList<>();
+      if(CollectionUtils.nullSafeIsEmpty(inputIdList))
+      {
+         return (rs);
+      }
+
+      Object anIdFromTheEnum = possibleValueSource.getEnumValues().get(0).getId();
+
+      if(anIdFromTheEnum instanceof Integer)
+      {
+         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsInteger(id)));
+      }
+      else if(anIdFromTheEnum instanceof String)
+      {
+         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsString(id)));
+      }
+      else if(anIdFromTheEnum instanceof Boolean)
+      {
+         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsBoolean(id)));
+      }
+      else
+      {
+         LOG.warn("Unexpected type [" + anIdFromTheEnum.getClass().getSimpleName() + "] for ids in enum: " + possibleValueSource.getName());
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private SearchPossibleValueSourceOutput searchPossibleValueTable(SearchPossibleValueSourceInput input, QPossibleValueSource possibleValueSource) throws QException
    {
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceOutput();
 
-      QueryInput queryInput = new QueryInput(input.getInstance());
-      queryInput.setSession(input.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(possibleValueSource.getTableName());
 
       QTableMetaData table = input.getInstance().getTable(possibleValueSource.getTableName());

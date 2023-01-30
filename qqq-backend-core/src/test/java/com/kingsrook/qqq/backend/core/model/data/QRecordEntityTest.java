@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.math.BigDecimal;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Item;
 import com.kingsrook.qqq.backend.core.model.data.testentities.ItemWithPrimitives;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
-class QRecordEntityTest
+class QRecordEntityTest extends BaseTest
 {
 
    /*******************************************************************************

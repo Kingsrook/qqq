@@ -25,9 +25,8 @@ package com.kingsrook.qqq.backend.core.modules.backend;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -39,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QBackendModuleDispatcher
 {
-   private static final Logger LOG = LogManager.getLogger(QBackendModuleDispatcher.class);
+   private static final QLogger LOG = QLogger.getLogger(QBackendModuleDispatcher.class);
 
    private static Map<String, String> backendTypeToModuleClassNameMap;
 

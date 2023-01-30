@@ -22,9 +22,9 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.actions.tables.AggregateAction
  *******************************************************************************/
-class AggregateActionTest
+class AggregateActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -43,8 +43,7 @@ class AggregateActionTest
    @Test
    void test() throws QException
    {
-      AggregateInput request = new AggregateInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
+      AggregateInput request = new AggregateInput();
       request.setTableName("person");
       assertThrows(IllegalStateException.class, () -> new AggregateAction().execute(request));
    }

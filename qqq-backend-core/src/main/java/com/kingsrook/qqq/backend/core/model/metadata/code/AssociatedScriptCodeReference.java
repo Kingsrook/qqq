@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
 import java.io.Serializable;
+import java.util.Objects;
 
 
 /*******************************************************************************
@@ -136,4 +137,34 @@ public class AssociatedScriptCodeReference extends QCodeReference
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      AssociatedScriptCodeReference that = (AssociatedScriptCodeReference) o;
+      return Objects.equals(recordTable, that.recordTable) && Objects.equals(recordPrimaryKey, that.recordPrimaryKey) && Objects.equals(fieldName, that.fieldName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(recordTable, recordPrimaryKey, fieldName);
+   }
 }

@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -38,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  ** Unit test for QueryAction
  **
  *******************************************************************************/
-class QueryActionTest
+class QueryActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -49,8 +51,7 @@ class QueryActionTest
    @Test
    public void test() throws QException
    {
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
-      queryInput.setSession(TestUtils.getMockSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName("person");
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertNotNull(queryOutput);
@@ -89,11 +90,10 @@ class QueryActionTest
    @Test
    public void testRecordPipeShapeTable() throws QException
    {
-      TestUtils.insertDefaultShapes(TestUtils.defineInstance());
+      TestUtils.insertDefaultShapes(QContext.getQInstance());
 
-      RecordPipe pipe = new RecordPipe();
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
-      queryInput.setSession(TestUtils.getMockSession());
+      RecordPipe pipe       = new RecordPipe();
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
       queryInput.setRecordPipe(pipe);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -104,6 +104,7 @@ class QueryActionTest
    }
 
 
+
    /*******************************************************************************
     ** Test running with a recordPipe - using the person table, which uses the mock
     ** backend, which is known to do a single-add (not addAll) to the query output.
@@ -112,9 +113,8 @@ class QueryActionTest
    @Test
    public void testRecordPipePersonTable() throws QException
    {
-      RecordPipe pipe = new RecordPipe();
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
-      queryInput.setSession(TestUtils.getMockSession());
+      RecordPipe pipe       = new RecordPipe();
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
       queryInput.setRecordPipe(pipe);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);

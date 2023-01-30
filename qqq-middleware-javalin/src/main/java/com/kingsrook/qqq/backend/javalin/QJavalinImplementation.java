@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,6 +55,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
@@ -61,6 +64,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -69,6 +73,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutp
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -100,13 +105,16 @@ import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpStatus;
+import org.json.JSONObject;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
+import static com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger.logPairIfSlow;
 import static io.javalin.apibuilder.ApiBuilder.delete;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.patch;
@@ -122,23 +130,26 @@ import static io.javalin.apibuilder.ApiBuilder.put;
  *******************************************************************************/
 public class QJavalinImplementation
 {
-   private static final Logger LOG = LogManager.getLogger(QJavalinImplementation.class);
+   private static final QLogger LOG = QLogger.getLogger(QJavalinImplementation.class);
 
    private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
    private static final String SESSION_ID_COOKIE_NAME = "sessionId";
    private static final String BASIC_AUTH_NAME        = "basicAuthString";
 
    static QInstance        qInstance;
-   static QJavalinMetaData javalinMetaData = new QJavalinMetaData();
+   static QJavalinMetaData javalinMetaData;
 
    private static Supplier<QInstance> qInstanceHotSwapSupplier;
    private static long                lastQInstanceHotSwapMillis;
 
    private static final long MILLIS_BETWEEN_HOT_SWAPS = 2500;
+   private static final long SLOW_LOG_THRESHOLD_MS    = 1000;
 
    private static int DEFAULT_PORT = 8001;
 
    private static Javalin service;
+
+   private static long startTime = 0;
 
 
 
@@ -161,8 +172,20 @@ public class QJavalinImplementation
     *******************************************************************************/
    public QJavalinImplementation(QInstance qInstance) throws QInstanceValidationException
    {
+      this(qInstance, new QJavalinMetaData());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QJavalinImplementation(QInstance qInstance, QJavalinMetaData javalinMetaData) throws QInstanceValidationException
+   {
       QJavalinImplementation.qInstance = qInstance;
+      QJavalinImplementation.javalinMetaData = javalinMetaData;
       new QInstanceValidator().validate(qInstance);
+      this.startTime = System.currentTimeMillis();
    }
 
 
@@ -175,6 +198,7 @@ public class QJavalinImplementation
       LOG.info("Loading qInstance from file (assuming json): " + qInstanceFilePath);
       String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath));
       QJavalinImplementation.qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
+      QJavalinImplementation.javalinMetaData = new QJavalinMetaData();
    }
 
 
@@ -190,6 +214,17 @@ public class QJavalinImplementation
       service.routes(getRoutes());
       service.before(QJavalinImplementation::hotSwapQInstance);
       service.before((Context context) -> context.header("Content-Type", "application/json"));
+      service.after(QJavalinImplementation::clearQContext);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void clearQContext(Context context)
+   {
+      QContext.clear();
    }
 
 
@@ -288,7 +323,7 @@ public class QJavalinImplementation
          {
             get("/", QJavalinImplementation::dataQuery);
             post("/query", QJavalinImplementation::dataQuery);
-            post("/", QJavalinImplementation::dataInsert); // todo - internal to that method, if input is a list, do a bulk - else, single.
+            post("/", QJavalinImplementation::dataInsert);
             get("/count", QJavalinImplementation::dataCount);
             post("/count", QJavalinImplementation::dataCount);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
@@ -309,13 +344,35 @@ public class QJavalinImplementation
             });
          });
 
-         get("/widget/{name}", QJavalinImplementation::widget);
+         get("/widget/{name}", QJavalinImplementation::widget); // todo - can we just do a slow log here?
+
+         get("/serverInfo", QJavalinImplementation::serverInfo);
 
          ////////////////////
          // process routes //
          ////////////////////
          path("", QJavalinProcessHandler.getRoutes());
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void serverInfo(Context context)
+   {
+      JSONObject serverInfo = new JSONObject();
+      serverInfo.put("startTimeMillis", startTime);
+      serverInfo.put("startTimeHuman", Instant.ofEpochMilli(startTime));
+
+      long uptime = System.currentTimeMillis() - startTime;
+      serverInfo.put("uptimeMillis", uptime);
+      serverInfo.put("uptimeHuman", Duration.ofMillis(uptime));
+
+      serverInfo.put("buildId", System.getProperty("buildId", "Unspecified"));
+
+      context.result(serverInfo.toString());
    }
 
 
@@ -336,7 +393,7 @@ public class QJavalinImplementation
    public static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(input.getAuthenticationMetaData());
+      QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
 
       try
       {
@@ -374,8 +431,9 @@ public class QJavalinImplementation
             }
          }
 
+         QContext.init(qInstance, null); // hmm...
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
-         input.setSession(session);
+         QContext.init(qInstance, session, null, input);
 
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
@@ -457,14 +515,19 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataDelete(Context context)
    {
+      String table      = context.pathParam("table");
+      String primaryKey = context.pathParam("primaryKey");
+
       try
       {
-         String             table       = context.pathParam("table");
          List<Serializable> primaryKeys = new ArrayList<>();
-         primaryKeys.add(context.pathParam("primaryKey"));
+         primaryKeys.add(primaryKey);
 
-         DeleteInput deleteInput = new DeleteInput(qInstance);
+         DeleteInput deleteInput = new DeleteInput();
          setupSession(context, deleteInput);
+
+         QJavalinAccessLogger.logStart("delete", logPair("table", table), logPair("primaryKey", primaryKey));
+
          deleteInput.setTableName(table);
          deleteInput.setPrimaryKeys(primaryKeys);
 
@@ -473,10 +536,12 @@ public class QJavalinImplementation
          DeleteAction deleteAction = new DeleteAction();
          DeleteOutput deleteResult = deleteAction.execute(deleteInput);
 
+         QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(deleteResult));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e);
          handleException(context, e);
       }
    }
@@ -488,11 +553,12 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataUpdate(Context context)
    {
+      String table      = context.pathParam("table");
+      String primaryKey = context.pathParam("primaryKey");
+
       try
       {
-         String table = context.pathParam("table");
-
-         UpdateInput updateInput = new UpdateInput(qInstance);
+         UpdateInput updateInput = new UpdateInput();
          setupSession(context, updateInput);
          updateInput.setTableName(table);
 
@@ -525,17 +591,21 @@ public class QJavalinImplementation
          }
 
          QTableMetaData tableMetaData = qInstance.getTable(table);
-         record.setValue(tableMetaData.getPrimaryKeyField(), context.pathParam("primaryKey"));
+         record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
+
+         QJavalinAccessLogger.logStart("update", logPair("table", table), logPair("primaryKey", primaryKey));
 
          updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
          UpdateOutput updateResult = updateAction.execute(updateInput);
 
+         QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(updateResult));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e);
          handleException(context, e);
       }
    }
@@ -547,18 +617,19 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataInsert(Context context)
    {
+      String tableName = context.pathParam("table");
       try
       {
-         String      table       = context.pathParam("table");
-         InsertInput insertInput = new InsertInput(qInstance);
+         InsertInput insertInput = new InsertInput();
          setupSession(context, insertInput);
-         insertInput.setTableName(table);
+         insertInput.setTableName(tableName);
+         QJavalinAccessLogger.logStart("insert", logPair("table", tableName));
 
          PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
-         record.setTableName(table);
+         record.setTableName(tableName);
          recordList.add(record);
 
          Map<?, ?> map = context.bodyAsClass(Map.class);
@@ -576,13 +647,15 @@ public class QJavalinImplementation
 
          if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getErrors()))
          {
-            throw (new QUserFacingException("Error inserting " + qInstance.getTable(table).getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
+            throw (new QUserFacingException("Error inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
          }
 
+         QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (insertOutput.getRecords().get(0).getValue(qInstance.getTable(tableName).getPrimaryKeyField()))));
          context.result(JsonUtils.toJson(insertOutput));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e);
          handleException(context, e);
       }
    }
@@ -594,14 +667,17 @@ public class QJavalinImplementation
     ********************************************************************************/
    private static void dataGet(Context context)
    {
+      String tableName  = context.pathParam("table");
+      String primaryKey = context.pathParam("primaryKey");
+
       try
       {
-         String         tableName  = context.pathParam("table");
-         QTableMetaData table      = qInstance.getTable(tableName);
-         String         primaryKey = context.pathParam("primaryKey");
-         GetInput       getInput   = new GetInput(qInstance);
+         QTableMetaData table    = qInstance.getTable(tableName);
+         GetInput       getInput = new GetInput();
 
          setupSession(context, getInput);
+         QJavalinAccessLogger.logStart("get", logPair("table", tableName), logPair("primaryKey", primaryKey));
+
          getInput.setTableName(tableName);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
@@ -625,10 +701,12 @@ public class QJavalinImplementation
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
+         QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(getOutput.getRecord()));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e);
          handleException(context, e);
       }
    }
@@ -649,15 +727,19 @@ public class QJavalinImplementation
     *******************************************************************************/
    static void dataCount(Context context)
    {
+      String table  = context.pathParam("table");
+      String filter = null;
+
       try
       {
-         CountInput countInput = new CountInput(qInstance);
+         CountInput countInput = new CountInput();
          setupSession(context, countInput);
-         countInput.setTableName(context.pathParam("table"));
+         countInput.setTableName(table);
+         QJavalinAccessLogger.logStartSilent("count");
 
          PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 
-         String filter = stringQueryParam(context, "filter");
+         filter = stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
          {
             filter = context.formParam("filter");
@@ -670,10 +752,12 @@ public class QJavalinImplementation
          CountAction countAction = new CountAction();
          CountOutput countOutput = countAction.execute(countInput);
 
+         QJavalinAccessLogger.logEndSuccessIfSlow(SLOW_LOG_THRESHOLD_MS, logPair("table", table), logPair("count", countOutput.getCount()), logPair("filter", filter));
          context.result(JsonUtils.toJson(countOutput));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e, logPair("table", table), logPair("filter", filter));
          handleException(context, e);
       }
    }
@@ -696,11 +780,16 @@ public class QJavalinImplementation
     *******************************************************************************/
    static void dataQuery(Context context)
    {
+      String table  = context.pathParam("table");
+      String filter = null;
+
       try
       {
-         QueryInput queryInput = new QueryInput(qInstance);
+         QueryInput queryInput = new QueryInput();
          setupSession(context, queryInput);
-         queryInput.setTableName(context.pathParam("table"));
+         QJavalinAccessLogger.logStart("query", logPair("table", table));
+
+         queryInput.setTableName(table);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setSkip(integerQueryParam(context, "skip"));
@@ -708,7 +797,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
-         String filter = stringQueryParam(context, "filter");
+         filter = stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
          {
             filter = context.formParam("filter");
@@ -721,10 +810,12 @@ public class QJavalinImplementation
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
 
+         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
          context.result(JsonUtils.toJson(queryOutput));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
          handleException(context, e);
       }
    }
@@ -738,7 +829,7 @@ public class QJavalinImplementation
    {
       try
       {
-         MetaDataInput metaDataInput = new MetaDataInput(qInstance);
+         MetaDataInput metaDataInput = new MetaDataInput();
          setupSession(context, metaDataInput);
          MetaDataAction metaDataAction = new MetaDataAction();
          MetaDataOutput metaDataOutput = metaDataAction.execute(metaDataInput);
@@ -760,7 +851,7 @@ public class QJavalinImplementation
    {
       try
       {
-         TableMetaDataInput tableMetaDataInput = new TableMetaDataInput(qInstance);
+         TableMetaDataInput tableMetaDataInput = new TableMetaDataInput();
          setupSession(context, tableMetaDataInput);
 
          String         tableName = context.pathParam("table");
@@ -798,7 +889,7 @@ public class QJavalinImplementation
    {
       try
       {
-         ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput(qInstance);
+         ProcessMetaDataInput processMetaDataInput = new ProcessMetaDataInput();
          setupSession(context, processMetaDataInput);
 
          String           processName = context.pathParam("processName");
@@ -828,14 +919,15 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void widget(Context context)
    {
+      String widgetName = context.pathParam("name");
+
+      RenderWidgetInput input = new RenderWidgetInput()
+         .withWidgetMetaData(qInstance.getWidget(widgetName));
+
       try
       {
-         InsertInput insertInput = new InsertInput(qInstance);
-         setupSession(context, insertInput);
-
-         RenderWidgetInput input = new RenderWidgetInput(qInstance)
-            .withSession(insertInput.getSession())
-            .withWidgetMetaData(qInstance.getWidget(context.pathParam("name")));
+         setupSession(context, input);
+         QJavalinAccessLogger.logStartSilent("widget");
 
          // todo permission?
 
@@ -853,10 +945,12 @@ public class QJavalinImplementation
          }
 
          RenderWidgetOutput output = new RenderWidgetAction().execute(input);
+         QJavalinAccessLogger.logEndSuccessIfSlow(SLOW_LOG_THRESHOLD_MS, logPair("widgetName", widgetName), logPair("inputParams", input.getQueryParams()));
          context.result(JsonUtils.toJson(output.getWidgetData()));
       }
       catch(Exception e)
       {
+         QJavalinAccessLogger.logEndFail(e, logPair("widgetName", widgetName), logPair("inputParams", input.getQueryParams()));
          handleException(context, e);
       }
    }
@@ -889,15 +983,16 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataExport(Context context, Optional<String> optionalFilename)
    {
+      String tableName = context.pathParam("table");
+
       try
       {
          //////////////////////////////////////////
          // read params from the request context //
          //////////////////////////////////////////
-         String  tableName = context.pathParam("table");
-         String  format    = context.queryParam("format");
-         String  filter    = context.queryParam("filter");
-         Integer limit     = integerQueryParam(context, "limit");
+         String  format = context.queryParam("format");
+         String  filter = context.queryParam("filter");
+         Integer limit  = integerQueryParam(context, "limit");
 
          ReportFormat reportFormat = getReportFormat(context, optionalFilename, format);
          if(reportFormat == null)
@@ -910,8 +1005,9 @@ public class QJavalinImplementation
          /////////////////////////////////////////////
          // set up the report action's input object //
          /////////////////////////////////////////////
-         ExportInput exportInput = new ExportInput(qInstance);
+         ExportInput exportInput = new ExportInput();
          setupSession(context, exportInput);
+
          exportInput.setTableName(tableName);
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(filename);
@@ -930,7 +1026,7 @@ public class QJavalinImplementation
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
-         UnsafeFunction<PipedOutputStream, ExportAction> preAction = (PipedOutputStream pos) ->
+         UnsafeFunction<PipedOutputStream, ExportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
             exportInput.setReportOutputStream(pos);
 
@@ -939,9 +1035,19 @@ public class QJavalinImplementation
             return (exportAction);
          };
 
-         UnsafeConsumer<ExportAction> execute = (ExportAction exportAction) ->
+         UnsafeConsumer<ExportAction, Exception> execute = (ExportAction exportAction) ->
          {
-            exportAction.execute(exportInput);
+            QJavalinAccessLogger.logStart("export", logPair("table", tableName));
+            try
+            {
+               ExportOutput exportOutput = exportAction.execute(exportInput);
+               QJavalinAccessLogger.logEndSuccess(logPair("recordCount", exportOutput.getRecordCount()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
+            }
+            catch(Exception e)
+            {
+               QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
+               throw (e);
+            }
          };
 
          runStreamedExportOrReport(context, reportFormat, filename, preAction, execute);
@@ -957,35 +1063,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   @FunctionalInterface
-   public interface UnsafeFunction<T, R>
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      R run(T t) throws Exception;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @FunctionalInterface
-   public interface UnsafeConsumer<T>
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      void run(T t) throws Exception;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static <T> void runStreamedExportOrReport(Context context, ReportFormat reportFormat, String filename, UnsafeFunction<PipedOutputStream, T> preAction, UnsafeConsumer<T> executor) throws Exception
+   public static <T> void runStreamedExportOrReport(Context context, ReportFormat reportFormat, String filename, UnsafeFunction<PipedOutputStream, T, Exception> preAction, UnsafeConsumer<T, Exception> executor) throws Exception
    {
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up the I/O pipe streams.                                                                      //
@@ -996,7 +1074,7 @@ public class QJavalinImplementation
       PipedInputStream  pipedInputStream  = new PipedInputStream();
       pipedOutputStream.connect(pipedInputStream);
 
-      T t = preAction.run(pipedOutputStream);
+      T t = preAction.apply(pipedOutputStream);
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       // start the async job.                                                                            //
@@ -1137,7 +1215,7 @@ public class QJavalinImplementation
             throw (new QNotFoundException("Field " + fieldName + " in table " + tableName + " is not associated with a possible value source."));
          }
 
-         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput(qInstance);
+         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
          setupSession(context, input);
          input.setPossibleValueSourceName(field.getPossibleValueSourceName());
          input.setSearchTerm(searchTerm);
@@ -1235,6 +1313,24 @@ public class QJavalinImplementation
    public static Integer integerQueryParam(Context context, String name) throws QValueException
    {
       String value = context.queryParam(name);
+      if(StringUtils.hasContent(value))
+      {
+         return (ValueUtils.getValueAsInteger(value));
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Returns Integer if context has a valid int form parameter by the given name,
+    **  Returns null if no param (or empty value).
+    **  Throws QValueException for malformed numbers.
+    *******************************************************************************/
+   public static Integer integerFormParam(Context context, String name) throws QValueException
+   {
+      String value = context.formParam(name);
       if(StringUtils.hasContent(value))
       {
          return (ValueUtils.getValueAsInteger(value));

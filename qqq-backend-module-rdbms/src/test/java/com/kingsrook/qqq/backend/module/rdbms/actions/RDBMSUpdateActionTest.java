@@ -369,7 +369,6 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    private UpdateInput initUpdateRequest()
    {
       UpdateInput updateInput = new UpdateInput();
-      updateInput.setInstance(TestUtils.defineInstance());
       updateInput.setTableName(TestUtils.defineTablePerson().getName());
       return updateInput;
    }

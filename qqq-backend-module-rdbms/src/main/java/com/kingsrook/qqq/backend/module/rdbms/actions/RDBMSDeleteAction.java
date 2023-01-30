@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -38,8 +39,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -47,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInterface
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSDeleteAction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSDeleteAction.class);
 
 
 
@@ -109,7 +108,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
                catch(Exception e)
                {
                   deleteInput.getAsyncJobCallback().updateStatus("Error running bulk delete via filter.  Fetching keys for individual deletes.");
-                  LOG.info("Exception trying to delete by filter query.  Moving on to deleting by id now.");
+                  LOG.info("Exception trying to delete by filter query.  Moving on to deleting by id now.", e);
                   deleteInput.setPrimaryKeys(DeleteAction.getPrimaryKeysFromQueryFilter(deleteInput));
                }
             }
@@ -261,7 +260,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       QTableMetaData     table  = deleteInput.getTable();
 
       String       tableName    = getTableName(table);
-      JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), Collections.emptyList());
+      JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), Collections.emptyList(), deleteInput.getQueryFilter());
       String       whereClause  = makeWhereClause(deleteInput.getInstance(), deleteInput.getSession(), table, joinsContext, filter, params);
 
       // todo sql customization - can edit sql and/or param list?

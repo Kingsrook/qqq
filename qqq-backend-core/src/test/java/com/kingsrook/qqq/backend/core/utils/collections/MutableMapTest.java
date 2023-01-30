@@ -23,13 +23,14 @@ package com.kingsrook.qqq.backend.core.utils.collections;
 
 
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.utils.collections.MutableMap
  *******************************************************************************/
-class MutableMapTest
+class MutableMapTest extends BaseTest
 {
 
    /*******************************************************************************

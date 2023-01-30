@@ -28,9 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -84,7 +86,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  ** Unit test for QInstanceValidator.
  **
  *******************************************************************************/
-class QInstanceValidatorTest
+class QInstanceValidatorTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -94,7 +96,7 @@ class QInstanceValidatorTest
    @Test
    public void test_validatePass() throws QInstanceValidationException
    {
-      new QInstanceValidator().validate(TestUtils.defineInstance());
+      new QInstanceValidator().validate(QContext.getQInstance());
    }
 
 
@@ -106,7 +108,7 @@ class QInstanceValidatorTest
    @Test
    public void test_doNotReValidate() throws QInstanceValidationException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
       qInstance.setBackends(null);
       new QInstanceValidator().validate(qInstance);
@@ -1546,7 +1548,7 @@ class QInstanceValidatorTest
 
       assertThatThrownBy(() ->
       {
-         QInstance qInstance = TestUtils.defineInstance();
+         QInstance qInstance = QContext.getQInstance();
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId"));
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId"));
       }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Attempted to add a second securityKeyType with name: clientId");

@@ -27,9 +27,11 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -60,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for PollingAutomationPerTableRunner
  *******************************************************************************/
-class PollingAutomationPerTableRunnerTest
+class PollingAutomationPerTableRunnerTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -81,13 +83,12 @@ class PollingAutomationPerTableRunnerTest
    @Test
    void testInsertAndUpdate() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // insert 2 person records, both updated by the insert action, and 1 logged by logger-on-update automation //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.now()),
@@ -120,8 +121,7 @@ class PollingAutomationPerTableRunnerTest
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // now do an user-driven update - this SHOULD trigger the update automation next time we run automations. //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      UpdateInput updateInput = new UpdateInput(qInstance);
-      updateInput.setSession(new QSession());
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       updateInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("lastName", "now with a LastName"),
@@ -154,12 +154,18 @@ class PollingAutomationPerTableRunnerTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runAllTableActions(QInstance qInstance)
+   private void runAllTableActions(QInstance qInstance) throws QException
    {
       List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
       for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
       {
-         new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, null, tableAction).run();
+         PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, QSession::new, tableAction);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status(), tableAction.actions());
+
       }
    }
 
@@ -175,13 +181,12 @@ class PollingAutomationPerTableRunnerTest
    @Test
    void testMultiPages() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       //////////////////////////////////////////////////////////////////////////////////
       // insert many people - half who should be updated by the AgeChecker automation //
       //////////////////////////////////////////////////////////////////////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
       insertInput.setRecords(new ArrayList<>());
@@ -225,13 +230,12 @@ class PollingAutomationPerTableRunnerTest
    @Test
    void testRunningProcess() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       ////////////////////////////////////////////////////////////////////
       // insert 2 person records, 1 to trigger the "increaseAge" action //
       ////////////////////////////////////////////////////////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.of(1886, Month.JUNE, 6)),
@@ -261,7 +265,7 @@ class PollingAutomationPerTableRunnerTest
    @Test
    void testRunningEtlWithFrontendProcess() throws QException
    {
-      QInstance instance = TestUtils.defineInstance();
+      QInstance instance = QContext.getQInstance();
 
       ////////////////////////////////////////////////////////
       // define the process - an ELT from Shapes to Persons //

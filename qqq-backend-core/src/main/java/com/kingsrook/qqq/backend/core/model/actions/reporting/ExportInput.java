@@ -26,8 +26,6 @@ import java.io.OutputStream;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -52,27 +50,6 @@ public class ExportInput extends AbstractTableActionInput
     *******************************************************************************/
    public ExportInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public ExportInput(QInstance instance)
-   {
-      super(instance);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public ExportInput(QInstance instance, QSession session)
-   {
-      super(instance);
-      setSession(session);
    }
 
 

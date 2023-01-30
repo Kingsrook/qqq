@@ -35,6 +35,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -55,8 +56,6 @@ import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -65,7 +64,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QPossibleValueTranslator
 {
-   private static final Logger LOG = LogManager.getLogger(QPossibleValueTranslator.class);
+   private static final QLogger LOG = QLogger.getLogger(QPossibleValueTranslator.class);
 
    private final QInstance qInstance;
    private final QSession  session;
@@ -75,6 +74,8 @@ public class QPossibleValueTranslator
    // 2nd-level keys are pkey values from the PVS table //
    ///////////////////////////////////////////////////////
    private Map<String, Map<Serializable, String>> possibleValueCache;
+
+   // todo not commit - remove instance & session - use Context
 
 
 
@@ -503,8 +504,7 @@ public class QPossibleValueTranslator
 
          for(List<Serializable> page : CollectionUtils.getPages(values, 1000))
          {
-            QueryInput queryInput = new QueryInput(qInstance);
-            queryInput.setSession(session);
+            QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
             queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, page)));
 

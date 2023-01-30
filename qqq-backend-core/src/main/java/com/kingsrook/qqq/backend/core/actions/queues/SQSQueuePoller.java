@@ -35,15 +35,14 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -51,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class SQSQueuePoller implements Runnable
 {
-   private static final Logger LOG = LogManager.getLogger(SQSQueuePoller.class);
+   private static final QLogger LOG = QLogger.getLogger(SQSQueuePoller.class);
 
    ///////////////////////////////////////////////
    // todo - move these 2 to a "QBaseRunnable"? //
@@ -70,8 +69,10 @@ public class SQSQueuePoller implements Runnable
    @Override
    public void run()
    {
+      QContext.init(qInstance, sessionSupplier.get());
+
       String originalThreadName = Thread.currentThread().getName();
-      Thread.currentThread().setName("SQSPoller>" + queueMetaData.getName() + StandardScheduledExecutor.newThreadNameRandomSuffix());
+      Thread.currentThread().setName("SQSPoller>" + queueMetaData.getName());
       LOG.debug("Running " + this.getClass().getSimpleName() + "[" + queueMetaData.getName() + "]");
 
       try
@@ -125,8 +126,7 @@ public class SQSQueuePoller implements Runnable
             /////////////////////////////////////////////////////////////////////////////////////
             try
             {
-               RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-               runProcessInput.setSession(sessionSupplier.get());
+               RunProcessInput runProcessInput = new RunProcessInput();
                runProcessInput.setProcessName(queueMetaData.getProcessName());
                runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
                runProcessInput.addValue("bodies", bodies);
@@ -165,6 +165,7 @@ public class SQSQueuePoller implements Runnable
       finally
       {
          Thread.currentThread().setName(originalThreadName);
+         QContext.clear();
       }
    }
 

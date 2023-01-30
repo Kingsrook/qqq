@@ -26,12 +26,11 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -39,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BasicETLExtractFunction implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(BasicETLExtractFunction.class);
+   private static final QLogger LOG = QLogger.getLogger(BasicETLExtractFunction.class);
 
    private RecordPipe recordPipe = null;
 
@@ -54,8 +53,7 @@ public class BasicETLExtractFunction implements BackendStep
       String tableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
       LOG.debug("Start query on table: " + tableName);
 
-      QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-      queryInput.setSession(runBackendStepInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
 
       // queryRequest.setSkip(integerQueryParam(context, "skip"));

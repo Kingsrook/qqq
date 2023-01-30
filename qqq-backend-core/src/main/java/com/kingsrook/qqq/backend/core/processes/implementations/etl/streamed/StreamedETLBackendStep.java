@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -37,8 +38,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLLoadFunction;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLTransformFunction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class StreamedETLBackendStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(StreamedETLBackendStep.class);
+   private static final QLogger LOG = QLogger.getLogger(StreamedETLBackendStep.class);
 
    private static final int TIMEOUT_AFTER_NO_RECORDS_MS = 10 * 60 * 1000;
 
@@ -112,9 +111,8 @@ public class StreamedETLBackendStep implements BackendStep
     *******************************************************************************/
    private QBackendTransaction openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
+      InsertInput insertInput = new InsertInput();
 
-      insertInput.setSession(runBackendStepInput.getSession());
       insertInput.setTableName(runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE));
 
       return new InsertAction().openTransaction(insertInput);

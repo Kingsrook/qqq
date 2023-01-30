@@ -31,6 +31,8 @@ import java.time.Month;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
@@ -47,7 +49,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.testutils.PersonQRecord;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -61,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for GenerateReportAction
  *******************************************************************************/
-public class GenerateReportActionTest
+public class GenerateReportActionTest extends BaseTest
 {
    private static final String REPORT_NAME = "personReport1";
 
@@ -86,7 +87,7 @@ public class GenerateReportActionTest
    @Test
    void testPivot1() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       qInstance.addReport(definePersonShoesPivotReport(true));
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1), "endDate", LocalDate.of(1980, Month.DECEMBER, 31)));
@@ -141,7 +142,7 @@ public class GenerateReportActionTest
    @Test
    void testPivot2() throws QException
    {
-      QInstance       qInstance = TestUtils.defineInstance();
+      QInstance       qInstance = QContext.getQInstance();
       QReportMetaData report    = definePersonShoesPivotReport(false);
 
       //////////////////////////////////////////////
@@ -173,7 +174,7 @@ public class GenerateReportActionTest
    @Test
    void testPivot3() throws QException
    {
-      QInstance       qInstance = TestUtils.defineInstance();
+      QInstance       qInstance = QContext.getQInstance();
       QReportMetaData report    = definePersonShoesPivotReport(false);
 
       //////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,7 +226,7 @@ public class GenerateReportActionTest
    @Test
    void testPivot4() throws QException
    {
-      QInstance       qInstance = TestUtils.defineInstance();
+      QInstance       qInstance = QContext.getQInstance();
       QReportMetaData report    = definePersonShoesPivotReport(false);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -283,7 +284,7 @@ public class GenerateReportActionTest
    @Test
    void testPivot5() throws QException
    {
-      QInstance       qInstance = TestUtils.defineInstance();
+      QInstance       qInstance = QContext.getQInstance();
       QReportMetaData report    = definePersonShoesPivotReport(false);
 
       /////////////////////////////////////////////////////////////////////////////////////
@@ -320,12 +321,11 @@ public class GenerateReportActionTest
       String name = "/tmp/report.csv";
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
-         QInstance qInstance = TestUtils.defineInstance();
+         QInstance qInstance = QContext.getQInstance();
          qInstance.addReport(definePersonShoesPivotReport(true));
          insertPersonRecords(qInstance);
 
-         ReportInput reportInput = new ReportInput(qInstance);
-         reportInput.setSession(new QSession());
+         ReportInput reportInput = new ReportInput();
          reportInput.setReportName(REPORT_NAME);
          reportInput.setReportFormat(ReportFormat.CSV);
          reportInput.setReportOutputStream(fileOutputStream);
@@ -346,12 +346,11 @@ public class GenerateReportActionTest
       String name = "/tmp/report.xlsx";
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
-         QInstance qInstance = TestUtils.defineInstance();
+         QInstance qInstance = QContext.getQInstance();
          qInstance.addReport(definePersonShoesPivotReport(true));
          insertPersonRecords(qInstance);
 
-         ReportInput reportInput = new ReportInput(qInstance);
-         reportInput.setSession(new QSession());
+         ReportInput reportInput = new ReportInput();
          reportInput.setReportName(REPORT_NAME);
          reportInput.setReportFormat(ReportFormat.XLSX);
          reportInput.setReportOutputStream(fileOutputStream);
@@ -368,8 +367,7 @@ public class GenerateReportActionTest
     *******************************************************************************/
    private void runReport(QInstance qInstance, Map<String, Serializable> inputValues) throws QException
    {
-      ReportInput reportInput = new ReportInput(qInstance);
-      reportInput.setSession(new QSession());
+      ReportInput reportInput = new ReportInput();
       reportInput.setReportName(REPORT_NAME);
       reportInput.setReportFormat(ReportFormat.LIST_OF_MAPS);
       reportInput.setReportOutputStream(new ByteArrayOutputStream());
@@ -454,7 +452,7 @@ public class GenerateReportActionTest
    @Test
    void testTableOnlyReport() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QReportMetaData report = new QReportMetaData()
          .withName(REPORT_NAME)
          .withDataSources(List.of(
@@ -501,7 +499,7 @@ public class GenerateReportActionTest
    @Test
    void testTwoTableViewsOneDataSourceReport() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QReportMetaData report = new QReportMetaData()
          .withName(REPORT_NAME)
          .withDataSources(List.of(
@@ -562,12 +560,11 @@ public class GenerateReportActionTest
    @Test
    void testReportWithPossibleValueColumns() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       insertPersonRecords(qInstance);
 
-      ReportInput reportInput = new ReportInput(qInstance);
-      reportInput.setSession(new QSession());
+      ReportInput reportInput = new ReportInput();
       reportInput.setReportName(TestUtils.REPORT_NAME_PERSON_SIMPLE);
       reportInput.setReportFormat(ReportFormat.LIST_OF_MAPS);
       reportInput.setReportOutputStream(new ByteArrayOutputStream());

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
@@ -32,6 +33,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -65,7 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for MemoryBackendModule
  *******************************************************************************/
-class MemoryBackendModuleTest
+class MemoryBackendModuleTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -87,23 +89,21 @@ class MemoryBackendModuleTest
    @Test
    void testFullCRUD() throws QException
    {
-      QInstance      qInstance = TestUtils.defineInstance();
+      QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
       QSession       session   = new QSession();
 
       /////////////////////////
       // do an initial count //
       /////////////////////////
-      CountInput countInput = new CountInput(qInstance);
-      countInput.setSession(session);
+      CountInput countInput = new CountInput();
       countInput.setTableName(table.getName());
       assertEquals(0, new CountAction().execute(countInput).getCount());
 
       //////////////////
       // do an insert //
       //////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(session);
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(getTestRecords(table));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -116,8 +116,7 @@ class MemoryBackendModuleTest
       ////////////////
       // do a query //
       ////////////////
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size());
@@ -134,8 +133,7 @@ class MemoryBackendModuleTest
       //////////////////
       // do an update //
       //////////////////
-      UpdateInput updateInput = new UpdateInput(qInstance);
-      updateInput.setSession(session);
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName(table.getName());
       updateInput.setRecords(List.of(
          new QRecord()
@@ -162,8 +160,7 @@ class MemoryBackendModuleTest
       /////////////////////////
       // do a filtered query //
       /////////////////////////
-      queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
       queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 3))));
       queryOutput = new QueryAction().execute(queryInput);
@@ -180,8 +177,7 @@ class MemoryBackendModuleTest
       /////////////////
       // do a delete //
       /////////////////
-      DeleteInput deleteInput = new DeleteInput(qInstance);
-      deleteInput.setSession(session);
+      DeleteInput deleteInput = new DeleteInput();
       deleteInput.setTableName(table.getName());
       deleteInput.setPrimaryKeys(List.of(1, 2));
       DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
@@ -204,12 +200,11 @@ class MemoryBackendModuleTest
    @Test
    void testQueryOperators() throws QException
    {
-      QInstance      qInstance = TestUtils.defineInstance();
+      QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
       QSession       session   = new QSession();
 
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(session);
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", 1).withValue("name", "Square").withValue("date", LocalDate.of(1980, Month.MAY, 31)),
@@ -344,8 +339,7 @@ class MemoryBackendModuleTest
       // skip & limit //
       //////////////////
       {
-         QueryInput queryInput = new QueryInput(qInstance);
-         queryInput.setSession(session);
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(table.getName());
          queryInput.setLimit(2);
          assertEquals(2, new QueryAction().execute(queryInput).getRecords().size());
@@ -362,8 +356,7 @@ class MemoryBackendModuleTest
       // order //
       ///////////
       {
-         QueryInput queryInput = new QueryInput(qInstance);
-         queryInput.setSession(session);
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(table.getName());
          queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("name", true)));
          assertEquals(List.of("Circle", "Square", "Triangle"), new QueryAction().execute(queryInput).getRecords().stream().map(r -> r.getValueString("name")).toList());
@@ -396,8 +389,7 @@ class MemoryBackendModuleTest
     *******************************************************************************/
    private List<QRecord> queryShapes(QInstance qInstance, QTableMetaData table, QSession session, QQueryFilter filter) throws QException
    {
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
       queryInput.setFilter(filter);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -412,15 +404,14 @@ class MemoryBackendModuleTest
    @Test
    void testSerials() throws QException
    {
-      QInstance      qInstance = TestUtils.defineInstance();
+      QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
       QSession       session   = new QSession();
 
       //////////////////
       // do an insert //
       //////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(session);
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("name", "Shape 1")));
       new InsertAction().execute(insertInput);
@@ -431,8 +422,7 @@ class MemoryBackendModuleTest
       insertInput.setRecords(List.of(new QRecord().withTableName(table.getName()).withValue("name", "Shape 3")));
       new InsertAction().execute(insertInput);
 
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1)));
@@ -492,9 +482,7 @@ class MemoryBackendModuleTest
    @Test
    void testCustomizer() throws QException
    {
-      QInstance      qInstance = TestUtils.defineInstance();
-      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
-      QSession       session   = new QSession();
+      QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE);
 
       ///////////////////////////////////
       // add a customizer to the table //
@@ -504,8 +492,7 @@ class MemoryBackendModuleTest
       //////////////////
       // do an insert //
       //////////////////
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(session);
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(getTestRecords(table));
       new InsertAction().execute(insertInput);
@@ -515,8 +502,7 @@ class MemoryBackendModuleTest
       ///////////////////////////////////////////////////////
       ShapeTestCustomizer.invocationCount = 0;
       ShapeTestCustomizer.recordsCustomizedCount = 0;
-      QueryInput queryInput = new QueryInput(qInstance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size());

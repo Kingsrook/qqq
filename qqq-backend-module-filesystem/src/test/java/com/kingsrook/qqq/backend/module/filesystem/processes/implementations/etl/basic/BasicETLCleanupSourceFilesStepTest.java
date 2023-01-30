@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -35,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -48,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for BasicETLCleanupSourceFilesFunction
  *******************************************************************************/
-public class BasicETLCleanupSourceFilesStepTest
+public class BasicETLCleanupSourceFilesStepTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -57,7 +59,7 @@ public class BasicETLCleanupSourceFilesStepTest
    @Test
    public void testDelete1Record1File() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       String    filePath  = getRandomFilePathPersonTable(qInstance);
       testDelete(qInstance, List.of(filePath));
    }
@@ -70,7 +72,7 @@ public class BasicETLCleanupSourceFilesStepTest
    @Test
    public void testDelete2Records1File() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       String    filePath  = getRandomFilePathPersonTable(qInstance);
       testDelete(qInstance, List.of(filePath, filePath));
    }
@@ -83,7 +85,7 @@ public class BasicETLCleanupSourceFilesStepTest
    @Test
    public void testDelete2Record2File() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       String    filePath1 = getRandomFilePathPersonTable(qInstance);
       String    filePath2 = getRandomFilePathPersonTable(qInstance);
       testDelete(qInstance, List.of(filePath1, filePath2));
@@ -97,7 +99,7 @@ public class BasicETLCleanupSourceFilesStepTest
    @Test
    public void testMove1Record1File() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       String    filePath  = getRandomFilePathPersonTable(qInstance);
       testMove(qInstance, List.of(filePath));
    }
@@ -110,7 +112,7 @@ public class BasicETLCleanupSourceFilesStepTest
    @Test
    public void testMove2Records1File() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       String    filePath  = getRandomFilePathPersonTable(qInstance);
       testMove(qInstance, List.of(filePath, filePath));
    }
@@ -123,7 +125,7 @@ public class BasicETLCleanupSourceFilesStepTest
    @Test
    public void testMove2Record2File() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       String    filePath1 = getRandomFilePathPersonTable(qInstance);
       String    filePath2 = getRandomFilePathPersonTable(qInstance);
       testMove(qInstance, List.of(filePath1, filePath2));
@@ -180,7 +182,7 @@ public class BasicETLCleanupSourceFilesStepTest
    private RunBackendStepOutput runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
    {
       QBackendStepMetaData backendStepMetaData = new BasicETLCleanupSourceFilesStep().defineStepMetaData();
-      QProcessMetaData     qProcessMetaData  = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
+      QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
 
       HashSet<String> filePathsSet = new HashSet<>(filePaths);
@@ -193,11 +195,10 @@ public class BasicETLCleanupSourceFilesStepTest
       // List<QRecord> records = filePaths.stream()
       //    .map(filePath -> new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, filePath)).toList();
 
-      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.setStepName(backendStepMetaData.getName());
       runBackendStepInput.setProcessName(qProcessMetaData.getName());
       // runFunctionRequest.setRecords(records);
-      runBackendStepInput.setSession(TestUtils.getMockSession());
       runBackendStepInput.addValue(BasicETLProcess.FIELD_SOURCE_TABLE, TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       runBackendStepInput.addValue(BasicETLProcess.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_S3);
       runBackendStepInput.addValue(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS, StringUtils.join(",", filePathsSet));

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils.aggregates;
 
 
 import java.math.BigDecimal;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for Aggregates
  *******************************************************************************/
-class AggregatesTest
+class AggregatesTest extends BaseTest
 {
 
    /*******************************************************************************

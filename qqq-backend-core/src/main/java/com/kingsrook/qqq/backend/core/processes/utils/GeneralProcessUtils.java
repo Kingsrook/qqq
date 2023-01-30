@@ -71,6 +71,8 @@ public class GeneralProcessUtils
       return getForeignRecordMap(parentActionInput, sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTablePrimaryKeyName, new QQueryFilter());
    }
 
+   // todo not commit - clean up all method sigs
+
 
 
    /*******************************************************************************
@@ -84,8 +86,7 @@ public class GeneralProcessUtils
    public static Map<Serializable, QRecord> getForeignRecordMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName, QQueryFilter additionalFilter) throws QException
    {
       Map<Serializable, QRecord> foreignRecordMap = new HashMap<>();
-      QueryInput                 queryInput       = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput                 queryInput       = new QueryInput();
       queryInput.setTableName(foreignTableName);
       List<Serializable> foreignIds = new ArrayList<>(sourceRecords.stream().map(r -> r.getValue(sourceTableForeignKeyFieldName)).toList());
 
@@ -113,8 +114,7 @@ public class GeneralProcessUtils
    public static ListingHash<Serializable, QRecord> getForeignRecordListingHashMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTableForeignKeyName) throws QException
    {
       ListingHash<Serializable, QRecord> foreignRecordMap = new ListingHash<>();
-      QueryInput                         queryInput       = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput                         queryInput       = new QueryInput();
       queryInput.setTableName(foreignTableName);
       List<Serializable> foreignIds = new ArrayList<>(sourceRecords.stream().map(r -> r.getValue(sourceTableForeignKeyFieldName)).toList());
 
@@ -186,8 +186,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static List<QRecord> getRecordListByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, List.of(fieldValue))));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -208,8 +207,7 @@ public class GeneralProcessUtils
          return (Optional.empty());
       }
 
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, fieldValue)));
       queryInput.setLimit(1);
@@ -252,8 +250,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Optional<QRecord> getRecordByPrimaryKey(AbstractActionInput parentActionInput, String tableName, Serializable value) throws QException
    {
-      GetInput getInput = new GetInput(parentActionInput.getInstance());
-      getInput.setSession(parentActionInput.getSession());
+      GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
       getInput.setPrimaryKey(value);
       GetOutput getOutput = new GetAction().execute(getInput);
@@ -281,8 +278,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static List<QRecord> loadTable(AbstractActionInput parentActionInput, String tableName) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords());
@@ -298,8 +294,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static <T extends QRecordEntity> List<T> loadTable(AbstractActionInput parentActionInput, String tableName, Class<T> entityClass) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
@@ -342,8 +337,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Map<Serializable, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, QQueryFilter filter) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setFilter(filter);
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
@@ -377,8 +371,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static <T extends Serializable> Map<T, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, Class<T> keyType, String keyFieldName) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
       List<QRecord> records     = queryOutput.getRecords();
@@ -403,8 +396,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, Class<T> entityClass) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
       List<QRecord> records     = queryOutput.getRecords();
@@ -435,8 +427,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static ListingHash<Serializable, QRecord> loadTableToListingHash(AbstractActionInput parentActionInput, String tableName, String keyFieldName) throws QException
    {
-      QueryInput queryInput = new QueryInput(parentActionInput.getInstance());
-      queryInput.setSession(parentActionInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
       List<QRecord> records     = queryOutput.getRecords();
@@ -509,8 +500,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Integer count(AbstractActionInput input, String tableName, QQueryFilter filter) throws QException
    {
-      CountInput countInput = new CountInput(input.getInstance());
-      countInput.setSession(input.getSession());
+      CountInput countInput = new CountInput();
       countInput.setTableName(tableName);
       countInput.setFilter(filter);
       CountOutput countOutput = new CountAction().execute(countInput);

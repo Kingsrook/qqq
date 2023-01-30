@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
@@ -39,7 +41,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /*******************************************************************************
  ** Unit test for ChildRecordListRenderer
  *******************************************************************************/
-class ParentWidgetRendererTest
+class ParentWidgetRendererTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -72,7 +73,7 @@ class ParentWidgetRendererTest
    @Test
    void testParentWidget() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       QWidgetMetaDataInterface parentWidget = new ParentWidgetMetaData()
          .withTitle("Parent")
@@ -97,8 +98,7 @@ class ParentWidgetRendererTest
          .withIcon("local_shipping");
       qInstance.addWidget(parentWidget);
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(parentWidget);
 
       RenderWidgetAction renderWidgetAction = new RenderWidgetAction();
@@ -119,18 +119,18 @@ class ParentWidgetRendererTest
    @Test
    void testNoChildRecordsFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
       qInstance.addWidget(widget);
+      reInitInstanceInContext(qInstance);
 
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
          new QRecord().withValue("id", 1)
       ));
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 
@@ -150,11 +150,12 @@ class ParentWidgetRendererTest
    @Test
    void testChildRecordsFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
       qInstance.addWidget(widget);
+      reInitInstanceInContext(qInstance);
 
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
          new QRecord().withValue("id", 1),
@@ -167,8 +168,7 @@ class ParentWidgetRendererTest
          new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.
       ));
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 

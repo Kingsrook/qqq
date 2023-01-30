@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.sql.Connection;
+import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for RDBMSTransaction
  *******************************************************************************/
-class RDBMSTransactionTest
+class RDBMSTransactionTest extends BaseTest
 {
    private final String testToken = getClass().getName();
 

@@ -28,7 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  ** Unit test for CollectionUtils
  **
  *******************************************************************************/
-class CollectionUtilsTest
+class CollectionUtilsTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -422,7 +424,7 @@ class CollectionUtilsTest
    void test_safelyGetPage()
    {
       List<Integer> empty = Collections.emptyList();
-      List<Integer> list = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+      List<Integer> list  = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
       /////////////////////
       // null list input //
@@ -479,14 +481,14 @@ class CollectionUtilsTest
       /////////////////////////////////////////////////////////
       // make sure scrolling through pages works as expected //
       /////////////////////////////////////////////////////////
-      int skip = 0;
-      int limit = 3;
-      int pageCount = 0;
+      int           skip        = 0;
+      int           limit       = 3;
+      int           pageCount   = 0;
       List<Integer> accumulator = new ArrayList<>();
-      while (true)
+      while(true)
       {
          List<Integer> nextPage = CollectionUtils.safelyGetPage(list, skip, limit);
-         if (nextPage.isEmpty())
+         if(nextPage.isEmpty())
          {
             break;
          }
@@ -496,6 +498,50 @@ class CollectionUtilsTest
       }
       assertEquals(4, pageCount);
       assertEquals(list, accumulator);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNonNullArray()
+   {
+      assertArrayEquals(new Integer[] { }, CollectionUtils.nonNullArray(null));
+      assertArrayEquals(new Integer[] { }, CollectionUtils.nonNullArray(new Integer[] { }));
+      assertArrayEquals(new Integer[] { 1, 2, 3 }, CollectionUtils.nonNullArray(new Integer[] { 1, 2, 3 }));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNonNullList()
+   {
+      assertEquals(List.of(), CollectionUtils.nonNullList(null));
+      assertEquals(List.of(), CollectionUtils.nonNullList(List.of()));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.nonNullList(List.of(1, 2, 3)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMergeLists()
+   {
+      assertEquals(List.of(), CollectionUtils.mergeLists());
+      assertEquals(List.of(), CollectionUtils.mergeLists((List<Object>) null));
+      assertEquals(List.of(), CollectionUtils.mergeLists((List<Object>[]) null));
+      assertEquals(List.of(), CollectionUtils.mergeLists(List.of()));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2, 3)));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2), List.of(3)));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2), null, List.of(3)));
+      assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(null, List.of(1, 2, 3), null));
    }
 
 }

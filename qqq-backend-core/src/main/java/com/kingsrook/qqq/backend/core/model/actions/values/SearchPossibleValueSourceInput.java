@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -49,16 +48,6 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput
     *******************************************************************************/
    public SearchPossibleValueSourceInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public SearchPossibleValueSourceInput(QInstance instance)
-   {
-      super(instance);
    }
 
 
@@ -198,7 +187,7 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput
    }
 
 
-   
+
    /*******************************************************************************
     ** Getter for skip
     **

@@ -39,7 +39,9 @@ import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -56,12 +58,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAut
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -75,7 +74,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class PollingAutomationPerTableRunner implements Runnable
 {
-   private static final Logger LOG = LogManager.getLogger(PollingAutomationPerTableRunner.class);
+   private static final QLogger LOG = QLogger.getLogger(PollingAutomationPerTableRunner.class);
 
    private final TableActions tableActions;
    private final String       name;
@@ -175,9 +174,11 @@ public class PollingAutomationPerTableRunner implements Runnable
    @Override
    public void run()
    {
+      QContext.init(instance, sessionSupplier.get());
+
       String originalThreadName = Thread.currentThread().getName();
-      Thread.currentThread().setName(name + StandardScheduledExecutor.newThreadNameRandomSuffix());
-      LOG.debug("Running " + this.getClass().getSimpleName() + "[" + name + "]");
+      Thread.currentThread().setName(name);
+      LOG.info("Running " + this.getClass().getSimpleName() + "[" + name + "]");
 
       try
       {
@@ -191,6 +192,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       finally
       {
          Thread.currentThread().setName(originalThreadName);
+         QContext.clear();
       }
    }
 
@@ -199,14 +201,14 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     ** Query for and process records that have a PENDING_INSERT or PENDING_UPDATE status on a given table.
     *******************************************************************************/
-   private void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus, List<TableAutomationAction> actions) throws QException
+   public void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus, List<TableAutomationAction> actions) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(actions))
       {
          return;
       }
 
-      LOG.debug("  Query for records " + automationStatus + " in " + table);
+      LOG.info("  Query for records " + automationStatus + " in " + table);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // run an async-pipe loop - that will query for records in PENDING - put them in a pipe - then apply actions to them //
@@ -219,8 +221,7 @@ public class PollingAutomationPerTableRunner implements Runnable
 
       asyncRecordPipeLoop.run("PollingAutomationRunner>Query>" + automationStatus + ">" + table.getName(), null, recordPipe, (status) ->
          {
-            QueryInput queryInput = new QueryInput(instance);
-            queryInput.setSession(session);
+            QueryInput queryInput = new QueryInput();
             queryInput.setTableName(table.getName());
 
             AutomationStatusTrackingType statusTrackingType = automationDetails.getStatusTracking().getType();
@@ -275,10 +276,10 @@ public class PollingAutomationPerTableRunner implements Runnable
             // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////
             List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(session, table, records, action);
-            LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
+            LOG.info("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
             if(CollectionUtils.nullSafeHasContents(matchingQRecords))
             {
-               LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
+               LOG.info("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
                applyActionToMatchingRecords(instance, session, table, matchingQRecords, action);
             }
          }
@@ -318,8 +319,7 @@ public class PollingAutomationPerTableRunner implements Runnable
     *******************************************************************************/
    private List<QRecord> getRecordsMatchingActionFilter(QSession session, QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws QException
    {
-      QueryInput queryInput = new QueryInput(instance);
-      queryInput.setSession(session);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
 
       QQueryFilter filter = new QQueryFilter();
@@ -368,8 +368,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          // tell it to SKIP frontend steps.                                                     //
          // give the process a callback w/ a query filter that has the p-keys of these records. //
          /////////////////////////////////////////////////////////////////////////////////////////
-         RunProcessInput runProcessInput = new RunProcessInput(instance);
-         runProcessInput.setSession(session);
+         RunProcessInput runProcessInput = new RunProcessInput();
          runProcessInput.setProcessName(action.getProcessName());
          runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
          runProcessInput.setCallback(new QProcessCallback()
@@ -392,8 +391,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       else if(action.getCodeReference() != null)
       {
          LOG.debug("    Executing action: [" + action.getName() + "] as code reference: " + action.getCodeReference());
-         RecordAutomationInput input = new RecordAutomationInput(instance);
-         input.setSession(session);
+         RecordAutomationInput input = new RecordAutomationInput();
          input.setTableName(table.getName());
          input.setRecordList(records);
 

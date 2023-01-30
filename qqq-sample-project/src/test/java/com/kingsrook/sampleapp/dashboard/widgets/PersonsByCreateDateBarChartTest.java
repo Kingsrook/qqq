@@ -27,7 +27,6 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChartData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
-import com.kingsrook.sampleapp.SampleMetaDataProvider;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +45,7 @@ class PersonsByCreateDateBarChartTest
    @Test
    void test() throws QException
    {
-      RenderWidgetOutput output = new PersonsByCreateDateBarChart().render(new RenderWidgetInput(SampleMetaDataProvider.defineInstance()));
+      RenderWidgetOutput output = new PersonsByCreateDateBarChart().render(new RenderWidgetInput());
       assertThat(output.getWidgetData()).isInstanceOf(ChartData.class);
       ChartData chartData = (ChartData) output.getWidgetData();
       assertEquals(WidgetType.CHART.getType(), chartData.getType());

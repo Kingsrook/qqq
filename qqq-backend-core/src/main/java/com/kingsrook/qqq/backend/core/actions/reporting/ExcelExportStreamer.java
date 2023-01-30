@@ -37,6 +37,7 @@ import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.ExcelStylerInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.PlainExcelStyler;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -45,8 +46,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.dhatim.fastexcel.StyleSetter;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
@@ -57,7 +56,7 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public class ExcelExportStreamer implements ExportStreamerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(ExcelExportStreamer.class);
+   private static final QLogger LOG = QLogger.getLogger(ExcelExportStreamer.class);
 
    private ExportInput          exportInput;
    private QTableMetaData       table;

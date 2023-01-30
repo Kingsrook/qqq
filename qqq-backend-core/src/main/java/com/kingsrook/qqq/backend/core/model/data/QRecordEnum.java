@@ -34,9 +34,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -44,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public interface QRecordEnum
 {
-   Logger LOG = LogManager.getLogger(QRecordEnum.class);
+   QLogger LOG = QLogger.getLogger(QRecordEnum.class);
 
    ListingHash<Class<? extends QRecordEnum>, QRecordEntityField> fieldMapping = new ListingHash<>();
 

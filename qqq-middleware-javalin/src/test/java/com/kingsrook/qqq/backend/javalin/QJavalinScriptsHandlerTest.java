@@ -26,6 +26,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -40,6 +41,8 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,6 +53,25 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *******************************************************************************/
 class QJavalinScriptsHandlerTest extends QJavalinTestBase
 {
+   @BeforeEach
+   public void beforeEach() throws Exception
+   {
+      QContext.init(TestUtils.defineInstance(), new QSession());
+      super.beforeEach();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   void afterEach()
+   {
+      QContext.clear();
+   }
+
+
 
    /*******************************************************************************
     **
@@ -57,14 +79,12 @@ class QJavalinScriptsHandlerTest extends QJavalinTestBase
    @Test
    void testGetRecordDeveloperMode() throws QException
    {
-      UpdateInput updateInput = new UpdateInput(TestUtils.defineInstance());
-      updateInput.setSession(new QSession());
+      UpdateInput updateInput = new UpdateInput();
       updateInput.setTableName("person");
       updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("testScriptId", 47)));
       new UpdateAction().execute(updateInput);
 
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("script");
       insertInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("currentScriptRevisionId", 100)));
       new InsertAction().execute(insertInput);
@@ -99,8 +119,7 @@ class QJavalinScriptsHandlerTest extends QJavalinTestBase
    @Test
    void testStoreRecordAssociatedScript() throws QException
    {
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("scriptType");
       insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("name", "Test")));
       new InsertAction().execute(insertInput);
@@ -110,8 +129,7 @@ class QJavalinScriptsHandlerTest extends QJavalinTestBase
          .field("commitMessage", "Javalin Commit")
          .asString();
 
-      QueryInput queryInput = new QueryInput(TestUtils.defineInstance());
-      queryInput.setSession(new QSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName("scriptRevision");
       queryInput.setFilter(new QQueryFilter()
          .withCriteria(new QFilterCriteria("contents", QCriteriaOperator.EQUALS, List.of("var j = 0;")))
@@ -129,8 +147,7 @@ class QJavalinScriptsHandlerTest extends QJavalinTestBase
    @Test
    void testTestAssociatedScript() throws QException
    {
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("scriptType");
       insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("name", "Test")));
       new InsertAction().execute(insertInput);
@@ -158,8 +175,7 @@ class QJavalinScriptsHandlerTest extends QJavalinTestBase
    @Test
    void testGetAssociatedScriptLogs() throws QException
    {
-      InsertInput insertInput = new InsertInput(TestUtils.defineInstance());
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName("scriptLog");
       insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("output", "testOutput").withValue("scriptRevisionId", 100)));
       new InsertAction().execute(insertInput);

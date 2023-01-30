@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -50,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  ** Unit test for JsonUtils.
  **
  *******************************************************************************/
-class JsonUtilsTest
+class JsonUtilsTest extends BaseTest
 {
 
    /*******************************************************************************

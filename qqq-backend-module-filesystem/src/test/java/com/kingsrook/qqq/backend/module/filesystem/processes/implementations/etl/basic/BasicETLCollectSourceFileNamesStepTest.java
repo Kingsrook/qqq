@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for BasicETLCollectSourceFileNamesFunction
  *******************************************************************************/
-class BasicETLCollectSourceFileNamesStepTest
+class BasicETLCollectSourceFileNamesStepTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -97,12 +98,12 @@ class BasicETLCollectSourceFileNamesStepTest
       QBackendStepMetaData backendStepMetaData = new BasicETLCollectSourceFileNamesStep().defineStepMetaData();
       QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
+      reInitInstanceInContext(qInstance);
 
       List<QRecord> records = Arrays.stream(fileNames).map(fileName ->
          new QRecord().withBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, fileName)).toList();
 
-      RunBackendStepInput runBackendStepInput = new RunBackendStepInput(qInstance);
-      runBackendStepInput.setSession(TestUtils.getMockSession());
+      RunBackendStepInput runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.setStepName(backendStepMetaData.getName());
       runBackendStepInput.setProcessName(qProcessMetaData.getName());
       runBackendStepInput.setRecords(records);

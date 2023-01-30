@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.reports;
 
 import java.time.LocalDate;
 import java.time.Month;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportActionTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -40,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /*******************************************************************************
  ** Unit test for BasicRunReportProcess
  *******************************************************************************/
-class BasicRunReportProcessTest
+class BasicRunReportProcessTest extends BaseTest
 {
    /*******************************************************************************
     **
@@ -56,8 +57,9 @@ class BasicRunReportProcessTest
       report.setProcessName(runReportProcess.getName());
       instance.addProcess(runReportProcess);
 
-      RunProcessInput runProcessInput = new RunProcessInput(instance);
-      runProcessInput.setSession(TestUtils.getMockSession());
+      reInitInstanceInContext(instance);
+
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(report.getProcessName());
       runProcessInput.addValue(BasicRunReportProcess.FIELD_REPORT_NAME, report.getName());
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);

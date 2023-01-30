@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Assertions;
@@ -32,7 +33,7 @@ import org.junit.jupiter.api.Test;
 /*******************************************************************************
  ** Unit test for TempFileStateProvider
  *******************************************************************************/
-public class TempFileStateProviderTest
+public class TempFileStateProviderTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -48,6 +49,7 @@ public class TempFileStateProviderTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -57,7 +59,7 @@ public class TempFileStateProviderTest
       TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
       UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
-      String uuid = UUID.randomUUID().toString();
+      String  uuid    = UUID.randomUUID().toString();
       QRecord qRecord = new QRecord().withValue("uuid", uuid);
       stateProvider.put(key, qRecord);
 
@@ -76,7 +78,7 @@ public class TempFileStateProviderTest
       TempFileStateProvider stateProvider = TempFileStateProvider.getInstance();
       UUIDAndTypeStateKey   key           = new UUIDAndTypeStateKey(StateType.PROCESS_STATUS);
 
-      String uuid = UUID.randomUUID().toString();
+      String  uuid    = UUID.randomUUID().toString();
       QRecord qRecord = new QRecord().withValue("uuid", uuid);
       stateProvider.put(key, qRecord);
 

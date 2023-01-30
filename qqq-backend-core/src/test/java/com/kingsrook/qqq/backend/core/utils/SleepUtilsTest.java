@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for SleepUtils
  *******************************************************************************/
-class SleepUtilsTest
+class SleepUtilsTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -41,7 +42,7 @@ class SleepUtilsTest
    {
       long start = System.currentTimeMillis();
       SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
-      long end = System.currentTimeMillis();
+      long end      = System.currentTimeMillis();
       long sleptFor = end - start;
       System.out.println("Slept for: " + sleptFor);
       assertTrue(sleptFor >= 10);

@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -418,6 +420,17 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
       {
          pickMessage(isForResultScreen);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public LogPair toLogPair()
+   {
+      return (logPair("ProcessSummary", logPair("status", status), logPair("count", count), logPair("message", message)));
    }
 
 

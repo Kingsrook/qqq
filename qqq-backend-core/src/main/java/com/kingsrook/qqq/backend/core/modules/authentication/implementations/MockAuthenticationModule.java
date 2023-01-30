@@ -24,12 +24,11 @@ package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -37,8 +36,9 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class MockAuthenticationModule implements QAuthenticationModuleInterface
 {
-   private static final Logger logger = LogManager.getLogger(MockAuthenticationModule.class);
-   private static final int USER_ID_MODULO = 10_000;
+   private static final QLogger logger         = QLogger.getLogger(MockAuthenticationModule.class);
+   private static final int     USER_ID_MODULO = 10_000;
+
 
 
    /*******************************************************************************

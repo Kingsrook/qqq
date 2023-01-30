@@ -28,13 +28,12 @@ import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -42,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QCodeLoader
 {
-   private static final Logger LOG = LogManager.getLogger(QCodeLoader.class);
+   private static final QLogger LOG = QLogger.getLogger(QCodeLoader.class);
 
 
 

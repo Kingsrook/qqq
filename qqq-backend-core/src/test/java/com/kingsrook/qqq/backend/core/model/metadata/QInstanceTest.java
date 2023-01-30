@@ -22,9 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for QInstance
  *******************************************************************************/
-class QInstanceTest
+class QInstanceTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -43,10 +44,9 @@ class QInstanceTest
    @Test
    void testGetTablePath() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
-      GetInput getInput = new GetInput(qInstance);
-      getInput.setSession(new QSession());
+      GetInput getInput = new GetInput();
 
       String tablePath = qInstance.getTablePath(getInput, TestUtils.TABLE_NAME_PERSON);
       assertEquals("/peopleApp/person", tablePath);
@@ -66,10 +66,9 @@ class QInstanceTest
    @Test
    void testGetTablePathNotInAnyApp() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
-      GetInput getInput = new GetInput(qInstance);
-      getInput.setSession(new QSession());
+      GetInput getInput = new GetInput();
 
       String tablePath = qInstance.getTablePath(getInput, "notATable");
       assertNull(tablePath);

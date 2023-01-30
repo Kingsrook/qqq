@@ -32,12 +32,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.lambda.model.QLambdaRequest;
 import com.kingsrook.qqq.lambda.model.QLambdaResponse;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,7 +55,7 @@ import org.json.JSONObject;
  *******************************************************************************/
 public abstract class QAbstractLambdaHandler implements RequestStreamHandler
 {
-   private static Logger LOG; // = LogManager.getLogger(QBasicLambdaHandler.class);
+   private static QLogger LOG; // = QLogger.getLogger(QBasicLambdaHandler.class);
 
    protected Context context;
 
@@ -213,7 +212,7 @@ public abstract class QAbstractLambdaHandler implements RequestStreamHandler
    {
       if(LOG == null)
       {
-         LOG = LogManager.getLogger(QAbstractLambdaHandler.class);
+         LOG = QLogger.getLogger(QAbstractLambdaHandler.class);
       }
    }
 

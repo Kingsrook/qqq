@@ -43,9 +43,8 @@ public class PieChartData extends ChartData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public PieChartData(String label, String description, String seriesLabel, List<String> labels, List<Number> data)
+   public PieChartData(String description, String seriesLabel, List<String> labels, List<Number> data)
    {
-      setLabel(label);
       setDescription(description);
       setChartData(new ChartData.Data()
          .withLabels(labels)

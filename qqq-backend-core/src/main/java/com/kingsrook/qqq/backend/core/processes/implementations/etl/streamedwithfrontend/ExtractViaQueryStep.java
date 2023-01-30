@@ -77,8 +77,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QueryInput queryInput = new QueryInput(runBackendStepInput.getInstance());
-      queryInput.setSession(runBackendStepInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
       queryInput.setFilter(queryFilter);
       queryInput.setRecordPipe(getRecordPipe());
@@ -99,8 +98,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
    @Override
    public Integer doCount(RunBackendStepInput runBackendStepInput) throws QException
    {
-      CountInput countInput = new CountInput(runBackendStepInput.getInstance());
-      countInput.setSession(runBackendStepInput.getSession());
+      CountInput countInput = new CountInput();
       countInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
       countInput.setFilter(queryFilter);
       CountOutput countOutput = new CountAction().execute(countInput);

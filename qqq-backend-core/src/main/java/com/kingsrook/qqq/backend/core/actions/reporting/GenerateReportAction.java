@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
@@ -72,8 +73,6 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -90,7 +89,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class GenerateReportAction
 {
-   private static final Logger LOG = LogManager.getLogger(GenerateReportAction.class);
+   private static final QLogger LOG = QLogger.getLogger(GenerateReportAction.class);
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // summaryAggregates and varianceAggregates are multi-level maps, ala:                                     //
@@ -216,8 +215,7 @@ public class GenerateReportAction
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", reportInput.getInputValues());
 
-      ExportInput exportInput = new ExportInput(reportInput.getInstance());
-      exportInput.setSession(reportInput.getSession());
+      ExportInput exportInput = new ExportInput();
       exportInput.setReportFormat(reportFormat);
       exportInput.setFilename(reportInput.getFilename());
       exportInput.setTitleRow(getTitle(reportView, variableInterpreter));
@@ -227,7 +225,7 @@ public class GenerateReportAction
       JoinsContext joinsContext = null;
       if(StringUtils.hasContent(dataSource.getSourceTable()))
       {
-         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins());
+         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
       }
 
       List<QFieldMetaData> fields = new ArrayList<>();
@@ -277,8 +275,7 @@ public class GenerateReportAction
       {
          transformStep = QCodeLoader.getBackendStep(AbstractTransformStep.class, tableView.getRecordTransformStep());
 
-         transformStepInput = new RunBackendStepInput(reportInput.getInstance());
-         transformStepInput.setSession(reportInput.getSession());
+         transformStepInput = new RunBackendStepInput();
          transformStepInput.setValues(reportInput.getInputValues());
 
          transformStepOutput = new RunBackendStepOutput();
@@ -304,15 +301,14 @@ public class GenerateReportAction
             QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
             setInputValuesInQueryFilter(reportInput, queryFilter);
 
-            QueryInput queryInput = new QueryInput(reportInput.getInstance());
-            queryInput.setSession(reportInput.getSession());
+            QueryInput queryInput = new QueryInput();
             queryInput.setRecordPipe(recordPipe);
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
             queryInput.setQueryJoins(dataSource.getQueryJoins());
 
             queryInput.setShouldTranslatePossibleValues(true);
-            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins())));
+            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
 
             if(dataSource.getQueryInputCustomizer() != null)
             {
@@ -597,8 +593,7 @@ public class GenerateReportAction
          QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
          SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
 
-         ExportInput exportInput = new ExportInput(reportInput.getInstance());
-         exportInput.setSession(reportInput.getSession());
+         ExportInput exportInput = new ExportInput();
          exportInput.setReportFormat(reportFormat);
          exportInput.setFilename(reportInput.getFilename());
          exportInput.setTitleRow(summaryOutput.titleRow);

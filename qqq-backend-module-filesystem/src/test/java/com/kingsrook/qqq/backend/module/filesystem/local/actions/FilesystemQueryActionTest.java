@@ -50,7 +50,6 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    public void testQuery1() throws QException
    {
       QueryInput queryInput = new QueryInput();
-      queryInput.setInstance(TestUtils.defineInstance());
       queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
       Assertions.assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
@@ -72,8 +71,8 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
 
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
       table.withCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole(), new QCodeReference(ValueUpshifter.class, QCodeUsage.CUSTOMIZER));
+      reInitInstanceInContext(instance);
 
-      queryInput.setInstance(instance);
       queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
       Assertions.assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");

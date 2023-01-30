@@ -28,14 +28,13 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -43,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BasicETLLoadFunction implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(BasicETLLoadFunction.class);
+   private static final QLogger LOG = QLogger.getLogger(BasicETLLoadFunction.class);
 
    private QBackendTransaction transaction;
    private boolean             returnStoredRecords = true;
@@ -89,8 +88,7 @@ public class BasicETLLoadFunction implements BackendStep
          LOG.info("Inserting a page of [" + page.size() + "] records. Progress:  " + recordsInserted + " loaded out of " + inputRecords.size() + " total");
          runBackendStepInput.getAsyncJobCallback().updateStatus("Inserting records", recordsInserted, inputRecords.size());
 
-         InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
-         insertInput.setSession(runBackendStepInput.getSession());
+         InsertInput insertInput = new InsertInput();
          insertInput.setTableName(table);
          insertInput.setRecords(page);
          insertInput.setTransaction(transaction);

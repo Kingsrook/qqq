@@ -22,7 +22,9 @@
 package com.kingsrook.sampleapp;
 
 
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -40,9 +42,11 @@ class SampleCliTest
    @Test
    void testExitSuccess() throws QException
    {
+      QContext.init(SampleMetaDataProvider.defineInstance(), new QSession());
       int exitCode = new SampleCli().run(new String[] { "--meta-data" });
       assertEquals(0, exitCode);
    }
+
 
 
    /*******************************************************************************
@@ -51,6 +55,7 @@ class SampleCliTest
    @Test
    void testNotExitSuccess() throws QException
    {
+      QContext.init(SampleMetaDataProvider.defineInstance(), new QSession());
       int exitCode = new SampleCli().run(new String[] { "asdfasdf" });
       assertNotEquals(0, exitCode);
    }

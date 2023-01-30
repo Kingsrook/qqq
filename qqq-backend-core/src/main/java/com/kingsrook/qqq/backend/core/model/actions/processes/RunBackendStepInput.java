@@ -31,9 +31,9 @@ import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -73,20 +73,8 @@ public class RunBackendStepInput extends AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunBackendStepInput(QInstance instance)
+   public RunBackendStepInput(ProcessState processState)
    {
-      super(instance);
-      processState = new ProcessState();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public RunBackendStepInput(QInstance instance, ProcessState processState)
-   {
-      super(instance);
       this.processState = processState;
    }
 
@@ -102,7 +90,6 @@ public class RunBackendStepInput extends AbstractActionInput
    public void cloneFieldsInto(RunBackendStepInput target)
    {
       target.setStepName(getStepName());
-      target.setSession(getSession());
       target.setTableName(getTableName());
       target.setProcessName(getProcessName());
       target.setAsyncJobCallback(getAsyncJobCallback());
@@ -117,7 +104,7 @@ public class RunBackendStepInput extends AbstractActionInput
     *******************************************************************************/
    public QStepMetaData getStepMetaData()
    {
-      return (instance.getProcessStep(getProcessName(), getStepName()));
+      return (QContext.getQInstance().getProcessStep(getProcessName(), getStepName()));
    }
 
 
@@ -200,7 +187,7 @@ public class RunBackendStepInput extends AbstractActionInput
          return (null);
       }
 
-      return (instance.getTable(tableName));
+      return (QContext.getQInstance().getTable(tableName));
    }
 
 

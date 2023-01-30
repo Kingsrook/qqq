@@ -27,12 +27,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -40,9 +39,9 @@ import org.apache.logging.log4j.Logger;
  ** scriptLogLine records - but doesn't insert them.  e.g., useful for testing
  ** (both in junit, and for users in-app).
  *******************************************************************************/
-public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecutionLoggerInterface
+public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecutionLoggerInterface, ScriptExecutionLoggerInterface
 {
-   private static final Logger LOG = LogManager.getLogger(BuildScriptLogAndScriptLogLineExecutionLogger.class);
+   private static final QLogger LOG = QLogger.getLogger(BuildScriptLogAndScriptLogLineExecutionLogger.class);
 
    private   QRecord          scriptLog;
    private   List<QRecord>    scriptLogLines = new ArrayList<>();
@@ -217,5 +216,38 @@ public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecu
    protected void setScriptLog(QRecord scriptLog)
    {
       this.scriptLog = scriptLog;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptLogLines
+    **
+    *******************************************************************************/
+   protected void setScriptLogLines(List<QRecord> scriptLogLines)
+   {
+      this.scriptLogLines = scriptLogLines;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void setScriptId(Integer scriptId)
+   {
+      this.scriptId = scriptId;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void setScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
    }
 }

@@ -30,13 +30,14 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -44,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class AsyncJobManager
 {
-   private static final Logger LOG = LogManager.getLogger(AsyncJobManager.class);
+   private static final QLogger LOG = QLogger.getLogger(AsyncJobManager.class);
 
 
 
@@ -72,8 +73,10 @@ public class AsyncJobManager
 
       try
       {
+         CapturedContext capturedContext = QContext.capture();
          CompletableFuture<T> future = CompletableFuture.supplyAsync(() ->
          {
+            QContext.init(capturedContext);
             return (runAsyncJob(jobName, asyncJob, uuidAndTypeStateKey, asyncJobStatus));
          });
 
@@ -153,6 +156,7 @@ public class AsyncJobManager
       finally
       {
          Thread.currentThread().setName(originalThreadName);
+         QContext.clear();
       }
    }
 

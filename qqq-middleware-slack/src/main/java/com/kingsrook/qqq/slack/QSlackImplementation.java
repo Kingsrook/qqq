@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -76,8 +77,6 @@ import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static io.javalin.apibuilder.ApiBuilder.path;
@@ -91,7 +90,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
  *******************************************************************************/
 public class QSlackImplementation
 {
-   private static final Logger LOG = LogManager.getLogger(QSlackImplementation.class);
+   private static final QLogger LOG = QLogger.getLogger(QSlackImplementation.class);
 
    static QInstance qInstance;
 
@@ -287,7 +286,7 @@ public class QSlackImplementation
     *******************************************************************************/
    private static void buildSlackMetaData(Context context) throws QException
    {
-      MetaDataInput metaDataInput = new MetaDataInput(qInstance);
+      MetaDataInput metaDataInput = new MetaDataInput();
       setupSession(context, metaDataInput);
       MetaDataAction metaDataAction = new MetaDataAction();
       MetaDataOutput metaDataOutput = metaDataAction.execute(metaDataInput);
@@ -384,7 +383,7 @@ public class QSlackImplementation
    {
       try
       {
-         QueryInput queryInput = new QueryInput(qInstance);
+         QueryInput queryInput = new QueryInput();
          queryInput.setLimit(10);
          queryInput.setTableName(tableName);
          setupSession(context, queryInput);
@@ -426,7 +425,7 @@ public class QSlackImplementation
    {
       try(ByteArrayOutputStream baos = new ByteArrayOutputStream())
       {
-         ExportInput exportInput = new ExportInput(qInstance);
+         ExportInput exportInput = new ExportInput();
          exportInput.setLimit(1000);
          exportInput.setTableName(tableName);
          exportInput.setReportFormat(ReportFormat.valueOf(format));
@@ -471,7 +470,7 @@ public class QSlackImplementation
       {
          QTableMetaData tableMetaData = qInstance.getTable(tableName);
 
-         GetInput getInput = new GetInput(qInstance);
+         GetInput getInput = new GetInput();
          getInput.setPrimaryKey(id);
          getInput.setTableName(tableName);
          setupSession(context, getInput);
@@ -520,7 +519,7 @@ public class QSlackImplementation
 
          QWidgetMetaDataInterface widgetMetaData = qInstance.getWidget(widgetName);
 
-         RenderWidgetInput input = new RenderWidgetInput(qInstance)
+         RenderWidgetInput input = new RenderWidgetInput()
             .withWidgetMetaData(widgetMetaData);
          setupSession(context, input);
          RenderWidgetOutput output = new RenderWidgetAction().execute(input);
@@ -729,7 +728,6 @@ public class QSlackImplementation
          }
 
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
-         input.setSession(session);
 
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //

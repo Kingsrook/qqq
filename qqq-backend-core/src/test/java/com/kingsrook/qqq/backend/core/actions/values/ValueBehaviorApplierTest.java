@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 import java.util.List;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
@@ -39,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /*******************************************************************************
  ** Unit test for ValueBehaviorApplier
  *******************************************************************************/
-class ValueBehaviorApplierTest
+class ValueBehaviorApplierTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -48,7 +50,7 @@ class ValueBehaviorApplierTest
    @Test
    void testValueTooLongNormalCases()
    {
-      QInstance      qInstance = TestUtils.defineInstance();
+      QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
       table.getField("firstName").withMaxLength(10).withBehavior(ValueTooLongBehavior.TRUNCATE);
       table.getField("lastName").withMaxLength(10).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
@@ -75,7 +77,7 @@ class ValueBehaviorApplierTest
    @Test
    void testValueTooLongEdgeCases()
    {
-      QInstance      qInstance = TestUtils.defineInstance();
+      QInstance      qInstance = QContext.getQInstance();
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

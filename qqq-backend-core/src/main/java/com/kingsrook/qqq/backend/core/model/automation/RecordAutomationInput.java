@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.model.automation;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 
 
@@ -35,16 +34,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAuto
 public class RecordAutomationInput extends AbstractTableActionInput
 {
    private TableAutomationAction action;
-   private List<QRecord> recordList;
+   private List<QRecord>         recordList;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RecordAutomationInput(QInstance instance)
+   public RecordAutomationInput()
    {
-      super(instance);
    }
 
 

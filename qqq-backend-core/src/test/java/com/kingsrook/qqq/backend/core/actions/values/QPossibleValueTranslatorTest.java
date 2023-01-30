@@ -26,6 +26,8 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -48,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for QPossibleValueTranslator
  *******************************************************************************/
-public class QPossibleValueTranslatorTest
+public class QPossibleValueTranslatorTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -70,7 +72,7 @@ public class QPossibleValueTranslatorTest
    @Test
    void testPossibleValueEnum()
    {
-      QInstance                qInstance               = TestUtils.defineInstance();
+      QInstance                qInstance               = QContext.getQInstance();
       QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
       QFieldMetaData           stateField              = qInstance.getTable("person").getField("homeStateId");
       QPossibleValueSource     possibleValueSource     = qInstance.getPossibleValueSource(stateField.getPossibleValueSourceName());
@@ -130,7 +132,7 @@ public class QPossibleValueTranslatorTest
    @Test
    void testPossibleValueTable() throws QException
    {
-      QInstance                qInstance               = TestUtils.defineInstance();
+      QInstance                qInstance               = QContext.getQInstance();
       QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
       QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
       QPossibleValueSource     possibleValueSource     = qInstance.getPossibleValueSource(shapeField.getPossibleValueSourceName());
@@ -204,7 +206,7 @@ public class QPossibleValueTranslatorTest
    @Test
    void testPossibleValueTableWithBadForeignKeys() throws QException
    {
-      QInstance                qInstance               = TestUtils.defineInstance();
+      QInstance                qInstance               = QContext.getQInstance();
       QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
       QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
 
@@ -231,7 +233,7 @@ public class QPossibleValueTranslatorTest
    @Test
    void testPossibleValueTableMultiplePvsForATable() throws QException
    {
-      QInstance      qInstance   = TestUtils.defineInstance();
+      QInstance      qInstance   = QContext.getQInstance();
       QTableMetaData shapeTable  = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
       QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
 
@@ -296,7 +298,7 @@ public class QPossibleValueTranslatorTest
    @Test
    void testCustomPossibleValue() throws QException
    {
-      QInstance      qInstance   = TestUtils.defineInstance();
+      QInstance      qInstance   = QContext.getQInstance();
       QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
       String         fieldName   = "customValue";
 
@@ -335,7 +337,7 @@ public class QPossibleValueTranslatorTest
       /////////////////////////////////////////////////////////////////
       // first, make sure it doesn't crash with null or empty inputs //
       /////////////////////////////////////////////////////////////////
-      QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(TestUtils.defineInstance(), new QSession());
+      QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), new QSession());
       possibleValueTranslator.translatePossibleValuesInRecords(table, null);
       possibleValueTranslator.translatePossibleValuesInRecords(table, Collections.emptyList());
 
@@ -369,7 +371,7 @@ public class QPossibleValueTranslatorTest
    @Test
    void testPossibleValueWithSecondaryPossibleValueLabel() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       qInstance.addTable(new QTableMetaData()
          .withName("city")
@@ -410,7 +412,7 @@ public class QPossibleValueTranslatorTest
          .withTableName("country")
          .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
 
-      List<QRecord> regions = List.of(new QRecord().withValue("id", 11).withValue("name", "Missouri").withValue("countryId", 111));
+      List<QRecord> regions   = List.of(new QRecord().withValue("id", 11).withValue("name", "Missouri").withValue("countryId", 111));
       List<QRecord> countries = List.of(new QRecord().withValue("id", 111).withValue("name", "U.S.A"));
 
       TestUtils.insertRecords(qInstance, qInstance.getTable("region"), regions);

@@ -26,8 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 
 
 /*******************************************************************************
@@ -37,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class RDBMSTransaction extends QBackendTransaction
 {
-   private static final Logger LOG = LogManager.getLogger(RDBMSTransaction.class);
+   private static final QLogger LOG = QLogger.getLogger(RDBMSTransaction.class);
 
    private Connection connection;
 

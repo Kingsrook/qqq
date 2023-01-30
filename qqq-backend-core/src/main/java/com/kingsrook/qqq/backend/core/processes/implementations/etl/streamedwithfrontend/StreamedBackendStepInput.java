@@ -47,7 +47,7 @@ public class StreamedBackendStepInput extends RunBackendStepInput
     *******************************************************************************/
    public StreamedBackendStepInput(RunBackendStepInput runBackendStepInput, List<QRecord> inputRecords)
    {
-      super(runBackendStepInput.getInstance());
+      super();
       runBackendStepInput.cloneFieldsInto(this);
       this.inputRecords = inputRecords;
    }

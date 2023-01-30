@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for the FullyAnonymousAuthenticationModule
  *******************************************************************************/
-public class FullyAnonymousAuthenticationModuleTest
+public class FullyAnonymousAuthenticationModuleTest extends BaseTest
 {
 
    /*******************************************************************************

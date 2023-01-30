@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -403,6 +402,7 @@ public class TestUtils
          try
          {
             Thread.sleep(runBackendStepInput.getValueInteger(FIELD_SLEEP_MILLIS));
+            runBackendStepOutput.addValue("didSleep", true);
          }
          catch(InterruptedException e)
          {
@@ -517,8 +517,7 @@ public class TestUtils
     *******************************************************************************/
    public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
    {
-      InsertInput insertInput = new InsertInput(qInstance);
-      insertInput.setSession(new QSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(records);
       new InsertAction().execute(insertInput);

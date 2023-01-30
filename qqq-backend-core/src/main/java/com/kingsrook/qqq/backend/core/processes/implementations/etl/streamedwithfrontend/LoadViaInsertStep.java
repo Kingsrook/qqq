@@ -50,8 +50,7 @@ public class LoadViaInsertStep extends AbstractLoadStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
-      insertInput.setSession(runBackendStepInput.getSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       insertInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(insertInput::setTransaction);
@@ -74,8 +73,7 @@ public class LoadViaInsertStep extends AbstractLoadStep
    @Override
    public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput(runBackendStepInput.getInstance());
-      insertInput.setSession(runBackendStepInput.getSession());
+      InsertInput insertInput = new InsertInput();
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
 
       return (Optional.of(new InsertAction().openTransaction(insertInput)));

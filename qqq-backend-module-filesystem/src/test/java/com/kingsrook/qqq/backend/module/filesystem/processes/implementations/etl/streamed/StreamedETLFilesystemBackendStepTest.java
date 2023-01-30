@@ -48,12 +48,11 @@ class StreamedETLFilesystemBackendStepTest extends FilesystemActionTest
    {
       QInstance qInstance = TestUtils.defineInstance();
 
-      RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-      runProcessInput.setSession(TestUtils.getMockSession());
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.PROCESS_NAME_STREAMED_ETL);
 
-      RunProcessOutput output = new RunProcessAction().execute(runProcessInput);
-      String sourceFilePaths = ValueUtils.getValueAsString(output.getValues().get(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS));
+      RunProcessOutput output          = new RunProcessAction().execute(runProcessInput);
+      String           sourceFilePaths = ValueUtils.getValueAsString(output.getValues().get(BasicETLCollectSourceFileNamesStep.FIELD_SOURCE_FILE_PATHS));
       assertThat(sourceFilePaths)
          .contains("FILE-1.csv")
          .contains("FILE-2.csv");

@@ -27,7 +27,6 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -47,16 +46,6 @@ public class CountInput extends AbstractTableActionInput
     *******************************************************************************/
    public CountInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public CountInput(QInstance instance)
-   {
-      super(instance);
    }
 
 

@@ -27,7 +27,6 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -49,16 +48,6 @@ public class AggregateInput extends AbstractTableActionInput
     *******************************************************************************/
    public AggregateInput()
    {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public AggregateInput(QInstance instance)
-   {
-      super(instance);
    }
 
 

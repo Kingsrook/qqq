@@ -84,4 +84,26 @@ public class QUser
    {
       return ("QUser{" + idReference + "," + fullName + "}");
    }
+
+   /*******************************************************************************
+    ** Fluent setter for idReference
+    *******************************************************************************/
+   public QUser withIdReference(String idReference)
+   {
+      this.idReference = idReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fullName
+    *******************************************************************************/
+   public QUser withFullName(String fullName)
+   {
+      this.fullName = fullName;
+      return (this);
+   }
+
+
 }

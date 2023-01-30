@@ -28,6 +28,7 @@ import cloud.localstack.docker.LocalstackDockerExtension;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *******************************************************************************/
 @ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(useSingleDockerContainer = true, services = { ServiceName.S3 }, portEdge = "2960", portElasticSearch = "2961")
-public class BaseS3Test
+public class BaseS3Test extends BaseTest
 {
    public static final String BUCKET_NAME = "localstack-test-bucket";
    public static final String TEST_FOLDER = "test-files";

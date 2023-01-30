@@ -43,7 +43,6 @@ public class FilesystemCountActionTest extends FilesystemActionTest
    public void testCount1() throws QException
    {
       CountInput countInput = new CountInput();
-      countInput.setInstance(TestUtils.defineInstance());
       countInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       CountOutput countOutput = new FilesystemCountAction().execute(countInput);
       Assertions.assertEquals(3, countOutput.getCount(), "Unfiltered count should find all rows");

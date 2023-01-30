@@ -36,9 +36,8 @@ import java.util.Locale;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public abstract class QRecordEntity
 {
-   private static final Logger LOG = LogManager.getLogger(QRecordEntity.class);
+   private static final QLogger LOG = QLogger.getLogger(QRecordEntity.class);
 
    private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField> fieldMapping = new ListingHash<>();
 

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 import java.io.File;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -42,8 +43,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class BasicETLCleanupSourceFilesStep implements BackendStep
 {
-   private static final Logger LOG = LogManager.getLogger(BasicETLCleanupSourceFilesStep.class);
+   private static final QLogger LOG = QLogger.getLogger(BasicETLCleanupSourceFilesStep.class);
 
    public static final String FIELD_MOVE_OR_DELETE        = "moveOrDelete";
    public static final String FIELD_DESTINATION_FOR_MOVES = "destinationForMoves";

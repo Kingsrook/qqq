@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.api.utils;
 
 
+import com.kingsrook.qqq.backend.module.api.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for QueryStringBuilder
  *******************************************************************************/
-class QueryStringBuilderTest
+class QueryStringBuilderTest extends BaseTest
 {
 
    /*******************************************************************************

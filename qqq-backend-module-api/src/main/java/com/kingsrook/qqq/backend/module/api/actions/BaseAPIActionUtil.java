@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -53,7 +54,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -89,7 +89,7 @@ public class BaseAPIActionUtil
 {
    private final QLogger LOG = QLogger.getLogger(BaseAPIActionUtil.class);
 
-   protected QSession                 session;
+   protected QSession                 session; // todo not commit - delete!!
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
 
@@ -116,7 +116,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.error(session, "Error in API count", e);
+         LOG.error("Error in API count", e);
          throw new QException("Error executing count: " + e.getMessage(), e);
       }
    }
@@ -149,7 +149,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.error(session, "Error in API get", e);
+         LOG.error("Error in API get", e);
          throw new QException("Error executing get: " + e.getMessage(), e);
       }
    }
@@ -166,7 +166,7 @@ public class BaseAPIActionUtil
 
       if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
-         LOG.debug(session, "Insert request called with 0 records.  Returning with no-op");
+         LOG.debug("Insert request called with 0 records.  Returning with no-op");
          return (insertOutput);
       }
 
@@ -188,6 +188,7 @@ public class BaseAPIActionUtil
                request.setEntity(recordToEntity(table, record));
 
                QHttpResponse response = makeRequest(table, request);
+               validateResponse(response);
                record = processPostResponse(table, record, response);
                insertOutput.addRecord(record);
             }
@@ -207,7 +208,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.error(session, "Error in API Insert for [" + table.getName() + "]", e);
+         LOG.error("Error in API Insert for [" + table.getName() + "]", e);
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
 
@@ -265,7 +266,7 @@ public class BaseAPIActionUtil
             ///////////////////////////////////////////////////////////////////
             if(queryInput.getAsyncJobCallback().wasCancelRequested())
             {
-               LOG.info(session, "Breaking query job, as requested.");
+               LOG.info("Breaking query job, as requested.");
                return (queryOutput);
             }
 
@@ -280,7 +281,7 @@ public class BaseAPIActionUtil
          }
          catch(Exception e)
          {
-            LOG.error(session, "Error in API Query", e);
+            LOG.error("Error in API Query", e);
             throw new QException("Error executing query: " + e.getMessage(), e);
          }
       }
@@ -298,7 +299,7 @@ public class BaseAPIActionUtil
 
       if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
       {
-         LOG.debug(session, "Update request called with 0 records.  Returning with no-op");
+         LOG.debug("Update request called with 0 records.  Returning with no-op");
          return (updateOutput);
       }
 
@@ -325,7 +326,7 @@ public class BaseAPIActionUtil
             catch(Exception e)
             {
                String errorMessage = "An unexpected error occurred updating entities.";
-               LOG.error(session, errorMessage, e);
+               LOG.error(errorMessage, e);
                throw (new QException(errorMessage, e));
             }
 
@@ -343,7 +344,7 @@ public class BaseAPIActionUtil
       }
       catch(Exception e)
       {
-         LOG.error(session, "Error in API Update for [" + table.getName() + "]", e);
+         LOG.error("Error in API Update for [" + table.getName() + "]", e);
          throw new QException("Error executing update: " + e.getMessage(), e);
       }
    }
@@ -483,7 +484,7 @@ public class BaseAPIActionUtil
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
       String errorMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
-      LOG.error(session, errorMessage);
+      LOG.error(errorMessage);
 
       if("GET".equals(request.getMethod()))
       {
@@ -605,7 +606,7 @@ public class BaseAPIActionUtil
          String fullURL  = backendMetaData.getBaseUrl() + "oauth/token";
          String postBody = "grant_type=client_credentials&client_id=" + backendMetaData.getClientId() + "&client_secret=" + backendMetaData.getClientSecret();
 
-         LOG.info(session, "Fetching OAuth2 token from " + fullURL);
+         LOG.info("Fetching OAuth2 token from " + fullURL);
 
          try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
          {
@@ -624,7 +625,7 @@ public class BaseAPIActionUtil
 
             JSONObject resultJSON = new JSONObject(resultString);
             accessToken = (resultJSON.getString("access_token"));
-            LOG.debug(session, "Fetched access token: " + accessToken);
+            LOG.debug("Fetched access token: " + accessToken);
 
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             // stash the access token in the backendMetaData, from which it will be used for future requests //
@@ -638,7 +639,7 @@ public class BaseAPIActionUtil
          catch(Exception e)
          {
             String errorMessage = "Error getting OAuth Token";
-            LOG.warn(session, errorMessage, e);
+            LOG.warn(errorMessage, e);
             throw (new OAuthCredentialsException(errorMessage, e));
          }
       }
@@ -853,10 +854,10 @@ public class BaseAPIActionUtil
             setupContentTypeInRequest(request);
             setupAdditionalHeaders(request);
 
-            LOG.info(session, "Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
+            LOG.info("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
             if("POST".equals(request.getMethod()))
             {
-               LOG.info(session, "POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
+               LOG.info("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
             }
 
             try(CloseableHttpResponse response = httpClient.execute(request))
@@ -873,26 +874,26 @@ public class BaseAPIActionUtil
                   handleResponseError(table, request, qResponse);
                }
 
-               LOG.info(session, "Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
+               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
                return (qResponse);
             }
          }
          catch(OAuthCredentialsException oce)
          {
-            LOG.error(session, "OAuth Credential failure for [" + table.getName() + "]");
+            LOG.error("OAuth Credential failure for [" + table.getName() + "]");
             throw (oce);
          }
          catch(OAuthExpiredTokenException oete)
          {
             if(!caughtAnOAuthExpiredToken)
             {
-               LOG.info(session, "OAuth Expired token for [" + table.getName() + "] - retrying");
+               LOG.info("OAuth Expired token for [" + table.getName() + "] - retrying");
                backendMetaData.withCustomValue("accessToken", null);
                caughtAnOAuthExpiredToken = true;
             }
             else
             {
-               LOG.info(session, "OAuth Expired token for [" + table.getName() + "] even after a retry.  Giving up.");
+               LOG.info("OAuth Expired token for [" + table.getName() + "] even after a retry.  Giving up.");
                throw (oete);
             }
          }
@@ -901,11 +902,11 @@ public class BaseAPIActionUtil
             rateLimitsCaught++;
             if(rateLimitsCaught > getMaxAllowedRateLimitErrors())
             {
-               LOG.error(session, "Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
+               LOG.error("Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
                throw (new QException(rle));
             }
 
-            LOG.warn(session, "Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
+            LOG.warn("Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
             SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
             sleepMillis *= 2;
          }
@@ -919,7 +920,7 @@ public class BaseAPIActionUtil
          catch(Exception e)
          {
             String message = "An unknown error occurred trying to make an HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "].";
-            LOG.error(session, message, e);
+            LOG.error(message, e);
             throw (new QException(message, e));
          }
       }

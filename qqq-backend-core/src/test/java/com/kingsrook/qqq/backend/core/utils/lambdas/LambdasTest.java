@@ -22,13 +22,14 @@
 package com.kingsrook.qqq.backend.core.utils.lambdas;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  ** Unit test for any simple lambdas we have (kinda just here to ensure test coverage metrics...)
  *******************************************************************************/
-class LambdasTest
+class LambdasTest extends BaseTest
 {
 
    /*******************************************************************************

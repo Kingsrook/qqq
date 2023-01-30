@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -57,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for the TableBasedAuthenticationModule
  *******************************************************************************/
-public class TableBasedAuthenticationModuleTest
+public class TableBasedAuthenticationModuleTest extends BaseTest
 {
    public static final String USERNAME  = "jdoe";
    public static final String PASSWORD  = "abc123";
@@ -355,8 +356,7 @@ public class TableBasedAuthenticationModuleTest
 
       String uuid = UUID.randomUUID().toString();
 
-      GetInput getUserInput = new GetInput(qInstance);
-      getUserInput.setSession(new QSession());
+      GetInput getUserInput = new GetInput();
       getUserInput.setTableName("user");
       getUserInput.setUniqueKey(Map.of("username", username));
       GetOutput getUserOutput = new GetAction().execute(getUserInput);
@@ -398,6 +398,8 @@ public class TableBasedAuthenticationModuleTest
       qInstance.setAuthentication(authenticationMetaData);
       qInstance.addTable(authenticationMetaData.defineStandardUserTable(TestUtils.MEMORY_BACKEND_NAME));
       qInstance.addTable(authenticationMetaData.defineStandardSessionTable(TestUtils.MEMORY_BACKEND_NAME));
+
+      reInitInstanceInContext(qInstance);
 
       return (qInstance);
    }

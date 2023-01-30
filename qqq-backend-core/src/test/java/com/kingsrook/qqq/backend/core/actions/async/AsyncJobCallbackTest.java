@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.async;
 
 
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -30,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for AsyncJobCallback
  *******************************************************************************/
-class AsyncJobCallbackTest
+class AsyncJobCallbackTest extends BaseTest
 {
 
    /*******************************************************************************

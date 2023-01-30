@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
@@ -46,6 +47,7 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +73,18 @@ public class SampleMetaDataProviderTest
    void beforeEach() throws Exception
    {
       primeTestDatabase("prime-test-database.sql");
+      QContext.init(SampleMetaDataProvider.defineInstance(), new QSession());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   void afterEach()
+   {
+      QContext.clear();
    }
 
 
@@ -134,7 +148,6 @@ public class SampleMetaDataProviderTest
       try
       {
          QueryInput queryInput = new QueryInput();
-         queryInput.setInstance(SampleMetaDataProvider.defineInstance());
          queryInput.setTableName(fileTable.getName());
 
          QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
@@ -178,13 +191,11 @@ public class SampleMetaDataProviderTest
    {
       QInstance       qInstance   = SampleMetaDataProvider.defineInstance();
       QTableMetaData  personTable = SampleMetaDataProvider.defineTablePerson();
-      RunProcessInput request     = new RunProcessInput(qInstance);
-      request.setSession(new QSession());
+      RunProcessInput request     = new RunProcessInput();
       request.setProcessName(SampleMetaDataProvider.PROCESS_NAME_GREET);
 
-      QueryInput queryInput = new QueryInput(qInstance);
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(personTable.getName());
-      queryInput.setSession(new QSession());
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
       request.setRecords(queryOutput.getRecords());
@@ -205,8 +216,7 @@ public class SampleMetaDataProviderTest
    public void testThrowProcess() throws Exception
    {
       QInstance       qInstance = SampleMetaDataProvider.defineInstance();
-      RunProcessInput request   = new RunProcessInput(qInstance);
-      request.setSession(new QSession());
+      RunProcessInput request   = new RunProcessInput();
       request.setProcessName(SampleMetaDataProvider.PROCESS_NAME_SIMPLE_THROW);
       request.addValue(SampleMetaDataProvider.ThrowerStep.FIELD_SLEEP_MILLIS, 10);
 

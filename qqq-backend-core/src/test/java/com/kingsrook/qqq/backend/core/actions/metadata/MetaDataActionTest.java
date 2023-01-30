@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -57,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  ** Unit test for MetaDataAction
  **
  *******************************************************************************/
-class MetaDataActionTest
+class MetaDataActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -66,9 +68,8 @@ class MetaDataActionTest
    @Test
    public void test() throws QException
    {
-      MetaDataInput request = new MetaDataInput(TestUtils.defineInstance());
-      request.setSession(TestUtils.getMockSession());
-      MetaDataOutput result = new MetaDataAction().execute(request);
+      MetaDataInput  request = new MetaDataInput();
+      MetaDataOutput result  = new MetaDataAction().execute(request);
       assertNotNull(result);
 
       ///////////////////////////////////
@@ -147,9 +148,9 @@ class MetaDataActionTest
       ///////////////////////////////////////////////////////////////////////////////////////////
       QInstance instance = TestUtils.defineInstance();
       instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
-      MetaDataInput input = new MetaDataInput(instance);
-      input.setSession(new QSession());
-      MetaDataOutput result = new MetaDataAction().execute(input);
+      reInitInstanceInContext(instance);
+
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       assertEquals(0, result.getTables().size());
       assertEquals(0, result.getProcesses().size());
@@ -198,9 +199,9 @@ class MetaDataActionTest
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       QInstance instance = TestUtils.defineInstance();
       instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION).withDenyBehavior(DenyBehavior.DISABLED));
-      MetaDataInput input = new MetaDataInput(instance);
-      input.setSession(new QSession());
-      MetaDataOutput result = new MetaDataAction().execute(input);
+      reInitInstanceInContext(instance);
+
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       assertNotEquals(0, result.getTables().size());
       assertNotEquals(0, result.getProcesses().size());
@@ -226,8 +227,9 @@ class MetaDataActionTest
    {
       QInstance instance = TestUtils.defineInstance();
       instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION));
-      MetaDataInput input = new MetaDataInput(instance);
-      input.setSession(new QSession().withPermissions(
+      reInitInstanceInContext(instance);
+
+      QContext.setQSession(new QSession().withPermissions(
          "person.hasAccess",
          "increaseBirthdate.hasAccess",
          "runShapesPersonReport.hasAccess",
@@ -236,7 +238,7 @@ class MetaDataActionTest
          "simplePersonReport.hasAccess",
          "PersonsByCreateDateBarChart.hasAccess"
       ));
-      MetaDataOutput result = new MetaDataAction().execute(input);
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
       // with several permissions set, we should see some things, and they should have permissions turned on //
@@ -264,8 +266,9 @@ class MetaDataActionTest
    {
       QInstance instance = TestUtils.defineInstance();
       instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_WRITE_PERMISSIONS));
-      MetaDataInput input = new MetaDataInput(instance);
-      input.setSession(new QSession().withPermissions(
+      reInitInstanceInContext(instance);
+
+      QContext.setQSession(new QSession().withPermissions(
          "person.read",
          "personFile.write",
          "personMemory.read",
@@ -273,7 +276,7 @@ class MetaDataActionTest
          "personMemoryCache.hasAccess", // this one should NOT come through.
          "increaseBirthdate.hasAccess"
       ));
-      MetaDataOutput result = new MetaDataAction().execute(input);
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
 
@@ -310,8 +313,9 @@ class MetaDataActionTest
    {
       QInstance instance = TestUtils.defineInstance();
       instance.setDefaultPermissionRules(new QPermissionRules().withLevel(PermissionLevel.READ_INSERT_EDIT_DELETE_PERMISSIONS));
-      MetaDataInput input = new MetaDataInput(instance);
-      input.setSession(new QSession().withPermissions(
+      reInitInstanceInContext(instance);
+
+      QContext.setQSession(new QSession().withPermissions(
          "person.read",
          "personFile.insert",
          "personFile.edit",
@@ -320,7 +324,7 @@ class MetaDataActionTest
          "personMemoryCache.hasAccess", // this one should NOT come through.
          "increaseBirthdate.hasAccess"
       ));
-      MetaDataOutput result = new MetaDataAction().execute(input);
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
       assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personMemory.bulkDelete"), result.getProcesses().keySet());

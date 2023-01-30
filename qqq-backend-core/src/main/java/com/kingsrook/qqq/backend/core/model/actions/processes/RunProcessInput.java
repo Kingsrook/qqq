@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 
 
@@ -72,17 +72,6 @@ public class RunProcessInput extends AbstractActionInput
 
 
    /*******************************************************************************
-    **
-    *******************************************************************************/
-   public RunProcessInput(QInstance instance)
-   {
-      super(instance);
-      processState = new ProcessState();
-   }
-
-
-
-   /*******************************************************************************
     ** e.g., for steps after the first step in a process, seed the data in a run
     ** function request from a process state.
     **
@@ -99,7 +88,7 @@ public class RunProcessInput extends AbstractActionInput
     *******************************************************************************/
    public QProcessMetaData getProcessMetaData()
    {
-      return (instance.getProcess(getProcessName()));
+      return (QContext.getQInstance().getProcess(getProcessName()));
    }
 
 

@@ -29,14 +29,13 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -44,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractFilesystemAction.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractFilesystemAction.class);
 
 
 

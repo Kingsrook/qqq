@@ -48,6 +48,7 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -57,8 +58,6 @@ import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -68,7 +67,7 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 {
-   private static final Logger LOG = LogManager.getLogger(Auth0AuthenticationModule.class);
+   private static final QLogger LOG = QLogger.getLogger(Auth0AuthenticationModule.class);
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // 30 minutes - ideally this would be lower, but right now we've been dealing with re-validation issues... //

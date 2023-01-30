@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.model.actions.widgets;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
@@ -45,43 +44,8 @@ public class RenderWidgetInput extends AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RenderWidgetInput(QInstance instance)
+   public RenderWidgetInput()
    {
-      super(instance);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for session
-    **
-    *******************************************************************************/
-   public QSession getSession()
-   {
-      return session;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for session
-    **
-    *******************************************************************************/
-   public void setSession(QSession session)
-   {
-      this.session = session;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for session
-    **
-    *******************************************************************************/
-   public RenderWidgetInput withSession(QSession session)
-   {
-      this.session = session;
-      return (this);
    }
 
 

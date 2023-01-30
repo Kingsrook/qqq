@@ -192,8 +192,7 @@ public class QInstance
    {
       if(!memoizedTablePaths.containsKey(tableName))
       {
-         MetaDataInput input = new MetaDataInput(this);
-         input.setSession(actionInput.getSession());
+         MetaDataInput  input  = new MetaDataInput();
          MetaDataOutput output = new MetaDataAction().execute(input);
          memoizedTablePaths.put(tableName, searchAppTree(output.getAppTree(), tableName, AppTreeNodeType.TABLE, ""));
       }
@@ -209,8 +208,7 @@ public class QInstance
    {
       if(!memoizedProcessPaths.containsKey(processName))
       {
-         MetaDataInput input = new MetaDataInput(this);
-         input.setSession(actionInput.getSession());
+         MetaDataInput  input  = new MetaDataInput();
          MetaDataOutput output = new MetaDataAction().execute(input);
          return searchAppTree(output.getAppTree(), processName, AppTreeNodeType.PROCESS, "");
       }

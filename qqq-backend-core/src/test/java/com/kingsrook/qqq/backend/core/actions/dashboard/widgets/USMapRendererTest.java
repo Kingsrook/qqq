@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
@@ -38,7 +40,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /*******************************************************************************
  ** Unit test for ChildRecordListRenderer
  *******************************************************************************/
-class USMapRendererTest
+class USMapRendererTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -71,7 +72,7 @@ class USMapRendererTest
    @Test
    void testMapRenderer() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       QWidgetMetaDataInterface parentWidget = new ParentWidgetMetaData()
          .withTitle("Test")
@@ -88,8 +89,7 @@ class USMapRendererTest
          .withIcon("local_shipping");
       qInstance.addWidget(parentWidget);
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(parentWidget);
 
       RenderWidgetAction renderWidgetAction = new RenderWidgetAction();
@@ -109,7 +109,7 @@ class USMapRendererTest
    @Test
    void testNoChildRecordsFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
@@ -119,8 +119,7 @@ class USMapRendererTest
          new QRecord().withValue("id", 1)
       ));
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 
@@ -140,7 +139,7 @@ class USMapRendererTest
    @Test
    void testChildRecordsFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
@@ -157,8 +156,7 @@ class USMapRendererTest
          new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.
       ));
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 

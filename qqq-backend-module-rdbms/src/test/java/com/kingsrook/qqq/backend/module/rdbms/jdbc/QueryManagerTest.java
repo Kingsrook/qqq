@@ -38,6 +38,7 @@ import java.time.OffsetDateTime;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /*******************************************************************************
  **
  *******************************************************************************/
-class QueryManagerTest
+class QueryManagerTest extends BaseTest
 {
 
    /*******************************************************************************

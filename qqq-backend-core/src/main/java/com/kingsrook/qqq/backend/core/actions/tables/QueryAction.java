@@ -32,13 +32,12 @@ import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -47,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class QueryAction
 {
-   private static final Logger LOG = LogManager.getLogger(QueryAction.class);
+   private static final QLogger LOG = QLogger.getLogger(QueryAction.class);
 
    private Optional<AbstractPostQueryCustomizer> postQueryRecordCustomizer;
 

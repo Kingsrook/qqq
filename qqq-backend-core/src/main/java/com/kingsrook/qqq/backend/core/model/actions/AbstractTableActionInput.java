@@ -22,10 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.actions;
 
 
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -41,26 +40,6 @@ public class AbstractTableActionInput extends AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBackendMetaData getBackend()
-   {
-      return (instance.getBackendForTable(getTableName()));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QTableMetaData getTable()
-   {
-      return (instance.getTable(getTableName()));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    public AbstractTableActionInput()
    {
    }
@@ -70,9 +49,19 @@ public class AbstractTableActionInput extends AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public AbstractTableActionInput(QInstance instance)
+   public QBackendMetaData getBackend()
    {
-      super(instance);
+      return (QContext.getQInstance().getBackendForTable(getTableName()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData getTable()
+   {
+      return (QContext.getQInstance().getTable(getTableName()));
    }
 
 
@@ -105,18 +94,6 @@ public class AbstractTableActionInput extends AbstractActionInput
    public AbstractTableActionInput withTableName(String tableName)
    {
       this.tableName = tableName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for session
-    *******************************************************************************/
-   @Override
-   public AbstractTableActionInput withSession(QSession session)
-   {
-      super.withSession(session);
       return (this);
    }
 

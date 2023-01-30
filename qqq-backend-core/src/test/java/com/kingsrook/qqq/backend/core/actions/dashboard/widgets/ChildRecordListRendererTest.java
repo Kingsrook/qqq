@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
@@ -34,7 +36,6 @@ import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChildRecordListDat
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /*******************************************************************************
  ** Unit test for ChildRecordListRenderer
  *******************************************************************************/
-class ChildRecordListRendererTest
+class ChildRecordListRendererTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -68,14 +69,13 @@ class ChildRecordListRendererTest
    @Test
    void testParentRecordNotFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
       qInstance.addWidget(widget);
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 
@@ -92,7 +92,7 @@ class ChildRecordListRendererTest
    @Test
    void testNoChildRecordsFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
@@ -102,8 +102,7 @@ class ChildRecordListRendererTest
          new QRecord().withValue("id", 1)
       ));
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 
@@ -123,7 +122,7 @@ class ChildRecordListRendererTest
    @Test
    void testChildRecordsFound() throws QException
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
@@ -140,8 +139,7 @@ class ChildRecordListRendererTest
          new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.
       ));
 
-      RenderWidgetInput input = new RenderWidgetInput(qInstance);
-      input.setSession(new QSession());
+      RenderWidgetInput input = new RenderWidgetInput();
       input.setWidgetMetaData(widget);
       input.setQueryParams(new HashMap<>(Map.of("id", "1")));
 

@@ -58,7 +58,6 @@ public class S3CountActionTest extends BaseS3Test
    private CountInput initCountRequest() throws QException
    {
       CountInput countInput = new CountInput();
-      countInput.setInstance(TestUtils.defineInstance());
       countInput.setTableName(TestUtils.defineS3CSVPersonTable().getName());
       return countInput;
    }

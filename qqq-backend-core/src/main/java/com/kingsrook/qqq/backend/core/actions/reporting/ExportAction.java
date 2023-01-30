@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
@@ -50,8 +51,6 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -67,7 +66,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class ExportAction
 {
-   private static final Logger LOG = LogManager.getLogger(ExportAction.class);
+   private static final QLogger LOG = QLogger.getLogger(ExportAction.class);
 
    private boolean preExecuteRan       = false;
    private Integer countFromPreExecute = null;
@@ -149,8 +148,7 @@ public class ExportAction
       // set up a query input //
       //////////////////////////
       QueryAction queryAction = new QueryAction();
-      QueryInput  queryInput  = new QueryInput(exportInput.getInstance());
-      queryInput.setSession(exportInput.getSession());
+      QueryInput  queryInput  = new QueryInput();
       queryInput.setTableName(exportInput.getTableName());
       queryInput.setFilter(exportInput.getQueryFilter());
       queryInput.setLimit(exportInput.getLimit());
@@ -350,8 +348,7 @@ public class ExportAction
          if(exportInput.getLimit() == null || exportInput.getLimit() > reportFormat.getMaxRows())
          {
             CountInterface countInterface = backendModule.getCountInterface();
-            CountInput     countInput     = new CountInput(exportInput.getInstance());
-            countInput.setSession(exportInput.getSession());
+            CountInput     countInput     = new CountInput();
             countInput.setTableName(exportInput.getTableName());
             countInput.setFilter(exportInput.getQueryFilter());
             CountOutput countOutput = countInterface.execute(countInput);

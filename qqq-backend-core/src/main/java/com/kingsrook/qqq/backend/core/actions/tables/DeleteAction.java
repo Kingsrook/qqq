@@ -28,6 +28,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -35,8 +36,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -45,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public class DeleteAction
 {
-   private static final Logger LOG = LogManager.getLogger(DeleteAction.class);
+   private static final QLogger LOG = QLogger.getLogger(DeleteAction.class);
 
 
 
@@ -102,7 +101,7 @@ public class DeleteAction
          QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
          QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
 
-         QueryInput queryInput = new QueryInput(deleteInput.getInstance(), deleteInput.getSession());
+         QueryInput queryInput = new QueryInput();
          queryInput.setTableName(deleteInput.getTableName());
          queryInput.setFilter(deleteInput.getQueryFilter());
          QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);

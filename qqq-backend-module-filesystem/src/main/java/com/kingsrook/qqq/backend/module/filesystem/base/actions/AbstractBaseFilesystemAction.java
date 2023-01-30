@@ -31,6 +31,7 @@ import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -51,8 +52,6 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinali
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /*******************************************************************************
@@ -63,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  *******************************************************************************/
 public abstract class AbstractBaseFilesystemAction<FILE>
 {
-   private static final Logger LOG = LogManager.getLogger(AbstractBaseFilesystemAction.class);
+   private static final QLogger LOG = QLogger.getLogger(AbstractBaseFilesystemAction.class);
 
 
 
@@ -258,8 +257,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public CountOutput executeCount(CountInput countInput) throws QException
    {
-      QueryInput queryInput = new QueryInput(countInput.getInstance());
-      queryInput.setSession(countInput.getSession());
+      QueryInput queryInput = new QueryInput();
       queryInput.setTableName(countInput.getTableName());
       queryInput.setFilter(countInput.getFilter());
       QueryOutput queryOutput = executeQuery(queryInput);

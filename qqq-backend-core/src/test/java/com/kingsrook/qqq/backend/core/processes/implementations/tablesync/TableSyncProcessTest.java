@@ -26,7 +26,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -37,7 +39,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for TableSyncProcess
  *******************************************************************************/
-class TableSyncProcessTest
+class TableSyncProcessTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -57,7 +58,7 @@ class TableSyncProcessTest
    @Test
    void test() throws Exception
    {
-      QInstance qInstance = TestUtils.defineInstance();
+      QInstance qInstance = QContext.getQInstance();
 
       QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
@@ -89,8 +90,7 @@ class TableSyncProcessTest
          .withSyncTransformStepClass(PersonTransformClass.class)
          .getProcessMetaData());
 
-      RunProcessInput runProcessInput = new RunProcessInput(qInstance);
-      runProcessInput.setSession(new QSession());
+      RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(PROCESS_NAME);
       runProcessInput.addValue("recordIds", "1,2,3,4,5");
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);

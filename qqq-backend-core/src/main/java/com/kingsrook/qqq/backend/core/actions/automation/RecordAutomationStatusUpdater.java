@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -37,7 +38,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAuto
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.QLogger;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -76,7 +76,7 @@ public class RecordAutomationStatusUpdater
             String className = stackTraceElement.getClassName();
             if(className.contains("com.kingsrook.qqq.backend.core.actions.automation") && !className.equals(RecordAutomationStatusUpdater.class.getName()) && !className.endsWith("Test"))
             {
-               LOG.debug(session, "Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
+               LOG.debug("Avoiding re-setting automation status to PENDING_UPDATE while running an automation");
                return (false);
             }
          }
@@ -143,8 +143,7 @@ public class RecordAutomationStatusUpdater
          boolean didSetStatusField = setAutomationStatusInRecords(session, table, records, automationStatus);
          if(didSetStatusField)
          {
-            UpdateInput updateInput = new UpdateInput(instance);
-            updateInput.setSession(session);
+            UpdateInput updateInput = new UpdateInput();
             updateInput.setTableName(table.getName());
 
             /////////////////////////////////////////////////////////////////////////////////////
