@@ -467,4 +467,28 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withSingularMessage(String singularMessage)
+   {
+      singularFutureMessage = singularMessage;
+      singularPastMessage = singularMessage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public ProcessSummaryLine withPluralMessage(String pluralMessage)
+   {
+      pluralFutureMessage = pluralMessage;
+      pluralPastMessage = pluralMessage;
+      return (this);
+   }
+
 }
