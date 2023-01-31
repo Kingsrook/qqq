@@ -25,13 +25,16 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablesync;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -53,6 +56,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -63,6 +67,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public abstract class AbstractTableSyncTransformStep extends AbstractTransformStep
 {
+   private static final QLogger LOG = QLogger.getLogger(AbstractTableSyncTransformStep.class);
+
    private ProcessSummaryLine okToInsert           = StandardProcessSummaryLineProducer.getOkToInsertLine();
    private ProcessSummaryLine okToUpdate           = StandardProcessSummaryLineProducer.getOkToUpdateLine();
    private ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
@@ -217,10 +223,17 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       /////////////////////////////////////////////////////////////////
       // foreach source record, build the record we'll insert/update //
       /////////////////////////////////////////////////////////////////
-      QFieldMetaData destinationForeignKeyField = runBackendStepInput.getInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
+      QFieldMetaData    destinationForeignKeyField = runBackendStepInput.getInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
+      Set<Serializable> processedSourceKeys        = new HashSet<>();
       for(QRecord sourceRecord : runBackendStepInput.getRecords())
       {
          Serializable sourceKeyValue = sourceRecord.getValue(sourceTableKeyField);
+         if(processedSourceKeys.contains(sourceKeyValue))
+         {
+            LOG.info("Skipping duplicated source-key within page", logPair("key", sourceKeyValue));
+            continue;
+         }
+         processedSourceKeys.add(sourceKeyValue);
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {

@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -39,6 +40,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractExtractStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -51,6 +54,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *******************************************************************************/
 class TableSyncProcessTest extends BaseTest
 {
+   String PROCESS_NAME           = "testSyncProcess";
+   String TABLE_NAME_PEOPLE_SYNC = "peopleSync";
+
+
 
    /*******************************************************************************
     **
@@ -59,10 +66,49 @@ class TableSyncProcessTest extends BaseTest
    void test() throws Exception
    {
       QInstance qInstance = QContext.getQInstance();
+      setupDataAndMetaData(ExtractViaQueryStep.class);
 
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(PROCESS_NAME);
+      runProcessInput.addValue("recordIds", "1,2,3,4,5");
+      runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+
+      RunProcessAction runProcessAction = new RunProcessAction();
+      RunProcessOutput runProcessOutput = runProcessAction.execute(runProcessInput);
+
+      @SuppressWarnings("unchecked")
+      ArrayList<ProcessSummaryLineInterface> processResults = (ArrayList<ProcessSummaryLineInterface>) runProcessOutput.getValues().get("processResults");
+
+      assertThat(processResults.get(0))
+         .hasFieldOrPropertyWithValue("message", "were inserted")
+         .hasFieldOrPropertyWithValue("count", 3);
+
+      assertThat(processResults.get(1))
+         .hasFieldOrPropertyWithValue("message", "were updated")
+         .hasFieldOrPropertyWithValue("count", 2);
+
+      List<QRecord> syncedRecords = TestUtils.queryTable(qInstance, TABLE_NAME_PEOPLE_SYNC);
+      assertEquals(5, syncedRecords.size());
+
+      /////////////////////////////////////////////////////////////////
+      // make sure the record referencing 3 has had its name updated //
+      // and the one referencing 5 stayed the same                   //
+      /////////////////////////////////////////////////////////////////
+      Map<Serializable, QRecord> syncPersonsBySourceId = GeneralProcessUtils.loadTableToMap(runProcessInput, TABLE_NAME_PEOPLE_SYNC, "sourcePersonId");
+      assertEquals("Tyler", syncPersonsBySourceId.get(3).getValueString("firstName"));
+      assertEquals("Homer", syncPersonsBySourceId.get(5).getValueString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void setupDataAndMetaData(Class<? extends AbstractExtractStep> extractStepClass) throws QException
+   {
+      QInstance      qInstance   = QContext.getQInstance();
       QTableMetaData personTable = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
-      String TABLE_NAME_PEOPLE_SYNC = "peopleSync";
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME_PEOPLE_SYNC)
          .withPrimaryKeyField("id")
@@ -83,16 +129,31 @@ class TableSyncProcessTest extends BaseTest
          new QRecord().withValue("sourcePersonId", 5).withValue("firstName", "Homer")
       ));
 
-      String PROCESS_NAME = "testSyncProcess";
       qInstance.addProcess(TableSyncProcess.processMetaDataBuilder(false)
          .withName(PROCESS_NAME)
          .withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)
          .withSyncTransformStepClass(PersonTransformClass.class)
+         .withExtractStepClass(extractStepClass)
          .getProcessMetaData());
+   }
+
+
+
+   /*******************************************************************************
+    ** Handle a case where an extract step sends duplicate records (in the same page)
+    ** into the transform & load steps.
+    **
+    ** Basically the same test as above - only we have a custom Extract step, that
+    ** produces duplicates.
+    *******************************************************************************/
+   @Test
+   void testDupesFromExtractStep() throws Exception
+   {
+      QInstance qInstance = QContext.getQInstance();
+      setupDataAndMetaData(TestExtractor.class);
 
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(PROCESS_NAME);
-      runProcessInput.addValue("recordIds", "1,2,3,4,5");
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
 
       RunProcessAction runProcessAction = new RunProcessAction();
@@ -150,4 +211,24 @@ class TableSyncProcessTest extends BaseTest
 
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestExtractor extends AbstractExtractStep
+   {
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         List<QRecord> qRecords = TestUtils.queryTable(QContext.getQInstance(), TestUtils.TABLE_NAME_PERSON_MEMORY);
+         qRecords.forEach(r -> getRecordPipe().addRecord(r));
+
+         ////////////////////////////////////////
+         // re-add records 1 and 5 to the pipe //
+         ////////////////////////////////////////
+         getRecordPipe().addRecord(qRecords.get(0));
+         getRecordPipe().addRecord(qRecords.get(4));
+      }
+   }
 }
