@@ -178,6 +178,12 @@ public class QJavalinProcessHandler
          String reportName = context.pathParam("reportName");
          String format     = context.queryParam("format");
 
+         QReportMetaData report = QJavalinImplementation.qInstance.getReport(reportName);
+         if(report == null)
+         {
+            throw (new QNotFoundException("Report [" + reportName + "] is not found."));
+         }
+
          ReportFormat reportFormat = QJavalinImplementation.getReportFormat(context, optionalFilename, format);
          if(reportFormat == null)
          {
@@ -197,12 +203,6 @@ public class QJavalinProcessHandler
          reportInput.setReportName(reportName);
          reportInput.setInputValues(null); // todo!
          reportInput.setFilename(filename);
-
-         QReportMetaData report = QJavalinImplementation.qInstance.getReport(reportName);
-         if(report == null)
-         {
-            throw (new QNotFoundException("Report [" + reportName + "] is not found."));
-         }
 
          //////////////////////////////////////////////////////////////
          // process the report's input fields, from the query string //
