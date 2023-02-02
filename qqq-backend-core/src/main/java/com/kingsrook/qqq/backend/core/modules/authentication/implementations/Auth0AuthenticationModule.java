@@ -374,6 +374,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       qSession.setIdReference(accessToken);
       qSession.setUser(qUser);
 
+      /////////////////////////////////////////////////////////////////////
+      // put the user id reference in security key value for usierId key //
+      /////////////////////////////////////////////////////////////////////
+      qSession.withSecurityKeyValue("userId", qUser.getIdReference());
+
       /////////////////////////////////////////////////
       // set permissions in the session from the JWT //
       /////////////////////////////////////////////////
