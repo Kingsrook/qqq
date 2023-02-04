@@ -29,6 +29,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.branding;
 public class QBrandingMetaData
 {
    private String companyName;
+   private String companyUrl;
+   private String appName;
    private String logo;
    private String icon;
 
@@ -40,7 +42,7 @@ public class QBrandingMetaData
    @Override
    public String toString()
    {
-      return ("QBrandingMetaData[" + companyName + "]");
+      return ("QBrandingMetaData[" + appName + "]");
    }
 
 
@@ -143,6 +145,68 @@ public class QBrandingMetaData
    {
       this.icon = icon;
       return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for appName
+    *******************************************************************************/
+   public String getAppName()
+   {
+      return (this.appName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for appName
+    *******************************************************************************/
+   public void setAppName(String appName)
+   {
+      this.appName = appName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for appName
+    *******************************************************************************/
+   public QBrandingMetaData withAppName(String appName)
+   {
+      this.appName = appName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for companyUrl
+    *******************************************************************************/
+   public String getCompanyUrl()
+   {
+      return (this.companyUrl);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for companyUrl
+    *******************************************************************************/
+   public void setCompanyUrl(String companyUrl)
+   {
+      this.companyUrl = companyUrl;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for companyUrl
+    *******************************************************************************/
+   public QBrandingMetaData withCompanyUrl(String companyUrl)
+   {
+      this.companyUrl = companyUrl;
+      return (this);
    }
 
 }
