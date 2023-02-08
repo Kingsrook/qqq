@@ -489,7 +489,7 @@ public class Auth0PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase
+   static class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase
    {
 
       /*******************************************************************************

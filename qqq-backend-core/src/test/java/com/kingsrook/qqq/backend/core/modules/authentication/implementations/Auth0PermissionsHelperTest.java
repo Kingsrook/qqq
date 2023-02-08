@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -49,6 +50,9 @@ class Auth0PermissionsHelperTest
       {
          // is expected.
       }
+
+      Auth0PermissionsHelper.HttpDeleteWithBody httpDeleteWithBody = new Auth0PermissionsHelper.HttpDeleteWithBody(null);
+      assertEquals("DELETE", httpDeleteWithBody.getMethod());
    }
 
 }
