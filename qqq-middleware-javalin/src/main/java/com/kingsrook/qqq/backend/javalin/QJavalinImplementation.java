@@ -85,6 +85,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
@@ -112,6 +113,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.http.HttpStatus;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger.logPairIfSlow;
@@ -749,6 +751,8 @@ public class QJavalinImplementation
             countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
+         countInput.setQueryJoins(processQueryJoinsParam(context));
+
          CountAction countAction = new CountAction();
          CountOutput countOutput = countAction.execute(countInput);
 
@@ -777,6 +781,16 @@ public class QJavalinImplementation
     *       {"fieldName":"age","isAscending":true}
     *     ]}
     * </pre>
+    *
+    * queryJoins parameter is a JSONArray of objects which represent a QueryJoin object.  e.g.,
+    * <pre>
+    *   queryJoins=
+    *    [
+    *       {"joinTable":"orderLine","select":true,"type":"INNER"},
+    *       {"joinTable":"customer","select":true,"type":"LEFT"}
+    *    }
+    * </pre>
+    * Additional field names in the JSONObjects there are: baseTableOrAlias, alias, joinName.
     *******************************************************************************/
    static void dataQuery(Context context)
    {
@@ -807,6 +821,8 @@ public class QJavalinImplementation
             queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
+         queryInput.setQueryJoins(processQueryJoinsParam(context));
+
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
 
@@ -818,6 +834,56 @@ public class QJavalinImplementation
          QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
          handleException(context, e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QueryJoin> processQueryJoinsParam(Context context)
+   {
+      List<QueryJoin> queryJoins = null;
+
+      String queryJoinsParam = stringQueryParam(context, "queryJoins");
+      if(StringUtils.hasContent(queryJoinsParam))
+      {
+         queryJoins = new ArrayList<>();
+
+         JSONArray queryJoinsJSON = new JSONArray(queryJoinsParam);
+         for(int i = 0; i < queryJoinsJSON.length(); i++)
+         {
+            QueryJoin queryJoin = new QueryJoin();
+            queryJoins.add(queryJoin);
+
+            JSONObject jsonObject = queryJoinsJSON.getJSONObject(i);
+            queryJoin.setJoinTable(jsonObject.optString("joinTable"));
+
+            if(jsonObject.has("baseTableOrAlias") && !jsonObject.isNull("baseTableOrAlias"))
+            {
+               queryJoin.setBaseTableOrAlias(jsonObject.optString("baseTableOrAlias"));
+            }
+
+            if(jsonObject.has("alias") && !jsonObject.isNull("alias"))
+            {
+               queryJoin.setAlias(jsonObject.optString("alias"));
+            }
+
+            queryJoin.setSelect(jsonObject.optBoolean("select"));
+
+            if(jsonObject.has("type") && !jsonObject.isNull("type"))
+            {
+               queryJoin.setType(QueryJoin.Type.valueOf(jsonObject.getString("type")));
+            }
+
+            if(jsonObject.has("joinName") && !jsonObject.isNull("joinName"))
+            {
+               queryJoin.setJoinMetaData(QContext.getQInstance().getJoin(jsonObject.getString("joinName")));
+            }
+         }
+      }
+
+      return (queryJoins);
    }
 
 

@@ -46,6 +46,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -139,6 +142,7 @@ public class TestUtils
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineDefaultH2Backend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addJoin(definePersonJoinPartnerPerson());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
       qInstance.addProcess(defineProcessSimpleSleep());
@@ -245,6 +249,21 @@ public class TestUtils
             .withFieldName("testScriptId")
             .withScriptTypeId(1)
             .withScriptTester(new QCodeReference(TestScriptAction.class, QCodeUsage.SCRIPT_TESTER)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJoinMetaData definePersonJoinPartnerPerson()
+   {
+      return (new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_PERSON)
+         .withRightTable(TABLE_NAME_PERSON)
+         .withType(JoinType.MANY_TO_ONE)
+         .withName("PersonJoinPartnerPerson")
+         .withJoinOn(new JoinOn("partnerPersonId", "id")));
    }
 
 

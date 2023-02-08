@@ -234,7 +234,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertTrue(jsonObject.has("count"));
       int count = jsonObject.getInt("count");
-      assertEquals(5, count);
+      assertEquals(6, count);
    }
 
 
@@ -246,7 +246,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    public void test_dataCountWithFilter()
    {
-      String               filterJson = getFirstNameEqualsTimFilterJSON();
+      String               filterJson = getFirstNameEqualsFilterJSON("Tim");
       HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/count?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
 
       assertEquals(200, response.getStatus());
@@ -266,7 +266,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    public void test_dataCountPOST()
    {
-      String filterJson = getFirstNameEqualsTimFilterJSON();
+      String filterJson = getFirstNameEqualsFilterJSON("Tim");
       HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/count")
          .field("filter", filterJson)
          .asString();
@@ -294,7 +294,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertTrue(jsonObject.has("records"));
       JSONArray records = jsonObject.getJSONArray("records");
-      assertEquals(5, records.length());
+      assertEquals(6, records.length());
       JSONObject record0 = records.getJSONObject(0);
       assertTrue(record0.has("values"));
       assertEquals("person", record0.getString("tableName"));
@@ -312,7 +312,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    public void test_dataQueryWithFilter()
    {
-      String               filterJson = getFirstNameEqualsTimFilterJSON();
+      String               filterJson = getFirstNameEqualsFilterJSON("Tim");
       HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
 
       assertEquals(200, response.getStatus());
@@ -328,13 +328,41 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test a table query using a filter and a queryJoin.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataQueryWithFilterAndQueryJoin()
+   {
+      String filterJson = getFirstNameEqualsFilterJSON("Darin");
+      String queryJoinsJson = """
+         [{"joinTable":"person","select":true,"type":"INNER","joinName":"PersonJoinPartnerPerson","alias":"partnerPerson"}]
+         """;
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)
+         + "&queryJoins=" + URLEncoder.encode(queryJoinsJson, StandardCharsets.UTF_8)).asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals("Darin", values0.getString("firstName"));
+      assertEquals("Linda", values0.getString("partnerPerson.firstName"));
+   }
+
+
+
+   /*******************************************************************************
     ** test a table query using an actual filter via POST.
     **
     *******************************************************************************/
    @Test
    public void test_dataQueryWithFilterPOST()
    {
-      String filterJson = getFirstNameEqualsTimFilterJSON();
+      String filterJson = getFirstNameEqualsFilterJSON("Tim");
       HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/query")
          .field("filter", filterJson)
          .asString();
@@ -354,10 +382,10 @@ class QJavalinImplementationTest extends QJavalinTestBase
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String getFirstNameEqualsTimFilterJSON()
+   private String getFirstNameEqualsFilterJSON(String name)
    {
       return """
-         {"criteria":[{"fieldName":"firstName","operator":"EQUALS","values":["Tim"]}]}""";
+         {"criteria":[{"fieldName":"firstName","operator":"EQUALS","values":["${name}"]}]}""".replaceAll("\\$\\{name}", name);
    }
 
 
@@ -391,7 +419,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertTrue(values0.has("firstName"));
       assertEquals("Bobby", values0.getString("firstName"));
       assertTrue(values0.has("id"));
-      assertEquals(6, values0.getInt("id"));
+      assertEquals(7, values0.getInt("id"));
    }
 
 
@@ -457,7 +485,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
             rowsFound++;
             assertNotEquals(3, rs.getInt(1));
          }
-         assertEquals(4, rowsFound);
+         assertEquals(5, rowsFound);
       }));
    }
 
@@ -474,7 +502,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertEquals("text/csv;charset=utf-8", response.getHeaders().get("Content-Type").get(0));
       assertEquals("filename=MyPersonExport.csv", response.getHeaders().get("Content-Disposition").get(0));
       String[] csvLines = response.getBody().split("\n");
-      assertEquals(6, csvLines.length);
+      assertEquals(7, csvLines.length);
    }
 
 
@@ -512,7 +540,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
    @Test
    void testExportFilterQueryParam()
    {
-      String               filterJson = getFirstNameEqualsTimFilterJSON();
+      String               filterJson = getFirstNameEqualsFilterJSON("Tim");
       HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/Favorite People.csv?filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
       assertEquals("filename=Favorite People.csv", response.getHeaders().get("Content-Disposition").get(0));
       String[] csvLines = response.getBody().split("\n");
@@ -576,7 +604,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
       assertNotNull(jsonObject.getJSONArray("options"));
-      assertEquals(5, jsonObject.getJSONArray("options").length());
+      assertEquals(6, jsonObject.getJSONArray("options").length());
       assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
       assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
    }
