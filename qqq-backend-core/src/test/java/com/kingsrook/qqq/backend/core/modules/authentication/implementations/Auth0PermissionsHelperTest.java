@@ -40,7 +40,15 @@ class Auth0PermissionsHelperTest
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // don't really want to test this class (don't want to change permissions), so, just here to help keep class coverage % up //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      new Auth0PermissionsHelper(null, null, null);
+      Auth0PermissionsHelper auth0PermissionsHelper = new Auth0PermissionsHelper(null, null, null);
+      try
+      {
+         auth0PermissionsHelper.getCurrentAuth0Permissions();
+      }
+      catch(Exception e)
+      {
+         // is expected.
+      }
    }
 
 }
