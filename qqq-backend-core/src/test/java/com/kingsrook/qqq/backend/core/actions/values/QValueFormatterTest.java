@@ -23,6 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -75,6 +81,10 @@ class QValueFormatterTest extends BaseTest
       assertNull(QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), null));
       assertEquals("Yes", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), true));
       assertEquals("No", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), false));
+
+      assertNull(QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), null));
+      assertEquals("5:00 AM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(5, 0)));
+      assertEquals("5:00 PM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(17, 0)));
 
       //////////////////////////////////////////////////
       // this one flows through the exceptional cases //
@@ -175,6 +185,19 @@ class QValueFormatterTest extends BaseTest
       assertEquals("$174,999.99", records.get(1).getDisplayValue("price"));
       assertEquals("47", records.get(1).getDisplayValue("quantity"));
       assertEquals("2", records.get(1).getDisplayValue("homeStateId")); // PVS NOT translated by this class.
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFormatDates()
+   {
+      assertEquals("2023-02-01", QValueFormatter.formatDate(LocalDate.of(2023, Month.FEBRUARY, 1)));
+      assertEquals("2023-02-01 7:15 PM", QValueFormatter.formatDateTime(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15)));
+      assertEquals("2023-02-01 7:15 PM CST", QValueFormatter.formatDateTimeWithZone(ZonedDateTime.of(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15), ZoneId.of("US/Central"))));
    }
 
 }

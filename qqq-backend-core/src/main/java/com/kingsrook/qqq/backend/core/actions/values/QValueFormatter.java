@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.actions.values;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
@@ -32,7 +34,6 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -46,8 +47,10 @@ public class QValueFormatter
 {
    private static final QLogger LOG = QLogger.getLogger(QValueFormatter.class);
 
-   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a");
-   private static DateTimeFormatter dateFormatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+   private static DateTimeFormatter dateTimeFormatter         = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a");
+   private static DateTimeFormatter dateTimeWithZoneFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a z");
+   private static DateTimeFormatter dateFormatter             = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+   private static DateTimeFormatter localTimeFormatter        = DateTimeFormatter.ofPattern("h:mm a");
 
 
 
@@ -56,23 +59,6 @@ public class QValueFormatter
     *******************************************************************************/
    public static String formatValue(QFieldMetaData field, Serializable value)
    {
-      if(QFieldType.BOOLEAN.equals(field.getType()))
-      {
-         Boolean b = ValueUtils.getValueAsBoolean(value);
-         if(b == null)
-         {
-            return (null);
-         }
-         else if(b)
-         {
-            return ("Yes");
-         }
-         else
-         {
-            return ("No");
-         }
-      }
-
       return (formatValue(field.getDisplayFormat(), field.getName(), value));
    }
 
@@ -100,6 +86,22 @@ public class QValueFormatter
       if(value == null)
       {
          return (null);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // try to apply some type-specific defaults, if we were requested to just format as a string. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      if("%s".equals(displayFormat))
+      {
+         if(value instanceof Boolean b)
+         {
+            return formatBoolean(b);
+         }
+
+         if(value instanceof LocalTime lt)
+         {
+            return formatLocalTime(lt);
+         }
       }
 
       ////////////////////////////////////////////////////////
@@ -164,6 +166,26 @@ public class QValueFormatter
    public static String formatDateTime(LocalDateTime dateTime)
    {
       return (dateTimeFormatter.format(dateTime));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String formatDateTimeWithZone(ZonedDateTime dateTime)
+   {
+      return (dateTimeWithZoneFormatter.format(dateTime));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String formatLocalTime(LocalTime localTime)
+   {
+      return (localTimeFormatter.format(localTime));
    }
 
 
@@ -290,6 +312,27 @@ public class QValueFormatter
             String formattedValue = formatValue(field, record.getValue(field.getName()));
             record.setDisplayValue(field.getName(), formattedValue);
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String formatBoolean(Boolean b)
+   {
+      if(b == null)
+      {
+         return (null);
+      }
+      else if(b)
+      {
+         return ("Yes");
+      }
+      else
+      {
+         return ("No");
       }
    }
 
