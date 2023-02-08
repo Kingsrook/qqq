@@ -26,7 +26,6 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -65,7 +64,7 @@ class RecordLookupHelperTest extends BaseTest
    {
       QInstance qInstance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(qInstance);
-      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput());
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper();
 
       MemoryRecordStore.setCollectStatistics(true);
       assertEquals(2, recordLookupHelper.getRecordId(TestUtils.TABLE_NAME_SHAPE, "name", "Square"));
@@ -92,7 +91,7 @@ class RecordLookupHelperTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(qInstance);
 
-      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput());
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper();
       recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name");
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
 
@@ -133,8 +132,8 @@ class RecordLookupHelperTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       TestUtils.insertDefaultShapes(qInstance);
 
-      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(new AbstractActionInput());
-      recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name", List.of("Triangle", "Square", "Circle", "Hexagon"));
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper();
+      recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name", List.of("Square", "Circle"));
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
 
       //////////////////////////////////////////////
@@ -149,9 +148,50 @@ class RecordLookupHelperTest extends BaseTest
       //////////////////////////////////////////////////
       assertNull(recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Hexagon"));
 
-      /////////////////////////////////////////////////////
-      // all those gets should run no additional queries //
-      /////////////////////////////////////////////////////
+      ////////////////////////////////////////////////
+      // those gets should run 2 additional queries //
+      ////////////////////////////////////////////////
+      assertEquals(3, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWithPreloadAndDisabledOneOffLookups() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      TestUtils.insertDefaultShapes(qInstance);
+
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper();
+      recordLookupHelper.preloadRecords(TestUtils.TABLE_NAME_SHAPE, "name", List.of("Triangle", "Square", "Octagon"));
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
+
+      ////////////////////////////////////////////////////////
+      // this is the key thing being tested in this method. //
+      ////////////////////////////////////////////////////////
+      recordLookupHelper.setMayNotDoOneOffLookups(TestUtils.TABLE_NAME_SHAPE, "name");
+
+      ////////////////////////////////////////////////////////////
+      // assert we do not find a record if it was not preloaded //
+      ////////////////////////////////////////////////////////////
+      assertNull(recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Circle"));
+
+      //////////////////////////////////////////////////
+      // assert we cached a null for a name not found //
+      //////////////////////////////////////////////////
+      assertNull(recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Octagon"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // assert we do not try to look up a name that we didn't rep-load, and that isn't found //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      assertNull(recordLookupHelper.getRecordByKey(TestUtils.TABLE_NAME_SHAPE, "name", "Hexagon"));
+
+      //////////////////////////////////////////////////////////
+      // there shouldn't have been any additional queries ran //
+      //////////////////////////////////////////////////////////
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
    }
 

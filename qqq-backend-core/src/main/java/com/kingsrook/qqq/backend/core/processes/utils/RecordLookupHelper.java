@@ -29,14 +29,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -47,10 +48,10 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RecordLookupHelper
 {
-   private final AbstractActionInput actionInput;
-
    private Map<String, Map<Serializable, QRecord>> recordMaps    = new HashMap<>();
    private Set<String>                             preloadedKeys = new HashSet<>();
+
+   private Set<Pair<String, String>> disallowedOneOffLookups = new HashSet<>();
 
 
 
@@ -58,9 +59,8 @@ public class RecordLookupHelper
     ** Constructor
     **
     *******************************************************************************/
-   public RecordLookupHelper(AbstractActionInput actionInput)
+   public RecordLookupHelper()
    {
-      this.actionInput = actionInput;
    }
 
 
@@ -76,13 +76,16 @@ public class RecordLookupHelper
       ////////////////////////////////////////////////////////////
       // make sure we have they key object in the expected type //
       ////////////////////////////////////////////////////////////
-      QFieldType type = actionInput.getInstance().getTable(tableName).getField(keyFieldName).getType();
+      QFieldType type = QContext.getQInstance().getTable(tableName).getField(keyFieldName).getType();
       key = ValueUtils.getValueAsFieldType(type, key);
 
       if(!recordMap.containsKey(key))
       {
-         Optional<QRecord> optRecord = GeneralProcessUtils.getRecordByField(actionInput, tableName, keyFieldName, key);
-         recordMap.put(key, optRecord.orElse(null));
+         if(disallowedOneOffLookups.isEmpty() || !disallowedOneOffLookups.contains(Pair.of(tableName, keyFieldName)))
+         {
+            Optional<QRecord> optRecord = GeneralProcessUtils.getRecordByField(null, tableName, keyFieldName, key);
+            recordMap.put(key, optRecord.orElse(null));
+         }
       }
 
       return (recordMap.get(key));
@@ -103,7 +106,7 @@ public class RecordLookupHelper
       String mapKey = tableName + "." + keyFieldName;
       if(!preloadedKeys.contains(mapKey))
       {
-         Map<Serializable, QRecord> recordMap = GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName);
+         Map<Serializable, QRecord> recordMap = GeneralProcessUtils.loadTableToMap(null, tableName, keyFieldName);
          recordMaps.put(mapKey, recordMap);
          preloadedKeys.add(mapKey);
       }
@@ -123,7 +126,7 @@ public class RecordLookupHelper
    {
       String                     mapKey   = tableName + "." + keyFieldName;
       Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
-      tableMap.putAll(GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName, filter));
+      tableMap.putAll(GeneralProcessUtils.loadTableToMap(null, tableName, keyFieldName, filter));
    }
 
 
@@ -134,20 +137,20 @@ public class RecordLookupHelper
     ** aren't found, then a null will be cached (for each element in the inList).
     **
     *******************************************************************************/
-   public void preloadRecords(String tableName, String keyFieldName, List<Serializable> inList) throws QException
+   public Map<Serializable, QRecord> preloadRecords(String tableName, String keyFieldName, List<Serializable> inList) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(inList))
       {
-         return;
+         return null;
       }
 
       String                     mapKey   = tableName + "." + keyFieldName;
       Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
 
       QQueryFilter filter = new QQueryFilter(new QFilterCriteria(keyFieldName, QCriteriaOperator.IN, inList));
-      tableMap.putAll(GeneralProcessUtils.loadTableToMap(actionInput, tableName, keyFieldName, filter));
+      tableMap.putAll(GeneralProcessUtils.loadTableToMap(null, tableName, keyFieldName, filter));
 
-      QFieldType type = actionInput.getInstance().getTable(tableName).getField(keyFieldName).getType();
+      QFieldType type = QContext.getQInstance().getTable(tableName).getField(keyFieldName).getType();
       for(Serializable keyValue : inList)
       {
          if(!tableMap.containsKey(keyValue))
@@ -156,6 +159,8 @@ public class RecordLookupHelper
             tableMap.put(keyValue, null);
          }
       }
+
+      return (tableMap);
    }
 
 
@@ -198,7 +203,7 @@ public class RecordLookupHelper
     *******************************************************************************/
    public Serializable getRecordId(String tableName, String keyFieldName, Serializable key) throws QException
    {
-      String primaryKeyField = actionInput.getInstance().getTable(tableName).getPrimaryKeyField();
+      String primaryKeyField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
       return (getRecordValue(tableName, primaryKeyField, keyFieldName, key));
    }
 
@@ -213,6 +218,16 @@ public class RecordLookupHelper
    {
       Serializable value = getRecordId(tableName, keyFieldName, key);
       return (ValueUtils.getValueAsType(type, value));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setMayNotDoOneOffLookups(String tableName, String fieldName)
+   {
+      this.disallowedOneOffLookups.add(Pair.of(tableName, fieldName));
    }
 
 }

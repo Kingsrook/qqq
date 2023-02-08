@@ -301,7 +301,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     *******************************************************************************/
    protected void initializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
    {
-      this.recordLookupHelper = new RecordLookupHelper(runBackendStepInput);
+      this.recordLookupHelper = new RecordLookupHelper();
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if there's only 1 record, don't bother preloading all records - just do the single lookup by the single needed key. //
