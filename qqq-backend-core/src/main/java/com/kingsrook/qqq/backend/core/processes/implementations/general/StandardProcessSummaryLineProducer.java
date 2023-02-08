@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.general;
 import java.util.ArrayList;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import static com.kingsrook.qqq.backend.core.model.actions.processes.Status.ERROR;
 import static com.kingsrook.qqq.backend.core.model.actions.processes.Status.OK;
 
 
@@ -60,6 +61,31 @@ public class StandardProcessSummaryLineProducer
          .withPluralFutureMessage("will be")
          .withSingularPastMessage("was")
          .withPluralPastMessage("were");
+   }
+
+
+
+   /*******************************************************************************
+    ** Make a line that'll say " {will be/was/were} deleted"
+    *******************************************************************************/
+   public static ProcessSummaryLine getOkToDeleteLine()
+   {
+      return new ProcessSummaryLine(OK)
+         .withMessageSuffix(" deleted")
+         .withSingularFutureMessage("will be")
+         .withPluralFutureMessage("will be")
+         .withSingularPastMessage("was")
+         .withPluralPastMessage("were");
+   }
+
+
+
+   /*******************************************************************************
+    ** Make a line that'll say " had an error"
+    *******************************************************************************/
+   public static ProcessSummaryLine getErrorLine()
+   {
+      return new ProcessSummaryLine(ERROR, "had an error");
    }
 
 
