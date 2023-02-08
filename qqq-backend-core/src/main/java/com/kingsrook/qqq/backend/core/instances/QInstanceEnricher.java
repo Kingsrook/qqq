@@ -327,7 +327,7 @@ public class QInstanceEnricher
       // and that PVS exists in the instance                                  //
       // and it's a table-type PVS and the table name is set                  //
       // and it's a valid table in the instance, and the table is in some app //
-      // and the field doesn't have a LINK adornment                          //
+      // and the field doesn't (already) have a LINK or CHIP adornment        //
       // then add a link-to-record-from-table adornment to the field.         //
       //////////////////////////////////////////////////////////////////////////
       if(StringUtils.hasContent(field.getPossibleValueSourceName()))
@@ -340,7 +340,15 @@ public class QInstanceEnricher
             {
                if(qInstance.getTable(tableName) != null && doesAnyAppHaveTable(tableName))
                {
-                  if(field.getAdornments() == null || field.getAdornments().stream().noneMatch(a -> AdornmentType.LINK.equals(a.getType())))
+                  boolean hasLinkAdornment = false;
+                  boolean hasChipAdornment = false;
+                  if(field.getAdornments() != null)
+                  {
+                     hasLinkAdornment = field.getAdornments().stream().anyMatch(a -> AdornmentType.LINK.equals(a.getType()));
+                     hasChipAdornment = field.getAdornments().stream().anyMatch(a -> AdornmentType.CHIP.equals(a.getType()));
+                  }
+
+                  if(!hasLinkAdornment && !hasChipAdornment)
                   {
                      field.withFieldAdornment(new FieldAdornment().withType(AdornmentType.LINK)
                         .withValue(AdornmentType.LinkValues.TO_RECORD_FROM_TABLE, tableName));
