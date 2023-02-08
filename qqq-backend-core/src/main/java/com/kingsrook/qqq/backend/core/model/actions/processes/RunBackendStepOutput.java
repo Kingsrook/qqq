@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -41,6 +42,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    private ProcessState processState;
    private Exception    exception; // todo - make optional
 
+   private List<AuditInput> auditInputList;
 
 
    /*******************************************************************************
@@ -255,5 +257,36 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
       }
       this.processState.getRecords().add(record);
    }
+
+
+   /*******************************************************************************
+    ** Getter for auditInputList
+    *******************************************************************************/
+   public List<AuditInput> getAuditInputList()
+   {
+      return (this.auditInputList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditInputList
+    *******************************************************************************/
+   public void setAuditInputList(List<AuditInput> auditInputList)
+   {
+      this.auditInputList = auditInputList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditInputList
+    *******************************************************************************/
+   public RunBackendStepOutput withAuditInputList(List<AuditInput> auditInputList)
+   {
+      this.auditInputList = auditInputList;
+      return (this);
+   }
+
 
 }

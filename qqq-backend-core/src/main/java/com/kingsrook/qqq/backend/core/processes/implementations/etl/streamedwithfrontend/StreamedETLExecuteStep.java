@@ -27,14 +27,17 @@ import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
+import com.kingsrook.qqq.backend.core.actions.audits.AuditAction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -201,6 +204,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
       transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+      List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
 
       ////////////////////////////////////////////////
       // pass the records through the load function //
@@ -209,6 +213,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
       loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+      List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
 
       ///////////////////////////////////////////////////////
       // copy a small number of records to the output list //
@@ -218,6 +223,20 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       {
          loadedRecordList.add(streamedBackendStepOutput.getRecords().get(i++));
       }
+
+      //////////////////////////////////////////////////////
+      // if we have a batch of audit inputs, execute them //
+      //////////////////////////////////////////////////////
+      List<AuditInput> mergedAuditInputList = CollectionUtils.mergeLists(auditInputListFromTransform, auditInputListFromLoad);
+      if(CollectionUtils.nullSafeHasContents(mergedAuditInputList))
+      {
+         AuditAction auditAction = new AuditAction();
+         for(AuditInput auditInput : mergedAuditInputList)
+         {
+            auditAction.execute(auditInput);
+         }
+      }
+      runBackendStepOutput.setAuditInputList(null);
 
       currentRowCount += qRecords.size();
       return (qRecords.size());
