@@ -703,6 +703,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                /////////////////////////////////////////////////////////////////////
                values = Collections.emptyList();
             }
+            else if(expectedNoOfParams.equals(1) && criterion.getExpression() != null)
+            {
+               values = List.of(criterion.getExpression().evaluate());
+            }
             else if(!expectedNoOfParams.equals(values.size()))
             {
                throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");

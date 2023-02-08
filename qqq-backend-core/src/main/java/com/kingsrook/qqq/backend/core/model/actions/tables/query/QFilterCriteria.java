@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -44,6 +45,7 @@ public class QFilterCriteria implements Serializable, Cloneable
    private List<Serializable> values;
 
    private String otherFieldName;
+   private AbstractFilterExpression<?> expression;
 
 
 
@@ -302,4 +304,35 @@ public class QFilterCriteria implements Serializable, Cloneable
 
       return (rs.toString());
    }
+
+   /*******************************************************************************
+    ** Getter for expression
+    *******************************************************************************/
+   public AbstractFilterExpression<?> getExpression()
+   {
+      return (this.expression);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for expression
+    *******************************************************************************/
+   public void setExpression(AbstractFilterExpression<?> expression)
+   {
+      this.expression = expression;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for expression
+    *******************************************************************************/
+   public QFilterCriteria withExpression(AbstractFilterExpression<?> expression)
+   {
+      this.expression = expression;
+      return (this);
+   }
+
+
 }
