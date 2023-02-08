@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.audits;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditOutput;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -45,31 +47,78 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
 /*******************************************************************************
- ** Insert an audit (e.g., the same one) against 1 or more records.
+ ** Insert 1 or more audits (and optionally their children, auditDetails)
  **
- ** Takes care of managing the foreign key tables.
+ ** Takes care of managing the foreign key tables (auditTable, auditUser).
  **
- ** Enforces that security key values are provided, if the table has any.
+ ** Enforces that security key values are provided, if the table has any.  Note that
+ ** might mean a null is given for a particular key, but at least the key must be present.
  *******************************************************************************/
 public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput>
 {
    private static final QLogger LOG = QLogger.getLogger(AuditAction.class);
 
+   private Map<Pair<String, String>, Integer> cachedFetches = new HashMap<>();
+
 
 
    /*******************************************************************************
-    **
+    ** Execute to insert 1 audit, with no details (child records)
     *******************************************************************************/
    public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message)
    {
-      new AuditAction().execute(new AuditInput()
+      execute(tableName, recordId, securityKeyValues, message, null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Execute to insert 1 audit, with a list of details (child records)
+    *******************************************************************************/
+   public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<String> details)
+   {
+      new AuditAction().execute(new AuditInput().withAuditSingleInput(new AuditSingleInput()
          .withAuditTableName(tableName)
-         .withRecordIdList(List.of(recordId))
+         .withRecordId(recordId)
          .withSecurityKeyValues(securityKeyValues)
-         .withMessage(message));
+         .withMessage(message)
+         .withDetails(details)
+      ));
+   }
+
+
+
+   /*******************************************************************************
+    ** Add 1 auditSingleInput to an AuditInput object - with no details (child records).
+    *******************************************************************************/
+   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message)
+   {
+      return (appendToInput(auditInput, tableName, recordId, securityKeyValues, message, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Add 1 auditSingleInput to an AuditInput object - with a list of details (child records).
+    *******************************************************************************/
+   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<String> details)
+   {
+      if(auditInput == null)
+      {
+         auditInput = new AuditInput();
+      }
+
+      return auditInput.withAuditSingleInput(new AuditSingleInput()
+         .withAuditTableName(tableName)
+         .withRecordId(recordId)
+         .withSecurityKeyValues(securityKeyValues)
+         .withMessage(message)
+         .withDetails(details)
+      );
    }
 
 
@@ -81,56 +130,105 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    public AuditOutput execute(AuditInput input)
    {
       AuditOutput auditOutput = new AuditOutput();
-      try
+
+      if(CollectionUtils.nullSafeHasContents(input.getAuditSingleInputList()))
       {
-         QTableMetaData table = QContext.getQInstance().getTable(input.getAuditTableName());
-         if(table == null)
+         try
          {
-            throw (new QException("Requested audit for an unrecognized table name: " + input.getAuditTableName()));
-         }
+            List<QRecord> auditRecords = new ArrayList<>();
 
-         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
-         {
-            if(input.getSecurityKeyValues() == null || !input.getSecurityKeyValues().containsKey(recordSecurityLock.getSecurityKeyType()))
+            for(AuditSingleInput auditSingleInput : CollectionUtils.nonNullList(input.getAuditSingleInputList()))
             {
-               throw (new QException("Missing securityKeyValue [" + recordSecurityLock.getSecurityKeyType() + "] in audit request for table " + input.getAuditTableName()));
-            }
-         }
-
-         Integer auditTableId = getIdForName("auditTable", input.getAuditTableName());
-         Integer auditUserId  = getIdForName("auditUser", Objects.requireNonNullElse(input.getAuditUserName(), getSessionUserName()));
-         Instant timestamp    = Objects.requireNonNullElse(input.getTimestamp(), Instant.now());
-
-         List<QRecord> auditRecords = new ArrayList<>();
-         for(Integer recordId : input.getRecordIdList())
-         {
-            QRecord record = new QRecord()
-               .withValue("auditTableId", auditTableId)
-               .withValue("auditUserId", auditUserId)
-               .withValue("timestamp", timestamp)
-               .withValue("message", input.getMessage())
-               .withValue("recordId", recordId);
-
-            if(input.getSecurityKeyValues() != null)
-            {
-               for(Map.Entry<String, Serializable> entry : input.getSecurityKeyValues().entrySet())
+               /////////////////////////////////////////
+               // validate table is known in instance //
+               /////////////////////////////////////////
+               QTableMetaData table = QContext.getQInstance().getTable(auditSingleInput.getAuditTableName());
+               if(table == null)
                {
-                  record.setValue(entry.getKey(), entry.getValue());
+                  throw (new QException("Requested audit for an unrecognized table name: " + auditSingleInput.getAuditTableName()));
+               }
+
+               ///////////////////////////////////////////////////
+               // validate security keys on the table are given //
+               ///////////////////////////////////////////////////
+               for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+               {
+                  if(auditSingleInput.getSecurityKeyValues() == null || !auditSingleInput.getSecurityKeyValues().containsKey(recordSecurityLock.getSecurityKeyType()))
+                  {
+                     throw (new QException("Missing securityKeyValue [" + recordSecurityLock.getSecurityKeyType() + "] in audit request for table " + auditSingleInput.getAuditTableName()));
+                  }
+               }
+
+               ////////////////////////////////////////////////
+               // map names to ids and handle default values //
+               ////////////////////////////////////////////////
+               Integer auditTableId = getIdForName("auditTable", auditSingleInput.getAuditTableName());
+               Integer auditUserId  = getIdForName("auditUser", Objects.requireNonNullElse(auditSingleInput.getAuditUserName(), getSessionUserName()));
+               Instant timestamp    = Objects.requireNonNullElse(auditSingleInput.getTimestamp(), Instant.now());
+
+               //////////////////
+               // build record //
+               //////////////////
+               QRecord record = new QRecord()
+                  .withValue("auditTableId", auditTableId)
+                  .withValue("auditUserId", auditUserId)
+                  .withValue("timestamp", timestamp)
+                  .withValue("message", auditSingleInput.getMessage())
+                  .withValue("recordId", auditSingleInput.getRecordId());
+
+               if(auditSingleInput.getSecurityKeyValues() != null)
+               {
+                  for(Map.Entry<String, Serializable> entry : auditSingleInput.getSecurityKeyValues().entrySet())
+                  {
+                     record.setValue(entry.getKey(), entry.getValue());
+                  }
+               }
+
+               auditRecords.add(record);
+            }
+
+            /////////////////////////////
+            // do a single bulk insert //
+            /////////////////////////////
+            InsertInput insertInput = new InsertInput();
+            insertInput.setTableName("audit");
+            insertInput.setRecords(auditRecords);
+            InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+            //////////////////////////////////////////
+            // now look for children (auditDetails) //
+            //////////////////////////////////////////
+            int i = 0;
+            List<QRecord> auditDetailRecords = new ArrayList<>();
+            for(AuditSingleInput auditSingleInput : CollectionUtils.nonNullList(input.getAuditSingleInputList()))
+            {
+               Integer auditId = insertOutput.getRecords().get(i++).getValueInteger("id");
+               if(auditId == null)
+               {
+                  LOG.warn("Missing an id for inserted audit - so won't be able to store its child details...");
+                  continue;
+               }
+
+               for(String detail : CollectionUtils.nonNullList(auditSingleInput.getDetails()))
+               {
+                  auditDetailRecords.add(new QRecord()
+                     .withValue("auditId", auditId)
+                     .withValue("message", detail)
+                  );
                }
             }
 
-            auditRecords.add(record);
+            insertInput = new InsertInput();
+            insertInput.setTableName("auditDetail");
+            insertInput.setRecords(auditDetailRecords);
+            new InsertAction().execute(insertInput);
          }
+         catch(Exception e)
+         {
+            LOG.error("Error performing an audit", e);
+         }
+      }
 
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName("audit");
-         insertInput.setRecords(auditRecords);
-         new InsertAction().execute(insertInput);
-      }
-      catch(Exception e)
-      {
-         LOG.error("Error performing an audit", e);
-      }
       return (auditOutput);
    }
 
@@ -156,54 +254,64 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
     *******************************************************************************/
    private Integer getIdForName(String tableName, String nameValue) throws QException
    {
-      Integer id = fetchIdFromName(tableName, nameValue);
-      if(id != null)
+      Pair<String, String> key = new Pair<>(tableName, nameValue);
+      if(!cachedFetches.containsKey(key))
       {
-         return id;
-      }
 
-      try
-      {
-         LOG.debug("Inserting " + tableName + " named " + nameValue);
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(tableName);
-         QRecord record = new QRecord().withValue("name", nameValue);
-
-         if(tableName.equals("auditTable"))
-         {
-            QTableMetaData table = QContext.getQInstance().getTable(nameValue);
-            if(table != null)
-            {
-               record.setValue("label", table.getLabel());
-            }
-         }
-
-         insertInput.setRecords(List.of(record));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         id = insertOutput.getRecords().get(0).getValueInteger("id");
+         Integer id = fetchIdFromName(tableName, nameValue);
          if(id != null)
          {
+            cachedFetches.put(key, id);
             return id;
          }
-      }
-      catch(Exception e)
-      {
-         ////////////////////////////////////////////////////////////////////
-         // assume this may mean a dupe-key - so - try another fetch below //
-         ////////////////////////////////////////////////////////////////////
-         LOG.debug("Caught error inserting " + tableName + " named " + nameValue + " - will try to re-fetch", e);
+
+         try
+         {
+            LOG.debug("Inserting " + tableName + " named " + nameValue);
+            InsertInput insertInput = new InsertInput();
+            insertInput.setTableName(tableName);
+            QRecord record = new QRecord().withValue("name", nameValue);
+
+            if(tableName.equals("auditTable"))
+            {
+               QTableMetaData table = QContext.getQInstance().getTable(nameValue);
+               if(table != null)
+               {
+                  record.setValue("label", table.getLabel());
+               }
+            }
+
+            insertInput.setRecords(List.of(record));
+            InsertOutput insertOutput = new InsertAction().execute(insertInput);
+            id = insertOutput.getRecords().get(0).getValueInteger("id");
+            if(id != null)
+            {
+               cachedFetches.put(key, id);
+               return id;
+            }
+         }
+         catch(Exception e)
+         {
+            ////////////////////////////////////////////////////////////////////
+            // assume this may mean a dupe-key - so - try another fetch below //
+            ////////////////////////////////////////////////////////////////////
+            LOG.debug("Caught error inserting " + tableName + " named " + nameValue + " - will try to re-fetch", e);
+         }
+
+         id = fetchIdFromName(tableName, nameValue);
+         if(id != null)
+         {
+            cachedFetches.put(key, id);
+            return id;
+         }
+
+         /////////////
+         // give up //
+         /////////////
+         throw (new QException("Unable to get id for " + tableName + " named " + nameValue));
       }
 
-      id = fetchIdFromName(tableName, nameValue);
-      if(id != null)
-      {
-         return id;
-      }
-
-      /////////////
-      // give up //
-      /////////////
-      throw (new QException("Unable to get id for " + tableName + " named " + nameValue));
+      return (cachedFetches.get(key));
    }
 
 
@@ -211,7 +319,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Integer fetchIdFromName(String tableName, String nameValue) throws QException
+   private Integer fetchIdFromName(String tableName, String nameValue) throws QException
    {
       GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
@@ -221,7 +329,8 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
       {
          return (getOutput.getRecord().getValueInteger("id"));
       }
-      return null;
+
+      return (null);
    }
 
 }

@@ -43,9 +43,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
  *******************************************************************************/
 public class AuditsMetaDataProvider
 {
-   public static final String TABLE_NAME_AUDIT_TABLE = "auditTable";
-   public static final String TABLE_NAME_AUDIT_USER = "auditUser";
-   public static final String TABLE_NAME_AUDIT = "audit";
+   public static final String TABLE_NAME_AUDIT_TABLE  = "auditTable";
+   public static final String TABLE_NAME_AUDIT_USER   = "auditUser";
+   public static final String TABLE_NAME_AUDIT        = "audit";
+   public static final String TABLE_NAME_AUDIT_DETAIL = "auditDetail";
 
 
 
@@ -80,6 +81,13 @@ public class AuditsMetaDataProvider
          .withType(JoinType.MANY_TO_ONE)
          .withJoinOn(new JoinOn("auditUserId", "id")));
 
+      instance.addJoin(new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_AUDIT)
+         .withRightTable(TABLE_NAME_AUDIT_DETAIL)
+         .withInferredName()
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "auditId")));
+
    }
 
 
@@ -111,6 +119,11 @@ public class AuditsMetaDataProvider
          .withName(TABLE_NAME_AUDIT_USER)
          .withTableName(TABLE_NAME_AUDIT_USER)
       );
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(TABLE_NAME_AUDIT)
+         .withTableName(TABLE_NAME_AUDIT)
+      );
    }
 
 
@@ -124,6 +137,7 @@ public class AuditsMetaDataProvider
       rs.add(enrich(backendDetailEnricher, defineAuditUserTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineAuditTableTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineAuditTable(backendName)));
+      rs.add(enrich(backendDetailEnricher, defineAuditDetailTable(backendName)));
       return (rs);
    }
 
@@ -201,6 +215,24 @@ public class AuditsMetaDataProvider
          .withField(new QFieldMetaData("recordId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
          .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineAuditDetailTable(String backendName)
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_AUDIT_DETAIL)
+         .withBackendName(backendName)
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("id")
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("auditId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT))
+         .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS));
    }
 
 }

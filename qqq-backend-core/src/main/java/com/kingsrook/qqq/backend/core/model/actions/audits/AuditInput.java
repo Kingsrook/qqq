@@ -23,208 +23,72 @@ package com.kingsrook.qqq.backend.core.model.actions.audits;
 
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 
 
 /*******************************************************************************
- **
+ ** Input object for the audit action - an object which contains a list of "single"
+ ** audit inputs - e.g., the data needed to insert 1 audit.
  *******************************************************************************/
-public class AuditInput extends AbstractActionInput
+public class AuditInput extends AbstractActionInput implements Serializable
 {
-   private String        auditTableName;
-   private String        auditUserName;
-   private Instant       timestamp;
-   private String        message;
-   private List<Integer> recordIdList;
-
-   private Map<String, Serializable> securityKeyValues;
+   private List<AuditSingleInput> auditSingleInputList = new ArrayList<>();
 
 
 
    /*******************************************************************************
-    ** Getter for auditTableName
+    ** Getter for auditSingleInputList
     *******************************************************************************/
-   public String getAuditTableName()
+   public List<AuditSingleInput> getAuditSingleInputList()
    {
-      return (this.auditTableName);
+      return (this.auditSingleInputList);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for auditTableName
+    ** Setter for auditSingleInputList
     *******************************************************************************/
-   public void setAuditTableName(String auditTableName)
+   public void setAuditSingleInputList(List<AuditSingleInput> auditSingleInputList)
    {
-      this.auditTableName = auditTableName;
+      this.auditSingleInputList = auditSingleInputList;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for auditTableName
+    ** Fluent setter for auditSingleInputList
     *******************************************************************************/
-   public AuditInput withAuditTableName(String auditTableName)
+   public AuditInput withAuditSingleInputList(List<AuditSingleInput> auditSingleInputList)
    {
-      this.auditTableName = auditTableName;
+      this.auditSingleInputList = auditSingleInputList;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for auditUserName
+    ** Add a single auditSingleInput
     *******************************************************************************/
-   public String getAuditUserName()
+   public void addAuditSingleInput(AuditSingleInput auditSingleInput)
    {
-      return (this.auditUserName);
+      if(this.auditSingleInputList == null)
+      {
+         this.auditSingleInputList = new ArrayList<>();
+      }
+      this.auditSingleInputList.add(auditSingleInput);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for auditUserName
+    ** Fluent setter to add a single auditSingleInput
     *******************************************************************************/
-   public void setAuditUserName(String auditUserName)
+   public AuditInput withAuditSingleInput(AuditSingleInput auditSingleInput)
    {
-      this.auditUserName = auditUserName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for auditUserName
-    *******************************************************************************/
-   public AuditInput withAuditUserName(String auditUserName)
-   {
-      this.auditUserName = auditUserName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for timestamp
-    *******************************************************************************/
-   public Instant getTimestamp()
-   {
-      return (this.timestamp);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for timestamp
-    *******************************************************************************/
-   public void setTimestamp(Instant timestamp)
-   {
-      this.timestamp = timestamp;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for timestamp
-    *******************************************************************************/
-   public AuditInput withTimestamp(Instant timestamp)
-   {
-      this.timestamp = timestamp;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for message
-    *******************************************************************************/
-   public String getMessage()
-   {
-      return (this.message);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for message
-    *******************************************************************************/
-   public void setMessage(String message)
-   {
-      this.message = message;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for message
-    *******************************************************************************/
-   public AuditInput withMessage(String message)
-   {
-      this.message = message;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for recordIdList
-    *******************************************************************************/
-   public List<Integer> getRecordIdList()
-   {
-      return (this.recordIdList);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for recordIdList
-    *******************************************************************************/
-   public void setRecordIdList(List<Integer> recordIdList)
-   {
-      this.recordIdList = recordIdList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for recordIdList
-    *******************************************************************************/
-   public AuditInput withRecordIdList(List<Integer> recordIdList)
-   {
-      this.recordIdList = recordIdList;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for securityKeyValues
-    *******************************************************************************/
-   public Map<String, Serializable> getSecurityKeyValues()
-   {
-      return (this.securityKeyValues);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for securityKeyValues
-    *******************************************************************************/
-   public void setSecurityKeyValues(Map<String, Serializable> securityKeyValues)
-   {
-      this.securityKeyValues = securityKeyValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for securityKeyValues
-    *******************************************************************************/
-   public AuditInput withSecurityKeyValues(Map<String, Serializable> securityKeyValues)
-   {
-      this.securityKeyValues = securityKeyValues;
+      addAuditSingleInput(auditSingleInput);
       return (this);
    }
 
