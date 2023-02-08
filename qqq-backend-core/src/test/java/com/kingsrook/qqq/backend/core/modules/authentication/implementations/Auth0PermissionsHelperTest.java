@@ -51,7 +51,7 @@ class Auth0PermissionsHelperTest
          // is expected.
       }
 
-      Auth0PermissionsHelper.HttpDeleteWithBody httpDeleteWithBody = new Auth0PermissionsHelper.HttpDeleteWithBody(null);
+      Auth0PermissionsHelper.HttpDeleteWithBody httpDeleteWithBody = new Auth0PermissionsHelper.HttpDeleteWithBody("http://localhost");
       assertEquals("DELETE", httpDeleteWithBody.getMethod());
    }
 
