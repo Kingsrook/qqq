@@ -887,7 +887,8 @@ public class QInstanceValidator
                //////////////////////////////////////////
                // otherwise, just append the exception //
                //////////////////////////////////////////
-               errors.add(prefix + ": " + e);
+               e.printStackTrace();
+               errors.add(prefix + ": " + e.getMessage());
             }
          }
       }
