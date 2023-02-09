@@ -48,13 +48,13 @@ class QInstanceTest extends BaseTest
 
       GetInput getInput = new GetInput();
 
-      String tablePath = qInstance.getTablePath(getInput, TestUtils.TABLE_NAME_PERSON);
+      String tablePath = qInstance.getTablePath(TestUtils.TABLE_NAME_PERSON);
       assertEquals("/peopleApp/person", tablePath);
 
       ////////////////////////////////////////////////////////////////////////////////////////
       // call again (to make sure getting from memoization works - verify w/ breakpoint...) //
       ////////////////////////////////////////////////////////////////////////////////////////
-      tablePath = qInstance.getTablePath(getInput, TestUtils.TABLE_NAME_PERSON);
+      tablePath = qInstance.getTablePath(TestUtils.TABLE_NAME_PERSON);
       assertEquals("/peopleApp/person", tablePath);
    }
 
@@ -70,13 +70,13 @@ class QInstanceTest extends BaseTest
 
       GetInput getInput = new GetInput();
 
-      String tablePath = qInstance.getTablePath(getInput, "notATable");
+      String tablePath = qInstance.getTablePath("notATable");
       assertNull(tablePath);
 
       ////////////////////////////////////////////////////////////////////////////////////////
       // call again (to make sure getting from memoization works - verify w/ breakpoint...) //
       ////////////////////////////////////////////////////////////////////////////////////////
-      tablePath = qInstance.getTablePath(getInput, "notATable");
+      tablePath = qInstance.getTablePath("notATable");
       assertNull(tablePath);
    }
 
