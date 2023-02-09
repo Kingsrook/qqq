@@ -32,10 +32,10 @@ import java.util.Map;
  *******************************************************************************/
 public abstract class QWidgetData
 {
-
    private String       label;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
+   private Boolean      hasPermission;
 
    /////////////////////////////////////////////////////////////////////////////////////////
    // this is a list of lists, the outer list corresponds to each dropdown (parallel list //
@@ -219,6 +219,40 @@ public abstract class QWidgetData
    public QWidgetData withDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
    {
       this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasPermission
+    **
+    *******************************************************************************/
+   public Boolean getHasPermission()
+   {
+      return hasPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasPermission
+    **
+    *******************************************************************************/
+   public void setHasPermission(Boolean hasPermission)
+   {
+      this.hasPermission = hasPermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hasPermission
+    **
+    *******************************************************************************/
+   public QWidgetData withHasPermission(Boolean hasPermission)
+   {
+      this.hasPermission = hasPermission;
       return (this);
    }
 

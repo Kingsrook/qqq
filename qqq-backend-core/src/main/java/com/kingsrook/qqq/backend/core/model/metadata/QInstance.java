@@ -188,7 +188,7 @@ public class QInstance
    /*******************************************************************************
     ** Get the full path to a table
     *******************************************************************************/
-   public String getTablePath(AbstractActionInput actionInput, String tableName) throws QException
+   public String getTablePath(String tableName) throws QException
    {
       if(!memoizedTablePaths.containsKey(tableName))
       {

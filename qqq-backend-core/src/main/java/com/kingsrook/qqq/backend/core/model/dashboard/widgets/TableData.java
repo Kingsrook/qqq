@@ -44,6 +44,15 @@ public class TableData extends QWidgetData
    /*******************************************************************************
     **
     *******************************************************************************/
+   public TableData()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public TableData(String label, List<Column> columns, List<Map<String, Object>> rows, List<Map<String, String>> dropdownOptions)
    {
       setLabel(label);

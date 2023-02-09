@@ -34,6 +34,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -49,6 +51,8 @@ public class ValueUtils
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMddWithDashes = DateTimeFormatter.ofPattern("yyyy-MM-dd");
    private static final DateTimeFormatter dateTimeFormatter_MdyyyyWithSlashes  = DateTimeFormatter.ofPattern("M/d/yyyy");
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMdd           = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+   public static final String COMPANY_TIMEZONE_ID = "America/New_York";
 
 
 
@@ -652,5 +656,78 @@ public class ValueUtils
             case DATE_TIME -> getValueAsInstant(value);
             case BLOB -> getValueAsByteArray(value);
          };
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getStartOfTodayInZoneId(String zoneId)
+   {
+      ///////////////////////////
+      // get the instant 'now' //
+      ///////////////////////////
+      ZoneId  zone         = ZoneId.of(zoneId);
+      Instant computerTime = Instant.now();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // get date time for now in given zone, truncate it and add offset from utc //
+      //////////////////////////////////////////////////////////////////////////////
+      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
+      LocalDateTime startOfDay    = givenZonesNow.truncatedTo(ChronoUnit.DAYS);
+      return (startOfDay.toInstant(zone.getRules().getOffset(computerTime)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getStartOfMonthInZoneId(String zoneId)
+   {
+      ///////////////////////////
+      // get the instant 'now' //
+      ///////////////////////////
+      ZoneId  zone         = ZoneId.of(zoneId);
+      Instant computerTime = Instant.now();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // get date time for now in given zone, truncate it and add offset from utc //
+      //////////////////////////////////////////////////////////////////////////////
+      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
+      LocalDateTime startOfMonth = givenZonesNow
+         .withDayOfMonth(1)
+         .with(ChronoField.HOUR_OF_DAY, 0)
+         .with(ChronoField.MINUTE_OF_DAY, 0)
+         .with(ChronoField.SECOND_OF_DAY, 0)
+         .with(ChronoField.NANO_OF_DAY, 0);
+      return (startOfMonth.toInstant(zone.getRules().getOffset(computerTime)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getStartOfYearInZoneId(String zoneId)
+   {
+      ///////////////////////////
+      // get the instant 'now' //
+      ///////////////////////////
+      ZoneId  zone         = ZoneId.of(zoneId);
+      Instant computerTime = Instant.now();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // get date time for now in given zone, truncate it and add offset from utc //
+      //////////////////////////////////////////////////////////////////////////////
+      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
+      LocalDateTime startOfMonth = givenZonesNow
+         .withDayOfYear(1)
+         .with(ChronoField.HOUR_OF_DAY, 0)
+         .with(ChronoField.MINUTE_OF_DAY, 0)
+         .with(ChronoField.SECOND_OF_DAY, 0)
+         .with(ChronoField.NANO_OF_DAY, 0);
+      return (startOfMonth.toInstant(zone.getRules().getOffset(computerTime)));
    }
 }

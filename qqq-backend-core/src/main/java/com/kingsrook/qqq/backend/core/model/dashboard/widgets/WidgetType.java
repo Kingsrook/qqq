@@ -44,7 +44,6 @@ public enum WidgetType
    PROCESS("process"),
    QUICK_SIGHT_CHART("quickSightChart"),
    STATISTICS("statistics"),
-   SIMPLE_STATISTICS("simpleStatistics"),
    STACKED_BAR_CHART("stackedBarChart"),
    STEPPER("stepper"),
    TABLE("table"),
