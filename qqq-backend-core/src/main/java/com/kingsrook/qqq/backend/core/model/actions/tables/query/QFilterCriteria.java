@@ -44,7 +44,7 @@ public class QFilterCriteria implements Serializable, Cloneable
    private QCriteriaOperator  operator;
    private List<Serializable> values;
 
-   private String otherFieldName;
+   private String                      otherFieldName;
    private AbstractFilterExpression<?> expression;
 
 
@@ -94,6 +94,23 @@ public class QFilterCriteria implements Serializable, Cloneable
       this.fieldName = fieldName;
       this.operator = operator;
       this.values = values == null ? new ArrayList<>() : values;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFilterCriteria(String fieldName, QCriteriaOperator operator, AbstractFilterExpression<?> expression)
+   {
+      this.fieldName = fieldName;
+      this.operator = operator;
+      this.expression = expression;
+
+      ///////////////////////////////////////
+      // this guy doesn't like to be null? //
+      ///////////////////////////////////////
+      this.values = new ArrayList<>();
    }
 
 
@@ -305,6 +322,8 @@ public class QFilterCriteria implements Serializable, Cloneable
       return (rs.toString());
    }
 
+
+
    /*******************************************************************************
     ** Getter for expression
     *******************************************************************************/
@@ -333,6 +352,5 @@ public class QFilterCriteria implements Serializable, Cloneable
       this.expression = expression;
       return (this);
    }
-
 
 }

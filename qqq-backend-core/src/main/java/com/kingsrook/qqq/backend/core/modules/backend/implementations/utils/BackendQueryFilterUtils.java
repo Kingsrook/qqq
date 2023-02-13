@@ -50,7 +50,6 @@ public class BackendQueryFilterUtils
    /*******************************************************************************
     ** Test if record matches filter.
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public static boolean doesRecordMatch(QQueryFilter filter, QRecord qRecord)
    {
       if(filter == null || !filter.hasAnyCriteria())
@@ -72,40 +71,7 @@ public class BackendQueryFilterUtils
          String       fieldName = criterion.getFieldName();
          Serializable value     = qRecord.getValue(fieldName);
 
-         boolean criterionMatches = switch(criterion.getOperator())
-            {
-               case EQUALS -> testEquals(criterion, value);
-               case NOT_EQUALS -> !testEquals(criterion, value);
-               case IN -> testIn(criterion, value);
-               case NOT_IN -> !testIn(criterion, value);
-               case IS_BLANK -> testBlank(criterion, value);
-               case IS_NOT_BLANK -> !testBlank(criterion, value);
-               case CONTAINS -> testContains(criterion, fieldName, value);
-               case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
-               case IS_NULL_OR_IN -> testBlank(criterion, value) || testIn(criterion, value);
-               case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
-               case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
-               case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
-               case NOT_ENDS_WITH -> !testEndsWith(criterion, fieldName, value);
-               case GREATER_THAN -> testGreaterThan(criterion, value);
-               case GREATER_THAN_OR_EQUALS -> testGreaterThan(criterion, value) || testEquals(criterion, value);
-               case LESS_THAN -> !testGreaterThan(criterion, value) && !testEquals(criterion, value);
-               case LESS_THAN_OR_EQUALS -> !testGreaterThan(criterion, value);
-               case BETWEEN ->
-               {
-                  QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-                  QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
-                  criteria1.getValues().remove(0);
-                  yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
-               }
-               case NOT_BETWEEN ->
-               {
-                  QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-                  QFilterCriteria criteria1 = new QFilterCriteria().withValues(criterion.getValues());
-                  criteria1.getValues().remove(0);
-                  yield !(testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
-               }
-            };
+         boolean criterionMatches = doesCriteriaMatch(criterion, fieldName, value);
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // add this new value to the existing recordMatches value - and if we can short circuit the remaining checks, do so. //
@@ -135,6 +101,51 @@ public class BackendQueryFilterUtils
       }
 
       return (recordMatches.getPlain());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
+   {
+      boolean criterionMatches = switch(criterion.getOperator())
+         {
+            case EQUALS -> testEquals(criterion, value);
+            case NOT_EQUALS -> !testEquals(criterion, value);
+            case IN -> testIn(criterion, value);
+            case NOT_IN -> !testIn(criterion, value);
+            case IS_BLANK -> testBlank(criterion, value);
+            case IS_NOT_BLANK -> !testBlank(criterion, value);
+            case CONTAINS -> testContains(criterion, fieldName, value);
+            case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
+            case IS_NULL_OR_IN -> testBlank(criterion, value) || testIn(criterion, value);
+            case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
+            case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
+            case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
+            case NOT_ENDS_WITH -> !testEndsWith(criterion, fieldName, value);
+            case GREATER_THAN -> testGreaterThan(criterion, value);
+            case GREATER_THAN_OR_EQUALS -> testGreaterThan(criterion, value) || testEquals(criterion, value);
+            case LESS_THAN -> !testGreaterThan(criterion, value) && !testEquals(criterion, value);
+            case LESS_THAN_OR_EQUALS -> !testGreaterThan(criterion, value);
+            case BETWEEN ->
+            {
+               QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
+               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
+               criteria1.getValues().remove(0);
+               yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
+            }
+            case NOT_BETWEEN ->
+            {
+               QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
+               QFilterCriteria criteria1 = new QFilterCriteria().withValues(criterion.getValues());
+               criteria1.getValues().remove(0);
+               yield !(testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
+            }
+         };
+      return criterionMatches;
    }
 
 

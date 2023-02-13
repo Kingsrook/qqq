@@ -52,8 +52,6 @@ public class ValueUtils
    private static final DateTimeFormatter dateTimeFormatter_MdyyyyWithSlashes  = DateTimeFormatter.ofPattern("M/d/yyyy");
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMdd           = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-   public static final String COMPANY_TIMEZONE_ID = "America/New_York";
-
 
 
    /*******************************************************************************

@@ -90,6 +90,7 @@ public class QInstance
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
    private Map<String, String> environmentValues = new LinkedHashMap<>();
+   private String              defaultTimeZoneId = "UTC";
 
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
 
@@ -989,6 +990,37 @@ public class QInstance
    {
       this.defaultPermissionRules = defaultPermissionRules;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultTimeZoneId
+    *******************************************************************************/
+   public void setDefaultTimeZoneId(String defaultTimeZoneId)
+   {
+      this.defaultTimeZoneId = defaultTimeZoneId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultTimeZoneId
+    *******************************************************************************/
+   public QInstance withDefaultTimeZoneId(String defaultTimeZoneId)
+   {
+      this.defaultTimeZoneId = defaultTimeZoneId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultTimeZoneId
+    *******************************************************************************/
+   public String getDefaultTimeZoneId()
+   {
+      return (this.defaultTimeZoneId);
    }
 
 

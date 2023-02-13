@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -120,7 +121,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableBulkLoad(RenderWidgetInput input, String tableName) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       return (tablePath + "/" + tableName + ".bulkInsert");
    }
 
@@ -131,7 +132,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableBulkLoadChildren(RenderWidgetInput input, String tableName) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return (null);
@@ -147,7 +148,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableCreate(RenderWidgetInput input, String tableName) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       return (tablePath + "/create");
    }
 
@@ -158,7 +159,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableCreateWithDefaultValues(RenderWidgetInput input, String tableName, Map<String, Serializable> defaultValues) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       return (tablePath + "/create?defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), Charset.defaultCharset()));
    }
 
@@ -170,7 +171,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String getCountLink(RenderWidgetInput input, String tableName, QQueryFilter filter, int count) throws QException
    {
       String totalString = QValueFormatter.formatValue(DisplayFormat.COMMAS, count);
-      String tablePath   = input.getInstance().getTablePath(tableName);
+      String tablePath   = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null || filter == null)
       {
          return (totalString);
@@ -185,7 +186,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static void addTableFilterToListIfPermissed(RenderWidgetInput input, String tableName, List<String> urls, QQueryFilter filter) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return;
@@ -201,7 +202,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableFilterUnencoded(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return (null);
@@ -217,7 +218,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return (null);
@@ -234,7 +235,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
    {
       String displayText = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + " " + StringUtils.plural(noOfRecords, singularLabel, pluralLabel);
-      String tablePath   = input.getInstance().getTablePath(tableName);
+      String tablePath   = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return (displayText);
@@ -251,7 +252,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String aHrefViewRecord(RenderWidgetInput input, String tableName, Serializable id, String linkText) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return (linkText);
@@ -267,7 +268,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkRecordEdit(AbstractActionInput input, String tableName, Serializable recordId) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       return (tablePath + "/" + recordId + "/edit");
    }
 
@@ -278,7 +279,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkRecordView(AbstractActionInput input, String tableName, Serializable recordId) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(tableName);
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
          return (null);
@@ -294,9 +295,9 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
    {
-      QProcessMetaData process   = input.getInstance().getProcess(processName);
+      QProcessMetaData process   = QContext.getQInstance().getProcess(processName);
       String           tableName = process.getTableName();
-      String           tablePath = input.getInstance().getTablePath(tableName);
+      String           tablePath = QContext.getQInstance().getTablePath(tableName);
       return (tablePath + "/" + recordId + "/" + processName);
    }
 
@@ -327,7 +328,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String linkTableCreateChild(RenderWidgetInput input, String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(childTableName);
+      String tablePath = QContext.getQInstance().getTablePath(childTableName);
       if(tablePath == null)
       {
          return (null);
@@ -347,7 +348,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String aHrefTableCreateChild(RenderWidgetInput input, String childTableName, Map<String, Serializable> defaultValues, Set<String> disabledFields) throws QException
    {
-      String tablePath = input.getInstance().getTablePath(childTableName);
+      String tablePath = QContext.getQInstance().getTablePath(childTableName);
       if(tablePath == null)
       {
          return (null);

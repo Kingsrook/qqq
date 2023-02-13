@@ -26,15 +26,18 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
@@ -715,10 +718,75 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
          clauses.add("(" + clause + ")");
 
+         if(field.getType().equals(QFieldType.DATE_TIME))
+         {
+            values = evaluateDateTimeParamValues(values);
+         }
+
          params.addAll(values);
       }
 
       return (String.join(" " + booleanOperator.toString() + " ", clauses));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<Serializable> evaluateDateTimeParamValues(List<Serializable> values)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(values))
+      {
+         return (values);
+      }
+
+      List<Serializable> rs = new ArrayList<>();
+      for(Serializable value : values)
+      {
+         if(value instanceof Instant)
+         {
+            rs.add(value);
+         }
+         else
+         {
+            try
+            {
+               Instant valueAsInstant = ValueUtils.getValueAsInstant(value);
+               rs.add(valueAsInstant);
+            }
+            catch(Exception e)
+            {
+               try
+               {
+                  Optional<Instant> valueAsRelativeInstant = parseValueAsRelativeInstant(value);
+                  rs.add(valueAsRelativeInstant.orElseThrow());
+               }
+               catch(Exception e2)
+               {
+                  throw (new QValueException("Parameter value [" + value + "] could not be evaluated as an absolute or relative Instant"));
+               }
+            }
+         }
+      }
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Optional<Instant> parseValueAsRelativeInstant(Serializable value)
+   {
+      String valueString = ValueUtils.getValueAsString(value);
+      if(valueString == null)
+      {
+         return (Optional.empty());
+      }
+
+      // todo - use parser!!
+      return Optional.of(Instant.now());
    }
 
 
