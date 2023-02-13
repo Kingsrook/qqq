@@ -33,6 +33,7 @@ public class QBrandingMetaData
    private String appName;
    private String logo;
    private String icon;
+   private String accentColor;
 
 
 
@@ -206,6 +207,40 @@ public class QBrandingMetaData
    public QBrandingMetaData withCompanyUrl(String companyUrl)
    {
       this.companyUrl = companyUrl;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for accentColor
+    **
+    *******************************************************************************/
+   public String getAccentColor()
+   {
+      return accentColor;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for accentColor
+    **
+    *******************************************************************************/
+   public void setAccentColor(String accentColor)
+   {
+      this.accentColor = accentColor;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for accentColor
+    **
+    *******************************************************************************/
+   public QBrandingMetaData withAccentColor(String accentColor)
+   {
+      this.accentColor = accentColor;
       return (this);
    }
 

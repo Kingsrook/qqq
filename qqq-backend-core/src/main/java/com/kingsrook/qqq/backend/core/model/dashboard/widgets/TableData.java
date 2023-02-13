@@ -37,7 +37,8 @@ public class TableData extends QWidgetData
    private String                    noRowsFoundHTML;
    private List<Column>              columns;
    private List<Map<String, Object>> rows;
-   private List<Map<String, String>> dropdownOptions;
+   private Integer                   rowsPerPage;
+   private Boolean                   hidePaginationDropdown;
 
 
 
@@ -53,12 +54,11 @@ public class TableData extends QWidgetData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public TableData(String label, List<Column> columns, List<Map<String, Object>> rows, List<Map<String, String>> dropdownOptions)
+   public TableData(String label, List<Column> columns, List<Map<String, Object>> rows)
    {
       setLabel(label);
       setColumns(columns);
       setRows(rows);
-      setDropdownOptions(dropdownOptions);
    }
 
 
@@ -70,6 +70,74 @@ public class TableData extends QWidgetData
    public String getType()
    {
       return WidgetType.TABLE.getType();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for rowsPerPage
+    **
+    *******************************************************************************/
+   public Integer getRowsPerPage()
+   {
+      return rowsPerPage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for rowsPerPage
+    **
+    *******************************************************************************/
+   public void setRowsPerPage(Integer rowsPerPage)
+   {
+      this.rowsPerPage = rowsPerPage;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for rowsPerPage
+    **
+    *******************************************************************************/
+   public TableData withRowsPerPage(Integer rowsPerPage)
+   {
+      this.rowsPerPage = rowsPerPage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hidePaginationDropdown
+    **
+    *******************************************************************************/
+   public Boolean getHidePaginationDropdown()
+   {
+      return hidePaginationDropdown;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hidePaginationDropdown
+    **
+    *******************************************************************************/
+   public void setHidePaginationDropdown(Boolean hidePaginationDropdown)
+   {
+      this.hidePaginationDropdown = hidePaginationDropdown;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hidePaginationDropdown
+    **
+    *******************************************************************************/
+   public TableData withHidePaginationDropdown(Boolean hidePaginationDropdown)
+   {
+      this.hidePaginationDropdown = hidePaginationDropdown;
+      return (this);
    }
 
 
@@ -137,40 +205,6 @@ public class TableData extends QWidgetData
    public TableData withRows(List<Map<String, Object>> rows)
    {
       this.rows = rows;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for dropdownOptions
-    **
-    *******************************************************************************/
-   public List<Map<String, String>> getDropdownOptions()
-   {
-      return dropdownOptions;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for dropdownOptions
-    **
-    *******************************************************************************/
-   public void setDropdownOptions(List<Map<String, String>> dropdownOptions)
-   {
-      this.dropdownOptions = dropdownOptions;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for dropdownOptions
-    **
-    *******************************************************************************/
-   public TableData withDropdownOptions(List<Map<String, String>> dropdownOptions)
-   {
-      this.dropdownOptions = dropdownOptions;
       return (this);
    }
 
