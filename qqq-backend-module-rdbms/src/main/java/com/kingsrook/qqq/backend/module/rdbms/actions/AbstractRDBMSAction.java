@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -718,10 +719,13 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
          clauses.add("(" + clause + ")");
 
+         /* not ready for this at this time - would be needed when "parsing" of values (instead of expressions for relative date-times) is ready*/
+         /*
          if(field.getType().equals(QFieldType.DATE_TIME))
          {
             values = evaluateDateTimeParamValues(values);
          }
+         */
 
          params.addAll(values);
       }
@@ -759,8 +763,12 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             {
                try
                {
+                  LocalDate valueAsLocalDate = ValueUtils.getValueAsLocalDate(value);
+                  rs.add(valueAsLocalDate);
+                  /*
                   Optional<Instant> valueAsRelativeInstant = parseValueAsRelativeInstant(value);
                   rs.add(valueAsRelativeInstant.orElseThrow());
+                  */
                }
                catch(Exception e2)
                {
