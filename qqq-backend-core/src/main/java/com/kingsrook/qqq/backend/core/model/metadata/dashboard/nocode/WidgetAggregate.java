@@ -22,22 +22,25 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.AggregateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
+public class WidgetAggregate extends AbstractWidgetValueSourceWithFilter
 {
-   private String selectFieldName;
+   private Aggregate aggregate;
 
 
 
@@ -45,7 +48,7 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
     ** Constructor
     **
     *******************************************************************************/
-   public WidgetQueryField()
+   public WidgetAggregate()
    {
       setType(getClass().getSimpleName());
    }
@@ -58,17 +61,22 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
    @Override
    public Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException
    {
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(tableName);
-      queryInput.setFilter(getEffectiveFilter(input));
-      queryInput.setLimit(1);
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
-      {
-         return (queryOutput.getRecords().get(0).getValue(selectFieldName));
-      }
+      AggregateInput aggregateInput = new AggregateInput();
+      aggregateInput.setTableName(tableName);
+      aggregateInput.setAggregates(List.of(aggregate));
+      aggregateInput.setFilter(getEffectiveFilter(input));
 
-      return (null);
+      AggregateOutput       aggregateOutput = new AggregateAction().execute(aggregateInput);
+      List<AggregateResult> results         = aggregateOutput.getResults();
+      if(results.isEmpty())
+      {
+         return (null);
+      }
+      else
+      {
+         AggregateResult aggregateResult = results.get(0);
+         return (aggregateResult.getAggregateValue(aggregate));
+      }
    }
 
 
@@ -76,7 +84,7 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
    /*******************************************************************************
     ** Fluent setter for name
     *******************************************************************************/
-   public WidgetQueryField withName(String name)
+   public WidgetAggregate withName(String name)
    {
       setName(name);
       return (this);
@@ -87,7 +95,8 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
    /*******************************************************************************
     ** Fluent setter for tableName
     *******************************************************************************/
-   public WidgetQueryField withTableName(String tableName)
+   @Override
+   public WidgetAggregate withTableName(String tableName)
    {
       this.tableName = tableName;
       return (this);
@@ -98,7 +107,8 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
    /*******************************************************************************
     ** Fluent setter for filter
     *******************************************************************************/
-   public WidgetQueryField withFilter(QQueryFilter filter)
+   @Override
+   public WidgetAggregate withFilter(QQueryFilter filter)
    {
       this.filter = filter;
       return (this);
@@ -107,31 +117,58 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
 
 
    /*******************************************************************************
-    ** Getter for selectFieldName
+    ** Fluent setter for conditionalFilterList
     *******************************************************************************/
-   public String getSelectFieldName()
+   @Override
+   public WidgetAggregate withConditionalFilterList(List<AbstractConditionalFilter> conditionalFilterList)
    {
-      return (this.selectFieldName);
+      this.conditionalFilterList = conditionalFilterList;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for selectFieldName
+    ** Fluent setter to add a single conditionalFilter
     *******************************************************************************/
-   public void setSelectFieldName(String selectFieldName)
+   public WidgetAggregate withConditionalFilter(AbstractConditionalFilter conditionalFilter)
    {
-      this.selectFieldName = selectFieldName;
+      if(this.conditionalFilterList == null)
+      {
+         this.conditionalFilterList = new ArrayList<>();
+      }
+      this.conditionalFilterList.add(conditionalFilter);
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for selectFieldName
+    ** Getter for aggregate
     *******************************************************************************/
-   public WidgetQueryField withSelectFieldName(String selectFieldName)
+   public Aggregate getAggregate()
    {
-      this.selectFieldName = selectFieldName;
+      return (this.aggregate);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for aggregate
+    *******************************************************************************/
+   public void setAggregate(Aggregate aggregate)
+   {
+      this.aggregate = aggregate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for aggregate
+    *******************************************************************************/
+   public WidgetAggregate withAggregate(Aggregate aggregate)
+   {
+      this.aggregate = aggregate;
       return (this);
    }
 

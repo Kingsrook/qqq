@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.AbstractWi
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.AbstractWidgetValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.QNoCodeWidgetMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -58,21 +59,29 @@ public class NoCodeWidgetRenderer extends AbstractWidgetRenderer
       // build context by evaluating all values //
       ////////////////////////////////////////////
       Map<String, Object> context = new HashMap<>();
+      context.put("utils", new NoCodeWidgetVelocityUtils(context, input));
+      context.put("input", input);
+
+      for(Map.Entry<String, String> entry : input.getQueryParams().entrySet())
+      {
+         context.put(entry.getKey(), entry.getValue());
+      }
 
       for(AbstractWidgetValueSource valueSource : widgetMetaData.getValues())
       {
-         LOG.trace("Computing: " + valueSource.getType() + " named " + valueSource.getName() + "...");
-         Object value = valueSource.evaluate(context);
-         LOG.trace("Computed: " + valueSource.getName() + " = " + value);
-         context.put(valueSource.getName(), value);
-
-         context.put(valueSource.getName() + ".source", valueSource);
+         try
+         {
+            LOG.trace("Computing: " + valueSource.getType() + " named " + valueSource.getName() + "...");
+            Object value = valueSource.evaluate(context, input);
+            LOG.trace("Computed: " + valueSource.getName() + " = " + value);
+            context.put(valueSource.getName(), value);
+            context.put(valueSource.getName() + ".source", valueSource);
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error evaluating widget value source", e, logPair("widgetName", input.getWidgetMetaData().getName()), logPair("valueSourceName", valueSource.getName()));
+         }
       }
-
-      /////////////////////////////////////////////
-      // set default utils object in context too //
-      /////////////////////////////////////////////
-      context.put("utils", new NoCodeWidgetVelocityUtils(context));
 
       /////////////////////////////////////////////
       // build content by evaluating all outputs //

@@ -22,11 +22,18 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractHTMLWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.WidgetCount;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -39,11 +46,8 @@ public class NoCodeWidgetVelocityUtils
 {
    private static final QLogger LOG = QLogger.getLogger(NoCodeWidgetVelocityUtils.class);
 
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private final Map<String, Object> context;
+   private Map<String, Object> context;
+   private RenderWidgetInput   input;
 
 
 
@@ -51,9 +55,10 @@ public class NoCodeWidgetVelocityUtils
     ** Constructor
     **
     *******************************************************************************/
-   public NoCodeWidgetVelocityUtils(Map<String, Object> context)
+   public NoCodeWidgetVelocityUtils(Map<String, Object> context, RenderWidgetInput input)
    {
       this.context = context;
+      this.input = input;
    }
 
 
@@ -61,7 +66,7 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public final String errorIcon()
+   public String errorIcon()
    {
       return ("""
          <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: red; position: relative; top: 6px;" aria-hidden="true">error_outline</span>
@@ -73,10 +78,46 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public final String checkIcon()
+   public String checkIcon()
    {
       return ("""
          <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: green; position: relative; top: 6px;" aria-hidden="true">check</span>
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String spanColorGreen()
+   {
+      return ("""
+         <span style="color: green;">
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String spanColorOrange()
+   {
+      return ("""
+         <span style="color: orange;">
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String spanColorRed()
+   {
+      return ("""
+         <span style="color: red;">
          """);
    }
 
@@ -95,13 +136,117 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public String formatDateTime(Instant i)
+   {
+      return QValueFormatter.formatDateTimeWithZone(i.atZone(ZoneId.of(QContext.getQInstance().getDefaultTimeZoneId())));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatSecondsAsDuration(Integer seconds)
+   {
+      StringBuilder rs = new StringBuilder();
+
+      if(seconds == null)
+      {
+         return ("");
+      }
+
+      int secondsPerDay = 24 * 60 * 60;
+      if(seconds >= secondsPerDay)
+      {
+         int days = seconds / (secondsPerDay);
+         seconds = seconds % secondsPerDay;
+         rs.append(days).append(StringUtils.plural(days, " day", " days")).append(" ");
+      }
+
+      int secondsPerHour = 60 * 60;
+      if(seconds >= secondsPerHour)
+      {
+         int hours = seconds / (secondsPerHour);
+         seconds = seconds % secondsPerHour;
+         rs.append(hours).append(StringUtils.plural(hours, " hour", " hours")).append(" ");
+      }
+
+      int secondsPerMinute = 60;
+      if(seconds >= secondsPerMinute)
+      {
+         int minutes = seconds / (secondsPerMinute);
+         seconds = seconds % secondsPerMinute;
+         rs.append(minutes).append(StringUtils.plural(minutes, " minute", " minutes")).append(" ");
+      }
+
+      if(seconds > 0 || rs.length() == 0)
+      {
+         rs.append(seconds).append(StringUtils.plural(seconds, " second", " seconds")).append(" ");
+      }
+
+      if(rs.length() > 0)
+      {
+         rs.deleteCharAt(rs.length() - 1);
+      }
+
+      return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String formatSecondsAsRoundedDuration(Integer seconds)
+   {
+      StringBuilder rs = new StringBuilder();
+
+      if(seconds == null)
+      {
+         return ("");
+      }
+
+      int secondsPerDay = 24 * 60 * 60;
+      if(seconds >= secondsPerDay)
+      {
+         int days = seconds / (secondsPerDay);
+         return (days + StringUtils.plural(days, " day", " days"));
+      }
+
+      int secondsPerHour = 60 * 60;
+      if(seconds >= secondsPerHour)
+      {
+         int hours = seconds / (secondsPerHour);
+         return (hours + StringUtils.plural(hours, " hour", " hours"));
+      }
+
+      int secondsPerMinute = 60;
+      if(seconds >= secondsPerMinute)
+      {
+         int minutes = seconds / (secondsPerMinute);
+         return (minutes + StringUtils.plural(minutes, " minute", " minutes"));
+      }
+
+      if(seconds > 0 || rs.length() == 0)
+      {
+         return (seconds + StringUtils.plural(seconds, " second", " seconds"));
+      }
+
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public String tableCountFilterLink(String countVariableName, String singular, String plural) throws QException
    {
       try
       {
          WidgetCount  widgetCount = (WidgetCount) context.get(countVariableName + ".source");
          Integer      count       = ValueUtils.getValueAsInteger(context.get(countVariableName));
-         QQueryFilter filter      = widgetCount.getFilter();
+         QQueryFilter filter      = widgetCount.getEffectiveFilter(input);
          return (AbstractHTMLWidgetRenderer.aHrefTableFilterNoOfRecords(null, widgetCount.getTableName(), filter, count, singular, plural));
       }
       catch(Exception e)
@@ -109,5 +254,15 @@ public class NoCodeWidgetVelocityUtils
          LOG.warn("Error rendering widget link", e);
          return ("");
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String round(BigDecimal input, int digits)
+   {
+      return String.valueOf(input.setScale(digits, RoundingMode.HALF_UP));
    }
 }

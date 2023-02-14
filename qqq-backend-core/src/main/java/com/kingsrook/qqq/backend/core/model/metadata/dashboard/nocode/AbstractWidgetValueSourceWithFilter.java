@@ -22,12 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -35,51 +32,63 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
+public abstract class AbstractWidgetValueSourceWithFilter extends AbstractWidgetValueSource
 {
-   private String selectFieldName;
+   protected String       tableName;
+   protected QQueryFilter filter;
 
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public WidgetQueryField()
-   {
-      setType(getClass().getSimpleName());
-   }
+   protected List<AbstractConditionalFilter> conditionalFilterList;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException
+   public QQueryFilter getEffectiveFilter(RenderWidgetInput input)
    {
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(tableName);
-      queryInput.setFilter(getEffectiveFilter(input));
-      queryInput.setLimit(1);
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
+      QQueryFilter effectiveFilter;
+      if(filter == null)
       {
-         return (queryOutput.getRecords().get(0).getValue(selectFieldName));
+         effectiveFilter = new QQueryFilter();
+      }
+      else
+      {
+         effectiveFilter = filter.clone();
       }
 
-      return (null);
+      for(AbstractConditionalFilter conditionalFilter : CollectionUtils.nonNullList(conditionalFilterList))
+      {
+         if(conditionalFilter.testCondition(input))
+         {
+            QQueryFilter additionalFilter = conditionalFilter.getFilter(input);
+            for(QFilterCriteria criterion : additionalFilter.getCriteria())
+            {
+               effectiveFilter.addCriteria(criterion);
+            }
+         }
+      }
+
+      return (effectiveFilter);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
+    ** Getter for tableName
     *******************************************************************************/
-   public WidgetQueryField withName(String name)
+   public String getTableName()
    {
-      setName(name);
-      return (this);
+      return (this.tableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableName
+    *******************************************************************************/
+   public void setTableName(String tableName)
+   {
+      this.tableName = tableName;
    }
 
 
@@ -87,7 +96,7 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
    /*******************************************************************************
     ** Fluent setter for tableName
     *******************************************************************************/
-   public WidgetQueryField withTableName(String tableName)
+   public AbstractWidgetValueSourceWithFilter withTableName(String tableName)
    {
       this.tableName = tableName;
       return (this);
@@ -96,9 +105,29 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
 
 
    /*******************************************************************************
+    ** Getter for filter
+    *******************************************************************************/
+   public QQueryFilter getFilter()
+   {
+      return (this.filter);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for filter
+    *******************************************************************************/
+   public void setFilter(QQueryFilter filter)
+   {
+      this.filter = filter;
+   }
+
+
+
+   /*******************************************************************************
     ** Fluent setter for filter
     *******************************************************************************/
-   public WidgetQueryField withFilter(QQueryFilter filter)
+   public AbstractWidgetValueSourceWithFilter withFilter(QQueryFilter filter)
    {
       this.filter = filter;
       return (this);
@@ -107,31 +136,31 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
 
 
    /*******************************************************************************
-    ** Getter for selectFieldName
+    ** Getter for conditionalFilterList
     *******************************************************************************/
-   public String getSelectFieldName()
+   public List<AbstractConditionalFilter> getConditionalFilterList()
    {
-      return (this.selectFieldName);
+      return (this.conditionalFilterList);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for selectFieldName
+    ** Setter for conditionalFilterList
     *******************************************************************************/
-   public void setSelectFieldName(String selectFieldName)
+   public void setConditionalFilterList(List<AbstractConditionalFilter> conditionalFilterList)
    {
-      this.selectFieldName = selectFieldName;
+      this.conditionalFilterList = conditionalFilterList;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for selectFieldName
+    ** Fluent setter for conditionalFilterList
     *******************************************************************************/
-   public WidgetQueryField withSelectFieldName(String selectFieldName)
+   public AbstractWidgetValueSourceWithFilter withConditionalFilterList(List<AbstractConditionalFilter> conditionalFilterList)
    {
-      this.selectFieldName = selectFieldName;
+      this.conditionalFilterList = conditionalFilterList;
       return (this);
    }
 

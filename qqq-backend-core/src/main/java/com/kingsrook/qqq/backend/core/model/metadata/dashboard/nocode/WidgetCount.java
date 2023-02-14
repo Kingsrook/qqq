@@ -22,22 +22,22 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class WidgetCount extends AbstractWidgetValueSource
+public class WidgetCount extends AbstractWidgetValueSourceWithFilter
 {
-   private String       tableName;
-   private QQueryFilter filter;
-
 
 
    /*******************************************************************************
@@ -55,25 +55,14 @@ public class WidgetCount extends AbstractWidgetValueSource
     **
     *******************************************************************************/
    @Override
-   public Object evaluate(Map<String, Object> context) throws QException
+   public Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException
    {
-      // todo - look for params in the filter (fields or values)
-      //  make sure to update it in supplementContext below too!!
       CountInput countInput = new CountInput();
       countInput.setTableName(tableName);
-      countInput.setFilter(filter);
+      countInput.setFilter(getEffectiveFilter(input));
+
       CountOutput countOutput = new CountAction().execute(countInput);
       return (countOutput.getCount());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void supplementContext(Map<String, Object> context)
-   {
-      context.put(getName() + ".filter", filter);
    }
 
 
@@ -90,28 +79,9 @@ public class WidgetCount extends AbstractWidgetValueSource
 
 
    /*******************************************************************************
-    ** Getter for tableName
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return (this.tableName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
-
-
-
-   /*******************************************************************************
     ** Fluent setter for tableName
     *******************************************************************************/
+   @Override
    public WidgetCount withTableName(String tableName)
    {
       this.tableName = tableName;
@@ -121,31 +91,39 @@ public class WidgetCount extends AbstractWidgetValueSource
 
 
    /*******************************************************************************
-    ** Getter for filter
-    *******************************************************************************/
-   public QQueryFilter getFilter()
-   {
-      return (this.filter);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for filter
-    *******************************************************************************/
-   public void setFilter(QQueryFilter filter)
-   {
-      this.filter = filter;
-   }
-
-
-
-   /*******************************************************************************
     ** Fluent setter for filter
     *******************************************************************************/
+   @Override
    public WidgetCount withFilter(QQueryFilter filter)
    {
       this.filter = filter;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for conditionalFilterList
+    *******************************************************************************/
+   @Override
+   public WidgetCount withConditionalFilterList(List<AbstractConditionalFilter> conditionalFilterList)
+   {
+      this.conditionalFilterList = conditionalFilterList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter to add a single conditionalFilter
+    *******************************************************************************/
+   public WidgetCount withConditionalFilter(AbstractConditionalFilter conditionalFilter)
+   {
+      if(this.conditionalFilterList == null)
+      {
+         this.conditionalFilterList = new ArrayList<>();
+      }
+      this.conditionalFilterList.add(conditionalFilter);
       return (this);
    }
 

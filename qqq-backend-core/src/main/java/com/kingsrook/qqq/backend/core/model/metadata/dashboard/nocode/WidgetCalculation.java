@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -51,8 +54,18 @@ public class WidgetCalculation extends AbstractWidgetValueSource
          Integer sum = 0;
          for(String valueName : valueNames)
          {
-            Integer addend = ValueUtils.getValueAsInteger(context.get(valueName));
-            sum += addend;
+            try
+            {
+               Integer addend = ValueUtils.getValueAsInteger(context.get(valueName));
+               sum += addend;
+            }
+            catch(Exception e)
+            {
+               ////////////////////////////////////////////////
+               // assume value to be null or 0, don't add it //
+               ////////////////////////////////////////////////
+               e.printStackTrace();
+            }
          }
          return (sum);
       }),
@@ -62,6 +75,30 @@ public class WidgetCalculation extends AbstractWidgetValueSource
          Instant now  = Instant.now();
          Instant then = ValueUtils.getValueAsInstant(context.get(valueNames.get(0)));
          return (then.until(now, ChronoUnit.MINUTES));
+      }),
+
+      AGE_SECONDS((List<String> valueNames, Map<String, Object> context) ->
+      {
+         Instant now  = Instant.now();
+         Instant then = ValueUtils.getValueAsInstant(context.get(valueNames.get(0)));
+         return (then.until(now, ChronoUnit.SECONDS));
+      }),
+
+      PERCENT_CHANGE((List<String> valueNames, Map<String, Object> context) ->
+      {
+         BigDecimal current  = ValueUtils.getValueAsBigDecimal(context.get(valueNames.get(0)));
+         BigDecimal previous = ValueUtils.getValueAsBigDecimal(context.get(valueNames.get(1)));
+
+         ///////////////////////////////////////////////
+         // 100 * ( (current - previous) / previous ) //
+         ///////////////////////////////////////////////
+         BigDecimal difference = current.subtract(previous);
+         if(BigDecimal.ZERO.equals(previous))
+         {
+            return (null);
+         }
+         BigDecimal quotient = difference.divide(previous, MathContext.DECIMAL32);
+         return new BigDecimal("100").multiply(quotient);
       });
 
 
@@ -105,7 +142,7 @@ public class WidgetCalculation extends AbstractWidgetValueSource
     **
     *******************************************************************************/
    @Override
-   public Object evaluate(Map<String, Object> context) throws QException
+   public Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException
    {
       return (operator.execute(values, context));
    }

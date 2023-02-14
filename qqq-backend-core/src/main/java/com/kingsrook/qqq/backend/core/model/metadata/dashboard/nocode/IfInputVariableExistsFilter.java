@@ -22,86 +22,30 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractWidgetValueSource
+public class IfInputVariableExistsFilter extends AbstractConditionalFilter
 {
-   protected String name;
-   protected String type;
+   private String       inputVariableName;
+   private QQueryFilter filter;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public abstract Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException;
-
-
-
-   /*******************************************************************************
-    ** Getter for type
-    *******************************************************************************/
-   public String getType()
+   public IfInputVariableExistsFilter()
    {
-      return (this.type);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for type
-    *******************************************************************************/
-   public AbstractWidgetValueSource withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for name
-    *******************************************************************************/
-   public String getName()
-   {
-      return (this.name);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for name
-    *******************************************************************************/
-   public AbstractWidgetValueSource withName(String name)
-   {
-      this.name = name;
-      return (this);
    }
 
 
@@ -109,11 +53,47 @@ public abstract class AbstractWidgetValueSource
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void supplementContext(Map<String, Object> context)
+   public IfInputVariableExistsFilter(String inputVariableName, QQueryFilter filter)
    {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
+      this.inputVariableName = inputVariableName;
+      this.filter = filter;
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean testCondition(RenderWidgetInput renderWidgetInput)
+   {
+      return (renderWidgetInput.getQueryParams().get(inputVariableName) != null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QQueryFilter getFilter(RenderWidgetInput renderWidgetInput)
+   {
+      for(QFilterCriteria criterion : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         if(criterion.getValues() != null)
+         {
+            criterion.setValues(new MutableList<>(criterion.getValues()));
+            for(int i = 0; i < criterion.getValues().size(); i++)
+            {
+               Serializable value = criterion.getValues().get(i);
+               if(value instanceof String valueString && valueString.equals("${input." + inputVariableName + "}"))
+               {
+                  criterion.getValues().set(i, renderWidgetInput.getQueryParams().get(inputVariableName));
+               }
+            }
+         }
+      }
+
+      return (filter);
+   }
 }

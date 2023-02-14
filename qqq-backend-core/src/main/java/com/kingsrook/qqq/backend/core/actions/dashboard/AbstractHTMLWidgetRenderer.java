@@ -234,7 +234,8 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
    {
-      String displayText = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + " " + StringUtils.plural(noOfRecords, singularLabel, pluralLabel);
+      String plural      = StringUtils.plural(noOfRecords, singularLabel, pluralLabel);
+      String displayText = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + (StringUtils.hasContent(plural) ? (" " + plural) : "");
       String tablePath   = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {

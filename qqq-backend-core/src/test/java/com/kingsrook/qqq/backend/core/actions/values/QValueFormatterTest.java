@@ -196,8 +196,8 @@ class QValueFormatterTest extends BaseTest
    void testFormatDates()
    {
       assertEquals("2023-02-01", QValueFormatter.formatDate(LocalDate.of(2023, Month.FEBRUARY, 1)));
-      assertEquals("2023-02-01 7:15 PM", QValueFormatter.formatDateTime(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15)));
-      assertEquals("2023-02-01 7:15 PM CST", QValueFormatter.formatDateTimeWithZone(ZonedDateTime.of(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15), ZoneId.of("US/Central"))));
+      assertEquals("2023-02-01 07:15 PM", QValueFormatter.formatDateTime(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15)));
+      assertEquals("2023-02-01 07:15 PM CST", QValueFormatter.formatDateTimeWithZone(ZonedDateTime.of(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15), ZoneId.of("US/Central"))));
    }
 
 }

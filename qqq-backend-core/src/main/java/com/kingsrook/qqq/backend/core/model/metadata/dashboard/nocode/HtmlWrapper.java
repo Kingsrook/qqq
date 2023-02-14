@@ -33,9 +33,13 @@ public class HtmlWrapper
    private String prefix;
    private String suffix;
 
-   public static final HtmlWrapper SUBHEADER = new HtmlWrapper("<h4>", "</h4>");
-   public static final HtmlWrapper INDENT_1  = new HtmlWrapper("<div style='padding-left: 1rem;'>", "</div>");
-   public static final HtmlWrapper INDENT_2  = new HtmlWrapper("<div style='padding-left: 2rem;'>", "</div>");
+   public static final HtmlWrapper SUBHEADER    = new HtmlWrapper("<h4>", "</h4>");
+   public static final HtmlWrapper BIG_CENTERED = new HtmlWrapper("<div style='font-size: 2rem; font-weight: 400; line-height: 1.625; text-align: center; padding-bottom: 8px;'>", "</div>");
+   public static final HtmlWrapper INDENT_1     = new HtmlWrapper("<div style='padding-left: 1rem;'>", "</div>");
+   public static final HtmlWrapper INDENT_2     = new HtmlWrapper("<div style='padding-left: 2rem;'>", "</div>");
+   public static final HtmlWrapper RULE_ABOVE   = new HtmlWrapper("""
+      <hr style="opacity: 0.25; height: 0.0625rem; border-width: 0; margin-bottom: 1rem; background-image: linear-gradient(to right, rgba(52, 71, 103, 0), rgba(52, 71, 103, 0.4), rgba(52, 71, 103, 0));" />
+      """, "");
 
 
 
