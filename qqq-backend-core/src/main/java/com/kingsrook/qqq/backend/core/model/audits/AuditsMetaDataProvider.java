@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
@@ -165,6 +167,7 @@ public class AuditsMetaDataProvider
       return new QTableMetaData()
          .withName(TABLE_NAME_AUDIT_TABLE)
          .withBackendName(backendName)
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
          .withPrimaryKeyField("id")
@@ -186,6 +189,7 @@ public class AuditsMetaDataProvider
       return new QTableMetaData()
          .withName(TABLE_NAME_AUDIT_USER)
          .withBackendName(backendName)
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("name")
          .withPrimaryKeyField("id")
@@ -206,6 +210,7 @@ public class AuditsMetaDataProvider
       return new QTableMetaData()
          .withName(TABLE_NAME_AUDIT)
          .withBackendName(backendName)
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s %s")
          .withRecordLabelFields("auditTableId", "recordId")
          .withPrimaryKeyField("id")
@@ -227,12 +232,16 @@ public class AuditsMetaDataProvider
       return new QTableMetaData()
          .withName(TABLE_NAME_AUDIT_DETAIL)
          .withBackendName(backendName)
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("id")
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("auditId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT))
-         .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS));
+         .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
+         .withField(new QFieldMetaData("fieldName", QFieldType.STRING).withMaxLength(100).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
+         .withField(new QFieldMetaData("oldValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
+         .withField(new QFieldMetaData("newValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS));
    }
 
 }

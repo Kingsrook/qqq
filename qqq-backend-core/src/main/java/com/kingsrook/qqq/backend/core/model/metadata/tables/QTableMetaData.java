@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
@@ -74,6 +75,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private List<RecordSecurityLock> recordSecurityLocks;
    private QPermissionRules         permissionRules;
+   private QAuditRules              auditRules;
 
    private QTableBackendDetails    backendDetails;
    private QTableAutomationDetails automationDetails;
@@ -1139,6 +1141,37 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withPermissionRules(QPermissionRules permissionRules)
    {
       this.permissionRules = permissionRules;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auditRules
+    *******************************************************************************/
+   public QAuditRules getAuditRules()
+   {
+      return (this.auditRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditRules
+    *******************************************************************************/
+   public void setAuditRules(QAuditRules auditRules)
+   {
+      this.auditRules = auditRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditRules
+    *******************************************************************************/
+   public QTableMetaData withAuditRules(QAuditRules auditRules)
+   {
+      this.auditRules = auditRules;
       return (this);
    }
 

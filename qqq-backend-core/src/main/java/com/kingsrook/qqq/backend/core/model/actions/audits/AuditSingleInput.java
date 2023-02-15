@@ -47,7 +47,7 @@ public class AuditSingleInput
 
    private Map<String, Serializable> securityKeyValues;
 
-   private List<String> details;
+   private List<QRecord> details;
 
 
 
@@ -254,10 +254,12 @@ public class AuditSingleInput
       return (this);
    }
 
+
+
    /*******************************************************************************
     ** Getter for details
     *******************************************************************************/
-   public List<String> getDetails()
+   public List<QRecord> getDetails()
    {
       return (this.details);
    }
@@ -267,7 +269,7 @@ public class AuditSingleInput
    /*******************************************************************************
     ** Setter for details
     *******************************************************************************/
-   public void setDetails(List<String> details)
+   public void setDetails(List<QRecord> details)
    {
       this.details = details;
    }
@@ -277,21 +279,24 @@ public class AuditSingleInput
    /*******************************************************************************
     ** Fluent setter for details
     *******************************************************************************/
-   public AuditSingleInput withDetails(List<String> details)
+   public AuditSingleInput withDetails(List<QRecord> details)
    {
       this.details = details;
       return (this);
    }
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void addDetail(String detail)
+   public void addDetail(String message)
    {
       if(this.details == null)
       {
          this.details = new ArrayList<>();
       }
+      QRecord detail = new QRecord().withValue("message", message);
       this.details.add(detail);
    }
 

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.context;
 
 
+import java.util.Optional;
 import java.util.Stack;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -242,5 +243,20 @@ public class QContext
    public static void clearTransaction()
    {
       qBackendTransactionThreadLocal.remove();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Optional<AbstractActionInput> getFirstActionInStack()
+   {
+      if(actionStackThreadLocal.get() == null || actionStackThreadLocal.get().isEmpty())
+      {
+         return (Optional.empty());
+      }
+
+      return (Optional.of(actionStackThreadLocal.get().get(0)));
    }
 }

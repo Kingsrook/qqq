@@ -83,8 +83,8 @@ class QValueFormatterTest extends BaseTest
       assertEquals("No", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), false));
 
       assertNull(QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), null));
-      assertEquals("5:00 AM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(5, 0)));
-      assertEquals("5:00 PM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(17, 0)));
+      assertEquals("5:00:00 AM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(5, 0)));
+      assertEquals("5:00:47 PM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(17, 0, 47)));
 
       //////////////////////////////////////////////////
       // this one flows through the exceptional cases //
@@ -196,8 +196,8 @@ class QValueFormatterTest extends BaseTest
    void testFormatDates()
    {
       assertEquals("2023-02-01", QValueFormatter.formatDate(LocalDate.of(2023, Month.FEBRUARY, 1)));
-      assertEquals("2023-02-01 07:15 PM", QValueFormatter.formatDateTime(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15)));
-      assertEquals("2023-02-01 07:15 PM CST", QValueFormatter.formatDateTimeWithZone(ZonedDateTime.of(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15), ZoneId.of("US/Central"))));
+      assertEquals("2023-02-01 07:15:00 PM", QValueFormatter.formatDateTime(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15, 0)));
+      assertEquals("2023-02-01 07:15:47 PM CST", QValueFormatter.formatDateTimeWithZone(ZonedDateTime.of(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15, 47), ZoneId.of("US/Central"))));
    }
 
 }

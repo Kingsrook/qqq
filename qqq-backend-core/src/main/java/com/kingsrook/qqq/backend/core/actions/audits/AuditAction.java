@@ -77,9 +77,9 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
 
 
    /*******************************************************************************
-    ** Execute to insert 1 audit, with a list of details (child records)
+    ** Execute to insert 1 audit, with a list of detail child records
     *******************************************************************************/
-   public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<String> details)
+   public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)
    {
       new AuditAction().execute(new AuditInput().withAuditSingleInput(new AuditSingleInput()
          .withAuditTableName(tableName)
@@ -105,7 +105,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     ** Add 1 auditSingleInput to an AuditInput object - with a list of details (child records).
     *******************************************************************************/
-   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<String> details)
+   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)
    {
       if(auditInput == null)
       {
@@ -198,7 +198,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             //////////////////////////////////////////
             // now look for children (auditDetails) //
             //////////////////////////////////////////
-            int i = 0;
+            int           i                  = 0;
             List<QRecord> auditDetailRecords = new ArrayList<>();
             for(AuditSingleInput auditSingleInput : CollectionUtils.nonNullList(input.getAuditSingleInputList()))
             {
@@ -209,12 +209,9 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                   continue;
                }
 
-               for(String detail : CollectionUtils.nonNullList(auditSingleInput.getDetails()))
+               for(QRecord detail : CollectionUtils.nonNullList(auditSingleInput.getDetails()))
                {
-                  auditDetailRecords.add(new QRecord()
-                     .withValue("auditId", auditId)
-                     .withValue("message", detail)
-                  );
+                  auditDetailRecords.add(detail.withValue("auditId", auditId));
                }
             }
 

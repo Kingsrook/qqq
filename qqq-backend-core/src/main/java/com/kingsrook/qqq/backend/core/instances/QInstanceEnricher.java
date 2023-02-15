@@ -197,6 +197,20 @@ public class QInstanceEnricher
       }
 
       enrichPermissionRules(table);
+      enrichAuditRules(table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichAuditRules(QTableMetaData table)
+   {
+      if(table.getAuditRules() == null && qInstance.getDefaultAuditRules() != null)
+      {
+         table.setAuditRules(qInstance.getDefaultAuditRules());
+      }
    }
 
 

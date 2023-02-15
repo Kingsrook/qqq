@@ -47,10 +47,10 @@ public class QValueFormatter
 {
    private static final QLogger LOG = QLogger.getLogger(QValueFormatter.class);
 
-   private static DateTimeFormatter dateTimeFormatter         = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
-   private static DateTimeFormatter dateTimeWithZoneFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a z");
+   private static DateTimeFormatter dateTimeFormatter         = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a");
+   private static DateTimeFormatter dateTimeWithZoneFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a z");
    private static DateTimeFormatter dateFormatter             = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-   private static DateTimeFormatter localTimeFormatter        = DateTimeFormatter.ofPattern("h:mm a");
+   private static DateTimeFormatter localTimeFormatter        = DateTimeFormatter.ofPattern("h:mm:ss a");
 
 
 

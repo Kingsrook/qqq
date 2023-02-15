@@ -32,6 +32,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCustomizer;
@@ -41,6 +42,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -84,6 +86,8 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
       // todo post-customization - can do whatever w/ the result if you want
 
+      new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
+
       if(postInsertCustomizer.isPresent())
       {
          postInsertCustomizer.get().setInsertInput(insertInput);
@@ -92,7 +96,6 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       return insertOutput;
    }
-
 
 
    /*******************************************************************************

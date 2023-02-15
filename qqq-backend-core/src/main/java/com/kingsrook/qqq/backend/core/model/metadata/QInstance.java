@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
@@ -93,6 +94,7 @@ public class QInstance
    private String              defaultTimeZoneId = "UTC";
 
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
+   private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
 
    // todo - lock down the object (no more changes allowed) after it's been validated?
 
@@ -1040,6 +1042,37 @@ public class QInstance
          }
       }
       return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultAuditRules
+    *******************************************************************************/
+   public QAuditRules getDefaultAuditRules()
+   {
+      return (this.defaultAuditRules);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultAuditRules
+    *******************************************************************************/
+   public void setDefaultAuditRules(QAuditRules defaultAuditRules)
+   {
+      this.defaultAuditRules = defaultAuditRules;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultAuditRules
+    *******************************************************************************/
+   public QInstance withDefaultAuditRules(QAuditRules defaultAuditRules)
+   {
+      this.defaultAuditRules = defaultAuditRules;
+      return (this);
    }
 
 }

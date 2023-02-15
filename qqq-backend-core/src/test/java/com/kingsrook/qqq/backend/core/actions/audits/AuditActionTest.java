@@ -165,9 +165,9 @@ class AuditActionTest extends BaseTest
       Integer    recordId2  = 1702;
       Integer    recordId3  = 1703;
       AuditInput auditInput = new AuditInput();
-      AuditAction.appendToInput(auditInput, TestUtils.TABLE_NAME_PERSON_MEMORY, recordId1, Map.of(), "Test Audit", List.of("Detail1", "Detail2"));
+      AuditAction.appendToInput(auditInput, TestUtils.TABLE_NAME_PERSON_MEMORY, recordId1, Map.of(), "Test Audit", List.of(new QRecord().withValue("message", "Detail1"), new QRecord().withValue("message", "Detail2")));
       AuditAction.appendToInput(auditInput, TestUtils.TABLE_NAME_ORDER, recordId2, Map.of(TestUtils.SECURITY_KEY_TYPE_STORE, 47), "Test Another Audit", null);
-      AuditAction.appendToInput(auditInput, TestUtils.TABLE_NAME_PERSON_MEMORY, recordId3, Map.of(TestUtils.SECURITY_KEY_TYPE_STORE, 42), "Audit 3", List.of("Detail3"));
+      AuditAction.appendToInput(auditInput, TestUtils.TABLE_NAME_PERSON_MEMORY, recordId3, Map.of(TestUtils.SECURITY_KEY_TYPE_STORE, 42), "Audit 3", List.of(new QRecord().withValue("message", "Detail3")));
       new AuditAction().execute(auditInput);
 
       /////////////////////////////////////

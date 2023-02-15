@@ -19,60 +19,56 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
-
-
-import java.util.Objects;
+package com.kingsrook.qqq.backend.core.model.metadata.audits;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class HtmlWrapper
+public class QAuditRules
 {
-   private String prefix;
-   private String suffix;
-
-   public static final HtmlWrapper SUBHEADER    = new HtmlWrapper("<h4>", "</h4>");
-   public static final HtmlWrapper BIG_CENTERED = new HtmlWrapper("<div style='font-size: 2rem; font-weight: 400; line-height: 1.625; text-align: center; padding-bottom: 8px;'>", "</div>");
-   public static final HtmlWrapper INDENT_1     = new HtmlWrapper("<div style='padding-left: 1rem;'>", "</div>");
-   public static final HtmlWrapper INDENT_2     = new HtmlWrapper("<div style='padding-left: 2rem;'>", "</div>");
-   public static final HtmlWrapper FLOAT_RIGHT  = new HtmlWrapper("<div style='float: right'>", "</div>");
-   public static final HtmlWrapper RULE_ABOVE   = new HtmlWrapper("""
-      <hr style="opacity: 0.25; height: 0.0625rem; border-width: 0; margin-bottom: 1rem; background-image: linear-gradient(to right, rgba(52, 71, 103, 0), rgba(52, 71, 103, 0.4), rgba(52, 71, 103, 0));" />
-      """, "");
+   private AuditLevel auditLevel;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public HtmlWrapper(String prefix, String suffix)
+   public static QAuditRules defaultInstanceLevelNone()
    {
-      this.prefix = prefix;
-      this.suffix = suffix;
+      return (new QAuditRules()
+         .withAuditLevel(AuditLevel.NONE));
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for auditLevel
     *******************************************************************************/
-   public static HtmlWrapper paddingTop(String amount)
+   public AuditLevel getAuditLevel()
    {
-      return (new HtmlWrapper("<div style='padding-top: " + amount + "'>", "</div>"));
+      return (this.auditLevel);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for auditLevel
     *******************************************************************************/
-   public String wrap(String content)
+   public void setAuditLevel(AuditLevel auditLevel)
    {
-      return (Objects.requireNonNullElse(prefix, "")
-         + "\n" + Objects.requireNonNullElse(content, "") + "\n"
-         + Objects.requireNonNullElse(suffix, "") + "\n");
+      this.auditLevel = auditLevel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditLevel
+    *******************************************************************************/
+   public QAuditRules withAuditLevel(AuditLevel auditLevel)
+   {
+      this.auditLevel = auditLevel;
+      return (this);
    }
 
 }

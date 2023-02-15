@@ -66,6 +66,18 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public String helpIcon()
+   {
+      return ("""
+         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: blue; position: relative; top: 6px;" aria-hidden="true">help_outline</span>
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public String errorIcon()
    {
       return ("""

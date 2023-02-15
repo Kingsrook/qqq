@@ -22,15 +22,28 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.io.Serializable;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -39,6 +52,10 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class UpdateAction
 {
+   private static final QLogger LOG = QLogger.getLogger(UpdateAction.class);
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -50,12 +67,50 @@ public class UpdateAction
       ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), updateInput.getTable(), updateInput.getRecords());
       // todo - need to handle records with errors coming out of here...
 
+      List<QRecord> oldRecordList = getOldRecordListForAuditIfNeeded(updateInput);
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
       // todo pre-customization - just get to modify the request?
       UpdateOutput updateResult = qModule.getUpdateInterface().execute(updateInput);
       // todo post-customization - can do whatever w/ the result if you want
+
+      new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateResult.getRecords()).withOldRecordList(oldRecordList));
+
       return updateResult;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QRecord> getOldRecordListForAuditIfNeeded(UpdateInput updateInput)
+   {
+      try
+      {
+         AuditLevel    auditLevel    = DMLAuditAction.getAuditLevel(updateInput);
+         List<QRecord> oldRecordList = null;
+         if(AuditLevel.FIELD.equals(auditLevel))
+         {
+            String             primaryKeyField   = updateInput.getTable().getPrimaryKeyField();
+            List<Serializable> pkeysBeingUpdated = updateInput.getRecords().stream().map(r -> r.getValue(primaryKeyField)).toList();
+
+            QueryInput queryInput = new QueryInput();
+            queryInput.setTableName(updateInput.getTableName());
+            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, pkeysBeingUpdated)));
+            // todo - need a limit?  what if too many??
+            QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+            oldRecordList = queryOutput.getRecords();
+         }
+         return oldRecordList;
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error getting old record list for audit", e, logPair("table", updateInput.getTableName()));
+         return (null);
+      }
    }
 
 

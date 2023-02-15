@@ -24,11 +24,21 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -77,6 +87,66 @@ class DeleteActionTest extends BaseTest
       {
          new DeleteAction().execute(request);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAuditsByPrimaryKey() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)));
+      new InsertAction().execute(insertInput);
+
+      new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).setAuditRules(new QAuditRules().withAuditLevel(AuditLevel.RECORD));
+
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      deleteInput.setPrimaryKeys(List.of(1, 2));
+      new DeleteAction().execute(deleteInput);
+
+      List<QRecord> audits = TestUtils.queryTable("audit");
+      assertEquals(2, audits.size());
+      assertTrue(audits.stream().allMatch(r -> r.getValueString("message").equals("Record was Deleted")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAuditsByFilter() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)));
+      new InsertAction().execute(insertInput);
+
+      new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).setAuditRules(new QAuditRules().withAuditLevel(AuditLevel.RECORD));
+
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, 1, 2)));
+      new DeleteAction().execute(deleteInput);
+
+      List<QRecord> audits = TestUtils.queryTable("audit");
+      assertEquals(2, audits.size());
+      assertTrue(audits.stream().allMatch(r -> r.getValueString("message").equals("Record was Deleted")));
    }
 
 }

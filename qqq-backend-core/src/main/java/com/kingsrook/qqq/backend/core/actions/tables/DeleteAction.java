@@ -26,13 +26,17 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -81,10 +85,44 @@ public class DeleteAction
          }
       }
 
-      DeleteOutput deleteResult = deleteInterface.execute(deleteInput);
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      List<QRecord> recordListForAudit = getRecordListForAuditIfNeeded(deleteInput);
+
+      DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
       // todo post-customization - can do whatever w/ the result if you want
 
-      return deleteResult;
+      new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(deleteInput).withRecordList(recordListForAudit));
+
+      return deleteOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QRecord> getRecordListForAuditIfNeeded(DeleteInput deleteInput) throws QException
+   {
+      List<QRecord> recordListForAudit = null;
+
+      AuditLevel auditLevel = DMLAuditAction.getAuditLevel(deleteInput);
+      if(AuditLevel.RECORD.equals(auditLevel) || AuditLevel.FIELD.equals(auditLevel))
+      {
+         List<Serializable> primaryKeyList = deleteInput.getPrimaryKeys();
+         if(CollectionUtils.nullSafeIsEmpty(deleteInput.getPrimaryKeys()) && deleteInput.getQueryFilter() != null)
+         {
+            primaryKeyList = getPrimaryKeysFromQueryFilter(deleteInput);
+         }
+
+         if(primaryKeyList != null)
+         {
+            recordListForAudit = primaryKeyList.stream().map(pk -> new QRecord().withValue(deleteInput.getTable().getPrimaryKeyField(), pk)).toList();
+         }
+      }
+
+      return (recordListForAudit);
    }
 
 
