@@ -24,7 +24,7 @@ function gumConfirmProceed
 }
 
 QQQ_RELEASE_DIR=/tmp/qqq-release
-QQQ_DEV_TOOLS_DIR=${}QQQ_RELEASE_DIR}/qqq/qqq-dev-tools
+QQQ_DEV_TOOLS_DIR=${QQQ_RELEASE_DIR}/qqq/qqq-dev-tools
 
 mkdir -p $QQQ_RELEASE_DIR/qqq
 cd $QQQ_RELEASE_DIR/qqq || exit
@@ -78,7 +78,7 @@ gumBanner "Running mvn gitflow:release-finish"
 mvn gitflow:release-finish
 
 gumBanner "Updating qqq-dev-tools/CURRENT-SNAPSHOT-VERSION"
-CURRENT_SNAPSHOT_VERSION=$(grep '<revision>' pom.xml | sed 's/<.\?revision>//g;s/-SNAPSHOT//;s/ //g;')
+CURRENT_SNAPSHOT_VERSION=$(grep '<revision>' pom.xml | sed 's/[ \t]*//; s/-SNAPSHOT//g; s/<[^>]*>//g')
 echo $CURRENT_SNAPSHOT_VERSION > $QQQ_DEV_TOOLS_DIR/CURRENT-SNAPSHOT-VERSION
 cd $QQQ_DEV_TOOLS_DIR || exit
 git commit -m "Updating to $CURRENT_SNAPSHOT_VERSION" CURRENT-SNAPSHOT-VERSION
