@@ -43,7 +43,7 @@
    </modules>
 
    <properties>
-      <revision>0.12.0</revision>
+      <revision>0.13.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
