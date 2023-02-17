@@ -173,6 +173,17 @@ class DMLAuditActionTest extends BaseTest
          assertTrue(auditDetailList.stream().noneMatch(r -> r.getValueString("message").contains("Favorite Shape")));
          MemoryRecordStore.getInstance().reset();
       }
+
+      ///////////////////////////////////////////////////////////
+      // confirm if nothing changed on an edit, that no audit. //
+      ///////////////////////////////////////////////////////////
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).setAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD));
+         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(recordList).withOldRecordList(recordList));
+         List<QRecord> auditList = TestUtils.queryTable("audit");
+         assertEquals(0, auditList.size());
+         MemoryRecordStore.getInstance().reset();
+      }
    }
 
 }

@@ -265,6 +265,8 @@ public class ScheduleManager
             runProcessInput.setProcessName(process.getName());
             runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
 
+            QContext.pushAction(runProcessInput);
+
             RunProcessAction runProcessAction = new RunProcessAction();
             runProcessAction.execute(runProcessInput);
          }

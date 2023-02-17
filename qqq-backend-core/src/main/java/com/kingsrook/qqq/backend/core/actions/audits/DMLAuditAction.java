@@ -210,12 +210,15 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
                   }
                }
 
-               if(details.isEmpty())
+               if(details.isEmpty() && DMLType.UPDATE.equals(dmlType))
                {
-                  details.add(new QRecord().withValue("message", "No fields values were changed."));
+                  // no, let's just noop.
+                  // details.add(new QRecord().withValue("message", "No fields values were changed."));
                }
-
-               AuditAction.appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record), "Record was " + dmlType.pastTenseVerb + contextSuffix, details);
+               else
+               {
+                  AuditAction.appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record), "Record was " + dmlType.pastTenseVerb + contextSuffix, details);
+               }
             }
          }
 

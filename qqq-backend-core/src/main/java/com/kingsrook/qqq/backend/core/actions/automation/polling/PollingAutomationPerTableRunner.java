@@ -381,11 +381,20 @@ public class PollingAutomationPerTableRunner implements Runnable
             }
          });
 
-         RunProcessAction runProcessAction = new RunProcessAction();
-         RunProcessOutput runProcessOutput = runProcessAction.execute(runProcessInput);
-         if(runProcessOutput.getException().isPresent())
+         try
          {
-            throw (runProcessOutput.getException().get());
+            QContext.pushAction(runProcessInput);
+
+            RunProcessAction runProcessAction = new RunProcessAction();
+            RunProcessOutput runProcessOutput = runProcessAction.execute(runProcessInput);
+            if(runProcessOutput.getException().isPresent())
+            {
+               throw (runProcessOutput.getException().get());
+            }
+         }
+         finally
+         {
+            QContext.popAction();
          }
       }
       else if(action.getCodeReference() != null)
