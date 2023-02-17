@@ -129,14 +129,6 @@ function createDotEnv
       rm -rf .env
       op read "${NUTRIFRESH_OP_LOCATION}${repoName}/environment" > .env
 
-      #####################################################################
-      ## assume this is Nutrifresh One and copy down to the ui directory ##
-      #####################################################################
-      echo "${TAB}Copying .env to src/main/ui..."
-      cd src/main/ui || exit
-      rm -rf .env
-      cp ../../../.env .
-
    fi
 }
 
