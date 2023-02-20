@@ -22,13 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 
+import java.io.Serializable;
 import java.util.Objects;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class HtmlWrapper
+public class HtmlWrapper implements Serializable
 {
    private String prefix;
    private String suffix;

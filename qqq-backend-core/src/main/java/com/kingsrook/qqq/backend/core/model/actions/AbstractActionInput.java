@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions;
 
 
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -84,6 +85,7 @@ public class AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
+   @JsonIgnore
    public QAuthenticationMetaData getAuthenticationMetaData()
    {
       return (getInstance().getAuthentication());
@@ -95,6 +97,7 @@ public class AbstractActionInput
     ** Getter for instance
     **
     *******************************************************************************/
+   @JsonIgnore
    public QInstance getInstance()
    {
       return (QContext.getQInstance());
@@ -106,6 +109,7 @@ public class AbstractActionInput
     ** Getter for session
     **
     *******************************************************************************/
+   @JsonIgnore
    public QSession getSession()
    {
       return (QContext.getQSession());
@@ -117,6 +121,7 @@ public class AbstractActionInput
     ** Getter for asyncJobCallback
     **
     *******************************************************************************/
+   @JsonIgnore
    public AsyncJobCallback getAsyncJobCallback()
    {
       if(asyncJobCallback == null)
