@@ -129,15 +129,26 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
       QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       recordsToInsert = new ArrayList<>();
       recordsToUpdate = new ArrayList<>();
-      for(QRecord record : runBackendStepInput.getRecords())
+
+      splitRecordsForInsertOrUpdate(runBackendStepInput.getRecords(), tableMetaData.getPrimaryKeyField(), recordsToInsert, recordsToUpdate);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void splitRecordsForInsertOrUpdate(List<QRecord> inputList, String primaryKeyFieldName, List<QRecord> insertList, List<QRecord> updateList)
+   {
+      for(QRecord record : inputList)
       {
-         if(record.getValue(tableMetaData.getPrimaryKeyField()) == null)
+         if(record.getValue(primaryKeyFieldName) == null)
          {
-            recordsToInsert.add(record);
+            insertList.add(record);
          }
          else
          {
-            recordsToUpdate.add(record);
+            updateList.add(record);
          }
       }
    }
