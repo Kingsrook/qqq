@@ -84,4 +84,36 @@ class AsyncJobCallbackTest extends BaseTest
       assertEquals(3, asyncJobStatus.getCurrent());
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUpdateStatusOnlyUpwards()
+   {
+      AsyncJobStatus   asyncJobStatus   = new AsyncJobStatus();
+      AsyncJobCallback asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), asyncJobStatus);
+
+      asyncJobCallback.updateStatusOnlyUpwards(10, 100);
+      assertEquals(10, asyncJobStatus.getCurrent());
+      assertEquals(100, asyncJobStatus.getTotal());
+
+      asyncJobCallback.updateStatusOnlyUpwards(5, 100);
+      assertEquals(10, asyncJobStatus.getCurrent());
+      assertEquals(100, asyncJobStatus.getTotal());
+
+      asyncJobCallback.updateStatusOnlyUpwards(11, 99);
+      assertEquals(10, asyncJobStatus.getCurrent());
+      assertEquals(100, asyncJobStatus.getTotal());
+
+      asyncJobCallback.updateStatusOnlyUpwards(11, 100);
+      assertEquals(11, asyncJobStatus.getCurrent());
+      assertEquals(100, asyncJobStatus.getTotal());
+
+      asyncJobCallback.updateStatusOnlyUpwards(11, 101);
+      assertEquals(11, asyncJobStatus.getCurrent());
+      assertEquals(101, asyncJobStatus.getTotal());
+   }
+
 }

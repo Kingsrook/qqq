@@ -96,6 +96,23 @@ public class AsyncJobCallback
 
 
    /*******************************************************************************
+    ** Update the current and total fields, but ONLY if the new values are
+    ** both >= the previous values.
+    *******************************************************************************/
+   public void updateStatusOnlyUpwards(int current, int total)
+   {
+      boolean currentIsOkay = (this.asyncJobStatus.getCurrent() == null || this.asyncJobStatus.getCurrent() <= current);
+      boolean totalIsOkay   = (this.asyncJobStatus.getTotal() == null || this.asyncJobStatus.getTotal() <= total);
+
+      if(currentIsOkay && totalIsOkay)
+      {
+         updateStatus(current, total);
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Increase the 'current' value in the '1 of 2' sense.
     *******************************************************************************/
    public void incrementCurrent()
