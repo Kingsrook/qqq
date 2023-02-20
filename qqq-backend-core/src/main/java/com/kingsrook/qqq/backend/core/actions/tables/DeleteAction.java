@@ -33,6 +33,9 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -85,9 +88,6 @@ public class DeleteAction
          }
       }
 
-      /*******************************************************************************
-       **
-       *******************************************************************************/
       List<QRecord> recordListForAudit = getRecordListForAuditIfNeeded(deleteInput);
 
       DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
@@ -116,9 +116,23 @@ public class DeleteAction
             primaryKeyList = getPrimaryKeysFromQueryFilter(deleteInput);
          }
 
-         if(primaryKeyList != null)
+         if(CollectionUtils.nullSafeHasContents(primaryKeyList))
          {
-            recordListForAudit = primaryKeyList.stream().map(pk -> new QRecord().withValue(deleteInput.getTable().getPrimaryKeyField(), pk)).toList();
+            if(CollectionUtils.nullSafeHasContents(deleteInput.getTable().getRecordSecurityLocks()))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if the table has any security locks, then we need full entities (to record the keys), not just ids //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////
+               QueryInput queryInput = new QueryInput();
+               queryInput.setTableName(deleteInput.getTableName());
+               queryInput.setFilter(new QQueryFilter(new QFilterCriteria(deleteInput.getTable().getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeyList)));
+               QueryOutput queryOutput = new QueryAction().execute(queryInput);
+               recordListForAudit = queryOutput.getRecords();
+            }
+            else
+            {
+               recordListForAudit = primaryKeyList.stream().map(pk -> new QRecord().withValue(deleteInput.getTable().getPrimaryKeyField(), pk)).toList();
+            }
          }
       }
 
