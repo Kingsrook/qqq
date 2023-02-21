@@ -93,6 +93,7 @@ public abstract class AbstractMergeDuplicatesTransformStep extends AbstractTrans
    private Set<List<Serializable>> keysSeenInPreviousPages = new HashSet<>();
 
 
+
    /*******************************************************************************
     ** Do the main work for this process - merge a list of records.
     ** May also call addOtherTableIdsToDelete, addOtherTableFilterToDelete,
@@ -257,8 +258,8 @@ public abstract class AbstractMergeDuplicatesTransformStep extends AbstractTrans
       filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
       for(QRecord record : runBackendStepInput.getRecords())
       {
-         List<Serializable> ukValues = new ArrayList<>();
-         QQueryFilter subFilter = new QQueryFilter();
+         List<Serializable> ukValues  = new ArrayList<>();
+         QQueryFilter       subFilter = new QQueryFilter();
          for(QFieldMetaData field : uniqueKeyFields)
          {
             ukValues.add(record.getValue(field.getName()));
@@ -388,7 +389,7 @@ public abstract class AbstractMergeDuplicatesTransformStep extends AbstractTrans
       runBackendStepOutput.addValue("otherTableFiltersToDelete", otherTableFiltersToDelete);
       runBackendStepOutput.addValue("otherTableRecordsToStore", otherTableRecordsToStore);
 
-      if(config.doAutomaticAudits)
+      if(config.doAutomaticAudits && "execute".equals(runBackendStepInput.getStepName()))
       {
          runBackendStepOutput.addValue("auditInput", auditInput);
       }

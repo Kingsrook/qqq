@@ -126,6 +126,7 @@ public class MergeDuplicatesLoadStep extends LoadViaInsertOrUpdateStep
       {
          // todo exec async?
          new AuditAction().execute(auditInput);
+         runBackendStepInput.addValue("auditInput", null);
       }
    }
 
