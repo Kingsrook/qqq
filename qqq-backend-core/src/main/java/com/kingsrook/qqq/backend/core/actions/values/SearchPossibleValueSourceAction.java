@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -275,8 +276,12 @@ public class SearchPossibleValueSourceAction
    {
       try
       {
-         // QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
-         // return (formatPossibleValue(possibleValueSource, customPossibleValueProvider.getPossibleValue(value)));
+         QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+         List<QPossibleValue<?>>      possibleValues              = customPossibleValueProvider.search(input);
+
+         SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceOutput();
+         output.setResults(possibleValues);
+         return (output);
       }
       catch(Exception e)
       {

@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
@@ -1092,6 +1093,17 @@ public class TestUtils
       public QPossibleValue<?> getPossibleValue(Serializable idValue)
       {
          return (new QPossibleValue<>(idValue, "Custom[" + idValue + "]"));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QPossibleValue<?>> search(SearchPossibleValueSourceInput input)
+      {
+         return (new ArrayList<>());
       }
    }
 

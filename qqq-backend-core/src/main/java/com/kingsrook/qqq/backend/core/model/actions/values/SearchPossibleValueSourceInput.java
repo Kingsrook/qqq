@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.values;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -31,7 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 /*******************************************************************************
  ** Input for the Search possible value source action
  *******************************************************************************/
-public class SearchPossibleValueSourceInput extends AbstractActionInput
+public class SearchPossibleValueSourceInput extends AbstractActionInput implements Cloneable
 {
    private String             possibleValueSourceName;
    private QQueryFilter       defaultQueryFilter;
@@ -48,6 +49,33 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput
     *******************************************************************************/
    public SearchPossibleValueSourceInput()
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public SearchPossibleValueSourceInput clone()
+   {
+      try
+      {
+         SearchPossibleValueSourceInput clone = (SearchPossibleValueSourceInput) super.clone();
+         if(defaultQueryFilter != null)
+         {
+            clone.setDefaultQueryFilter(defaultQueryFilter.clone());
+         }
+         if(idList != null)
+         {
+            clone.setIdList(new ArrayList<>(idList));
+         }
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 
@@ -253,5 +281,4 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput
       this.limit = limit;
       return (this);
    }
-
 }

@@ -277,4 +277,24 @@ public class NoCodeWidgetVelocityUtils
    {
       return String.valueOf(input.setScale(digits, RoundingMode.HALF_UP));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Object ifElse(Object ifObject, Object elseObject)
+   {
+      if(StringUtils.hasContent(ValueUtils.getValueAsString(ifObject)))
+      {
+         return (ifObject);
+      }
+      else if(StringUtils.hasContent(ValueUtils.getValueAsString(elseObject)))
+      {
+         return (elseObject);
+      }
+
+      return ("");
+   }
+
 }

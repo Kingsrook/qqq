@@ -35,7 +35,8 @@ public enum QComponentType
    DOWNLOAD_FORM,
    RECORD_LIST,
    PROCESS_SUMMARY_RESULTS,
-   GOOGLE_DRIVE_SELECT_FOLDER;
+   GOOGLE_DRIVE_SELECT_FOLDER,
+   HTML;
    ///////////////////////////////////////////////////////////////////////////
    // keep these values in sync with QComponentType.ts in qqq-frontend-core //
    ///////////////////////////////////////////////////////////////////////////

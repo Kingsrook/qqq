@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.NoCodeWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
@@ -50,7 +51,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
@@ -154,6 +157,7 @@ public class RunProcessAction
                   {
                      LOG.trace("Breaking process [" + process.getName() + "] at frontend step (as requested by caller): " + step.getName());
                      processFrontendStepFieldDefaultValues(processState, frontendStep);
+                     processFrontendComponents(processState, frontendStep);
                      processState.setNextStepName(step.getName());
                      break STEP_LOOP;
                   }
@@ -227,6 +231,26 @@ public class RunProcessAction
       }
 
       return (runProcessOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void processFrontendComponents(ProcessState processState, QFrontendStepMetaData frontendStep) throws QException
+   {
+      for(QFrontendComponentMetaData component : CollectionUtils.nonNullList(frontendStep.getComponents()))
+      {
+         if(component instanceof NoCodeWidgetFrontendComponentMetaData noCodeWidgetComponent)
+         {
+            NoCodeWidgetRenderer noCodeWidgetRenderer = new NoCodeWidgetRenderer();
+            Map<String, Object>  context              = noCodeWidgetRenderer.initContext(null);
+            context.putAll(processState.getValues());
+            String html = noCodeWidgetRenderer.renderOutputs(context, noCodeWidgetComponent.getOutputs());
+            processState.getValues().put(frontendStep.getName() + ".html", html);
+         }
+      }
    }
 
 
