@@ -268,8 +268,28 @@ class ValueUtilsTest extends BaseTest
       assertEquals("1", ValueUtils.getValueAsType(String.class, 1));
       assertEquals(BigDecimal.ONE, ValueUtils.getValueAsType(BigDecimal.class, 1));
       assertEquals(true, ValueUtils.getValueAsType(Boolean.class, "true"));
-      assertArrayEquals("a".getBytes(StandardCharsets.UTF_8), ValueUtils.getValueAsType(byte[].class, "a"));
+      assertArrayEquals("a" .getBytes(StandardCharsets.UTF_8), ValueUtils.getValueAsType(byte[].class, "a"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsType(Serializable.class, 1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetFirstNonNull()
+   {
+      assertEquals(0, ValueUtils.getFirstNonNull(0));
+      assertEquals(1, ValueUtils.getFirstNonNull(1, 2));
+      assertEquals(2, ValueUtils.getFirstNonNull(null, 2));
+      assertEquals(3, ValueUtils.getFirstNonNull(null, null, 3));
+
+      assertNull(ValueUtils.getFirstNonNull());
+      assertNull(ValueUtils.getFirstNonNull(new Object[] { }));
+      assertNull(ValueUtils.getFirstNonNull(null));
+      assertNull(ValueUtils.getFirstNonNull(null, null));
+
    }
 
 }
