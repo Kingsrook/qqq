@@ -155,6 +155,7 @@ public class RecordAutomationStatusUpdater
                .withValue(table.getPrimaryKeyField(), r.getValue(table.getPrimaryKeyField()))
                .withValue(automationDetails.getStatusTracking().getFieldName(), r.getValue(automationDetails.getStatusTracking().getFieldName()))).toList());
             updateInput.setAreAllValuesBeingUpdatedTheSame(true);
+            updateInput.setOmitDmlAudit(true);
 
             new UpdateAction().execute(updateInput);
          }

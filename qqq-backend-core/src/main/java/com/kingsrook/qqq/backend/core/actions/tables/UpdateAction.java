@@ -75,7 +75,14 @@ public class UpdateAction
       UpdateOutput updateResult = qModule.getUpdateInterface().execute(updateInput);
       // todo post-customization - can do whatever w/ the result if you want
 
-      new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateResult.getRecords()).withOldRecordList(oldRecordList));
+      if(updateInput.getOmitDmlAudit())
+      {
+         LOG.debug("Requested to omit DML audit");
+      }
+      else
+      {
+         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateResult.getRecords()).withOldRecordList(oldRecordList));
+      }
 
       return updateResult;
    }
@@ -87,6 +94,11 @@ public class UpdateAction
     *******************************************************************************/
    private static List<QRecord> getOldRecordListForAuditIfNeeded(UpdateInput updateInput)
    {
+      if(updateInput.getOmitDmlAudit())
+      {
+         return (null);
+      }
+
       try
       {
          AuditLevel    auditLevel    = DMLAuditAction.getAuditLevel(updateInput);

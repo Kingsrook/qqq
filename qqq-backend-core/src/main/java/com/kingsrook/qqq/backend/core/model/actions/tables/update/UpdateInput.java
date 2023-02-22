@@ -45,6 +45,8 @@ public class UpdateInput extends AbstractTableActionInput
    ////////////////////////////////////////////////////////////////////////////////////////////
    private Boolean areAllValuesBeingUpdatedTheSame = null;
 
+   private boolean omitDmlAudit = false;
+
 
 
    /*******************************************************************************
@@ -130,6 +132,37 @@ public class UpdateInput extends AbstractTableActionInput
    public void setAreAllValuesBeingUpdatedTheSame(Boolean areAllValuesBeingUpdatedTheSame)
    {
       this.areAllValuesBeingUpdatedTheSame = areAllValuesBeingUpdatedTheSame;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitDmlAudit
+    *******************************************************************************/
+   public boolean getOmitDmlAudit()
+   {
+      return (this.omitDmlAudit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitDmlAudit
+    *******************************************************************************/
+   public void setOmitDmlAudit(boolean omitDmlAudit)
+   {
+      this.omitDmlAudit = omitDmlAudit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitDmlAudit
+    *******************************************************************************/
+   public UpdateInput withOmitDmlAudit(boolean omitDmlAudit)
+   {
+      this.omitDmlAudit = omitDmlAudit;
+      return (this);
    }
 
 }
