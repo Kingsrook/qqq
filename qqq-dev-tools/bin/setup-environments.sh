@@ -9,23 +9,23 @@
 
 function usage()
 {
-   echo "Usage: $0 [--nf-one|--qqq] [-q|--quiet] [-r|--is-for-release]"
-   echo "By default, all environments are set up.  Give an option to just do nf-one or qqq."
+   echo "Usage: $0 [--ct-live|--qqq] [-q|--quiet] [-r|--is-for-release]"
+   echo "By default, all environments are set up.  Give an option to just do ct-live or qqq."
    exit 1;
 }
 
-DO_NF_ONE=0
+DO_CT_LIVE=0
 DO_QQQ=0
 QUIET=0
 IS_FOR_RELEASE=0
 
 if [ -z "$1" ]; then
-   DO_NF_ONE=1
+   DO_CT_LIVE=1
    DO_QQQ=1
 else
    for arg in ${@}; do
-      if [ "$arg" == "--nf-one" ]; then
-         DO_NF_ONE=1
+      if [ "$arg" == "--ct-live" -o "$arg" == "--nf-one" ]; then
+         DO_CT_LIVE=1
       elif [ "$arg" == "--qqq" ]; then
          DO_QQQ=1
       elif [ "$arg" == "-q" -o "$arg" == "--quiet" ]; then
@@ -52,7 +52,7 @@ fi
 ## locations of env files in 1password ##
 #########################################
 QQQ_OP_LOCATION="op://Development Environments/"
-NUTRIFRESH_OP_LOCATION="op://NF-One-Development/"
+CTL_OP_LOCATION="op://NF-One-Development/"
 
 
 ##################################################
@@ -60,7 +60,7 @@ NUTRIFRESH_OP_LOCATION="op://NF-One-Development/"
 ##################################################
 QQQ_FRONTEND_MATERIAL_DASHBOARD_REPO_NAME="qqq-frontend-material-dashboard"
 QQQ_PROJECT_NAME="qqq"
-NF_ONE_REPO_NAME="Nutrifresh-One"
+CT_LIVE_REPO_NAME="Nutrifresh-One"
 
 ########################################################
 ## qqq modules which need environments setup for them ##
@@ -97,12 +97,12 @@ function createDotEnv
 {
    repoName=$1
    repoLocation=$2
-   isNutrifreshOneRepo=$3
+   isColdTrackLiveRepo=$3
 
    echo "${TAB}Changing directory to repository [$repoName] at [$repoLocation]..."
    cd "${repoLocation}" || exit
 
-   if [ "$isNutrifreshOneRepo" != "1" ]; then
+   if [ "$isColdTrackLiveRepo" != "1" ]; then
 
       if [ "${repoName}" = "${QQQ_PROJECT_NAME}" ]; then
 
@@ -125,9 +125,9 @@ function createDotEnv
 
    else
 
-      echo "${TAB}Creating NF .env..."
+      echo "${TAB}Creating CT-Live .env..."
       rm -rf .env
-      op read "${NUTRIFRESH_OP_LOCATION}${repoName}/environment" > .env
+      op read "${CTL_OP_LOCATION}${repoName}/environment" > .env
 
    fi
 }
@@ -137,7 +137,7 @@ function createDotEnv
 function setupRepoEnvironment
 {
    repoName=$1
-   isNutrifreshOneRepo=$2
+   isColdTrackLiveRepo=$2
 
    repoSearchRoot=${HOME}/git
    if [ "$IS_FOR_RELEASE" == "1" ]; then
@@ -185,7 +185,7 @@ function setupRepoEnvironment
       echo "Invalid git directory was given, quitting..." && exit 1
    fi
 
-   createDotEnv ${repoName} ${repoLocation} $isNutrifreshOneRepo
+   createDotEnv ${repoName} ${repoLocation} $isColdTrackLiveRepo
 }
 
 
@@ -214,18 +214,18 @@ fi
 
 
 
-##################
-### NUTRIFRESH ###
-##################
-if [ "$DO_NF_ONE" == "1" ]; then
+#################
+### COLDTRACK ###
+#################
+if [ "$DO_CT_LIVE" == "1" ]; then
 
-   ##################################################
-   ## make sure signed into right 1passord account ##
-   ##################################################
+   ###################################################
+   ## make sure signed into right 1password account ##
+   ###################################################
    echo
-   echo "Signing in to Nutrifresh's 1password account..."
-   op signin --account team-nutrifreshservices.1password.com
-   setupRepoEnvironment ${NF_ONE_REPO_NAME} 1
+   echo "Signing in to ColdTrack's 1password account..."
+   op signin --account coldtrack.1password.com
+   setupRepoEnvironment ${CT_LIVE_REPO_NAME} 1
 
 fi
 
