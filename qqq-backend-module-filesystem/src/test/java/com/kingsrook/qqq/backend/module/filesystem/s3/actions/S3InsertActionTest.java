@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 import java.io.IOException;
 import java.util.List;
 import com.amazonaws.services.s3.model.S3Object;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
@@ -89,7 +88,11 @@ public class S3InsertActionTest extends BaseS3Test
       insertInput.setRecords(List.of(
          new QRecord().withValue("id", "1").withValue("firstName", "Bob")
       ));
-      assertThatThrownBy(() -> new InsertAction().execute(insertInput))
+
+      S3InsertAction insertAction = new S3InsertAction();
+      insertAction.setS3Utils(getS3Utils());
+
+      assertThatThrownBy(() -> insertAction.execute(insertInput))
          .hasRootCauseInstanceOf(NotImplementedException.class);
    }
 }

@@ -338,6 +338,8 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    {
       try
       {
+         preAction(insertInput.getBackend());
+
          InsertOutput     output  = new InsertOutput();
          QTableMetaData   table   = insertInput.getTable();
          QBackendMetaData backend = insertInput.getBackend();
