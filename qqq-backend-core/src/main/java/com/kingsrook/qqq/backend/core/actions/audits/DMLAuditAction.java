@@ -86,7 +86,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       try
       {
          AuditLevel auditLevel = getAuditLevel(tableActionInput);
-         if(auditLevel == null || auditLevel.equals(AuditLevel.NONE))
+         if(auditLevel == null || auditLevel.equals(AuditLevel.NONE) || CollectionUtils.nullSafeIsEmpty(recordList))
          {
             /////////////////////////////////////////////
             // return with noop for null or level NONE //
