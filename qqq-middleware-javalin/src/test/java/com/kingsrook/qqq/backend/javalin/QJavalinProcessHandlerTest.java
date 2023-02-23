@@ -558,4 +558,22 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       JSONArray jsonArray = JsonUtils.toJSONArray(response.getBody());
    }
 
+
+
+   /*******************************************************************************
+    ** test calling for possibleValue
+    **
+    *******************************************************************************/
+   @Test
+   public void test_possibleValues()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/possibleValues/partnerPersonId").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(6, jsonObject.getJSONArray("options").length());
+      assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
+      assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
 }

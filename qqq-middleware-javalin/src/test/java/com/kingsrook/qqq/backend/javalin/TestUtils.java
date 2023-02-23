@@ -286,7 +286,8 @@ public class TestUtils
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
-                  new QFieldMetaData("greetingSuffix", QFieldType.STRING)
+                  new QFieldMetaData("greetingSuffix", QFieldType.STRING),
+                  new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withBackendName("partner_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
