@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +121,6 @@ public abstract class AbstractWidgetRenderer
          //////////////////////////////////////////
          Set<String> exists = new HashSet<>();
          output.getResults().removeIf(pvs -> !exists.add(pvs.getLabel()));
-         output.getResults().sort(Comparator.comparing(QPossibleValue::getLabel));
          for(QPossibleValue<?> possibleValue : output.getResults())
          {
             dropdownOptionList.add(Map.of(

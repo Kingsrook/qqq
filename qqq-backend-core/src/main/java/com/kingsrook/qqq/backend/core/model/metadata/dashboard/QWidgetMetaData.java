@@ -41,6 +41,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected String         icon;
    protected String         label;
    protected String         type;
+   protected String         minHeight;
    protected boolean        isCard;
    protected Integer        gridColumns;
    protected QCodeReference codeReference;
@@ -423,6 +424,40 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withIsCard(boolean isCard)
    {
       this.isCard = isCard;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for minHeight
+    **
+    *******************************************************************************/
+   public String getMinHeight()
+   {
+      return minHeight;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for minHeight
+    **
+    *******************************************************************************/
+   public void setMinHeight(String minHeight)
+   {
+      this.minHeight = minHeight;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for minHeight
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withMinHeight(String minHeight)
+   {
+      this.minHeight = minHeight;
       return (this);
    }
 

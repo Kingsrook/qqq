@@ -32,6 +32,7 @@ import java.util.List;
 public class ParentWidgetData extends QWidgetData
 {
    private List<String> childWidgetNameList;
+   private boolean      omitReloadWidgetCallback;
 
 
 
@@ -84,6 +85,40 @@ public class ParentWidgetData extends QWidgetData
    public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
    {
       this.childWidgetNameList = childWidgetNameList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitReloadWidgetCallback
+    **
+    *******************************************************************************/
+   public boolean getOmitReloadWidgetCallback()
+   {
+      return omitReloadWidgetCallback;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitReloadWidgetCallback
+    **
+    *******************************************************************************/
+   public void setOmitReloadWidgetCallback(boolean omitReloadWidgetCallback)
+   {
+      this.omitReloadWidgetCallback = omitReloadWidgetCallback;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitReloadWidgetCallback
+    **
+    *******************************************************************************/
+   public ParentWidgetData withOmitReloadWidgetCallback(boolean omitReloadWidgetCallback)
+   {
+      this.omitReloadWidgetCallback = omitReloadWidgetCallback;
       return (this);
    }
 
