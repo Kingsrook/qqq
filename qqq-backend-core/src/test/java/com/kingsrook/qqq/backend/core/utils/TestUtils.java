@@ -1083,16 +1083,16 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class CustomPossibleValueSource implements QCustomPossibleValueProvider
+   public static class CustomPossibleValueSource implements QCustomPossibleValueProvider<String>
    {
 
       /*******************************************************************************
        **
        *******************************************************************************/
       @Override
-      public QPossibleValue<?> getPossibleValue(Serializable idValue)
+      public QPossibleValue<String> getPossibleValue(Serializable idValue)
       {
-         return (new QPossibleValue<>(idValue, "Custom[" + idValue + "]"));
+         return (new QPossibleValue<>(ValueUtils.getValueAsString(idValue), "Custom[" + idValue + "]"));
       }
 
 
@@ -1101,9 +1101,19 @@ public class TestUtils
        **
        *******************************************************************************/
       @Override
-      public List<QPossibleValue<?>> search(SearchPossibleValueSourceInput input)
+      public List<QPossibleValue<String>> search(SearchPossibleValueSourceInput input)
       {
-         return (new ArrayList<>());
+         List<QPossibleValue<String>> rs = new ArrayList<>();
+         for(int i = 0; i < 10; i++)
+         {
+            QPossibleValue<String> possibleValue = getPossibleValue(i);
+            List<String>           idsInType     = convertInputIdsToIdType(String.class, input.getIdList());
+            if(doesPossibleValueMatchSearchInput(idsInType, possibleValue, input))
+            {
+               rs.add(possibleValue);
+            }
+         }
+         return (rs);
       }
    }
 

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 /*******************************************************************************
  ** An actual possible value - an id and label.
  **
+ ** Type parameter `T` is the type of the id (often Integer, maybe String)
  *******************************************************************************/
 public class QPossibleValue<T>
 {

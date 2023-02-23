@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -266,6 +267,16 @@ public class NoCodeWidgetVelocityUtils
          LOG.warn("Error rendering widget link", e);
          return ("");
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String format(String displayFormat, Serializable value)
+   {
+      return (QValueFormatter.formatValue(displayFormat, value));
    }
 
 

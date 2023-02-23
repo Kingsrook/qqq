@@ -36,18 +36,20 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 /*******************************************************************************
  ** Interface to be implemented by user-defined code that serves as the backing
  ** for a CUSTOM type possibleValueSource
+ **
+ ** Type parameter `T` is the id-type of the possible value.
  *******************************************************************************/
-public interface QCustomPossibleValueProvider
+public interface QCustomPossibleValueProvider<T extends Serializable>
 {
    /*******************************************************************************
     **
     *******************************************************************************/
-   QPossibleValue<?> getPossibleValue(Serializable idValue);
+   QPossibleValue<T> getPossibleValue(Serializable idValue);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   List<QPossibleValue<?>> search(SearchPossibleValueSourceInput input) throws QException;
+   List<QPossibleValue<T>> search(SearchPossibleValueSourceInput input) throws QException;
 
 
    /*******************************************************************************
@@ -55,7 +57,7 @@ public interface QCustomPossibleValueProvider
     ** the type of the ids in the enum (e.g., strings from a frontend, integers
     ** in an enum).  So, this method looks maps a list of input ids to the requested type.
     *******************************************************************************/
-   default <T extends Serializable> List<T> convertInputIdsToIdType(Class<T> type, List<Serializable> inputIdList)
+   default List<T> convertInputIdsToIdType(Class<T> type, List<Serializable> inputIdList)
    {
       List<T> rs = new ArrayList<>();
       if(CollectionUtils.nullSafeIsEmpty(inputIdList))
@@ -75,10 +77,8 @@ public interface QCustomPossibleValueProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   default <T extends Serializable> boolean doesPossibleValueMatchSearchInput(Class<T> idType, QPossibleValue<T> possibleValue, SearchPossibleValueSourceInput input)
+   default boolean doesPossibleValueMatchSearchInput(List<T> idsInType, QPossibleValue<T> possibleValue, SearchPossibleValueSourceInput input)
    {
-      List<T> idsInType = convertInputIdsToIdType(idType, input.getIdList());
-
       boolean match = false;
       if(input.getIdList() != null)
       {

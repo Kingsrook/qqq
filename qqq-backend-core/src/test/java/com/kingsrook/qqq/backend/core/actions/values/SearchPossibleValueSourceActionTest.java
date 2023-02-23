@@ -227,6 +227,82 @@ class SearchPossibleValueSourceActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testSearchPvsAction_customSearchTermFound() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutput("Custom[3]", TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals("3") && pv.getLabel().equals("Custom[3]"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_customSearchTermNotFound() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutput("Foo", TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+      assertEquals(0, output.getResults().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_customSearchTermManyFound() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutput("Custom", TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+      assertEquals(10, output.getResults().size());
+      assertThat(output.getResults()).allMatch(pv -> pv.getLabel().startsWith("Custom["));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_customIdFound() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById("4", TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals("4") && pv.getLabel().equals("Custom[4]"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_customIdFoundDifferentType() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById(5, TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals("5") && pv.getLabel().equals("Custom[5]"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_customIdNotFound() throws QException
+   {
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById(-1, TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+      assertEquals(0, output.getResults().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private SearchPossibleValueSourceOutput getSearchPossibleValueSourceOutput(String searchTerm, String possibleValueSourceName) throws QException
    {
       SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();

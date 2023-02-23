@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -65,6 +66,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -126,6 +129,8 @@ public class QJavalinProcessHandler
                   get("/status/{jobUUID}", QJavalinProcessHandler::processStatus);
                   get("/records", QJavalinProcessHandler::processRecords);
                });
+
+               get("/possibleValues/{fieldName}", QJavalinProcessHandler::possibleValues);
             });
          });
          get("/download/{file}", QJavalinProcessHandler::downloadFile);
@@ -725,6 +730,57 @@ public class QJavalinProcessHandler
          }
 
          context.result(JsonUtils.toJson(resultForCaller));
+      }
+      catch(Exception e)
+      {
+         QJavalinImplementation.handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void possibleValues(Context context)
+   {
+      try
+      {
+         String processName = context.pathParam("processName");
+         String fieldName   = context.pathParam("fieldName");
+         String searchTerm  = context.queryParam("searchTerm");
+         String ids         = context.queryParam("ids");
+
+         QProcessMetaData process = QJavalinImplementation.qInstance.getProcess(processName);
+         if(process == null)
+         {
+            throw (new QNotFoundException("Could not find process named " + processName + " in this instance."));
+         }
+
+         Optional<QFieldMetaData> optField = process.getInputFields().stream().filter(f -> f.getName().equals(fieldName)).findFirst();
+         QFieldMetaData           field    = optField.orElseThrow(() -> new QNotFoundException("Could not find field named " + fieldName + " in process " + processName + "."));
+
+         if(!StringUtils.hasContent(field.getPossibleValueSourceName()))
+         {
+            throw (new QNotFoundException("Field " + fieldName + " in process " + processName + " is not associated with a possible value source."));
+         }
+
+         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
+         QJavalinImplementation.setupSession(context, input);
+         input.setPossibleValueSourceName(field.getPossibleValueSourceName());
+         input.setSearchTerm(searchTerm);
+
+         if(StringUtils.hasContent(ids))
+         {
+            List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
+            input.setIdList(idList);
+         }
+
+         SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
+
+         Map<String, Object> result = new HashMap<>();
+         result.put("options", output.getResults());
+         context.result(JsonUtils.toJson(result));
       }
       catch(Exception e)
       {
