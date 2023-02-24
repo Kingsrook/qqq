@@ -305,7 +305,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    private void incrementStatus(UpdateInput updateInput, int amount)
    {
       statusCounter += amount;
-      updateInput.getAsyncJobCallback().updateStatus(statusCounter, updateInput.getRecords().size());
+      updateInput.getAsyncJobCallback().updateStatusOnlyUpwards(statusCounter, updateInput.getRecords().size());
    }
 
 }
