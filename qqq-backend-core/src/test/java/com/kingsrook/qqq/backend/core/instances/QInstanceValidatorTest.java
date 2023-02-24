@@ -347,11 +347,11 @@ class QInstanceValidatorTest extends BaseTest
    @Test
    public void test_validateProcessStepWithEmptyName()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).getStepList().get(0).setName(""),
-         "Missing name for a step");
-
-      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(1).setName(null),
-         "Missing name for a step");
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // these used to be an assertion failure - but enricher now sets a default name for backend steps w/ a code name //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).getStepList().get(0).setName(""));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(1).setName(null));
    }
 
 
