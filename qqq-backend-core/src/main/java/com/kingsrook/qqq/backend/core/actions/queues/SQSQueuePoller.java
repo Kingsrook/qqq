@@ -131,6 +131,8 @@ public class SQSQueuePoller implements Runnable
                runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
                runProcessInput.addValue("bodies", bodies);
 
+               QContext.pushAction(runProcessInput);
+
                RunProcessAction runProcessAction = new RunProcessAction();
                RunProcessOutput runProcessOutput = runProcessAction.execute(runProcessInput);
 
@@ -155,6 +157,10 @@ public class SQSQueuePoller implements Runnable
             catch(Exception e)
             {
                LOG.warn("Error receiving SQS Messages.", e);
+            }
+            finally
+            {
+               QContext.popAction();
             }
          }
       }
