@@ -1,0 +1,24 @@
+== QQQ Fields
+include::../variables.adoc[]
+
+QQQ Fields define
+
+=== QFieldMetaData
+*QFieldMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the field within its container (table, process, etc).
+* `label` - *String* - User-facing label for the field, presented in User Interfaces.
+* `type` - *enum of QFieldType, Required* - Data type for values in the field.
+* `backendName` - *String* - Name of the field within its backend.
+** For example, in an RDBMS-backed table, a field's `name` may be written in camel case, but its `backendName` written with underscores.
+* `isRequired` - *boolean, default false* - Indicator that a value is required in this field.
+* `isEditable` - *boolean, default true* - Indicator that users may edit values in this field.
+* `displayFormat` - *String, default `%s`* - Java Format Specifier string, used to format values in the field for display in user interfaces.
+Used to set values in the `displayValues` map within a `QRecord`.
+** Recommended values for `displayFormat` come from the `DisplayFormat` interface, such as `DisplayFormat.CURRENCY`, `DisplayFormat.COMMAS`, or `DisplayFormat.DECIMAL2_COMMAS`.
+* `defaultValue` - Value to use for the field if no other value is given.  Type is based on the field's `type`.
+* `possibleValueSourceName` - *String* - Reference to a {link-pvs} to be used for this field.
+Values in this field should correspond to ids from the referenced Possible Value Source.
+* `maxLength` - *Integer* - Maximum length (number of characters) allowed for values in this field.
+Only applicable for fields with `type=STRING`.
+* `

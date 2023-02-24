@@ -1,0 +1,179 @@
+== QueryAction
+include::../variables.adoc[]
+
+The `*QueryAction*` is the basic action that is used to get records from a {link-table}.
+In SQL/RDBMS terms, it is analogous to a `SELECT` statement, where 0 or more records may be found and returned.
+
+=== Examples
+==== Basic Form
+[source,java]
+----
+QueryInput input = new QueryInput(qInstance);
+input.setSession(session);
+input.setTableName("orders");
+input.setFilter(new QQueryFilter()
+   .withCriteria(new QFilterCriteria("total", GREATER_THAN, new BigDecimal("3.50")))
+   .withOrderBy(new QFilterOrderBy("orderDate", false))
+);
+QueryOutput output = new QueryAction.execute(input);
+List<QRecord> records = output.getRecords();
+----
+
+=== QueryInput
+* `table` - *String, Required* - Name of the table being queried against.
+* `filter` - *QQueryFilter object* - Specification for what records should be returned, based on *QFilterCriteria* objects, and how they should be sorted, based on *QFilterOrderBy* objects.
+* `skip` - *Integer* - Optional number of records to be skipped at the beginning of the result set.
+e.g., for implementing pagination.
+* `limit` - *Integer* - Optional maximum number of records to be returned by the query.
+* `transaction` - *QBackendTransaction object* - Optional transaction object.
+** Behavior for this object is backend-dependant.
+In an RDBMS backend, this object is generally needed if you want your query to see data that may have been modified within the same transaction.
+* `recordPipe` - *RecordPipe object* - Optional object that records are placed into, for asynchronous processing.
+** If a *recordPipe* is used, then records cannot be retrieved from the *QueryOutput*.
+Rather, such records must be read from the pipe's `consumeAvailableRecords()` method.
+** A *recordPipe* should only be used when a *QueryAction* is running in a separate Thread from the record's consumer.
+* `shouldTranslatePossibleValues` - *boolean, default: false* - Controls whether any fields in the table with a *possibleValueSource* assigned to them should have those possible values looked up
+(e.g., to provide text translations in the generated records' `displayValues` map).
+** For example, if running a query to present results to a user, this would generally need to be *true*.
+But if running a query to provide data as part of a process, then this can generally be left as *false*.
+* `shouldGenerateDisplayValues` - *boolean, default: false* - Controls whether if field level *displayFormats* should be used to populate the generated records' `displayValues` map.
+** For example, if running a query to present results to a user, this would generally need to be *true*.
+But if running a query to provide data as part of a process, then this can generally be left as *false*.
+* `queryJoins` - *List of QueryJoin objects* - Optional list of tables to be joined with the main *table* specified in the *QueryInput*.
+See QueryJoin below for further details.
+
+==== QQueryFilter
+A key component of *QueryInput*, a *QQueryFilter* defines both what records should be included in a query's results (e.g., an SQL `WHERE`), as well as how those results should be sorted (SQL `ORDER BY`).
+
+* `criteria` - *List of QFilterCriteria* - Individual conditions or clauses to filter records.
+They are combined using the *booleanOperator* specified in the *QQueryFilter*.  See below for further details.
+* `orderBys` - *List of QFilterOrderBy* - List of fields (and directions) to control the sorting of query results.
+In general, multiple *orderBys* can be given (depending on backend implementations).
+* `booleanOperator` - *Enum of AND, OR, default: AND* - Specifies the logical joining operator used among individual criteria.
+* `subFilters` - *List of QQueryFilter* - To build arbitrarily complex queries, with nested boolean logic, 0 or more *subFilters* may be provided.
+** Each *subFilter* can include its own additional *subFilters*.
+** Each *subFilter* can specify a different *booleanOperator*.
+** For example, consider the following *QQueryFilter*, that uses two *subFilters*, and a mix of *booleanOperators*
+
+[source,java]
+----
+ queryInput.setFilter(new QQueryFilter()
+    .withBooleanOperator(OR)
+    .withSubFilters(List.of(
+       new QQueryFilter().withBooleanOperator(AND)
+          .withCriteria(new QFilterCriteria("firstName", EQUALS, "James"))
+          .withCriteria(new QFilterCriteria("lastName", EQUALS, "Maes")),
+       new QQueryFilter().withBooleanOperator(AND)
+          .withCriteria(new QFilterCriteria("firstName", EQUALS, "Darin"))
+          .withCriteria(new QFilterCriteria("lastName", EQUALS, "Kelkhoff"))
+    )));
+
+// which would generate the following WHERE clause in an RDBMS backend:
+   WHERE (first_name='James' AND last_name='Maes') OR (first_name='Darin' AND last_name='Kelkhoff')
+----
+
+===== QFilterCriteria
+* `fieldName` - *String, required* - Reference to a field on the table being queried.
+** Or, in the case of a query with *queryJoins*, a qualified name of a field from a join-table (where the qualifier would be the joined table's name or alias, followed by a dot)
+*** For example:  `orderLine.sku` or `orderBillToCustomer.firstName`
+* `operator` - *Enum of QCriteriaOperator, required* - Comparison operation to be applied to the field specified as *fieldName* and the *values* or *otherFieldName*.
+** e.g., `EQUALS`, `NOT_IN`, `GREATER_THAN`, `BETWEEN`, `IS_BLANK`, etc.
+* `values` - *List of values, conditional* - Provides the value(s) that the field is compared against.
+The number of values (0, 1, 2, or more) be driven based on the *operator* being used.
+If an *otherFieldName* is given, and the *operator* expects 1 value, then *values* is ignored, and *otherFieldName* is used.
+* `otherFieldName` - *String, conditional* - Specifies that the *fieldName* should be compared against another field in the records, rather than the values in the *values* property.
+Only used for *operators* that expect 1 value (e.g., `EQUALS` or `LESS_THAN_OR_EQUALS` - not `IS_NOT_BLANK` or `IN`).
+
+QFilterCriteria definition examples:
+[source,java]
+----
+// one-liners, via constructors that take (List<Serializable> values) or (Serializable... values) in 3rd position
+new QFilterCriteria("id", IN, List.of(1, 2, 3))
+new QFilterCriteria("name", IS_BLANK)
+new QFilterCriteria("orderNo", IN, orderNoList)
+new QFilterCriteria("state", EQUALS, "MO");
+
+// long-form, with fluent setters
+new QFilterCriteria()
+   .withFieldName("quantity")
+   .withOpeartor(QCriteriaOperator.GREATER_THAN)
+   .withValues(List.of(47));
+
+// to use otherFieldName, long-form must be used
+new QFilterCriteria()
+   .withFieldName("firstName")
+   .withOpeartor(QCriteriaOperator.EQUALS)
+   .withOtherFieldName("lastName");
+
+// using otherFieldName to build a criterion that looks at two fields from join tables
+new QFilterCriteria()
+   .withFieldName("billToCustomer.lastName")
+   .withOpeartor(QCriteriaOperator.NOT_EQUALS)
+   .withOtherFieldName("shipToCustomer.lastName");
+
+----
+
+===== QFilterOrderBy
+* `fieldName` - *String, required* - Reference to a field on the table being queried.
+** Or, in the case of a query with *queryJoins*, a qualified name of a field from a join-table (where the qualifier would be the joined table's name or alias, followed by a dot)
+* `isAscending` - *boolean, default: true* - Specify if the sort is ascending or descending.
+
+QFilterCriteria definition examples:
+
+[source,java]
+----
+// short-form, via constructors
+new QFilterOrderBy("id") // isAscending defaults to true.
+new QFilterOrderBy("name", false)
+
+// long-form, with fluent setters
+new QFilterOrderBy()
+   .withFieldName("birthDate")
+   .withIsAscending(true);
+----
+
+==== QueryJoin
+* `joinTable` - *String, required* - Name of the table that is being joined in to the existing query.
+** Will be inferred from *joinMetaData*, if *joinTable* is not set when *joinMetaData* gets set.
+* `baseTableOrAlias` - *String, required* - Name of a table (or an alias) already defined in the query, to which the *joinTable* will be joined.
+** Will be inferred from *joinMetaData*, if *baseTableOrAlias* is not set when *joinMetaData* gets set (which will only use the leftTableName from the joinMetaData - never an alias).
+* `joinMetaData` - *QJoinMetaData object* - Optional specification of a {link-join} in the current QInstance.
+If not set, will be looked up at runtime based on *baseTableOrAlias* and *joinTable*.
+** If set before *baseTableOrAlias* and *joinTable*, then they will be set based on the *leftTable* and *rightTable* in this object.
+* `alias` - *String* - Optional (unless multiple instances of the same table are being joined together, when it becomes required).
+Behavior based on SQL `FROM` clause aliases.
+If given, must be used as the part before the dot in field name specifications throughout the rest of the query input.
+* `select` - *boolean, default: false* - Specify whether fields from the *rightTable* should be selected by the query.
+If *true*, then the `QRecord` objects returned by this query will have values with corresponding to the (table-or-alias `.` field-name) form.
+* `type` - *Enum of INNER, LEFT, RIGHT, FULL, default: INNER* - specifies the SQL-style type of join being performed.
+
+QueryJoin definition examples:
+
+[source,java]
+----
+// selecting from an "orderLine" table - then join to its corresponding "order" table
+queryInput.withTableName("orderLine");
+queryInput.withQueryJoin(new QueryJoin("order").withSelect(true));
+...
+queryOutput.getRecords().get(0).getValueBigDecimal("order.grandTotal");
+
+// given an "order" table with 2 foreign keys to a customer table (billToCustomerId and shipToCustomerId)
+// Note, we must supply the JoinMetaData to the QueryJoin, to drive what fields to join on in each case.
+queryInput.withTableName("order");
+queryInput.withQueryJoins(List.of(
+   new QueryJoin(instance.getJoin("orderJoinShipToCustomer")
+       .withAlias("shipToCustomer")
+       .withSelect(true)),
+   new QueryJoin(instance.getJoin("orderJoinBillToCustomer")
+       .withAlias("billToCustomer")
+       .withSelect(true))));
+...
+record.getValueString("billToCustomer.firstName")
+   + " placed an order for "
+   + record.getValueString("shipToCustomer.firstName")
+
+----
+
+=== QueryOutput
+* `records` - *List of QRecord* - List of 0 or more records that match the query filter.
+** _Note:  If a *recordPipe* was supplied to the QueryInput, then calling `queryOutput.getRecords()` will result in an `IllegalStateException` being thrown - as the records were placed into the pipe as they were fetched, and cannot all be accessed as a single list._
