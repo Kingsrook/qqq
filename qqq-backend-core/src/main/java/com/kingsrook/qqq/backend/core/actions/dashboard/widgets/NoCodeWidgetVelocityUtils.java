@@ -91,6 +91,18 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public String warningIcon()
+   {
+      return ("""
+         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: orange; position: relative; top: 6px;" aria-hidden="true">warning</span>
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public String checkIcon()
    {
       return ("""
