@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 
 
 /*******************************************************************************
@@ -50,6 +51,9 @@ public class Script extends QRecordEntity
 
    @QField(possibleValueSourceName = "scriptType")
    private Integer scriptTypeId;
+
+   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
+   private String tableName;
 
    @QField(possibleValueSourceName = "scriptRevision")
    private Integer currentScriptRevisionId;
@@ -276,6 +280,37 @@ public class Script extends QRecordEntity
    public Script withCurrentScriptRevisionId(Integer currentScriptRevisionId)
    {
       this.currentScriptRevisionId = currentScriptRevisionId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableName
+    *******************************************************************************/
+   public String getTableName()
+   {
+      return (this.tableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableName
+    *******************************************************************************/
+   public void setTableName(String tableName)
+   {
+      this.tableName = tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    *******************************************************************************/
+   public Script withTableName(String tableName)
+   {
+      this.tableName = tableName;
       return (this);
    }
 

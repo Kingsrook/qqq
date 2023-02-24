@@ -160,6 +160,29 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
+    ** Added when QRecords got exposed in scripts, and passing a constant String
+    ** raised a class-cast exception, because it was some nashorn non-serializable
+    ** type (though once inside *this* method, the value was a java.lang.String...)
+    *******************************************************************************/
+   public void setValue(String fieldName, Object value)
+   {
+      if(value == null)
+      {
+         setValue(fieldName, null);
+      }
+      else if(value instanceof Serializable s)
+      {
+         setValue(fieldName, s);
+      }
+      else
+      {
+         setValue(fieldName, ValueUtils.getValueAsString(value));
+      }
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void setValue(String fieldName, Serializable value)

@@ -26,10 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ChildRecordListRenderer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -37,10 +41,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScriptRevisionProcessStep;
 
 
 /*******************************************************************************
@@ -58,6 +66,23 @@ public class ScriptsMetaDataProvider
       defineStandardScriptsPossibleValueSources(instance);
       defineStandardScriptsJoins(instance);
       defineStandardScriptsWidgets(instance);
+      instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
+      instance.addProcess(defineStoreScriptRevisionProcess());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QProcessMetaData defineStoreScriptRevisionProcess()
+   {
+      return (new QProcessMetaData()
+         .withName("storeScriptRevision")
+         .withStepList(List.of(
+            new QBackendStepMetaData()
+               .withCode(new QCodeReference(StoreScriptRevisionProcessStep.class))
+         )));
    }
 
 
@@ -70,7 +95,15 @@ public class ScriptsMetaDataProvider
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(QJoinMetaData.makeInferredJoinName(ScriptLog.TABLE_NAME, ScriptLogLine.TABLE_NAME)))
          .withLabel("Log Lines")
          .getWidgetMetaData());
+
+      instance.addWidget(new QWidgetMetaData()
+         .withName("scriptViewer")
+         .withLabel("Contents")
+         .withIsCard(true)
+         .withType(WidgetType.SCRIPT_VIEWER.getType())
+         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class, null)));
    }
+
 
 
    /*******************************************************************************
@@ -182,7 +215,8 @@ public class ScriptsMetaDataProvider
    private QTableMetaData defineScriptTable(String backendName) throws QException
    {
       return (defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "tableName", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2).withWidgetName("scriptViewer"))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate"))));
    }
 
