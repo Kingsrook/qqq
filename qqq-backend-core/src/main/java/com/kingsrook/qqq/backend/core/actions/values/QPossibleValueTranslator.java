@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -414,6 +415,15 @@ public class QPossibleValueTranslator
          {
             String aliasOrTableName = Objects.requireNonNullElse(queryJoin.getAlias(), queryJoin.getJoinTable());
             primePvsCacheTableListingHashLoader(qInstance.getTable(queryJoin.getJoinTable()), fieldsByPvsTable, pvsesByTable, aliasOrTableName + ".", queryJoin.getJoinTable(), limitedToFieldNames);
+         }
+      }
+
+      for(Map.Entry<String, Map<Serializable, String>> entry : possibleValueCache.entrySet())
+      {
+         int size = entry.getValue().size();
+         if(size > 50_000)
+         {
+            LOG.debug("Found a big PVS cache - clearing it.", logPair("name", entry.getKey()), logPair("size", size));
          }
       }
 
