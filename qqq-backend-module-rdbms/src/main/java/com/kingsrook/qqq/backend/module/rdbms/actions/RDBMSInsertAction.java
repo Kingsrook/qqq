@@ -153,6 +153,8 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                   continue;
                }
 
+               logSQL(sql, params);
+
                ///////////////////////////////////////////////////////////
                // execute the insert, then foreach record in the input, //
                // add it to the output, and set its generated id too.   //

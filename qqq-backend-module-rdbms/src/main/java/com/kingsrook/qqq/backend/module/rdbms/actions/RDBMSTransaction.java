@@ -72,13 +72,13 @@ public class RDBMSTransaction extends QBackendTransaction
    {
       try
       {
-         RDBMSTransaction.LOG.debug("Committing transaction");
+         LOG.debug("Committing transaction");
          connection.commit();
-         RDBMSTransaction.LOG.debug("Commit complete");
+         LOG.debug("Commit complete");
       }
       catch(Exception e)
       {
-         RDBMSTransaction.LOG.error("Error committing transaction", e);
+         LOG.error("Error committing transaction", e);
          throw new QException("Error committing transaction: " + e.getMessage(), e);
       }
    }
@@ -93,13 +93,13 @@ public class RDBMSTransaction extends QBackendTransaction
    {
       try
       {
-         RDBMSTransaction.LOG.info("Rolling back transaction");
+         LOG.info("Rolling back transaction");
          connection.rollback();
-         RDBMSTransaction.LOG.info("Rollback complete");
+         LOG.info("Rollback complete");
       }
       catch(Exception e)
       {
-         RDBMSTransaction.LOG.error("Error rolling back transaction", e);
+         LOG.error("Error rolling back transaction", e);
          throw new QException("Error rolling back transaction: " + e.getMessage(), e);
       }
    }

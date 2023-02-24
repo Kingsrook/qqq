@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
@@ -68,6 +69,7 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -938,4 +940,29 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          return (String.format(groupBy.getFormatString(), fullFieldName));
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void logSQL(CharSequence sql, List<?> params)
+   {
+      if(System.getProperty("qqq.rdbms.logSQL", "false").equals("true"))
+      {
+         try
+         {
+            LogPair paramsLogPair = params == null ? null :
+               params.size() <= 100 ? logPair("params", params) :
+                  logPair("first100Params", params.subList(0, 99));
+
+            LOG.debug("Running SQL", logPair("sql", sql), paramsLogPair);
+         }
+         catch(Exception e)
+         {
+            LOG.debug("Error logging sql...", e);
+         }
+      }
+   }
+
 }

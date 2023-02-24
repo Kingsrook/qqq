@@ -86,7 +86,8 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
          }
 
          // todo sql customization - can edit sql and/or param list
-         LOG.debug(sql); // todo not commit - downgrade to trace
+
+         logSQL(sql, params);
 
          AggregateOutput       rs      = new AggregateOutput();
          List<AggregateResult> results = new ArrayList<>();

@@ -64,8 +64,9 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          QQueryFilter       filter = countInput.getFilter();
          List<Serializable> params = new ArrayList<>();
          sql += " WHERE " + makeWhereClause(countInput.getInstance(), countInput.getSession(), table, joinsContext, filter, params);
-
          // todo sql customization - can edit sql and/or param list
+
+         logSQL(sql, params);
 
          CountOutput rs = new CountOutput();
 

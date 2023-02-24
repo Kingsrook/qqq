@@ -204,6 +204,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          rowValues.add(record.getValue(table.getPrimaryKeyField()));
       }
 
+      logSQL(sql, values);
+
       ////////////////////////////////////////////////////////////////////////////////
       // let query manager do the batch updates - note that it will internally page //
       ////////////////////////////////////////////////////////////////////////////////
@@ -260,6 +262,8 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          {
             params.add(record.getValue(table.getPrimaryKeyField()));
          }
+
+         logSQL(sql, params);
 
          /////////////////////////////////////
          // let query manager do the update //

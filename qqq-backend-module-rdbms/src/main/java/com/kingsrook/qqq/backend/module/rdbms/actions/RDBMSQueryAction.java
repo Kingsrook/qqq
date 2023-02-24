@@ -137,7 +137,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             // execute the query - iterate over results //
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
-            // System.out.println(sql);
+            logSQL(sql, params);
+
             PreparedStatement statement = createStatement(connection, sql.toString(), queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {

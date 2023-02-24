@@ -190,6 +190,8 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          + " WHERE "
          + escapeIdentifier(primaryKeyName) + " = ?";
 
+      logSQL(sql, List.of(primaryKey));
+
       try
       {
          int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKey);
@@ -237,6 +239,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
             + ")";
 
          // todo sql customization - can edit sql and/or param list
+         logSQL(sql, primaryKeys);
 
          Integer rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKeys);
          deleteOutput.addToDeletedRecordCount(rowCount);
@@ -267,6 +270,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          + escapeIdentifier(tableName) + " AS " + escapeIdentifier(table.getName())
          + " WHERE "
          + whereClause;
+      logSQL(sql, params);
 
       try
       {
