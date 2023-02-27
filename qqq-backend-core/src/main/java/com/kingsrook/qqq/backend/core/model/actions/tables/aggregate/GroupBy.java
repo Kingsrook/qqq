@@ -41,6 +41,17 @@ public class GroupBy implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
+   public GroupBy(QFieldType type, String fieldName)
+   {
+      this.type = type;
+      this.fieldName = fieldName;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public GroupBy(QFieldType type, String fieldName, String formatString)
    {
       this.type = type;

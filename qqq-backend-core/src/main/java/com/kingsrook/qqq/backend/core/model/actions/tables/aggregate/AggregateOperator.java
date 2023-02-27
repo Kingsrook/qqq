@@ -27,9 +27,33 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
  *******************************************************************************/
 public enum AggregateOperator
 {
-   COUNT,
-   SUM,
-   MIN,
-   MAX,
-   AVG
+   COUNT("COUNT("),
+   COUNT_DISTINCT("COUNT(DISTINCT "),
+   SUM("SUM("),
+   MIN("MIN("),
+   MAX("MAX("),
+   AVG("AVG(");
+
+   private final String sqlPrefix;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   AggregateOperator(String sqlPrefix)
+   {
+      this.sqlPrefix = sqlPrefix;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sqlPrefix
+    **
+    *******************************************************************************/
+   public String getSqlPrefix()
+   {
+      return sqlPrefix;
+   }
 }

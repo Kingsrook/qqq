@@ -85,6 +85,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys(), joinsContext);
          }
 
+         if(aggregateInput.getLimit() != null)
+         {
+            sql += " LIMIT " + aggregateInput.getLimit();
+         }
+
          // todo sql customization - can edit sql and/or param list
 
          AggregateOutput       rs      = new AggregateOutput();
@@ -155,7 +160,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       for(Aggregate aggregate : aggregateInput.getAggregates())
       {
          JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
-         rs.add(aggregate.getOperator() + "(" + escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())) + ")");
+         rs.add(aggregate.getOperator().getSqlPrefix() + escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())) + ")");
       }
       return (rs);
    }
