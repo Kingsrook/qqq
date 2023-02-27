@@ -93,6 +93,11 @@ public class StreamedETLWithFrontendProcess
    public static final String DEFAULT_PREVIEW_MESSAGE_FOR_DELETE           = "This is a preview of the records that will be deleted.";
    public static final String FIELD_PREVIEW_MESSAGE                        = "previewMessage";
 
+   public static final String FIELD_TRANSACTION_LEVEL       = "transactionLevel";
+   public static final String TRANSACTION_LEVEL_AUTO_COMMIT = "autoCommit";
+   public static final String TRANSACTION_LEVEL_PAGE        = "page";
+   public static final String TRANSACTION_LEVEL_PROCESS     = "process";
+
 
 
    /*******************************************************************************
@@ -109,6 +114,7 @@ public class StreamedETLWithFrontendProcess
       Map<String, Serializable> defaultFieldValues = new HashMap<>();
       defaultFieldValues.put(FIELD_SOURCE_TABLE, sourceTableName);
       defaultFieldValues.put(FIELD_DESTINATION_TABLE, destinationTableName);
+      defaultFieldValues.put(FIELD_TRANSACTION_LEVEL, TRANSACTION_LEVEL_PROCESS);
       return defineProcessMetaData(extractStepClass, transformStepClass, loadStepClass, defaultFieldValues);
    }
 
@@ -141,6 +147,7 @@ public class StreamedETLWithFrontendProcess
             .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(extractStepClass == null ? null : new QCodeReference(extractStepClass)))
             .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(transformStepClass == null ? null : new QCodeReference(transformStepClass)))
             .withField(new QFieldMetaData(FIELD_PREVIEW_MESSAGE, QFieldType.STRING).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_PREVIEW_MESSAGE, DEFAULT_PREVIEW_MESSAGE_FOR_INSERT)))
+            .withField(new QFieldMetaData(FIELD_TRANSACTION_LEVEL, QFieldType.STRING).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_TRANSACTION_LEVEL, TRANSACTION_LEVEL_PROCESS)))
          );
 
       QFrontendStepMetaData reviewStep = new QFrontendStepMetaData()
@@ -273,6 +280,42 @@ public class StreamedETLWithFrontendProcess
       public Builder withSupportsFullValidation(Boolean supportsFullValidation)
       {
          setInputFieldDefaultValue(FIELD_SUPPORTS_FULL_VALIDATION, supportsFullValidation);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter to set transaction level to auto-commit
+       **
+       *******************************************************************************/
+      public Builder withTransactionLevelAutoCommit()
+      {
+         setInputFieldDefaultValue(FIELD_TRANSACTION_LEVEL, TRANSACTION_LEVEL_AUTO_COMMIT);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter to set transaction level to page
+       **
+       *******************************************************************************/
+      public Builder withTransactionLevelPage()
+      {
+         setInputFieldDefaultValue(FIELD_TRANSACTION_LEVEL, TRANSACTION_LEVEL_PAGE);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter to set transaction level to process
+       **
+       *******************************************************************************/
+      public Builder withTransactionLevelProcess()
+      {
+         setInputFieldDefaultValue(FIELD_TRANSACTION_LEVEL, TRANSACTION_LEVEL_PROCESS);
          return (this);
       }
 

@@ -101,9 +101,16 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          transformStep.preRun(runBackendStepInput, runBackendStepOutput);
          loadStep.preRun(runBackendStepInput, runBackendStepOutput);
 
-         transaction = loadStep.openTransaction(runBackendStepInput);
-         loadStep.setTransaction(transaction);
-         transformStep.setTransaction(transaction);
+         /////////////////////////////////////////////////////////////////////////////
+         // open a transaction for the whole process, if that's the requested level //
+         /////////////////////////////////////////////////////////////////////////////
+         boolean doProcessLevelTransaction = StreamedETLWithFrontendProcess.TRANSACTION_LEVEL_PROCESS.equals(runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_TRANSACTION_LEVEL));
+         if(doProcessLevelTransaction)
+         {
+            transaction = loadStep.openTransaction(runBackendStepInput);
+            loadStep.setTransaction(transaction);
+            transformStep.setTransaction(transaction);
+         }
 
          List<QRecord> loadedRecordList = new ArrayList<>();
          int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
@@ -145,10 +152,10 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          //////////////////////////////////////////////////////////////////////////////
          runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
 
-         /////////////////////
-         // commit the work //
-         /////////////////////
-         if(transaction.isPresent())
+         ////////////////////////////////////////////////////////
+         // commit the work at the process level if applicable //
+         ////////////////////////////////////////////////////////
+         if(doProcessLevelTransaction && transaction.isPresent())
          {
             transaction.get().commit();
          }
@@ -183,63 +190,98 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
     *******************************************************************************/
    private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformStep transformStep, AbstractLoadStep loadStep, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> loadedRecordList) throws QException
    {
-      Integer totalRows = runBackendStepInput.getValueInteger(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT);
-      if(totalRows != null)
+      /////////////////////////////////////////////////////////////////////////////
+      // open a transaction for the whole process, if that's the requested level //
+      /////////////////////////////////////////////////////////////////////////////
+      Optional<QBackendTransaction> transaction            = Optional.empty();
+      boolean                       doPageLevelTransaction = StreamedETLWithFrontendProcess.TRANSACTION_LEVEL_PAGE.equals(runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_TRANSACTION_LEVEL));
+      if(doPageLevelTransaction)
       {
-         runBackendStepInput.getAsyncJobCallback().updateStatus(currentRowCount, totalRows);
+         transaction = loadStep.openTransaction(runBackendStepInput);
+         loadStep.setTransaction(transaction);
+         transformStep.setTransaction(transaction);
       }
 
-      ///////////////////////////////////
-      // get the records from the pipe //
-      ///////////////////////////////////
-      List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
-
-      ///////////////////////////////////////////////////////////////////////
-      // make streamed input & output objects from the run input & outputs //
-      ///////////////////////////////////////////////////////////////////////
-      StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
-      StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
-
-      /////////////////////////////////////////////////////
-      // pass the records through the transform function //
-      /////////////////////////////////////////////////////
-      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
-      List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
-
-      ////////////////////////////////////////////////
-      // pass the records through the load function //
-      ////////////////////////////////////////////////
-      streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, streamedBackendStepOutput.getRecords());
-      streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
-
-      loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
-      List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
-
-      ///////////////////////////////////////////////////////
-      // copy a small number of records to the output list //
-      ///////////////////////////////////////////////////////
-      int i = 0;
-      while(loadedRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < streamedBackendStepOutput.getRecords().size())
+      try
       {
-         loadedRecordList.add(streamedBackendStepOutput.getRecords().get(i++));
-      }
-
-      //////////////////////////////////////////////////////
-      // if we have a batch of audit inputs, execute them //
-      //////////////////////////////////////////////////////
-      List<AuditInput> mergedAuditInputList = CollectionUtils.mergeLists(auditInputListFromTransform, auditInputListFromLoad);
-      if(CollectionUtils.nullSafeHasContents(mergedAuditInputList))
-      {
-         AuditAction auditAction = new AuditAction();
-         for(AuditInput auditInput : mergedAuditInputList)
+         Integer totalRows = runBackendStepInput.getValueInteger(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT);
+         if(totalRows != null)
          {
-            auditAction.execute(auditInput);
+            runBackendStepInput.getAsyncJobCallback().updateStatus(currentRowCount, totalRows);
+         }
+
+         ///////////////////////////////////
+         // get the records from the pipe //
+         ///////////////////////////////////
+         List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
+
+         ///////////////////////////////////////////////////////////////////////
+         // make streamed input & output objects from the run input & outputs //
+         ///////////////////////////////////////////////////////////////////////
+         StreamedBackendStepInput  streamedBackendStepInput  = new StreamedBackendStepInput(runBackendStepInput, qRecords);
+         StreamedBackendStepOutput streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
+
+         /////////////////////////////////////////////////////
+         // pass the records through the transform function //
+         /////////////////////////////////////////////////////
+         transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
+
+         ////////////////////////////////////////////////
+         // pass the records through the load function //
+         ////////////////////////////////////////////////
+         streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, streamedBackendStepOutput.getRecords());
+         streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
+
+         loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
+
+         ///////////////////////////////////////////////////////
+         // copy a small number of records to the output list //
+         ///////////////////////////////////////////////////////
+         int i = 0;
+         while(loadedRecordList.size() < PROCESS_OUTPUT_RECORD_LIST_LIMIT && i < streamedBackendStepOutput.getRecords().size())
+         {
+            loadedRecordList.add(streamedBackendStepOutput.getRecords().get(i++));
+         }
+
+         //////////////////////////////////////////////////////
+         // if we have a batch of audit inputs, execute them //
+         //////////////////////////////////////////////////////
+         List<AuditInput> mergedAuditInputList = CollectionUtils.mergeLists(auditInputListFromTransform, auditInputListFromLoad);
+         if(CollectionUtils.nullSafeHasContents(mergedAuditInputList))
+         {
+            AuditAction auditAction = new AuditAction();
+            for(AuditInput auditInput : mergedAuditInputList)
+            {
+               auditAction.execute(auditInput);
+            }
+         }
+         runBackendStepOutput.setAuditInputList(null);
+
+         if(doPageLevelTransaction && transaction.isPresent())
+         {
+            transaction.get().commit();
+         }
+
+         currentRowCount += qRecords.size();
+         return (qRecords.size());
+      }
+      catch(Exception e)
+      {
+         if(doPageLevelTransaction && transaction.isPresent())
+         {
+            transaction.get().rollback();
+         }
+         throw (e);
+      }
+      finally
+      {
+         if(doPageLevelTransaction && transaction.isPresent())
+         {
+            transaction.get().close();
          }
       }
-      runBackendStepOutput.setAuditInputList(null);
-
-      currentRowCount += qRecords.size();
-      return (qRecords.size());
    }
 
 }
