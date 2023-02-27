@@ -314,6 +314,42 @@ public class StringUtils
 
 
    /*******************************************************************************
+    ** Given a "formatString" containing any number of {singular,plural} style "tokens",
+    ** replace the "tokens" with the "singular" options if the 'size' parameter is 1
+    ** or the "plural" options if not-1 (e.g., 0 or 2+)
+    **
+    ** e.g.: StringUtils.pluralFormat(n, "Apple{,s} {was,were} eaten")) // seems easier.
+    ** e.g.: StringUtils.pluralFormat(n, "Apple{ was,s were} eaten")) // also works...
+    *******************************************************************************/
+   public static String pluralFormat(Integer size, String formatString)
+   {
+      int           lastIndex = 0;
+      StringBuilder output    = new StringBuilder();
+
+      Pattern pattern = Pattern.compile("\\{.*?,.*?}");
+      Matcher matcher = pattern.matcher(formatString);
+      while(matcher.find())
+      {
+         String   group       = matcher.group();
+         String   groupBody   = group.substring(1, group.length() - 1);
+         String[] groupParts  = groupBody.split(",", 2);
+         String   replacement = (size == 1) ? groupParts[0] : groupParts[1];
+         output.append(formatString, lastIndex, matcher.start()).append(replacement);
+
+         lastIndex = matcher.end();
+      }
+
+      if(lastIndex < formatString.length())
+      {
+         output.append(formatString, lastIndex, formatString.length());
+      }
+
+      return (output.toString());
+   }
+
+
+
+   /*******************************************************************************
     ** Switch between strings based on if the size of the parameter collection.  If
     ** it is 1 (the singular) or not-1 (0 or 2+, the plural). Get back "" or "s"
     **

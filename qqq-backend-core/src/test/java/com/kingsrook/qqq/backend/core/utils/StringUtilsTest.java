@@ -285,4 +285,23 @@ class StringUtilsTest extends BaseTest
       assertEquals("Abc", StringUtils.ucFirst("abc"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPluralFormat()
+   {
+      assertEquals("Apple", StringUtils.pluralFormat(1, "Apple{,s}"));
+      assertEquals("Apples", StringUtils.pluralFormat(0, "Apple{,s}"));
+      assertEquals("Apples", StringUtils.pluralFormat(2, "Apple{,s}"));
+
+      assertEquals("Apple and Orange", StringUtils.pluralFormat(1, "Apple{,s} and Orange{,s}"));
+      assertEquals("Apples and Oranges", StringUtils.pluralFormat(2, "Apple{,s} and Orange{,s}"));
+
+      assertEquals("Apple was eaten", StringUtils.pluralFormat(1, "Apple{,s} {was,were} eaten"));
+      assertEquals("Apples were eaten", StringUtils.pluralFormat(2, "Apple{,s} {was,were} eaten"));
+   }
+
 }
