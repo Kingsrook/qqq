@@ -24,8 +24,13 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablestats;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.AggregateAction;
+import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -38,8 +43,11 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateRe
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -64,10 +72,20 @@ public class TableStatsStep implements BackendStep
          String fieldName  = runBackendStepInput.getValueString("fieldName");
          String filterJSON = runBackendStepInput.getValueString("filterJSON");
 
+         /////////////////////////////////////////
+         // make sure user may query this table //
+         /////////////////////////////////////////
+         PermissionsHelper.checkTablePermissionThrowing(new QueryInput().withTableName(tableName), TablePermissionSubType.READ);
+
          QQueryFilter filter = null;
          if(StringUtils.hasContent(filterJSON))
          {
             filter = JsonUtils.toObject(filterJSON, QQueryFilter.class);
+
+            ///////////////////////////////////////////////////////////////
+            // ... remove any order-by that may have been in that filter //
+            ///////////////////////////////////////////////////////////////
+            filter.setOrderBys(new ArrayList<>());
          }
          else
          {
@@ -94,8 +112,14 @@ public class TableStatsStep implements BackendStep
          {
             Serializable value = result.getGroupByValue(groupBy);
             Integer      count = ValueUtils.getValueAsInteger(result.getAggregateValue(aggregate));
-            valueCounts.add(new QRecord().withValue("value", value).withValue("count", count));
+            valueCounts.add(new QRecord().withValue(fieldName, value).withValue("count", count));
          }
+         QFieldMetaData countField = new QFieldMetaData("count", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS).withLabel("Count");
+
+         QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator();
+         qPossibleValueTranslator.translatePossibleValuesInRecords(table, valueCounts, null, null);
+         QValueFormatter.setDisplayValuesInRecords(List.of(table.getField(fieldName), countField), valueCounts);
+
          runBackendStepOutput.addValue("valueCounts", valueCounts);
 
          if(valueCounts.size() < limit)
