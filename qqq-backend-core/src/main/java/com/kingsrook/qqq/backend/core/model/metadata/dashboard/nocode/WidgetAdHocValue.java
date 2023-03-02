@@ -24,76 +24,47 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractWidgetValueSource
+public class WidgetAdHocValue extends AbstractWidgetValueSource
 {
-   protected String name;
-   protected String type;
+   private QCodeReference codeReference;
 
-   protected Map<String, Serializable> inputValues;
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public WidgetAdHocValue()
+   {
+      setType(getClass().getSimpleName());
+   }
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException;
-
-
-
-   /*******************************************************************************
-    ** Getter for type
-    *******************************************************************************/
-   public String getType()
+   @Override
+   public Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException
    {
-      return (this.type);
-   }
+      if(inputValues != null)
+      {
+         context.putAll(inputValues);
+      }
 
-
-
-   /*******************************************************************************
-    ** Setter for type
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for type
-    *******************************************************************************/
-   public AbstractWidgetValueSource withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for name
-    *******************************************************************************/
-   public String getName()
-   {
-      return (this.name);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
+      Function<Object, Object> function = QCodeLoader.getFunction(codeReference);
+      Object                   result   = function.apply(context);
+      return (result);
    }
 
 
@@ -101,42 +72,42 @@ public abstract class AbstractWidgetValueSource
    /*******************************************************************************
     ** Fluent setter for name
     *******************************************************************************/
-   public AbstractWidgetValueSource withName(String name)
+   @Override
+   public WidgetAdHocValue withName(String name)
    {
-      this.name = name;
+      setName(name);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for codeReference
     *******************************************************************************/
-   public void supplementContext(Map<String, Object> context)
+   public QCodeReference getCodeReference()
    {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
+      return (this.codeReference);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for inputValues
+    ** Setter for codeReference
     *******************************************************************************/
-   public Map<String, Serializable> getInputValues()
+   public void setCodeReference(QCodeReference codeReference)
    {
-      return (this.inputValues);
+      this.codeReference = codeReference;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for inputValues
+    ** Fluent setter for codeReference
     *******************************************************************************/
-   public void setInputValues(Map<String, Serializable> inputValues)
+   public WidgetAdHocValue withCodeReference(QCodeReference codeReference)
    {
-      this.inputValues = inputValues;
+      this.codeReference = codeReference;
+      return (this);
    }
 
 
@@ -144,7 +115,8 @@ public abstract class AbstractWidgetValueSource
    /*******************************************************************************
     ** Fluent setter for inputValues
     *******************************************************************************/
-   public AbstractWidgetValueSource withInputValues(Map<String, Serializable> inputValues)
+   @Override
+   public WidgetAdHocValue withInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
       return (this);

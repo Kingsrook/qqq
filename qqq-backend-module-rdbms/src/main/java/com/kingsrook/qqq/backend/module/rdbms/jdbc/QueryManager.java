@@ -41,6 +41,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -49,6 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -59,6 +61,8 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class QueryManager
 {
+   private static final QLogger LOG = QLogger.getLogger(QueryManager.class);
+
    public static final int DEFAULT_PAGE_SIZE = 2000;
    public static       int PAGE_SIZE         = DEFAULT_PAGE_SIZE;
 
@@ -1409,13 +1413,44 @@ public class QueryManager
     *******************************************************************************/
    public static Instant getInstant(ResultSet resultSet, int column) throws SQLException
    {
-      Timestamp value = resultSet.getTimestamp(column);
-      if(resultSet.wasNull())
+      try
       {
-         return (null);
-      }
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // this will be a zone-less date-time string, in the database server's configured timezone //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         String string = resultSet.getString(column);
+         if(resultSet.wasNull())
+         {
+            return (null);
+         }
 
-      return (value.toInstant());
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // make an Instant (which means UTC) from that zone-less date-time string.                  //
+         // if the database server was giving back non-utc times, we'd need a different ZoneId here? //
+         // e.g., as configured via ... a system property or database metadata setting               //
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         LocalDateTime localDateTime = LocalDateTime.parse(string.replace(' ', 'T'));
+         ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of("UTC"));
+         Instant       instant       = zonedDateTime.toInstant();
+         return (instant);
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error getting an instant value from a database result - proceeding with potentially wrong-timezone implementation...", e);
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if for some reason the parsing and stuff above fails, well, this will give us back "some" date, maybe //
+         // this was our old logic, which probably had timezones wrong if server wasn't in UTC                    //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Timestamp value = resultSet.getTimestamp(column);
+         if(resultSet.wasNull())
+         {
+            return (null);
+         }
+
+         Instant instant = value.toInstant();
+         return (instant);
+      }
    }
 
 
