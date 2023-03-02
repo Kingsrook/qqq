@@ -74,14 +74,14 @@ public class WidgetCalculation extends AbstractWidgetValueSource
       {
          Instant now  = Instant.now();
          Instant then = ValueUtils.getValueAsInstant(context.get(valueNames.get(0)));
-         return (then.until(now, ChronoUnit.MINUTES));
+         return (then == null ? null : then.until(now, ChronoUnit.MINUTES));
       }),
 
       AGE_SECONDS((List<String> valueNames, Map<String, Object> context) ->
       {
          Instant now  = Instant.now();
          Instant then = ValueUtils.getValueAsInstant(context.get(valueNames.get(0)));
-         return (then.until(now, ChronoUnit.SECONDS));
+         return (then == null ? null : then.until(now, ChronoUnit.SECONDS));
       }),
 
       PERCENT_CHANGE((List<String> valueNames, Map<String, Object> context) ->
@@ -92,8 +92,8 @@ public class WidgetCalculation extends AbstractWidgetValueSource
          ///////////////////////////////////////////////
          // 100 * ( (current - previous) / previous ) //
          ///////////////////////////////////////////////
-         BigDecimal difference = current.subtract(previous);
-         if(BigDecimal.ZERO.equals(previous))
+         BigDecimal difference = current == null ? null : current.subtract(previous);
+         if(BigDecimal.ZERO.equals(previous) || difference == null)
          {
             return (null);
          }
