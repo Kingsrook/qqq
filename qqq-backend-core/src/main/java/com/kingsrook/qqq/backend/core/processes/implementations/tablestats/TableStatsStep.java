@@ -166,8 +166,8 @@ public class TableStatsStep implements BackendStep
          /////////////////////////////////////////////////////
          // now do individual statistics as a pseudo-record //
          /////////////////////////////////////////////////////
-         QFieldMetaData countNonNullField  = new QFieldMetaData("count", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS);
-         QFieldMetaData countDistinctField = new QFieldMetaData("countDistinct", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS);
+         QFieldMetaData countNonNullField  = new QFieldMetaData("count", QFieldType.INTEGER).withLabel("Rows with a value").withDisplayFormat(DisplayFormat.COMMAS);
+         QFieldMetaData countDistinctField = new QFieldMetaData("countDistinct", QFieldType.INTEGER).withLabel("Distinct values").withDisplayFormat(DisplayFormat.COMMAS);
          QFieldMetaData sumField           = new QFieldMetaData("sum", QFieldType.DECIMAL).withDisplayFormat(field.getDisplayFormat());
          QFieldMetaData avgField           = new QFieldMetaData("average", QFieldType.DECIMAL).withDisplayFormat(field.getDisplayFormat());
          QFieldMetaData minField           = new QFieldMetaData("min", field.getType()).withDisplayFormat(field.getDisplayFormat());
