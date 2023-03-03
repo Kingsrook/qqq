@@ -119,7 +119,12 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                      JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
                      QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
 
-                     if(field.getType().equals(QFieldType.INTEGER) && aggregate.getOperator().equals(AggregateOperator.AVG))
+                     if(field.getType().equals(QFieldType.INTEGER) && (aggregate.getOperator().equals(AggregateOperator.AVG) || aggregate.getOperator().equals(AggregateOperator.SUM)))
+                     {
+                        field = new QFieldMetaData().withType(QFieldType.DECIMAL);
+                     }
+
+                     if(aggregate.getOperator().equals(AggregateOperator.COUNT) || aggregate.getOperator().equals(AggregateOperator.COUNT_DISTINCT))
                      {
                         field = new QFieldMetaData().withType(QFieldType.DECIMAL);
                      }
