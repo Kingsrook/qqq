@@ -81,6 +81,7 @@ public class ScriptsMetaDataProvider
          .withName("storeScriptRevision")
          .withStepList(List.of(
             new QBackendStepMetaData()
+               .withName("main")
                .withCode(new QCodeReference(StoreScriptRevisionProcessStep.class))
          )));
    }
@@ -118,6 +119,30 @@ public class ScriptsMetaDataProvider
          .withJoinOn(new JoinOn("id", "scriptLogId"))
          .withOrderBy(new QFilterOrderBy("id"))
          .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(Script.TABLE_NAME)
+         .withRightTable(ScriptRevision.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_ONE)
+         .withLeftTable(Script.TABLE_NAME)
+         .withRightTable(ScriptRevision.TABLE_NAME)
+         .withJoinOn(new JoinOn("currentScriptRevisionId", "id"))
+         .withName("currentScriptRevision"));
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(ScriptType.TABLE_NAME)
+         .withRightTable(Script.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptTypeId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
    }
 
 

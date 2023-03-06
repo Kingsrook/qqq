@@ -23,12 +23,16 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -53,8 +57,14 @@ public class TablesPossibleValueSourceMetaDataProvider
       List<QPossibleValue<?>> enumValues = new ArrayList<>();
       for(QTableMetaData table : qInstance.getTables().values())
       {
-         enumValues.add(new QPossibleValue<>(table.getName(), table.getLabel()));
+         if(BooleanUtils.isNotTrue(table.getIsHidden()))
+         {
+            String label = StringUtils.hasContent(table.getLabel()) ? table.getLabel() : QInstanceEnricher.nameToLabel(table.getName());
+            enumValues.add(new QPossibleValue<>(table.getName(), label));
+         }
       }
+
+      enumValues.sort(Comparator.comparing(QPossibleValue::getLabel));
 
       possibleValueSource.withEnumValues(enumValues);
       return (possibleValueSource);

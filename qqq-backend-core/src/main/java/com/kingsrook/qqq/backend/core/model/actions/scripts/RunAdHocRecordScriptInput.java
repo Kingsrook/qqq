@@ -23,9 +23,11 @@ package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 
 
@@ -36,7 +38,8 @@ public class RunAdHocRecordScriptInput extends AbstractTableActionInput
 {
    private AdHocScriptCodeReference      codeReference;
    private Map<String, Serializable>     inputValues;
-   private Serializable                  recordPrimaryKey;
+   private List<Serializable>            recordPrimaryKeyList; // can either supply recordList, or recordPrimaryKeyList
+   private List<QRecord>                 recordList;
    private String                        tableName;
    private QCodeExecutionLoggerInterface logger;
 
@@ -208,37 +211,6 @@ public class RunAdHocRecordScriptInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for recordPrimaryKey
-    *******************************************************************************/
-   public Serializable getRecordPrimaryKey()
-   {
-      return (this.recordPrimaryKey);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for recordPrimaryKey
-    *******************************************************************************/
-   public void setRecordPrimaryKey(Serializable recordPrimaryKey)
-   {
-      this.recordPrimaryKey = recordPrimaryKey;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for recordPrimaryKey
-    *******************************************************************************/
-   public RunAdHocRecordScriptInput withRecordPrimaryKey(Serializable recordPrimaryKey)
-   {
-      this.recordPrimaryKey = recordPrimaryKey;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for tableName
     *******************************************************************************/
    public String getTableName()
@@ -264,6 +236,68 @@ public class RunAdHocRecordScriptInput extends AbstractTableActionInput
    public RunAdHocRecordScriptInput withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordList
+    *******************************************************************************/
+   public List<QRecord> getRecordList()
+   {
+      return (this.recordList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordList
+    *******************************************************************************/
+   public void setRecordList(List<QRecord> recordList)
+   {
+      this.recordList = recordList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordList
+    *******************************************************************************/
+   public RunAdHocRecordScriptInput withRecordList(List<QRecord> recordList)
+   {
+      this.recordList = recordList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordPrimaryKeyList
+    *******************************************************************************/
+   public List<Serializable> getRecordPrimaryKeyList()
+   {
+      return (this.recordPrimaryKeyList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordPrimaryKeyList
+    *******************************************************************************/
+   public void setRecordPrimaryKeyList(List<Serializable> recordPrimaryKeyList)
+   {
+      this.recordPrimaryKeyList = recordPrimaryKeyList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordPrimaryKeyList
+    *******************************************************************************/
+   public RunAdHocRecordScriptInput withRecordPrimaryKeyList(List<Serializable> recordPrimaryKeyList)
+   {
+      this.recordPrimaryKeyList = recordPrimaryKeyList;
       return (this);
    }
 

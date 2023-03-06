@@ -22,12 +22,22 @@
 package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
 public class AdHocScriptCodeReference extends QCodeReference
 {
+   ////////////////////////////////////////////////////////////////////////////////
+   // can supply scriptId (in which case, current revisionId will be looked up), //
+   // or revisionId (in which case, record will be looked up)                    //
+   // or, the record.                                                            //
+   ////////////////////////////////////////////////////////////////////////////////
    private Integer scriptId;
+   private Integer scriptRevisionId;
+   private QRecord scriptRevisionRecord;
 
 
 
@@ -57,6 +67,68 @@ public class AdHocScriptCodeReference extends QCodeReference
    public AdHocScriptCodeReference withScriptId(Integer scriptId)
    {
       this.scriptId = scriptId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptRevisionId
+    *******************************************************************************/
+   public Integer getScriptRevisionId()
+   {
+      return (this.scriptRevisionId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptRevisionId
+    *******************************************************************************/
+   public void setScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptRevisionId
+    *******************************************************************************/
+   public AdHocScriptCodeReference withScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptRevisionRecord
+    *******************************************************************************/
+   public QRecord getScriptRevisionRecord()
+   {
+      return (this.scriptRevisionRecord);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptRevisionRecord
+    *******************************************************************************/
+   public void setScriptRevisionRecord(QRecord scriptRevisionRecord)
+   {
+      this.scriptRevisionRecord = scriptRevisionRecord;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptRevisionRecord
+    *******************************************************************************/
+   public AdHocScriptCodeReference withScriptRevisionRecord(QRecord scriptRevisionRecord)
+   {
+      this.scriptRevisionRecord = scriptRevisionRecord;
       return (this);
    }
 

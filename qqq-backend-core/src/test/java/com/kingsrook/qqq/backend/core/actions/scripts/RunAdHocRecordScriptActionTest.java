@@ -67,7 +67,7 @@ class RunAdHocRecordScriptActionTest extends BaseTest
          """);
 
       RunAdHocRecordScriptInput runAdHocRecordScriptInput = new RunAdHocRecordScriptInput();
-      runAdHocRecordScriptInput.setRecordPrimaryKey(1);
+      runAdHocRecordScriptInput.setRecordPrimaryKeyList(List.of(1));
       runAdHocRecordScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
       runAdHocRecordScriptInput.setLogger(new Log4jCodeExecutionLogger());
