@@ -48,10 +48,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Action to store a new version of a script, associated with a record.
- **
- ** If there's never been a script assigned to the record (for the specified field),
- ** then a new Script record is first inserted.
+ ** Action to store a new version (revision) of a script.
  **
  ** The script referenced by the record is always updated to point at the new
  ** scriptRevision record that is inserted.
@@ -67,33 +64,6 @@ public class StoreScriptRevisionProcessStep implements BackendStep
    public void run(RunBackendStepInput input, RunBackendStepOutput output) throws QException
    {
       ActionHelper.validateSession(input);
-
-      /*
-      QTableMetaData             table               = input.getTable();
-      Optional<AssociatedScript> optAssociatedScript = table.getAssociatedScripts().stream().filter(as -> as.getFieldName().equals(input.getFieldName())).findFirst();
-      if(optAssociatedScript.isEmpty())
-      {
-         throw (new QException("Field to update associated script for is not an associated script field."));
-      }
-      AssociatedScript associatedScript = optAssociatedScript.get();
-
-      /////////////////////////////////////////////////////////////
-      // get the record that the script is to be associated with //
-      /////////////////////////////////////////////////////////////
-      QRecord associatedRecord;
-      {
-         GetInput getInput = new GetInput();
-         getInput.setTableName(input.getTableName());
-         getInput.setPrimaryKey(input.getRecordPrimaryKey());
-         getInput.setShouldGenerateDisplayValues(true);
-         GetOutput getOutput = new GetAction().execute(getInput);
-         associatedRecord = getOutput.getRecord();
-      }
-      if(associatedRecord == null)
-      {
-         throw (new QException("Record to associated with script was not found."));
-      }
-      */
 
       //////////////////////////////////////////////////////////////////
       // check if there's currently a script referenced by the record //
