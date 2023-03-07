@@ -44,7 +44,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 /*******************************************************************************
@@ -58,47 +60,46 @@ class RunAdHocRecordScriptActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testScriptRevisionNotFound() throws QException
+   {
+      setupInstance();
+
+      RunAdHocRecordScriptInput runAdHocRecordScriptInput = new RunAdHocRecordScriptInput();
+      runAdHocRecordScriptInput.setRecordPrimaryKeyList(List.of(1));
+      runAdHocRecordScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionId(-1));
+      runAdHocRecordScriptInput.setLogger(new Log4jCodeExecutionLogger());
+
+      RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
+
+      assertThatThrownBy(() -> new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput))
+         .isInstanceOf(QException.class)
+         .hasMessageContaining("Script revision was not found");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   @Disabled("Doesn't work, because javascript module not available to backend-core")
    void test() throws QException
    {
       setupInstance();
 
-      Integer scriptId = insertScript("""
+      Integer scriptRevisionId = insertScriptRevision("""
          return "Hello";
          """);
 
       RunAdHocRecordScriptInput runAdHocRecordScriptInput = new RunAdHocRecordScriptInput();
       runAdHocRecordScriptInput.setRecordPrimaryKeyList(List.of(1));
       runAdHocRecordScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-      runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
+      runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionId(scriptRevisionId));
       runAdHocRecordScriptInput.setLogger(new Log4jCodeExecutionLogger());
 
       RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
       new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
-
-      /*
-      RunAssociatedScriptInput runAssociatedScriptInput = new RunAssociatedScriptInput();
-      runAssociatedScriptInput.setInputValues(Map.of());
-      runAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-      runAssociatedScriptInput.setCodeReference(new AssociatedScriptCodeReference()
-         .withRecordTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withRecordPrimaryKey(1)
-         .withFieldName("testScriptId")
-      );
-      RunAssociatedScriptOutput runAssociatedScriptOutput = new RunAssociatedScriptOutput();
-
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // ok - since the core module doesn't have the javascript language support module as a dep, this action will fail - but at least we can confirm it fails with this specific exception! //
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      assertThatThrownBy(() -> new RunAssociatedScriptAction().run(runAssociatedScriptInput, runAssociatedScriptOutput))
-         .isInstanceOf(QException.class)
-         .hasRootCauseInstanceOf(ClassNotFoundException.class)
-         .hasRootCauseMessage("com.kingsrook.qqq.languages.javascript.QJavaScriptExecutor");
-
-      /////////////////////////////////////
-      // assert that a log was generated //
-      /////////////////////////////////////
-      assertEquals(1, TestUtils.queryTable(ScriptLog.TABLE_NAME).size());
-      */
    }
 
 
@@ -133,7 +134,7 @@ class RunAdHocRecordScriptActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Integer insertScript(String code) throws QException
+   private Integer insertScriptRevision(String code) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName("script");
@@ -152,6 +153,6 @@ class RunAdHocRecordScriptActionTest extends BaseTest
       updateInput.setRecords(List.of(new QRecord().withValue("id", scriptId).withValue("currentScriptRevisionId", scriptRevisionId)));
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
 
-      return (scriptId);
+      return (scriptRevisionId);
    }
 }

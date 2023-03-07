@@ -259,24 +259,27 @@ public class PollingAutomationPerTableRunner implements Runnable
       /////////////////////////////////////////////////
       // next add any tableTriggers, defined in data //
       /////////////////////////////////////////////////
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(TableTrigger.TABLE_NAME);
-      queryInput.setFilter(new QQueryFilter(
-         new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, table.getName()),
-         new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
-      ));
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      for(QRecord record : queryOutput.getRecords())
+      if(QContext.getQInstance().getTable(TableTrigger.TABLE_NAME) != null)
       {
-         // todo - get filter if there is/was one
-         rs.add(new TableAutomationAction()
-            .withName("Script:" + record.getValue("scriptId"))
-            .withFilter(null)
-            .withTriggerEvent(triggerEvent)
-            .withPriority(record.getValueInteger("priority"))
-            .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
-            .withValues(MapBuilder.of("scriptId", record.getValue("scriptId")))
-         );
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TableTrigger.TABLE_NAME);
+         queryInput.setFilter(new QQueryFilter(
+            new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, table.getName()),
+            new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
+         ));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         for(QRecord record : queryOutput.getRecords())
+         {
+            // todo - get filter if there is/was one
+            rs.add(new TableAutomationAction()
+               .withName("Script:" + record.getValue("scriptId"))
+               .withFilter(null)
+               .withTriggerEvent(triggerEvent)
+               .withPriority(record.getValueInteger("priority"))
+               .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
+               .withValues(MapBuilder.of("scriptId", record.getValue("scriptId")))
+            );
+         }
       }
 
       rs.sort(Comparator.comparing(taa -> Objects.requireNonNullElse(taa.getPriority(), Integer.MAX_VALUE)));

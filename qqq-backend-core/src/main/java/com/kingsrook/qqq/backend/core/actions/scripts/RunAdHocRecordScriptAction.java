@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -206,55 +205,6 @@ public class RunAdHocRecordScriptAction
       }
 
       throw (new QException("Code reference did not contain a scriptRevision, scriptRevisionId, or scriptId"));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private ScriptRevision getCurrentScriptRevision(RunAdHocRecordScriptInput input, Serializable scriptRevisionId) throws QException
-   {
-      GetInput getInput = new GetInput();
-      getInput.setTableName("scriptRevision");
-      getInput.setPrimaryKey(scriptRevisionId);
-      GetOutput getOutput = new GetAction().execute(getInput);
-      if(getOutput.getRecord() == null)
-      {
-         /* todo
-         throw (new QNotFoundException("The current revision of the script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey() + "]["
-            + input.getCodeReference().getFieldName() + "] (scriptRevisionId=" + scriptRevisionId + ") was not found."));
-
-          */
-         throw (new IllegalStateException("todo"));
-      }
-
-      return (new ScriptRevision(getOutput.getRecord()));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private Script getScript(RunAdHocRecordScriptInput input, Serializable scriptId) throws QException
-   {
-      GetInput getInput = new GetInput();
-      getInput.setTableName("script");
-      getInput.setPrimaryKey(scriptId);
-      GetOutput getOutput = new GetAction().execute(getInput);
-
-      if(getOutput.getRecord() == null)
-      {
-         /*
-         throw (new QNotFoundException("The script for record [" + input.getCodeReference().getRecordTable() + "][" + input.getCodeReference().getRecordPrimaryKey() + "]["
-            + input.getCodeReference().getFieldName() + "] (script id=" + scriptId + ") was not found."));
-
-          */
-         throw (new IllegalStateException("todo"));
-      }
-
-      return (new Script(getOutput.getRecord()));
    }
 
 }
