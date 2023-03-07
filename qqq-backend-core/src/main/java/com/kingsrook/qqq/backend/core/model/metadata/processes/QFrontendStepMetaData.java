@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
@@ -318,6 +319,25 @@ public class QFrontendStepMetaData extends QStepMetaData
    {
       setLabel(label);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a list of all of the input fields used by this function
+    *******************************************************************************/
+   @JsonIgnore // because this is a computed property - we don't want it in our json.
+   @Override
+   public List<QFieldMetaData> getInputFields()
+   {
+      List<QFieldMetaData> rs = new ArrayList<>();
+
+      if(formFields != null)
+      {
+         rs.addAll(formFields);
+      }
+
+      return (rs);
    }
 
 }
