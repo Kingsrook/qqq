@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.RunAdHocRecordScriptAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -40,17 +42,17 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
-import com.kingsrook.qqq.backend.core.model.scripts.ScriptType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunRecordScriptsAutomationHandler extends RecordAutomationHandler
+public class RunRecordScriptAutomationHandler extends RecordAutomationHandler
 {
-   private static final QLogger LOG = QLogger.getLogger(RunRecordScriptsAutomationHandler.class);
+   private static final QLogger LOG = QLogger.getLogger(RunRecordScriptAutomationHandler.class);
 
 
 
@@ -60,30 +62,34 @@ public class RunRecordScriptsAutomationHandler extends RecordAutomationHandler
    @Override
    public void execute(RecordAutomationInput recordAutomationInput) throws QException
    {
-      String     tableName  = recordAutomationInput.getTableName();
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(ScriptRevision.TABLE_NAME);
-      queryInput.setFilter(new QQueryFilter(
-         new QFilterCriteria("script.tableName", QCriteriaOperator.EQUALS, tableName),
-         new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, "Record Script") // todo... no.  something about post-insert/update?
-      ));
-      queryInput.withQueryJoin(new QueryJoin(Script.TABLE_NAME).withBaseTableOrAlias(ScriptRevision.TABLE_NAME).withJoinMetaData(QContext.getQInstance().getJoin("currentScriptRevision")));
-      queryInput.withQueryJoin(new QueryJoin(ScriptType.TABLE_NAME).withBaseTableOrAlias(Script.TABLE_NAME));
+      String                    tableName = recordAutomationInput.getTableName();
+      Map<String, Serializable> values    = recordAutomationInput.getAction().getValues();
+      Integer                   scriptId  = ValueUtils.getValueAsInteger(values.get("scriptId"));
 
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      for(QRecord scriptRevision : CollectionUtils.nonNullList(queryOutput.getRecords()))
+      if(scriptId == null)
       {
-         // todo - refresh the records if more than 1 script
-
-         LOG.info("Running script against records", logPair("scriptRevisionId", scriptRevision.getValue("id")), logPair("scriptId", scriptRevision.getValue("scriptIdd")));
-         RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
-         input.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision));
-         input.setTableName(tableName);
-         input.setRecordList(recordAutomationInput.getRecordList());
-         RunAdHocRecordScriptOutput output = new RunAdHocRecordScriptOutput();
-         new RunAdHocRecordScriptAction().run(input, output);
+         throw (new QException("ScriptId was not provided in values map for record automations on table: " + tableName));
       }
 
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(ScriptRevision.TABLE_NAME);
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("scriptId", QCriteriaOperator.EQUALS, scriptId)));
+      queryInput.withQueryJoin(new QueryJoin(Script.TABLE_NAME).withBaseTableOrAlias(ScriptRevision.TABLE_NAME).withJoinMetaData(QContext.getQInstance().getJoin("currentScriptRevision")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      if(CollectionUtils.nullSafeIsEmpty(queryOutput.getRecords()))
+      {
+         throw (new QException("Could not find current revision for scriptId: " + scriptId + " on table " + tableName));
+      }
+
+      QRecord scriptRevision = queryOutput.getRecords().get(0);
+      LOG.info("Running script against records", logPair("scriptRevisionId", scriptRevision.getValue("id")), logPair("scriptId", scriptRevision.getValue("scriptIdd")));
+
+      RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
+      input.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision));
+      input.setTableName(tableName);
+      input.setRecordList(recordAutomationInput.getRecordList());
+      RunAdHocRecordScriptOutput output = new RunAdHocRecordScriptOutput();
+      new RunAdHocRecordScriptAction().run(input, output);
    }
 
 }
