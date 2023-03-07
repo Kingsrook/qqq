@@ -45,9 +45,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
-
- $api.query("order", null);
- $api.query($utils.newQueryInput().withTable("order").withLimit(1).withShouldGenerateDisplayValues())
+ ** Object made available to scripts for access to qqq api (e.g., query, insert,
+ ** etc, plus object constructors).
  *******************************************************************************/
 public class ScriptApi implements Serializable
 {

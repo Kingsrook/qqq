@@ -66,6 +66,10 @@ import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScr
  *******************************************************************************/
 public class ScriptsMetaDataProvider
 {
+   public static final String RUN_RECORD_SCRIPT_PROCESS_NAME     = "runRecordScript";
+   public static final String STORE_SCRIPT_REVISION_PROCESS_NAME = "storeScriptRevision";
+
+
 
    /*******************************************************************************
     **
@@ -89,7 +93,7 @@ public class ScriptsMetaDataProvider
    private QProcessMetaData defineStoreScriptRevisionProcess()
    {
       return (new QProcessMetaData()
-         .withName("storeScriptRevision")
+         .withName(STORE_SCRIPT_REVISION_PROCESS_NAME)
          .withStepList(List.of(
             new QBackendStepMetaData()
                .withName("main")
@@ -105,7 +109,7 @@ public class ScriptsMetaDataProvider
    private QProcessMetaData defineRunRecordScriptProcess()
    {
       QProcessMetaData processMetaData = StreamedETLWithFrontendProcess.processMetaDataBuilder()
-         .withName("runRecordScript")
+         .withName(RUN_RECORD_SCRIPT_PROCESS_NAME)
          .withLabel("Run Script")
          .withIcon(new QIcon().withName("data_object"))
          .withSupportsFullValidation(false)
