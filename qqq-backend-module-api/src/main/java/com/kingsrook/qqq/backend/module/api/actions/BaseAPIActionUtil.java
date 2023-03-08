@@ -450,7 +450,20 @@ public class BaseAPIActionUtil
             jsonObject = JsonUtils.toJSONObject(resultString);
             if(jsonObject.has(tablePath))
             {
-               resultList = jsonObject.getJSONArray(getBackendDetails(table).getTablePath());
+               Object o = jsonObject.get(tablePath);
+               if(o instanceof JSONArray jsonArray)
+               {
+                  resultList = jsonArray;
+               }
+               else if(o instanceof JSONObject recordJsonObject)
+               {
+                  resultList = new JSONArray();
+                  resultList.put(recordJsonObject);
+               }
+               else
+               {
+                  throw (new QException("Unrecognized object until tablePath: " + o));
+               }
             }
          }
 
