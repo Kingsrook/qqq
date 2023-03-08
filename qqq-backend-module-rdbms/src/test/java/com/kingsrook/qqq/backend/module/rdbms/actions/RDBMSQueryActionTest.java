@@ -946,7 +946,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          new QueryJoin("shipToPerson", TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("shipToIdCard").withSelect(true)
       ));
       assertThatThrownBy(() -> new QueryAction().execute(queryInput))
-         .hasRootCauseMessage("Could not find a table or alias [personTable] in query.  May need to be more specific setting up QueryJoins.");
+         .rootCause()
+         .hasMessageContaining("Could not find a join between tables [order][personalIdCard]");
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // ensure we throw if either of the ambiguous joins from person to id-card doesn't specify its left-table //
@@ -958,7 +959,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("shipToIdCard").withSelect(true)
       ));
       assertThatThrownBy(() -> new QueryAction().execute(queryInput))
-         .hasRootCauseMessage("Could not find a table or alias [personTable] in query.  May need to be more specific setting up QueryJoins.");
+         .rootCause()
+         .hasMessageContaining("Could not find a join between tables [order][personalIdCard]");
 
       ////////////////////////////////////////////////////////////////////////
       // ensure we throw if we have a bogus alias name given as a left-side //
