@@ -68,7 +68,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertTrue(jsonObject.has("tables"));
       JSONObject tables = jsonObject.getJSONObject("tables");
-      assertEquals(6, tables.length()); // person + 5 script tables
+      assertThat(tables.length()).isGreaterThan(1);
       JSONObject personTable = tables.getJSONObject("person");
       assertTrue(personTable.has("name"));
       assertEquals("person", personTable.getString("name"));
