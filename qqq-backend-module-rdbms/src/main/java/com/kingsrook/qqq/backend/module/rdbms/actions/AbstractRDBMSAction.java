@@ -957,8 +957,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          {
             params = params.size() <= 100 ? params : params.subList(0, 99);
 
-            LOG.debug("PARAMS: " + params);
-            if(System.getProperty("qqq.rdbms.logSQL.output", "logger").equals("system.out"))
+            if(System.getProperty("qqq.rdbms.logSQL.output", "logger").equalsIgnoreCase("system.out"))
             {
                System.out.println("SQL: " + sql);
                System.out.println("PARAMS: " + params);
