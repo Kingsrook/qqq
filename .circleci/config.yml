@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs:
-  slack: circleci/slack@4.10.1
   localstack: localstack/platform@1.0
 
 commands:
@@ -64,7 +63,7 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
-      - find_untested_classes:
+      - run:
           name: Find Un-tested Classes
           command: |
             for i in */target/site/jacoco/*/index.html; do html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1; done
@@ -95,8 +94,6 @@ jobs:
       - localstack/startup
       - install_java17
       - mvn_verify
-      - slack/notify:
-          event: fail
 
   mvn_deploy:
     executor: localstack/default
@@ -105,14 +102,12 @@ jobs:
       - install_java17
       - mvn_verify
       - mvn_jar_deploy
-      - slack/notify:
-          event: always
 
 workflows:
   test_only:
     jobs:
       - mvn_test:
-          context: [ qqq-maven-registry-credentials, kingsrook-slack, build-qqq-sample-app ]
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
               ignore: /dev/
@@ -122,7 +117,7 @@ workflows:
   deploy:
     jobs:
       - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, kingsrook-slack, build-qqq-sample-app ]
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
               only: /dev/
