@@ -153,7 +153,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                   continue;
                }
 
-               logSQL(sql, params);
+               Long mark = System.currentTimeMillis();
 
                ///////////////////////////////////////////////////////////
                // execute the insert, then foreach record in the input, //
@@ -175,6 +175,8 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                      outputRecord.setValue(table.getPrimaryKeyField(), id);
                   }
                }
+
+               logSQL(sql, params, mark);
             }
          }
          finally

@@ -87,11 +87,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          // todo sql customization - can edit sql and/or param list
 
-         logSQL(sql, params);
-
          AggregateOutput       rs      = new AggregateOutput();
          List<AggregateResult> results = new ArrayList<>();
          rs.setResults(results);
+
+         Long mark = System.currentTimeMillis();
 
          try(Connection connection = getConnection(aggregateInput))
          {
@@ -126,6 +126,8 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
             }), params);
          }
+
+         logSQL(sql, params, mark);
 
          return rs;
       }

@@ -82,7 +82,9 @@ INSERT INTO carrier (id, name, company_code, service_level) VALUES (11, 'GSO', '
 DROP TABLE IF EXISTS order_line;
 DROP TABLE IF EXISTS item;
 DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS warehouse_store_int;
 DROP TABLE IF EXISTS store;
+DROP TABLE IF EXISTS warehouse;
 
 CREATE TABLE store
 (
@@ -152,3 +154,26 @@ INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (5, 'QRU-1', 2
 INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (6, 'QD-1', 3, 1);
 INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (7, 'QD-1', 3, 2);
 INSERT INTO order_line (order_id, sku, store_id, quantity) VALUES (8, 'QD-1', 3, 3);
+
+
+CREATE TABLE warehouse
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   name VARCHAR(80)
+);
+
+INSERT INTO warehouse (name) VALUES ('Patterson');
+INSERT INTO warehouse (name) VALUES ('Edison');
+INSERT INTO warehouse (name) VALUES ('Stockton');
+INSERT INTO warehouse (name) VALUES ('Somewhere in Texas');
+
+CREATE TABLE warehouse_store_int
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   warehouse_id INT REFERENCES `warehouse`,
+   store_id INT REFERENCES `store`
+);
+
+INSERT INTO warehouse_store_int (warehouse_id, store_id) VALUES (1, 1);
+INSERT INTO warehouse_store_int (warehouse_id, store_id) VALUES (1, 2);
+INSERT INTO warehouse_store_int (warehouse_id, store_id) VALUES (1, 3);

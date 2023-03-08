@@ -1381,4 +1381,20 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          .allMatch(r -> r.getValueInteger("storeId").equals(1));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityWithLockFromJoinTableWhereTheKeyIsOnTheManySide() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_WAREHOUSE);
+
+      assertThat(new QueryAction().execute(queryInput).getRecords())
+         .hasSize(1);
+   }
+
 }

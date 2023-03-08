@@ -200,4 +200,19 @@ public class RDBMSCountActionTest extends RDBMSActionTest
       assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(5);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityWithLockFromJoinTableWhereTheKeyIsOnTheManySide() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      CountInput countInput = new CountInput();
+      countInput.setTableName(TestUtils.TABLE_NAME_WAREHOUSE);
+
+      assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(1);
+   }
+
 }

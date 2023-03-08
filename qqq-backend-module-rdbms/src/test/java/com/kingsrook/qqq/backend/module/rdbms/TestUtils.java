@@ -55,12 +55,14 @@ public class TestUtils
 {
    public static final String DEFAULT_BACKEND_NAME = "default";
 
-   public static final String TABLE_NAME_PERSON           = "personTable";
-   public static final String TABLE_NAME_PERSONAL_ID_CARD = "personalIdCard";
-   public static final String TABLE_NAME_STORE            = "store";
-   public static final String TABLE_NAME_ORDER            = "order";
-   public static final String TABLE_NAME_ITEM             = "item";
-   public static final String TABLE_NAME_ORDER_LINE       = "orderLine";
+   public static final String TABLE_NAME_PERSON              = "personTable";
+   public static final String TABLE_NAME_PERSONAL_ID_CARD    = "personalIdCard";
+   public static final String TABLE_NAME_STORE               = "store";
+   public static final String TABLE_NAME_ORDER               = "order";
+   public static final String TABLE_NAME_ITEM                = "item";
+   public static final String TABLE_NAME_ORDER_LINE          = "orderLine";
+   public static final String TABLE_NAME_WAREHOUSE           = "warehouse";
+   public static final String TABLE_NAME_WAREHOUSE_STORE_INT = "warehouseStoreInt";
 
    public static final String SECURITY_KEY_STORE_ALL_ACCESS = "storeAllAccess";
 
@@ -246,6 +248,28 @@ public class TestUtils
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("quantity", QFieldType.INTEGER))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_WAREHOUSE_STORE_INT, "warehouse_store_int")
+         .withField(new QFieldMetaData("warehouseId", QFieldType.INTEGER).withBackendName("warehouse_id"))
+         .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id"))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_WAREHOUSE, "warehouse")
+         .withRecordSecurityLock(new RecordSecurityLock()
+            .withSecurityKeyType(TABLE_NAME_STORE)
+            .withFieldName(TABLE_NAME_WAREHOUSE_STORE_INT + ".storeId")
+            .withJoinNameChain(List.of(QJoinMetaData.makeInferredJoinName(TestUtils.TABLE_NAME_WAREHOUSE, TestUtils.TABLE_NAME_WAREHOUSE_STORE_INT)))
+         )
+         .withField(new QFieldMetaData("name", QFieldType.STRING).withBackendName("name"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(TestUtils.TABLE_NAME_WAREHOUSE)
+         .withRightTable(TestUtils.TABLE_NAME_WAREHOUSE_STORE_INT)
+         .withInferredName()
+         .withJoinOn(new JoinOn("id", "warehouseId"))
       );
 
       qInstance.addJoin(new QJoinMetaData()

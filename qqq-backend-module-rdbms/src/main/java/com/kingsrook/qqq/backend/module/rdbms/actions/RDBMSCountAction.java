@@ -56,9 +56,14 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
       {
          QTableMetaData table = countInput.getTable();
 
-         JoinsContext joinsContext = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), countInput.getFilter());
+         JoinsContext                          joinsContext             = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), countInput.getFilter());
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(table.getPrimaryKeyField());
 
-         String sql = "SELECT count(*) as record_count FROM "
+         boolean requiresDistinct = doesSelectClauseRequireDistinct(table);
+         String  primaryKeyColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(fieldAndTableNameOrAlias.field().getName());
+         String  clausePrefix     = (requiresDistinct) ? "SELECT COUNT (DISTINCT " + primaryKeyColumn + ")" : "SELECT COUNT(*)";
+
+         String sql = clausePrefix + " AS record_count FROM "
             + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);
 
          QQueryFilter       filter = countInput.getFilter();
@@ -66,12 +71,11 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          sql += " WHERE " + makeWhereClause(countInput.getInstance(), countInput.getSession(), table, joinsContext, filter, params);
          // todo sql customization - can edit sql and/or param list
 
-         logSQL(sql, params);
-
          CountOutput rs = new CountOutput();
-
          try(Connection connection = getConnection(countInput))
          {
+            long mark = System.currentTimeMillis();
+
             QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
             {
                if(resultSet.next())
@@ -80,6 +84,8 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
                }
 
             }), params);
+
+            logSQL(sql, params, mark);
          }
 
          return rs;

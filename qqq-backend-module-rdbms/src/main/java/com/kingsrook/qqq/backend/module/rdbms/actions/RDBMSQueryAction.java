@@ -68,7 +68,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          QTableMetaData table     = queryInput.getTable();
          String         tableName = queryInput.getTableName();
 
-         StringBuilder sql = new StringBuilder("SELECT ").append(makeSelectClause(queryInput));
+         StringBuilder sql = new StringBuilder(makeSelectClause(queryInput));
 
          JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), queryInput.getFilter());
          sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext));
@@ -133,11 +133,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          try
          {
+            Long mark = System.currentTimeMillis();
+
             //////////////////////////////////////////////
             // execute the query - iterate over results //
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
-            logSQL(sql, params);
 
             PreparedStatement statement = createStatement(connection, sql.toString(), queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
@@ -168,6 +169,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
             }), params);
 
+            logSQL(sql, params, mark);
+
             return queryOutput;
          }
          finally
@@ -195,14 +198,17 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       QInstance       instance   = queryInput.getInstance();
       String          tableName  = queryInput.getTableName();
       List<QueryJoin> queryJoins = queryInput.getQueryJoins();
+      QTableMetaData  table      = instance.getTable(tableName);
 
-      QTableMetaData       table     = instance.getTable(tableName);
+      boolean requiresDistinct = doesSelectClauseRequireDistinct(table);
+      String  clausePrefix     = (requiresDistinct) ? "SELECT DISTINCT " : "SELECT ";
+
       List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
       String columns = fieldList.stream()
          .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
          .map(field -> escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field)))
          .collect(Collectors.joining(", "));
-      StringBuilder rs = new StringBuilder(columns);
+      StringBuilder rs = new StringBuilder(clausePrefix).append(columns);
 
       for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryJoins))
       {
