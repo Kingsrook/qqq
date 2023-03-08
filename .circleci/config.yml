@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs:
-  slack: circleci/slack@4.10.1
   localstack: localstack/platform@1.0
 
 commands:
@@ -12,8 +11,10 @@ commands:
     steps:
       - store_artifacts:
           path: << parameters.module >>/target/site/jacoco/index.html
+          when: always
       - store_artifacts:
           path: << parameters.module >>/target/site/jacoco/jacoco-resources
+          when: always
 
   install_java17:
     steps:
@@ -24,6 +25,11 @@ commands:
             sudo apt install -y openjdk-17-jdk
             sudo rm /etc/alternatives/java
             sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
+      - run:
+          name: Install html2text
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y html2text
 
   mvn_verify:
     steps:
@@ -59,6 +65,11 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
+      - run:
+          name: Find Un-tested Classes
+          command: |
+            set +o pipefail && for i in */target/site/jacoco/*/index.html; do html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1; done
+          when: always
       - save_cache:
           paths:
             - ~/.m2
@@ -86,8 +97,6 @@ jobs:
       - localstack/startup
       - install_java17
       - mvn_verify
-      - slack/notify:
-          event: fail
 
   mvn_deploy:
     executor: localstack/default
@@ -96,14 +105,12 @@ jobs:
       - install_java17
       - mvn_verify
       - mvn_jar_deploy
-      - slack/notify:
-          event: always
 
 workflows:
   test_only:
     jobs:
       - mvn_test:
-          context: [ qqq-maven-registry-credentials, kingsrook-slack, build-qqq-sample-app ]
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
               ignore: /dev/
@@ -113,7 +120,7 @@ workflows:
   deploy:
     jobs:
       - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, kingsrook-slack, build-qqq-sample-app ]
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
               only: /dev/

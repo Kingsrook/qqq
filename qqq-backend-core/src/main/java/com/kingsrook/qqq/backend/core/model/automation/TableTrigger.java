@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.scripts;
+package com.kingsrook.qqq.backend.core.model.automation;
 
 
 import java.time.Instant;
@@ -28,14 +28,15 @@ import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.scripts.Script;
 
 
 /*******************************************************************************
- **
+ ** Definition of in-app/user/data-defined triggers (aka, automations).
  *******************************************************************************/
-public class Script extends QRecordEntity
+public class TableTrigger extends QRecordEntity
 {
-   public static final String TABLE_NAME = "script";
+   public static final String TABLE_NAME = "tableTrigger";
 
    @QField(isEditable = false)
    private Integer id;
@@ -46,17 +47,23 @@ public class Script extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField()
-   private String name;
-
-   @QField(possibleValueSourceName = "scriptType")
-   private Integer scriptTypeId;
-
    @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
    private String tableName;
 
-   @QField(possibleValueSourceName = "scriptRevision")
-   private Integer currentScriptRevisionId;
+   @QField(/* todo possibleValueSourceName = */)
+   private Integer filterId;
+
+   @QField(possibleValueSourceName = Script.TABLE_NAME)
+   private Integer scriptId;
+
+   @QField()
+   private Integer priority;
+
+   @QField()
+   private Boolean postInsert;
+
+   @QField()
+   private Boolean postUpdate;
 
 
 
@@ -64,7 +71,7 @@ public class Script extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public Script()
+   public TableTrigger()
    {
    }
 
@@ -74,7 +81,7 @@ public class Script extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public Script(QRecord qRecord) throws QException
+   public TableTrigger(QRecord qRecord) throws QException
    {
       populateFromQRecord(qRecord);
    }
@@ -107,7 +114,7 @@ public class Script extends QRecordEntity
     ** Fluent setter for id
     **
     *******************************************************************************/
-   public Script withId(Integer id)
+   public TableTrigger withId(Integer id)
    {
       this.id = id;
       return (this);
@@ -141,7 +148,7 @@ public class Script extends QRecordEntity
     ** Fluent setter for createDate
     **
     *******************************************************************************/
-   public Script withCreateDate(Instant createDate)
+   public TableTrigger withCreateDate(Instant createDate)
    {
       this.createDate = createDate;
       return (this);
@@ -175,7 +182,7 @@ public class Script extends QRecordEntity
     ** Fluent setter for modifyDate
     **
     *******************************************************************************/
-   public Script withModifyDate(Instant modifyDate)
+   public TableTrigger withModifyDate(Instant modifyDate)
    {
       this.modifyDate = modifyDate;
       return (this);
@@ -184,119 +191,19 @@ public class Script extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for name
-    **
-    *******************************************************************************/
-   public String getName()
-   {
-      return name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for name
-    **
-    *******************************************************************************/
-   public void setName(String name)
-   {
-      this.name = name;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for name
-    **
-    *******************************************************************************/
-   public Script withName(String name)
-   {
-      this.name = name;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for scriptTypeId
-    **
-    *******************************************************************************/
-   public Integer getScriptTypeId()
-   {
-      return scriptTypeId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for scriptTypeId
-    **
-    *******************************************************************************/
-   public void setScriptTypeId(Integer scriptTypeId)
-   {
-      this.scriptTypeId = scriptTypeId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for scriptTypeId
-    **
-    *******************************************************************************/
-   public Script withScriptTypeId(Integer scriptTypeId)
-   {
-      this.scriptTypeId = scriptTypeId;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for currentScriptRevisionId
-    **
-    *******************************************************************************/
-   public Integer getCurrentScriptRevisionId()
-   {
-      return currentScriptRevisionId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for currentScriptRevisionId
-    **
-    *******************************************************************************/
-   public void setCurrentScriptRevisionId(Integer currentScriptRevisionId)
-   {
-      this.currentScriptRevisionId = currentScriptRevisionId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for currentScriptRevisionId
-    **
-    *******************************************************************************/
-   public Script withCurrentScriptRevisionId(Integer currentScriptRevisionId)
-   {
-      this.currentScriptRevisionId = currentScriptRevisionId;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for tableName
+    **
     *******************************************************************************/
    public String getTableName()
    {
-      return (this.tableName);
+      return tableName;
    }
 
 
 
    /*******************************************************************************
     ** Setter for tableName
+    **
     *******************************************************************************/
    public void setTableName(String tableName)
    {
@@ -307,10 +214,178 @@ public class Script extends QRecordEntity
 
    /*******************************************************************************
     ** Fluent setter for tableName
+    **
     *******************************************************************************/
-   public Script withTableName(String tableName)
+   public TableTrigger withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for filterId
+    **
+    *******************************************************************************/
+   public Integer getFilterId()
+   {
+      return filterId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for filterId
+    **
+    *******************************************************************************/
+   public void setFilterId(Integer filterId)
+   {
+      this.filterId = filterId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for filterId
+    **
+    *******************************************************************************/
+   public TableTrigger withFilterId(Integer filterId)
+   {
+      this.filterId = filterId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptId
+    **
+    *******************************************************************************/
+   public Integer getScriptId()
+   {
+      return scriptId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptId
+    **
+    *******************************************************************************/
+   public void setScriptId(Integer scriptId)
+   {
+      this.scriptId = scriptId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptId
+    **
+    *******************************************************************************/
+   public TableTrigger withScriptId(Integer scriptId)
+   {
+      this.scriptId = scriptId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for postInsert
+    **
+    *******************************************************************************/
+   public Boolean getPostInsert()
+   {
+      return postInsert;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for postInsert
+    **
+    *******************************************************************************/
+   public void setPostInsert(Boolean postInsert)
+   {
+      this.postInsert = postInsert;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for postInsert
+    **
+    *******************************************************************************/
+   public TableTrigger withPostInsert(Boolean postInsert)
+   {
+      this.postInsert = postInsert;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for postUpdate
+    **
+    *******************************************************************************/
+   public Boolean getPostUpdate()
+   {
+      return postUpdate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for postUpdate
+    **
+    *******************************************************************************/
+   public void setPostUpdate(Boolean postUpdate)
+   {
+      this.postUpdate = postUpdate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for postUpdate
+    **
+    *******************************************************************************/
+   public TableTrigger withPostUpdate(Boolean postUpdate)
+   {
+      this.postUpdate = postUpdate;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for priority
+    *******************************************************************************/
+   public Integer getPriority()
+   {
+      return (this.priority);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for priority
+    *******************************************************************************/
+   public void setPriority(Integer priority)
+   {
+      this.priority = priority;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for priority
+    *******************************************************************************/
+   public TableTrigger withPriority(Integer priority)
+   {
+      this.priority = priority;
       return (this);
    }
 

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,60 +19,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
+
+
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ ** Unit test for DefaultWidgetRenderer
  *******************************************************************************/
-public enum WidgetType
+class DefaultWidgetRendererTest
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PIE_CHART("pieChart"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STACKED_BAR_CHART("stackedBarChart"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap"),
-   DATA_BAG_VIEWER("dataBagViewer"),
-   SCRIPT_VIEWER("scriptViewer");
-
-
-   private final String type;
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   WidgetType(String type)
+   @Test
+   void test() throws QException
    {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for type
-    **
-    *******************************************************************************/
-   public String getType()
-   {
-      return type;
+      RenderWidgetInput input = new RenderWidgetInput();
+      input.setWidgetMetaData(new QWidgetMetaData().withType(WidgetType.PIE_CHART.getType()));
+      RenderWidgetOutput output = new DefaultWidgetRenderer().render(input);
+      assertEquals(WidgetType.PIE_CHART.getType(), output.getWidgetData().getType());
    }
 
 }

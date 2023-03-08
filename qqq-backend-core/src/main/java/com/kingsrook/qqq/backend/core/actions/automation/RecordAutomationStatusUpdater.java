@@ -25,10 +25,18 @@ package com.kingsrook.qqq.backend.core.actions.automation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.automation.TableTrigger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -119,14 +127,63 @@ public class RecordAutomationStatusUpdater
 
       if(automationStatus.equals(AutomationStatus.PENDING_INSERT_AUTOMATIONS))
       {
-         return tableActions.stream().noneMatch(a -> TriggerEvent.POST_INSERT.equals(a.getTriggerEvent()));
+         if(tableActions.stream().anyMatch(a -> TriggerEvent.POST_INSERT.equals(a.getTriggerEvent())))
+         {
+            return (false);
+         }
+         else if(areThereTableTriggersForTable(table, TriggerEvent.POST_INSERT))
+         {
+            return (false);
+         }
       }
       else if(automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
       {
-         return tableActions.stream().noneMatch(a -> TriggerEvent.POST_UPDATE.equals(a.getTriggerEvent()));
+         if(tableActions.stream().anyMatch(a -> TriggerEvent.POST_UPDATE.equals(a.getTriggerEvent())))
+         {
+            return (false);
+         }
+         else if(areThereTableTriggersForTable(table, TriggerEvent.POST_UPDATE))
+         {
+            return (false);
+         }
       }
 
-      return (false);
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean areThereTableTriggersForTable(QTableMetaData table, TriggerEvent triggerEvent)
+   {
+      if(QContext.getQInstance().getTable(TableTrigger.TABLE_NAME) == null)
+      {
+         return (false);
+      }
+
+      try
+      {
+         ///////////////////
+         // todo - cache? //
+         ///////////////////
+         CountInput countInput = new CountInput();
+         countInput.setTableName(TableTrigger.TABLE_NAME);
+         countInput.setFilter(new QQueryFilter(
+            new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, table.getName()),
+            new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
+         ));
+         CountOutput countOutput = new CountAction().execute(countInput);
+         return (countOutput.getCount() != null && countOutput.getCount() > 0);
+      }
+      catch(Exception e)
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the count query failed, we're a bit safer to err on the side of "yeah, there might be automations" //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
+      }
    }
 
 

@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables.automation;
 
 
+import java.io.Serializable;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
@@ -35,6 +37,8 @@ public class TableAutomationAction
    private TriggerEvent triggerEvent;
    private Integer      priority = 500;
    private QQueryFilter filter;
+
+   private Map<String, Serializable> values;
 
    ////////////////////////////////
    // mutually-exclusive options //
@@ -50,7 +54,8 @@ public class TableAutomationAction
    @Override
    public String toString()
    {
-      return "TableAutomationAction{name='" + name + "'}";}
+      return "TableAutomationAction{name='" + name + "'}";
+   }
 
 
 
@@ -73,6 +78,7 @@ public class TableAutomationAction
    {
       this.name = name;
    }
+
 
 
    /*******************************************************************************
@@ -108,6 +114,7 @@ public class TableAutomationAction
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for triggerEvent
     **
@@ -139,6 +146,7 @@ public class TableAutomationAction
    {
       this.priority = priority;
    }
+
 
 
    /*******************************************************************************
@@ -174,6 +182,7 @@ public class TableAutomationAction
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for filter
     **
@@ -205,6 +214,7 @@ public class TableAutomationAction
    {
       this.codeReference = codeReference;
    }
+
 
 
    /*******************************************************************************
@@ -240,6 +250,7 @@ public class TableAutomationAction
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for processName
     **
@@ -247,6 +258,37 @@ public class TableAutomationAction
    public TableAutomationAction withProcessName(String processName)
    {
       this.processName = processName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for values
+    *******************************************************************************/
+   public Map<String, Serializable> getValues()
+   {
+      return (this.values);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for values
+    *******************************************************************************/
+   public void setValues(Map<String, Serializable> values)
+   {
+      this.values = values;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for values
+    *******************************************************************************/
+   public TableAutomationAction withValues(Map<String, Serializable> values)
+   {
+      this.values = values;
       return (this);
    }
 

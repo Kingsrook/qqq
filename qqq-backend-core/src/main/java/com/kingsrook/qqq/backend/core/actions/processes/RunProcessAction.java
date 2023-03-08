@@ -63,6 +63,7 @@ import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.BooleanUtils;
 
@@ -339,10 +340,21 @@ public class RunProcessAction
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput(processState);
       runBackendStepInput.setProcessName(process.getName());
       runBackendStepInput.setStepName(backendStep.getName());
-      runBackendStepInput.setTableName(process.getTableName());
       runBackendStepInput.setCallback(runProcessInput.getCallback());
       runBackendStepInput.setFrontendStepBehavior(runProcessInput.getFrontendStepBehavior());
       runBackendStepInput.setAsyncJobCallback(runProcessInput.getAsyncJobCallback());
+
+      runBackendStepInput.setTableName(process.getTableName());
+      if(!StringUtils.hasContent(runBackendStepInput.getTableName()))
+      {
+         ////////////////////////////////////////////////////////////////
+         // help support generic (e.g., not tied-to-a-table) processes //
+         ////////////////////////////////////////////////////////////////
+         if(runProcessInput.getValue("tableName") != null)
+         {
+            runBackendStepInput.setTableName(ValueUtils.getValueAsString(runProcessInput.getValue("tableName")));
+         }
+      }
 
       ///////////////////////////////////////////////////////////////
       // if 'basepull' values are in the inputs, add to step input //

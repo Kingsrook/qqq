@@ -26,8 +26,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -363,4 +366,32 @@ public class QQueryFilter implements Serializable, Cloneable
 
       return (rs.toString());
    }
+
+
+
+   /*******************************************************************************
+    ** Replace any criteria values that look like ${input.XXX} with the value of XXX
+    ** from the supplied inputValues map.
+    *******************************************************************************/
+   public void interpretValues(Map<String, Serializable> inputValues)
+   {
+      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
+      variableInterpreter.addValueMap("input", inputValues);
+      for(QFilterCriteria criterion : getCriteria())
+      {
+         if(criterion.getValues() != null)
+         {
+            List<Serializable> newValues = new ArrayList<>();
+
+            for(Serializable value : criterion.getValues())
+            {
+               String       valueAsString    = ValueUtils.getValueAsString(value);
+               Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
+               newValues.add(interpretedValue);
+            }
+            criterion.setValues(newValues);
+         }
+      }
+   }
+
 }

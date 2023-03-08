@@ -337,4 +337,92 @@ public class QueryInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for filter
+    *******************************************************************************/
+   public QueryInput withFilter(QQueryFilter filter)
+   {
+      this.filter = filter;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for skip
+    *******************************************************************************/
+   public QueryInput withSkip(Integer skip)
+   {
+      this.skip = skip;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for limit
+    *******************************************************************************/
+   public QueryInput withLimit(Integer limit)
+   {
+      this.limit = limit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordPipe
+    *******************************************************************************/
+   public QueryInput withRecordPipe(RecordPipe recordPipe)
+   {
+      this.recordPipe = recordPipe;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldTranslatePossibleValues
+    *******************************************************************************/
+   public QueryInput withShouldTranslatePossibleValues(boolean shouldTranslatePossibleValues)
+   {
+      this.shouldTranslatePossibleValues = shouldTranslatePossibleValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldGenerateDisplayValues
+    *******************************************************************************/
+   public QueryInput withShouldGenerateDisplayValues(boolean shouldGenerateDisplayValues)
+   {
+      this.shouldGenerateDisplayValues = shouldGenerateDisplayValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldFetchHeavyFields
+    *******************************************************************************/
+   public QueryInput withShouldFetchHeavyFields(boolean shouldFetchHeavyFields)
+   {
+      this.shouldFetchHeavyFields = shouldFetchHeavyFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QueryInput withTableName(String tableName)
+   {
+      super.withTableName(tableName);
+      return (this);
+   }
 }

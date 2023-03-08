@@ -25,15 +25,16 @@ package com.kingsrook.qqq.backend.core.actions.automation.polling;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.automation.RunRecordScriptAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
@@ -49,9 +50,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
+import com.kingsrook.qqq.backend.core.model.automation.TableTrigger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
@@ -60,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEv
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -87,6 +92,11 @@ public class PollingAutomationPerTableRunner implements Runnable
       TriggerEvent.POST_UPDATE, AutomationStatus.PENDING_UPDATE_AUTOMATIONS
    );
 
+   private static Map<AutomationStatus, TriggerEvent> automationStatusTriggerEventMap = Map.of(
+      AutomationStatus.PENDING_INSERT_AUTOMATIONS, TriggerEvent.POST_INSERT,
+      AutomationStatus.PENDING_UPDATE_AUTOMATIONS, TriggerEvent.POST_UPDATE
+   );
+
    private static Map<AutomationStatus, AutomationStatus> pendingToRunningStatusMap = Map.of(
       AutomationStatus.PENDING_INSERT_AUTOMATIONS, AutomationStatus.RUNNING_INSERT_AUTOMATIONS,
       AutomationStatus.PENDING_UPDATE_AUTOMATIONS, AutomationStatus.RUNNING_UPDATE_AUTOMATIONS
@@ -102,51 +112,26 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public record TableActions(String tableName, AutomationStatus status, List<TableAutomationAction> actions)
+   public record TableActions(String tableName, AutomationStatus status)
    {
    }
 
 
 
    /*******************************************************************************
-    **
+    ** basically just get a list of tables which at least *could* have automations
+    ** run - either meta-data automations, or table-triggers (data/user defined).
     *******************************************************************************/
    public static List<TableActions> getTableActions(QInstance instance, String providerName)
    {
-      Map<String, Map<AutomationStatus, List<TableAutomationAction>>> workingTableActionMap = new HashMap<>();
-      List<TableActions>                                              tableActionList       = new ArrayList<>();
+      List<TableActions> tableActionList = new ArrayList<>();
 
-      //////////////////////////////////////////////////////////////////////
-      // todo - share logic like this among any automation implementation //
-      //////////////////////////////////////////////////////////////////////
       for(QTableMetaData table : instance.getTables().values())
       {
          if(table.getAutomationDetails() != null && providerName.equals(table.getAutomationDetails().getProviderName()))
          {
-            ///////////////////////////////////////////////////////////////////////////
-            // organize the table's actions by type                                  //
-            // todo - in future, need user-defined actions here too (and refreshed!) //
-            ///////////////////////////////////////////////////////////////////////////
-            for(TableAutomationAction action : table.getAutomationDetails().getActions())
-            {
-               AutomationStatus automationStatus = triggerEventAutomationStatusMap.get(action.getTriggerEvent());
-               workingTableActionMap.putIfAbsent(table.getName(), new HashMap<>());
-               workingTableActionMap.get(table.getName()).putIfAbsent(automationStatus, new ArrayList<>());
-               workingTableActionMap.get(table.getName()).get(automationStatus).add(action);
-            }
-
-            ////////////////////////////////////////////
-            // convert the map to tableAction records //
-            ////////////////////////////////////////////
-            for(Map.Entry<AutomationStatus, List<TableAutomationAction>> entry : workingTableActionMap.get(table.getName()).entrySet())
-            {
-               AutomationStatus            automationStatus = entry.getKey();
-               List<TableAutomationAction> actionList       = entry.getValue();
-
-               actionList.sort(Comparator.comparing(TableAutomationAction::getPriority));
-
-               tableActionList.add(new TableActions(table.getName(), automationStatus, actionList));
-            }
+            tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_INSERT_AUTOMATIONS));
+            tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS));
          }
       }
 
@@ -183,7 +168,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       try
       {
          QSession session = sessionSupplier != null ? sessionSupplier.get() : new QSession();
-         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), session, tableActions.status(), tableActions.actions());
+         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), session, tableActions.status());
       }
       catch(Exception e)
       {
@@ -201,8 +186,12 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     ** Query for and process records that have a PENDING_INSERT or PENDING_UPDATE status on a given table.
     *******************************************************************************/
-   public void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus, List<TableAutomationAction> actions) throws QException
+   public void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus) throws QException
    {
+      /////////////////////////////////////////////////////////////////////////
+      // get the actions to run against this table in this automation status //
+      /////////////////////////////////////////////////////////////////////////
+      List<TableAutomationAction> actions = getTableActions(table, automationStatus);
       if(CollectionUtils.nullSafeIsEmpty(actions))
       {
          return;
@@ -248,6 +237,59 @@ public class PollingAutomationPerTableRunner implements Runnable
 
 
    /*******************************************************************************
+    ** get the actions to run against a table in an automation status.  both from
+    ** metaData and tableTriggers/data.
+    *******************************************************************************/
+   private List<TableAutomationAction> getTableActions(QTableMetaData table, AutomationStatus automationStatus) throws QException
+   {
+      List<TableAutomationAction> rs           = new ArrayList<>();
+      TriggerEvent                triggerEvent = automationStatusTriggerEventMap.get(automationStatus);
+
+      ///////////////////////////////////////////////////////////
+      // start with any actions defined in the table meta data //
+      ///////////////////////////////////////////////////////////
+      for(TableAutomationAction action : table.getAutomationDetails().getActions())
+      {
+         if(action.getTriggerEvent().equals(triggerEvent))
+         {
+            rs.add(action);
+         }
+      }
+
+      /////////////////////////////////////////////////
+      // next add any tableTriggers, defined in data //
+      /////////////////////////////////////////////////
+      if(QContext.getQInstance().getTable(TableTrigger.TABLE_NAME) != null)
+      {
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TableTrigger.TABLE_NAME);
+         queryInput.setFilter(new QQueryFilter(
+            new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, table.getName()),
+            new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
+         ));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         for(QRecord record : queryOutput.getRecords())
+         {
+            // todo - get filter if there is/was one
+            rs.add(new TableAutomationAction()
+               .withName("Script:" + record.getValue("scriptId"))
+               .withFilter(null)
+               .withTriggerEvent(triggerEvent)
+               .withPriority(record.getValueInteger("priority"))
+               .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
+               .withValues(MapBuilder.of("scriptId", record.getValue("scriptId")))
+            );
+         }
+      }
+
+      rs.sort(Comparator.comparing(taa -> Objects.requireNonNullElse(taa.getPriority(), Integer.MAX_VALUE)));
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
     ** For a set of records that were found to be in a PENDING state - run all the
     ** table's actions against them - IF they are found to match the action's filter
     ** (assuming it has one - if it doesn't, then all records match).
@@ -275,12 +317,12 @@ public class PollingAutomationPerTableRunner implements Runnable
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(session, table, records, action);
+            List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(table, records, action);
             LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
             if(CollectionUtils.nullSafeHasContents(matchingQRecords))
             {
                LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
-               applyActionToMatchingRecords(instance, session, table, matchingQRecords, action);
+               applyActionToMatchingRecords(table, matchingQRecords, action);
             }
          }
          catch(Exception e)
@@ -317,7 +359,7 @@ public class PollingAutomationPerTableRunner implements Runnable
     ** but that will almost certainly give potentially different results than a true
     ** backend - e.g., just consider if the DB is case-sensitive for strings...
     *******************************************************************************/
-   private List<QRecord> getRecordsMatchingActionFilter(QSession session, QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws QException
+   private List<QRecord> getRecordsMatchingActionFilter(QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
@@ -359,7 +401,7 @@ public class PollingAutomationPerTableRunner implements Runnable
     ** Finally, actually run action code against a list of known matching records.
     ** todo not commit - move to somewhere genericer
     *******************************************************************************/
-   public static void applyActionToMatchingRecords(QInstance instance, QSession session, QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws Exception
+   public static void applyActionToMatchingRecords(QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws Exception
    {
       if(StringUtils.hasContent(action.getProcessName()))
       {
@@ -403,6 +445,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          RecordAutomationInput input = new RecordAutomationInput();
          input.setTableName(table.getName());
          input.setRecordList(records);
+         input.setAction(action);
 
          RecordAutomationHandler recordAutomationHandler = QCodeLoader.getRecordAutomationHandler(action);
          recordAutomationHandler.execute(input);

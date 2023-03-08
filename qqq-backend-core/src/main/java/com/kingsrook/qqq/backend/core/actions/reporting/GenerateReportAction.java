@@ -52,7 +52,6 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -69,7 +68,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
@@ -412,23 +410,7 @@ public class GenerateReportAction
          return;
       }
 
-      QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
-      variableInterpreter.addValueMap("input", reportInput.getInputValues());
-      for(QFilterCriteria criterion : queryFilter.getCriteria())
-      {
-         if(criterion.getValues() != null)
-         {
-            List<Serializable> newValues = new ArrayList<>();
-
-            for(Serializable value : criterion.getValues())
-            {
-               String       valueAsString    = ValueUtils.getValueAsString(value);
-               Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
-               newValues.add(interpretedValue);
-            }
-            criterion.setValues(newValues);
-         }
-      }
+      queryFilter.interpretValues(reportInput.getInputValues());
    }
 
 

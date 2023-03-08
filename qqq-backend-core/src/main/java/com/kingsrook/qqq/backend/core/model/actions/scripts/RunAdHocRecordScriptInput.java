@@ -19,267 +19,192 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.scripts;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
-import java.time.Instant;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.data.QField;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class Script extends QRecordEntity
+public class RunAdHocRecordScriptInput extends AbstractTableActionInput
 {
-   public static final String TABLE_NAME = "script";
+   private AdHocScriptCodeReference      codeReference;
+   private Map<String, Serializable>     inputValues;
+   private List<Serializable>            recordPrimaryKeyList; // can either supply recordList, or recordPrimaryKeyList
+   private List<QRecord>                 recordList;
+   private String                        tableName;
+   private QCodeExecutionLoggerInterface logger;
 
-   @QField(isEditable = false)
-   private Integer id;
+   private Serializable outputObject;
 
-   @QField(isEditable = false)
-   private Instant createDate;
-
-   @QField(isEditable = false)
-   private Instant modifyDate;
-
-   @QField()
-   private String name;
-
-   @QField(possibleValueSourceName = "scriptType")
-   private Integer scriptTypeId;
-
-   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
-   private String tableName;
-
-   @QField(possibleValueSourceName = "scriptRevision")
-   private Integer currentScriptRevisionId;
+   private Serializable scriptUtils;
 
 
 
    /*******************************************************************************
-    ** Constructor
     **
     *******************************************************************************/
-   public Script()
+   public RunAdHocRecordScriptInput()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
+    ** Getter for inputValues
     **
     *******************************************************************************/
-   public Script(QRecord qRecord) throws QException
+   public Map<String, Serializable> getInputValues()
    {
-      populateFromQRecord(qRecord);
+      return inputValues;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for id
+    ** Setter for inputValues
     **
     *******************************************************************************/
-   public Integer getId()
+   public void setInputValues(Map<String, Serializable> inputValues)
    {
-      return id;
+      this.inputValues = inputValues;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for id
+    ** Fluent setter for inputValues
     **
     *******************************************************************************/
-   public void setId(Integer id)
+   public RunAdHocRecordScriptInput withInputValues(Map<String, Serializable> inputValues)
    {
-      this.id = id;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for id
-    **
-    *******************************************************************************/
-   public Script withId(Integer id)
-   {
-      this.id = id;
+      this.inputValues = inputValues;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for createDate
+    ** Getter for outputObject
     **
     *******************************************************************************/
-   public Instant getCreateDate()
+   public Serializable getOutputObject()
    {
-      return createDate;
+      return outputObject;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for createDate
+    ** Setter for outputObject
     **
     *******************************************************************************/
-   public void setCreateDate(Instant createDate)
+   public void setOutputObject(Serializable outputObject)
    {
-      this.createDate = createDate;
+      this.outputObject = outputObject;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for createDate
+    ** Fluent setter for outputObject
     **
     *******************************************************************************/
-   public Script withCreateDate(Instant createDate)
+   public RunAdHocRecordScriptInput withOutputObject(Serializable outputObject)
    {
-      this.createDate = createDate;
+      this.outputObject = outputObject;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for modifyDate
-    **
+    ** Getter for logger
     *******************************************************************************/
-   public Instant getModifyDate()
+   public QCodeExecutionLoggerInterface getLogger()
    {
-      return modifyDate;
+      return (this.logger);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for modifyDate
-    **
+    ** Setter for logger
     *******************************************************************************/
-   public void setModifyDate(Instant modifyDate)
+   public void setLogger(QCodeExecutionLoggerInterface logger)
    {
-      this.modifyDate = modifyDate;
+      this.logger = logger;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for modifyDate
-    **
+    ** Fluent setter for logger
     *******************************************************************************/
-   public Script withModifyDate(Instant modifyDate)
+   public RunAdHocRecordScriptInput withLogger(QCodeExecutionLoggerInterface logger)
    {
-      this.modifyDate = modifyDate;
+      this.logger = logger;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for name
+    ** Getter for scriptUtils
     **
     *******************************************************************************/
-   public String getName()
+   public Serializable getScriptUtils()
    {
-      return name;
+      return scriptUtils;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
+    ** Setter for scriptUtils
     **
     *******************************************************************************/
-   public void setName(String name)
+   public void setScriptUtils(Serializable scriptUtils)
    {
-      this.name = name;
+      this.scriptUtils = scriptUtils;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
-    **
+    ** Getter for codeReference
     *******************************************************************************/
-   public Script withName(String name)
+   public AdHocScriptCodeReference getCodeReference()
    {
-      this.name = name;
-      return (this);
+      return (this.codeReference);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for scriptTypeId
-    **
+    ** Setter for codeReference
     *******************************************************************************/
-   public Integer getScriptTypeId()
+   public void setCodeReference(AdHocScriptCodeReference codeReference)
    {
-      return scriptTypeId;
+      this.codeReference = codeReference;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for scriptTypeId
-    **
+    ** Fluent setter for codeReference
     *******************************************************************************/
-   public void setScriptTypeId(Integer scriptTypeId)
+   public RunAdHocRecordScriptInput withCodeReference(AdHocScriptCodeReference codeReference)
    {
-      this.scriptTypeId = scriptTypeId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for scriptTypeId
-    **
-    *******************************************************************************/
-   public Script withScriptTypeId(Integer scriptTypeId)
-   {
-      this.scriptTypeId = scriptTypeId;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for currentScriptRevisionId
-    **
-    *******************************************************************************/
-   public Integer getCurrentScriptRevisionId()
-   {
-      return currentScriptRevisionId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for currentScriptRevisionId
-    **
-    *******************************************************************************/
-   public void setCurrentScriptRevisionId(Integer currentScriptRevisionId)
-   {
-      this.currentScriptRevisionId = currentScriptRevisionId;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for currentScriptRevisionId
-    **
-    *******************************************************************************/
-   public Script withCurrentScriptRevisionId(Integer currentScriptRevisionId)
-   {
-      this.currentScriptRevisionId = currentScriptRevisionId;
+      this.codeReference = codeReference;
       return (this);
    }
 
@@ -308,9 +233,71 @@ public class Script extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for tableName
     *******************************************************************************/
-   public Script withTableName(String tableName)
+   public RunAdHocRecordScriptInput withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordList
+    *******************************************************************************/
+   public List<QRecord> getRecordList()
+   {
+      return (this.recordList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordList
+    *******************************************************************************/
+   public void setRecordList(List<QRecord> recordList)
+   {
+      this.recordList = recordList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordList
+    *******************************************************************************/
+   public RunAdHocRecordScriptInput withRecordList(List<QRecord> recordList)
+   {
+      this.recordList = recordList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordPrimaryKeyList
+    *******************************************************************************/
+   public List<Serializable> getRecordPrimaryKeyList()
+   {
+      return (this.recordPrimaryKeyList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordPrimaryKeyList
+    *******************************************************************************/
+   public void setRecordPrimaryKeyList(List<Serializable> recordPrimaryKeyList)
+   {
+      this.recordPrimaryKeyList = recordPrimaryKeyList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordPrimaryKeyList
+    *******************************************************************************/
+   public RunAdHocRecordScriptInput withRecordPrimaryKeyList(List<Serializable> recordPrimaryKeyList)
+   {
+      this.recordPrimaryKeyList = recordPrimaryKeyList;
       return (this);
    }
 

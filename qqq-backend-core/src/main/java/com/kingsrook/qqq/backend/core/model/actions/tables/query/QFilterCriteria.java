@@ -208,6 +208,16 @@ public class QFilterCriteria implements Serializable, Cloneable
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QFilterCriteria withOperator(String operatorName)
+   {
+      return withOperator(QCriteriaOperator.valueOf(operatorName.toUpperCase()));
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for values
     **
     *******************************************************************************/

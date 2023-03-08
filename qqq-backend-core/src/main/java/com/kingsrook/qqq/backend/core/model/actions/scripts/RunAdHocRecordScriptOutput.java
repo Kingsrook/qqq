@@ -19,60 +19,52 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.actions.scripts;
+
+
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ **
  *******************************************************************************/
-public enum WidgetType
+public class RunAdHocRecordScriptOutput extends AbstractActionOutput
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PIE_CHART("pieChart"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STACKED_BAR_CHART("stackedBarChart"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap"),
-   DATA_BAG_VIEWER("dataBagViewer"),
-   SCRIPT_VIEWER("scriptViewer");
-
-
-   private final String type;
+   private Serializable output;
 
 
 
    /*******************************************************************************
+    ** Getter for output
     **
     *******************************************************************************/
-   WidgetType(String type)
+   public Serializable getOutput()
    {
-      this.type = type;
+      return output;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Setter for output
     **
     *******************************************************************************/
-   public String getType()
+   public void setOutput(Serializable output)
    {
-      return type;
+      this.output = output;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for output
+    **
+    *******************************************************************************/
+   public RunAdHocRecordScriptOutput withOutput(Serializable output)
+   {
+      this.output = output;
+      return (this);
    }
 
 }

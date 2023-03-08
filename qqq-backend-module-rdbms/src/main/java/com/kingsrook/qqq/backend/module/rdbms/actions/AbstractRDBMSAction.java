@@ -212,7 +212,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          // find the join in the instance, to set the 'on' clause  //
          ////////////////////////////////////////////////////////////
          List<String> joinClauseList = new ArrayList<>();
-         String       baseTableName  = joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias());
+         String       baseTableName  = Objects.requireNonNullElse(joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias()), tableName);
          QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
          {
             QJoinMetaData found = findJoinMetaData(instance, joinsContext, baseTableName, queryJoin.getJoinTable());
@@ -239,6 +239,13 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             }
 
             String joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
+            if(!joinMetaData.getLeftTable().equals(baseTableName))
+            {
+               joinOn = joinOn.flip();
+               QTableMetaData tmpTable = leftTable;
+               leftTable = rightTable;
+               rightTable = tmpTable;
+            }
 
             joinClauseList.add(escapeIdentifier(baseTableOrAlias)
                + "." + escapeIdentifier(getColumnName(leftTable.getField(joinOn.getLeftField())))

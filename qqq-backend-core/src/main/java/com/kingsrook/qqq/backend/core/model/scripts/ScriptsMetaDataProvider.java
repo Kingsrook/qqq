@@ -26,21 +26,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ChildRecordListRenderer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.automation.TableTrigger;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.NoopTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptLoadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScriptRevisionProcessStep;
 
 
 /*******************************************************************************
@@ -48,6 +69,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
  *******************************************************************************/
 public class ScriptsMetaDataProvider
 {
+   public static final String RUN_RECORD_SCRIPT_PROCESS_NAME     = "runRecordScript";
+   public static final String STORE_SCRIPT_REVISION_PROCESS_NAME = "storeScriptRevision";
+
+   public static final String SCRIPT_TYPE_NAME_RECORD = "Record Script";
+
+
 
    /*******************************************************************************
     **
@@ -58,6 +85,54 @@ public class ScriptsMetaDataProvider
       defineStandardScriptsPossibleValueSources(instance);
       defineStandardScriptsJoins(instance);
       defineStandardScriptsWidgets(instance);
+      instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
+      instance.addProcess(defineStoreScriptRevisionProcess());
+      instance.addProcess(defineRunRecordScriptProcess());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QProcessMetaData defineStoreScriptRevisionProcess()
+   {
+      return (new QProcessMetaData()
+         .withName(STORE_SCRIPT_REVISION_PROCESS_NAME)
+         .withStepList(List.of(
+            new QBackendStepMetaData()
+               .withName("main")
+               .withCode(new QCodeReference(StoreScriptRevisionProcessStep.class))
+         )));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QProcessMetaData defineRunRecordScriptProcess()
+   {
+      QProcessMetaData processMetaData = StreamedETLWithFrontendProcess.processMetaDataBuilder()
+         .withName(RUN_RECORD_SCRIPT_PROCESS_NAME)
+         .withLabel("Run Script")
+         .withIcon(new QIcon().withName("data_object"))
+         .withSupportsFullValidation(false)
+         .withExtractStepClass(RunRecordScriptExtractStep.class)
+         .withTransformStepClass(NoopTransformStep.class)
+         .withLoadStepClass(RunRecordScriptLoadStep.class)
+         .getProcessMetaData();
+
+      processMetaData.addStep(0, new QFrontendStepMetaData()
+         .withName("input")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
+         .withFormField(new QFieldMetaData("scriptId", QFieldType.INTEGER).withPossibleValueSourceName(Script.TABLE_NAME)
+            .withPossibleValueSourceFilter(new QQueryFilter(
+               new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
+               new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
+            ))));
+
+      return (processMetaData);
    }
 
 
@@ -70,7 +145,15 @@ public class ScriptsMetaDataProvider
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(QJoinMetaData.makeInferredJoinName(ScriptLog.TABLE_NAME, ScriptLogLine.TABLE_NAME)))
          .withLabel("Log Lines")
          .getWidgetMetaData());
+
+      instance.addWidget(new QWidgetMetaData()
+         .withName("scriptViewer")
+         .withLabel("Contents")
+         .withIsCard(true)
+         .withType(WidgetType.SCRIPT_VIEWER.getType())
+         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class, null)));
    }
+
 
 
    /*******************************************************************************
@@ -85,6 +168,30 @@ public class ScriptsMetaDataProvider
          .withJoinOn(new JoinOn("id", "scriptLogId"))
          .withOrderBy(new QFilterOrderBy("id"))
          .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(Script.TABLE_NAME)
+         .withRightTable(ScriptRevision.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_ONE)
+         .withLeftTable(Script.TABLE_NAME)
+         .withRightTable(ScriptRevision.TABLE_NAME)
+         .withJoinOn(new JoinOn("currentScriptRevisionId", "id"))
+         .withName("currentScriptRevision"));
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(ScriptType.TABLE_NAME)
+         .withRightTable(Script.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptTypeId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
    }
 
 
@@ -141,6 +248,7 @@ public class ScriptsMetaDataProvider
       rs.add(enrich(backendDetailEnricher, defineScriptRevisionTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineScriptLogTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineScriptLogLineTable(backendName)));
+      rs.add(enrich(backendDetailEnricher, defineTableTriggerTable(backendName)));
       return (rs);
    }
 
@@ -179,10 +287,25 @@ public class ScriptsMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
+   private QTableMetaData defineTableTriggerTable(String backendName) throws QException
+   {
+      return (defineStandardTable(backendName, TableTrigger.TABLE_NAME, TableTrigger.class)
+         .withRecordLabelFields("id")
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2, List.of("tableName", "filterId", "scriptId", "priority", "postInsert", "postUpdate")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate"))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QTableMetaData defineScriptTable(String backendName) throws QException
    {
       return (defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "tableName", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2).withWidgetName("scriptViewer"))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate"))));
    }
 
