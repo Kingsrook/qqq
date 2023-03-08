@@ -117,6 +117,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
             // have been converted to a list of primary keys in the deleteInput). so, proceed now by deleting a list of pkeys.        //
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             deleteList(connection, deleteInput, deleteOutput);
+
             return (deleteOutput);
          }
          finally
@@ -190,7 +191,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          + " WHERE "
          + escapeIdentifier(primaryKeyName) + " = ?";
 
-      logSQL(sql, List.of(primaryKey));
+      Long mark = System.currentTimeMillis();
 
       try
       {
@@ -211,6 +212,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          //    LOG.debug("rowCount 0 trying to delete [" + tableName + "][" + primaryKey + "]");
          //    deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError("Record was not deleted (but no error was given from the database)"));
          // }
+         logSQL(sql, List.of(primaryKey), mark);
       }
       catch(Exception e)
       {
@@ -228,6 +230,8 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
    {
       try
       {
+         long mark = System.currentTimeMillis();
+
          String tableName      = getTableName(table);
          String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
          String sql = "DELETE FROM "
@@ -239,10 +243,11 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
             + ")";
 
          // todo sql customization - can edit sql and/or param list
-         logSQL(sql, primaryKeys);
 
          Integer rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKeys);
          deleteOutput.addToDeletedRecordCount(rowCount);
+
+         logSQL(sql, primaryKeys, mark);
       }
       catch(Exception e)
       {
@@ -270,13 +275,15 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          + escapeIdentifier(tableName) + " AS " + escapeIdentifier(table.getName())
          + " WHERE "
          + whereClause;
-      logSQL(sql, params);
+
+      Long mark = System.currentTimeMillis();
 
       try
       {
          int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, params);
-
          deleteOutput.setDeletedRecordCount(rowCount);
+
+         logSQL(sql, params, mark);
       }
       catch(Exception e)
       {

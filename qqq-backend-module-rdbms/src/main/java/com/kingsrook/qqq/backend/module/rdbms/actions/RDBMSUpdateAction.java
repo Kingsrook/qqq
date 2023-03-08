@@ -204,13 +204,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          rowValues.add(record.getValue(table.getPrimaryKeyField()));
       }
 
-      logSQL(sql, values);
+      Long mark = System.currentTimeMillis();
 
       ////////////////////////////////////////////////////////////////////////////////
       // let query manager do the batch updates - note that it will internally page //
       ////////////////////////////////////////////////////////////////////////////////
       QueryManager.executeBatchUpdate(connection, sql, values);
       incrementStatus(updateInput, recordList.size());
+
+      logSQL(sql, values, mark);
    }
 
 
@@ -263,13 +265,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             params.add(record.getValue(table.getPrimaryKeyField()));
          }
 
-         logSQL(sql, params);
+         Long mark = System.currentTimeMillis();
 
          /////////////////////////////////////
          // let query manager do the update //
          /////////////////////////////////////
          QueryManager.executeUpdate(connection, sql, params);
          incrementStatus(updateInput, page.size());
+
+         logSQL(sql, params, mark);
       }
    }
 

@@ -37,9 +37,10 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
-import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
@@ -54,9 +55,11 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -953,23 +956,70 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected void logSQL(CharSequence sql, List<?> params)
+   protected void logSQL(CharSequence sql, List<?> params, Long mark)
    {
       if(System.getProperty("qqq.rdbms.logSQL", "false").equals("true"))
       {
          try
          {
-            LogPair paramsLogPair = params == null ? null :
-               params.size() <= 100 ? logPair("params", params) :
-                  logPair("first100Params", params.subList(0, 99));
+            params = params.size() <= 100 ? params : params.subList(0, 99);
 
-            LOG.debug("Running SQL", logPair("sql", sql), paramsLogPair);
+            if(System.getProperty("qqq.rdbms.logSQL.output", "logger").equalsIgnoreCase("system.out"))
+            {
+               System.out.println("SQL: " + sql);
+               System.out.println("PARAMS: " + params);
+
+               if(mark != null)
+               {
+                  System.out.println("SQL Took [" + QValueFormatter.formatValue(DisplayFormat.COMMAS, (System.currentTimeMillis() - mark)) + "] ms");
+               }
+            }
+            else
+            {
+               LOG.debug("Running SQL", logPair("sql", sql), logPair("params", params));
+
+               if(mark != null)
+               {
+                  LOG.debug("SQL Took [" + QValueFormatter.formatValue(DisplayFormat.COMMAS, (System.currentTimeMillis() - mark)) + "] ms");
+               }
+            }
          }
          catch(Exception e)
          {
             LOG.debug("Error logging sql...", e);
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** method that looks at security lock joins, and if a one-to-many is found where
+    ** the specified field name is on the 'right side' of the join, then a distinct
+    ** needs added to select clause
+    *******************************************************************************/
+   protected boolean doesSelectClauseRequireDistinct(QTableMetaData table)
+   {
+      if(table != null)
+      {
+         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+         {
+            for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+            {
+               QJoinMetaData joinMetaData = QContext.getQInstance().getJoin(joinName);
+               if(JoinType.ONE_TO_MANY.equals(joinMetaData.getType()) && !joinMetaData.getRightTable().equals(table.getName()))
+               {
+                  return (true);
+               }
+               else if(JoinType.MANY_TO_ONE.equals(joinMetaData.getType()) && !joinMetaData.getLeftTable().equals(table.getName()))
+               {
+                  return (true);
+               }
+            }
+         }
+      }
+
+      return (false);
    }
 
 }
