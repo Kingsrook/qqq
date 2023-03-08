@@ -45,16 +45,22 @@ commands:
             mvn -s .circleci/mvn-settings.xml -T4 verify
       - store_jacoco_site:
           module: qqq-backend-core
+          when: always
       - store_jacoco_site:
           module: qqq-backend-module-filesystem
+          when: always
       - store_jacoco_site:
           module: qqq-backend-module-rdbms
+          when: always
       - store_jacoco_site:
           module: qqq-middleware-javalin
+          when: always
       - store_jacoco_site:
           module: qqq-middleware-picocli
+          when: always
       - store_jacoco_site:
           module: qqq-sample-project
+          when: always
       - run:
           name: Save test results
           command: |
@@ -67,6 +73,7 @@ commands:
           name: Find Un-tested Classes
           command: |
             set +o pipefail && for i in */target/site/jacoco/*/index.html; do html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1; done
+          when: always
       - save_cache:
           paths:
             - ~/.m2
