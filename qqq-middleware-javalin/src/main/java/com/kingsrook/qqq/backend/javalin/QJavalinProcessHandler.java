@@ -50,7 +50,6 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
-import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -66,8 +65,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
-import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -749,19 +746,6 @@ public class QJavalinProcessHandler
       {
          String processName = context.pathParam("processName");
          String fieldName   = context.pathParam("fieldName");
-         String searchTerm  = context.queryParam("searchTerm");
-         String ids         = context.queryParam("ids");
-
-         Map<String, Serializable> values = new HashMap<>();
-         if(context.formParamMap().containsKey("values"))
-         {
-            List<String> valuesParamList = context.formParamMap().get("values");
-            if(CollectionUtils.nullSafeHasContents(valuesParamList))
-            {
-               String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, Map.class);
-            }
-         }
 
          QProcessMetaData process = QJavalinImplementation.qInstance.getProcess(processName);
          if(process == null)
@@ -777,28 +761,7 @@ public class QJavalinProcessHandler
             throw (new QNotFoundException("Field " + fieldName + " in process " + processName + " is not associated with a possible value source."));
          }
 
-         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
-         QJavalinImplementation.setupSession(context, input);
-         input.setPossibleValueSourceName(field.getPossibleValueSourceName());
-         input.setSearchTerm(searchTerm);
-
-         if(field.getPossibleValueSourceFilter() != null)
-         {
-            field.getPossibleValueSourceFilter().interpretValues(values);
-            input.setDefaultQueryFilter(field.getPossibleValueSourceFilter());
-         }
-
-         if(StringUtils.hasContent(ids))
-         {
-            List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
-            input.setIdList(idList);
-         }
-
-         SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
-
-         Map<String, Object> result = new HashMap<>();
-         result.put("options", output.getResults());
-         context.result(JsonUtils.toJson(result));
+         QJavalinImplementation.finishPossibleValuesRequest(context, field);
       }
       catch(Exception e)
       {

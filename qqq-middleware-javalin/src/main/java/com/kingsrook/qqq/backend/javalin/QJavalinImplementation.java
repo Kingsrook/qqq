@@ -57,6 +57,7 @@ import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAc
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
@@ -333,6 +334,7 @@ public class QJavalinImplementation
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
             post("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
             get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
+            post("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
 
             // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
             path("/{primaryKey}", () ->
@@ -1255,10 +1257,8 @@ public class QJavalinImplementation
    {
       try
       {
-         String tableName  = context.pathParam("table");
-         String fieldName  = context.pathParam("fieldName");
-         String searchTerm = context.queryParam("searchTerm");
-         String ids        = context.queryParam("ids");
+         String tableName = context.pathParam("table");
+         String fieldName = context.pathParam("fieldName");
 
          QTableMetaData table = qInstance.getTable(tableName);
          if(table == null)
@@ -1281,27 +1281,57 @@ public class QJavalinImplementation
             throw (new QNotFoundException("Field " + fieldName + " in table " + tableName + " is not associated with a possible value source."));
          }
 
-         SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
-         setupSession(context, input);
-         input.setPossibleValueSourceName(field.getPossibleValueSourceName());
-         input.setSearchTerm(searchTerm);
-
-         if(StringUtils.hasContent(ids))
-         {
-            List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
-            input.setIdList(idList);
-         }
-
-         SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
-
-         Map<String, Object> result = new HashMap<>();
-         result.put("options", output.getResults());
-         context.result(JsonUtils.toJson(result));
+         finishPossibleValuesRequest(context, field);
       }
       catch(Exception e)
       {
          handleException(context, e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void finishPossibleValuesRequest(Context context, QFieldMetaData field) throws IOException, QException
+   {
+      String searchTerm = context.queryParam("searchTerm");
+      String ids        = context.queryParam("ids");
+
+      Map<String, Serializable> values = new HashMap<>();
+      if(context.formParamMap().containsKey("values"))
+      {
+         List<String> valuesParamList = context.formParamMap().get("values");
+         if(CollectionUtils.nullSafeHasContents(valuesParamList))
+         {
+            String valuesParam = valuesParamList.get(0);
+            values = JsonUtils.toObject(valuesParam, Map.class);
+         }
+      }
+
+      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
+      setupSession(context, input);
+      input.setPossibleValueSourceName(field.getPossibleValueSourceName());
+      input.setSearchTerm(searchTerm);
+
+      if(field.getPossibleValueSourceFilter() != null)
+      {
+         field.getPossibleValueSourceFilter().interpretValues(values);
+         input.setDefaultQueryFilter(field.getPossibleValueSourceFilter());
+      }
+
+      if(StringUtils.hasContent(ids))
+      {
+         List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
+         input.setIdList(idList);
+      }
+
+      SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
+
+      Map<String, Object> result = new HashMap<>();
+      result.put("options", output.getResults());
+      context.result(JsonUtils.toJson(result));
    }
 
 
