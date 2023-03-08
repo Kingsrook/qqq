@@ -11,8 +11,10 @@ commands:
     steps:
       - store_artifacts:
           path: << parameters.module >>/target/site/jacoco/index.html
+          when: always
       - store_artifacts:
           path: << parameters.module >>/target/site/jacoco/jacoco-resources
+          when: always
 
   install_java17:
     steps:
@@ -45,22 +47,16 @@ commands:
             mvn -s .circleci/mvn-settings.xml -T4 verify
       - store_jacoco_site:
           module: qqq-backend-core
-          when: always
       - store_jacoco_site:
           module: qqq-backend-module-filesystem
-          when: always
       - store_jacoco_site:
           module: qqq-backend-module-rdbms
-          when: always
       - store_jacoco_site:
           module: qqq-middleware-javalin
-          when: always
       - store_jacoco_site:
           module: qqq-middleware-picocli
-          when: always
       - store_jacoco_site:
           module: qqq-sample-project
-          when: always
       - run:
           name: Save test results
           command: |
