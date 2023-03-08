@@ -66,7 +66,7 @@ commands:
       - run:
           name: Find Un-tested Classes
           command: |
-            for i in */target/site/jacoco/*/index.html; do html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1; done
+            set +o pipefail && for i in */target/site/jacoco/*/index.html; do html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1; done
       - save_cache:
           paths:
             - ~/.m2
