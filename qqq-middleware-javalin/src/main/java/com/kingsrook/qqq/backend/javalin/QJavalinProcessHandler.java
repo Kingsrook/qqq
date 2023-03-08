@@ -131,6 +131,7 @@ public class QJavalinProcessHandler
                });
 
                get("/possibleValues/{fieldName}", QJavalinProcessHandler::possibleValues);
+               post("/possibleValues/{fieldName}", QJavalinProcessHandler::possibleValues);
             });
          });
          get("/download/{file}", QJavalinProcessHandler::downloadFile);
@@ -751,6 +752,17 @@ public class QJavalinProcessHandler
          String searchTerm  = context.queryParam("searchTerm");
          String ids         = context.queryParam("ids");
 
+         Map<String, Serializable> values = new HashMap<>();
+         if(context.formParamMap().containsKey("values"))
+         {
+            List<String> valuesParamList = context.formParamMap().get("values");
+            if(CollectionUtils.nullSafeHasContents(valuesParamList))
+            {
+               String valuesParam = valuesParamList.get(0);
+               values = JsonUtils.toObject(valuesParam, Map.class);
+            }
+         }
+
          QProcessMetaData process = QJavalinImplementation.qInstance.getProcess(processName);
          if(process == null)
          {
@@ -769,6 +781,12 @@ public class QJavalinProcessHandler
          QJavalinImplementation.setupSession(context, input);
          input.setPossibleValueSourceName(field.getPossibleValueSourceName());
          input.setSearchTerm(searchTerm);
+
+         if(field.getPossibleValueSourceFilter() != null)
+         {
+            field.getPossibleValueSourceFilter().interpretValues(values);
+            input.setDefaultQueryFilter(field.getPossibleValueSourceFilter());
+         }
 
          if(StringUtils.hasContent(ids))
          {

@@ -28,7 +28,10 @@ import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ChildRecordListRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.automation.TableTrigger;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
@@ -68,6 +71,8 @@ public class ScriptsMetaDataProvider
 {
    public static final String RUN_RECORD_SCRIPT_PROCESS_NAME     = "runRecordScript";
    public static final String STORE_SCRIPT_REVISION_PROCESS_NAME = "storeScriptRevision";
+
+   public static final String SCRIPT_TYPE_NAME_RECORD = "Record Script";
 
 
 
@@ -121,8 +126,11 @@ public class ScriptsMetaDataProvider
       processMetaData.addStep(0, new QFrontendStepMetaData()
          .withName("input")
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
-         .withFormField(new QFieldMetaData("scriptId", QFieldType.INTEGER).withPossibleValueSourceName(Script.TABLE_NAME))
-      );
+         .withFormField(new QFieldMetaData("scriptId", QFieldType.INTEGER).withPossibleValueSourceName(Script.TABLE_NAME)
+            .withPossibleValueSourceFilter(new QQueryFilter(
+               new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
+               new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
+            ))));
 
       return (processMetaData);
    }

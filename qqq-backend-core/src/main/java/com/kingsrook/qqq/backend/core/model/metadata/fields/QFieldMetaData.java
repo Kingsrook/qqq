@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -63,6 +64,7 @@ public class QFieldMetaData implements Cloneable
    private String       displayFormat = "%s";
    private Serializable defaultValue;
    private String       possibleValueSourceName;
+   private QQueryFilter possibleValueSourceFilter;
 
    private Integer            maxLength;
    private Set<FieldBehavior> behaviors;
@@ -752,6 +754,37 @@ public class QFieldMetaData implements Cloneable
    public QFieldMetaData withIsHeavy(boolean isHeavy)
    {
       this.isHeavy = isHeavy;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleValueSourceFilter
+    *******************************************************************************/
+   public QQueryFilter getPossibleValueSourceFilter()
+   {
+      return (this.possibleValueSourceFilter);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for possibleValueSourceFilter
+    *******************************************************************************/
+   public void setPossibleValueSourceFilter(QQueryFilter possibleValueSourceFilter)
+   {
+      this.possibleValueSourceFilter = possibleValueSourceFilter;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for possibleValueSourceFilter
+    *******************************************************************************/
+   public QFieldMetaData withPossibleValueSourceFilter(QQueryFilter possibleValueSourceFilter)
+   {
+      this.possibleValueSourceFilter = possibleValueSourceFilter;
       return (this);
    }
 
