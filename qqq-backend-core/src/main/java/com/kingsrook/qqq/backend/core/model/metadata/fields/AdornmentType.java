@@ -116,6 +116,9 @@ public enum AdornmentType
 
 
 
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       public FieldAdornment toAdornment()
       {
          return (new FieldAdornment(AdornmentType.SIZE, MapBuilder.of("width", name().toLowerCase())));
