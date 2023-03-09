@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 import java.io.Serializable;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
@@ -105,14 +106,20 @@ public enum AdornmentType
    /*******************************************************************************
     **
     *******************************************************************************/
-   public interface SizeValues
+   public enum Size
    {
-      String WIDTH  = "width";
-      String XSMALL = "xsmall";
-      String SMALL  = "small";
-      String MEDIUM = "medium";
-      String LARGE  = "large";
-      String XLARGE = "xlarge";
+      XSMALL,
+      SMALL,
+      MEDIUM,
+      LARGE,
+      XLARGE;
+
+
+
+      public FieldAdornment toAdornment()
+      {
+         return (new FieldAdornment(AdornmentType.SIZE, MapBuilder.of("width", name().toLowerCase())));
+      }
    }
 
 

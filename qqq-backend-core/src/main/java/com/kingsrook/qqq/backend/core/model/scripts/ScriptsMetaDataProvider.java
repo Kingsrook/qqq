@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScriptRevisionProcessStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.TestScriptProcessStep;
 
 
 /*******************************************************************************
@@ -71,6 +72,7 @@ public class ScriptsMetaDataProvider
 {
    public static final String RUN_RECORD_SCRIPT_PROCESS_NAME     = "runRecordScript";
    public static final String STORE_SCRIPT_REVISION_PROCESS_NAME = "storeScriptRevision";
+   public static final String TEST_SCRIPT_PROCESS_NAME           = "testScript";
 
    public static final String SCRIPT_TYPE_NAME_RECORD = "Record Script";
 
@@ -87,6 +89,7 @@ public class ScriptsMetaDataProvider
       defineStandardScriptsWidgets(instance);
       instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
       instance.addProcess(defineStoreScriptRevisionProcess());
+      instance.addProcess(defineTestScriptProcess());
       instance.addProcess(defineRunRecordScriptProcess());
    }
 
@@ -103,6 +106,22 @@ public class ScriptsMetaDataProvider
             new QBackendStepMetaData()
                .withName("main")
                .withCode(new QCodeReference(StoreScriptRevisionProcessStep.class))
+         )));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QProcessMetaData defineTestScriptProcess()
+   {
+      return (new QProcessMetaData()
+         .withName(TEST_SCRIPT_PROCESS_NAME)
+         .withStepList(List.of(
+            new QBackendStepMetaData()
+               .withName("main")
+               .withCode(new QCodeReference(TestScriptProcessStep.class))
          )));
    }
 
@@ -303,10 +322,15 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineScriptTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
+      QTableMetaData tableMetaData = defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "tableName", "currentScriptRevisionId")))
          .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2).withWidgetName("scriptViewer"))
-         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate"))));
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      tableMetaData.getField("name").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+      tableMetaData.getField("currentScriptRevisionId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+
+      return (tableMetaData);
    }
 
 
@@ -342,6 +366,8 @@ public class ScriptsMetaDataProvider
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       tableMetaData.getField("contents").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR));
+      tableMetaData.getField("scriptId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+
       return (tableMetaData);
    }
 
@@ -352,14 +378,21 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineScriptLogTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, ScriptLog.TABLE_NAME, ScriptLog.class)
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptLog.TABLE_NAME, ScriptLog.class)
          .withRecordLabelFields(List.of("id"))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("script", new QIcon().withName("data_object"), Tier.T2, List.of("scriptId", "scriptRevisionId")))
          .withSection(new QFieldSection("timing", new QIcon().withName("schedule"), Tier.T2, List.of("startTimestamp", "endTimestamp", "runTimeMillis", "createDate", "modifyDate")))
          .withSection(new QFieldSection("error", "Error", new QIcon().withName("error_outline"), Tier.T2, List.of("hadError", "error")))
          .withSection(new QFieldSection("inputOutput", "Input/Output", new QIcon().withName("chat"), Tier.T2, List.of("input", "output")))
-         .withSection(new QFieldSection("lines", new QIcon().withName("horizontal_rule"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(ScriptLog.TABLE_NAME, ScriptLogLine.TABLE_NAME))));
+         .withSection(new QFieldSection("lines", new QIcon().withName("horizontal_rule"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(ScriptLog.TABLE_NAME, ScriptLogLine.TABLE_NAME)));
+
+      tableMetaData.getField("scriptId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+      tableMetaData.getField("scriptRevisionId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+      tableMetaData.getField("input").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+      tableMetaData.getField("output").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+
+      return (tableMetaData);
    }
 
 
@@ -369,8 +402,12 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineScriptLogLineTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, ScriptLogLine.TABLE_NAME, ScriptLogLine.class)
-         .withRecordLabelFields(List.of("id")));
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptLogLine.TABLE_NAME, ScriptLogLine.class)
+         .withRecordLabelFields(List.of("id"));
+
+      tableMetaData.getField("text").withFieldAdornment(AdornmentType.Size.XLARGE.toAdornment());
+
+      return (tableMetaData);
    }
 
 }
