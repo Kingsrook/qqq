@@ -61,7 +61,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
 
          boolean requiresDistinct = doesSelectClauseRequireDistinct(table);
          String  primaryKeyColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(fieldAndTableNameOrAlias.field().getName());
-         String  clausePrefix     = (requiresDistinct) ? "SELECT COUNT (DISTINCT " + primaryKeyColumn + ")" : "SELECT COUNT(*)";
+         String  clausePrefix     = (requiresDistinct) ? "SELECT COUNT(DISTINCT (" + primaryKeyColumn + "))" : "SELECT COUNT(*)";
 
          String sql = clausePrefix + " AS record_count FROM "
             + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);
