@@ -132,4 +132,18 @@ public class AdHocScriptCodeReference extends QCodeReference
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "AdHocScriptCodeReference{" +
+         "scriptId=" + scriptId +
+         ", scriptRevisionId=" + scriptRevisionId +
+         ", scriptRevisionRecord=" + scriptRevisionRecord +
+         '}';
+   }
 }

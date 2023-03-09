@@ -167,4 +167,20 @@ public class AssociatedScriptCodeReference extends QCodeReference
    {
       return Objects.hash(recordTable, recordPrimaryKey, fieldName);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "AssociatedScriptCodeReference{" +
+         "recordTable='" + recordTable + '\'' +
+         ", recordPrimaryKey=" + recordPrimaryKey +
+         ", fieldName='" + fieldName + '\'' +
+         '}';
+   }
+
 }
