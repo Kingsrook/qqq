@@ -176,11 +176,7 @@ public class AssociatedScriptCodeReference extends QCodeReference
    @Override
    public String toString()
    {
-      return "AssociatedScriptCodeReference{" +
-         "recordTable='" + recordTable + '\'' +
-         ", recordPrimaryKey=" + recordPrimaryKey +
-         ", fieldName='" + fieldName + '\'' +
-         '}';
+      return "AssociatedScriptCodeReference{recordTable='" + recordTable + '\'' + ", recordPrimaryKey=" + recordPrimaryKey + ", fieldName='" + fieldName + '\'' + '}';
    }
 
 }

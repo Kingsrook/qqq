@@ -140,10 +140,6 @@ public class AdHocScriptCodeReference extends QCodeReference
    @Override
    public String toString()
    {
-      return "AdHocScriptCodeReference{" +
-         "scriptId=" + scriptId +
-         ", scriptRevisionId=" + scriptRevisionId +
-         ", scriptRevisionRecord=" + scriptRevisionRecord +
-         '}';
+      return "AdHocScriptCodeReference{scriptId=" + scriptId + ", scriptRevisionId=" + scriptRevisionId + ", scriptRevisionRecord=" + scriptRevisionRecord + '}';
    }
 }
