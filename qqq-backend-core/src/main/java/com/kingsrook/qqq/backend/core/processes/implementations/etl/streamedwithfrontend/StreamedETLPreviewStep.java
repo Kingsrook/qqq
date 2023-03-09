@@ -124,7 +124,9 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       updateRecordsWithDisplayValuesAndPossibleValues(runBackendStepInput, previewRecordList);
       runBackendStepOutput.setRecords(previewRecordList);
 
-      transformStep.postRun(runBackendStepInput, runBackendStepOutput);
+      BackendStepPostRunOutput postRunOutput = new BackendStepPostRunOutput(runBackendStepOutput);
+      BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
+      transformStep.postRun(postRunInput, postRunOutput);
    }
 
 

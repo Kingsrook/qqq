@@ -53,6 +53,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -335,6 +336,39 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testPostRun() throws QException
+   {
+      QInstance instance = QContext.getQInstance();
+
+      ////////////////////////////////////////////////////////
+      // define the process - an ELT from Shapes to Persons //
+      ////////////////////////////////////////////////////////
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+         TestUtils.TABLE_NAME_SHAPE,
+         TestUtils.TABLE_NAME_PERSON,
+         ExtractViaQueryStep.class,
+         NoopTransformStep.class,
+         TestLoadPostRunStep.class);
+      process.setName("test");
+      process.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      instance.addProcess(process);
+
+      instance.getTable(TestUtils.TABLE_NAME_PERSON).setBackendName(TestUtils.MEMORY_BACKEND_NAME);
+      TestUtils.insertDefaultShapes(instance);
+
+      /////////////////////
+      // run the process //
+      /////////////////////
+      RunProcessOutput runProcessOutput = runProcess(instance, process, Collections.emptyMap(), new Callback(), RunProcessInput.FrontendStepBehavior.SKIP);
+      assertEquals(47, runProcessOutput.getValues().get("valueFromPostStep"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public RunProcessOutput runProcess(QInstance instance, QProcessMetaData process) throws QException
    {
       return (runProcess(instance, process, new HashMap<>(), new Callback()));
@@ -535,6 +569,49 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
       public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
       {
          return null;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestLoadPostRunStep extends AbstractLoadStep
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      {
+         ///////////////////////////////////
+         // just pass the records through //
+         ///////////////////////////////////
+         for(QRecord record : runBackendStepInput.getRecords())
+         {
+            runBackendStepOutput.addRecord(record);
+         }
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public void postRun(BackendStepPostRunInput runBackendStepInput, BackendStepPostRunOutput runBackendStepOutput) throws QException
+      {
+         assertThatThrownBy(() -> runBackendStepInput.getRecords())
+            .isInstanceOf(IllegalStateException.class);
+         assertThatThrownBy(() -> runBackendStepOutput.getRecords())
+            .isInstanceOf(IllegalStateException.class);
+
+         assertThat(runBackendStepInput.getPreviewRecordList()).isNotEmpty();
+         assertThat(runBackendStepOutput.getPreviewRecordList()).isNotEmpty();
+
+         runBackendStepOutput.addValue("valueFromPostStep", 47);
       }
    }
 

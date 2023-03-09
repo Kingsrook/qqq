@@ -64,7 +64,7 @@ public abstract class AbstractLoadStep implements BackendStep
     ** Allow subclasses to do an action after the run is complete - after the last
     ** page of records is passed in.
     *******************************************************************************/
-   public void postRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void postRun(BackendStepPostRunInput runBackendStepInput, BackendStepPostRunOutput runBackendStepOutput) throws QException
    {
       ////////////////////////
       // noop in base class //

@@ -108,7 +108,9 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////
       runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, false));
 
-      transformStep.postRun(runBackendStepInput, runBackendStepOutput);
+      BackendStepPostRunOutput postRunOutput = new BackendStepPostRunOutput(runBackendStepOutput);
+      BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
+      transformStep.postRun(postRunInput, postRunOutput);
    }
 
 

@@ -65,6 +65,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.BackendStepPostRunInput;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.BackendStepPostRunOutput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -355,7 +357,7 @@ public class GenerateReportAction
       ////////////////////////////////////////////////
       if(transformStep != null)
       {
-         transformStep.postRun(transformStepInput, transformStepOutput);
+         transformStep.postRun(new BackendStepPostRunInput(transformStepInput), new BackendStepPostRunOutput(transformStepOutput));
       }
    }
 

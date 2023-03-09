@@ -138,8 +138,20 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
          }
 
-         transformStep.postRun(runBackendStepInput, runBackendStepOutput);
-         loadStep.postRun(runBackendStepInput, runBackendStepOutput);
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // use a subclass of runBackendStepOutput that makes it clear you can't use the recordList, as it's a "preview/subset" record list //
+         // this prevents bugs where you might think you have the full record list, but really don't                                        //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         BackendStepPostRunOutput postRunOutput = new BackendStepPostRunOutput(runBackendStepOutput);
+         BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
+         transformStep.postRun(postRunInput, postRunOutput);
+         loadStep.postRun(postRunInput, postRunOutput);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // explicitly copy values back into the runStepOutput from the post-run output                                     //
+         // this might not be needed, since they (presumably) share a processState object, but just in case that changes... //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         runBackendStepOutput.setValues(postRunOutput.getValues());
 
          if(recordCount > 0)
          {
