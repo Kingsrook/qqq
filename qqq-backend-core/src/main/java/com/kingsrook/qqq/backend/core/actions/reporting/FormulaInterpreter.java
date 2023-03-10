@@ -185,7 +185,7 @@ public class FormulaInterpreter
          case "DIVIDE":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 2, variableInterpreter);
-            if(numbers.get(1) == null || numbers.get(1).equals(BigDecimal.ZERO))
+            if(numbers.get(1) == null || numbers.get(1).compareTo(BigDecimal.ZERO) == 0)
             {
                return null;
             }
@@ -194,7 +194,7 @@ public class FormulaInterpreter
          case "DIVIDE_SCALE":
          {
             List<BigDecimal> numbers = getNumberArgumentList(args, 3, variableInterpreter);
-            if(numbers.get(1) == null || numbers.get(1).equals(BigDecimal.ZERO))
+            if(numbers.get(1) == null || numbers.get(1).compareTo(BigDecimal.ZERO) == 0)
             {
                return null;
             }

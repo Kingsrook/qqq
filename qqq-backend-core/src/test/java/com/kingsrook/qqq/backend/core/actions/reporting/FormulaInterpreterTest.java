@@ -118,7 +118,14 @@ class FormulaInterpreterTest extends BaseTest
       assertEquals(new BigDecimal("34.500"), interpretFormula(vi, "MULTIPLY(100,0.345)"));
 
       assertThat((BigDecimal) interpretFormula(vi, "DIVIDE(1,2)")).isCloseTo(new BigDecimal("0.5"), ZERO_OFFSET);
+      assertThat((BigDecimal) interpretFormula(vi, "DIVIDE_SCALE(1,2,0)")).isEqualTo(new BigDecimal("1"));
+      assertThat((BigDecimal) interpretFormula(vi, "DIVIDE_SCALE(1,2,0)")).isEqualTo(new BigDecimal("1"));
+      assertThat((BigDecimal) interpretFormula(vi, "DIVIDE_SCALE(1,2,3)")).isEqualTo(new BigDecimal("0.500"));
+      assertThat((BigDecimal) interpretFormula(vi, "DIVIDE_SCALE(1,2,4)")).isEqualTo(new BigDecimal("0.5000"));
       assertNull(interpretFormula(vi, "DIVIDE(1,0)"));
+      assertNull(interpretFormula(vi, "DIVIDE(1,0.0)"));
+      assertNull(interpretFormula(vi, "DIVIDE_SCALE(1,0,0)"));
+      assertNull(interpretFormula(vi, "DIVIDE_SCALE(1,0.0,1)"));
 
       assertEquals(new BigDecimal("0.5"), interpretFormula(vi, "ROUND(0.510,1)"));
       assertEquals(new BigDecimal("5.0"), interpretFormula(vi, "ROUND(5.010,2)"));
