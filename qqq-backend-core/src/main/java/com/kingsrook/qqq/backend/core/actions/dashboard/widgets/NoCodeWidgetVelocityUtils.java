@@ -163,6 +163,10 @@ public class NoCodeWidgetVelocityUtils
     *******************************************************************************/
    public String formatDateTime(Instant i)
    {
+      if(i == null)
+      {
+         return ("");
+      }
       return QValueFormatter.formatDateTimeWithZone(i.atZone(ZoneId.of(QContext.getQInstance().getDefaultTimeZoneId())));
    }
 
