@@ -685,7 +685,7 @@ public class QueryManager
       }
       else if(value instanceof Double d)
       {
-         bindParam(statement, index, d.doubleValue());
+         bindParam(statement, index, d);
          return (1);
       }
       else if(value instanceof String s)
@@ -739,9 +739,7 @@ public class QueryManager
       }
       else if(value instanceof Instant i)
       {
-         long      epochMillis = i.toEpochMilli();
-         Timestamp timestamp   = new Timestamp(epochMillis);
-         statement.setTimestamp(index, timestamp);
+         statement.setString(index, i.toString());
          return (1);
       }
       else if(value instanceof LocalDate ld)
