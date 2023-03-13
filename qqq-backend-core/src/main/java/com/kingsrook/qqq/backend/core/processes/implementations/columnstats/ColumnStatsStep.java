@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.tablestats;
+package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 
 
 import java.io.Serializable;
@@ -61,9 +61,9 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class TableStatsStep implements BackendStep
+public class ColumnStatsStep implements BackendStep
 {
-   private static final QLogger LOG = QLogger.getLogger(TableStatsStep.class);
+   private static final QLogger LOG = QLogger.getLogger(ColumnStatsStep.class);
 
 
 
