@@ -31,10 +31,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -268,7 +271,7 @@ class ValueUtilsTest extends BaseTest
       assertEquals("1", ValueUtils.getValueAsType(String.class, 1));
       assertEquals(BigDecimal.ONE, ValueUtils.getValueAsType(BigDecimal.class, 1));
       assertEquals(true, ValueUtils.getValueAsType(Boolean.class, "true"));
-      assertArrayEquals("a" .getBytes(StandardCharsets.UTF_8), ValueUtils.getValueAsType(byte[].class, "a"));
+      assertArrayEquals("a".getBytes(StandardCharsets.UTF_8), ValueUtils.getValueAsType(byte[].class, "a"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsType(Serializable.class, 1));
    }
 
@@ -290,6 +293,23 @@ class ValueUtilsTest extends BaseTest
       assertNull(ValueUtils.getFirstNonNull(null));
       assertNull(ValueUtils.getFirstNonNull(null, null));
 
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetSessionOrInstanceZoneId()
+   {
+      assertEquals(ZoneId.of("UTC"), ValueUtils.getSessionOrInstanceZoneId());
+
+      QContext.getQInstance().setDefaultTimeZoneId("America/Chicago");
+      assertEquals(ZoneId.of("America/Chicago"), ValueUtils.getSessionOrInstanceZoneId());
+
+      QContext.getQSession().setValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES, "-300");
+      assertEquals(ZoneId.of("UTC-05:00"), ValueUtils.getSessionOrInstanceZoneId());
    }
 
 }

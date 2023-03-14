@@ -53,6 +53,9 @@ public class QSession implements Serializable
    // implementation-specific custom values
    private Map<String, String> values;
 
+   public static final String VALUE_KEY_USER_TIMEZONE                = "UserTimezone";
+   public static final String VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES = "UserTimezoneOffsetMinutes";
+
 
 
    /*******************************************************************************
@@ -453,6 +456,7 @@ public class QSession implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for user
     *******************************************************************************/
@@ -461,6 +465,5 @@ public class QSession implements Serializable
       this.user = user;
       return (this);
    }
-
 
 }

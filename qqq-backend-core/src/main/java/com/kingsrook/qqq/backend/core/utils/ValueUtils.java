@@ -39,8 +39,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
@@ -674,7 +676,7 @@ public class ValueUtils
       //////////////////////////////////////////////////////////////////////////////
       LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
       LocalDateTime startOfDay    = givenZonesNow.truncatedTo(ChronoUnit.DAYS);
-      return (startOfDay.toInstant(zone.getRules().getOffset(computerTime)));
+      return (startOfDay.toInstant(zone.getRules().getOffset(startOfDay)));
    }
 
 
@@ -700,7 +702,7 @@ public class ValueUtils
          .with(ChronoField.MINUTE_OF_DAY, 0)
          .with(ChronoField.SECOND_OF_DAY, 0)
          .with(ChronoField.NANO_OF_DAY, 0);
-      return (startOfMonth.toInstant(zone.getRules().getOffset(computerTime)));
+      return (startOfMonth.toInstant(zone.getRules().getOffset(startOfMonth)));
    }
 
 
@@ -720,13 +722,13 @@ public class ValueUtils
       // get date time for now in given zone, truncate it and add offset from utc //
       //////////////////////////////////////////////////////////////////////////////
       LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
-      LocalDateTime startOfMonth = givenZonesNow
+      LocalDateTime startOfYear = givenZonesNow
          .withDayOfYear(1)
          .with(ChronoField.HOUR_OF_DAY, 0)
          .with(ChronoField.MINUTE_OF_DAY, 0)
          .with(ChronoField.SECOND_OF_DAY, 0)
          .with(ChronoField.NANO_OF_DAY, 0);
-      return (startOfMonth.toInstant(zone.getRules().getOffset(computerTime)));
+      return (startOfYear.toInstant(zone.getRules().getOffset(startOfYear)));
    }
 
 
@@ -751,6 +753,30 @@ public class ValueUtils
       }
 
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the (time) zoneId either for the current user session (based on session
+    ** value UserTimezone or UserTimezoneOffsetMinutes), else the instance's
+    ** defaultTimeZoneId string.
+    *******************************************************************************/
+   public static ZoneId getSessionOrInstanceZoneId()
+   {
+      String timezone = QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE);
+      if(StringUtils.hasContent(timezone))
+      {
+         return (ZoneId.of(timezone));
+      }
+
+      String userTimezoneOffsetMinutesString = QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES);
+      if(StringUtils.hasContent(userTimezoneOffsetMinutesString))
+      {
+         return (ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(60 * Integer.parseInt(userTimezoneOffsetMinutesString))));
+      }
+
+      return (ZoneId.of(QContext.getQInstance().getDefaultTimeZoneId()));
    }
 
 }

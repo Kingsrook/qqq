@@ -447,7 +447,8 @@ public class QJavalinImplementation
             context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
          }
 
-         setUserTimezoneOffsetMinutesHeaderInSession(context, session);
+         setUserTimezoneOffsetMinutesInSession(context, session);
+         setUserTimezoneInSession(context, session);
       }
       catch(QAuthenticationException qae)
       {
@@ -493,7 +494,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void setUserTimezoneOffsetMinutesHeaderInSession(Context context, QSession session)
+   private static void setUserTimezoneOffsetMinutesInSession(Context context, QSession session)
    {
       String userTimezoneOffsetMinutes = context.header("X-QQQ-UserTimezoneOffsetMinutes");
       if(StringUtils.hasContent(userTimezoneOffsetMinutes))
@@ -503,12 +504,26 @@ public class QJavalinImplementation
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // even though we're putting it in the session as a string, go through parse int, to make sure it's a valid int. //
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            session.setValue("UserTimezoneOffsetMinutes", String.valueOf(Integer.parseInt(userTimezoneOffsetMinutes)));
+            session.setValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES, String.valueOf(Integer.parseInt(userTimezoneOffsetMinutes)));
          }
          catch(Exception e)
          {
             LOG.debug("Received non-integer value for X-QQQ-UserTimezoneOffsetMinutes header: " + userTimezoneOffsetMinutes);
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setUserTimezoneInSession(Context context, QSession session)
+   {
+      String userTimezone = context.header("X-QQQ-UserTimezone");
+      if(StringUtils.hasContent(userTimezone))
+      {
+         session.setValue(QSession.VALUE_KEY_USER_TIMEZONE, userTimezone);
       }
    }
 
