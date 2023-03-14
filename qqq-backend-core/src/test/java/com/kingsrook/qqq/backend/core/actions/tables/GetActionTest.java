@@ -101,7 +101,8 @@ class GetActionTest extends BaseTest
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "George").withValue("lastName", "Washington").withValue("noOfShoes", 5),
          new QRecord().withValue("id", 2).withValue("firstName", "John").withValue("lastName", "Adams"),
-         new QRecord().withValue("id", 3).withValue("firstName", "Thomas").withValue("lastName", "Jefferson")
+         new QRecord().withValue("id", 3).withValue("firstName", "Thomas").withValue("lastName", "Jefferson"),
+         new QRecord().withValue("id", 3).withValue("firstName", "Thomas 503").withValue("lastName", "Jefferson")
       ));
 
       /////////////////////////////////////////////////////////////////////////////
@@ -115,6 +116,17 @@ class GetActionTest extends BaseTest
          assertNotNull(getOutput.getRecord());
          assertNotNull(getOutput.getRecord().getValue("cachedDate"));
          assertEquals(5, getOutput.getRecord().getValue("noOfShoes"));
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // try to get from the table which caches it - but should not find because use case should filter out because of matching 503 //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         GetInput getInput = new GetInput();
+         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
+         getInput.setUniqueKey(Map.of("firstName", "Thomas 503", "lastName", "Jefferson"));
+         GetOutput getOutput = new GetAction().execute(getInput);
+         assertNull(getOutput.getRecord());
       }
 
       ///////////////////////////////////////////////////////////////////////////

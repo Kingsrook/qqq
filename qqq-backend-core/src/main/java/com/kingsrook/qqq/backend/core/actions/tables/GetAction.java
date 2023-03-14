@@ -36,6 +36,8 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
@@ -53,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -64,6 +67,8 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class GetAction
 {
+   private static final QLogger LOG = QLogger.getLogger(InsertAction.class);
+
    private Optional<AbstractPostQueryCustomizer> postGetRecordCustomizer;
 
    private GetInput                 getInput;
@@ -125,13 +130,34 @@ public class GetAction
             QRecord recordFromSource = tryToGetFromCacheSource(getInput, getOutput);
             if(recordFromSource != null)
             {
-               QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
+               QRecord recordToCache     = mapSourceRecordToCacheRecord(table, recordFromSource);
+               boolean shouldCacheRecord = true;
 
-               InsertInput insertInput = new InsertInput();
-               insertInput.setTableName(getInput.getTableName());
-               insertInput.setRecords(List.of(recordToCache));
-               InsertOutput insertOutput = new InsertAction().execute(insertInput);
-               getOutput.setRecord(insertOutput.getRecords().get(0));
+               ////////////////////////////////////////////////////////////////////////////////
+               // see if there are any exclustions that need to be considered for this table //
+               ////////////////////////////////////////////////////////////////////////////////
+               recordMatchExclusionLoop:
+               for(CacheUseCase useCase : CollectionUtils.nonNullList(table.getCacheOf().getUseCases()))
+               {
+                  for(QQueryFilter filter : CollectionUtils.nonNullList(useCase.getExcludeRecordsMatching()))
+                  {
+                     if(BackendQueryFilterUtils.doesRecordMatch(filter, recordToCache))
+                     {
+                        LOG.info("Not catching record because it matches a use case's filter exclusion", new LogPair("record", recordToCache), new LogPair("filter", filter));
+                        shouldCacheRecord = false;
+                        break recordMatchExclusionLoop;
+                     }
+                  }
+               }
+
+               if(shouldCacheRecord)
+               {
+                  InsertInput insertInput = new InsertInput();
+                  insertInput.setTableName(getInput.getTableName());
+                  insertInput.setRecords(List.of(recordToCache));
+                  InsertOutput insertOutput = new InsertAction().execute(insertInput);
+                  getOutput.setRecord(insertOutput.getRecords().get(0));
+               }
             }
          }
          else
@@ -257,7 +283,9 @@ public class GetAction
       sourceGetInput.setTableName(sourceTableName);
       sourceGetInput.setUniqueKey(getInput.getUniqueKey());
       GetOutput sourceGetOutput = new GetAction().execute(sourceGetInput);
-      return (sourceGetOutput.getRecord());
+      QRecord   outputRecord    = sourceGetOutput.getRecord();
+
+      return (outputRecord);
    }
 
 

@@ -739,6 +739,15 @@ public class TestUtils
                .withSourceUniqueKey(uniqueKey)
                .withCacheUniqueKey(uniqueKey)
                .withCacheSourceMisses(false)
+               .withExcludeRecordsMatching(List.of(
+                  new QQueryFilter(
+                     new QFilterCriteria(
+                        "firstName",
+                        QCriteriaOperator.CONTAINS,
+                        List.of("503")
+                     )
+                  )
+               ))
             ));
    }
 

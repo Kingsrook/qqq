@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables.cache;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
 
@@ -47,6 +49,8 @@ public class CacheUseCase
    //////////////////////////
    private UniqueKey cacheUniqueKey;
    private UniqueKey sourceUniqueKey;
+
+   private List<QQueryFilter> excludeRecordsMatching;
 
 
 
@@ -181,6 +185,40 @@ public class CacheUseCase
    public CacheUseCase withSourceUniqueKey(UniqueKey sourceUniqueKey)
    {
       this.sourceUniqueKey = sourceUniqueKey;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for excludeRecordsMatching
+    **
+    *******************************************************************************/
+   public List<QQueryFilter> getExcludeRecordsMatching()
+   {
+      return excludeRecordsMatching;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for excludeRecordsMatching
+    **
+    *******************************************************************************/
+   public void setExcludeRecordsMatching(List<QQueryFilter> excludeRecordsMatching)
+   {
+      this.excludeRecordsMatching = excludeRecordsMatching;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for excludeRecordsMatching
+    **
+    *******************************************************************************/
+   public CacheUseCase withExcludeRecordsMatching(List<QQueryFilter> excludeRecordsMatching)
+   {
+      this.excludeRecordsMatching = excludeRecordsMatching;
       return (this);
    }
 
