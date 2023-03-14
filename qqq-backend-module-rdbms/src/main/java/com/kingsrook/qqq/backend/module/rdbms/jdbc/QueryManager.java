@@ -739,7 +739,7 @@ public class QueryManager
       }
       else if(value instanceof Instant i)
       {
-         statement.setString(index, i.toString().replaceAll("T", " ").replaceAll("Z", ""));
+         statement.setObject(index, i);
          return (1);
       }
       else if(value instanceof LocalDate ld)
