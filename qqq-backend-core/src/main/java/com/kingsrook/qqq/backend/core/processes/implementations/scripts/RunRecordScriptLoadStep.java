@@ -22,30 +22,147 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.scripts.RunAdHocRecordScriptAction;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryFilterLink;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAdHocRecordScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAdHocRecordScriptOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
+import com.kingsrook.qqq.backend.core.model.scripts.Script;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptLog;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractLoadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ProcessSummaryProviderInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.BooleanUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IN;
 
 
 /*******************************************************************************
  ** Load step for the runRecordScript process - runs the script on a page of records
  *******************************************************************************/
-public class RunRecordScriptLoadStep extends AbstractLoadStep
+public class RunRecordScriptLoadStep extends AbstractLoadStep implements ProcessSummaryProviderInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(RunRecordScriptLoadStep.class);
+
+   private ProcessSummaryLine okLine = new ProcessSummaryLine(Status.OK)
+      .withSingularPastMessage("had the script ran against it.")
+      .withPluralPastMessage("had the script ran against them.");
+
+   private List<Serializable> okScriptLogIds    = new ArrayList<>();
+   private List<Serializable> errorScriptLogIds = new ArrayList<>();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Integer getOverrideRecordPipeCapacity(RunBackendStepInput runBackendStepInput)
+   {
+      Integer scriptId = runBackendStepInput.getValueInteger("scriptId");
+      try
+      {
+         GetInput getInput = new GetInput();
+         getInput.setTableName(Script.TABLE_NAME);
+         getInput.setPrimaryKey(scriptId);
+         GetOutput getOutput = new GetAction().execute(getInput);
+         if(getOutput.getRecord() != null)
+         {
+            Integer scriptMaxBatchSize = getOutput.getRecord().getValueInteger("maxBatchSize");
+            if(scriptMaxBatchSize != null)
+            {
+               return (scriptMaxBatchSize);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error getting script by id: " + scriptId);
+      }
+
+      return super.getOverrideRecordPipeCapacity(runBackendStepInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       runBackendStepInput.getAsyncJobCallback().updateStatus("Running script");
 
-      RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
-      input.setRecordList(runBackendStepInput.getRecords());
-      input.setCodeReference(new AdHocScriptCodeReference().withScriptId(runBackendStepInput.getValueInteger("scriptId")));
-      RunAdHocRecordScriptOutput output = new RunAdHocRecordScriptOutput();
-      new RunAdHocRecordScriptAction().run(input, output);
+      okLine.incrementCount(runBackendStepInput.getRecords().size());
+
+      Integer                                       scriptId     = runBackendStepInput.getValueInteger("scriptId");
+      StoreScriptLogAndScriptLogLineExecutionLogger scriptLogger = new StoreScriptLogAndScriptLogLineExecutionLogger(null, null); // downstream these will get set!
+
+      try
+      {
+         RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
+         input.setRecordList(runBackendStepInput.getRecords());
+         input.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
+         input.setLogger(scriptLogger);
+         RunAdHocRecordScriptOutput output = new RunAdHocRecordScriptOutput();
+         new RunAdHocRecordScriptAction().run(input, output);
+      }
+      catch(Exception e)
+      {
+         LOG.info("Exception running record script", e, logPair("scriptId", scriptId));
+      }
+
+      if(scriptLogger.getScriptLog() != null)
+      {
+         Integer id = scriptLogger.getScriptLog().getValueInteger("id");
+         if(id != null)
+         {
+            boolean hadError = BooleanUtils.isTrue(scriptLogger.getScriptLog().getValueBoolean("hadError"));
+            (hadError ? errorScriptLogIds : okScriptLogIds).add(id);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+   {
+      ArrayList<ProcessSummaryLineInterface> summary = new ArrayList<>();
+      summary.add(okLine);
+
+      if(CollectionUtils.nullSafeHasContents(okScriptLogIds))
+      {
+         summary.add(new ProcessSummaryFilterLink(Status.OK, ScriptLog.TABLE_NAME, new QQueryFilter(new QFilterCriteria("id", IN, okScriptLogIds)))
+            .withLinkText("Created " + String.format("%,d", okScriptLogIds.size()) + " Successful Script Log" + StringUtils.plural(okScriptLogIds)));
+      }
+
+      if(CollectionUtils.nullSafeHasContents(errorScriptLogIds))
+      {
+         summary.add(new ProcessSummaryFilterLink(Status.ERROR, ScriptLog.TABLE_NAME, new QQueryFilter(new QFilterCriteria("id", IN, errorScriptLogIds)))
+            .withLinkText("Created " + String.format("%,d", errorScriptLogIds.size()) + " Script Log" + StringUtils.plural(errorScriptLogIds) + " with Errors"));
+      }
+
+      return (summary);
    }
 }

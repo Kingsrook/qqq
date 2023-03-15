@@ -22,9 +22,13 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -52,6 +56,16 @@ public class RunRecordScriptExtractStep extends ExtractViaQueryStep
       }
 
       runBackendStepInput.addValue(FIELD_SOURCE_TABLE, tableName);
+
+      Integer  scriptId = runBackendStepInput.getValueInteger("scriptId");
+      GetInput getInput = new GetInput();
+      getInput.setTableName(Script.TABLE_NAME);
+      getInput.setPrimaryKey(scriptId);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      if(getOutput.getRecord() != null)
+      {
+         runBackendStepOutput.addValue("scriptName", getOutput.getRecord().getValueString("name"));
+      }
 
       super.preRun(runBackendStepInput, runBackendStepOutput);
    }

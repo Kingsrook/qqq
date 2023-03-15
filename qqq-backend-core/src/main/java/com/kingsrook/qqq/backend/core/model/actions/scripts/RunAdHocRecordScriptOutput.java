@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 
 
@@ -32,6 +33,8 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 public class RunAdHocRecordScriptOutput extends AbstractActionOutput
 {
    private Serializable output;
+
+   private QCodeExecutionLoggerInterface logger;
 
 
 
@@ -64,6 +67,37 @@ public class RunAdHocRecordScriptOutput extends AbstractActionOutput
    public RunAdHocRecordScriptOutput withOutput(Serializable output)
    {
       this.output = output;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for logger
+    *******************************************************************************/
+   public QCodeExecutionLoggerInterface getLogger()
+   {
+      return (this.logger);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for logger
+    *******************************************************************************/
+   public void setLogger(QCodeExecutionLoggerInterface logger)
+   {
+      this.logger = logger;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for logger
+    *******************************************************************************/
+   public RunAdHocRecordScriptOutput withLogger(QCodeExecutionLoggerInterface logger)
+   {
+      this.logger = logger;
       return (this);
    }
 

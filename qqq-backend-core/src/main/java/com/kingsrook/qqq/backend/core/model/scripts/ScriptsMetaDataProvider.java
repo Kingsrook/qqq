@@ -57,10 +57,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.NoopTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptLoadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScriptRevisionProcessStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.TestScriptProcessStep;
 
@@ -138,7 +138,7 @@ public class ScriptsMetaDataProvider
          .withIcon(new QIcon().withName("data_object"))
          .withSupportsFullValidation(false)
          .withExtractStepClass(RunRecordScriptExtractStep.class)
-         .withTransformStepClass(NoopTransformStep.class)
+         .withTransformStepClass(RunRecordScriptTransformStep.class)
          .withLoadStepClass(RunRecordScriptLoadStep.class)
          .getProcessMetaData();
 
@@ -163,6 +163,10 @@ public class ScriptsMetaDataProvider
    {
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(QJoinMetaData.makeInferredJoinName(ScriptLog.TABLE_NAME, ScriptLogLine.TABLE_NAME)))
          .withLabel("Log Lines")
+         .getWidgetMetaData());
+
+      instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(QJoinMetaData.makeInferredJoinName(Script.TABLE_NAME, ScriptLog.TABLE_NAME))).withMaxRows(50)
+         .withLabel("Recent Logs")
          .getWidgetMetaData());
 
       instance.addWidget(new QWidgetMetaData()
@@ -208,6 +212,14 @@ public class ScriptsMetaDataProvider
          .withLeftTable(ScriptType.TABLE_NAME)
          .withRightTable(Script.TABLE_NAME)
          .withJoinOn(new JoinOn("id", "scriptTypeId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(Script.TABLE_NAME)
+         .withRightTable(ScriptLog.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptId"))
          .withOrderBy(new QFilterOrderBy("id"))
          .withInferredName());
 
@@ -308,11 +320,17 @@ public class ScriptsMetaDataProvider
     *******************************************************************************/
    private QTableMetaData defineTableTriggerTable(String backendName) throws QException
    {
-      return (defineStandardTable(backendName, TableTrigger.TABLE_NAME, TableTrigger.class)
+      QTableMetaData tableMetaData = defineStandardTable(backendName, TableTrigger.TABLE_NAME, TableTrigger.class)
          .withRecordLabelFields("id")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2, List.of("tableName", "filterId", "scriptId", "priority", "postInsert", "postUpdate")))
-         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate"))));
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      tableMetaData.getField("scriptId").withPossibleValueSourceFilter(new QQueryFilter(
+         new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD)
+      ));
+
+      return tableMetaData;
    }
 
 
@@ -323,12 +341,15 @@ public class ScriptsMetaDataProvider
    private QTableMetaData defineScriptTable(String backendName) throws QException
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "tableName", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "currentScriptRevisionId")))
+         .withSection(new QFieldSection("recordScriptSettings", new QIcon().withName("table_rows"), Tier.T2, List.of("tableName", "maxBatchSize")))
          .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2).withWidgetName("scriptViewer"))
-         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
+         .withSection(new QFieldSection("lines", new QIcon().withName("horizontal_rule"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Script.TABLE_NAME, ScriptLog.TABLE_NAME)));
 
       tableMetaData.getField("name").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
       tableMetaData.getField("currentScriptRevisionId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+      tableMetaData.getField("currentScriptRevisionId").withIsEditable(false);
 
       return (tableMetaData);
    }

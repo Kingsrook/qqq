@@ -55,6 +55,9 @@ public class Script extends QRecordEntity
    @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
    private String tableName;
 
+   @QField()
+   private Integer maxBatchSize;
+
    @QField(possibleValueSourceName = "scriptRevision")
    private Integer currentScriptRevisionId;
 
@@ -311,6 +314,37 @@ public class Script extends QRecordEntity
    public Script withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxBatchSize
+    *******************************************************************************/
+   public Integer getMaxBatchSize()
+   {
+      return (this.maxBatchSize);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxBatchSize
+    *******************************************************************************/
+   public void setMaxBatchSize(Integer maxBatchSize)
+   {
+      this.maxBatchSize = maxBatchSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxBatchSize
+    *******************************************************************************/
+   public Script withMaxBatchSize(Integer maxBatchSize)
+   {
+      this.maxBatchSize = maxBatchSize;
       return (this);
    }
 

@@ -145,6 +145,7 @@ public class RunAdHocRecordScriptAction
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
 
       output.setOutput(executeCodeOutput.getOutput());
+      output.setLogger(executionLogger);
    }
 
 
