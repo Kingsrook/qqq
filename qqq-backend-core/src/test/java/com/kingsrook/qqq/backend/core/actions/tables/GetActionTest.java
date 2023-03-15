@@ -102,7 +102,8 @@ class GetActionTest extends BaseTest
          new QRecord().withValue("id", 1).withValue("firstName", "George").withValue("lastName", "Washington").withValue("noOfShoes", 5),
          new QRecord().withValue("id", 2).withValue("firstName", "John").withValue("lastName", "Adams"),
          new QRecord().withValue("id", 3).withValue("firstName", "Thomas").withValue("lastName", "Jefferson"),
-         new QRecord().withValue("id", 3).withValue("firstName", "Thomas 503").withValue("lastName", "Jefferson")
+         new QRecord().withValue("id", 3).withValue("firstName", "Thomas 503").withValue("lastName", "Jefferson"),
+         new QRecord().withValue("id", 3).withValue("firstName", "Thomas 999").withValue("lastName", "Jefferson")
       ));
 
       /////////////////////////////////////////////////////////////////////////////
@@ -126,6 +127,9 @@ class GetActionTest extends BaseTest
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
          getInput.setUniqueKey(Map.of("firstName", "Thomas 503", "lastName", "Jefferson"));
          GetOutput getOutput = new GetAction().execute(getInput);
+         assertNull(getOutput.getRecord());
+         getInput.setUniqueKey(Map.of("firstName", "Thomas 999", "lastName", "Jefferson"));
+         getOutput = new GetAction().execute(getInput);
          assertNull(getOutput.getRecord());
       }
 
