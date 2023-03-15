@@ -149,6 +149,101 @@ public class Auth0PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
+   public Set<String> getUsers() throws QException
+   {
+      Set<String> rs = new LinkedHashSet<>();
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+      {
+         HttpGet request = new HttpGet(baseUrl + "users");
+         request.addHeader("Authorization", "Bearer " + token);
+         request.addHeader("Content-Type", "application/json");
+
+         try(CloseableHttpResponse response = httpClient.execute(request))
+         {
+            logResponseStatus(response);
+
+            String    body = EntityUtils.toString(response.getEntity());
+            JSONArray json = new JSONArray(body);
+            for(int i = 0; i < json.length(); i++)
+            {
+               JSONObject user = json.getJSONObject(i);
+               rs.add(user.getString("user_id"));
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         throw (new QException("Error getting auth0 users", e));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getRoleName(String roleId) throws QException
+   {
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+      {
+         HttpGet request = new HttpGet(baseUrl + "roles/" + roleId);
+         request.addHeader("Authorization", "Bearer " + token);
+         request.addHeader("Content-Type", "application/json");
+
+         try(CloseableHttpResponse response = httpClient.execute(request))
+         {
+            logResponseStatus(response);
+
+            String     body = EntityUtils.toString(response.getEntity());
+            JSONObject json = new JSONObject(body);
+            return (json.getString("name"));
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         throw (new QException("Error getting auth0 roles", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getUserName(String userId) throws QException
+   {
+      Set<String> rs = new LinkedHashSet<>();
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+      {
+         HttpGet request = new HttpGet(baseUrl + "users/" + URLEncoder.encode(userId, StandardCharsets.UTF_8));
+         request.addHeader("Authorization", "Bearer " + token);
+         request.addHeader("Content-Type", "application/json");
+
+         try(CloseableHttpResponse response = httpClient.execute(request))
+         {
+            logResponseStatus(response);
+
+            String     body = EntityUtils.toString(response.getEntity());
+            JSONObject json = new JSONObject(body);
+            return (json.getString("name"));
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         throw (new QException("Error getting auth0 users", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public Set<String> getPermissionsForRole(String roleId) throws QException
    {
       Set<String> rs = new LinkedHashSet<>();
@@ -183,6 +278,50 @@ public class Auth0PermissionsHelper
       {
          e.printStackTrace();
          throw (new QException("Error getting auth0 permissions for role", e));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Set<String> getPermissionsForUser(String userId) throws QException
+   {
+      Set<String> rs = new LinkedHashSet<>();
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+      {
+         for(int page = 0; ; page++)
+         {
+            HttpGet request = new HttpGet(baseUrl + "users/" + URLEncoder.encode(userId, StandardCharsets.UTF_8) + "/permissions?page=" + page);
+            request.addHeader("Authorization", "Bearer " + token);
+            request.addHeader("Content-Type", "application/json");
+
+            try(CloseableHttpResponse response = httpClient.execute(request))
+            {
+               logResponseStatus(response);
+
+               String    body = EntityUtils.toString(response.getEntity());
+               JSONArray json = new JSONArray(body);
+               if(json.isEmpty())
+               {
+                  break;
+               }
+
+               for(int i = 0; i < json.length(); i++)
+               {
+                  JSONObject permission = json.getJSONObject(i);
+                  rs.add(permission.getString("permission_name"));
+               }
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         throw (new QException("Error getting auth0 permissions for user", e));
       }
 
       return (rs);
@@ -363,7 +502,7 @@ public class Auth0PermissionsHelper
       {
          Integer statusCode         = response.getStatusLine().getStatusCode();
          String  statusReasonPhrase = response.getStatusLine().getReasonPhrase();
-         System.out.println("Result: " + statusCode + " : " + statusReasonPhrase);
+         // System.out.println("Result: " + statusCode + " : " + statusReasonPhrase);
 
          if(statusCode > 299)
          {
