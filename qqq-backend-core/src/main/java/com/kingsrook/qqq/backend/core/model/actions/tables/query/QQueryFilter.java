@@ -372,6 +372,10 @@ public class QQueryFilter implements Serializable, Cloneable
    /*******************************************************************************
     ** Replace any criteria values that look like ${input.XXX} with the value of XXX
     ** from the supplied inputValues map.
+    **
+    ** Note - it may be very important that you call this method on a clone of a
+    ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
+    ** want to be (permanently) changed!!
     *******************************************************************************/
    public void interpretValues(Map<String, Serializable> inputValues)
    {

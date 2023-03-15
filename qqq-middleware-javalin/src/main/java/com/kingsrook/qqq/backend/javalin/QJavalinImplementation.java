@@ -1332,8 +1332,9 @@ public class QJavalinImplementation
 
       if(field.getPossibleValueSourceFilter() != null)
       {
-         field.getPossibleValueSourceFilter().interpretValues(values);
-         input.setDefaultQueryFilter(field.getPossibleValueSourceFilter());
+         QQueryFilter filter = field.getPossibleValueSourceFilter().clone();
+         filter.interpretValues(values);
+         input.setDefaultQueryFilter(filter);
       }
 
       if(StringUtils.hasContent(ids))
