@@ -65,6 +65,8 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
       .withSingularPastMessage("had the script ran against it.")
       .withPluralPastMessage("had the script ran against them.");
 
+   private ProcessSummaryLine unloggedExceptionLine = new ProcessSummaryLine(Status.ERROR, null, "had an error that was not logged.");
+
    private List<Serializable> okScriptLogIds    = new ArrayList<>();
    private List<Serializable> errorScriptLogIds = new ArrayList<>();
 
@@ -115,18 +117,24 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
       Integer                                       scriptId     = runBackendStepInput.getValueInteger("scriptId");
       StoreScriptLogAndScriptLogLineExecutionLogger scriptLogger = new StoreScriptLogAndScriptLogLineExecutionLogger(null, null); // downstream these will get set!
 
+      RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
+      input.setRecordList(runBackendStepInput.getRecords());
+      input.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
+      input.setLogger(scriptLogger);
+      RunAdHocRecordScriptOutput output          = new RunAdHocRecordScriptOutput();
+      Exception                  caughtException = null;
       try
       {
-         RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
-         input.setRecordList(runBackendStepInput.getRecords());
-         input.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
-         input.setLogger(scriptLogger);
-         RunAdHocRecordScriptOutput output = new RunAdHocRecordScriptOutput();
          new RunAdHocRecordScriptAction().run(input, output);
+         if(output.getException().isPresent())
+         {
+            caughtException = output.getException().get();
+         }
       }
       catch(Exception e)
       {
          LOG.info("Exception running record script", e, logPair("scriptId", scriptId));
+         caughtException = e;
       }
 
       if(scriptLogger.getScriptLog() != null)
@@ -137,6 +145,10 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
             boolean hadError = BooleanUtils.isTrue(scriptLogger.getScriptLog().getValueBoolean("hadError"));
             (hadError ? errorScriptLogIds : okScriptLogIds).add(id);
          }
+      }
+      else if(caughtException != null)
+      {
+         unloggedExceptionLine.incrementCount(runBackendStepInput.getRecords().size());
       }
    }
 
@@ -162,6 +174,8 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
          summary.add(new ProcessSummaryFilterLink(Status.ERROR, ScriptLog.TABLE_NAME, new QQueryFilter(new QFilterCriteria("id", IN, errorScriptLogIds)))
             .withLinkText("Created " + String.format("%,d", errorScriptLogIds.size()) + " Script Log" + StringUtils.plural(errorScriptLogIds) + " with Errors"));
       }
+
+      unloggedExceptionLine.addSelfToListIfAnyCount(summary);
 
       return (summary);
    }

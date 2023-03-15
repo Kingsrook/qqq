@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.ScriptExecutionLoggerInterface;
@@ -73,79 +74,86 @@ public class RunAdHocRecordScriptAction
     *******************************************************************************/
    public void run(RunAdHocRecordScriptInput input, RunAdHocRecordScriptOutput output) throws QException
    {
-      ActionHelper.validateSession(input);
-
-      /////////////////////////
-      // figure out the code //
-      /////////////////////////
-      ScriptRevision scriptRevision = getScriptRevision(input);
-      if(scriptRevision == null)
+      try
       {
-         throw (new QException("Script revision was not found."));
-      }
+         ActionHelper.validateSession(input);
 
-      ////////////////////////////
-      // figure out the records //
-      ////////////////////////////
-      QTableMetaData table = QContext.getQInstance().getTable(input.getTableName());
-      if(CollectionUtils.nullSafeIsEmpty(input.getRecordList()))
+         /////////////////////////
+         // figure out the code //
+         /////////////////////////
+         ScriptRevision scriptRevision = getScriptRevision(input);
+         if(scriptRevision == null)
+         {
+            throw (new QException("Script revision was not found."));
+         }
+
+         ////////////////////////////
+         // figure out the records //
+         ////////////////////////////
+         QTableMetaData table = QContext.getQInstance().getTable(input.getTableName());
+         if(CollectionUtils.nullSafeIsEmpty(input.getRecordList()))
+         {
+            QueryInput queryInput = new QueryInput();
+            queryInput.setTableName(input.getTableName());
+            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, input.getRecordPrimaryKeyList())));
+            QueryOutput queryOutput = new QueryAction().execute(queryInput);
+            input.setRecordList(queryOutput.getRecords());
+         }
+
+         if(CollectionUtils.nullSafeIsEmpty(input.getRecordList()))
+         {
+            ////////////////////////////////////////
+            // just return if nothing found?  idk //
+            ////////////////////////////////////////
+            LOG.info("No records supplied as input (or found via primary keys); exiting with noop");
+            return;
+         }
+
+         /////////////
+         // run it! //
+         /////////////
+         ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
+         executeCodeInput.setInput(new HashMap<>(Objects.requireNonNullElseGet(input.getInputValues(), HashMap::new)));
+         executeCodeInput.getInput().put("records", new ArrayList<>(input.getRecordList()));
+         executeCodeInput.setContext(new HashMap<>());
+         if(input.getOutputObject() != null)
+         {
+            executeCodeInput.getContext().put("output", input.getOutputObject());
+         }
+
+         if(input.getScriptUtils() != null)
+         {
+            executeCodeInput.getContext().put("scriptUtils", input.getScriptUtils());
+         }
+
+         executeCodeInput.getContext().put("api", new ScriptApi());
+
+         executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // let caller supply a logger, or by default use StoreScriptLogAndScriptLogLineExecutionLogger //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         QCodeExecutionLoggerInterface executionLogger = Objects.requireNonNullElseGet(input.getLogger(), () -> new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
+         executeCodeInput.setExecutionLogger(executionLogger);
+         if(executionLogger instanceof ScriptExecutionLoggerInterface scriptExecutionLoggerInterface)
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if logger is aware of scripts (as opposed to a generic CodeExecution logger), give it the ids. //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            scriptExecutionLoggerInterface.setScriptId(scriptRevision.getScriptId());
+            scriptExecutionLoggerInterface.setScriptRevisionId(scriptRevision.getId());
+         }
+
+         ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
+         new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
+
+         output.setOutput(executeCodeOutput.getOutput());
+         output.setLogger(executionLogger);
+      }
+      catch(Exception e)
       {
-         QueryInput queryInput = new QueryInput();
-         queryInput.setTableName(input.getTableName());
-         queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, input.getRecordPrimaryKeyList())));
-         QueryOutput queryOutput = new QueryAction().execute(queryInput);
-         input.setRecordList(queryOutput.getRecords());
+         output.setException(Optional.of(e));
       }
-
-      if(CollectionUtils.nullSafeIsEmpty(input.getRecordList()))
-      {
-         ////////////////////////////////////////
-         // just return if nothing found?  idk //
-         ////////////////////////////////////////
-         LOG.info("No records supplied as input (or found via primary keys); exiting with noop");
-         return;
-      }
-
-      /////////////
-      // run it! //
-      /////////////
-      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
-      executeCodeInput.setInput(new HashMap<>(Objects.requireNonNullElseGet(input.getInputValues(), HashMap::new)));
-      executeCodeInput.getInput().put("records", new ArrayList<>(input.getRecordList()));
-      executeCodeInput.setContext(new HashMap<>());
-      if(input.getOutputObject() != null)
-      {
-         executeCodeInput.getContext().put("output", input.getOutputObject());
-      }
-
-      if(input.getScriptUtils() != null)
-      {
-         executeCodeInput.getContext().put("scriptUtils", input.getScriptUtils());
-      }
-
-      executeCodeInput.getContext().put("api", new ScriptApi());
-
-      executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
-
-      /////////////////////////////////////////////////////////////////////////////////////////////////
-      // let caller supply a logger, or by default use StoreScriptLogAndScriptLogLineExecutionLogger //
-      /////////////////////////////////////////////////////////////////////////////////////////////////
-      QCodeExecutionLoggerInterface executionLogger = Objects.requireNonNullElseGet(input.getLogger(), () -> new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
-      executeCodeInput.setExecutionLogger(executionLogger);
-      if(executionLogger instanceof ScriptExecutionLoggerInterface scriptExecutionLoggerInterface)
-      {
-         ////////////////////////////////////////////////////////////////////////////////////////////////////
-         // if logger is aware of scripts (as opposed to a generic CodeExecution logger), give it the ids. //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////
-         scriptExecutionLoggerInterface.setScriptId(scriptRevision.getScriptId());
-         scriptExecutionLoggerInterface.setScriptRevisionId(scriptRevision.getId());
-      }
-
-      ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
-      new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
-
-      output.setOutput(executeCodeOutput.getOutput());
-      output.setLogger(executionLogger);
    }
 
 

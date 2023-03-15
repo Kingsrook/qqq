@@ -22,17 +22,22 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
+import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -50,6 +55,8 @@ class RunRecordScriptTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       new ScriptsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
 
+      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(new QRecord().withValue("id", 1)));
+
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(ScriptsMetaDataProvider.RUN_RECORD_SCRIPT_PROCESS_NAME);
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
@@ -63,9 +70,9 @@ class RunRecordScriptTest extends BaseTest
       // so, turns out, we don't know how to do a join yet in memory backend, so this can't quite work //
       // still good to run the code and at least get this far w/ an expected exception.                //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
-      assertThatThrownBy(() -> new RunProcessAction().execute(runProcessInput))
-         .isInstanceOf(QException.class)
-         .hasMessageContaining("Script revision was not found");
+      RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      System.out.println(runProcessOutput);
+      assertTrue(((List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get("processResults")).stream().anyMatch(psli -> psli instanceof ProcessSummaryLine psl && psl.getMessage().contains("error that was not logged")));
    }
 
 }

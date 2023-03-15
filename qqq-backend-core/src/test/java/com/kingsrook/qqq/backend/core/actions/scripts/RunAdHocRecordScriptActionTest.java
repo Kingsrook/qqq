@@ -46,7 +46,7 @@ import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /*******************************************************************************
@@ -72,9 +72,10 @@ class RunAdHocRecordScriptActionTest extends BaseTest
 
       RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
 
-      assertThatThrownBy(() -> new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput))
+      new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
+      assertThat(runAdHocRecordScriptOutput.getException()).isPresent().get()
          .isInstanceOf(QException.class)
-         .hasMessageContaining("Script revision was not found");
+         .hasFieldOrPropertyWithValue("message", "Script revision was not found.");
    }
 
 

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
 import java.io.Serializable;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 
@@ -32,9 +33,9 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
  *******************************************************************************/
 public class RunAdHocRecordScriptOutput extends AbstractActionOutput
 {
-   private Serializable output;
-
+   private Serializable                  output;
    private QCodeExecutionLoggerInterface logger;
+   private Optional<Exception>           exception = Optional.empty();
 
 
 
@@ -98,6 +99,37 @@ public class RunAdHocRecordScriptOutput extends AbstractActionOutput
    public RunAdHocRecordScriptOutput withLogger(QCodeExecutionLoggerInterface logger)
    {
       this.logger = logger;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for exception
+    *******************************************************************************/
+   public Optional<Exception> getException()
+   {
+      return (this.exception);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for exception
+    *******************************************************************************/
+   public void setException(Optional<Exception> exception)
+   {
+      this.exception = exception;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for exception
+    *******************************************************************************/
+   public RunAdHocRecordScriptOutput withException(Optional<Exception> exception)
+   {
+      this.exception = exception;
       return (this);
    }
 
