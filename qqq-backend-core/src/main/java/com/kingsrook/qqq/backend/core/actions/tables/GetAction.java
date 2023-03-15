@@ -143,7 +143,7 @@ public class GetAction
                   {
                      if(BackendQueryFilterUtils.doesRecordMatch(filter, recordToCache))
                      {
-                        LOG.info("Not catching record because it matches a use case's filter exclusion", new LogPair("record", recordToCache), new LogPair("filter", filter));
+                        LOG.info("Not caching record because it matches a use case's filter exclusion", new LogPair("record", recordToCache), new LogPair("filter", filter));
                         shouldCacheRecord = false;
                         break recordMatchExclusionLoop;
                      }
