@@ -188,7 +188,7 @@ public class BaseAPIActionUtil
                request.setEntity(recordToEntity(table, record));
 
                QHttpResponse response = makeRequest(table, request);
-               validateResponse(response);
+               validateResponse(response, List.of(record));
                record = processPostResponse(table, record, response);
                insertOutput.addRecord(record);
             }
@@ -317,7 +317,7 @@ public class BaseAPIActionUtil
                request.setEntity(recordsToEntity(table, recordList));
 
                QHttpResponse response = makeRequest(table, request);
-               validateResponse(response);
+               validateResponse(response, recordList);
             }
             catch(QException e)
             {
@@ -354,7 +354,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void validateResponse(QHttpResponse response) throws QException
+   public void validateResponse(QHttpResponse response, List<QRecord> recordList) throws QException
    {
       ////////////////////////
       // noop at base level //
