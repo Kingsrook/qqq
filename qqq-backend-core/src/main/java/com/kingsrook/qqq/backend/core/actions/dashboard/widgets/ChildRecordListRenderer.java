@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.BooleanUtils;
 
@@ -120,6 +121,17 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       /*******************************************************************************
        **
        *******************************************************************************/
+      public Builder withMaxRows(Integer maxRows)
+      {
+         widgetMetaData.withDefaultValue("maxRows", maxRows);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       public Builder withCanAddChildRecord(boolean b)
       {
          widgetMetaData.withDefaultValue("canAddChildRecord", true);
@@ -150,6 +162,12 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       String        joinName    = input.getQueryParams().get("joinName");
       QJoinMetaData join        = input.getInstance().getJoin(joinName);
       String        id          = input.getQueryParams().get("id");
+
+      Integer maxRows = null;
+      if(StringUtils.hasContent(input.getQueryParams().get("maxRows")))
+      {
+         maxRows = ValueUtils.getValueAsInteger(input.getQueryParams().get("maxRows"));
+      }
 
       ////////////////////////////////////////////////////////
       // fetch the record that we're getting children for.  //
@@ -182,6 +200,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       queryInput.setShouldTranslatePossibleValues(true);
       queryInput.setShouldGenerateDisplayValues(true);
       queryInput.setFilter(filter);
+      queryInput.setLimit(maxRows);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
       QTableMetaData table       = input.getInstance().getTable(join.getRightTable());
