@@ -117,7 +117,7 @@ public abstract class AbstractLoadStep implements BackendStep
     ** In other words, for a slow loader, setting a lower pipe capacity can help prevent
     ** time-out errors ("Giving up adding record to pipe...")
     *******************************************************************************/
-   public Integer getOverrideRecordPipeCapacity()
+   public Integer getOverrideRecordPipeCapacity(RunBackendStepInput runBackendStepInput)
    {
       return (null);
    }

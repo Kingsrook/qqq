@@ -45,9 +45,10 @@ public class AsyncRecordPipeLoop
 
    private static final int TIMEOUT_AFTER_NO_RECORDS_MS = 10 * 60 * 1000;
 
-   private static final int MAX_SLEEP_MS           = 1000;
-   private static final int INIT_SLEEP_MS          = 10;
-   private static final int MIN_RECORDS_TO_CONSUME = 10;
+   private static final int MAX_SLEEP_MS  = 1000;
+   private static final int INIT_SLEEP_MS = 10;
+
+   private Integer minRecordsToConsume = 10;
 
 
 
@@ -83,7 +84,7 @@ public class AsyncRecordPipeLoop
 
       while(jobState.equals(AsyncJobState.RUNNING))
       {
-         if(recordPipe.countAvailableRecords() < MIN_RECORDS_TO_CONSUME)
+         if(recordPipe.countAvailableRecords() < minRecordsToConsume)
          {
             ///////////////////////////////////////////////////////////////
             // if the pipe is too empty, sleep to let the producer work. //
@@ -174,6 +175,37 @@ public class AsyncRecordPipeLoop
       }
 
       return (recordCount);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for minRecordsToConsume
+    *******************************************************************************/
+   public Integer getMinRecordsToConsume()
+   {
+      return (this.minRecordsToConsume);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for minRecordsToConsume
+    *******************************************************************************/
+   public void setMinRecordsToConsume(Integer minRecordsToConsume)
+   {
+      this.minRecordsToConsume = minRecordsToConsume;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for minRecordsToConsume
+    *******************************************************************************/
+   public AsyncRecordPipeLoop withMinRecordsToConsume(Integer minRecordsToConsume)
+   {
+      this.minRecordsToConsume = minRecordsToConsume;
+      return (this);
    }
 
 }

@@ -106,7 +106,7 @@ public abstract class AbstractTransformStep implements BackendStep, ProcessSumma
     ** In other words, for a slow transformer, setting a lower pipe capacity can help prevent
     ** time-out errors ("Giving up adding record to pipe...")
     *******************************************************************************/
-   public Integer getOverrideRecordPipeCapacity()
+   public Integer getOverrideRecordPipeCapacity(RunBackendStepInput runBackendStepInput)
    {
       return (null);
    }

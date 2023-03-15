@@ -80,19 +80,24 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          // before it can put more records in.                                      //
          /////////////////////////////////////////////////////////////////////////////
          RecordPipe recordPipe;
-         if(loadStep.getOverrideRecordPipeCapacity() != null)
+         Integer    overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         if(overrideRecordPipeCapacity != null)
          {
-            recordPipe = new RecordPipe(loadStep.getOverrideRecordPipeCapacity());
-            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + loadStep.getOverrideRecordPipeCapacity());
-         }
-         else if(transformStep.getOverrideRecordPipeCapacity() != null)
-         {
-            recordPipe = new RecordPipe(transformStep.getOverrideRecordPipeCapacity());
-            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + transformStep.getOverrideRecordPipeCapacity());
+            recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+            LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
          }
          else
          {
-            recordPipe = new RecordPipe();
+            overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+            if(overrideRecordPipeCapacity != null)
+            {
+               recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+               LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+            }
+            else
+            {
+               recordPipe = new RecordPipe();
+            }
          }
 
          extractStep.setRecordPipe(recordPipe);
@@ -112,8 +117,14 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             transformStep.setTransaction(transaction);
          }
 
-         List<QRecord> loadedRecordList = new ArrayList<>();
-         int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
+         List<QRecord>       loadedRecordList    = new ArrayList<>();
+         AsyncRecordPipeLoop asyncRecordPipeLoop = new AsyncRecordPipeLoop();
+         if(overrideRecordPipeCapacity != null && overrideRecordPipeCapacity < asyncRecordPipeLoop.getMinRecordsToConsume())
+         {
+            asyncRecordPipeLoop.setMinRecordsToConsume(overrideRecordPipeCapacity);
+         }
+
+         int recordCount = asyncRecordPipeLoop.run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
             {
                extractStep.run(runBackendStepInput, runBackendStepOutput);
                return (runBackendStepOutput);
