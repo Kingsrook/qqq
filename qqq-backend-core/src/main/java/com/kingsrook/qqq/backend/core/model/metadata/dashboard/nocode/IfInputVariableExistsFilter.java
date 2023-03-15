@@ -27,6 +27,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 
 
@@ -67,7 +69,7 @@ public class IfInputVariableExistsFilter extends AbstractConditionalFilter
    @Override
    public boolean testCondition(RenderWidgetInput renderWidgetInput)
    {
-      return (renderWidgetInput.getQueryParams().get(inputVariableName) != null);
+      return (StringUtils.hasContent(ValueUtils.getValueAsString(renderWidgetInput.getQueryParams().get(inputVariableName))));
    }
 
 
@@ -78,7 +80,8 @@ public class IfInputVariableExistsFilter extends AbstractConditionalFilter
    @Override
    public QQueryFilter getFilter(RenderWidgetInput renderWidgetInput)
    {
-      for(QFilterCriteria criterion : CollectionUtils.nonNullList(filter.getCriteria()))
+      QQueryFilter returnFilter = filter.clone();
+      for(QFilterCriteria criterion : CollectionUtils.nonNullList(returnFilter.getCriteria()))
       {
          if(criterion.getValues() != null)
          {
@@ -94,6 +97,6 @@ public class IfInputVariableExistsFilter extends AbstractConditionalFilter
          }
       }
 
-      return (filter);
+      return (returnFilter);
    }
 }
