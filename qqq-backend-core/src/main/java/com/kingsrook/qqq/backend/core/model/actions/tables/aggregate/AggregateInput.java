@@ -38,6 +38,7 @@ public class AggregateInput extends AbstractTableActionInput
    private QQueryFilter    filter;
    private List<Aggregate> aggregates;
    private List<GroupBy>   groupBys = new ArrayList<>();
+   private Integer         limit;
 
    private List<QueryJoin> queryJoins = null;
 
@@ -231,6 +232,40 @@ public class AggregateInput extends AbstractTableActionInput
          this.queryJoins = new ArrayList<>();
       }
       this.queryJoins.add(queryJoin);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for limit
+    **
+    *******************************************************************************/
+   public Integer getLimit()
+   {
+      return limit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for limit
+    **
+    *******************************************************************************/
+   public void setLimit(Integer limit)
+   {
+      this.limit = limit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for limit
+    **
+    *******************************************************************************/
+   public AggregateInput withLimit(Integer limit)
+   {
+      this.limit = limit;
       return (this);
    }
 

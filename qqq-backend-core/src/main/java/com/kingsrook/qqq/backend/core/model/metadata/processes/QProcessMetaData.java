@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPer
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -234,6 +235,12 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
       {
          this.steps = new HashMap<>();
       }
+
+      if(!StringUtils.hasContent(step.getName()))
+      {
+         throw (new IllegalArgumentException("Attempt to add a process step without a name"));
+      }
+
       this.steps.put(step.getName(), step);
 
       return (this);
@@ -251,6 +258,12 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
       {
          this.steps = new HashMap<>();
       }
+
+      if(!StringUtils.hasContent(step.getName()))
+      {
+         throw (new IllegalArgumentException("Attempt to add a process step without a name"));
+      }
+
       this.steps.put(step.getName(), step);
 
       return (this);

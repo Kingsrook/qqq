@@ -436,7 +436,7 @@ public class PermissionsHelper
             }
          }
 
-         if(hasPermission(actionInput.getSession(), permissionBaseName, effectivePermissionSubType))
+         if(hasPermission(QContext.getQSession(), permissionBaseName, effectivePermissionSubType))
          {
             return (PermissionCheckResult.ALLOW);
          }
@@ -534,9 +534,9 @@ public class PermissionsHelper
          return;
       }
 
-      if(!hasPermission(actionInput.getSession(), permissionBaseName, effectivePermissionSubType))
+      if(!hasPermission(QContext.getQSession(), permissionBaseName, effectivePermissionSubType))
       {
-         // LOG.debug("Throwing permission denied for: " + getPermissionName(permissionBaseName, effectivePermissionSubType) + " for " + actionInput.getSession().getUser());
+         // LOG.debug("Throwing permission denied for: " + getPermissionName(permissionBaseName, effectivePermissionSubType) + " for " + QContext.getQSession().getUser());
          throw (new QPermissionDeniedException("Permission denied."));
       }
    }

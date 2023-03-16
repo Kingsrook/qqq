@@ -51,7 +51,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPer
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
@@ -293,14 +292,6 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void enrichStep(QStepMetaData step)
    {
-      if(!StringUtils.hasContent(step.getName()) && step instanceof QBackendStepMetaData backendStep)
-      {
-         if(backendStep.getCode() != null && backendStep.getCode().getName() != null)
-         {
-            step.setName(backendStep.getCode().getName());
-         }
-      }
-
       if(!StringUtils.hasContent(step.getLabel()))
       {
          step.setLabel(nameToLabel(step.getName()));

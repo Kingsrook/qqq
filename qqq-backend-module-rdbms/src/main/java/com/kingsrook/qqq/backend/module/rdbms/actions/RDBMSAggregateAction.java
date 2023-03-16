@@ -85,6 +85,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             sql += " ORDER BY " + makeOrderByClause(table, filter.getOrderBys(), joinsContext);
          }
 
+         if(aggregateInput.getLimit() != null)
+         {
+            sql += " LIMIT " + aggregateInput.getLimit();
+         }
+
          // todo sql customization - can edit sql and/or param list
 
          AggregateOutput       rs      = new AggregateOutput();
@@ -114,9 +119,18 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                      JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
                      QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
 
-                     if(field.getType().equals(QFieldType.INTEGER) && aggregate.getOperator().equals(AggregateOperator.AVG))
+                     QFieldType fieldType = aggregate.getFieldType();
+                     if(fieldType == null)
                      {
-                        field = new QFieldMetaData().withType(QFieldType.DECIMAL);
+                        if(field.getType().equals(QFieldType.INTEGER) && (aggregate.getOperator().equals(AggregateOperator.AVG)))
+                        {
+                           fieldType = QFieldType.DECIMAL;
+                        }
+                     }
+
+                     if(fieldType != null)
+                     {
+                        field = new QFieldMetaData().withType(fieldType);
                      }
 
                      Serializable value = getFieldValueFromResultSet(field, resultSet, selectionIndex++);
@@ -155,7 +169,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       for(Aggregate aggregate : aggregateInput.getAggregates())
       {
          JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
-         rs.add(aggregate.getOperator() + "(" + escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())) + ")");
+         rs.add(aggregate.getOperator().getSqlPrefix() + escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(fieldAndTableNameOrAlias.field())) + ")");
       }
       return (rs);
    }

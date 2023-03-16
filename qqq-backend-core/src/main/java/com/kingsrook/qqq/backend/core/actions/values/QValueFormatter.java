@@ -282,7 +282,8 @@ public class QValueFormatter
 
 
    /*******************************************************************************
-    ** For a list of records, set their recordLabels and display values
+    ** For a list of records, set their recordLabels and display values - including
+    ** record label (e.g., from the table meta data).
     *******************************************************************************/
    public static void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
@@ -295,6 +296,24 @@ public class QValueFormatter
       {
          setDisplayValuesInRecord(table.getFields().values(), record);
          record.setRecordLabel(formatRecordLabel(table, record));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of records, set their recordLabels and display values
+    *******************************************************************************/
+   public static void setDisplayValuesInRecords(Collection<QFieldMetaData> fields, List<QRecord> records)
+   {
+      if(records == null)
+      {
+         return;
+      }
+
+      for(QRecord record : records)
+      {
+         setDisplayValuesInRecord(fields, record);
       }
    }
 

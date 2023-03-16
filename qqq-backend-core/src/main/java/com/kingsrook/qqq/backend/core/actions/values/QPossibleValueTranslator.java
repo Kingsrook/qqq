@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -67,16 +68,23 @@ public class QPossibleValueTranslator
 {
    private static final QLogger LOG = QLogger.getLogger(QPossibleValueTranslator.class);
 
-   private final QInstance qInstance;
-   private final QSession  session;
-
    ///////////////////////////////////////////////////////
    // top-level keys are pvsNames (not table names)     //
    // 2nd-level keys are pkey values from the PVS table //
    ///////////////////////////////////////////////////////
-   private Map<String, Map<Serializable, String>> possibleValueCache;
+   private Map<String, Map<Serializable, String>> possibleValueCache = new HashMap<>();
 
    // todo not commit - remove instance & session - use Context
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public QPossibleValueTranslator()
+   {
+   }
 
 
 
@@ -85,10 +93,6 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    public QPossibleValueTranslator(QInstance qInstance, QSession session)
    {
-      this.qInstance = qInstance;
-      this.session = session;
-
-      this.possibleValueCache = new HashMap<>();
    }
 
 
@@ -141,7 +145,7 @@ public class QPossibleValueTranslator
             {
                try
                {
-                  QTableMetaData joinTable = qInstance.getTable(queryJoin.getJoinTable());
+                  QTableMetaData joinTable = QContext.getQInstance().getTable(queryJoin.getJoinTable());
                   for(QFieldMetaData field : joinTable.getFields().values())
                   {
                      String joinFieldName = Objects.requireNonNullElse(queryJoin.getAlias(), joinTable.getName()) + "." + field.getName();
@@ -152,7 +156,7 @@ public class QPossibleValueTranslator
                            ///////////////////////////////////////////////
                            // avoid circling-back upon the source table //
                            ///////////////////////////////////////////////
-                           QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+                           QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
                            if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()) && table.getName().equals(possibleValueSource.getTableName()))
                            {
                               continue;
@@ -212,7 +216,7 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    public String translatePossibleValue(QFieldMetaData field, Serializable value)
    {
-      QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+      QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
       if(possibleValueSource == null)
       {
          LOG.error("Missing possible value source named [" + field.getPossibleValueSourceName() + "] when formatting value for field [" + field.getName() + "]");
@@ -414,7 +418,7 @@ public class QPossibleValueTranslator
          if(queryJoin.getSelect())
          {
             String aliasOrTableName = Objects.requireNonNullElse(queryJoin.getAlias(), queryJoin.getJoinTable());
-            primePvsCacheTableListingHashLoader(qInstance.getTable(queryJoin.getJoinTable()), fieldsByPvsTable, pvsesByTable, aliasOrTableName + ".", queryJoin.getJoinTable(), limitedToFieldNames);
+            primePvsCacheTableListingHashLoader(QContext.getQInstance().getTable(queryJoin.getJoinTable()), fieldsByPvsTable, pvsesByTable, aliasOrTableName + ".", queryJoin.getJoinTable(), limitedToFieldNames);
          }
       }
 
@@ -474,7 +478,7 @@ public class QPossibleValueTranslator
    {
       for(QFieldMetaData field : table.getFields().values())
       {
-         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+         QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
          if(possibleValueSource != null && possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
          {
             if(limitedToFieldNames != null && !limitedToFieldNames.contains(fieldNamePrefix + field.getName()))
@@ -510,7 +514,7 @@ public class QPossibleValueTranslator
 
       try
       {
-         String primaryKeyField = qInstance.getTable(tableName).getPrimaryKeyField();
+         String primaryKeyField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
 
          for(List<Serializable> page : CollectionUtils.getPages(values, 1000))
          {
@@ -531,7 +535,7 @@ public class QPossibleValueTranslator
             {
                if(possibleValueSource.getType().equals(QPossibleValueSourceType.TABLE))
                {
-                  QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+                  QTableMetaData table = QContext.getQInstance().getTable(possibleValueSource.getTableName());
                   for(String recordLabelField : CollectionUtils.nonNullList(table.getRecordLabelFields()))
                   {
                      QFieldMetaData field = table.getField(recordLabelField);
