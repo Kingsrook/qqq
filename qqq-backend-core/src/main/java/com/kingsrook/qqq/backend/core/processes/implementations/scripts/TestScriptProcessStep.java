@@ -118,6 +118,11 @@ public class TestScriptProcessStep implements BackendStep
             runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision.toQRecord()));
             RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
             new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
+
+            /////////////////////////////////////////////
+            // if there was an exception, send it back //
+            /////////////////////////////////////////////
+            runAdHocRecordScriptOutput.getException().ifPresent(e -> output.addValue("exception", e));
          }
          else
          {
