@@ -119,14 +119,18 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                      JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(aggregate.getFieldName());
                      QFieldMetaData                        field                    = fieldAndTableNameOrAlias.field();
 
-                     if(field.getType().equals(QFieldType.INTEGER) && (aggregate.getOperator().equals(AggregateOperator.AVG) || aggregate.getOperator().equals(AggregateOperator.SUM)))
+                     QFieldType fieldType = aggregate.getFieldType();
+                     if(fieldType == null)
                      {
-                        field = new QFieldMetaData().withType(QFieldType.DECIMAL);
+                        if(field.getType().equals(QFieldType.INTEGER) && (aggregate.getOperator().equals(AggregateOperator.AVG)))
+                        {
+                           fieldType = QFieldType.DECIMAL;
+                        }
                      }
 
-                     if(aggregate.getOperator().equals(AggregateOperator.COUNT) || aggregate.getOperator().equals(AggregateOperator.COUNT_DISTINCT))
+                     if(fieldType != null)
                      {
-                        field = new QFieldMetaData().withType(QFieldType.DECIMAL);
+                        field = new QFieldMetaData().withType(fieldType);
                      }
 
                      Serializable value = getFieldValueFromResultSet(field, resultSet, selectionIndex++);

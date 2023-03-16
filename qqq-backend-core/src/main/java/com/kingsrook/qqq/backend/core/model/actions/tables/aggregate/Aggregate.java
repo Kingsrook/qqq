@@ -24,15 +24,18 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 import java.io.Serializable;
 import java.util.Objects;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
- **
+ ** Define an "aggregate", e.g., to be selected in an Aggregate action.
+ ** Such as SUM(cost).
  *******************************************************************************/
 public class Aggregate implements Serializable
 {
    private String            fieldName;
    private AggregateOperator operator;
+   private QFieldType        fieldType;
 
 
 
@@ -55,12 +58,14 @@ public class Aggregate implements Serializable
       {
          return true;
       }
+
       if(o == null || getClass() != o.getClass())
       {
          return false;
       }
+
       Aggregate aggregate = (Aggregate) o;
-      return Objects.equals(fieldName, aggregate.fieldName) && operator == aggregate.operator;
+      return Objects.equals(fieldName, aggregate.fieldName) && operator == aggregate.operator && fieldType == aggregate.fieldType;
    }
 
 
@@ -71,7 +76,7 @@ public class Aggregate implements Serializable
    @Override
    public int hashCode()
    {
-      return Objects.hash(fieldName, operator);
+      return Objects.hash(fieldName, operator, fieldType);
    }
 
 
@@ -150,6 +155,37 @@ public class Aggregate implements Serializable
    public Aggregate withOperator(AggregateOperator operator)
    {
       this.operator = operator;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldType
+    *******************************************************************************/
+   public QFieldType getFieldType()
+   {
+      return (this.fieldType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldType
+    *******************************************************************************/
+   public void setFieldType(QFieldType fieldType)
+   {
+      this.fieldType = fieldType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldType
+    *******************************************************************************/
+   public Aggregate withFieldType(QFieldType fieldType)
+   {
+      this.fieldType = fieldType;
       return (this);
    }
 

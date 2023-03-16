@@ -108,7 +108,7 @@ public class ColumnStatsStep implements BackendStep
          ////////////////////////////////////////////
          // do a count query grouped by this field //
          ////////////////////////////////////////////
-         Aggregate aggregate = new Aggregate(table.getPrimaryKeyField(), AggregateOperator.COUNT);
+         Aggregate aggregate = new Aggregate(table.getPrimaryKeyField(), AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
          GroupBy   groupBy   = new GroupBy(field.getType(), fieldName);
 
          if(StringUtils.hasContent(orderBy))
@@ -171,7 +171,7 @@ public class ColumnStatsStep implements BackendStep
          QFieldMetaData countNonNullField  = new QFieldMetaData("count", QFieldType.INTEGER).withLabel("Rows with a value").withDisplayFormat(DisplayFormat.COMMAS);
          QFieldMetaData countDistinctField = new QFieldMetaData("countDistinct", QFieldType.INTEGER).withLabel("Distinct values").withDisplayFormat(DisplayFormat.COMMAS);
          QFieldMetaData sumField           = new QFieldMetaData("sum", QFieldType.DECIMAL).withDisplayFormat(field.getDisplayFormat());
-         QFieldMetaData avgField           = new QFieldMetaData("average", QFieldType.DECIMAL).withDisplayFormat(field.getDisplayFormat());
+         QFieldMetaData avgField           = new QFieldMetaData("average", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.DECIMAL2_COMMAS);
          QFieldMetaData minField           = new QFieldMetaData("min", field.getType()).withDisplayFormat(field.getDisplayFormat());
          QFieldMetaData maxField           = new QFieldMetaData("max", field.getType()).withDisplayFormat(field.getDisplayFormat());
 
@@ -205,6 +205,11 @@ public class ColumnStatsStep implements BackendStep
             doMax = false;
          }
 
+         if(field.getName().equals(table.getPrimaryKeyField()))
+         {
+            doSum = false;
+         }
+
          ArrayList<QFieldMetaData> fields = new ArrayList<>();
          fields.add(countNonNullField);
          fields.add(countDistinctField);
@@ -233,10 +238,13 @@ public class ColumnStatsStep implements BackendStep
             doCountDistinct = false;
          }
 
-         Aggregate      countNonNullAggregate  = new Aggregate(fieldName, AggregateOperator.COUNT);
-         Aggregate      countDistinctAggregate = new Aggregate(fieldName, AggregateOperator.COUNT_DISTINCT);
-         Aggregate      sumAggregate           = new Aggregate(fieldName, AggregateOperator.SUM);
-         Aggregate      avgAggregate           = new Aggregate(fieldName, AggregateOperator.AVG);
+         /////////////////////////////////////////////////////////////////////////////////
+         // just in case any of these don't fit in an integer, use decimal for them all //
+         /////////////////////////////////////////////////////////////////////////////////
+         Aggregate      countNonNullAggregate  = new Aggregate(fieldName, AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
+         Aggregate      countDistinctAggregate = new Aggregate(fieldName, AggregateOperator.COUNT_DISTINCT).withFieldType(QFieldType.DECIMAL);
+         Aggregate      sumAggregate           = new Aggregate(fieldName, AggregateOperator.SUM).withFieldType(QFieldType.DECIMAL);
+         Aggregate      avgAggregate           = new Aggregate(fieldName, AggregateOperator.AVG).withFieldType(QFieldType.DECIMAL);
          Aggregate      minAggregate           = new Aggregate(fieldName, AggregateOperator.MIN);
          Aggregate      maxAggregate           = new Aggregate(fieldName, AggregateOperator.MAX);
          AggregateInput statsAggregateInput    = new AggregateInput();
