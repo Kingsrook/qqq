@@ -59,7 +59,9 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
- **
+ ** This is a single-step process used to provide Column Statistics.  These include
+ ** counts per-value for a field, plus things like total count, min, max, avg, based
+ ** on the field type.
  *******************************************************************************/
 public class ColumnStatsStep implements BackendStep
 {
