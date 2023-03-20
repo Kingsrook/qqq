@@ -1,0 +1,3271 @@
+  openapi: "3.0.3"
+  info:
+    title: "QQQ API"
+    description: "This is an openAPI built by QQQ"
+    contact:
+      email: "contact@kingsrook.com"
+    version: "2023.03"
+  servers:
+    - description: "Localhost development"
+      url: "http://localhost:8000/api"
+  tags:
+    - name: "Person"
+      description: "Operations on the Person table."
+    - name: "Person File"
+      description: "Operations on the Person File table."
+    - name: "Person Memory"
+      description: "Operations on the Person Memory table."
+    - name: "Person Memory Cache"
+      description: "Operations on the Person Memory Cache table."
+    - name: "Id and Name Only"
+      description: "Operations on the Id and Name Only table."
+    - name: "Shape"
+      description: "Operations on the Shape table."
+    - name: "Basepull Test"
+      description: "Operations on the Basepull Test table."
+    - name: "Order"
+      description: "Operations on the Order table."
+    - name: "Order Line"
+      description: "Operations on the Order Line table."
+  paths:
+    /person/query:
+      get:
+        summary: "Search the Person table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryPerson"
+        tags:
+          - "Person"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              firstNameAndLastNameAndBirthDate:
+                summary: "order by firstName descending, then by lastName ascending, then\
+              \ by birthDate"
+                value: "firstName desc, lastName asc, birthDate"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            required: false
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            allowEmptyValue: false
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            allowEmptyValue: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "firstName"
+            description: "Query on the First Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lastName"
+            description: "Query on the Last Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "birthDate"
+            description: "Query on the Birth Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "email"
+            description: "Query on the Email field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "homeStateId"
+            description: "Query on the Home State field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "favoriteShapeId"
+            description: "Query on the Favorite Shape field.  Can prefix value with an\
+          \ operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "customValue"
+            description: "Query on the Custom Value field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "noOfShoes"
+            description: "Query on the No Of Shoes field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "cost"
+            description: "Query on the Cost field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "price"
+            description: "Query on the Price field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Person table (though may have found\
+            \ 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/personSearchResult"
+    /personFile/query:
+      get:
+        summary: "Search the Person File table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryPersonFile"
+        tags:
+          - "Person File"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              firstNameAndLastNameAndBirthDate:
+                summary: "order by firstName descending, then by lastName ascending, then\
+              \ by birthDate"
+                value: "firstName desc, lastName asc, birthDate"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "firstName"
+            description: "Query on the First Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lastName"
+            description: "Query on the Last Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "birthDate"
+            description: "Query on the Birth Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "email"
+            description: "Query on the Email field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "homeStateId"
+            description: "Query on the Home State field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "favoriteShapeId"
+            description: "Query on the Favorite Shape field.  Can prefix value with an\
+          \ operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "customValue"
+            description: "Query on the Custom Value field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "noOfShoes"
+            description: "Query on the No Of Shoes field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "cost"
+            description: "Query on the Cost field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "price"
+            description: "Query on the Price field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Person File table (though may have\
+            \ found 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/personFileSearchResult"
+    /personMemory/query:
+      get:
+        summary: "Search the Person Memory table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryPersonMemory"
+        tags:
+          - "Person Memory"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              firstNameAndLastNameAndBirthDate:
+                summary: "order by firstName descending, then by lastName ascending, then\
+              \ by birthDate"
+                value: "firstName desc, lastName asc, birthDate"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "firstName"
+            description: "Query on the First Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lastName"
+            description: "Query on the Last Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "birthDate"
+            description: "Query on the Birth Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "email"
+            description: "Query on the Email field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "homeStateId"
+            description: "Query on the Home State field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "favoriteShapeId"
+            description: "Query on the Favorite Shape field.  Can prefix value with an\
+          \ operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "customValue"
+            description: "Query on the Custom Value field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "noOfShoes"
+            description: "Query on the No Of Shoes field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "cost"
+            description: "Query on the Cost field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "price"
+            description: "Query on the Price field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "qqqAutomationStatus"
+            description: "Query on the Qqq Automation Status field.  Can prefix value\
+          \ with an operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Person Memory table (though may\
+            \ have found 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/personMemorySearchResult"
+    /personMemoryCache/query:
+      get:
+        summary: "Search the Person Memory Cache table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryPersonMemoryCache"
+        tags:
+          - "Person Memory Cache"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              firstNameAndLastNameAndBirthDate:
+                summary: "order by firstName descending, then by lastName ascending, then\
+              \ by birthDate"
+                value: "firstName desc, lastName asc, birthDate"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "firstName"
+            description: "Query on the First Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lastName"
+            description: "Query on the Last Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "birthDate"
+            description: "Query on the Birth Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "email"
+            description: "Query on the Email field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "homeStateId"
+            description: "Query on the Home State field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "favoriteShapeId"
+            description: "Query on the Favorite Shape field.  Can prefix value with an\
+          \ operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "customValue"
+            description: "Query on the Custom Value field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "noOfShoes"
+            description: "Query on the No Of Shoes field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "cost"
+            description: "Query on the Cost field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "price"
+            description: "Query on the Price field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "cachedDate"
+            description: "Query on the Cached Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Person Memory Cache table (though\
+            \ may have found 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/personMemoryCacheSearchResult"
+    /idAndNameOnly/query:
+      get:
+        summary: "Search the Id and Name Only table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryIdAndNameOnly"
+        tags:
+          - "Id and Name Only"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "name"
+            description: "Query on the Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Id and Name Only table (though may\
+            \ have found 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/idAndNameOnlySearchResult"
+    /shape/query:
+      get:
+        summary: "Search the Shape table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryShape"
+        tags:
+          - "Shape"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              nameAndTypeAndNoOfSides:
+                summary: "order by name descending, then by type ascending, then by noOfSides"
+                value: "name desc, type asc, noOfSides"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "name"
+            description: "Query on the Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "type"
+            description: "Query on the Type field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "noOfSides"
+            description: "Query on the No Of Sides field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "isPolygon"
+            description: "Query on the Is Polygon field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Shape table (though may have found\
+            \ 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/shapeSearchResult"
+    /basepullTest/query:
+      get:
+        summary: "Search the Basepull Test table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryBasepullTest"
+        tags:
+          - "Basepull Test"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              firstNameAndLastNameAndBirthDate:
+                summary: "order by firstName descending, then by lastName ascending, then\
+              \ by birthDate"
+                value: "firstName desc, lastName asc, birthDate"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "firstName"
+            description: "Query on the First Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lastName"
+            description: "Query on the Last Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "birthDate"
+            description: "Query on the Birth Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "email"
+            description: "Query on the Email field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "homeStateId"
+            description: "Query on the Home State field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "favoriteShapeId"
+            description: "Query on the Favorite Shape field.  Can prefix value with an\
+          \ operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "customValue"
+            description: "Query on the Custom Value field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "noOfShoes"
+            description: "Query on the No Of Shoes field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "cost"
+            description: "Query on the Cost field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "price"
+            description: "Query on the Price field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "processName"
+            description: "Query on the Process Name field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lastRunTime"
+            description: "Query on the Last Run Time field.  Can prefix value with an\
+          \ operator, else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Basepull Test table (though may\
+            \ have found 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/basepullTestSearchResult"
+    /order/query:
+      get:
+        summary: "Search the Order table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryOrder"
+        tags:
+          - "Order"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              orderDateAndStoreIdAndTotal:
+                summary: "order by orderDate descending, then by storeId ascending, then\
+              \ by total"
+                value: "orderDate desc, storeId asc, total"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "orderDate"
+            description: "Query on the Order Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "storeId"
+            description: "Query on the Store Id field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "total"
+            description: "Query on the Total field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Order table (though may have found\
+            \ 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/orderSearchResult"
+    /orderLine/query:
+      get:
+        summary: "Search the Order Line table using multiple query string fields."
+        description: "TODO"
+        operationId: "queryOrderLine"
+        tags:
+          - "Order Line"
+        parameters:
+          - name: "pageNo"
+            description: "Which page of results to return.  Starts at 1."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "pageSize"
+            description: "Max number of records to include in a page.  Defaults to 50."
+            in: "query"
+            schema:
+              type: "integer"
+          - name: "includeCount"
+            description: "Whether or not to include the count (total matching records)\
+          \ in the result. Default is true."
+            in: "query"
+            schema:
+              type: "boolean"
+          - name: "orderBy"
+            description: "How the results of the query should be sorted.<br/>\nSQL-style,\
+          \ comma-separated list of field names, each optionally followed by ASC or\
+          \ DESC (defaults to ASC).\n"
+            in: "query"
+            schema:
+              type: "string"
+            examples:
+              id:
+                summary: "order by id (by default is ascending)"
+                value: "id"
+              idDesc:
+                summary: "order by id (descending)"
+                value: "id desc"
+              idAsc:
+                summary: "order by id (explicitly ascending)"
+                value: "id asc"
+              createDateAndModifyDate:
+                summary: "order by createDate, then by modifyDate (both ascending)"
+                value: "createDate, modifyDate"
+              orderIdAndLineNumberAndSku:
+                summary: "order by orderId descending, then by lineNumber ascending, then\
+              \ by sku"
+                value: "orderId desc, lineNumber asc, sku"
+          - name: "booleanOperator"
+            description: "Whether to combine query field as an AND or an OR.  Default\
+          \ is AND."
+            in: "query"
+            schema:
+              type: "string"
+              enum:
+                - "AND"
+                - "OR"
+          - name: "id"
+            description: "Query on the Id field.  Can prefix value with an operator, else\
+          \ defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "createDate"
+            description: "Query on the Create Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "modifyDate"
+            description: "Query on the Modify Date field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "orderId"
+            description: "Query on the Order Id field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "lineNumber"
+            description: "Query on the Line Number field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "sku"
+            description: "Query on the Sku field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+          - name: "quantity"
+            description: "Query on the Quantity field.  Can prefix value with an operator,\
+          \ else defaults to = (equals)."
+            in: "query"
+            schema:
+              type: "array"
+              items:
+                type: "string"
+            explode: true
+            examples:
+              notQueried:
+                summary: "No query on this field"
+                value:
+                  - ""
+              equals:
+                summary: "equal to 47"
+                value:
+                  - "47"
+              complex:
+                summary: "between 42 and 47 and not equal to 45"
+                value:
+                  - "BETWEEN 42,47"
+                  - "!=45"
+        responses:
+          400:
+            $ref: "#/components/responses/400"
+          401:
+            $ref: "#/components/responses/401"
+          403:
+            $ref: "#/components/responses/403"
+          500:
+            $ref: "#/components/responses/500"
+          200:
+            description: "Successfully searched the Order Line table (though may have\
+            \ found 0 records)."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/orderLineSearchResult"
+  components:
+    schemas:
+      baseSearchResultFields:
+        type: "object"
+        properties:
+          pageNo:
+            type: "integer"
+            description: "Requested result page number"
+          count:
+            type: "integer"
+            description: "Number of records that matched the search criteria"
+          pageSize:
+            type: "integer"
+            description: "Requested result page size"
+      personWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person."
+          createDate:
+            description: "Create Date for the Person."
+          modifyDate:
+            description: "Modify Date for the Person."
+          firstName:
+            type: "string"
+            description: "First Name for the Person."
+          lastName:
+            type: "string"
+            description: "Last Name for the Person."
+          birthDate:
+            description: "Birth Date for the Person."
+          email:
+            type: "string"
+            description: "Email for the Person."
+          homeStateId:
+            type: "integer"
+            description: "Home State for the Person."
+          favoriteShapeId:
+            type: "integer"
+            description: "Favorite Shape for the Person."
+          customValue:
+            type: "integer"
+            description: "Custom Value for the Person."
+          noOfShoes:
+            type: "integer"
+            description: "No Of Shoes for the Person."
+          cost:
+            description: "Cost for the Person."
+          price:
+            description: "Price for the Person."
+      person:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/personWithoutPrimaryKey"
+      personSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/person"
+                - $ref: "#/components/schemas/personWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      personFileWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person File."
+          createDate:
+            description: "Create Date for the Person File."
+          modifyDate:
+            description: "Modify Date for the Person File."
+          firstName:
+            type: "string"
+            description: "First Name for the Person File."
+          lastName:
+            type: "string"
+            description: "Last Name for the Person File."
+          birthDate:
+            description: "Birth Date for the Person File."
+          email:
+            type: "string"
+            description: "Email for the Person File."
+          homeStateId:
+            type: "integer"
+            description: "Home State for the Person File."
+          favoriteShapeId:
+            type: "integer"
+            description: "Favorite Shape for the Person File."
+          customValue:
+            type: "integer"
+            description: "Custom Value for the Person File."
+          noOfShoes:
+            type: "integer"
+            description: "No Of Shoes for the Person File."
+          cost:
+            description: "Cost for the Person File."
+          price:
+            description: "Price for the Person File."
+      personFile:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person File.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/personFileWithoutPrimaryKey"
+      personFileSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/personFile"
+                - $ref: "#/components/schemas/personFileWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      personMemoryWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person Memory."
+          createDate:
+            description: "Create Date for the Person Memory."
+          modifyDate:
+            description: "Modify Date for the Person Memory."
+          firstName:
+            type: "string"
+            description: "First Name for the Person Memory."
+          lastName:
+            type: "string"
+            description: "Last Name for the Person Memory."
+          birthDate:
+            description: "Birth Date for the Person Memory."
+          email:
+            type: "string"
+            description: "Email for the Person Memory."
+          homeStateId:
+            type: "integer"
+            description: "Home State for the Person Memory."
+          favoriteShapeId:
+            type: "integer"
+            description: "Favorite Shape for the Person Memory."
+          customValue:
+            type: "integer"
+            description: "Custom Value for the Person Memory."
+          noOfShoes:
+            type: "integer"
+            description: "No Of Shoes for the Person Memory."
+          cost:
+            description: "Cost for the Person Memory."
+          price:
+            description: "Price for the Person Memory."
+          qqqAutomationStatus:
+            type: "integer"
+            description: "Qqq Automation Status for the Person Memory."
+      personMemory:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person Memory.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/personMemoryWithoutPrimaryKey"
+      personMemorySearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/personMemory"
+                - $ref: "#/components/schemas/personMemoryWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      personMemoryCacheWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person Memory Cache."
+          createDate:
+            description: "Create Date for the Person Memory Cache."
+          modifyDate:
+            description: "Modify Date for the Person Memory Cache."
+          firstName:
+            type: "string"
+            description: "First Name for the Person Memory Cache."
+          lastName:
+            type: "string"
+            description: "Last Name for the Person Memory Cache."
+          birthDate:
+            description: "Birth Date for the Person Memory Cache."
+          email:
+            type: "string"
+            description: "Email for the Person Memory Cache."
+          homeStateId:
+            type: "integer"
+            description: "Home State for the Person Memory Cache."
+          favoriteShapeId:
+            type: "integer"
+            description: "Favorite Shape for the Person Memory Cache."
+          customValue:
+            type: "integer"
+            description: "Custom Value for the Person Memory Cache."
+          noOfShoes:
+            type: "integer"
+            description: "No Of Shoes for the Person Memory Cache."
+          cost:
+            description: "Cost for the Person Memory Cache."
+          price:
+            description: "Price for the Person Memory Cache."
+          cachedDate:
+            description: "Cached Date for the Person Memory Cache."
+      personMemoryCache:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Person Memory Cache.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/personMemoryCacheWithoutPrimaryKey"
+      personMemoryCacheSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/personMemoryCache"
+                - $ref: "#/components/schemas/personMemoryCacheWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      idAndNameOnlyWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Id and Name Only."
+          name:
+            type: "string"
+            description: "Name for the Id and Name Only."
+      idAndNameOnly:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Id and Name Only.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/idAndNameOnlyWithoutPrimaryKey"
+      idAndNameOnlySearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/idAndNameOnly"
+                - $ref: "#/components/schemas/idAndNameOnlyWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      shapeWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Shape."
+          createDate:
+            description: "Create Date for the Shape."
+          modifyDate:
+            description: "Modify Date for the Shape."
+          name:
+            type: "string"
+            description: "Name for the Shape."
+          type:
+            type: "string"
+            description: "Type for the Shape."
+          noOfSides:
+            type: "integer"
+            description: "No Of Sides for the Shape."
+          isPolygon:
+            description: "Is Polygon for the Shape."
+      shape:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Shape.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/shapeWithoutPrimaryKey"
+      shapeSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/shape"
+                - $ref: "#/components/schemas/shapeWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      basepullTestWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Basepull Test."
+          createDate:
+            description: "Create Date for the Basepull Test."
+          modifyDate:
+            description: "Modify Date for the Basepull Test."
+          firstName:
+            type: "string"
+            description: "First Name for the Basepull Test."
+          lastName:
+            type: "string"
+            description: "Last Name for the Basepull Test."
+          birthDate:
+            description: "Birth Date for the Basepull Test."
+          email:
+            type: "string"
+            description: "Email for the Basepull Test."
+          homeStateId:
+            type: "integer"
+            description: "Home State for the Basepull Test."
+          favoriteShapeId:
+            type: "integer"
+            description: "Favorite Shape for the Basepull Test."
+          customValue:
+            type: "integer"
+            description: "Custom Value for the Basepull Test."
+          noOfShoes:
+            type: "integer"
+            description: "No Of Shoes for the Basepull Test."
+          cost:
+            description: "Cost for the Basepull Test."
+          price:
+            description: "Price for the Basepull Test."
+          processName:
+            type: "string"
+            description: "Process Name for the Basepull Test."
+          lastRunTime:
+            description: "Last Run Time for the Basepull Test."
+      basepullTest:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Basepull Test.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/basepullTestWithoutPrimaryKey"
+      basepullTestSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/basepullTest"
+                - $ref: "#/components/schemas/basepullTestWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      orderWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Order."
+          createDate:
+            description: "Create Date for the Order."
+          modifyDate:
+            description: "Modify Date for the Order."
+          orderDate:
+            description: "Order Date for the Order."
+          storeId:
+            type: "integer"
+            description: "Store Id for the Order."
+          total:
+            description: "Total for the Order."
+      order:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Order.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/orderWithoutPrimaryKey"
+      orderSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/order"
+                - $ref: "#/components/schemas/orderWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+      orderLineWithoutPrimaryKey:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Order Line."
+          createDate:
+            description: "Create Date for the Order Line."
+          modifyDate:
+            description: "Modify Date for the Order Line."
+          orderId:
+            type: "integer"
+            description: "Order Id for the Order Line."
+          lineNumber:
+            type: "string"
+            description: "Line Number for the Order Line."
+          sku:
+            type: "string"
+            description: "Sku for the Order Line."
+          quantity:
+            type: "integer"
+            description: "Quantity for the Order Line."
+      orderLine:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "Id for the Order Line.  Primary Key."
+        allOf:
+          - $ref: "#/components/schemas/orderLineWithoutPrimaryKey"
+      orderLineSearchResult:
+        type: "object"
+        properties:
+          records:
+            type: "array"
+            items:
+              allOf:
+                - $ref: "#/components/schemas/orderLine"
+                - $ref: "#/components/schemas/orderLineWithoutPrimaryKey"
+        allOf:
+          - $ref: "#/components/schemas/baseSearchResultFields"
+    responses:
+      400:
+        description: "Bad Request.  Some portion of the request's content was not acceptable\
+        \ to the server.  See error message in body for details."
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                error:
+                  type: "string"
+                  example: "Parameter id should be given an integer value, but received\
+                  \ string: \"Foo\""
+      401:
+        description: "Unauthorized.  The required authentication credentials were missing\
+        \ or invalid."
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                error:
+                  type: "string"
+                  example: "The required authentication credentials were missing or\
+                  \ invalid."
+      403:
+        description: "Forbidden.  You do not have permission to access the requested\
+        \ resource."
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                error:
+                  type: "string"
+                  example: "You do not have permission to access the requested resource."
+      500:
+        description: "Internal Server Error.  An error occurred in the server processing\
+        \ the request."
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                error:
+                  type: "string"
+                  example: "Database connection error.  Try again later."

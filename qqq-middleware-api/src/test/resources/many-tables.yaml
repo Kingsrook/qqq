@@ -1,0 +1,252 @@
+openapi: "3.0.3"
+info:
+  title: "QQQ API"
+  description: "This is your api description!\n"
+  termsOfService: "https://swagger.io/terms/"
+  contact:
+    email: "apiteam@swagger.io"
+  license:
+    name: "Apache 2.0"
+    url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+  version: "1.0.11"
+externalDocs:
+  description: "Find out more at:"
+  url: "https://swagger.io"
+servers:
+  - url: "https://petstore3.swagger.io/api/v3"
+tags:
+  - name: "person"
+    description: "Operations on the Person table."
+  - name: "personFile"
+    description: "Operations on the Person File table."
+  - name: "personMemory"
+    description: "Operations on the Person Memory table."
+  - name: "personMemoryCache"
+    description: "Operations on the Person Memory Cache table."
+  - name: "idAndNameOnly"
+    description: "Operations on the Id and Name Only table."
+  - name: "shape"
+    description: "Operations on the Shape table."
+  - name: "basepullTest"
+    description: "Operations on the Basepull Test table."
+  - name: "order"
+    description: "Operations on the Order table."
+  - name: "orderLine"
+    description: "Operations on the Order Line table."
+paths:
+  /person/{id}:
+    get:
+      summary: "Find Person by Id"
+      description: "Returns a single Person"
+      operationId: "getPersonById"
+      responses:
+        "200":
+          description: "Successfully got Person"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Person to return"
+          required: true
+      tags:
+        - "person"
+  /personFile/{id}:
+    get:
+      summary: "Find Person File by Id"
+      description: "Returns a single Person File"
+      operationId: "getPersonFileById"
+      responses:
+        "200":
+          description: "Successfully got Person File"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Person File to return"
+          required: true
+      tags:
+        - "personFile"
+  /personMemory/{id}:
+    get:
+      summary: "Find Person Memory by Id"
+      description: "Returns a single Person Memory"
+      operationId: "getPersonMemoryById"
+      responses:
+        "200":
+          description: "Successfully got Person Memory"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Person Memory to return"
+          required: true
+      tags:
+        - "personMemory"
+  /personMemoryCache/{id}:
+    get:
+      summary: "Find Person Memory Cache by Id"
+      description: "Returns a single Person Memory Cache"
+      operationId: "getPersonMemoryCacheById"
+      responses:
+        "200":
+          description: "Successfully got Person Memory Cache"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Person Memory Cache to return"
+          required: true
+      tags:
+        - "personMemoryCache"
+  /idAndNameOnly/{id}:
+    get:
+      summary: "Find Id and Name Only by Id"
+      description: "Returns a single Id and Name Only"
+      operationId: "getIdAndNameOnlyById"
+      responses:
+        "200":
+          description: "Successfully got Id and Name Only"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Id and Name Only to return"
+          required: true
+      tags:
+        - "idAndNameOnly"
+  /shape/{id}:
+    get:
+      summary: "Find Shape by Id"
+      description: "Returns a single Shape"
+      operationId: "getShapeById"
+      responses:
+        "200":
+          description: "Successfully got Shape"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Shape to return"
+          required: true
+      tags:
+        - "shape"
+  /basepullTest/{id}:
+    get:
+      summary: "Find Basepull Test by Id"
+      description: "Returns a single Basepull Test"
+      operationId: "getBasepullTestById"
+      responses:
+        "200":
+          description: "Successfully got Basepull Test"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Basepull Test to return"
+          required: true
+      tags:
+        - "basepullTest"
+  /order/{id}:
+    get:
+      summary: "Find Order by Id"
+      description: "Returns a single Order"
+      operationId: "getOrderById"
+      responses:
+        "200":
+          description: "Successfully got Order"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Order to return"
+          required: true
+      tags:
+        - "order"
+  /orderLine/{id}:
+    get:
+      summary: "Find Order Line by Id"
+      description: "Returns a single Order Line"
+      operationId: "getOrderLineById"
+      responses:
+        "200":
+          description: "Successfully got Order Line"
+        "401":
+          description: "Unauthorized.  Security credentials were either missing or\
+            \ invalid."
+        "403":
+          description: "Forbidden.  The credentials provided do not have permission\
+            \ to access the requested resource."
+      parameters:
+        - schema:
+            format: "int32"
+            type: "integer"
+          in: "path"
+          name: "id"
+          description: "Id of Order Line to return"
+          required: true
+      tags:
+        - "orderLine"

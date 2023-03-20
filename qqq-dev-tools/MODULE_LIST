@@ -6,4 +6,5 @@ qqq-language-support-javascript
 qqq-middleware-javalin
 qqq-middleware-picocli
 qqq-middleware-slack
+qqq-middleware-api
 qqq-frontend-material-dashboard

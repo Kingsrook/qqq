@@ -37,9 +37,10 @@
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
       <module>qqq-middleware-lambda</module>
+      <module>qqq-middleware-slack</module>
+      <module>qqq-middleware-api</module>
       <module>qqq-utility-lambdas</module>
       <module>qqq-sample-project</module>
-      <module>qqq-middleware-slack</module>
    </modules>
 
    <properties>
