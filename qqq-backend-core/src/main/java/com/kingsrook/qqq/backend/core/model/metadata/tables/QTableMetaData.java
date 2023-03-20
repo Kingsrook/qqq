@@ -96,6 +96,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private CacheOf cacheOf;
 
+   private Map<String, QMiddlewareTableMetaData> middlewareMetaData;
+
 
 
    /*******************************************************************************
@@ -1172,6 +1174,66 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withAuditRules(QAuditRules auditRules)
    {
       this.auditRules = auditRules;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for middlewareMetaData
+    *******************************************************************************/
+   public Map<String, QMiddlewareTableMetaData> getMiddlewareMetaData()
+   {
+      return (this.middlewareMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for middlewareMetaData
+    *******************************************************************************/
+   public QMiddlewareTableMetaData getMiddlewareMetaData(String type)
+   {
+      if(this.middlewareMetaData == null)
+      {
+         return (null);
+      }
+      return this.middlewareMetaData.get(type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for middlewareMetaData
+    *******************************************************************************/
+   public void setMiddlewareMetaData(Map<String, QMiddlewareTableMetaData> middlewareMetaData)
+   {
+      this.middlewareMetaData = middlewareMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for middlewareMetaData
+    *******************************************************************************/
+   public QTableMetaData withMiddlewareMetaData(Map<String, QMiddlewareTableMetaData> middlewareMetaData)
+   {
+      this.middlewareMetaData = middlewareMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for middlewareMetaData
+    *******************************************************************************/
+   public QTableMetaData withMiddlewareMetaData(QMiddlewareTableMetaData middlewareMetaData)
+   {
+      if(this.middlewareMetaData == null)
+      {
+         this.middlewareMetaData = new HashMap<>();
+      }
+      this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
       return (this);
    }
 

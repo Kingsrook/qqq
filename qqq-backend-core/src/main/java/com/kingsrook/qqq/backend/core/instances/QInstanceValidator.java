@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
@@ -141,6 +142,7 @@ public class QInstanceValidator
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
          validateSecurityKeyTypes(qInstance);
+         validateMiddlewareMetaData(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
       }
@@ -155,6 +157,19 @@ public class QInstanceValidator
       }
 
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateMiddlewareMetaData(QInstance qInstance)
+   {
+      for(QMiddlewareInstanceMetaData middlewareInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getMiddlewareMetaData()).values())
+      {
+         middlewareInstanceMetaData.validate(qInstance);
+      }
    }
 
 

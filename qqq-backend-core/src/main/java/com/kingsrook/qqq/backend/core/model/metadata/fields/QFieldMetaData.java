@@ -25,8 +25,10 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import com.github.hervian.reflection.Fun;
@@ -80,6 +82,8 @@ public class QFieldMetaData implements Cloneable
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    private List<FieldAdornment> adornments;
+
+   private Map<String, QMiddlewareFieldMetaData> middlewareMetaData;
 
 
 
@@ -788,4 +792,63 @@ public class QFieldMetaData implements Cloneable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for middlewareMetaData
+    *******************************************************************************/
+   public Map<String, QMiddlewareFieldMetaData> getMiddlewareMetaData()
+   {
+      return (this.middlewareMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for middlewareMetaData
+    *******************************************************************************/
+   public QMiddlewareFieldMetaData getMiddlewareMetaData(String type)
+   {
+      if(this.middlewareMetaData == null)
+      {
+         return (null);
+      }
+      return this.middlewareMetaData.get(type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for middlewareMetaData
+    *******************************************************************************/
+   public void setMiddlewareMetaData(Map<String, QMiddlewareFieldMetaData> middlewareMetaData)
+   {
+      this.middlewareMetaData = middlewareMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for middlewareMetaData
+    *******************************************************************************/
+   public QFieldMetaData withMiddlewareMetaData(Map<String, QMiddlewareFieldMetaData> middlewareMetaData)
+   {
+      this.middlewareMetaData = middlewareMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for middlewareMetaData
+    *******************************************************************************/
+   public QFieldMetaData withMiddlewareMetaData(QMiddlewareFieldMetaData middlewareMetaData)
+   {
+      if(this.middlewareMetaData == null)
+      {
+         this.middlewareMetaData = new HashMap<>();
+      }
+      this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
+      return (this);
+   }
 }

@@ -90,6 +90,8 @@ public class QInstance
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
+   private Map<String, QMiddlewareInstanceMetaData> middlewareMetaData = new LinkedHashMap<>();
+
    private Map<String, String> environmentValues = new LinkedHashMap<>();
    private String              defaultTimeZoneId = "UTC";
 
@@ -1075,4 +1077,63 @@ public class QInstance
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for middlewareMetaData
+    *******************************************************************************/
+   public Map<String, QMiddlewareInstanceMetaData> getMiddlewareMetaData()
+   {
+      return (this.middlewareMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for middlewareMetaData
+    *******************************************************************************/
+   public QMiddlewareInstanceMetaData getMiddlewareMetaData(String type)
+   {
+      if(this.middlewareMetaData == null)
+      {
+         return (null);
+      }
+      return this.middlewareMetaData.get(type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for middlewareMetaData
+    *******************************************************************************/
+   public void setMiddlewareMetaData(Map<String, QMiddlewareInstanceMetaData> middlewareMetaData)
+   {
+      this.middlewareMetaData = middlewareMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for middlewareMetaData
+    *******************************************************************************/
+   public QInstance withMiddlewareMetaData(Map<String, QMiddlewareInstanceMetaData> middlewareMetaData)
+   {
+      this.middlewareMetaData = middlewareMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for middlewareMetaData
+    *******************************************************************************/
+   public QInstance withMiddlewareMetaData(QMiddlewareInstanceMetaData middlewareMetaData)
+   {
+      if(this.middlewareMetaData == null)
+      {
+         this.middlewareMetaData = new HashMap<>();
+      }
+      this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
+      return (this);
+   }
 }
