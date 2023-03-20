@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
@@ -146,7 +145,7 @@ public class QJavalinImplementation
    private static long                lastQInstanceHotSwapMillis;
 
    private static final long MILLIS_BETWEEN_HOT_SWAPS = 2500;
-   private static final long SLOW_LOG_THRESHOLD_MS    = 1000;
+   public static final  long SLOW_LOG_THRESHOLD_MS    = 1000;
 
    private static int DEFAULT_PORT = 8001;
 
@@ -356,6 +355,14 @@ public class QJavalinImplementation
          // process routes //
          ////////////////////
          path("", QJavalinProcessHandler.getRoutes());
+
+         // todo... ? ////////////////
+         // todo... ? // api routes //
+         // todo... ? ////////////////
+         // todo... ? if(qInstance.getApiMetaData() != null)
+         // todo... ? {
+         // todo... ?    path("", QJavalinApiHandler.getRoutes());
+         // todo... ? }
       });
    }
 
@@ -758,7 +765,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 
-         filter = stringQueryParam(context, "filter");
+         filter = QJavalinUtils.stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
          {
             filter = context.formParam("filter");
@@ -823,12 +830,12 @@ public class QJavalinImplementation
          queryInput.setTableName(table);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
-         queryInput.setSkip(integerQueryParam(context, "skip"));
-         queryInput.setLimit(integerQueryParam(context, "limit"));
+         queryInput.setSkip(QJavalinUtils.integerQueryParam(context, "skip"));
+         queryInput.setLimit(QJavalinUtils.integerQueryParam(context, "limit"));
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
-         filter = stringQueryParam(context, "filter");
+         filter = QJavalinUtils.stringQueryParam(context, "filter");
          if(!StringUtils.hasContent(filter))
          {
             filter = context.formParam("filter");
@@ -862,7 +869,7 @@ public class QJavalinImplementation
    {
       List<QueryJoin> queryJoins = null;
 
-      String queryJoinsParam = stringQueryParam(context, "queryJoins");
+      String queryJoinsParam = QJavalinUtils.stringQueryParam(context, "queryJoins");
       if(StringUtils.hasContent(queryJoinsParam))
       {
          queryJoins = new ArrayList<>();
@@ -1075,7 +1082,7 @@ public class QJavalinImplementation
          //////////////////////////////////////////
          String  format = context.queryParam("format");
          String  filter = context.queryParam("filter");
-         Integer limit  = integerQueryParam(context, "limit");
+         Integer limit  = QJavalinUtils.integerQueryParam(context, "limit");
 
          ReportFormat reportFormat = getReportFormat(context, optionalFilename, format);
          if(reportFormat == null)
@@ -1098,7 +1105,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(exportInput, TablePermissionSubType.READ);
 
-         String fields = stringQueryParam(context, "fields");
+         String fields = QJavalinUtils.stringQueryParam(context, "fields");
          if(StringUtils.hasContent(fields))
          {
             exportInput.setFieldNames(List.of(fields.split(",")));
@@ -1413,59 +1420,6 @@ public class QJavalinImplementation
    {
       context.status(statusCode.getCode());
       context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
-   }
-
-
-
-   /*******************************************************************************
-    ** Returns Integer if context has a valid int query parameter by the given name,
-    **  Returns null if no param (or empty value).
-    **  Throws QValueException for malformed numbers.
-    *******************************************************************************/
-   public static Integer integerQueryParam(Context context, String name) throws QValueException
-   {
-      String value = context.queryParam(name);
-      if(StringUtils.hasContent(value))
-      {
-         return (ValueUtils.getValueAsInteger(value));
-      }
-
-      return (null);
-   }
-
-
-
-   /*******************************************************************************
-    ** Returns Integer if context has a valid int form parameter by the given name,
-    **  Returns null if no param (or empty value).
-    **  Throws QValueException for malformed numbers.
-    *******************************************************************************/
-   public static Integer integerFormParam(Context context, String name) throws QValueException
-   {
-      String value = context.formParam(name);
-      if(StringUtils.hasContent(value))
-      {
-         return (ValueUtils.getValueAsInteger(value));
-      }
-
-      return (null);
-   }
-
-
-
-   /*******************************************************************************
-    ** Returns String if context has a valid query parameter by the given name,
-    *  Returns null if no param (or empty value).
-    *******************************************************************************/
-   private static String stringQueryParam(Context context, String name)
-   {
-      String value = context.queryParam(name);
-      if(StringUtils.hasContent(value))
-      {
-         return (value);
-      }
-
-      return (null);
    }
 
 

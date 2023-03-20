@@ -700,8 +700,8 @@ public class QJavalinProcessHandler
          // todo - need process values? PermissionsHelper.checkProcessPermissionThrowing(input, context.pathParam("processName"));
 
          String  processUUID = context.pathParam("processUUID");
-         Integer skip        = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "skip"), 0);
-         Integer limit       = Objects.requireNonNullElse(QJavalinImplementation.integerQueryParam(context, "limit"), 20);
+         Integer skip        = Objects.requireNonNullElse(QJavalinUtils.integerQueryParam(context, "skip"), 0);
+         Integer limit       = Objects.requireNonNullElse(QJavalinUtils.integerQueryParam(context, "limit"), 20);
 
          // todo - potential optimization - if a future state provider could take advantage of it,
          //  we might pass the skip & limit in to a method that fetch just those 'n' rows from state, rather than the whole thing?
@@ -786,10 +786,10 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    private static Integer getTimeoutMillis(Context context)
    {
-      Integer timeout = QJavalinImplementation.integerQueryParam(context, "_qStepTimeoutMillis");
+      Integer timeout = QJavalinUtils.integerQueryParam(context, "_qStepTimeoutMillis");
       if(timeout == null)
       {
-         timeout = QJavalinImplementation.integerFormParam(context, "_qStepTimeoutMillis");
+         timeout = QJavalinUtils.integerFormParam(context, "_qStepTimeoutMillis");
          if(timeout == null)
          {
             timeout = ASYNC_STEP_TIMEOUT_MILLIS;

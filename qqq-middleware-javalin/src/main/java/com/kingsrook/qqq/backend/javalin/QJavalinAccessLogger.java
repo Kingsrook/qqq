@@ -58,7 +58,7 @@ public class QJavalinAccessLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void logStart(String actionName, LogPair... logPairs)
+   public static void logStart(String actionName, LogPair... logPairs)
    {
       try
       {
@@ -159,7 +159,7 @@ public class QJavalinAccessLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void logEndSuccess(LogPair... logPairs)
+   public static void logEndSuccess(LogPair... logPairs)
    {
       try
       {
@@ -182,7 +182,7 @@ public class QJavalinAccessLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void logEndFail(Throwable t, LogPair... logPairs)
+   public static void logEndFail(Throwable t, LogPair... logPairs)
    {
       try
       {
