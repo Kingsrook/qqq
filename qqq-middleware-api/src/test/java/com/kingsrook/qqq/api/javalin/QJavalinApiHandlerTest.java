@@ -22,22 +22,31 @@
 package com.kingsrook.qqq.api.javalin;
 
 
+import java.util.List;
+import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
  ** Unit test for QJavalinApiHandler
  *******************************************************************************/
-class QJavalinApiHandlerTest
+class QJavalinApiHandlerTest extends BaseTest
 {
    private static final   int    PORT     = 6263;
    protected static final String BASE_URL = "http://localhost:" + PORT;
@@ -98,10 +107,66 @@ class QJavalinApiHandlerTest
     **
     *******************************************************************************/
    @Test
+   void testGet404()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
+      assertEquals(404, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals("Could not find Person with Id of 1", jsonObject.getString("error"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGet200() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff")));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(1, jsonObject.getInt("id"));
+      assertEquals("Darin", jsonObject.getString("firstName"));
+      assertEquals("Kelkhoff", jsonObject.getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery400()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?asdf=Darin&orderBy=asdf asdf").asString();
+      assertEquals(400, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      String     error      = jsonObject.getString("error");
+      assertThat(error).contains("orderBy direction for field asdf must be either ASC or DESC");
+      assertThat(error).contains("Unrecognized orderBy field name: asdf");
+      assertThat(error).contains("Unrecognized filter criteria field: asdf");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQuery()
    {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
-      System.out.println(response.getBody());
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?firstName=Darin&orderBy=firstName desc").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(0, jsonObject.getInt("count"));
+      assertEquals(1, jsonObject.getInt("pageNo"));
+      assertEquals(50, jsonObject.getInt("pageSize"));
    }
 
 }

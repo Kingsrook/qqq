@@ -372,7 +372,7 @@ public class QJavalinApiHandler
                }
                else if(orderByNameDirection.length > 2)
                {
-                  badRequestMessages.add("unrecognized format for orderBy clause: " + orderByPart + ".  Expected:  fieldName [ASC|DESC].");
+                  badRequestMessages.add("Unrecognized format for orderBy clause: " + orderByPart + ".  Expected:  fieldName [ASC|DESC].");
                }
 
                try
@@ -382,7 +382,7 @@ public class QJavalinApiHandler
                }
                catch(Exception e)
                {
-                  badRequestMessages.add("unrecognized orderBy field name: " + orderByNameDirection[0] + ".");
+                  badRequestMessages.add("Unrecognized orderBy field name: " + orderByNameDirection[0] + ".");
                }
             }
          }

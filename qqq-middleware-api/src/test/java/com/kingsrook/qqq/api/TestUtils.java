@@ -26,8 +26,10 @@ import java.util.List;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -40,8 +42,8 @@ import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.Mem
  *******************************************************************************/
 public class TestUtils
 {
-   public static final  String MEMORY_BACKEND_NAME = "memory";
-   private static final String TABLE_NAME_PERSON   = "person";
+   public static final String MEMORY_BACKEND_NAME = "memory";
+   public static final String TABLE_NAME_PERSON   = "person";
 
    private static final String API_VERSION = "2023.Q1";
 
@@ -56,6 +58,7 @@ public class TestUtils
 
       qInstance.addBackend(defineMemoryBackend());
       qInstance.addTable(defineTablePerson());
+      qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
       qInstance.withMiddlewareMetaData(new ApiInstanceMetaData()
          .withCurrentVersion(new APIVersion(API_VERSION))
