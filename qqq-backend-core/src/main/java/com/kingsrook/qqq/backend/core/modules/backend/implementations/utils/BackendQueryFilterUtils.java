@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,7 +36,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -134,14 +134,14 @@ public class BackendQueryFilterUtils
             case BETWEEN ->
             {
                QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new MutableList<>(criterion.getValues()));
+               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
                criteria1.getValues().remove(0);
                yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
             }
             case NOT_BETWEEN ->
             {
                QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new MutableList<>(criterion.getValues()));
+               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
                criteria1.getValues().remove(0);
                boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
                yield !between;
