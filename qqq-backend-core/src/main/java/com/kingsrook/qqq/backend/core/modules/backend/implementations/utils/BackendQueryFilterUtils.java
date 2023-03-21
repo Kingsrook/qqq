@@ -23,8 +23,8 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -133,16 +134,17 @@ public class BackendQueryFilterUtils
             case BETWEEN ->
             {
                QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
+               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new MutableList<>(criterion.getValues()));
                criteria1.getValues().remove(0);
                yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
             }
             case NOT_BETWEEN ->
             {
                QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-               QFilterCriteria criteria1 = new QFilterCriteria().withValues(criterion.getValues());
+               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new MutableList<>(criterion.getValues()));
                criteria1.getValues().remove(0);
-               yield !(testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
+               boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
+               yield !between;
             }
          };
       return criterionMatches;
@@ -273,6 +275,26 @@ public class BackendQueryFilterUtils
          }
 
          return (valueDate.isAfter(criterionDate));
+      }
+
+      try
+      {
+         if(a instanceof Number numberA && b instanceof String stringB)
+         {
+            BigDecimal bdA = ValueUtils.getValueAsBigDecimal(numberA);
+            BigDecimal bdB = ValueUtils.getValueAsBigDecimal(stringB);
+            return (bdA.doubleValue() < bdB.doubleValue());
+         }
+         else if(a instanceof String stringA && b instanceof Number numberB)
+         {
+            BigDecimal bdA = ValueUtils.getValueAsBigDecimal(stringA);
+            BigDecimal bdB = ValueUtils.getValueAsBigDecimal(numberB);
+            return (bdA.doubleValue() < bdB.doubleValue());
+         }
+      }
+      catch(Exception e)
+      {
+         // ignore...
       }
 
       throw (new NotImplementedException("Greater/Less Than comparisons are not (yet?) implemented for the supplied types [" + b.getClass().getSimpleName() + "][" + a.getClass().getSimpleName() + "]"));

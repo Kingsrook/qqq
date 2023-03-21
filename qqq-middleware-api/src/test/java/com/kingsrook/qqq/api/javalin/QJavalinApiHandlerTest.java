@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.javalin;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
@@ -123,14 +124,14 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testGet200() throws QException
    {
-      insertTestRecord();
+      insertTestRecord(1, "Homer", "Simpson");
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(1, jsonObject.getInt("id"));
-      assertEquals("Darin", jsonObject.getString("firstName"));
-      assertEquals("Kelkhoff", jsonObject.getString("lastName"));
+      assertEquals("Homer", jsonObject.getString("firstName"));
+      assertEquals("Simpson", jsonObject.getString("lastName"));
    }
 
 
@@ -138,11 +139,11 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void insertTestRecord() throws QException
+   private static void insertTestRecord(Integer id, String firstName, String lastName) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff")));
+      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName)));
       new InsertAction().execute(insertInput);
    }
 
@@ -210,7 +211,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testQuery200SomethingFound() throws QException
    {
-      insertTestRecord();
+      insertTestRecord(1, "Homer", "Simpson");
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
       assertEquals(200, response.getStatus());
@@ -222,8 +223,147 @@ class QJavalinApiHandlerTest extends BaseTest
       JSONArray jsonArray = jsonObject.getJSONArray("records");
       jsonObject = jsonArray.getJSONObject(0);
       assertEquals(1, jsonObject.getInt("id"));
-      assertEquals("Darin", jsonObject.getString("firstName"));
-      assertEquals("Kelkhoff", jsonObject.getString("lastName"));
+      assertEquals("Homer", jsonObject.getString("firstName"));
+      assertEquals("Simpson", jsonObject.getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200OrQuery() throws QException
+   {
+      insertSimpsons();
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge"), "booleanOperator=OR&firstName=Homer&firstName=Marge&orderBy=firstName");
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart", "Lisa", "Maggie"), "booleanOperator=OR&firstName=!Homer&firstName=!Marge&orderBy=id");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200EqualsAndNot() throws QException
+   {
+      insertSimpsons();
+      assertPersonQueryFindsFirstNames(List.of("Homer"), "firstName=Homer"); // no operator implies =
+      assertPersonQueryFindsFirstNames(List.of("Homer"), "firstName==Homer"); // == is an explicit equals operator.
+      assertPersonQueryFindsFirstNames(List.of(), "firstName===Homer"); /// === is = "=Homer"
+
+      assertPersonQueryFindsFirstNames(List.of("Marge", "Bart", "Lisa", "Maggie"), "firstName=!Homer&orderBy=id"); // ! alone implies not-equals
+      assertPersonQueryFindsFirstNames(List.of("Marge", "Bart", "Lisa", "Maggie"), "firstName=!=Homer&orderBy=id"); // != is explicit not-equals
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart", "Lisa", "Maggie"), "firstName=!==Homer&orderBy=id"); // !== is not-equals "=Homer"
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200In() throws QException
+   {
+      insertSimpsons();
+      assertPersonQueryFindsFirstNames(List.of("Bart", "Lisa", "Maggie"), "firstName=IN Bart,Lisa,Maggie&orderBy=firstName");
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge"), "firstName=!IN Bart,Lisa,Maggie&orderBy=firstName");
+      assertPersonQueryFindsFirstNames(List.of("Maggie"), "firstName=IN Maggie");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200Between() throws QException
+   {
+      insertSimpsons();
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart"), "id=BETWEEN 1,3&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Maggie"), "id=!BETWEEN 2,4&orderBy=id");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200Empty() throws QException
+   {
+      insertSimpsons();
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart", "Lisa", "Maggie"), "noOfShoes=EMPTY&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of(), "noOfShoes=!EMPTY");
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart", "Lisa", "Maggie"), "id=!EMPTY&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of(), "id=EMPTY");
+
+      assertError("Unexpected value after operator EMPTY for field id", BASE_URL + "/api/" + VERSION + "/person/query?id=EMPTY 3");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200LessThanGreaterThanEquals() throws QException
+   {
+      insertSimpsons();
+      String GT = "%3E";
+      assertPersonQueryFindsFirstNames(List.of("Lisa", "Maggie"), "id=" + GT + "3&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of("Bart", "Lisa", "Maggie"), "id=" + GT + "=3&orderBy=id");
+
+      String LT = "%3C";
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge"), "id=" + LT + "3&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart"), "id=" + LT + "=3&orderBy=id");
+
+      assertError("Unsupported operator: !>", BASE_URL + "/api/" + VERSION + "/person/query?id=!" + GT + "3");
+      assertError("Unsupported operator: !>=", BASE_URL + "/api/" + VERSION + "/person/query?id=!" + GT + "=3");
+      assertError("Unsupported operator: !<", BASE_URL + "/api/" + VERSION + "/person/query?id=!" + LT + "3");
+      assertError("Unsupported operator: !<=", BASE_URL + "/api/" + VERSION + "/person/query?id=!" + LT + "=3");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void insertSimpsons() throws QException
+   {
+      insertTestRecord(1, "Homer", "Simpson");
+      insertTestRecord(2, "Marge", "Simpson");
+      insertTestRecord(3, "Bart", "Simpson");
+      insertTestRecord(4, "Lisa", "Simpson");
+      insertTestRecord(5, "Maggie", "Simpson");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertPersonQueryFindsFirstNames(List<String> expectedFirstNames, String queryString)
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?" + queryString).asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(expectedFirstNames.size(), jsonObject.getInt("count"));
+
+      if(expectedFirstNames.isEmpty() && !jsonObject.has("records"))
+      {
+         return;
+      }
+
+      JSONArray    jsonArray        = jsonObject.getJSONArray("records");
+      List<String> actualFirstNames = new ArrayList<>();
+      for(int i = 0; i < jsonArray.length(); i++)
+      {
+         actualFirstNames.add(jsonArray.getJSONObject(i).getString("firstName"));
+      }
+
+      assertEquals(expectedFirstNames, actualFirstNames);
    }
 
 
@@ -234,7 +374,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testQuery200ManyParams()
    {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?pageSize=49&pageNo=2&includeCount=true&booleanOperator=AND&firstName=Darin&orderBy=firstName desc").asString();
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?pageSize=49&pageNo=2&includeCount=true&booleanOperator=AND&firstName=Homer&orderBy=firstName desc").asString();
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(0, jsonObject.getInt("count"));

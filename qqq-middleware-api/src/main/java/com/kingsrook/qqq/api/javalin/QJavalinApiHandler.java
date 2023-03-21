@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api.javalin;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,6 +71,7 @@ import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.apibuilder.ApiBuilder;
@@ -119,7 +121,7 @@ public class QJavalinApiHandler
                ApiBuilder.post("/", QJavalinApiHandler::doInsert);
 
                ApiBuilder.get("/query", QJavalinApiHandler::doQuery);
-               ApiBuilder.post("/query", QJavalinApiHandler::doQuery);
+               // ApiBuilder.post("/query", QJavalinApiHandler::doQuery);
 
                ApiBuilder.get("/{primaryKey}", QJavalinApiHandler::doGet);
                ApiBuilder.patch("/{primaryKey}", QJavalinApiHandler::doUpdate);
@@ -318,7 +320,7 @@ public class QJavalinApiHandler
          }
          else if("or".equalsIgnoreCase(context.queryParam("booleanOperator")))
          {
-            filter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
+            filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
          }
          else if(StringUtils.hasContent(context.queryParam("booleanOperator")))
          {
@@ -401,9 +403,14 @@ public class QJavalinApiHandler
                {
                   if(StringUtils.hasContent(value))
                   {
-                     QCriteriaOperator  operator       = getCriteriaOperator(value);
-                     List<Serializable> criteriaValues = getCriteriaValues(field, value);
-                     filter.addCriteria(new QFilterCriteria(name, operator, criteriaValues));
+                     try
+                     {
+                        filter.addCriteria(parseQueryParamToCriteria(name, value));
+                     }
+                     catch(Exception e)
+                     {
+                        badRequestMessages.add(e.getMessage());
+                     }
                   }
                }
             }
@@ -501,10 +508,42 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QCriteriaOperator getCriteriaOperator(String value)
+   private enum Operator
    {
-      // todo - all other operators
-      return (QCriteriaOperator.EQUALS);
+      ///////////////////////////////////////////////////////////////////////////////////
+      // order of these is important (e.g., because some are a sub-string of others!!) //
+      ///////////////////////////////////////////////////////////////////////////////////
+      EQ("=", QCriteriaOperator.EQUALS, QCriteriaOperator.NOT_EQUALS, true, 1),
+      LTE("<=", QCriteriaOperator.LESS_THAN_OR_EQUALS, QCriteriaOperator.GREATER_THAN, false, 1),
+      GTE(">=", QCriteriaOperator.GREATER_THAN_OR_EQUALS, QCriteriaOperator.LESS_THAN, false, 1),
+      LT("<", QCriteriaOperator.LESS_THAN, QCriteriaOperator.GREATER_THAN_OR_EQUALS, false, 1),
+      GT(">", QCriteriaOperator.GREATER_THAN, QCriteriaOperator.LESS_THAN_OR_EQUALS, false, 1),
+      EMPTY("EMPTY", QCriteriaOperator.IS_BLANK, QCriteriaOperator.IS_NOT_BLANK, true, 0),
+      BETWEEN("BETWEEN ", QCriteriaOperator.BETWEEN, QCriteriaOperator.NOT_BETWEEN, true, 2),
+      IN("IN ", QCriteriaOperator.IN, QCriteriaOperator.NOT_IN, true, 2),
+      // todo MATCHES
+      ;
+
+
+      private final String            prefix;
+      private final QCriteriaOperator positiveOperator;
+      private final QCriteriaOperator negativeOperator;
+      private final boolean           supportsNot;
+      private final int               noOfValues; // 0 & 1 mean 0 & 1 ... 2 means 1 or more...
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      Operator(String prefix, QCriteriaOperator positiveOperator, QCriteriaOperator negativeOperator, boolean supportsNot, int noOfValues)
+      {
+         this.prefix = prefix;
+         this.positiveOperator = positiveOperator;
+         this.negativeOperator = negativeOperator;
+         this.supportsNot = supportsNot;
+         this.noOfValues = noOfValues;
+      }
    }
 
 
@@ -512,10 +551,73 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<Serializable> getCriteriaValues(QFieldMetaData field, String value)
+   private static QFilterCriteria parseQueryParamToCriteria(String name, String value) throws QBadRequestException
    {
-      // todo - parse the thing, do stuff
-      return (List.of(value));
+      ///////////////////////////////////
+      // process & discard a leading ! //
+      ///////////////////////////////////
+      boolean isNot = false;
+      if(value.startsWith("!") && value.length() > 1)
+      {
+         isNot = true;
+         value = value.substring(1);
+      }
+
+      //////////////////////////
+      // look for an operator //
+      //////////////////////////
+      Operator selectedOperator = null;
+      for(Operator op : Operator.values())
+      {
+         if(value.startsWith(op.prefix))
+         {
+            selectedOperator = op;
+            if(!selectedOperator.supportsNot && isNot)
+            {
+               throw (new QBadRequestException("Unsupported operator: !" + selectedOperator.prefix));
+            }
+            break;
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // if an operator was found, strip it away from the value for figuring out the values part //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      if(selectedOperator != null)
+      {
+         value = value.substring(selectedOperator.prefix.length());
+      }
+      else
+      {
+         ////////////////////////////////////////////////////////////////
+         // else - assume the default operator, and use the full value //
+         ////////////////////////////////////////////////////////////////
+         selectedOperator = Operator.EQ;
+      }
+
+      ////////////////////////////////////
+      // figure out the criteria values //
+      // todo - quotes?                 //
+      ////////////////////////////////////
+      List<Serializable> criteriaValues;
+      if(selectedOperator.noOfValues == 1)
+      {
+         criteriaValues = ListBuilder.of(value);
+      }
+      else if(selectedOperator.noOfValues == 0)
+      {
+         if(StringUtils.hasContent(value))
+         {
+            throw (new QBadRequestException("Unexpected value after operator " + selectedOperator.prefix + " for field " + name));
+         }
+         criteriaValues = null;
+      }
+      else
+      {
+         criteriaValues = Arrays.asList(value.split(","));
+      }
+
+      return (new QFilterCriteria(name, isNot ? selectedOperator.negativeOperator : selectedOperator.positiveOperator, criteriaValues));
    }
 
 
