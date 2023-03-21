@@ -23,6 +23,7 @@ package com.kingsrook.qqq.api.actions;
 
 
 import com.kingsrook.qqq.api.BaseTest;
+import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
@@ -48,7 +49,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
    @Test
    void test() throws QException
    {
-      String version = "2023.03";
+      String version = TestUtils.API_VERSION;
 
       QInstance qInstance = QContext.getQInstance();
       qInstance.withMiddlewareMetaData(new ApiInstanceMetaData()
@@ -58,6 +59,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
       for(QTableMetaData table : qInstance.getTables().values())
       {
          table.withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(version));
+         break;
       }
 
       new QInstanceEnricher(qInstance).enrich();

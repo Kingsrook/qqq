@@ -42,6 +42,7 @@ import com.kingsrook.qqq.api.model.openapi.OAuth2Flow;
 import com.kingsrook.qqq.api.model.openapi.OpenAPI;
 import com.kingsrook.qqq.api.model.openapi.Parameter;
 import com.kingsrook.qqq.api.model.openapi.Path;
+import com.kingsrook.qqq.api.model.openapi.RequestBody;
 import com.kingsrook.qqq.api.model.openapi.Response;
 import com.kingsrook.qqq.api.model.openapi.Schema;
 import com.kingsrook.qqq.api.model.openapi.SecurityScheme;
@@ -139,11 +140,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             continue;
          }
 
-         String tableName        = table.getName();
-         String tableNameUcFirst = StringUtils.ucFirst(table.getName());
-         String tableLabel       = table.getLabel();
-         String primaryKeyName   = table.getPrimaryKeyField();
-         String primaryKeyLabel  = table.getField(table.getPrimaryKeyField()).getLabel();
+         String         tableName        = table.getName();
+         String         tableNameUcFirst = StringUtils.ucFirst(table.getName());
+         String         tableLabel       = table.getLabel();
+         String         primaryKeyName   = table.getPrimaryKeyField();
+         QFieldMetaData primaryKeyField  = table.getField(table.getPrimaryKeyField());
+         String         primaryKeyLabel  = primaryKeyField.getLabel();
 
          List<? extends QFieldMetaData> tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
 
@@ -152,6 +154,28 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          {
             scopes.put(tableReadPermissionName, "Permission to read the " + tableLabel + " table");
          }
+
+         String tableUpdatePermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.EDIT);
+         if(StringUtils.hasContent(tableUpdatePermissionName))
+         {
+            scopes.put(tableUpdatePermissionName, "Permission to update records in the " + tableLabel + " table");
+         }
+
+         String tableInsertPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.EDIT);
+         if(StringUtils.hasContent(tableInsertPermissionName))
+         {
+            scopes.put(tableInsertPermissionName, "Permission to insert records in the " + tableLabel + " table");
+         }
+
+         String tableDeletePermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.EDIT);
+         if(StringUtils.hasContent(tableDeletePermissionName))
+         {
+            scopes.put(tableDeletePermissionName, "Permission to delete records in the " + tableLabel + " table");
+         }
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         // todo - handle non read/edit/insert/delete tables (e.g., w/ just 1 permission, or read/write) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////
 
          ////////////////////////
          // tag for this table //
@@ -170,8 +194,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
+            if(primaryKeyName.equals(tableApiField.getName()))
+            {
+               continue;
+            }
+
             tableFieldsWithoutPrimaryKey.put(tableApiField.getName(), new Schema()
                .withType(getFieldType(table.getField(tableApiField.getName())))
+               .withFormat(getFieldFormat(table.getField(tableApiField.getName())))
                .withDescription(tableApiField.getLabel() + " for the " + tableLabel + ".")
             );
          }
@@ -182,6 +212,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withProperties(MapBuilder.of(
                primaryKeyName, new Schema()
                   .withType(getFieldType(table.getField(primaryKeyName)))
+                  .withFormat(getFieldFormat(table.getField(primaryKeyName)))
                   .withDescription(primaryKeyLabel + " for the " + tableLabel + ".  Primary Key.")
             ))
          );
@@ -245,10 +276,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Successfully searched the " + tableLabel + " table (though may have found 0 records).")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableName + "SearchResult"))
-               ))
-            ).withSecurity(ListBuilder.of(MapBuilder.of(
-               "OAuth2", List.of(tableReadPermissionName)
-            )));
+               )))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableReadPermissionName))));
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
@@ -269,42 +298,111 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             );
          }
 
-         openAPI.getPaths().put("/" + tableName + "/query", new Path().withGet(queryGet));
-         /*
-         .withPost(new Method()
+         Method queryPost = new Method()
             .withSummary("Search the " + tableLabel + " table by posting a QueryFilter object.")
             .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableReadPermissionName))));
+
+         openAPI.getPaths().put("/" + tableName + "/query", new Path()
+            .withGet(queryGet)
+            .withPost(queryPost)
+         );
+
+         Method idGet = new Method()
+            .withSummary("Get one " + tableLabel + " by " + primaryKeyLabel)
+            .withDescription("TODO")
+            .withOperationId("get" + tableNameUcFirst)
+            .withTags(ListBuilder.of(tableLabel))
+            .withParameters(ListBuilder.of(
+               new Parameter()
+                  .withName(primaryKeyName)
+                  .withDescription(primaryKeyLabel + " of the " + tableLabel + " to get.")
+                  .withIn("path")
+                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
+            ))
             .withResponses(buildStandardErrorResponses())
-         )
-         */
+            .withResponse(404, buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
+            .withResponse(200, new Response()
+               .withDescription("Successfully got the requested " + tableLabel)
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableName))
+               )))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableReadPermissionName))));
+
+         Method idPatch = new Method()
+            .withSummary("Update one " + tableLabel + ".")
+            .withDescription("TODO")
+            .withOperationId("update" + tableNameUcFirst)
+            .withTags(ListBuilder.of(tableLabel))
+            .withParameters(ListBuilder.of(
+               new Parameter()
+                  .withName(primaryKeyName)
+                  .withDescription(primaryKeyLabel + " of the " + tableLabel + " to update.")
+                  .withIn("path")
+                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
+            ))
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription("Field values to update in the " + tableLabel + " record.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableName))
+               )))
+            .withResponses(buildStandardErrorResponses())
+            .withResponse(404, buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47.")) // todo - 404 on update?
+            .withResponse(200, new Response().withDescription("Successfully updated the requested " + tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableUpdatePermissionName))));
+
+         Method idDelete = new Method()
+            .withSummary("Delete one " + tableLabel + ".")
+            .withDescription("TODO")
+            .withOperationId("delete" + tableNameUcFirst)
+            .withTags(ListBuilder.of(tableLabel))
+            .withParameters(ListBuilder.of(
+               new Parameter()
+                  .withName(primaryKeyName)
+                  .withDescription(primaryKeyLabel + " of the " + tableLabel + " to delete.")
+                  .withIn("path")
+                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
+            ))
+            .withResponses(buildStandardErrorResponses())
+            .withResponse(404, buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47.")) // todo - 404 on update?
+            .withResponse(200, new Response().withDescription("Successfully deleted the requested " + tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableDeletePermissionName))));
+
+         openAPI.getPaths().put("/" + tableName + "/{" + primaryKeyName + "}", new Path()
+            .withGet(idGet)
+            .withPatch(idPatch)
+            .withDelete(idDelete)
+         );
+
+         Method slashPost = new Method()
+            .withSummary("Create one " + tableLabel + " record.")
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription("Values for the " + tableLabel + " record to create.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableName + "WithoutPrimaryKey"))
+               )))
+            .withResponses(buildStandardErrorResponses())
+            .withResponse(201, new Response()
+               .withDescription("Successfully created the requested " + tableLabel)
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema()
+                     .withType("object")
+                     .withProperties(MapBuilder.of(primaryKeyName, new Schema()
+                        .withType(getFieldType(primaryKeyField))
+                        .withExample("47")
+                     ))
+                  )
+               )))
+            .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableInsertPermissionName))));
+
+         openAPI.getPaths().put("/" + tableName + "/", new Path()
+            .withPost(slashPost)
+         );
 
          /*
-         openAPI.getPaths().put("/" + tableName + "/{" + primaryKeyName + "}", new Path()
-            .withGet(new Method()
-               .withSummary("Get one " + tableLabel + " record by " + primaryKeyLabel + ".")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-            .withPatch(new Method()
-               .withSummary("Update one " + tableLabel + " record.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-            .withDelete(new Method()
-               .withSummary("Delete one " + tableLabel + " record.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-         );
-
-         openAPI.getPaths().put("/" + tableName, new Path()
-            .withPost(new Method()
-               .withSummary("Create one " + tableLabel + " record.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-         );
-
          openAPI.getPaths().put("/" + tableName + "/bulk", new Path()
             .withPatch(new Method()
                .withSummary("Update multiple " + tableLabel + " records.")
@@ -429,17 +527,39 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    {
       return switch(type)
          {
-            case STRING -> "string";
+            case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
             case INTEGER -> "integer";
-            case DECIMAL -> null;
-            case BOOLEAN -> null;
-            case DATE -> null;
-            case TIME -> null;
-            case DATE_TIME -> null;
-            case TEXT -> null;
-            case HTML -> null;
-            case PASSWORD -> null;
-            case BLOB -> null;
+            case DECIMAL -> "number";
+            case BOOLEAN -> "boolean";
+         };
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFieldFormat(QFieldMetaData field)
+   {
+      return (getFieldFormat(field.getType()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   private String getFieldFormat(QFieldType type)
+   {
+      return switch(type)
+         {
+            case DATE -> "date";
+            case TIME -> "time"; // non-standard format...
+            case DATE_TIME -> "date-time";
+            case PASSWORD -> "password";
+            case BLOB -> "byte"; // base-64-encoded, per https://swagger.io/docs/specification/data-models/data-types/#file
+            default -> null;
          };
    }
 
@@ -488,96 +608,4 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          ));
    }
 
-   //   /*******************************************************************************
-   //    **
-   //    *******************************************************************************/
-   //   @Override
-   //   public GenerateSwaggerOutput execute(GenerateSwaggerInput input) throws QException
-   //   {
-   //      QInstance qInstance = QContext.getQInstance();
-   //
-   //      LinkedHashMap<String, Serializable> swagger = new LinkedHashMap<>();
-   //      swagger.put("openapi", "3.0.3");
-   //
-   //      LinkedHashMap<String, Serializable> info = new LinkedHashMap<>();
-   //      swagger.put("info", info);
-   //
-   //      // todo - add a whole section of this to meta data?
-   //      info.put("title", "QQQ API");
-   //      info.put("description", """
-   //         This is your api description!
-   //         """);
-   //      info.put("termsOfService", "http://swagger.io/terms/");
-   //      info.put("contact", new LinkedHashMap<>(MapBuilder.of("email", "apiteam@swagger.io")));
-   //      info.put("license", new LinkedHashMap<>(MapBuilder.of(
-   //         "name", "Apache 2.0",
-   //         "url", "http://www.apache.org/licenses/LICENSE-2.0.html"
-   //      )));
-   //      info.put("version", "1.0.11");
-   //
-   //      swagger.put("externalDocs", new LinkedHashMap<>(MapBuilder.of(
-   //         "description", "Find out more at:",
-   //         "url", "http://swagger.io"
-   //      )));
-   //      swagger.put("servers", new LinkedHashMap<>(MapBuilder.of(
-   //         "url", new ArrayList<>(ListBuilder.of("https://petstore3.swagger.io/api/v3"))
-   //      )));
-   //
-   //      ArrayList<LinkedHashMap<String, Serializable>> tags = new ArrayList<>();
-   //      swagger.put("tags", tags);
-   //      for(QTableMetaData table : qInstance.getTables().values())
-   //      {
-   //         tags.add(new LinkedHashMap<>(MapBuilder.of(
-   //            "name", table.getName(),
-   //            "description", "Operations on the " + table.getLabel() + " table."
-   //         )));
-   //      }
-   //
-   //      LinkedHashMap<String, Serializable> paths = new LinkedHashMap<>();
-   //      swagger.put("paths", paths);
-   //      for(QTableMetaData table : qInstance.getTables().values())
-   //      {
-   //         String primaryKeyLabel = table.getField(table.getPrimaryKeyField()).getLabel();
-   //         String primaryKeyName  = table.getPrimaryKeyField();
-   //
-   //         LinkedHashMap<String, Serializable> path = new LinkedHashMap<>();
-   //         paths.put("/" + table.getName() + "/{" + primaryKeyName + "}", path);
-   //
-   //         LinkedHashMap<String, Serializable> get = new LinkedHashMap<>(MapBuilder.of(
-   //            "tags", new ArrayList<>(ListBuilder.of(table.getName())),
-   //            "summary", "Find " + table.getLabel() + " by " + primaryKeyLabel + ".",
-   //            "description", "Returns a single " + table.getLabel(),
-   //            "operationId", "get" + StringUtils.ucFirst(table.getName()) + "By" + StringUtils.ucFirst(primaryKeyName),
-   //            "parameters", new ArrayList<>(ListBuilder.of(
-   //               new LinkedHashMap<>(MapBuilder.of(
-   //                  "name", primaryKeyName,
-   //                  "in", "path",
-   //                  "description", primaryKeyLabel + " of " + table.getLabel() + " to return",
-   //                  "required", true,
-   //                  "schema", new LinkedHashMap<>(MapBuilder.of(
-   //                     "type", "integer", // todo - get from field/type.
-   //                     "format", "int32"
-   //                  )
-   //                  ))
-   //               ))),
-   //            "responses", new LinkedHashMap<>(MapBuilder.of(
-   //               "200", new LinkedHashMap<>(MapBuilder.of(
-   //                  "description", "Successfully got " + table.getLabel()
-   //               )),
-   //               "401", new LinkedHashMap<>(MapBuilder.of(
-   //                  "description", "Unauthorized.  Security credentials were eitehr missing or invalid."
-   //               )),
-   //               "403", new LinkedHashMap<>(MapBuilder.of(
-   //                  "description", "Forbidden.  The credentials provided do not have permission to access the requested resource."
-   //               ))
-   //            ))
-   //         ));
-   //
-   //         path.put("get", get);
-   //      }
-   //
-   //      System.out.println(YamlUtils.toYaml(swagger));
-   //
-   //      return null;
-   //   }
 }

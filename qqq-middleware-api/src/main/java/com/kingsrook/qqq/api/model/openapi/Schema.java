@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 public class Schema
 {
    private String              type;
+   private String              format;
    private String              description;
    private List<String>        enumValues;
    private Schema              items;
@@ -69,6 +70,37 @@ public class Schema
    public Schema withType(String type)
    {
       this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for format
+    *******************************************************************************/
+   public String getFormat()
+   {
+      return (this.format);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for format
+    *******************************************************************************/
+   public void setFormat(String format)
+   {
+      this.format = format;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for format
+    *******************************************************************************/
+   public Schema withFormat(String format)
+   {
+      this.format = format;
       return (this);
    }
 

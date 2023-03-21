@@ -45,7 +45,7 @@ public class TestUtils
    public static final String MEMORY_BACKEND_NAME = "memory";
    public static final String TABLE_NAME_PERSON   = "person";
 
-   private static final String API_VERSION = "2023.Q1";
+   public static final String API_VERSION = "2023.Q1";
 
 
 

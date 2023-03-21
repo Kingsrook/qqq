@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.api.model.openapi;
 
 
-import java.util.List;
+import java.util.Map;
 
 
 /*******************************************************************************
@@ -30,9 +30,9 @@ import java.util.List;
  *******************************************************************************/
 public class RequestBody
 {
-   private Boolean       required = false;
-   private String        description;
-   private List<Content> content;
+   private Boolean              required = false;
+   private String               description;
+   private Map<String, Content> content;
 
 
 
@@ -101,7 +101,7 @@ public class RequestBody
    /*******************************************************************************
     ** Getter for content
     *******************************************************************************/
-   public List<Content> getContent()
+   public Map<String, Content> getContent()
    {
       return (this.content);
    }
@@ -111,7 +111,7 @@ public class RequestBody
    /*******************************************************************************
     ** Setter for content
     *******************************************************************************/
-   public void setContent(List<Content> content)
+   public void setContent(Map<String, Content> content)
    {
       this.content = content;
    }
@@ -121,7 +121,7 @@ public class RequestBody
    /*******************************************************************************
     ** Fluent setter for content
     *******************************************************************************/
-   public RequestBody withContent(List<Content> content)
+   public RequestBody withContent(Map<String, Content> content)
    {
       this.content = content;
       return (this);
