@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.actions;
 
 
+import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.Test;
 /*******************************************************************************
  ** Unit test for GenerateOpenApiSpecAction
  *******************************************************************************/
-class GenerateOpenApiSpecActionTest // todo base test
+class GenerateOpenApiSpecActionTest extends BaseTest
 {
 
    /*******************************************************************************

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.RemovedApiFieldMetaData;
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for GetTableApiFieldsAction
  *******************************************************************************/
-class GetTableApiFieldsActionTest // todo base test
+class GetTableApiFieldsActionTest extends BaseTest
 {
    private final String TABLE_NAME = "testTable";
 
@@ -96,18 +97,20 @@ class GetTableApiFieldsActionTest // todo base test
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME)
          .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("1")
-            .withRemovedApiField(((RemovedApiFieldMetaData) new RemovedApiFieldMetaData("d", STRING)
+            .withRemovedApiField(((RemovedApiFieldMetaData) new RemovedApiFieldMetaData("c", STRING)
                .withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1")))
                .withFinalVersion("2"))
          )
          .withField(new QFieldMetaData("a", STRING)) // inherit versionRange from the table
          .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1")))
+         // we used to have "c" here... now it's in the removed list above!
          .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("3")))
       );
       new QInstanceEnricher(qInstance).enrich();
 
-      assertEquals(Set.of("a", "b", "d"), fieldListToNameSet.apply(getFields(TABLE_NAME, "1")));
-      assertEquals(Set.of("a", "b", "d"), fieldListToNameSet.apply(getFields(TABLE_NAME, "2")));
-      assertEquals(Set.of("a", "b", "c"), fieldListToNameSet.apply(getFields(TABLE_NAME, "3")));
+      assertEquals(Set.of("a", "b", "c"), fieldListToNameSet.apply(getFields(TABLE_NAME, "1")));
+      assertEquals(Set.of("a", "b", "c"), fieldListToNameSet.apply(getFields(TABLE_NAME, "2")));
+      assertEquals(Set.of("a", "b", "d"), fieldListToNameSet.apply(getFields(TABLE_NAME, "3")));
    }
+
 }
