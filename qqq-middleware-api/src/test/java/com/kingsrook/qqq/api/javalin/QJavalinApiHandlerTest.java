@@ -29,12 +29,12 @@ import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -123,10 +123,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testGet200() throws QException
    {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff")));
-      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+      insertTestRecord();
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
       assertEquals(200, response.getStatus());
@@ -141,16 +138,12 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Test
-   void testQuery400()
+   private static void insertTestRecord() throws QException
    {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?asdf=Darin&orderBy=asdf asdf").asString();
-      assertEquals(400, response.getStatus());
-      JSONObject jsonObject = new JSONObject(response.getBody());
-      String     error      = jsonObject.getString("error");
-      assertThat(error).contains("orderBy direction for field asdf must be either ASC or DESC");
-      assertThat(error).contains("Unrecognized orderBy field name: asdf");
-      assertThat(error).contains("Unrecognized filter criteria field: asdf");
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff")));
+      new InsertAction().execute(insertInput);
    }
 
 
@@ -159,14 +152,119 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testQuery()
+   void testQuery404()
    {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?firstName=Darin&orderBy=firstName desc").asString();
+      assertError(404, BASE_URL + "/api/" + VERSION + "/notATable/query?");
+      assertError(404, BASE_URL + "/api/notAVersion/person/query?");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery400()
+   {
+      String base = BASE_URL + "/api/" + VERSION + "/person/query?";
+
+      assertError("Could not parse pageNo as an integer", base + "pageNo=foo");
+      assertError("pageNo must be greater than 0", base + "pageNo=0");
+
+      assertError("Could not parse pageSize as an integer", base + "pageSize=foo");
+      assertError("pageSize must be between 1 and 1000.", base + "pageSize=0");
+      assertError("pageSize must be between 1 and 1000.", base + "pageSize=1001");
+
+      assertError("booleanOperator must be either AND or OR", base + "booleanOperator=not");
+      assertError("includeCount must be either true or false", base + "includeCount=maybe");
+
+      assertError("orderBy direction for field firstName must be either ASC or DESC", base + "orderBy=firstName foo");
+      assertError("Unrecognized format for orderBy clause: firstName asc foo", base + "orderBy=firstName asc foo");
+      assertError("Unrecognized orderBy field name: foo", base + "orderBy=foo");
+      assertError("Unrecognized filter criteria field: foo", base + "foo=bar");
+
+      assertError("Request failed with 2 reasons", base + "foo=bar&bar=baz");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200NoParams()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(0, jsonObject.getInt("count"));
       assertEquals(1, jsonObject.getInt("pageNo"));
       assertEquals(50, jsonObject.getInt("pageSize"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200SomethingFound() throws QException
+   {
+      insertTestRecord();
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(1, jsonObject.getInt("count"));
+      assertEquals(1, jsonObject.getInt("pageNo"));
+      assertEquals(50, jsonObject.getInt("pageSize"));
+
+      JSONArray jsonArray = jsonObject.getJSONArray("records");
+      jsonObject = jsonArray.getJSONObject(0);
+      assertEquals(1, jsonObject.getInt("id"));
+      assertEquals("Darin", jsonObject.getString("firstName"));
+      assertEquals("Kelkhoff", jsonObject.getString("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200ManyParams()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?pageSize=49&pageNo=2&includeCount=true&booleanOperator=AND&firstName=Darin&orderBy=firstName desc").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(0, jsonObject.getInt("count"));
+      assertEquals(2, jsonObject.getInt("pageNo"));
+      assertEquals(49, jsonObject.getInt("pageSize"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertError(Integer statusCode, String url)
+   {
+      HttpResponse<String> response = Unirest.get(url).asString();
+      assertEquals(statusCode, response.getStatus());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertError(String expectedErrorMessage, String url)
+   {
+      HttpResponse<String> response = Unirest.get(url).asString();
+      assertEquals(400, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      String     error      = jsonObject.getString("error");
+      assertThat(error).contains(expectedErrorMessage);
    }
 
 }

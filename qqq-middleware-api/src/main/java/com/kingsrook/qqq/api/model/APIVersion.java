@@ -104,4 +104,37 @@ public class APIVersion implements Comparable<APIVersion>
    {
       return (version);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+
+      APIVersion that = (APIVersion) o;
+      return Objects.equals(version, that.version);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(version);
+   }
 }

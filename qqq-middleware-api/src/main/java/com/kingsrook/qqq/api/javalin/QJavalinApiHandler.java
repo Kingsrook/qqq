@@ -72,7 +72,6 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
-import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.ContentType;
@@ -198,16 +197,7 @@ public class QJavalinApiHandler
          // todo - make sure table is supported in this version
 
          QTableMetaData table = qInstance.getTable(tableName);
-
-         if(table == null)
-         {
-            throw (new QNotFoundException("Could not find any resources at path " + context.path()));
-         }
-
-         if(!getApiVersionRange(table).includes(new APIVersion(version)))
-         {
-            throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
-         }
+         validateTableAndVersion(context, version, table);
 
          GetInput getInput = new GetInput();
 
@@ -270,16 +260,7 @@ public class QJavalinApiHandler
          // todo - make sure table is supported in this version
 
          QTableMetaData table = qInstance.getTable(tableName);
-
-         if(table == null)
-         {
-            throw (new QNotFoundException("Could not find any resources at path " + context.path()));
-         }
-
-         if(!getApiVersionRange(table).includes(new APIVersion(version)))
-         {
-            throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
-         }
+         validateTableAndVersion(context, version, table);
 
          QueryInput queryInput = new QueryInput();
          setupSession(context, queryInput);
@@ -308,7 +289,18 @@ public class QJavalinApiHandler
             badRequestMessages.add("pageSize must be between 1 and 1000.");
          }
 
-         Integer pageNo = Objects.requireNonNullElse(QJavalinUtils.integerQueryParam(context, "pageNo"), 1);
+         Integer pageNo = 1;
+         if(StringUtils.hasContent(context.queryParam("pageNo")))
+         {
+            try
+            {
+               pageNo = ValueUtils.getValueAsInteger(context.queryParam("pageNo"));
+            }
+            catch(Exception e)
+            {
+               badRequestMessages.add("Could not parse pageNo as an integer");
+            }
+         }
          if(pageNo < 1)
          {
             badRequestMessages.add("pageNo must be greater than 0.");
@@ -432,7 +424,7 @@ public class QJavalinApiHandler
             }
             else
             {
-               throw (new QBadRequestException("Requested failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join(" \n", badRequestMessages)));
+               throw (new QBadRequestException("Request failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join(" \n", badRequestMessages)));
             }
          }
 
@@ -477,6 +469,30 @@ public class QJavalinApiHandler
       {
          QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
          handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void validateTableAndVersion(Context context, String version, QTableMetaData table) throws QNotFoundException
+   {
+      if(table == null)
+      {
+         throw (new QNotFoundException("Could not find any resources at path " + context.path()));
+      }
+
+      APIVersion requestApiVersion = new APIVersion(version);
+      if(!ApiMiddlewareType.getApiInstanceMetaData(qInstance).getSupportedVersions().contains(requestApiVersion))
+      {
+         throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
+      }
+
+      if(!getApiVersionRange(table).includes(requestApiVersion))
+      {
+         throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
       }
    }
 
