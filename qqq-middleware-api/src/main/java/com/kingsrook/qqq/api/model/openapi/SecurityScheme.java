@@ -19,70 +19,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api;
-
-
-import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+package com.kingsrook.qqq.api.model.openapi;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class BaseTest
+public class SecurityScheme
 {
-   private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
+   private String type;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for type
     *******************************************************************************/
-   @BeforeEach
-   @AfterEach
-   void baseBeforeAndAfterEach()
+   public String getType()
    {
-      MemoryRecordStore.fullReset();
+      return (this.type);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for type
     *******************************************************************************/
-   @BeforeEach
-   void baseBeforeEach()
+   public void setType(String type)
    {
-      QContext.init(TestUtils.defineInstance(), new QSession());
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter for type
     *******************************************************************************/
-   @AfterEach
-   void baseAfterEach()
+   public SecurityScheme withType(String type)
    {
-      QContext.clear();
+      this.type = type;
+      return (this);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected static void reInitInstanceInContext(QInstance qInstance)
-   {
-      if(qInstance.equals(QContext.getQInstance()))
-      {
-         LOG.warn("Unexpected condition - the same qInstance that is already in the QContext was passed into reInit.  You probably want a new QInstance object instance.");
-      }
-      QContext.init(qInstance, new QSession());
-   }
 }

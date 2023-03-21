@@ -28,134 +28,102 @@ import java.util.Map;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class Components
+public class OAuth2Flow
 {
-   private Map<String, Example>        examples;
-   private Map<String, Schema>         schemas;
-   private Map<Integer, Response>      responses;
-   private Map<String, SecurityScheme> securitySchemes;
+   private String              authorizationUrl;
+   private String              tokenUrl;
+   private Map<String, String> scopes;
 
 
 
    /*******************************************************************************
-    ** Getter for examples
+    ** Getter for authorizationUrl
     *******************************************************************************/
-   public Map<String, Example> getExamples()
+   public String getAuthorizationUrl()
    {
-      return (this.examples);
+      return (this.authorizationUrl);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for examples
+    ** Setter for authorizationUrl
     *******************************************************************************/
-   public void setExamples(Map<String, Example> examples)
+   public void setAuthorizationUrl(String authorizationUrl)
    {
-      this.examples = examples;
+      this.authorizationUrl = authorizationUrl;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for examples
+    ** Fluent setter for authorizationUrl
     *******************************************************************************/
-   public Components withExamples(Map<String, Example> examples)
+   public OAuth2Flow withAuthorizationUrl(String authorizationUrl)
    {
-      this.examples = examples;
+      this.authorizationUrl = authorizationUrl;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for schemas
+    ** Getter for tokenUrl
     *******************************************************************************/
-   public Map<String, Schema> getSchemas()
+   public String getTokenUrl()
    {
-      return (this.schemas);
+      return (this.tokenUrl);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for schemas
+    ** Setter for tokenUrl
     *******************************************************************************/
-   public void setSchemas(Map<String, Schema> schemas)
+   public void setTokenUrl(String tokenUrl)
    {
-      this.schemas = schemas;
+      this.tokenUrl = tokenUrl;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for schemas
+    ** Fluent setter for tokenUrl
     *******************************************************************************/
-   public Components withSchemas(Map<String, Schema> schemas)
+   public OAuth2Flow withTokenUrl(String tokenUrl)
    {
-      this.schemas = schemas;
+      this.tokenUrl = tokenUrl;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for responses
+    ** Getter for scopes
     *******************************************************************************/
-   public Map<Integer, Response> getResponses()
+   public Map<String, String> getScopes()
    {
-      return (this.responses);
+      return (this.scopes);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for responses
+    ** Setter for scopes
     *******************************************************************************/
-   public void setResponses(Map<Integer, Response> responses)
+   public void setScopes(Map<String, String> scopes)
    {
-      this.responses = responses;
+      this.scopes = scopes;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for responses
+    ** Fluent setter for scopes
     *******************************************************************************/
-   public Components withResponses(Map<Integer, Response> responses)
+   public OAuth2Flow withScopes(Map<String, String> scopes)
    {
-      this.responses = responses;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for securitySchemes
-    *******************************************************************************/
-   public Map<String, SecurityScheme> getSecuritySchemes()
-   {
-      return (this.securitySchemes);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for securitySchemes
-    *******************************************************************************/
-   public void setSecuritySchemes(Map<String, SecurityScheme> securitySchemes)
-   {
-      this.securitySchemes = securitySchemes;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for securitySchemes
-    *******************************************************************************/
-   public Components withSecuritySchemes(Map<String, SecurityScheme> securitySchemes)
-   {
-      this.securitySchemes = securitySchemes;
+      this.scopes = scopes;
       return (this);
    }
 

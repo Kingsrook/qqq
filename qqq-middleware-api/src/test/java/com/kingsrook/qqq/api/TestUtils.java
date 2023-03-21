@@ -22,6 +22,10 @@
 package com.kingsrook.qqq.api;
 
 
+import java.util.List;
+import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
@@ -39,6 +43,8 @@ public class TestUtils
    public static final  String MEMORY_BACKEND_NAME = "memory";
    private static final String TABLE_NAME_PERSON   = "person";
 
+   private static final String API_VERSION = "2023.Q1";
+
 
 
    /*******************************************************************************
@@ -50,6 +56,11 @@ public class TestUtils
 
       qInstance.addBackend(defineMemoryBackend());
       qInstance.addTable(defineTablePerson());
+
+      qInstance.withMiddlewareMetaData(new ApiInstanceMetaData()
+         .withCurrentVersion(new APIVersion(API_VERSION))
+         .withSupportedVersions(List.of(new APIVersion(API_VERSION)))
+      );
 
       return (qInstance);
    }
@@ -77,6 +88,7 @@ public class TestUtils
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(MEMORY_BACKEND_NAME)
+         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(API_VERSION))
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))

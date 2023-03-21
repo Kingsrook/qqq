@@ -23,6 +23,7 @@ package com.kingsrook.qqq.api.model.metadata;
 
 
 import java.util.List;
+import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
@@ -37,6 +38,17 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    private List<APIVersion> supportedVersions;
    private List<APIVersion> pastVersions;
    private List<APIVersion> futureVersions;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ApiInstanceMetaData()
+   {
+      setType(ApiMiddlewareType.NAME);
+   }
 
 
 

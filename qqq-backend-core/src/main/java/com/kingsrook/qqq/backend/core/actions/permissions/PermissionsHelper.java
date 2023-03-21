@@ -75,7 +75,20 @@ public class PermissionsHelper
       warnAboutPermissionSubTypeForTables(permissionSubType);
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
 
-      commonCheckPermissionThrowing(getEffectivePermissionRules(table, QContext.getQInstance()), permissionSubType, table.getName(), actionInput);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(table, QContext.getQInstance()), permissionSubType, table.getName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getTablePermissionName(String tableName, TablePermissionSubType permissionSubType)
+   {
+      QInstance        qInstance          = QContext.getQInstance();
+      QPermissionRules rules              = getEffectivePermissionRules(qInstance.getTable(tableName), qInstance);
+      String           permissionBaseName = getEffectivePermissionBaseName(rules, tableName);
+      return (getPermissionName(permissionBaseName, permissionSubType));
    }
 
 
@@ -181,7 +194,7 @@ public class PermissionsHelper
          return;
       }
 
-      commonCheckPermissionThrowing(effectivePermissionRules, PrivatePermissionSubType.HAS_ACCESS, process.getName(), actionInput);
+      commonCheckPermissionThrowing(effectivePermissionRules, PrivatePermissionSubType.HAS_ACCESS, process.getName());
    }
 
 
@@ -210,7 +223,7 @@ public class PermissionsHelper
    public static void checkAppPermissionThrowing(AbstractActionInput actionInput, String appName) throws QPermissionDeniedException
    {
       QAppMetaData app = QContext.getQInstance().getApp(appName);
-      commonCheckPermissionThrowing(getEffectivePermissionRules(app, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, app.getName(), actionInput);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(app, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, app.getName());
    }
 
 
@@ -239,7 +252,7 @@ public class PermissionsHelper
    public static void checkReportPermissionThrowing(AbstractActionInput actionInput, String reportName) throws QPermissionDeniedException
    {
       QReportMetaData report = QContext.getQInstance().getReport(reportName);
-      commonCheckPermissionThrowing(getEffectivePermissionRules(report, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, report.getName(), actionInput);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(report, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, report.getName());
    }
 
 
@@ -268,7 +281,7 @@ public class PermissionsHelper
    public static void checkWidgetPermissionThrowing(AbstractActionInput actionInput, String widgetName) throws QPermissionDeniedException
    {
       QWidgetMetaDataInterface widget = QContext.getQInstance().getWidget(widgetName);
-      commonCheckPermissionThrowing(getEffectivePermissionRules(widget, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, widget.getName(), actionInput);
+      commonCheckPermissionThrowing(getEffectivePermissionRules(widget, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, widget.getName());
    }
 
 
@@ -524,7 +537,7 @@ public class PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void commonCheckPermissionThrowing(QPermissionRules rules, PermissionSubType permissionSubType, String name, AbstractActionInput actionInput) throws QPermissionDeniedException
+   private static void commonCheckPermissionThrowing(QPermissionRules rules, PermissionSubType permissionSubType, String name) throws QPermissionDeniedException
    {
       PermissionSubType effectivePermissionSubType = getEffectivePermissionSubType(rules, permissionSubType);
       String            permissionBaseName         = getEffectivePermissionBaseName(rules, name);

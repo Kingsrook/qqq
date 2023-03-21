@@ -37,14 +37,19 @@ import com.kingsrook.qqq.api.model.openapi.ExampleWithListValue;
 import com.kingsrook.qqq.api.model.openapi.ExampleWithSingleValue;
 import com.kingsrook.qqq.api.model.openapi.Info;
 import com.kingsrook.qqq.api.model.openapi.Method;
+import com.kingsrook.qqq.api.model.openapi.OAuth2;
+import com.kingsrook.qqq.api.model.openapi.OAuth2Flow;
 import com.kingsrook.qqq.api.model.openapi.OpenAPI;
 import com.kingsrook.qqq.api.model.openapi.Parameter;
 import com.kingsrook.qqq.api.model.openapi.Path;
 import com.kingsrook.qqq.api.model.openapi.Response;
 import com.kingsrook.qqq.api.model.openapi.Schema;
+import com.kingsrook.qqq.api.model.openapi.SecurityScheme;
 import com.kingsrook.qqq.api.model.openapi.Server;
 import com.kingsrook.qqq.api.model.openapi.Tag;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
+import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -91,11 +96,22 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       openAPI.setTags(new ArrayList<>());
       openAPI.setPaths(new LinkedHashMap<>());
 
-      LinkedHashMap<Integer, Response> componentResponses = new LinkedHashMap<>();
-      LinkedHashMap<String, Schema>    componentSchemas   = new LinkedHashMap<>();
+      LinkedHashMap<Integer, Response>      componentResponses = new LinkedHashMap<>();
+      LinkedHashMap<String, Schema>         componentSchemas   = new LinkedHashMap<>();
+      LinkedHashMap<String, SecurityScheme> securitySchemes    = new LinkedHashMap<>();
       openAPI.setComponents(new Components()
          .withSchemas(componentSchemas)
          .withResponses(componentResponses)
+         .withSecuritySchemes(securitySchemes)
+      );
+
+      LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
+      securitySchemes.put("OAuth2", new OAuth2()
+         .withFlows(MapBuilder.of("authorizationCode", new OAuth2Flow()
+            .withAuthorizationUrl("https://nutrifresh-one-development.us.auth0.com/authorize")
+            .withTokenUrl("https://nutrifresh-one-development.us.auth0.com/oauth/token")
+            .withScopes(scopes)
+         ))
       );
 
       componentSchemas.put("baseSearchResultFields", new Schema()
@@ -130,6 +146,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          String primaryKeyLabel  = table.getField(table.getPrimaryKeyField()).getLabel();
 
          List<? extends QFieldMetaData> tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
+
+         String tableReadPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.READ);
+         if(StringUtils.hasContent(tableReadPermissionName))
+         {
+            scopes.put(tableReadPermissionName, "Permission to read the " + tableLabel + " table");
+         }
 
          ////////////////////////
          // tag for this table //
@@ -224,7 +246,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableName + "SearchResult"))
                ))
-            );
+            ).withSecurity(ListBuilder.of(MapBuilder.of(
+               "OAuth2", List.of(tableReadPermissionName)
+            )));
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {

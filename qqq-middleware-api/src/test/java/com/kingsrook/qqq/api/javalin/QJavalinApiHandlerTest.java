@@ -19,35 +19,57 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api;
+package com.kingsrook.qqq.api.javalin;
 
 
-import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /*******************************************************************************
- **
+ ** Unit test for QJavalinApiHandler
  *******************************************************************************/
-public class BaseTest
+class QJavalinApiHandlerTest
 {
-   private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
+   private static final   int    PORT     = 6263;
+   protected static final String BASE_URL = "http://localhost:" + PORT;
+
+   private static final String VERSION = "2023.Q1";
+
+   protected static QJavalinImplementation qJavalinImplementation;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @BeforeEach
-   @AfterEach
-   void baseBeforeAndAfterEach()
+   @BeforeAll
+   static void beforeAll() throws QInstanceValidationException
    {
-      MemoryRecordStore.fullReset();
+      QInstance qInstance = TestUtils.defineInstance();
+      qJavalinImplementation = new QJavalinImplementation(qInstance);
+      qJavalinImplementation.startJavalinServer(PORT);
+      qJavalinImplementation.getJavalinService().routes(new QJavalinApiHandler(qInstance).getRoutes());
+   }
+
+
+
+   /*******************************************************************************
+    ** Before the class (all) runs, start a javalin server.
+    **
+    *******************************************************************************/
+   @AfterAll
+   public static void afterAll()
+   {
+      qJavalinImplementation.stopJavalinServer();
    }
 
 
@@ -55,10 +77,19 @@ public class BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @BeforeEach
-   void baseBeforeEach()
+   @Test
+   void testSpec()
    {
-      QContext.init(TestUtils.defineInstance(), new QSession());
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/openapi.yaml").asString();
+      System.out.println(response.getBody());
+      assertThat(response.getBody())
+         .contains("""
+            title: "QQQ API"
+            """)
+         .contains("""
+            /person/query:
+            """)
+      ;
    }
 
 
@@ -66,23 +97,11 @@ public class BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @AfterEach
-   void baseAfterEach()
+   @Test
+   void testQuery()
    {
-      QContext.clear();
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
+      System.out.println(response.getBody());
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected static void reInitInstanceInContext(QInstance qInstance)
-   {
-      if(qInstance.equals(QContext.getQInstance()))
-      {
-         LOG.warn("Unexpected condition - the same qInstance that is already in the QContext was passed into reInit.  You probably want a new QInstance object instance.");
-      }
-      QContext.init(qInstance, new QSession());
-   }
 }

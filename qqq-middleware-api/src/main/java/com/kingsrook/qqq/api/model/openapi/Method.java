@@ -40,6 +40,8 @@ public class Method
    private RequestBody            requestBody;
    private List<Parameter>        parameters;
    private Map<Integer, Response> responses;
+  
+   private List<Map<String, List<String>>> security;
 
 
 
@@ -303,4 +305,36 @@ public class Method
       this.responses.put(code, response);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for security
+    *******************************************************************************/
+   public List<Map<String, List<String>>> getSecurity()
+   {
+      return (this.security);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for security
+    *******************************************************************************/
+   public void setSecurity(List<Map<String, List<String>>> security)
+   {
+      this.security = security;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for security
+    *******************************************************************************/
+   public Method withSecurity(List<Map<String, List<String>>> security)
+   {
+      this.security = security;
+      return (this);
+   }
+
 }

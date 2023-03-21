@@ -208,7 +208,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   void startJavalinServer(int port)
+   public void startJavalinServer(int port)
    {
       // todo port from arg
       // todo base path from arg? - and then potentially multiple instances too (chosen based on the root path??)
@@ -217,6 +217,16 @@ public class QJavalinImplementation
       service.before(QJavalinImplementation::hotSwapQInstance);
       service.before((Context context) -> context.header("Content-Type", "application/json"));
       service.after(QJavalinImplementation::clearQContext);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Javalin getJavalinService()
+   {
+      return (service);
    }
 
 
@@ -277,7 +287,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   void stopJavalinServer()
+   public void stopJavalinServer()
    {
       service.stop();
    }

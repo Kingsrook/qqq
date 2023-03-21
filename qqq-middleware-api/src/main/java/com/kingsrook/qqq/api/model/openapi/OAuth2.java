@@ -19,70 +19,59 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api;
+package com.kingsrook.qqq.api.model.openapi;
 
 
-import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Map;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class BaseTest
+public class OAuth2 extends SecurityScheme
 {
-   private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
+   private Map<String, OAuth2Flow> flows;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   @BeforeEach
-   @AfterEach
-   void baseBeforeAndAfterEach()
+   public OAuth2()
    {
-      MemoryRecordStore.fullReset();
+      setType("oauth2");
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for flows
     *******************************************************************************/
-   @BeforeEach
-   void baseBeforeEach()
+   public Map<String, OAuth2Flow> getFlows()
    {
-      QContext.init(TestUtils.defineInstance(), new QSession());
+      return (this.flows);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for flows
     *******************************************************************************/
-   @AfterEach
-   void baseAfterEach()
+   public void setFlows(Map<String, OAuth2Flow> flows)
    {
-      QContext.clear();
+      this.flows = flows;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter for flows
     *******************************************************************************/
-   protected static void reInitInstanceInContext(QInstance qInstance)
+   public OAuth2 withFlows(Map<String, OAuth2Flow> flows)
    {
-      if(qInstance.equals(QContext.getQInstance()))
-      {
-         LOG.warn("Unexpected condition - the same qInstance that is already in the QContext was passed into reInit.  You probably want a new QInstance object instance.");
-      }
-      QContext.init(qInstance, new QSession());
+      this.flows = flows;
+      return (this);
    }
+
 }
