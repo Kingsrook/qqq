@@ -245,15 +245,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             );
          }
 
-         openAPI.getPaths().put("/" + tableName + "/query", new Path().withGet(queryGet)
-            /*
-            .withPost(new Method()
-               .withSummary("Search the " + tableLabel + " table by posting a QueryFilter object.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-            */
-         );
+         openAPI.getPaths().put("/" + tableName + "/query", new Path().withGet(queryGet));
+         /*
+         .withPost(new Method()
+            .withSummary("Search the " + tableLabel + " table by posting a QueryFilter object.")
+            .withTags(ListBuilder.of(tableLabel))
+            .withResponses(buildStandardErrorResponses())
+         )
+         */
 
          /*
          openAPI.getPaths().put("/" + tableName + "/{" + primaryKeyName + "}", new Path()
