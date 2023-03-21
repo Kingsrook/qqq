@@ -23,20 +23,28 @@ package com.kingsrook.qqq.api.javalin;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
+import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
+import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
@@ -44,8 +52,13 @@ import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -56,11 +69,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
+import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import org.eclipse.jetty.http.HttpStatus;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -92,12 +107,14 @@ public class QJavalinApiHandler
    /*******************************************************************************
     ** Define the routes
     *******************************************************************************/
-   public static EndpointGroup getRoutes()
+   public EndpointGroup getRoutes()
    {
       return (() ->
       {
          ApiBuilder.path("/api/{version}", () -> // todo - configurable, that /api/ bit?
          {
+            ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpec);
+
             ApiBuilder.path("/{tableName}", () ->
             {
                ApiBuilder.post("/", QJavalinApiHandler::doInsert);
@@ -115,6 +132,27 @@ public class QJavalinApiHandler
             });
          });
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doSpec(Context context)
+   {
+      try
+      {
+         QContext.init(qInstance, null);
+         String                    version = context.pathParam("version");
+         GenerateOpenApiSpecOutput output  = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(version));
+         context.contentType(ContentType.APPLICATION_YAML);
+         context.result(output.getYaml());
+      }
+      catch(Exception e)
+      {
+         QJavalinImplementation.handleException(context, e);
+      }
    }
 
 
@@ -151,7 +189,7 @@ public class QJavalinApiHandler
    private static void doGet(Context context)
    {
       String version    = context.pathParam("version");
-      String tableName  = context.pathParam("table");
+      String tableName  = context.pathParam("tableName");
       String primaryKey = context.pathParam("primaryKey");
 
       try
@@ -200,14 +238,8 @@ public class QJavalinApiHandler
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         List<? extends QFieldMetaData> tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
-         Map<String, Serializable>      outputRecord   = new LinkedHashMap<>();
-         for(QFieldMetaData tableApiField : tableApiFields)
-         {
-            // todo - what about display values / possible values
-            // todo - handle removed-from-this-version fields!!
-            outputRecord.put(tableApiField.getName(), record.getValue(tableApiField.getName()));
-         }
+         List<? extends QFieldMetaData>      tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
+         LinkedHashMap<String, Serializable> outputRecord   = toApiRecord(record, tableApiFields);
 
          QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(outputRecord));
@@ -226,46 +258,248 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doQuery(Context context)
    {
-      String table  = context.pathParam("table");
-      String filter = null;
+      String       version   = context.pathParam("version");
+      String       tableName = context.pathParam("tableName");
+      QQueryFilter filter    = null;
 
       try
       {
+         List<String> badRequestMessages = new ArrayList<>();
+
+         // todo - make sure version is known in this instance
+         // todo - make sure table is supported in this version
+
+         QTableMetaData table = qInstance.getTable(tableName);
+
+         if(table == null)
+         {
+            throw (new QNotFoundException("Could not find any resources at path " + context.path()));
+         }
+
+         if(!getApiVersionRange(table).includes(new APIVersion(version)))
+         {
+            throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
+         }
+
          QueryInput queryInput = new QueryInput();
          setupSession(context, queryInput);
-         QJavalinAccessLogger.logStart("query", logPair("table", table));
+         QJavalinAccessLogger.logStart("apiQuery", logPair("table", tableName));
 
-         queryInput.setTableName(table);
-         queryInput.setShouldGenerateDisplayValues(true);
-         queryInput.setShouldTranslatePossibleValues(true);
-         queryInput.setSkip(QJavalinUtils.integerQueryParam(context, "skip"));
-         queryInput.setLimit(QJavalinUtils.integerQueryParam(context, "limit"));
+         queryInput.setTableName(tableName);
+         //? queryInput.setShouldGenerateDisplayValues(true);
+         //? queryInput.setShouldTranslatePossibleValues(true);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
-         filter = QJavalinUtils.stringQueryParam(context, "filter");
-         if(!StringUtils.hasContent(filter))
+         Integer pageSize = 50;
+         if(StringUtils.hasContent(context.queryParam("pageSize")))
          {
-            filter = context.formParam("filter");
+            try
+            {
+               pageSize = ValueUtils.getValueAsInteger(context.queryParam("pageSize"));
+            }
+            catch(Exception e)
+            {
+               badRequestMessages.add("Could not parse pageSize as an integer");
+            }
          }
-         if(filter != null)
+         if(pageSize < 1 || pageSize > 1000)
          {
-            queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            badRequestMessages.add("pageSize must be between 1 and 1000.");
          }
+
+         Integer pageNo = Objects.requireNonNullElse(QJavalinUtils.integerQueryParam(context, "pageNo"), 1);
+         if(pageNo < 1)
+         {
+            badRequestMessages.add("pageNo must be greater than 0.");
+         }
+
+         queryInput.setLimit(pageSize);
+         queryInput.setSkip((pageNo - 1) * pageSize);
 
          // queryInput.setQueryJoins(processQueryJoinsParam(context));
 
+         filter = new QQueryFilter();
+         if("and".equalsIgnoreCase(context.queryParam("booleanOperator")))
+         {
+            filter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
+         }
+         else if("or".equalsIgnoreCase(context.queryParam("booleanOperator")))
+         {
+            filter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
+         }
+         else if(StringUtils.hasContent(context.queryParam("booleanOperator")))
+         {
+            badRequestMessages.add("booleanOperator must be either AND or OR.");
+         }
+
+         boolean includeCount = true;
+         if("true".equalsIgnoreCase(context.queryParam("includeCount")))
+         {
+            includeCount = true;
+         }
+         else if("false".equalsIgnoreCase(context.queryParam("includeCount")))
+         {
+            includeCount = false;
+         }
+         else if(StringUtils.hasContent(context.queryParam("includeCount")))
+         {
+            badRequestMessages.add("includeCount must be either true or false");
+         }
+
+         String orderBy = context.queryParam("orderBy");
+         if(StringUtils.hasContent(orderBy))
+         {
+            for(String orderByPart : orderBy.split(","))
+            {
+               orderByPart = orderByPart.trim();
+               String[] orderByNameDirection = orderByPart.split(" +");
+               boolean  asc                  = true;
+               if(orderByNameDirection.length == 2)
+               {
+                  if("asc".equalsIgnoreCase(orderByNameDirection[1]))
+                  {
+                     asc = true;
+                  }
+                  else if("desc".equalsIgnoreCase(orderByNameDirection[1]))
+                  {
+                     asc = false;
+                  }
+                  else
+                  {
+                     badRequestMessages.add("orderBy direction for field " + orderByNameDirection[0] + " must be either ASC or DESC.");
+                  }
+               }
+               else if(orderByNameDirection.length > 2)
+               {
+                  badRequestMessages.add("unrecognized format for orderBy clause: " + orderByPart + ".  Expected:  fieldName [ASC|DESC].");
+               }
+
+               try
+               {
+                  QFieldMetaData field = table.getField(orderByNameDirection[0]);
+                  filter.withOrderBy(new QFilterOrderBy(field.getName(), asc));
+               }
+               catch(Exception e)
+               {
+                  badRequestMessages.add("unrecognized orderBy field name: " + orderByNameDirection[0] + ".");
+               }
+            }
+         }
+
+         Set<String> nonFilterParams = Set.of("pageSize", "pageNo", "orderBy", "booleanOperator", "includeCount");
+
+         ////////////////////////////
+         // look for filter params //
+         ////////////////////////////
+         for(Map.Entry<String, List<String>> entry : context.queryParamMap().entrySet())
+         {
+            String       name   = entry.getKey();
+            List<String> values = entry.getValue();
+
+            if(nonFilterParams.contains(name))
+            {
+               continue;
+            }
+
+            try
+            {
+               QFieldMetaData field = table.getField(name);
+               for(String value : values)
+               {
+                  if(StringUtils.hasContent(value))
+                  {
+                     QCriteriaOperator  operator       = getCriteriaOperator(value);
+                     List<Serializable> criteriaValues = getCriteriaValues(field, value);
+                     filter.addCriteria(new QFilterCriteria(name, operator, criteriaValues));
+                  }
+               }
+            }
+            catch(Exception e)
+            {
+               badRequestMessages.add("Unrecognized filter criteria field: " + name);
+            }
+         }
+
+         //////////////////////////////////////////
+         // no more badRequest checks below here //
+         //////////////////////////////////////////
+         if(!badRequestMessages.isEmpty())
+         {
+            if(badRequestMessages.size() == 1)
+            {
+               throw (new QBadRequestException(badRequestMessages.get(0)));
+            }
+            else
+            {
+               throw (new QBadRequestException("Requested failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join(" \n", badRequestMessages)));
+            }
+         }
+
+         //////////////////
+         // do the query //
+         //////////////////
          QueryAction queryAction = new QueryAction();
+         queryInput.setFilter(filter);
          QueryOutput queryOutput = queryAction.execute(queryInput);
 
+         Map<String, Serializable> output = new HashMap<>();
+         output.put("pageSize", pageSize);
+         output.put("pageNo", pageNo);
+
+         ///////////////////////////////
+         // map record fields for api //
+         ///////////////////////////////
+         List<? extends QFieldMetaData>       tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
+         ArrayList<Map<String, Serializable>> records        = new ArrayList<>();
+         for(QRecord record : queryOutput.getRecords())
+         {
+            records.add(toApiRecord(record, tableApiFields));
+         }
+         output.put("records", records);
+
+         /////////////////////////////
+         // optionally do the count //
+         /////////////////////////////
+         if(includeCount)
+         {
+            CountInput countInput = new CountInput();
+            countInput.setTableName(tableName);
+            countInput.setFilter(filter);
+            CountOutput countOutput = new CountAction().execute(countInput);
+            output.put("count", countOutput.getCount());
+         }
+
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), QJavalinAccessLogger.logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
-         context.result(JsonUtils.toJson(queryOutput));
+         context.result(JsonUtils.toJson(output));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
          handleException(context, e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QCriteriaOperator getCriteriaOperator(String value)
+   {
+      // todo - all other operators
+      return (QCriteriaOperator.EQUALS);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<Serializable> getCriteriaValues(QFieldMetaData field, String value)
+   {
+      // todo - parse the thing, do stuff
+      return (List.of(value));
    }
 
 
@@ -303,6 +537,23 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static LinkedHashMap<String, Serializable> toApiRecord(QRecord record, List<? extends QFieldMetaData> tableApiFields)
+   {
+      LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+      for(QFieldMetaData tableApiField : tableApiFields)
+      {
+         // todo - what about display values / possible values
+         // todo - handle removed-from-this-version fields!!
+         outputRecord.put(tableApiField.getName(), record.getValue(tableApiField.getName()));
+      }
+      return outputRecord;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static void handleException(Context context, Exception e)
    {
       handleException(null, context, e);
@@ -315,6 +566,14 @@ public class QJavalinApiHandler
     *******************************************************************************/
    public static void handleException(HttpStatus.Code statusCode, Context context, Exception e)
    {
+      QBadRequestException badRequestException = ExceptionUtils.findClassInRootChain(e, QBadRequestException.class);
+      if(badRequestException != null)
+      {
+         statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.BAD_REQUEST); // 400
+         respondWithError(context, statusCode, badRequestException.getMessage());
+         return;
+      }
+
       QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
       if(userFacingException != null)
       {

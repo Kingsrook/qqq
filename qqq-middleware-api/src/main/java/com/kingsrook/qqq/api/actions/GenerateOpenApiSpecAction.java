@@ -118,6 +118,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       ///////////////////
       for(QTableMetaData table : qInstance.getTables().values())
       {
+         if(table.getIsHidden())
+         {
+            continue;
+         }
+
          String tableName        = table.getName();
          String tableNameUcFirst = StringUtils.ucFirst(table.getName());
          String tableLabel       = table.getLabel();
