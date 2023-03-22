@@ -62,6 +62,9 @@ public class TestUtils
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
       qInstance.withMiddlewareMetaData(new ApiInstanceMetaData()
+         .withName("TestAPI")
+         .withDescription("QQQ Test API")
+         .withContactEmail("contact@kingsrook.com")
          .withCurrentVersion(new APIVersion(API_VERSION))
          .withSupportedVersions(List.of(new APIVersion(API_VERSION)))
       );

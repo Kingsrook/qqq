@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
-import com.kingsrook.qqq.api.model.metadata.fields.RemovedApiFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -40,7 +39,7 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    private String initialVersion;
    private String finalVersion;
 
-   private List<RemovedApiFieldMetaData> removedApiFields;
+   private List<QFieldMetaData> removedApiFields;
 
 
 
@@ -86,7 +85,7 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     ** Getter for removedApiFields
     *******************************************************************************/
-   public List<RemovedApiFieldMetaData> getRemovedApiFields()
+   public List<QFieldMetaData> getRemovedApiFields()
    {
       return (this.removedApiFields);
    }
@@ -96,7 +95,7 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     ** Setter for removedApiFields
     *******************************************************************************/
-   public void setRemovedApiFields(List<RemovedApiFieldMetaData> removedApiFields)
+   public void setRemovedApiFields(List<QFieldMetaData> removedApiFields)
    {
       this.removedApiFields = removedApiFields;
    }
@@ -106,7 +105,7 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     ** Fluent setter for removedApiFields
     *******************************************************************************/
-   public ApiTableMetaData withRemovedApiFields(List<RemovedApiFieldMetaData> removedApiFields)
+   public ApiTableMetaData withRemovedApiFields(List<QFieldMetaData> removedApiFields)
    {
       this.removedApiFields = removedApiFields;
       return (this);
@@ -117,7 +116,7 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     ** Fluent setter for a single removedApiField
     *******************************************************************************/
-   public ApiTableMetaData withRemovedApiField(RemovedApiFieldMetaData removedApiField)
+   public ApiTableMetaData withRemovedApiField(QFieldMetaData removedApiField)
    {
       if(this.removedApiFields == null)
       {

@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QMiddlewareFieldMeta
 public class ApiFieldMetaData extends QMiddlewareFieldMetaData
 {
    private String initialVersion;
+   private String finalVersion;
 
 
 
@@ -71,6 +72,37 @@ public class ApiFieldMetaData extends QMiddlewareFieldMetaData
    public ApiFieldMetaData withInitialVersion(String initialVersion)
    {
       this.initialVersion = initialVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for finalVersion
+    *******************************************************************************/
+   public String getFinalVersion()
+   {
+      return (this.finalVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for finalVersion
+    *******************************************************************************/
+   public void setFinalVersion(String finalVersion)
+   {
+      this.finalVersion = finalVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for finalVersion
+    *******************************************************************************/
+   public ApiFieldMetaData withFinalVersion(String finalVersion)
+   {
+      this.finalVersion = finalVersion;
       return (this);
    }
 

@@ -30,7 +30,6 @@ import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsOutput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
-import com.kingsrook.qqq.api.model.metadata.fields.RemovedApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -80,7 +79,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       //////////////////////////////////////////////////////////////////////////////////////////////////
       // look for removed fields (e.g., not currently in the table anymore), that are in this version //
       //////////////////////////////////////////////////////////////////////////////////////////////////
-      for(RemovedApiFieldMetaData removedApiField : CollectionUtils.nonNullList(getRemovedApiFields(table)))
+      for(QFieldMetaData removedApiField : CollectionUtils.nonNullList(getRemovedApiFields(table)))
       {
          APIVersionRange versionRange = getApiVersionRangeForRemovedField(removedApiField);
 
@@ -99,14 +98,14 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
    /*******************************************************************************
     **
     *******************************************************************************/
-   private APIVersionRange getApiVersionRangeForRemovedField(RemovedApiFieldMetaData field)
+   private APIVersionRange getApiVersionRangeForRemovedField(QFieldMetaData field)
    {
       ApiFieldMetaData middlewareMetaData = ApiMiddlewareType.getApiFieldMetaData(field);
       if(middlewareMetaData != null && middlewareMetaData.getInitialVersion() != null)
       {
-         if(StringUtils.hasContent(field.getFinalVersion()))
+         if(StringUtils.hasContent(middlewareMetaData.getFinalVersion()))
          {
-            return (APIVersionRange.betweenAndIncluding(middlewareMetaData.getInitialVersion(), field.getFinalVersion()));
+            return (APIVersionRange.betweenAndIncluding(middlewareMetaData.getInitialVersion(), middlewareMetaData.getFinalVersion()));
          }
          else
          {
@@ -140,7 +139,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<RemovedApiFieldMetaData> getRemovedApiFields(QTableMetaData table)
+   private List<QFieldMetaData> getRemovedApiFields(QTableMetaData table)
    {
       ApiTableMetaData apiTableMetaData = ApiMiddlewareType.getApiTableMetaData(table);
       if(apiTableMetaData != null)

@@ -101,7 +101,7 @@ class QJavalinApiHandlerTest extends BaseTest
       System.out.println(response.getBody());
       assertThat(response.getBody())
          .contains("""
-            title: "QQQ API"
+            title: "TestAPI"
             """)
          .contains("""
             /person/query:

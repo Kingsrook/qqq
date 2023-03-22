@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
-import com.kingsrook.qqq.api.model.metadata.fields.RemovedApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -97,9 +96,7 @@ class GetTableApiFieldsActionTest extends BaseTest
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME)
          .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("1")
-            .withRemovedApiField(((RemovedApiFieldMetaData) new RemovedApiFieldMetaData("c", STRING)
-               .withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1")))
-               .withFinalVersion("2"))
+            .withRemovedApiField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1").withFinalVersion("2")))
          )
          .withField(new QFieldMetaData("a", STRING)) // inherit versionRange from the table
          .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1")))
