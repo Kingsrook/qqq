@@ -949,12 +949,6 @@ public class QJavalinApiHandler
       }
       else
       {
-         if(e instanceof ApiPathNotFoundException)
-         {
-            respondWithError(context, HttpStatus.Code.NOT_FOUND, e.getMessage()); // 404
-            return;
-         }
-
          if(e instanceof QAuthenticationException)
          {
             respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
