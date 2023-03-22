@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
@@ -82,7 +81,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
       QInstance qInstance = QContext.getQInstance();
 
-      ApiInstanceMetaData apiInstanceMetaData = ApiMiddlewareType.getApiInstanceMetaData(qInstance);
+      ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
 
       OpenAPI openAPI = new OpenAPI()
          .withVersion("3.0.3")
@@ -153,7 +152,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          QFieldMetaData primaryKeyField  = table.getField(table.getPrimaryKeyField());
          String         primaryKeyLabel  = primaryKeyField.getLabel();
 
-         List<? extends QFieldMetaData> tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
+         List<QFieldMetaData> tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
 
          String tableReadPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.READ);
          if(StringUtils.hasContent(tableReadPermissionName))

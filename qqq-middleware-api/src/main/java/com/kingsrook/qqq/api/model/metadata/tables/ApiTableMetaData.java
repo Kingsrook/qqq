@@ -29,6 +29,7 @@ import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -46,6 +47,16 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static ApiTableMetaData of(QTableMetaData table)
+   {
+      return ((ApiTableMetaData) table.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void enrich(QTableMetaData table)
    {
@@ -55,18 +66,37 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            if(field.getMiddlewareMetaData(ApiMiddlewareType.NAME) == null)
+            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(field);
+            if(apiFieldMetaData.getInitialVersion() == null)
             {
-               field.withMiddlewareMetaData(new ApiFieldMetaData());
+               apiFieldMetaData.setInitialVersion(initialVersion);
             }
+         }
 
-            ApiFieldMetaData apiFieldMetaData = (ApiFieldMetaData) field.getMiddlewareMetaData(ApiMiddlewareType.NAME);
+         for(QFieldMetaData field : CollectionUtils.nonNullList(removedApiFields))
+         {
+            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(field);
             if(apiFieldMetaData.getInitialVersion() == null)
             {
                apiFieldMetaData.setInitialVersion(initialVersion);
             }
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static ApiFieldMetaData ensureFieldHasApiMiddlewareMetaData(QFieldMetaData field)
+   {
+      if(field.getMiddlewareMetaData(ApiMiddlewareType.NAME) == null)
+      {
+         field.withMiddlewareMetaData(new ApiFieldMetaData());
+      }
+
+      return (ApiFieldMetaData.of(field));
    }
 
 

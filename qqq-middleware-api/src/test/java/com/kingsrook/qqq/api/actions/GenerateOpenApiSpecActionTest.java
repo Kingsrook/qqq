@@ -49,7 +49,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
    @Test
    void test() throws QException
    {
-      String version = TestUtils.API_VERSION;
+      String version = TestUtils.V2023_Q1;
 
       QInstance qInstance = QContext.getQInstance();
       qInstance.withMiddlewareMetaData(new ApiInstanceMetaData()

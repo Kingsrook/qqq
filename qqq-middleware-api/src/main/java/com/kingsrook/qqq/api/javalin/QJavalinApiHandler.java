@@ -31,15 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
-import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
+import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
-import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
@@ -205,7 +203,7 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static APIVersionRange getApiVersionRange(QTableMetaData table)
    {
-      ApiTableMetaData middlewareMetaData = ApiMiddlewareType.getApiTableMetaData(table);
+      ApiTableMetaData middlewareMetaData = ApiTableMetaData.of(table);
       if(middlewareMetaData != null && middlewareMetaData.getInitialVersion() != null)
       {
          return (APIVersionRange.afterAndIncluding(middlewareMetaData.getInitialVersion()));
@@ -259,7 +257,7 @@ public class QJavalinApiHandler
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         LinkedHashMap<String, Serializable> outputRecord = toApiRecord(record, tableName, version);
+         Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordToApiMap(record, tableName, version);
 
          QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(outputRecord));
@@ -477,7 +475,7 @@ public class QJavalinApiHandler
          ArrayList<Map<String, Serializable>> records = new ArrayList<>();
          for(QRecord record : queryOutput.getRecords())
          {
-            records.add(toApiRecord(record, tableName, version));
+            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, version));
          }
          output.put("records", records);
 
@@ -516,7 +514,7 @@ public class QJavalinApiHandler
       }
 
       APIVersion       requestApiVersion = new APIVersion(version);
-      List<APIVersion> supportedVersions = ApiMiddlewareType.getApiInstanceMetaData(qInstance).getSupportedVersions();
+      List<APIVersion> supportedVersions = ApiInstanceMetaData.of(qInstance).getSupportedVersions();
       if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
       {
          throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
@@ -689,7 +687,7 @@ public class QJavalinApiHandler
             }
 
             JSONObject jsonObject = new JSONObject(context.body());
-            insertInput.setRecords(List.of(toQRecord(jsonObject, tableName, version)));
+            insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version)));
          }
          catch(QBadRequestException qbre)
          {
@@ -757,7 +755,7 @@ public class QJavalinApiHandler
             for(int i = 0; i < jsonArray.length(); i++)
             {
                JSONObject jsonObject = jsonArray.getJSONObject(i);
-               recordList.add(toQRecord(jsonObject, tableName, version));
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version));
             }
 
             if(recordList.isEmpty())
@@ -862,7 +860,7 @@ public class QJavalinApiHandler
             }
 
             JSONObject jsonObject = new JSONObject(context.body());
-            QRecord    qRecord    = toQRecord(jsonObject, tableName, version);
+            QRecord    qRecord    = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version);
             qRecord.setValue(table.getPrimaryKeyField(), primaryKey);
             updateInput.setRecords(List.of(qRecord));
          }
@@ -952,59 +950,6 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logEndFail(e);
          handleException(context, e);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static LinkedHashMap<String, Serializable> toApiRecord(QRecord record, String tableName, String apiVersion) throws QException
-   {
-      List<? extends QFieldMetaData>      tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(apiVersion)).getFields();
-      LinkedHashMap<String, Serializable> outputRecord   = new LinkedHashMap<>();
-      for(QFieldMetaData tableApiField : tableApiFields)
-      {
-         // todo - what about display values / possible values
-         // todo - handle removed-from-this-version fields!!
-         outputRecord.put(tableApiField.getName(), record.getValue(tableApiField.getName()));
-      }
-      return (outputRecord);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static QRecord toQRecord(JSONObject jsonObject, String tableName, String apiVersion) throws QException
-   {
-      List<String> unrecognizedFieldNames = new ArrayList<>();
-
-      List<? extends QFieldMetaData>        tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(apiVersion)).getFields();
-      Map<String, ? extends QFieldMetaData> apiFieldsMap   = tableApiFields.stream().collect(Collectors.toMap(f -> f.getName(), f -> f));
-
-      QRecord qRecord = new QRecord();
-
-      for(String jsonKey : jsonObject.keySet())
-      {
-         if(apiFieldsMap.containsKey(jsonKey))
-         {
-            QFieldMetaData field = apiFieldsMap.get(jsonKey);
-            qRecord.setValue(field.getName(), jsonObject.get(jsonKey));
-         }
-         else
-         {
-            unrecognizedFieldNames.add(jsonKey);
-         }
-      }
-
-      if(!unrecognizedFieldNames.isEmpty())
-      {
-         throw (new QBadRequestException("Request body contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.joinWithCommasAndAnd(unrecognizedFieldNames)));
-      }
-
-      return (qRecord);
    }
 
 

@@ -32,14 +32,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
  *******************************************************************************/
 public class GetTableApiFieldsOutput extends AbstractActionOutput
 {
-   private List<? extends QFieldMetaData> fields;
+   private List<QFieldMetaData> fields;
 
 
 
    /*******************************************************************************
     ** Getter for fields
     *******************************************************************************/
-   public List<? extends QFieldMetaData> getFields()
+   public List<QFieldMetaData> getFields()
    {
       return (this.fields);
    }
@@ -49,7 +49,7 @@ public class GetTableApiFieldsOutput extends AbstractActionOutput
    /*******************************************************************************
     ** Setter for fields
     *******************************************************************************/
-   public void setFields(List<? extends QFieldMetaData> fields)
+   public void setFields(List<QFieldMetaData> fields)
    {
       this.fields = fields;
    }
@@ -59,7 +59,7 @@ public class GetTableApiFieldsOutput extends AbstractActionOutput
    /*******************************************************************************
     ** Fluent setter for fields
     *******************************************************************************/
-   public GetTableApiFieldsOutput withFields(List<? extends QFieldMetaData> fields)
+   public GetTableApiFieldsOutput withFields(List<QFieldMetaData> fields)
    {
       this.fields = fields;
       return (this);

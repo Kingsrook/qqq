@@ -22,45 +22,11 @@
 package com.kingsrook.qqq.api;
 
 
-import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
-import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
-import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-
-
 /*******************************************************************************
  **
  *******************************************************************************/
 public interface ApiMiddlewareType
 {
    String NAME = "api";
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   static ApiInstanceMetaData getApiInstanceMetaData(QInstance instance)
-   {
-      return ((ApiInstanceMetaData) instance.getMiddlewareMetaData(NAME));
-   }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   static ApiTableMetaData getApiTableMetaData(QTableMetaData table)
-   {
-      return ((ApiTableMetaData) table.getMiddlewareMetaData(NAME));
-   }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   static ApiFieldMetaData getApiFieldMetaData(QFieldMetaData field)
-   {
-      return ((ApiFieldMetaData) field.getMiddlewareMetaData(NAME));
-   }
 
 }

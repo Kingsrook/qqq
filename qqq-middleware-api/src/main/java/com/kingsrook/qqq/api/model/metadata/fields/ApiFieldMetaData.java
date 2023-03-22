@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.api.model.metadata.fields;
 
 
+import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QMiddlewareFieldMetaData;
 
 
@@ -33,6 +35,11 @@ public class ApiFieldMetaData extends QMiddlewareFieldMetaData
    private String initialVersion;
    private String finalVersion;
 
+   private String apiFieldName;
+
+   private Boolean isExcluded;
+   private String  replacedByFieldName;
+
 
 
    /*******************************************************************************
@@ -42,6 +49,16 @@ public class ApiFieldMetaData extends QMiddlewareFieldMetaData
    public ApiFieldMetaData()
    {
       setType("api");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ApiFieldMetaData of(QFieldMetaData field)
+   {
+      return ((ApiFieldMetaData) field.getMiddlewareMetaData(ApiMiddlewareType.NAME));
    }
 
 
@@ -103,6 +120,99 @@ public class ApiFieldMetaData extends QMiddlewareFieldMetaData
    public ApiFieldMetaData withFinalVersion(String finalVersion)
    {
       this.finalVersion = finalVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for replacedByFieldName
+    *******************************************************************************/
+   public String getReplacedByFieldName()
+   {
+      return (this.replacedByFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for replacedByFieldName
+    *******************************************************************************/
+   public void setReplacedByFieldName(String replacedByFieldName)
+   {
+      this.replacedByFieldName = replacedByFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for replacedByFieldName
+    *******************************************************************************/
+   public ApiFieldMetaData withReplacedByFieldName(String replacedByFieldName)
+   {
+      this.replacedByFieldName = replacedByFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isExcluded
+    *******************************************************************************/
+   public Boolean getIsExcluded()
+   {
+      return (this.isExcluded);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isExcluded
+    *******************************************************************************/
+   public void setIsExcluded(Boolean isExcluded)
+   {
+      this.isExcluded = isExcluded;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isExcluded
+    *******************************************************************************/
+   public ApiFieldMetaData withIsExcluded(Boolean isExcluded)
+   {
+      this.isExcluded = isExcluded;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiFieldName
+    *******************************************************************************/
+   public String getApiFieldName()
+   {
+      return (this.apiFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiFieldName
+    *******************************************************************************/
+   public void setApiFieldName(String apiFieldName)
+   {
+      this.apiFieldName = apiFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiFieldName
+    *******************************************************************************/
+   public ApiFieldMetaData withApiFieldName(String apiFieldName)
+   {
+      this.apiFieldName = apiFieldName;
       return (this);
    }
 

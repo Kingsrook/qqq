@@ -24,7 +24,6 @@ package com.kingsrook.qqq.api.actions;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
@@ -38,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -70,7 +70,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       ///////////////////////////////////////////////////////
       for(QFieldMetaData field : table.getFields().values())
       {
-         if(getApiVersionRange(field).includes(version))
+         if(!isExcluded(field) && getApiVersionRange(field).includes(version))
          {
             fields.add(field);
          }
@@ -79,14 +79,11 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       //////////////////////////////////////////////////////////////////////////////////////////////////
       // look for removed fields (e.g., not currently in the table anymore), that are in this version //
       //////////////////////////////////////////////////////////////////////////////////////////////////
-      for(QFieldMetaData removedApiField : CollectionUtils.nonNullList(getRemovedApiFields(table)))
+      for(QFieldMetaData field : CollectionUtils.nonNullList(getRemovedApiFields(table)))
       {
-         APIVersionRange versionRange = getApiVersionRangeForRemovedField(removedApiField);
-
-         if(versionRange.includes(version))
+         if(!isExcluded(field) && getApiVersionRangeForRemovedField(field).includes(version))
          {
-            // todo - dress this up w/ the old stuff
-            fields.add(removedApiField);
+            fields.add(field);
          }
       }
 
@@ -98,9 +95,25 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
    /*******************************************************************************
     **
     *******************************************************************************/
+   private boolean isExcluded(QFieldMetaData field)
+   {
+      ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(field);
+      if(apiFieldMetaData != null && BooleanUtils.isTrue(apiFieldMetaData.getIsExcluded()))
+      {
+         return (true);
+      }
+
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private APIVersionRange getApiVersionRangeForRemovedField(QFieldMetaData field)
    {
-      ApiFieldMetaData middlewareMetaData = ApiMiddlewareType.getApiFieldMetaData(field);
+      ApiFieldMetaData middlewareMetaData = ApiFieldMetaData.of(field);
       if(middlewareMetaData != null && middlewareMetaData.getInitialVersion() != null)
       {
          if(StringUtils.hasContent(middlewareMetaData.getFinalVersion()))
@@ -125,7 +138,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
     *******************************************************************************/
    private APIVersionRange getApiVersionRange(QFieldMetaData field)
    {
-      ApiFieldMetaData middlewareMetaData = ApiMiddlewareType.getApiFieldMetaData(field);
+      ApiFieldMetaData middlewareMetaData = ApiFieldMetaData.of(field);
       if(middlewareMetaData != null && middlewareMetaData.getInitialVersion() != null)
       {
          return (APIVersionRange.afterAndIncluding(middlewareMetaData.getInitialVersion()));
@@ -141,7 +154,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
     *******************************************************************************/
    private List<QFieldMetaData> getRemovedApiFields(QTableMetaData table)
    {
-      ApiTableMetaData apiTableMetaData = ApiMiddlewareType.getApiTableMetaData(table);
+      ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
       if(apiTableMetaData != null)
       {
          return (apiTableMetaData.getRemovedApiFields());

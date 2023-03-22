@@ -66,6 +66,16 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static ApiInstanceMetaData of(QInstance qInstance)
+   {
+      return ((ApiInstanceMetaData) qInstance.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public void validate(QInstance qInstance, QInstanceValidator validator)
    {
@@ -103,7 +113,7 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
       /////////////////////////////////
       for(QTableMetaData table : qInstance.getTables().values())
       {
-         ApiTableMetaData apiTableMetaData = ApiMiddlewareType.getApiTableMetaData(table);
+         ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
          if(apiTableMetaData != null)
          {
             validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version.");

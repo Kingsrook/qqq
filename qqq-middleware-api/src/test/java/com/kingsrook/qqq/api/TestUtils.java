@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api;
 import java.util.List;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -46,7 +47,11 @@ public class TestUtils
    public static final String MEMORY_BACKEND_NAME = "memory";
    public static final String TABLE_NAME_PERSON   = "person";
 
-   public static final String API_VERSION = "2023.Q1";
+   public static final String V2023_Q1 = "2023.Q1";
+   public static final String V2022_Q4 = "2022.Q4";
+   public static final String V2023_Q2 = "2023.Q2";
+
+   public static final String CURRENT_API_VERSION = V2023_Q1;
 
 
 
@@ -65,8 +70,10 @@ public class TestUtils
          .withName("TestAPI")
          .withDescription("QQQ Test API")
          .withContactEmail("contact@kingsrook.com")
-         .withCurrentVersion(new APIVersion(API_VERSION))
-         .withSupportedVersions(List.of(new APIVersion(API_VERSION)))
+         .withCurrentVersion(new APIVersion(CURRENT_API_VERSION))
+         .withSupportedVersions(List.of(new APIVersion(V2022_Q4), new APIVersion(V2023_Q1)))
+         .withPastVersions(List.of(new APIVersion(V2022_Q4)))
+         .withFutureVersions(List.of(new APIVersion(V2023_Q2)))
       );
 
       return (qInstance);
@@ -95,7 +102,16 @@ public class TestUtils
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(API_VERSION))
+         .withMiddlewareMetaData(new ApiTableMetaData()
+            .withInitialVersion(V2022_Q4)
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // in 2022.Q4, this table had a "shoeCount" field. but for the 2023.Q1 version, we renamed it to noOfShoes! //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            .withRemovedApiField(new QFieldMetaData("shoeCount", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS)
+               .withMiddlewareMetaData(new ApiFieldMetaData().withFinalVersion(V2022_Q4).withReplacedByFieldName("noOfShoes")))
+
+         )
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("email"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
@@ -103,14 +119,23 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("firstName", QFieldType.STRING))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
-         .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
+         .withField(new QFieldMetaData("birthDate", QFieldType.DATE)
+            .withMiddlewareMetaData(new ApiFieldMetaData().withApiFieldName("birthDay"))
+         )
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          // .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STATE))
          // .withField(new QFieldMetaData("favoriteShapeId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_SHAPE))
          // .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
-         .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
-         .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
-         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS)
+            .withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion(V2023_Q1)))
+
+         /////////////////////////////////////////////////////////////////
+         // 2 new fields - they'll appear in future versions of the API //
+         /////////////////////////////////////////////////////////////////
+         .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY)
+            .withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion(V2023_Q2)))
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY)
+            .withMiddlewareMetaData(new ApiFieldMetaData().withIsExcluded(true)))
          ;
    }
 
