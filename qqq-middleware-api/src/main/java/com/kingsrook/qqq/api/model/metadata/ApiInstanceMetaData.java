@@ -22,11 +22,18 @@
 package com.kingsrook.qqq.api.model.metadata;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -34,6 +41,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData
  *******************************************************************************/
 public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
 {
+   private String name;
+   private String description;
+   private String contactEmail;
+
    private APIVersion       currentVersion;
    private List<APIVersion> supportedVersions;
    private List<APIVersion> pastVersions;
@@ -56,11 +67,49 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
     **
     *******************************************************************************/
    @Override
-   public void validate(QInstance qInstance)
+   public void validate(QInstance qInstance, QInstanceValidator validator)
    {
-      // todo - version is set
-      // todo - past versions all < current < all future
-      // todo - any version specified anywhere is one of the known
+      validator.assertCondition(StringUtils.hasContent(name), "Missing name for instance api");
+      validator.assertCondition(StringUtils.hasContent(description), "Missing description for instance api");
+      validator.assertCondition(StringUtils.hasContent(contactEmail), "Missing contactEmail for instance api");
+
+      Set<APIVersion> allVersions = new HashSet<>();
+
+      if(validator.assertCondition(currentVersion != null, "Missing currentVersion for instance api"))
+      {
+         allVersions.add(currentVersion);
+      }
+
+      if(validator.assertCondition(supportedVersions != null, "Missing supportedVersions for instance api"))
+      {
+         validator.assertCondition(supportedVersions.contains(currentVersion), "supportedVersions [" + supportedVersions + "] does not contain currentVersion [" + currentVersion + "] for instance api");
+         allVersions.addAll(supportedVersions);
+      }
+
+      for(APIVersion pastVersion : CollectionUtils.nonNullList(pastVersions))
+      {
+         validator.assertCondition(pastVersion.compareTo(currentVersion) < 0, "pastVersion [" + pastVersion + "] is not lexicographically before currentVersion [" + currentVersion + "] for instance api");
+         allVersions.add(pastVersion);
+      }
+
+      for(APIVersion futureVersion : CollectionUtils.nonNullList(futureVersions))
+      {
+         validator.assertCondition(futureVersion.compareTo(currentVersion) > 0, "futureVersion [" + futureVersion + "] is not lexicographically after currentVersion [" + currentVersion + "] for instance api");
+         allVersions.add(futureVersion);
+      }
+
+      /////////////////////////////////
+      // validate all table versions //
+      /////////////////////////////////
+      for(QTableMetaData table : qInstance.getTables().values())
+      {
+         ApiTableMetaData apiTableMetaData = ApiMiddlewareType.getApiTableMetaData(table);
+         if(apiTableMetaData != null)
+         {
+            validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version.");
+         }
+      }
+
    }
 
 
@@ -184,6 +233,99 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    public ApiInstanceMetaData withSupportedVersions(List<APIVersion> supportedVersions)
    {
       this.supportedVersions = supportedVersions;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for name
+    *******************************************************************************/
+   public String getName()
+   {
+      return (this.name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public ApiInstanceMetaData withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for description
+    *******************************************************************************/
+   public String getDescription()
+   {
+      return (this.description);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for description
+    *******************************************************************************/
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public ApiInstanceMetaData withDescription(String description)
+   {
+      this.description = description;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for contactEmail
+    *******************************************************************************/
+   public String getContactEmail()
+   {
+      return (this.contactEmail);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contactEmail
+    *******************************************************************************/
+   public void setContactEmail(String contactEmail)
+   {
+      this.contactEmail = contactEmail;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contactEmail
+    *******************************************************************************/
+   public ApiInstanceMetaData withContactEmail(String contactEmail)
+   {
+      this.contactEmail = contactEmail;
       return (this);
    }
 

@@ -447,6 +447,104 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testBulkInsert207() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [
+               {"firstName": "Moe", "email": "moe@moes.com"},
+               {"firstName": "Barney", "email": "barney@moes.com"},
+               {"firstName": "CM", "email": "boss@snpp.com"},
+               {"firstName": "Waylon", "email": "boss@snpp.com"}
+            ]
+            """)
+         .asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(4, jsonArray.length());
+
+      assertEquals(HttpStatus.CREATED_201, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertEquals(1, jsonArray.getJSONObject(0).getInt("id"));
+
+      assertEquals(HttpStatus.CREATED_201, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertEquals(2, jsonArray.getJSONObject(1).getInt("id"));
+
+      assertEquals(HttpStatus.CREATED_201, jsonArray.getJSONObject(2).getInt("statusCode"));
+      assertEquals(3, jsonArray.getJSONObject(2).getInt("id"));
+
+      assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(3).getInt("statusCode"));
+      assertEquals("Error inserting Person: Another record already exists with this Email", jsonArray.getJSONObject(3).getString("error"));
+
+      QRecord record = getPersonRecord(1);
+      assertEquals("Moe", record.getValueString("firstName"));
+
+      record = getPersonRecord(2);
+      assertEquals("Barney", record.getValueString("firstName"));
+
+      record = getPersonRecord(3);
+      assertEquals("CM", record.getValueString("firstName"));
+
+      record = getPersonRecord(4);
+      assertNull(record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBulkInsert400s() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            {"firstName": "Moe"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON array: A JSONArray text must start with '['", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         // no body
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required POST body", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("[]")
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "No records were found in the POST body", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [{"firstName": "Moe", "foo": "bar"}]
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request body contained 1 unrecognized field name: foo", response);
+
+      /////////////////////////////////
+      // assert nothing got inserted //
+      /////////////////////////////////
+      QRecord personRecord = getPersonRecord(1);
+      assertNull(personRecord);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // apparently, as long as the body *starts with* json, the JSONObject constructor builds //
+      // a json object out of it??  so... this in this case we expected 400, but get 201...    //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [{"firstName": "Moe"}]
+            Not json
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.MULTI_STATUS_207, null, response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testUpdate204() throws QException
    {
       insertPersonRecord(1, "CM", "Burns");

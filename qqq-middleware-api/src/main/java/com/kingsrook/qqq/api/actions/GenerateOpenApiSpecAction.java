@@ -26,9 +26,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.openapi.Components;
 import com.kingsrook.qqq.api.model.openapi.Contact;
 import com.kingsrook.qqq.api.model.openapi.Content;
@@ -80,13 +82,15 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
       QInstance qInstance = QContext.getQInstance();
 
+      ApiInstanceMetaData apiInstanceMetaData = ApiMiddlewareType.getApiInstanceMetaData(qInstance);
+
       OpenAPI openAPI = new OpenAPI()
          .withVersion("3.0.3")
          .withInfo(new Info()
-            .withTitle("QQQ API")
-            .withDescription("This is an openAPI built by QQQ")
+            .withTitle(apiInstanceMetaData.getName())
+            .withDescription(apiInstanceMetaData.getDescription())
             .withContact(new Contact()
-               .withEmail("contact@kingsrook.com")
+               .withEmail(apiInstanceMetaData.getContactEmail())
             )
             .withVersion(version)
          )
@@ -110,6 +114,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
       securitySchemes.put("OAuth2", new OAuth2()
          .withFlows(MapBuilder.of("authorizationCode", new OAuth2Flow()
+            // todo - get from auth metadata
             .withAuthorizationUrl("https://nutrifresh-one-development.us.auth0.com/authorize")
             .withTokenUrl("https://nutrifresh-one-development.us.auth0.com/oauth/token")
             .withScopes(scopes)
@@ -162,13 +167,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             scopes.put(tableUpdatePermissionName, "Permission to update records in the " + tableLabel + " table");
          }
 
-         String tableInsertPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.EDIT);
+         String tableInsertPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.INSERT);
          if(StringUtils.hasContent(tableInsertPermissionName))
          {
             scopes.put(tableInsertPermissionName, "Permission to insert records in the " + tableLabel + " table");
          }
 
-         String tableDeletePermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.EDIT);
+         String tableDeletePermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.DELETE);
          if(StringUtils.hasContent(tableDeletePermissionName))
          {
             scopes.put(tableDeletePermissionName, "Permission to delete records in the " + tableLabel + " table");
@@ -403,25 +408,56 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withPost(slashPost)
          );
 
-         /*
+         ////////////////
+         // bulk paths //
+         ////////////////
+         Method bulkPost = new Method()
+            .withSummary("Create multiple " + tableLabel + " records.")
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription("Values for the " + tableLabel + " records to create.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema()
+                     .withType("array")
+                     .withItems(new Schema().withRef("#/components/schemas/" + tableName + "WithoutPrimaryKey"))))))
+            .withResponses(buildStandardErrorResponses())
+            .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyName, primaryKeyField, "post"))
+            .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableInsertPermissionName))));
+
+         Method bulkPatch = new Method()
+            .withSummary("Update multiple " + tableLabel + " records.")
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription("Values for the " + tableLabel + " records to update.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema()
+                     .withType("array")
+                     .withItems(new Schema().withRef("#/components/schemas/" + tableName))))))
+            .withResponses(buildStandardErrorResponses())
+            .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyName, primaryKeyField, "patch"))
+            .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableUpdatePermissionName))));
+
+         Method bulkDelete = new Method()
+            .withSummary("Delete multiple " + tableLabel + " records.")
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription(primaryKeyLabel + " values for the " + tableLabel + " records to delete.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema()
+                     .withType("array")
+                     .withItems(new Schema().withType(getFieldType(primaryKeyField)))
+                     .withExample(List.of(42, 47))))))
+            .withResponses(buildStandardErrorResponses())
+            .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyName, primaryKeyField, "delete"))
+            .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableDeletePermissionName))));
+
          openAPI.getPaths().put("/" + tableName + "/bulk", new Path()
-            .withPatch(new Method()
-               .withSummary("Update multiple " + tableLabel + " records.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-            .withDelete(new Method()
-               .withSummary("Delete multiple " + tableLabel + " records.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-            .withPost(new Method()
-               .withSummary("Create multiple  " + tableLabel + " records.")
-               .withTags(ListBuilder.of(tableLabel))
-               .withResponses(buildStandardErrorResponses())
-            )
-         );
-         */
+            .withPost(bulkPost)
+            .withPatch(bulkPatch)
+            .withDelete(bulkDelete));
       }
 
       componentResponses.put(HttpStatus.BAD_REQUEST.getCode(), buildStandardErrorResponse("Bad Request.  Some portion of the request's content was not acceptable to the server.  See error message in body for details.", "Parameter id should be given an integer value, but received string: \"Foo\""));
@@ -434,6 +470,68 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       output.setYaml(YamlUtils.toYaml(openAPI));
       output.setJson(JsonUtils.toJson(openAPI));
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   private Response buildMultiStatusResponse(String tableLabel, String primaryKeyName, QFieldMetaData primaryKeyField, String method)
+   {
+      List<Object> example = switch(method.toLowerCase())
+         {
+            case "post" -> ListBuilder.of(
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.CREATED.getCode())
+                  .with("statusText", HttpStatus.CREATED.getMessage())
+                  .with(primaryKeyName, "47").build(),
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
+                  .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
+                  .with("error", "Could not create " + tableLabel + ": Duplicate value in unique key field.").build()
+            );
+            case "patch" -> ListBuilder.of(
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.NO_CONTENT.getCode())
+                  .with("statusText", HttpStatus.NO_CONTENT.getMessage()).build(),
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
+                  .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
+                  .with("error", "Could not update " + tableLabel + ": Duplicate value in unique key field.").build()
+            );
+            case "delete" -> ListBuilder.of(
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.NO_CONTENT.getCode())
+                  .with("statusText", HttpStatus.NO_CONTENT.getMessage()).build(),
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
+                  .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
+                  .with("error", "Could not delete " + tableLabel + ": Foreign key constraint violation.").build()
+            );
+            default -> throw (new IllegalArgumentException("Unrecognized method: " + method));
+         };
+
+      Map<String, Schema> properties = new LinkedHashMap<>();
+      properties.put("status", new Schema().withType("integer"));
+      properties.put("error", new Schema().withType("string"));
+      if(method.equalsIgnoreCase("post"))
+      {
+         properties.put(primaryKeyName, new Schema().withType(getFieldType(primaryKeyField)));
+      }
+
+      return new Response()
+         .withDescription("Multiple statuses.  See body for details.")
+         .withContent(MapBuilder.of("application/json", new Content()
+            .withSchema(new Schema()
+               .withType("array")
+               .withItems(new Schema()
+                  .withType("object")
+                  .withProperties(properties))
+               .withExample(example)
+            )
+         ));
    }
 
 

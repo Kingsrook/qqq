@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils.collections;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 
 /*******************************************************************************
@@ -31,8 +32,52 @@ import java.util.Map;
  ** NPE's on nulls...  So, replace it with this, which returns HashMaps, which
  ** "don't suck"
  *******************************************************************************/
-public class MapBuilder
+public class MapBuilder<K, V>
 {
+   private Map<K, V> map;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private MapBuilder(Map<K, V> map)
+   {
+      this.map = map;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <K, V> MapBuilder<K, V> of(Supplier<Map<K, V>> mapSupplier)
+   {
+      return (new MapBuilder<>(mapSupplier.get()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public MapBuilder<K, V> with(K key, V value)
+   {
+      map.put(key, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Map<K, V> build()
+   {
+      return (this.map);
+   }
+
+
 
    /*******************************************************************************
     **

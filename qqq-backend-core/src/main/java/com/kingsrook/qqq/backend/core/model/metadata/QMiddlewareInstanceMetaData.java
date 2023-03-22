@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
@@ -80,7 +81,7 @@ public abstract class QMiddlewareInstanceMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void validate(QInstance qInstance)
+   public void validate(QInstance qInstance, QInstanceValidator validator)
    {
       ////////////////////////
       // noop in base class //

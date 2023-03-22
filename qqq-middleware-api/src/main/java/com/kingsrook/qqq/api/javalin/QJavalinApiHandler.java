@@ -91,6 +91,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import org.eclipse.jetty.http.HttpStatus;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static com.kingsrook.qqq.backend.javalin.QJavalinImplementation.SLOW_LOG_THRESHOLD_MS;
@@ -140,7 +141,7 @@ public class QJavalinApiHandler
                ApiBuilder.patch("/{primaryKey}", QJavalinApiHandler::doUpdate);
                ApiBuilder.delete("/{primaryKey}", QJavalinApiHandler::doDelete);
 
-               // post("/bulk", QJavalinApiHandler::bulkInsert);
+               ApiBuilder.post("/bulk", QJavalinApiHandler::bulkInsert);
                // patch("/bulk", QJavalinApiHandler::bulkUpdate);
                // delete("/bulk", QJavalinApiHandler::bulkDelete);
             });
@@ -514,8 +515,9 @@ public class QJavalinApiHandler
          throw (new QNotFoundException("Could not find any resources at path " + context.path()));
       }
 
-      APIVersion requestApiVersion = new APIVersion(version);
-      if(!ApiMiddlewareType.getApiInstanceMetaData(qInstance).getSupportedVersions().contains(requestApiVersion))
+      APIVersion       requestApiVersion = new APIVersion(version);
+      List<APIVersion> supportedVersions = ApiMiddlewareType.getApiInstanceMetaData(qInstance).getSupportedVersions();
+      if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
       {
          throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
       }
@@ -707,6 +709,104 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.CREATED.getCode());
          context.result(JsonUtils.toJson(outputRecord));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void bulkInsert(Context context)
+   {
+      String version   = context.pathParam("version");
+      String tableName = context.pathParam("tableName");
+
+      try
+      {
+         QTableMetaData table = qInstance.getTable(tableName);
+         validateTableAndVersion(context, version, table);
+
+         InsertInput insertInput = new InsertInput();
+
+         setupSession(context, insertInput);
+         QJavalinAccessLogger.logStart("bulkInsert", logPair("table", tableName));
+
+         insertInput.setTableName(tableName);
+
+         PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+
+         /////////////////
+         // build input //
+         /////////////////
+         try
+         {
+            if(!StringUtils.hasContent(context.body()))
+            {
+               throw (new QBadRequestException("Missing required POST body"));
+            }
+
+            ArrayList<QRecord> recordList = new ArrayList<>();
+            insertInput.setRecords(recordList);
+            JSONArray jsonArray = new JSONArray(context.body());
+            for(int i = 0; i < jsonArray.length(); i++)
+            {
+               JSONObject jsonObject = jsonArray.getJSONObject(i);
+               recordList.add(toQRecord(jsonObject, tableName, version));
+            }
+
+            if(recordList.isEmpty())
+            {
+               throw (new QBadRequestException("No records were found in the POST body"));
+            }
+         }
+         catch(QBadRequestException qbre)
+         {
+            throw (qbre);
+         }
+         catch(Exception e)
+         {
+            throw (new QBadRequestException("Body could not be parsed as a JSON array: " + e.getMessage(), e));
+         }
+
+         //////////////
+         // execute! //
+         //////////////
+         InsertAction insertAction = new InsertAction();
+         InsertOutput insertOutput = insertAction.execute(insertInput);
+
+         ///////////////////////////////////////
+         // process records to build response //
+         ///////////////////////////////////////
+         List<Map<String, Serializable>> response = new ArrayList<>();
+         for(QRecord record : insertOutput.getRecords())
+         {
+            LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+            response.add(outputRecord);
+
+            List<String> errors = record.getErrors();
+            if(CollectionUtils.nullSafeHasContents(errors))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            }
+            else
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.CREATED.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.CREATED.getMessage());
+               outputRecord.put(table.getPrimaryKeyField(), record.getValue(table.getPrimaryKeyField()));
+            }
+         }
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(HttpStatus.Code.MULTI_STATUS.getCode());
+         context.result(JsonUtils.toJson(response));
       }
       catch(Exception e)
       {

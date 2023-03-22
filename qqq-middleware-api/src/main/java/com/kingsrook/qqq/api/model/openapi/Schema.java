@@ -38,7 +38,7 @@ public class Schema
    private List<String>        enumValues;
    private Schema              items;
    private Map<String, Schema> properties;
-   private String              example;
+   private Object              example;
    private String              ref;
    private List<Schema>        allOf;
 
@@ -171,7 +171,7 @@ public class Schema
    /*******************************************************************************
     ** Getter for example
     *******************************************************************************/
-   public String getExample()
+   public Object getExample()
    {
       return (this.example);
    }
@@ -192,6 +192,27 @@ public class Schema
     ** Fluent setter for example
     *******************************************************************************/
    public Schema withExample(String example)
+   {
+      this.example = example;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for example
+    *******************************************************************************/
+   public void setExample(List<?> example)
+   {
+      this.example = example;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for example
+    *******************************************************************************/
+   public Schema withExample(List<?> example)
    {
       this.example = example;
       return (this);

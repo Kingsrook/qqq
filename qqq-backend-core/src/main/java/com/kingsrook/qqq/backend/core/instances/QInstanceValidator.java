@@ -168,7 +168,7 @@ public class QInstanceValidator
    {
       for(QMiddlewareInstanceMetaData middlewareInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getMiddlewareMetaData()).values())
       {
-         middlewareInstanceMetaData.validate(qInstance);
+         middlewareInstanceMetaData.validate(qInstance, this);
       }
    }
 
