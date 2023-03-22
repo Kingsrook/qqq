@@ -26,15 +26,20 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -42,6 +47,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -77,7 +84,7 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @AfterAll
-   public static void afterAll()
+   static void afterAll()
    {
       qJavalinImplementation.stopJavalinServer();
    }
@@ -108,10 +115,28 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testRandom404s()
+   {
+      for(String method : new String[] { "get", "post", "patch", "delete" })
+      {
+         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/").asString());
+         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/foo").asString());
+         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testGet404()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
-      assertEquals(404, response.getStatus());
+      assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals("Could not find Person with Id of 1", jsonObject.getString("error"));
    }
@@ -124,10 +149,10 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testGet200() throws QException
    {
-      insertTestRecord(1, "Homer", "Simpson");
+      insertPersonRecord(1, "Homer", "Simpson");
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
-      assertEquals(200, response.getStatus());
+      assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(1, jsonObject.getInt("id"));
       assertEquals("Homer", jsonObject.getString("firstName"));
@@ -139,24 +164,11 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void insertTestRecord(Integer id, String firstName, String lastName) throws QException
-   {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName)));
-      new InsertAction().execute(insertInput);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    @Test
    void testQuery404()
    {
-      assertError(404, BASE_URL + "/api/" + VERSION + "/notATable/query?");
-      assertError(404, BASE_URL + "/api/notAVersion/person/query?");
+      assertError(HttpStatus.NOT_FOUND_404, BASE_URL + "/api/" + VERSION + "/notATable/query?");
+      assertError(HttpStatus.NOT_FOUND_404, BASE_URL + "/api/notAVersion/person/query?");
    }
 
 
@@ -196,7 +208,7 @@ class QJavalinApiHandlerTest extends BaseTest
    void testQuery200NoParams()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
-      assertEquals(200, response.getStatus());
+      assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(0, jsonObject.getInt("count"));
       assertEquals(1, jsonObject.getInt("pageNo"));
@@ -211,10 +223,10 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testQuery200SomethingFound() throws QException
    {
-      insertTestRecord(1, "Homer", "Simpson");
+      insertPersonRecord(1, "Homer", "Simpson");
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
-      assertEquals(200, response.getStatus());
+      assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(1, jsonObject.getInt("count"));
       assertEquals(1, jsonObject.getInt("pageNo"));
@@ -330,13 +342,297 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testQuery200ManyParams()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?pageSize=49&pageNo=2&includeCount=true&booleanOperator=AND&firstName=Homer&orderBy=firstName desc").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(0, jsonObject.getInt("count"));
+      assertEquals(2, jsonObject.getInt("pageNo"));
+      assertEquals(49, jsonObject.getInt("pageSize"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInsert201() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            {"firstName": "Moe"}
+            """)
+         .asString();
+      assertEquals(HttpStatus.CREATED_201, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(1, jsonObject.getInt("id"));
+
+      QRecord record = getPersonRecord(1);
+      assertEquals("Moe", record.getValueString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInsert400s() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            [{"firstName": "Moe"}]
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON object: A JSONObject text must begin with '{'", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            "firstName"="Moe"
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON object: A JSONObject text must begin with '{'", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         // no body
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required POST body", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            {"firstName": "Moe", "firstName": "Barney"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON object: Duplicate key \"firstName\"", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            {"firstName": "Moe", "foo": "bar"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request body contained 1 unrecognized field name: foo", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            {"firstName": "Moe", "foo": "bar", "bar": true, "baz": 1}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request body contained 3 unrecognized field names: ", response);
+
+      ///////////////////////////////////
+      // assert it didn't get inserted //
+      ///////////////////////////////////
+      QRecord personRecord = getPersonRecord(1);
+      assertNull(personRecord);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // apparently, as long as the body *starts with* json, the JSONObject constructor builds //
+      // a json object out of it??  so... this in this case we expected 400, but get 201...    //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            {"firstName": "Moe"}
+            Not json
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.CREATED_201, null, response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUpdate204() throws QException
+   {
+      insertPersonRecord(1, "CM", "Burns");
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            {"firstName": "Charles"}
+            """)
+         .asString();
+      assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+      assertFalse(StringUtils.hasContent(response.getBody()));
+
+      QRecord record = getPersonRecord(1);
+      assertEquals("Charles", record.getValueString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUpdate404()
+   {
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            {"firstName": "Charles"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find Person with Id of 1", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUpdate400s() throws QException
+   {
+      insertPersonRecord(1, "Mo", "Szyslak");
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            [{"firstName": "Moe"}]
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON object: A JSONObject text must begin with '{'", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            "firstName"="Moe"
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON object: A JSONObject text must begin with '{'", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         // no body
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required POST body", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            {"firstName": "Moe", "firstName": "Barney"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON object: Duplicate key \"firstName\"", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            {"firstName": "Moe", "foo": "bar"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request body contained 1 unrecognized field name: foo", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            {"firstName": "Moe", "foo": "bar", "bar": true, "baz": 1}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request body contained 3 unrecognized field names: ", response);
+
+      ///////////////////////////////////
+      // assert it didn't get updated. //
+      ///////////////////////////////////
+      QRecord personRecord = getPersonRecord(1);
+      assertEquals("Mo", personRecord.getValueString("firstName"));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // apparently, as long as the body *starts with* json, the JSONObject constructor builds //
+      // a json object out of it??  so... this in this case we expected 400, but get 204...    //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
+         .body("""
+            {"firstName": "Moe"}
+            Not json
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.NO_CONTENT_204, null, response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeleteWithoutPkey() throws QException
+   {
+      insertPersonRecord(1, "CM", "Burns");
+
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/").asString();
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDelete204() throws QException
+   {
+      insertPersonRecord(1, "CM", "Burns");
+
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/1").asString();
+      assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+      assertFalse(StringUtils.hasContent(response.getBody()));
+
+      QRecord record = getPersonRecord(1);
+      assertNull(record);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDelete404()
+   {
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/1")
+         .asString();
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find Person with Id of 1", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QRecord getPersonRecord(Integer id) throws QException
+   {
+      GetInput getInput = new GetInput();
+      getInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      getInput.setPrimaryKey(id);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      QRecord   record    = getOutput.getRecord();
+      return record;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void insertPersonRecord(Integer id, String firstName, String lastName) throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName)));
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void insertSimpsons() throws QException
    {
-      insertTestRecord(1, "Homer", "Simpson");
-      insertTestRecord(2, "Marge", "Simpson");
-      insertTestRecord(3, "Bart", "Simpson");
-      insertTestRecord(4, "Lisa", "Simpson");
-      insertTestRecord(5, "Maggie", "Simpson");
+      insertPersonRecord(1, "Homer", "Simpson");
+      insertPersonRecord(2, "Marge", "Simpson");
+      insertPersonRecord(3, "Bart", "Simpson");
+      insertPersonRecord(4, "Lisa", "Simpson");
+      insertPersonRecord(5, "Maggie", "Simpson");
    }
 
 
@@ -347,7 +643,7 @@ class QJavalinApiHandlerTest extends BaseTest
    private void assertPersonQueryFindsFirstNames(List<String> expectedFirstNames, String queryString)
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?" + queryString).asString();
-      assertEquals(200, response.getStatus());
+      assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(expectedFirstNames.size(), jsonObject.getInt("count"));
 
@@ -371,22 +667,6 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Test
-   void testQuery200ManyParams()
-   {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query?pageSize=49&pageNo=2&includeCount=true&booleanOperator=AND&firstName=Homer&orderBy=firstName desc").asString();
-      assertEquals(200, response.getStatus());
-      JSONObject jsonObject = new JSONObject(response.getBody());
-      assertEquals(0, jsonObject.getInt("count"));
-      assertEquals(2, jsonObject.getInt("pageNo"));
-      assertEquals(49, jsonObject.getInt("pageSize"));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    private void assertError(Integer statusCode, String url)
    {
       HttpResponse<String> response = Unirest.get(url).asString();
@@ -401,10 +681,30 @@ class QJavalinApiHandlerTest extends BaseTest
    private void assertError(String expectedErrorMessage, String url)
    {
       HttpResponse<String> response = Unirest.get(url).asString();
-      assertEquals(400, response.getStatus());
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, expectedErrorMessage, response);
       JSONObject jsonObject = new JSONObject(response.getBody());
       String     error      = jsonObject.getString("error");
       assertThat(error).contains(expectedErrorMessage);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertErrorResponse(Integer expectedStatusCode, String expectedErrorMessage, HttpResponse<String> response)
+   {
+      if(expectedStatusCode != null)
+      {
+         assertEquals(expectedStatusCode, response.getStatus());
+      }
+
+      if(expectedErrorMessage != null)
+      {
+         JSONObject jsonObject = new JSONObject(response.getBody());
+         String     error      = jsonObject.getString("error");
+         assertThat(error).contains(expectedErrorMessage);
+      }
    }
 
 }

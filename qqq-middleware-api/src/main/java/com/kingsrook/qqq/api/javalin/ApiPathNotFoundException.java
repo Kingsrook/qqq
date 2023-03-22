@@ -22,33 +22,19 @@
 package com.kingsrook.qqq.api.javalin;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-
-
 /*******************************************************************************
- **
+ ** Runtime exception
  *******************************************************************************/
-public class QBadRequestException extends QException
+public class ApiPathNotFoundException extends RuntimeException
 {
 
    /*******************************************************************************
     ** Constructor
     **
     *******************************************************************************/
-   public QBadRequestException(String message)
+   public ApiPathNotFoundException(String message)
    {
       super(message);
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public QBadRequestException(String message, Throwable root)
-   {
-      super(message, root);
    }
 
 }

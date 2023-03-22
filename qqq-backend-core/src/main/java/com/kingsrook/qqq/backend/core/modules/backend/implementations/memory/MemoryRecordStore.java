@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -255,7 +256,7 @@ public class MemoryRecordStore
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
       for(QRecord record : input.getRecords())
       {
-         Serializable primaryKeyValue = record.getValue(primaryKeyField.getName());
+         Serializable primaryKeyValue = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), record.getValue(primaryKeyField.getName()));
          if(tableData.containsKey(primaryKeyValue))
          {
             QRecord recordToUpdate = tableData.get(primaryKeyValue);
@@ -286,11 +287,13 @@ public class MemoryRecordStore
          return (0);
       }
 
-      QTableMetaData             table       = input.getTable();
-      Map<Serializable, QRecord> tableData   = getTableData(table);
-      int                        rowsDeleted = 0;
+      QTableMetaData             table           = input.getTable();
+      QFieldMetaData             primaryKeyField = table.getField(table.getPrimaryKeyField());
+      Map<Serializable, QRecord> tableData       = getTableData(table);
+      int                        rowsDeleted     = 0;
       for(Serializable primaryKeyValue : input.getPrimaryKeys())
       {
+         primaryKeyValue = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), primaryKeyValue);
          if(tableData.containsKey(primaryKeyValue))
          {
             tableData.remove(primaryKeyValue);

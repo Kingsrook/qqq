@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import io.javalin.http.HttpStatus;
 
 
 /*******************************************************************************
@@ -272,7 +273,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withType("string").withEnumValues(ListBuilder.of("AND", "OR")))
             ))
             .withResponses(buildStandardErrorResponses())
-            .withResponse(200, new Response()
+            .withResponse(HttpStatus.OK.getCode(), new Response()
                .withDescription("Successfully searched the " + tableLabel + " table (though may have found 0 records).")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableName + "SearchResult"))
@@ -321,8 +322,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
             ))
             .withResponses(buildStandardErrorResponses())
-            .withResponse(404, buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
-            .withResponse(200, new Response()
+            .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
+            .withResponse(HttpStatus.OK.getCode(), new Response()
                .withDescription("Successfully got the requested " + tableLabel)
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableName))
@@ -348,8 +349,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableName))
                )))
             .withResponses(buildStandardErrorResponses())
-            .withResponse(404, buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47.")) // todo - 404 on update?
-            .withResponse(200, new Response().withDescription("Successfully updated the requested " + tableLabel))
+            .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
+            .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully updated the requested " + tableLabel))
             .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableUpdatePermissionName))));
 
          Method idDelete = new Method()
@@ -365,8 +366,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
             ))
             .withResponses(buildStandardErrorResponses())
-            .withResponse(404, buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47.")) // todo - 404 on update?
-            .withResponse(200, new Response().withDescription("Successfully deleted the requested " + tableLabel))
+            .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
+            .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully deleted the requested " + tableLabel))
             .withSecurity(ListBuilder.of(MapBuilder.of("OAuth2", List.of(tableDeletePermissionName))));
 
          openAPI.getPaths().put("/" + tableName + "/{" + primaryKeyName + "}", new Path()
@@ -384,7 +385,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableName + "WithoutPrimaryKey"))
                )))
             .withResponses(buildStandardErrorResponses())
-            .withResponse(201, new Response()
+            .withResponse(HttpStatus.CREATED.getCode(), new Response()
                .withDescription("Successfully created the requested " + tableLabel)
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
@@ -423,10 +424,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          */
       }
 
-      componentResponses.put(400, buildStandardErrorResponse("Bad Request.  Some portion of the request's content was not acceptable to the server.  See error message in body for details.", "Parameter id should be given an integer value, but received string: \"Foo\""));
-      componentResponses.put(401, buildStandardErrorResponse("Unauthorized.  The required authentication credentials were missing or invalid.", "The required authentication credentials were missing or invalid."));
-      componentResponses.put(403, buildStandardErrorResponse("Forbidden.  You do not have permission to access the requested resource.", "You do not have permission to access the requested resource."));
-      componentResponses.put(500, buildStandardErrorResponse("Internal Server Error.  An error occurred in the server processing the request.", "Database connection error.  Try again later."));
+      componentResponses.put(HttpStatus.BAD_REQUEST.getCode(), buildStandardErrorResponse("Bad Request.  Some portion of the request's content was not acceptable to the server.  See error message in body for details.", "Parameter id should be given an integer value, but received string: \"Foo\""));
+      componentResponses.put(HttpStatus.UNAUTHORIZED.getCode(), buildStandardErrorResponse("Unauthorized.  The required authentication credentials were missing or invalid.", "The required authentication credentials were missing or invalid."));
+      componentResponses.put(HttpStatus.FORBIDDEN.getCode(), buildStandardErrorResponse("Forbidden.  You do not have permission to access the requested resource.", "You do not have permission to access the requested resource."));
+      componentResponses.put(HttpStatus.INTERNAL_SERVER_ERROR.getCode(), buildStandardErrorResponse("Internal Server Error.  An error occurred in the server processing the request.", "Database connection error.  Try again later."));
 
       GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecOutput();
       output.setOpenAPI(openAPI);
@@ -571,10 +572,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    private static Map<Integer, Response> buildStandardErrorResponses()
    {
       return MapBuilder.of(
-         400, new Response().withRef("#/components/responses/400"),
-         401, new Response().withRef("#/components/responses/401"),
-         403, new Response().withRef("#/components/responses/403"),
-         500, new Response().withRef("#/components/responses/500")
+         HttpStatus.BAD_REQUEST.getCode(), new Response().withRef("#/components/responses/" + HttpStatus.BAD_REQUEST.getCode()),
+         HttpStatus.UNAUTHORIZED.getCode(), new Response().withRef("#/components/responses/" + HttpStatus.UNAUTHORIZED.getCode()),
+         HttpStatus.FORBIDDEN.getCode(), new Response().withRef("#/components/responses/" + HttpStatus.FORBIDDEN.getCode()),
+         HttpStatus.INTERNAL_SERVER_ERROR.getCode(), new Response().withRef("#/components/responses/" + HttpStatus.INTERNAL_SERVER_ERROR.getCode())
       );
    }
 

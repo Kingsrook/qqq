@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
@@ -43,10 +44,14 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
@@ -55,18 +60,25 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -79,6 +91,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import org.eclipse.jetty.http.HttpStatus;
+import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static com.kingsrook.qqq.backend.javalin.QJavalinImplementation.SLOW_LOG_THRESHOLD_MS;
 
@@ -132,7 +145,25 @@ public class QJavalinApiHandler
                // delete("/bulk", QJavalinApiHandler::bulkDelete);
             });
          });
+
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // default all other /api/ requests (for the methods we support) to a standard 404 response //
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         ApiBuilder.get("/api/*", QJavalinApiHandler::doPathNotFound);
+         ApiBuilder.delete("/api/*", QJavalinApiHandler::doPathNotFound);
+         ApiBuilder.patch("/api/*", QJavalinApiHandler::doPathNotFound);
+         ApiBuilder.post("/api/*", QJavalinApiHandler::doPathNotFound);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doPathNotFound(Context context)
+   {
+      handleException(context, new QNotFoundException("Could not find any resources at path " + context.path()));
    }
 
 
@@ -152,7 +183,7 @@ public class QJavalinApiHandler
       }
       catch(Exception e)
       {
-         QJavalinImplementation.handleException(context, e);
+         handleException(context, e);
       }
    }
 
@@ -195,9 +226,6 @@ public class QJavalinApiHandler
 
       try
       {
-         // todo - make sure version is known in this instance
-         // todo - make sure table is supported in this version
-
          QTableMetaData table = qInstance.getTable(tableName);
          validateTableAndVersion(context, version, table);
 
@@ -230,8 +258,7 @@ public class QJavalinApiHandler
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         List<? extends QFieldMetaData>      tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
-         LinkedHashMap<String, Serializable> outputRecord   = toApiRecord(record, tableApiFields);
+         LinkedHashMap<String, Serializable> outputRecord = toApiRecord(record, tableName, version);
 
          QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(outputRecord));
@@ -239,7 +266,7 @@ public class QJavalinApiHandler
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         QJavalinImplementation.handleException(context, e);
+         handleException(context, e);
       }
    }
 
@@ -257,9 +284,6 @@ public class QJavalinApiHandler
       try
       {
          List<String> badRequestMessages = new ArrayList<>();
-
-         // todo - make sure version is known in this instance
-         // todo - make sure table is supported in this version
 
          QTableMetaData table = qInstance.getTable(tableName);
          validateTableAndVersion(context, version, table);
@@ -449,11 +473,10 @@ public class QJavalinApiHandler
          ///////////////////////////////
          // map record fields for api //
          ///////////////////////////////
-         List<? extends QFieldMetaData>       tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
-         ArrayList<Map<String, Serializable>> records        = new ArrayList<>();
+         ArrayList<Map<String, Serializable>> records = new ArrayList<>();
          for(QRecord record : queryOutput.getRecords())
          {
-            records.add(toApiRecord(record, tableApiFields));
+            records.add(toApiRecord(record, tableName, version));
          }
          output.put("records", records);
 
@@ -520,7 +543,7 @@ public class QJavalinApiHandler
       GT(">", QCriteriaOperator.GREATER_THAN, QCriteriaOperator.LESS_THAN_OR_EQUALS, false, 1),
       EMPTY("EMPTY", QCriteriaOperator.IS_BLANK, QCriteriaOperator.IS_NOT_BLANK, true, 0),
       BETWEEN("BETWEEN ", QCriteriaOperator.BETWEEN, QCriteriaOperator.NOT_BETWEEN, true, 2),
-      IN("IN ", QCriteriaOperator.IN, QCriteriaOperator.NOT_IN, true, 2),
+      IN("IN ", QCriteriaOperator.IN, QCriteriaOperator.NOT_IN, true, null),
       // todo MATCHES
       ;
 
@@ -529,14 +552,14 @@ public class QJavalinApiHandler
       private final QCriteriaOperator positiveOperator;
       private final QCriteriaOperator negativeOperator;
       private final boolean           supportsNot;
-      private final int               noOfValues; // 0 & 1 mean 0 & 1 ... 2 means 1 or more...
+      private final Integer           noOfValues; // null means many (IN)
 
 
 
       /*******************************************************************************
        **
        *******************************************************************************/
-      Operator(String prefix, QCriteriaOperator positiveOperator, QCriteriaOperator negativeOperator, boolean supportsNot, int noOfValues)
+      Operator(String prefix, QCriteriaOperator positiveOperator, QCriteriaOperator negativeOperator, boolean supportsNot, Integer noOfValues)
       {
          this.prefix = prefix;
          this.positiveOperator = positiveOperator;
@@ -551,7 +574,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QFilterCriteria parseQueryParamToCriteria(String name, String value) throws QBadRequestException
+   private static QFilterCriteria parseQueryParamToCriteria(String name, String value) throws QException
    {
       ///////////////////////////////////
       // process & discard a leading ! //
@@ -600,7 +623,11 @@ public class QJavalinApiHandler
       // todo - quotes?                 //
       ////////////////////////////////////
       List<Serializable> criteriaValues;
-      if(selectedOperator.noOfValues == 1)
+      if(selectedOperator.noOfValues == null)
+      {
+         criteriaValues = Arrays.asList(value.split(","));
+      }
+      else if(selectedOperator.noOfValues == 1)
       {
          criteriaValues = ListBuilder.of(value);
       }
@@ -612,9 +639,17 @@ public class QJavalinApiHandler
          }
          criteriaValues = null;
       }
-      else
+      else if(selectedOperator.noOfValues == 2)
       {
          criteriaValues = Arrays.asList(value.split(","));
+         if(criteriaValues.size() != 2)
+         {
+            throw (new QBadRequestException("Operator " + selectedOperator.prefix + " for field " + name + " requires 2 values (received " + criteriaValues.size() + ")"));
+         }
+      }
+      else
+      {
+         throw (new QException("Unexpected noOfValues [" + selectedOperator.noOfValues + "] in operator [" + selectedOperator + "]"));
       }
 
       return (new QFilterCriteria(name, isNot ? selectedOperator.negativeOperator : selectedOperator.positiveOperator, criteriaValues));
@@ -627,7 +662,57 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doInsert(Context context)
    {
+      String version   = context.pathParam("version");
+      String tableName = context.pathParam("tableName");
 
+      try
+      {
+         QTableMetaData table = qInstance.getTable(tableName);
+         validateTableAndVersion(context, version, table);
+
+         InsertInput insertInput = new InsertInput();
+
+         setupSession(context, insertInput);
+         QJavalinAccessLogger.logStart("insert", logPair("table", tableName));
+
+         insertInput.setTableName(tableName);
+
+         PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+
+         try
+         {
+            if(!StringUtils.hasContent(context.body()))
+            {
+               throw (new QBadRequestException("Missing required POST body"));
+            }
+
+            JSONObject jsonObject = new JSONObject(context.body());
+            insertInput.setRecords(List.of(toQRecord(jsonObject, tableName, version)));
+         }
+         catch(QBadRequestException qbre)
+         {
+            throw (qbre);
+         }
+         catch(Exception e)
+         {
+            throw (new QBadRequestException("Body could not be parsed as a JSON object: " + e.getMessage(), e));
+         }
+
+         InsertAction insertAction = new InsertAction();
+         InsertOutput insertOutput = insertAction.execute(insertInput);
+
+         LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+         outputRecord.put(table.getPrimaryKeyField(), insertOutput.getRecords().get(0).getValue(table.getPrimaryKeyField()));
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(HttpStatus.Code.CREATED.getCode());
+         context.result(JsonUtils.toJson(outputRecord));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
    }
 
 
@@ -637,7 +722,76 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doUpdate(Context context)
    {
+      String version    = context.pathParam("version");
+      String tableName  = context.pathParam("tableName");
+      String primaryKey = context.pathParam("primaryKey");
 
+      try
+      {
+         QTableMetaData table = qInstance.getTable(tableName);
+         validateTableAndVersion(context, version, table);
+
+         UpdateInput updateInput = new UpdateInput();
+
+         setupSession(context, updateInput);
+         QJavalinAccessLogger.logStart("update", logPair("table", tableName));
+
+         updateInput.setTableName(tableName);
+
+         PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
+
+         ///////////////////////////////////////////////////////
+         // throw a not found error if the record isn't found //
+         ///////////////////////////////////////////////////////
+         GetInput getInput = new GetInput();
+         getInput.setTableName(tableName);
+         getInput.setPrimaryKey(primaryKey);
+         GetAction getAction = new GetAction();
+         GetOutput getOutput = getAction.execute(getInput);
+         if(getOutput.getRecord() == null)
+         {
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
+               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+         }
+
+         try
+         {
+            if(!StringUtils.hasContent(context.body()))
+            {
+               throw (new QBadRequestException("Missing required POST body"));
+            }
+
+            JSONObject jsonObject = new JSONObject(context.body());
+            QRecord    qRecord    = toQRecord(jsonObject, tableName, version);
+            qRecord.setValue(table.getPrimaryKeyField(), primaryKey);
+            updateInput.setRecords(List.of(qRecord));
+         }
+         catch(QBadRequestException qbre)
+         {
+            throw (qbre);
+         }
+         catch(Exception e)
+         {
+            throw (new QBadRequestException("Body could not be parsed as a JSON object: " + e.getMessage(), e));
+         }
+
+         UpdateAction updateAction = new UpdateAction();
+         UpdateOutput updateOutput = updateAction.execute(updateInput);
+
+         List<String> errors = updateOutput.getRecords().get(0).getErrors();
+         if(CollectionUtils.nullSafeHasContents(errors))
+         {
+            throw (new QException("Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors)));
+         }
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(HttpStatus.Code.NO_CONTENT.getCode());
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
    }
 
 
@@ -647,7 +801,57 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doDelete(Context context)
    {
+      String version    = context.pathParam("version");
+      String tableName  = context.pathParam("tableName");
+      String primaryKey = context.pathParam("primaryKey");
 
+      try
+      {
+         QTableMetaData table = qInstance.getTable(tableName);
+         validateTableAndVersion(context, version, table);
+
+         DeleteInput deleteInput = new DeleteInput();
+
+         setupSession(context, deleteInput);
+         QJavalinAccessLogger.logStart("delete", logPair("table", tableName));
+
+         deleteInput.setTableName(tableName);
+         deleteInput.setPrimaryKeys(List.of(primaryKey));
+
+         PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);
+
+         ///////////////////////////////////////////////////////
+         // throw a not found error if the record isn't found //
+         ///////////////////////////////////////////////////////
+         GetInput getInput = new GetInput();
+         getInput.setTableName(tableName);
+         getInput.setPrimaryKey(primaryKey);
+         GetAction getAction = new GetAction();
+         GetOutput getOutput = getAction.execute(getInput);
+         if(getOutput.getRecord() == null)
+         {
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
+               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+         }
+
+         ///////////////////
+         // do the delete //
+         ///////////////////
+         DeleteAction deleteAction = new DeleteAction();
+         DeleteOutput deleteOutput = deleteAction.execute(deleteInput);
+         if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
+         {
+            throw (new QException("Error deleting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(deleteOutput.getRecordsWithErrors().get(0).getErrors())));
+         }
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(HttpStatus.Code.NO_CONTENT.getCode());
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
    }
 
 
@@ -655,16 +859,52 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static LinkedHashMap<String, Serializable> toApiRecord(QRecord record, List<? extends QFieldMetaData> tableApiFields)
+   private static LinkedHashMap<String, Serializable> toApiRecord(QRecord record, String tableName, String apiVersion) throws QException
    {
-      LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+      List<? extends QFieldMetaData>      tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(apiVersion)).getFields();
+      LinkedHashMap<String, Serializable> outputRecord   = new LinkedHashMap<>();
       for(QFieldMetaData tableApiField : tableApiFields)
       {
          // todo - what about display values / possible values
          // todo - handle removed-from-this-version fields!!
          outputRecord.put(tableApiField.getName(), record.getValue(tableApiField.getName()));
       }
-      return outputRecord;
+      return (outputRecord);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QRecord toQRecord(JSONObject jsonObject, String tableName, String apiVersion) throws QException
+   {
+      List<String> unrecognizedFieldNames = new ArrayList<>();
+
+      List<? extends QFieldMetaData>        tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(apiVersion)).getFields();
+      Map<String, ? extends QFieldMetaData> apiFieldsMap   = tableApiFields.stream().collect(Collectors.toMap(f -> f.getName(), f -> f));
+
+      QRecord qRecord = new QRecord();
+
+      for(String jsonKey : jsonObject.keySet())
+      {
+         if(apiFieldsMap.containsKey(jsonKey))
+         {
+            QFieldMetaData field = apiFieldsMap.get(jsonKey);
+            qRecord.setValue(field.getName(), jsonObject.get(jsonKey));
+         }
+         else
+         {
+            unrecognizedFieldNames.add(jsonKey);
+         }
+      }
+
+      if(!unrecognizedFieldNames.isEmpty())
+      {
+         throw (new QBadRequestException("Request body contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.joinWithCommasAndAnd(unrecognizedFieldNames)));
+      }
+
+      return (qRecord);
    }
 
 
@@ -709,6 +949,12 @@ public class QJavalinApiHandler
       }
       else
       {
+         if(e instanceof ApiPathNotFoundException)
+         {
+            respondWithError(context, HttpStatus.Code.NOT_FOUND, e.getMessage()); // 404
+            return;
+         }
+
          if(e instanceof QAuthenticationException)
          {
             respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
