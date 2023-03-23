@@ -91,6 +91,7 @@ import org.apache.commons.lang.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static com.kingsrook.qqq.backend.javalin.QJavalinImplementation.SLOW_LOG_THRESHOLD_MS;
 
@@ -137,13 +138,16 @@ public class QJavalinApiHandler
                ApiBuilder.get("/query", QJavalinApiHandler::doQuery);
                // ApiBuilder.post("/query", QJavalinApiHandler::doQuery);
 
+               ApiBuilder.post("/bulk", QJavalinApiHandler::bulkInsert);
+               ApiBuilder.patch("/bulk", QJavalinApiHandler::bulkUpdate);
+               ApiBuilder.delete("/bulk", QJavalinApiHandler::bulkDelete);
+
+               //////////////////////////////////////////////////////////////////
+               // remember to keep the wildcard paths after the specific paths //
+               //////////////////////////////////////////////////////////////////
                ApiBuilder.get("/{primaryKey}", QJavalinApiHandler::doGet);
                ApiBuilder.patch("/{primaryKey}", QJavalinApiHandler::doUpdate);
                ApiBuilder.delete("/{primaryKey}", QJavalinApiHandler::doDelete);
-
-               ApiBuilder.post("/bulk", QJavalinApiHandler::bulkInsert);
-               // patch("/bulk", QJavalinApiHandler::bulkUpdate);
-               // delete("/bulk", QJavalinApiHandler::bulkDelete);
             });
          });
 
@@ -722,8 +726,15 @@ public class QJavalinApiHandler
                throw (new QBadRequestException("Missing required POST body"));
             }
 
-            JSONObject jsonObject = new JSONObject(context.body());
+            JSONTokener jsonTokener = new JSONTokener(context.body().trim());
+            JSONObject  jsonObject  = new JSONObject(jsonTokener);
+
             insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version)));
+
+            if(jsonTokener.more())
+            {
+               throw (new QBadRequestException("Body contained more than a single JSON object."));
+            }
          }
          catch(QBadRequestException qbre)
          {
@@ -787,11 +798,19 @@ public class QJavalinApiHandler
 
             ArrayList<QRecord> recordList = new ArrayList<>();
             insertInput.setRecords(recordList);
-            JSONArray jsonArray = new JSONArray(context.body());
+
+            JSONTokener jsonTokener = new JSONTokener(context.body().trim());
+            JSONArray   jsonArray   = new JSONArray(jsonTokener);
+
             for(int i = 0; i < jsonArray.length(); i++)
             {
                JSONObject jsonObject = jsonArray.getJSONObject(i);
                recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version));
+            }
+
+            if(jsonTokener.more())
+            {
+               throw (new QBadRequestException("Body contained more than a single JSON array."));
             }
 
             if(recordList.isEmpty())
@@ -854,6 +873,229 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void bulkUpdate(Context context)
+   {
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
+
+      try
+      {
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
+
+         UpdateInput updateInput = new UpdateInput();
+
+         setupSession(context, updateInput);
+         QJavalinAccessLogger.logStart("bulkUpdate", logPair("table", tableName));
+
+         updateInput.setTableName(tableName);
+
+         PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
+
+         /////////////////
+         // build input //
+         /////////////////
+         try
+         {
+            if(!StringUtils.hasContent(context.body()))
+            {
+               throw (new QBadRequestException("Missing required PATCH body"));
+            }
+
+            ArrayList<QRecord> recordList = new ArrayList<>();
+            updateInput.setRecords(recordList);
+
+            JSONTokener jsonTokener = new JSONTokener(context.body().trim());
+            JSONArray   jsonArray   = new JSONArray(jsonTokener);
+
+            for(int i = 0; i < jsonArray.length(); i++)
+            {
+               JSONObject jsonObject = jsonArray.getJSONObject(i);
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version));
+            }
+
+            if(jsonTokener.more())
+            {
+               throw (new QBadRequestException("Body contained more than a single JSON array."));
+            }
+
+            if(recordList.isEmpty())
+            {
+               throw (new QBadRequestException("No records were found in the PATCH body"));
+            }
+         }
+         catch(QBadRequestException qbre)
+         {
+            throw (qbre);
+         }
+         catch(Exception e)
+         {
+            throw (new QBadRequestException("Body could not be parsed as a JSON array: " + e.getMessage(), e));
+         }
+
+         //////////////
+         // execute! //
+         //////////////
+         UpdateAction updateAction = new UpdateAction();
+         UpdateOutput updateOutput = updateAction.execute(updateInput);
+
+         ///////////////////////////////////////
+         // process records to build response //
+         ///////////////////////////////////////
+         List<Map<String, Serializable>> response = new ArrayList<>();
+         for(QRecord record : updateOutput.getRecords())
+         {
+            LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+            response.add(outputRecord);
+
+            List<String> errors = record.getErrors();
+            if(CollectionUtils.nullSafeHasContents(errors))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               outputRecord.put("error", "Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            }
+            else
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.NO_CONTENT.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.NO_CONTENT.getMessage());
+            }
+         }
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(HttpStatus.Code.MULTI_STATUS.getCode());
+         context.result(JsonUtils.toJson(response));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void bulkDelete(Context context)
+   {
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
+
+      try
+      {
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
+
+         DeleteInput deleteInput = new DeleteInput();
+
+         setupSession(context, deleteInput);
+         QJavalinAccessLogger.logStart("bulkDelete", logPair("table", tableName));
+
+         deleteInput.setTableName(tableName);
+
+         PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);
+
+         /////////////////
+         // build input //
+         /////////////////
+         try
+         {
+            if(!StringUtils.hasContent(context.body()))
+            {
+               throw (new QBadRequestException("Missing required DELETE body"));
+            }
+
+            ArrayList<Serializable> primaryKeyList = new ArrayList<>();
+            deleteInput.setPrimaryKeys(primaryKeyList);
+
+            JSONTokener jsonTokener = new JSONTokener(context.body().trim());
+            JSONArray   jsonArray   = new JSONArray(jsonTokener);
+
+            for(int i = 0; i < jsonArray.length(); i++)
+            {
+               Object object = jsonArray.get(i);
+               if(object instanceof JSONArray || object instanceof JSONObject)
+               {
+                  throw (new QBadRequestException("One or more elements inside the DELETE body JSONArray was not a primitive value"));
+               }
+               primaryKeyList.add(String.valueOf(object));
+            }
+
+            if(jsonTokener.more())
+            {
+               throw (new QBadRequestException("Body contained more than a single JSON array."));
+            }
+
+            if(primaryKeyList.isEmpty())
+            {
+               throw (new QBadRequestException("No primary keys were found in the DELETE body"));
+            }
+         }
+         catch(QBadRequestException qbre)
+         {
+            throw (qbre);
+         }
+         catch(Exception e)
+         {
+            throw (new QBadRequestException("Body could not be parsed as a JSON array: " + e.getMessage(), e));
+         }
+
+         //////////////
+         // execute! //
+         //////////////
+         DeleteAction deleteAction = new DeleteAction();
+         DeleteOutput deleteOutput = deleteAction.execute(deleteInput);
+
+         ///////////////////////////////////////
+         // process records to build response //
+         ///////////////////////////////////////
+         List<Map<String, Serializable>> response = new ArrayList<>();
+
+         List<QRecord>       recordsWithErrors    = deleteOutput.getRecordsWithErrors();
+         Map<String, String> primaryKeyToErrorMap = new HashMap<>();
+         for(QRecord recordWithError : CollectionUtils.nonNullList(recordsWithErrors))
+         {
+            String primaryKey = recordWithError.getValueString(table.getPrimaryKeyField());
+            primaryKeyToErrorMap.put(primaryKey, StringUtils.join(", ", recordWithError.getErrors()));
+         }
+
+         for(Serializable primaryKey : deleteInput.getPrimaryKeys())
+         {
+            LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+            response.add(outputRecord);
+
+            String primaryKeyString = ValueUtils.getValueAsString((primaryKey));
+            if(primaryKeyToErrorMap.containsKey(primaryKeyString))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               outputRecord.put("error", "Error deleting " + table.getLabel() + ": " + primaryKeyToErrorMap.get(primaryKeyString));
+            }
+            else
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.NO_CONTENT.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.NO_CONTENT.getMessage());
+            }
+         }
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(HttpStatus.Code.MULTI_STATUS.getCode());
+         context.result(JsonUtils.toJson(response));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void doUpdate(Context context)
    {
       String version      = context.pathParam("version");
@@ -892,13 +1134,20 @@ public class QJavalinApiHandler
          {
             if(!StringUtils.hasContent(context.body()))
             {
-               throw (new QBadRequestException("Missing required POST body"));
+               throw (new QBadRequestException("Missing required PATCH body"));
             }
 
-            JSONObject jsonObject = new JSONObject(context.body());
-            QRecord    qRecord    = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version);
+            JSONTokener jsonTokener = new JSONTokener(context.body().trim());
+            JSONObject  jsonObject  = new JSONObject(jsonTokener);
+
+            QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version);
             qRecord.setValue(table.getPrimaryKeyField(), primaryKey);
             updateInput.setRecords(List.of(qRecord));
+
+            if(jsonTokener.more())
+            {
+               throw (new QBadRequestException("Body contained more than a single JSON object."));
+            }
          }
          catch(QBadRequestException qbre)
          {

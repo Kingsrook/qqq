@@ -257,6 +257,14 @@ public class MemoryRecordStore
       for(QRecord record : input.getRecords())
       {
          Serializable primaryKeyValue = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), record.getValue(primaryKeyField.getName()));
+
+         if(primaryKeyValue == null)
+         {
+            record.addError("Missing value in primary key field");
+            outputRecords.add(record);
+            continue;
+         }
+
          if(tableData.containsKey(primaryKeyValue))
          {
             QRecord recordToUpdate = tableData.get(primaryKeyValue);

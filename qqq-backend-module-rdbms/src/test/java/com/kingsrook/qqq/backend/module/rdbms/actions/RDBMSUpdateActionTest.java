@@ -26,7 +26,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -36,6 +39,7 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,7 +102,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    public void testUpdateOne() throws Exception
    {
       UpdateInput updateInput = initUpdateRequest();
-      QRecord record = new QRecord().withTableName("person")
+      QRecord record = new QRecord()
          .withValue("id", 2)
          .withValue("firstName", "James")
          .withValue("lastName", "Kirk")
@@ -141,18 +145,18 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    public void testUpdateManyWithDifferentColumnsAndValues() throws Exception
    {
       UpdateInput updateInput = initUpdateRequest();
-      QRecord record1 = new QRecord().withTableName("person")
+      QRecord record1 = new QRecord()
          .withValue("id", 1)
          .withValue("firstName", "Darren")
          .withValue("lastName", "From Bewitched")
          .withValue("birthDate", "1900-01-01");
 
-      QRecord record2 = new QRecord().withTableName("person")
+      QRecord record2 = new QRecord()
          .withValue("id", 3)
          .withValue("firstName", "Wilt")
          .withValue("birthDate", null);
 
-      QRecord record3 = new QRecord().withTableName("person")
+      QRecord record3 = new QRecord()
          .withValue("id", 5)
          .withValue("firstName", "Richard")
          .withValue("birthDate", null);
@@ -216,13 +220,13 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    public void testUpdateManyWithSameColumnsDifferentValues() throws Exception
    {
       UpdateInput updateInput = initUpdateRequest();
-      QRecord record1 = new QRecord().withTableName("person")
+      QRecord record1 = new QRecord()
          .withValue("id", 1)
          .withValue("firstName", "Darren")
          .withValue("lastName", "From Bewitched")
          .withValue("birthDate", "1900-01-01");
 
-      QRecord record2 = new QRecord().withTableName("person")
+      QRecord record2 = new QRecord()
          .withValue("id", 3)
          .withValue("firstName", "Wilt")
          .withValue("lastName", "Tim's Uncle")
@@ -276,7 +280,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       List<QRecord> records     = new ArrayList<>();
       for(int i = 1; i <= 5; i++)
       {
-         records.add(new QRecord().withTableName("person")
+         records.add(new QRecord()
             .withValue("id", i)
             .withValue("birthDate", "1999-09-09"));
       }
@@ -312,7 +316,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
       UpdateInput   updateInput = initUpdateRequest();
       List<QRecord> records     = new ArrayList<>();
-      records.add(new QRecord().withTableName("person")
+      records.add(new QRecord()
          .withValue("id", 1)
          .withValue("firstName", "Johnny Updated"));
       updateInput.setRecords(records);
@@ -336,12 +340,69 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    {
       UpdateInput   updateInput = initUpdateRequest();
       List<QRecord> records     = new ArrayList<>();
-      records.add(new QRecord().withTableName("person")
+      records.add(new QRecord()
          .withValue("id", 1)
          .withValue("createDate", "2022-10-03T10:29:35Z")
          .withValue("firstName", "Johnny Updated"));
       updateInput.setRecords(records);
       new RDBMSUpdateAction().execute(updateInput);
+   }
+
+
+
+   /*******************************************************************************
+    ** Make sure that records without a primary key come back with error.
+    *******************************************************************************/
+   @Test
+   void testWithoutPrimaryKeyErrors() throws Exception
+   {
+      {
+         UpdateInput   updateInput = initUpdateRequest();
+         List<QRecord> records     = new ArrayList<>();
+         records.add(new QRecord()
+            .withValue("firstName", "Johnny Updated"));
+         updateInput.setRecords(records);
+         UpdateOutput updateOutput = new RDBMSUpdateAction().execute(updateInput);
+         assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
+         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
+      }
+
+      {
+         UpdateInput   updateInput = initUpdateRequest();
+         List<QRecord> records     = new ArrayList<>();
+         records.add(new QRecord()
+            .withValue("id", null)
+            .withValue("firstName", "Johnny Updated"));
+         updateInput.setRecords(records);
+         UpdateOutput updateOutput = new RDBMSUpdateAction().execute(updateInput);
+         assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
+         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
+      }
+
+      {
+         UpdateInput   updateInput = initUpdateRequest();
+         List<QRecord> records     = new ArrayList<>();
+         records.add(new QRecord()
+            .withValue("id", null)
+            .withValue("firstName", "Johnny Not Updated"));
+         records.add(new QRecord()
+            .withValue("id", 2)
+            .withValue("firstName", "Johnny Updated"));
+         updateInput.setRecords(records);
+         UpdateOutput updateOutput = new RDBMSUpdateAction().execute(updateInput);
+
+         assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
+         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
+
+         assertTrue(updateOutput.getRecords().get(1).getErrors().isEmpty());
+
+         GetInput getInput = new GetInput();
+         getInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+         getInput.setPrimaryKey(2);
+         GetOutput getOutput = new GetAction().execute(getInput);
+         assertEquals("Johnny Updated", getOutput.getRecord().getValueString("firstName"));
+      }
+
    }
 
 
@@ -369,7 +430,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    private UpdateInput initUpdateRequest()
    {
       UpdateInput updateInput = new UpdateInput();
-      updateInput.setTableName(TestUtils.defineTablePerson().getName());
+      updateInput.setTableName(TestUtils.TABLE_NAME_PERSON);
       return updateInput;
    }
 

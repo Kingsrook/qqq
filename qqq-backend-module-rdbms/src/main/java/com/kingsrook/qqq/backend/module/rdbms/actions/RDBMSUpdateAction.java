@@ -87,6 +87,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       // record.  So, we will first "hash" up the records by their list of fields being updated. //
       /////////////////////////////////////////////////////////////////////////////////////////////
       ListingHash<List<String>, QRecord> recordsByFieldBeingUpdated = new ListingHash<>();
+      boolean                            haveAnyWithoutErorrs       = false;
       for(QRecord record : updateInput.getRecords())
       {
          ////////////////////////////////////////////
@@ -103,6 +104,19 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             .toList();
          recordsByFieldBeingUpdated.add(updatableFields, record);
 
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // to update a record, we must have its primary key value - so - check - if it's missing, mark it as an error //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(record.getValue(table.getPrimaryKeyField()) == null)
+         {
+            record.addError("Missing value in primary key field");
+         }
+
+         if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
+         {
+            haveAnyWithoutErorrs = true;
+         }
+
          //////////////////////////////////////////////////////////////////////////////
          // go ahead and put the record into the output list at this point in time,  //
          // so that the output list's order matches the input list order             //
@@ -111,6 +125,12 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          //////////////////////////////////////////////////////////////////////////////
          QRecord outputRecord = new QRecord(record);
          outputRecords.add(outputRecord);
+      }
+
+      if(!haveAnyWithoutErorrs)
+      {
+         LOG.info("Exiting early - all records have some error.");
+         return (rs);
       }
 
       try
@@ -192,6 +212,11 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       List<List<Serializable>> values = new ArrayList<>();
       for(QRecord record : recordList)
       {
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         {
+            continue;
+         }
+
          List<Serializable> rowValues = new ArrayList<>();
          values.add(rowValues);
 
@@ -202,6 +227,14 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             rowValues.add(value);
          }
          rowValues.add(record.getValue(table.getPrimaryKeyField()));
+      }
+
+      if(values.isEmpty())
+      {
+         ////////////////////////////////////////////////////////////////////////////////
+         // if all records had errors, so we didn't push any values, then return early //
+         ////////////////////////////////////////////////////////////////////////////////
+         return;
       }
 
       Long mark = System.currentTimeMillis();
@@ -241,6 +274,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    {
       for(List<QRecord> page : CollectionUtils.getPages(recordList, QueryManager.PAGE_SIZE))
       {
+         //////////////////////////////
+         // skip records with errors //
+         //////////////////////////////
+         page = page.stream().filter(r -> CollectionUtils.nullSafeIsEmpty(r.getErrors())).collect(Collectors.toList());
+         if(page.isEmpty())
+         {
+            continue;
+         }
+
          String sql = writeUpdateSQLPrefix(table, fieldsBeingUpdated) + " IN (" + StringUtils.join(",", Collections.nCopies(page.size(), "?")) + ")";
 
          // todo sql customization? - let each table have custom sql and/or param list
@@ -293,6 +335,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       for(int i = 1; i < recordList.size(); i++)
       {
          QRecord record = recordList.get(i);
+
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         {
+            ///////////////////////////////////////////////////////
+            // skip records w/ errors (that we won't be updating //
+            ///////////////////////////////////////////////////////
+            continue;
+         }
+
          for(String fieldName : fieldsBeingUpdated)
          {
             if(!Objects.equals(record0.getValue(fieldName), record.getValue(fieldName)))

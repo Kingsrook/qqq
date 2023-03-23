@@ -29,11 +29,17 @@ import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -442,17 +448,16 @@ class QJavalinApiHandlerTest extends BaseTest
       QRecord personRecord = getPersonRecord(1);
       assertNull(personRecord);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // apparently, as long as the body *starts with* json, the JSONObject constructor builds //
-      // a json object out of it??  so... this in this case we expected 400, but get 201...    //
-      ///////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////
+      // If more than just a json object, fail //
+      ///////////////////////////////////////////
       response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
          .body("""
             {"firstName": "Moe"}
             Not json
             """)
          .asString();
-      assertErrorResponse(HttpStatus.CREATED_201, null, response);
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body contained more than a single JSON object", response);
    }
 
 
@@ -540,17 +545,16 @@ class QJavalinApiHandlerTest extends BaseTest
       QRecord personRecord = getPersonRecord(1);
       assertNull(personRecord);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // apparently, as long as the body *starts with* json, the JSONObject constructor builds //
-      // a json object out of it??  so... this in this case we expected 400, but get 201...    //
-      ///////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////
+      // If more than just a json array, fail //
+      //////////////////////////////////////////
       response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")
          .body("""
             [{"firstName": "Moe"}]
             Not json
             """)
          .asString();
-      assertErrorResponse(HttpStatus.MULTI_STATUS_207, null, response);
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body contained more than a single JSON array", response);
    }
 
 
@@ -618,7 +622,7 @@ class QJavalinApiHandlerTest extends BaseTest
       response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
          // no body
          .asString();
-      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required POST body", response);
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required PATCH body", response);
 
       response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
          .body("""
@@ -647,17 +651,185 @@ class QJavalinApiHandlerTest extends BaseTest
       QRecord personRecord = getPersonRecord(1);
       assertEquals("Mo", personRecord.getValueString("firstName"));
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // apparently, as long as the body *starts with* json, the JSONObject constructor builds //
-      // a json object out of it??  so... this in this case we expected 400, but get 204...    //
-      ///////////////////////////////////////////////////////////////////////////////////////////
       response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
          .body("""
             {"firstName": "Moe"}
             Not json
             """)
          .asString();
-      assertErrorResponse(HttpStatus.NO_CONTENT_204, null, response);
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body contained more than a single JSON object", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBulkUpdate207() throws QException
+   {
+      insertSimpsons();
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [
+               {"id": 1, "email": "homer@simpson.com"},
+               {"id": 2, "email": "marge@simpson.com"},
+               {"email": "nobody@simpson.com"}
+            ]
+            """)
+         .asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(3, jsonArray.length());
+
+      assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(1).getInt("statusCode"));
+
+      assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(2).getInt("statusCode"));
+      assertEquals("Error updating Person: Missing value in primary key field", jsonArray.getJSONObject(2).getString("error"));
+
+      QRecord record = getPersonRecord(1);
+      assertEquals("homer@simpson.com", record.getValueString("email"));
+
+      record = getPersonRecord(2);
+      assertEquals("marge@simpson.com", record.getValueString("email"));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.EQUALS, "nobody@simpson.com")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(0, queryOutput.getRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBulkUpdate400s() throws QException
+   {
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            {"firstName": "Moe"}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON array: A JSONArray text must start with '['", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         // no body
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required PATCH body", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("[]")
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "No records were found in the PATCH body", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [{"firstName": "Moe", "foo": "bar"}]
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request body contained 1 unrecognized field name: foo", response);
+
+      ////////////////////////////////
+      // assert nothing got updated //
+      ////////////////////////////////
+      QRecord personRecord = getPersonRecord(1);
+      assertNull(personRecord);
+
+      //////////////////////////////////////////
+      // If more than just a json array, fail //
+      //////////////////////////////////////////
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [{"firstName": "Moe"}]
+            Not json
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body contained more than a single JSON array", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBulkDelete207() throws QException
+   {
+      insertSimpsons();
+
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [ 1, 3, 5 ]
+            """)
+         .asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(3, jsonArray.length());
+
+      assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(2).getInt("statusCode"));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertEquals(2, queryOutput.getRecords().size());
+      assertEquals(List.of(2, 4), queryOutput.getRecords().stream().map(r -> r.getValueInteger("id")).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBulkDelete400s() throws QException
+   {
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            1, 2, 3
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body could not be parsed as a JSON array: A JSONArray text must start with '['", response);
+
+      response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         // no body
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Missing required DELETE body", response);
+
+      response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("[]")
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "No primary keys were found in the DELETE body", response);
+
+      response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [{"id": 1}]
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "One or more elements inside the DELETE body JSONArray was not a primitive value", response);
+
+      ////////////////////////////////
+      // assert nothing got deleted //
+      ////////////////////////////////
+      QRecord personRecord = getPersonRecord(1);
+      assertNull(personRecord);
+
+      //////////////////////////////////////////
+      // If more than just a json array, fail //
+      //////////////////////////////////////////
+      response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("""
+            [1,2,3]
+            Not json
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Body contained more than a single JSON array", response);
    }
 
 
