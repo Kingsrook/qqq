@@ -32,7 +32,7 @@ public class Components
 {
    private Map<String, Example>        examples;
    private Map<String, Schema>         schemas;
-   private Map<Integer, Response>      responses;
+   private Map<String, Response>       responses;
    private Map<String, SecurityScheme> securitySchemes;
 
 
@@ -102,7 +102,7 @@ public class Components
    /*******************************************************************************
     ** Getter for responses
     *******************************************************************************/
-   public Map<Integer, Response> getResponses()
+   public Map<String, Response> getResponses()
    {
       return (this.responses);
    }
@@ -112,7 +112,7 @@ public class Components
    /*******************************************************************************
     ** Setter for responses
     *******************************************************************************/
-   public void setResponses(Map<Integer, Response> responses)
+   public void setResponses(Map<String, Response> responses)
    {
       this.responses = responses;
    }
@@ -122,7 +122,7 @@ public class Components
    /*******************************************************************************
     ** Fluent setter for responses
     *******************************************************************************/
-   public Components withResponses(Map<Integer, Response> responses)
+   public Components withResponses(Map<String, Response> responses)
    {
       this.responses = responses;
       return (this);

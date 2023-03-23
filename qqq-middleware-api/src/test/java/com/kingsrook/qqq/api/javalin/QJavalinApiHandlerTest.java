@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -35,6 +36,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import kong.unirest.HttpResponse;
@@ -72,6 +76,16 @@ class QJavalinApiHandlerTest extends BaseTest
    static void beforeAll() throws QInstanceValidationException
    {
       QInstance qInstance = TestUtils.defineInstance();
+
+      qInstance.addTable(new QTableMetaData()
+         .withName("internalName")
+         .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withMiddlewareMetaData(new ApiTableMetaData()
+            .withApiTableName("externalName")
+            .withInitialVersion(TestUtils.V2022_Q4)));
+
       qJavalinImplementation = new QJavalinImplementation(qInstance);
       qJavalinImplementation.startJavalinServer(PORT);
       qJavalinImplementation.getJavalinService().routes(new QJavalinApiHandler(qInstance).getRoutes());
@@ -686,9 +700,29 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testDelete404()
    {
-      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/1")
-         .asString();
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/1").asString();
       assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find Person with Id of 1", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRenamedTable()
+   {
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/internalName/query").asString();
+         assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+      }
+
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/externalName/query").asString();
+         assertEquals(HttpStatus.OK_200, response.getStatus());
+         JSONObject jsonObject = new JSONObject(response.getBody());
+         assertEquals(0, jsonObject.getInt("count"));
+      }
    }
 
 

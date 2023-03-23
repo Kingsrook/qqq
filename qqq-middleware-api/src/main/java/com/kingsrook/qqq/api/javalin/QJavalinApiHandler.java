@@ -34,7 +34,6 @@ import java.util.Set;
 import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
 import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.APIVersion;
-import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
@@ -88,6 +87,7 @@ import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
+import org.apache.commons.lang.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -102,7 +102,9 @@ public class QJavalinApiHandler
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinApiHandler.class);
 
-   static QInstance qInstance;
+   private static QInstance qInstance;
+
+   private static Map<String, Map<String, QTableMetaData>> tableApiNameMap = new HashMap<>();
 
 
 
@@ -201,32 +203,16 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static APIVersionRange getApiVersionRange(QTableMetaData table)
-   {
-      ApiTableMetaData middlewareMetaData = ApiTableMetaData.of(table);
-      if(middlewareMetaData != null && middlewareMetaData.getInitialVersion() != null)
-      {
-         return (APIVersionRange.afterAndIncluding(middlewareMetaData.getInitialVersion()));
-      }
-
-      return (APIVersionRange.none());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    private static void doGet(Context context)
    {
-      String version    = context.pathParam("version");
-      String tableName  = context.pathParam("tableName");
-      String primaryKey = context.pathParam("primaryKey");
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
+      String primaryKey   = context.pathParam("primaryKey");
 
       try
       {
-         QTableMetaData table = qInstance.getTable(tableName);
-         validateTableAndVersion(context, version, table);
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
 
          GetInput getInput = new GetInput();
 
@@ -276,16 +262,16 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doQuery(Context context)
    {
-      String       version   = context.pathParam("version");
-      String       tableName = context.pathParam("tableName");
-      QQueryFilter filter    = null;
+      String       version      = context.pathParam("version");
+      String       tableApiName = context.pathParam("tableName");
+      QQueryFilter filter       = null;
 
       try
       {
          List<String> badRequestMessages = new ArrayList<>();
 
-         QTableMetaData table = qInstance.getTable(tableName);
-         validateTableAndVersion(context, version, table);
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
 
          QueryInput queryInput = new QueryInput();
          setupSession(context, queryInput);
@@ -506,24 +492,74 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void validateTableAndVersion(Context context, String version, QTableMetaData table) throws QNotFoundException
+   private static QTableMetaData validateTableAndVersion(Context context, String version, String tableApiName) throws QNotFoundException
    {
+      QNotFoundException qNotFoundException = new QNotFoundException("Could not find any resources at path " + context.path());
+
+      QTableMetaData table = getTableByApiName(version, tableApiName);
+
       if(table == null)
       {
-         throw (new QNotFoundException("Could not find any resources at path " + context.path()));
+         throw (qNotFoundException);
+      }
+
+      if(BooleanUtils.isTrue(table.getIsHidden()))
+      {
+         throw (qNotFoundException);
+      }
+
+      ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
+      if(apiTableMetaData == null)
+      {
+         throw (qNotFoundException);
+      }
+
+      if(BooleanUtils.isTrue(apiTableMetaData.getIsExcluded()))
+      {
+         throw (qNotFoundException);
       }
 
       APIVersion       requestApiVersion = new APIVersion(version);
       List<APIVersion> supportedVersions = ApiInstanceMetaData.of(qInstance).getSupportedVersions();
       if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
       {
-         throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
+         throw (qNotFoundException);
       }
 
-      if(!getApiVersionRange(table).includes(requestApiVersion))
+      if(!apiTableMetaData.getApiVersionRange().includes(requestApiVersion))
       {
-         throw (new QNotFoundException("This version of this API does not contain the resource path " + context.path()));
+         throw (qNotFoundException);
       }
+
+      return (table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QTableMetaData getTableByApiName(String version, String tableApiName)
+   {
+      if(tableApiNameMap.get(version) == null)
+      {
+         Map<String, QTableMetaData> map = new HashMap<>();
+
+         for(QTableMetaData table : qInstance.getTables().values())
+         {
+            ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
+            String           name             = table.getName();
+            if(apiTableMetaData != null && StringUtils.hasContent(apiTableMetaData.getApiTableName()))
+            {
+               name = apiTableMetaData.getApiTableName();
+            }
+            map.put(name, table);
+         }
+
+         tableApiNameMap.put(version, map);
+      }
+
+      return (tableApiNameMap.get(version).get(tableApiName));
    }
 
 
@@ -662,13 +698,13 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doInsert(Context context)
    {
-      String version   = context.pathParam("version");
-      String tableName = context.pathParam("tableName");
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
 
       try
       {
-         QTableMetaData table = qInstance.getTable(tableName);
-         validateTableAndVersion(context, version, table);
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
 
          InsertInput insertInput = new InsertInput();
 
@@ -722,13 +758,13 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void bulkInsert(Context context)
    {
-      String version   = context.pathParam("version");
-      String tableName = context.pathParam("tableName");
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
 
       try
       {
-         QTableMetaData table = qInstance.getTable(tableName);
-         validateTableAndVersion(context, version, table);
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
 
          InsertInput insertInput = new InsertInput();
 
@@ -820,14 +856,14 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doUpdate(Context context)
    {
-      String version    = context.pathParam("version");
-      String tableName  = context.pathParam("tableName");
-      String primaryKey = context.pathParam("primaryKey");
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
+      String primaryKey   = context.pathParam("primaryKey");
 
       try
       {
-         QTableMetaData table = qInstance.getTable(tableName);
-         validateTableAndVersion(context, version, table);
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
 
          UpdateInput updateInput = new UpdateInput();
 
@@ -899,14 +935,14 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doDelete(Context context)
    {
-      String version    = context.pathParam("version");
-      String tableName  = context.pathParam("tableName");
-      String primaryKey = context.pathParam("primaryKey");
+      String version      = context.pathParam("version");
+      String tableApiName = context.pathParam("tableName");
+      String primaryKey   = context.pathParam("primaryKey");
 
       try
       {
-         QTableMetaData table = qInstance.getTable(tableName);
-         validateTableAndVersion(context, version, table);
+         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         String         tableName = table.getName();
 
          DeleteInput deleteInput = new DeleteInput();
 

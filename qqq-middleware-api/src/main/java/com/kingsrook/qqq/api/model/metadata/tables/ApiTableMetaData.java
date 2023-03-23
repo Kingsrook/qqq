@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api.model.metadata.tables;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
@@ -40,6 +41,9 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    private String initialVersion;
    private String finalVersion;
 
+   private String  apiTableName;
+   private Boolean isExcluded;
+
    private List<QFieldMetaData> removedApiFields;
 
 
@@ -50,6 +54,23 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    public static ApiTableMetaData of(QTableMetaData table)
    {
       return ((ApiTableMetaData) table.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public APIVersionRange getApiVersionRange()
+   {
+      if(getInitialVersion() == null)
+      {
+         return APIVersionRange.none();
+      }
+
+      return (getFinalVersion() != null
+         ? APIVersionRange.betweenAndIncluding(getInitialVersion(), getFinalVersion())
+         : APIVersionRange.afterAndIncluding(getInitialVersion()));
    }
 
 
@@ -215,6 +236,68 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    public ApiTableMetaData withFinalVersion(String finalVersion)
    {
       this.finalVersion = finalVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiTableName
+    *******************************************************************************/
+   public String getApiTableName()
+   {
+      return (this.apiTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiTableName
+    *******************************************************************************/
+   public void setApiTableName(String apiTableName)
+   {
+      this.apiTableName = apiTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiTableName
+    *******************************************************************************/
+   public ApiTableMetaData withApiTableName(String apiTableName)
+   {
+      this.apiTableName = apiTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isExcluded
+    *******************************************************************************/
+   public Boolean getIsExcluded()
+   {
+      return (this.isExcluded);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isExcluded
+    *******************************************************************************/
+   public void setIsExcluded(Boolean isExcluded)
+   {
+      this.isExcluded = isExcluded;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isExcluded
+    *******************************************************************************/
+   public ApiTableMetaData withIsExcluded(Boolean isExcluded)
+   {
+      this.isExcluded = isExcluded;
       return (this);
    }
 

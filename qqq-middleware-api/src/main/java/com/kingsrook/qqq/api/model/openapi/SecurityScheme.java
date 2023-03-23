@@ -28,6 +28,8 @@ package com.kingsrook.qqq.api.model.openapi;
 public class SecurityScheme
 {
    private String type;
+   private String scheme;
+   private String bearerFormat;
 
 
 
@@ -57,6 +59,68 @@ public class SecurityScheme
    public SecurityScheme withType(String type)
    {
       this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for scheme
+    *******************************************************************************/
+   public String getScheme()
+   {
+      return (this.scheme);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scheme
+    *******************************************************************************/
+   public void setScheme(String scheme)
+   {
+      this.scheme = scheme;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scheme
+    *******************************************************************************/
+   public SecurityScheme withScheme(String scheme)
+   {
+      this.scheme = scheme;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for bearerFormat
+    *******************************************************************************/
+   public String getBearerFormat()
+   {
+      return (this.bearerFormat);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for bearerFormat
+    *******************************************************************************/
+   public void setBearerFormat(String bearerFormat)
+   {
+      this.bearerFormat = bearerFormat;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for bearerFormat
+    *******************************************************************************/
+   public SecurityScheme withBearerFormat(String bearerFormat)
+   {
+      this.bearerFormat = bearerFormat;
       return (this);
    }
 

@@ -32,6 +32,7 @@ public class Parameter
 {
    private String               name;
    private String               description;
+   private Boolean              required;
    private String               in;
    private Schema               schema;
    private Boolean              explode;
@@ -220,6 +221,37 @@ public class Parameter
    public Parameter withExamples(Map<String, Example> examples)
    {
       this.examples = examples;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for required
+    *******************************************************************************/
+   public Boolean getRequired()
+   {
+      return (this.required);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for required
+    *******************************************************************************/
+   public void setRequired(Boolean required)
+   {
+      this.required = required;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for required
+    *******************************************************************************/
+   public Parameter withRequired(Boolean required)
+   {
+      this.required = required;
       return (this);
    }
 
