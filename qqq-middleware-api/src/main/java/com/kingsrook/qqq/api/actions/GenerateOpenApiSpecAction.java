@@ -371,8 +371,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          if(queryCapability)
          {
             openAPI.getPaths().put("/" + tableApiName + "/query", new Path()
-                  .withGet(queryGet)
                // todo!! .withPost(queryPost)
+               .withGet(queryGet)
             );
          }
 
