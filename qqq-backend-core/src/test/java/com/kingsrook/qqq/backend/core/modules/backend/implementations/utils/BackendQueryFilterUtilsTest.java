@@ -87,6 +87,78 @@ class BackendQueryFilterUtilsTest
       assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_BETWEEN, List.of(1, 3)), "f", 2));
       assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_BETWEEN, List.of(1, 3)), "f", 3));
       assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_BETWEEN, List.of(1, 3)), "f", 4));
+
+      ////////////////
+      // like & not //
+      ////////////////
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.LIKE, "Test"), "f", "Test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.LIKE, "T%"), "f", "Test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.LIKE, "T_st"), "f", "Test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_LIKE, "Test"), "f", "Tst"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_LIKE, "T%"), "f", "Rest"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_LIKE, "T_st"), "f", "Toast"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLikeDarPercent()
+   {
+      String pattern = BackendQueryFilterUtils.sqlLikeToRegex("Dar%");
+      assertTrue("Darin".matches(pattern));
+      assertTrue("Dar".matches(pattern));
+      assertFalse("Not Darin".matches(pattern));
+      assertFalse("David".matches(pattern));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLikeDPercentIn()
+   {
+      String pattern = BackendQueryFilterUtils.sqlLikeToRegex("D%in");
+      assertTrue("Darin".matches(pattern));
+      assertFalse("Dar".matches(pattern));
+      assertFalse("Not Darin".matches(pattern));
+      assertTrue("Davin".matches(pattern));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLikeDPercentUnderscoreN()
+   {
+      String pattern = BackendQueryFilterUtils.sqlLikeToRegex("D%_n");
+      assertTrue("Darin".matches(pattern));
+      assertTrue("Daron".matches(pattern));
+      assertTrue("Dan".matches(pattern));
+      assertFalse("Dar".matches(pattern));
+      assertFalse("Not Darin".matches(pattern));
+      assertTrue("Davin".matches(pattern));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLikeDarUnderscore()
+   {
+      String pattern = BackendQueryFilterUtils.sqlLikeToRegex("Dar_");
+      assertFalse("Darin".matches(pattern));
+      assertFalse("Dar".matches(pattern));
+      assertTrue("Dart".matches(pattern));
+      assertFalse("Not Darin".matches(pattern));
+      assertFalse("David".matches(pattern));
+   }
 }

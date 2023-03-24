@@ -63,6 +63,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -106,7 +109,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          )
          .withServers(ListBuilder.of(new Server()
             .withDescription("Localhost development")
-            .withUrl("http://localhost:8000/api")
+            .withUrl("http://localhost:8000/api/" + version)
          ));
 
       openAPI.setTags(new ArrayList<>());
@@ -163,6 +166,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          String tableName = table.getName();
 
+         if(input.getTableName() != null && !input.getTableName().equals(tableName))
+         {
+            LOG.debug("Omitting table [" + tableName + "] because it is not the requested table [" + input.getTableName() + "]");
+            continue;
+         }
+
          if(table.getIsHidden())
          {
             LOG.debug("Omitting table [" + tableName + "] because it is marked as hidden");
@@ -209,10 +218,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          String               primaryKeyName      = table.getPrimaryKeyField();
          QFieldMetaData       primaryKeyField     = table.getField(table.getPrimaryKeyField());
          String               primaryKeyLabel     = primaryKeyField.getLabel();
+         String               primaryKeyApiName   = ApiFieldMetaData.getEffectiveApiFieldName(primaryKeyField);
          List<QFieldMetaData> tableApiFields      = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
-
-         ApiFieldMetaData apiFieldMetaData  = ApiFieldMetaData.of(primaryKeyField);
-         String           primaryKeyApiName = (apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.getApiFieldName())) ? apiFieldMetaData.getApiFieldName() : primaryKeyName;
 
          String tableReadPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.READ);
          if(StringUtils.hasContent(tableReadPermissionName))
@@ -257,18 +264,40 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withType("object")
             .withProperties(tableFieldsWithoutPrimaryKey));
 
-         for(QFieldMetaData tableApiField : tableApiFields)
+         for(QFieldMetaData field : tableApiFields)
          {
-            if(primaryKeyName.equals(tableApiField.getName()))
+            if(primaryKeyName.equals(field.getName()))
             {
                continue;
             }
 
-            tableFieldsWithoutPrimaryKey.put(tableApiField.getName(), new Schema()
-               .withType(getFieldType(table.getField(tableApiField.getName())))
-               .withFormat(getFieldFormat(table.getField(tableApiField.getName())))
-               .withDescription(tableApiField.getLabel() + " for the " + tableLabel + ".")
-            );
+            String apiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(field);
+
+            Schema fieldSchema = new Schema()
+               .withType(getFieldType(table.getField(field.getName())))
+               .withFormat(getFieldFormat(table.getField(field.getName())))
+               .withDescription(field.getLabel() + " for the " + tableLabel + ".");
+
+            if(StringUtils.hasContent(field.getPossibleValueSourceName()))
+            {
+               QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
+               if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
+               {
+                  List<String> enumValues = new ArrayList<>();
+                  for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+                  {
+                     enumValues.add(enumValue.getId() + "=" + enumValue.getLabel());
+                  }
+                  fieldSchema.setEnumValues(enumValues);
+               }
+               else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
+               {
+                  QTableMetaData sourceTable = qInstance.getTable(possibleValueSource.getTableName());
+                  fieldSchema.setDescription(fieldSchema.getDescription() + "  Values in this field come from the primary key of the " + sourceTable.getLabel() + " table");
+               }
+            }
+
+            tableFieldsWithoutPrimaryKey.put(apiFieldName, fieldSchema);
          }
 
          componentSchemas.put(tableApiName, new Schema()

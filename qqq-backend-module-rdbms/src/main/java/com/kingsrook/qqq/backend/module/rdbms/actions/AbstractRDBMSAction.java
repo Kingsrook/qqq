@@ -601,6 +601,18 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                }
                break;
             }
+            case LIKE:
+            {
+               clause += " LIKE ?";
+               expectedNoOfParams = 1;
+               break;
+            }
+            case NOT_LIKE:
+            {
+               clause += " NOT LIKE ?";
+               expectedNoOfParams = 1;
+               break;
+            }
             case STARTS_WITH:
             {
                clause += " LIKE ?";

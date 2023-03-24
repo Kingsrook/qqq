@@ -296,6 +296,23 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testQuery200LikeAndNotLike() throws QException
+   {
+      insertSimpsons();
+      String PERCENT = "%25";
+      assertPersonQueryFindsFirstNames(List.of("Homer"), "firstName=LIKE Ho" + PERCENT);
+      assertPersonQueryFindsFirstNames(List.of("Homer"), "firstName=LIKE Ho_er");
+
+      assertPersonQueryFindsFirstNames(List.of("Marge", "Bart", "Lisa", "Maggie"), "firstName=!LIKE Homer&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of("Homer"), "firstName=!LIKE " + PERCENT + "a" + PERCENT + "&orderBy=id");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQuery200In() throws QException
    {
       insertSimpsons();

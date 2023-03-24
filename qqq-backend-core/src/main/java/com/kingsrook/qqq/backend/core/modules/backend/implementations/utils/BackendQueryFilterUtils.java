@@ -123,6 +123,8 @@ public class BackendQueryFilterUtils
             case CONTAINS -> testContains(criterion, fieldName, value);
             case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
             case IS_NULL_OR_IN -> testBlank(criterion, value) || testIn(criterion, value);
+            case LIKE -> testLike(criterion, fieldName, value);
+            case NOT_LIKE -> !testLike(criterion, fieldName, value);
             case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
             case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
             case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
@@ -148,6 +150,21 @@ public class BackendQueryFilterUtils
             }
          };
       return criterionMatches;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean testLike(QFilterCriteria criterion, String fieldName, Serializable value)
+   {
+      String stringValue    = getStringFieldValue(value, fieldName, criterion);
+      String criterionValue = getFirstStringCriterionValue(criterion);
+
+      String regex = sqlLikeToRegex(criterionValue);
+
+      return (stringValue.matches(regex));
    }
 
 
@@ -514,4 +531,38 @@ public class BackendQueryFilterUtils
       return recordList;
    }
 
+
+
+   /*******************************************************************************
+    ** ... written by ChatGPT
+    *******************************************************************************/
+   static String sqlLikeToRegex(String sqlLikeExpression)
+   {
+      StringBuilder regex = new StringBuilder("^");
+
+      for(int i = 0; i < sqlLikeExpression.length(); i++)
+      {
+         char c = sqlLikeExpression.charAt(i);
+
+         if(c == '%')
+         {
+            regex.append(".*");
+         }
+         else if(c == '_')
+         {
+            regex.append(".");
+         }
+         else if("[]^$|\\(){}.*+?".indexOf(c) >= 0)
+         {
+            regex.append("\\").append(c);
+         }
+         else
+         {
+            regex.append(c);
+         }
+      }
+
+      regex.append("$");
+      return regex.toString();
+   }
 }

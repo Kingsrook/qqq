@@ -67,12 +67,7 @@ public class QRecordApiAdapter
 
          // todo - what about display values / possible values?
 
-         String apiFieldName = apiFieldMetaData.getApiFieldName();
-         if(!StringUtils.hasContent(apiFieldName))
-         {
-            apiFieldName = field.getName();
-         }
-
+         String apiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(field);
          if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
          {
             outputRecord.put(apiFieldName, record.getValue(apiFieldMetaData.getReplacedByFieldName()));
@@ -149,16 +144,7 @@ public class QRecordApiAdapter
       Pair<String, String> key = new Pair<>(tableName, apiVersion);
       if(!fieldMapCache.containsKey(key))
       {
-         Map<String, QFieldMetaData> map = getTableApiFieldList(tableName, apiVersion).stream().collect(Collectors.toMap(f ->
-         {
-            ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(f);
-            String           apiFieldName     = apiFieldMetaData.getApiFieldName();
-            if(!StringUtils.hasContent(apiFieldName))
-            {
-               apiFieldName = f.getName();
-            }
-            return (apiFieldName);
-         }, f -> f));
+         Map<String, QFieldMetaData> map = getTableApiFieldList(tableName, apiVersion).stream().collect(Collectors.toMap(f -> (ApiFieldMetaData.getEffectiveApiFieldName(f)), f -> f));
          fieldMapCache.put(key, map);
       }
 

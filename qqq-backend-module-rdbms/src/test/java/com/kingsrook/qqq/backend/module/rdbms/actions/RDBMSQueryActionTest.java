@@ -217,6 +217,46 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   public void testLike() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("email")
+            .withOperator(QCriteriaOperator.LIKE)
+            .withValues(List.of("%kelk%")))
+      );
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testNotLike() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("email")
+            .withOperator(QCriteriaOperator.NOT_LIKE)
+            .withValues(List.of("%kelk%")))
+      );
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testEndsWith() throws QException
    {
       QueryInput queryInput = initQueryRequest();

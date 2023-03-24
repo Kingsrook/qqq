@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
 import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.APIVersion;
@@ -129,10 +130,14 @@ public class QJavalinApiHandler
       {
          ApiBuilder.path("/api/{version}", () -> // todo - configurable, that /api/ bit?
          {
-            ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpec);
+            ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
+            ApiBuilder.get("/openapi.json", QJavalinApiHandler::doSpecJson);
 
             ApiBuilder.path("/{tableName}", () ->
             {
+               ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
+               ApiBuilder.get("/openapi.json", QJavalinApiHandler::doSpecJson);
+
                ApiBuilder.post("/", QJavalinApiHandler::doInsert);
 
                ApiBuilder.get("/query", QJavalinApiHandler::doQuery);
@@ -151,6 +156,10 @@ public class QJavalinApiHandler
             });
          });
 
+         ApiBuilder.get("/api/versions.json", QJavalinApiHandler::doVersions);
+
+         ApiBuilder.before("/*", QJavalinApiHandler::setupCORS);
+
          //////////////////////////////////////////////////////////////////////////////////////////////
          // default all other /api/ requests (for the methods we support) to a standard 404 response //
          //////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,6 +168,45 @@ public class QJavalinApiHandler
          ApiBuilder.patch("/api/*", QJavalinApiHandler::doPathNotFound);
          ApiBuilder.post("/api/*", QJavalinApiHandler::doPathNotFound);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doVersions(Context context)
+   {
+      ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
+
+      Map<String, Object> rs = new HashMap<>();
+      rs.put("supportedVersions", apiInstanceMetaData.getSupportedVersions().stream().map(String::valueOf).collect(Collectors.toList()));
+      rs.put("currentVersion", apiInstanceMetaData.getCurrentVersion().toString());
+
+      context.contentType(ContentType.APPLICATION_JSON);
+      context.result(JsonUtils.toJson(rs));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setupCORS(Context context)
+   {
+      if(StringUtils.hasContent(context.header("Origin")))
+      {
+         context.res().setHeader("Access-Control-Allow-Origin", context.header("Origin"));
+         context.res().setHeader("Vary", "Origin");
+      }
+      else
+      {
+         context.res().setHeader("Access-Control-Allow-Origin", "*");
+      }
+
+      context.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS");
+      context.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization, Accept, content-type, authorization, accept");
+      context.header("Access-Control-Allow-Credentials", "true");
    }
 
 
@@ -176,7 +224,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doSpec(Context context)
+   private static void doSpecYaml(Context context)
    {
       try
       {
@@ -185,6 +233,34 @@ public class QJavalinApiHandler
          GenerateOpenApiSpecOutput output  = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(version));
          context.contentType(ContentType.APPLICATION_YAML);
          context.result(output.getYaml());
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doSpecJson(Context context)
+   {
+      try
+      {
+         QContext.init(qInstance, null);
+         String                   version = context.pathParam("version");
+         GenerateOpenApiSpecInput input   = new GenerateOpenApiSpecInput().withVersion(version);
+
+         if(context.pathParam("tableName") != null)
+         {
+            input.setTableName(context.pathParam("tableName"));
+         }
+
+         GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(input);
+         context.contentType(ContentType.JSON);
+         context.result(output.getJson());
       }
       catch(Exception e)
       {
@@ -576,22 +652,20 @@ public class QJavalinApiHandler
       ///////////////////////////////////////////////////////////////////////////////////
       // order of these is important (e.g., because some are a sub-string of others!!) //
       ///////////////////////////////////////////////////////////////////////////////////
-      EQ("=", QCriteriaOperator.EQUALS, QCriteriaOperator.NOT_EQUALS, true, 1),
-      LTE("<=", QCriteriaOperator.LESS_THAN_OR_EQUALS, QCriteriaOperator.GREATER_THAN, false, 1),
-      GTE(">=", QCriteriaOperator.GREATER_THAN_OR_EQUALS, QCriteriaOperator.LESS_THAN, false, 1),
-      LT("<", QCriteriaOperator.LESS_THAN, QCriteriaOperator.GREATER_THAN_OR_EQUALS, false, 1),
-      GT(">", QCriteriaOperator.GREATER_THAN, QCriteriaOperator.LESS_THAN_OR_EQUALS, false, 1),
-      EMPTY("EMPTY", QCriteriaOperator.IS_BLANK, QCriteriaOperator.IS_NOT_BLANK, true, 0),
-      BETWEEN("BETWEEN ", QCriteriaOperator.BETWEEN, QCriteriaOperator.NOT_BETWEEN, true, 2),
-      IN("IN ", QCriteriaOperator.IN, QCriteriaOperator.NOT_IN, true, null),
-      // todo MATCHES
-      ;
+      EQ("=", QCriteriaOperator.EQUALS, QCriteriaOperator.NOT_EQUALS, 1),
+      LTE("<=", QCriteriaOperator.LESS_THAN_OR_EQUALS, null, 1),
+      GTE(">=", QCriteriaOperator.GREATER_THAN_OR_EQUALS, null, 1),
+      LT("<", QCriteriaOperator.LESS_THAN, null, 1),
+      GT(">", QCriteriaOperator.GREATER_THAN, null, 1),
+      EMPTY("EMPTY", QCriteriaOperator.IS_BLANK, QCriteriaOperator.IS_NOT_BLANK, 0),
+      BETWEEN("BETWEEN ", QCriteriaOperator.BETWEEN, QCriteriaOperator.NOT_BETWEEN, 2),
+      IN("IN ", QCriteriaOperator.IN, QCriteriaOperator.NOT_IN, null),
+      LIKE("LIKE ", QCriteriaOperator.LIKE, QCriteriaOperator.NOT_LIKE, 1);
 
 
       private final String            prefix;
       private final QCriteriaOperator positiveOperator;
       private final QCriteriaOperator negativeOperator;
-      private final boolean           supportsNot;
       private final Integer           noOfValues; // null means many (IN)
 
 
@@ -599,12 +673,11 @@ public class QJavalinApiHandler
       /*******************************************************************************
        **
        *******************************************************************************/
-      Operator(String prefix, QCriteriaOperator positiveOperator, QCriteriaOperator negativeOperator, boolean supportsNot, Integer noOfValues)
+      Operator(String prefix, QCriteriaOperator positiveOperator, QCriteriaOperator negativeOperator, Integer noOfValues)
       {
          this.prefix = prefix;
          this.positiveOperator = positiveOperator;
          this.negativeOperator = negativeOperator;
-         this.supportsNot = supportsNot;
          this.noOfValues = noOfValues;
       }
    }
@@ -635,7 +708,7 @@ public class QJavalinApiHandler
          if(value.startsWith(op.prefix))
          {
             selectedOperator = op;
-            if(!selectedOperator.supportsNot && isNot)
+            if(selectedOperator.negativeOperator == null && isNot)
             {
                throw (new QBadRequestException("Unsupported operator: !" + selectedOperator.prefix));
             }

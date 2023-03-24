@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api.model.metadata.fields;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QMiddlewareFieldMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -59,6 +60,22 @@ public class ApiFieldMetaData extends QMiddlewareFieldMetaData
    public static ApiFieldMetaData of(QFieldMetaData field)
    {
       return ((ApiFieldMetaData) field.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getEffectiveApiFieldName(QFieldMetaData field)
+   {
+      ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(field);
+      if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.apiFieldName))
+      {
+         return (apiFieldMetaData.apiFieldName);
+      }
+
+      return (field.getName());
    }
 
 
