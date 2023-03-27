@@ -72,6 +72,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private Map<String, QFieldMetaData> fields;
    private List<UniqueKey>             uniqueKeys;
+   private List<Association>           associations;
 
    private List<RecordSecurityLock> recordSecurityLocks;
    private QPermissionRules         permissionRules;
@@ -1234,6 +1235,52 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
          this.middlewareMetaData = new HashMap<>();
       }
       this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for associations
+    *******************************************************************************/
+   public List<Association> getAssociations()
+   {
+      return (this.associations);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for associations
+    *******************************************************************************/
+   public void setAssociations(List<Association> associations)
+   {
+      this.associations = associations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associations
+    *******************************************************************************/
+   public QTableMetaData withAssociations(List<Association> associations)
+   {
+      this.associations = associations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associations
+    *******************************************************************************/
+   public QTableMetaData withAssociation(Association association)
+   {
+      if(this.associations == null)
+      {
+         this.associations = new ArrayList<>();
+      }
+      this.associations.add(association);
       return (this);
    }
 

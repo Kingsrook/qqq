@@ -411,7 +411,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
+   public static QSession setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
    {
       QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
       QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
@@ -466,6 +466,8 @@ public class QJavalinImplementation
 
          setUserTimezoneOffsetMinutesInSession(context, session);
          setUserTimezoneInSession(context, session);
+
+         return (session);
       }
       catch(QAuthenticationException qae)
       {

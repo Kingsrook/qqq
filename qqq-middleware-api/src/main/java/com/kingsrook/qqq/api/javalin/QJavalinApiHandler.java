@@ -76,6 +76,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -253,7 +254,7 @@ public class QJavalinApiHandler
          String                   version = context.pathParam("version");
          GenerateOpenApiSpecInput input   = new GenerateOpenApiSpecInput().withVersion(version);
 
-         if(context.pathParam("tableName") != null)
+         if(StringUtils.hasContent(context.pathParam("tableName")))
          {
             input.setTableName(context.pathParam("tableName"));
          }
@@ -273,9 +274,10 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void setupSession(Context context, AbstractActionInput input) throws QModuleDispatchException, QAuthenticationException
+   public static void setupSession(Context context, AbstractActionInput input, String version) throws QModuleDispatchException, QAuthenticationException
    {
-      QJavalinImplementation.setupSession(context, input);
+      QSession session = QJavalinImplementation.setupSession(context, input);
+      session.setValue("apiVersion", version);
    }
 
 
@@ -296,8 +298,8 @@ public class QJavalinApiHandler
 
          GetInput getInput = new GetInput();
 
-         setupSession(context, getInput);
-         QJavalinAccessLogger.logStart("get", logPair("table", tableName), logPair("primaryKey", primaryKey));
+         setupSession(context, getInput, version);
+         QJavalinAccessLogger.logStart("apiGet", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          getInput.setTableName(tableName);
          // i think not for api... getInput.setShouldGenerateDisplayValues(true);
@@ -354,7 +356,7 @@ public class QJavalinApiHandler
          String         tableName = table.getName();
 
          QueryInput queryInput = new QueryInput();
-         setupSession(context, queryInput);
+         setupSession(context, queryInput, version);
          QJavalinAccessLogger.logStart("apiQuery", logPair("table", tableName));
 
          queryInput.setTableName(tableName);
@@ -785,8 +787,8 @@ public class QJavalinApiHandler
 
          InsertInput insertInput = new InsertInput();
 
-         setupSession(context, insertInput);
-         QJavalinAccessLogger.logStart("insert", logPair("table", tableName));
+         setupSession(context, insertInput, version);
+         QJavalinAccessLogger.logStart("apiInsert", logPair("table", tableName));
 
          insertInput.setTableName(tableName);
 
@@ -852,8 +854,8 @@ public class QJavalinApiHandler
 
          InsertInput insertInput = new InsertInput();
 
-         setupSession(context, insertInput);
-         QJavalinAccessLogger.logStart("bulkInsert", logPair("table", tableName));
+         setupSession(context, insertInput, version);
+         QJavalinAccessLogger.logStart("apiBulkInsert", logPair("table", tableName));
 
          insertInput.setTableName(tableName);
 
@@ -958,8 +960,8 @@ public class QJavalinApiHandler
 
          UpdateInput updateInput = new UpdateInput();
 
-         setupSession(context, updateInput);
-         QJavalinAccessLogger.logStart("bulkUpdate", logPair("table", tableName));
+         setupSession(context, updateInput, version);
+         QJavalinAccessLogger.logStart("apiBulkUpdate", logPair("table", tableName));
 
          updateInput.setTableName(tableName);
 
@@ -1063,8 +1065,8 @@ public class QJavalinApiHandler
 
          DeleteInput deleteInput = new DeleteInput();
 
-         setupSession(context, deleteInput);
-         QJavalinAccessLogger.logStart("bulkDelete", logPair("table", tableName));
+         setupSession(context, deleteInput, version);
+         QJavalinAccessLogger.logStart("apiBulkDelete", logPair("table", tableName));
 
          deleteInput.setTableName(tableName);
 
@@ -1182,8 +1184,8 @@ public class QJavalinApiHandler
 
          UpdateInput updateInput = new UpdateInput();
 
-         setupSession(context, updateInput);
-         QJavalinAccessLogger.logStart("update", logPair("table", tableName));
+         setupSession(context, updateInput, version);
+         QJavalinAccessLogger.logStart("apiUpdate", logPair("table", tableName));
 
          updateInput.setTableName(tableName);
 
@@ -1268,8 +1270,8 @@ public class QJavalinApiHandler
 
          DeleteInput deleteInput = new DeleteInput();
 
-         setupSession(context, deleteInput);
-         QJavalinAccessLogger.logStart("delete", logPair("table", tableName));
+         setupSession(context, deleteInput, version);
+         QJavalinAccessLogger.logStart("apiDelete", logPair("table", tableName));
 
          deleteInput.setTableName(tableName);
          deleteInput.setPrimaryKeys(List.of(primaryKey));

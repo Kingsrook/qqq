@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
@@ -66,8 +67,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
@@ -204,7 +207,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          boolean          updateCapability = table.isCapabilityEnabled(tableBackend, Capability.TABLE_UPDATE);
          boolean          deleteCapability = table.isCapabilityEnabled(tableBackend, Capability.TABLE_DELETE);
          boolean          insertCapability = table.isCapabilityEnabled(tableBackend, Capability.TABLE_INSERT);
-         boolean          countCapability  = table.isCapabilityEnabled(tableBackend, Capability.TABLE_COUNT);
+         boolean          countCapability  = table.isCapabilityEnabled(tableBackend, Capability.TABLE_COUNT); // todo - look at this - if table doesn't have count, don't include it in its input/output, etc
 
          if(!queryCapability && !getCapability && !updateCapability && !deleteCapability && !insertCapability)
          {
@@ -221,6 +224,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          String               primaryKeyApiName   = ApiFieldMetaData.getEffectiveApiFieldName(primaryKeyField);
          List<QFieldMetaData> tableApiFields      = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
 
+         ///////////////////////////////
+         // permissions for the table //
+         ///////////////////////////////
          String tableReadPermissionName = PermissionsHelper.getTablePermissionName(tableName, TablePermissionSubType.READ);
          if(StringUtils.hasContent(tableReadPermissionName))
          {
@@ -256,13 +262,15 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withName(tableLabel)
             .withDescription("Operations on the " + tableLabel + " table."));
 
-         //////////////////////////////////////
-         // build the schemas for this table //
-         //////////////////////////////////////
+         //////////////////////////////////////////////////////////////////
+         // build the schemas for this table                             //
+         // start with the full table minus its pkey (e.g., for posting) //
+         //////////////////////////////////////////////////////////////////
          LinkedHashMap<String, Schema> tableFieldsWithoutPrimaryKey = new LinkedHashMap<>();
-         componentSchemas.put(tableApiName + "WithoutPrimaryKey", new Schema()
+         Schema tableWithoutPrimaryKeySchema = new Schema()
             .withType("object")
-            .withProperties(tableFieldsWithoutPrimaryKey));
+            .withProperties(tableFieldsWithoutPrimaryKey);
+         componentSchemas.put(tableApiName + "WithoutPrimaryKey", tableWithoutPrimaryKeySchema);
 
          for(QFieldMetaData field : tableApiFields)
          {
@@ -271,46 +279,26 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                continue;
             }
 
-            String apiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(field);
-
-            Schema fieldSchema = new Schema()
-               .withType(getFieldType(table.getField(field.getName())))
-               .withFormat(getFieldFormat(table.getField(field.getName())))
-               .withDescription(field.getLabel() + " for the " + tableLabel + ".");
-
-            if(StringUtils.hasContent(field.getPossibleValueSourceName()))
-            {
-               QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(field.getPossibleValueSourceName());
-               if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
-               {
-                  List<String> enumValues = new ArrayList<>();
-                  for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
-                  {
-                     enumValues.add(enumValue.getId() + "=" + enumValue.getLabel());
-                  }
-                  fieldSchema.setEnumValues(enumValues);
-               }
-               else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
-               {
-                  QTableMetaData sourceTable = qInstance.getTable(possibleValueSource.getTableName());
-                  fieldSchema.setDescription(fieldSchema.getDescription() + "  Values in this field come from the primary key of the " + sourceTable.getLabel() + " table");
-               }
-            }
-
-            tableFieldsWithoutPrimaryKey.put(apiFieldName, fieldSchema);
+            Schema fieldSchema = getFieldSchema(table, field);
+            tableFieldsWithoutPrimaryKey.put(ApiFieldMetaData.getEffectiveApiFieldName(field), fieldSchema);
          }
 
+         //////////////////////////////////
+         // recursively add associations //
+         //////////////////////////////////
+         addAssociations(table, tableWithoutPrimaryKeySchema);
+
+         /////////////////////////////////////////////////
+         // full version of table (w/o pkey + the pkey) //
+         /////////////////////////////////////////////////
          componentSchemas.put(tableApiName, new Schema()
             .withType("object")
             .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/" + tableApiName + "WithoutPrimaryKey")))
-            .withProperties(MapBuilder.of(
-               primaryKeyApiName, new Schema()
-                  .withType(getFieldType(table.getField(primaryKeyName)))
-                  .withFormat(getFieldFormat(table.getField(primaryKeyName)))
-                  .withDescription(primaryKeyLabel + " for the " + tableLabel + ".  Primary Key.")
-            ))
-         );
+            .withProperties(MapBuilder.of(primaryKeyApiName, getFieldSchema(table, table.getField(primaryKeyName)))));
 
+         //////////////////////////////////////////////////////////////////////////////
+         // table as a search result (the base search result, plus the table itself) //
+         //////////////////////////////////////////////////////////////////////////////
          componentSchemas.put(tableApiName + "SearchResult", new Schema()
             .withType("object")
             .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/baseSearchResultFields")))
@@ -573,6 +561,59 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       output.setYaml(YamlUtils.toYaml(openAPI));
       output.setJson(JsonUtils.toJson(openAPI));
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void addAssociations(QTableMetaData table, Schema tableWithoutPrimaryKeySchema)
+   {
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         String           associatedTableName        = association.getAssociatedTableName();
+         QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
+         ApiTableMetaData associatedApiTableMetaData = Objects.requireNonNullElse(ApiTableMetaData.of(associatedTable), new ApiTableMetaData());
+         String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
+
+         tableWithoutPrimaryKeySchema.getProperties().put(association.getName(), new Schema()
+            .withType("array")
+            .withItems(new Schema().withRef("#/components/schemas/" + associatedTableApiName)));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Schema getFieldSchema(QTableMetaData table, QFieldMetaData field)
+   {
+      Schema fieldSchema = new Schema()
+         .withType(getFieldType(table.getField(field.getName())))
+         .withFormat(getFieldFormat(table.getField(field.getName())))
+         .withDescription(field.getLabel() + " for the " + table.getLabel() + ".");
+
+      if(StringUtils.hasContent(field.getPossibleValueSourceName()))
+      {
+         QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
+         if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
+         {
+            List<String> enumValues = new ArrayList<>();
+            for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+            {
+               enumValues.add(enumValue.getId() + "=" + enumValue.getLabel());
+            }
+            fieldSchema.setEnumValues(enumValues);
+         }
+         else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
+         {
+            QTableMetaData sourceTable = QContext.getQInstance().getTable(possibleValueSource.getTableName());
+            fieldSchema.setDescription(fieldSchema.getDescription() + "  Values in this field come from the primary key of the " + sourceTable.getLabel() + " table");
+         }
+      }
+      return fieldSchema;
    }
 
 

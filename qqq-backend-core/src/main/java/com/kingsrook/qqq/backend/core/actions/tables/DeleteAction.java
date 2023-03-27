@@ -28,6 +28,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
@@ -40,6 +41,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -91,11 +95,54 @@ public class DeleteAction
       List<QRecord> recordListForAudit = getRecordListForAuditIfNeeded(deleteInput);
 
       DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
+
+      manageAssociations(deleteInput);
+
       // todo post-customization - can do whatever w/ the result if you want
 
       new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(deleteInput).withRecordList(recordListForAudit));
 
       return deleteOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void manageAssociations(DeleteInput deleteInput) throws QException
+   {
+      QTableMetaData table = deleteInput.getTable();
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         // e.g., order -> orderLine
+         QJoinMetaData join = QContext.getQInstance().getJoin(association.getJoinName()); // todo ... ever need to flip?
+         // just assume this, at least for now... if(BooleanUtils.isTrue(association.getDoInserts()))
+
+         QQueryFilter filter = new QQueryFilter();
+
+         if(join.getJoinOns().size() == 1 && join.getJoinOns().get(0).getLeftField().equals(table.getPrimaryKeyField()))
+         {
+            filter.addCriteria(new QFilterCriteria(join.getJoinOns().get(0).getRightField(), QCriteriaOperator.IN, deleteInput.getPrimaryKeys()));
+         }
+         else
+         {
+            throw (new QException("Join of this type is not supported for an associated delete at this time..."));
+         }
+
+         QTableMetaData associatedTable = QContext.getQInstance().getTable(association.getAssociatedTableName());
+
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(association.getAssociatedTableName());
+         queryInput.setFilter(filter);
+         QueryOutput        queryOutput    = new QueryAction().execute(queryInput);
+         List<Serializable> associatedKeys = queryOutput.getRecords().stream().map(r -> r.getValue(associatedTable.getPrimaryKeyField())).toList();
+
+         DeleteInput nextLevelDeleteInput = new DeleteInput();
+         nextLevelDeleteInput.setTableName(association.getAssociatedTableName());
+         nextLevelDeleteInput.setPrimaryKeys(associatedKeys);
+         DeleteOutput nextLevelDeleteOutput = new DeleteAction().execute(nextLevelDeleteInput);
+      }
    }
 
 

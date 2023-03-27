@@ -91,6 +91,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
@@ -126,10 +127,12 @@ public class TestUtils
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
-   public static final String TABLE_NAME_PERSON    = "person";
-   public static final String TABLE_NAME_SHAPE     = "shape";
-   public static final String TABLE_NAME_ORDER     = "order";
-   public static final String TABLE_NAME_LINE_ITEM = "orderLine";
+   public static final String TABLE_NAME_PERSON              = "person";
+   public static final String TABLE_NAME_SHAPE               = "shape";
+   public static final String TABLE_NAME_ORDER               = "order";
+   public static final String TABLE_NAME_LINE_ITEM           = "orderLine";
+   public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
+   public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
@@ -185,8 +188,12 @@ public class TestUtils
       qInstance.addTable(defineTableBasepull());
       qInstance.addTable(defineTableOrder());
       qInstance.addTable(defineTableLineItem());
+      qInstance.addTable(defineTableLineItemExtrinsic());
+      qInstance.addTable(defineTableOrderExtrinsic());
 
       qInstance.addJoin(defineJoinOrderLineItem());
+      qInstance.addJoin(defineJoinLineItemLineItemExtrinsic());
+      qInstance.addJoin(defineJoinOrderOrderExtrinsic());
 
       qInstance.addPossibleValueSource(defineAutomationStatusPossibleValueSource());
       qInstance.addPossibleValueSource(defineStatesPossibleValueSource());
@@ -538,9 +545,12 @@ public class TestUtils
          .withRecordSecurityLock(new RecordSecurityLock()
             .withSecurityKeyType(SECURITY_KEY_TYPE_STORE)
             .withFieldName("storeId"))
+         .withAssociation(new Association().withName("orderLine").withAssociatedTableName(TABLE_NAME_LINE_ITEM).withJoinName("orderLineItem"))
+         .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_ORDER_EXTRINSIC).withJoinName("orderOrderExtrinsic"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("orderNo", QFieldType.STRING))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY).withFieldSecurityLock(new FieldSecurityLock()
@@ -561,6 +571,7 @@ public class TestUtils
          .withName(TABLE_NAME_LINE_ITEM)
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
+         .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_LINE_ITEM_EXTRINSIC).withJoinName("lineItemLineItemExtrinsic"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -568,6 +579,44 @@ public class TestUtils
          .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
          .withField(new QFieldMetaData("quantity", QFieldType.INTEGER));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the lineItemExtrinsic table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableLineItemExtrinsic()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_LINE_ITEM_EXTRINSIC)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("lineItemId", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("key", QFieldType.STRING))
+         .withField(new QFieldMetaData("value", QFieldType.STRING));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the orderExtrinsic table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableOrderExtrinsic()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_ORDER_EXTRINSIC)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("key", QFieldType.STRING))
+         .withField(new QFieldMetaData("value", QFieldType.STRING));
    }
 
 
@@ -584,6 +633,38 @@ public class TestUtils
          .withRightTable(TABLE_NAME_LINE_ITEM)
          .withJoinOn(new JoinOn("id", "orderId"))
          .withOrderBy(new QFilterOrderBy("lineNumber"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJoinMetaData defineJoinLineItemLineItemExtrinsic()
+   {
+      return new QJoinMetaData()
+         .withName("lineItemLineItemExtrinsic")
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(TABLE_NAME_LINE_ITEM)
+         .withRightTable(TABLE_NAME_LINE_ITEM_EXTRINSIC)
+         .withJoinOn(new JoinOn("id", "lineItemId"))
+         .withOrderBy(new QFilterOrderBy("key"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJoinMetaData defineJoinOrderOrderExtrinsic()
+   {
+      return new QJoinMetaData()
+         .withName("orderOrderExtrinsic")
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_ORDER_EXTRINSIC)
+         .withJoinOn(new JoinOn("id", "orderId"))
+         .withOrderBy(new QFilterOrderBy("key"));
    }
 
 

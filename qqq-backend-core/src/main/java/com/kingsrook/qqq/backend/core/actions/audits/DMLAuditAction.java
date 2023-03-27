@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -106,6 +107,13 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             }
          }
 
+         QSession qSession   = QContext.getQSession();
+         String   apiVersion = qSession.getValue("apiVersion");
+         if(apiVersion != null)
+         {
+            contextSuffix += (" via API Version: " + apiVersion);
+         }
+
          AuditInput auditInput = new AuditInput();
          if(auditLevel.equals(AuditLevel.RECORD) || (auditLevel.equals(AuditLevel.FIELD) && !dmlType.supportsFields))
          {
@@ -125,7 +133,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             ///////////////////////////////////////////////////////////////////
             // do many audits, all with field level details, for FIELD level //
             ///////////////////////////////////////////////////////////////////
-            QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
+            QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), qSession);
             qPossibleValueTranslator.translatePossibleValuesInRecords(table, CollectionUtils.mergeLists(recordList, oldRecordList));
 
             //////////////////////////////////////////

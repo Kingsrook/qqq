@@ -32,11 +32,16 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -94,6 +99,13 @@ public class QRecordApiAdapter
       List<String>                unrecognizedFieldNames = new ArrayList<>();
       QRecord                     qRecord                = new QRecord();
 
+      Map<String, Association> associationMap = new HashMap<>();
+      QTableMetaData           table          = QContext.getQInstance().getTable(tableName);
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         associationMap.put(association.getName(), association);
+      }
+
       //////////////////////////////////////////
       // iterate over keys in the json object //
       //////////////////////////////////////////
@@ -115,6 +127,30 @@ public class QRecordApiAdapter
             else
             {
                qRecord.setValue(field.getName(), value);
+            }
+         }
+         else if(associationMap.containsKey(jsonKey))
+         {
+            Association association = associationMap.get(jsonKey);
+            Object      value       = jsonObject.get(jsonKey);
+            if(value instanceof JSONArray jsonArray)
+            {
+               for(Object subObject : jsonArray)
+               {
+                  if(subObject instanceof JSONObject subJsonObject)
+                  {
+                     QRecord subRecord = apiJsonObjectToQRecord(subJsonObject, association.getAssociatedTableName(), apiVersion);
+                     qRecord.withAssociatedRecord(association.getName(), subRecord);
+                  }
+                  else
+                  {
+                     throw (new QBadRequestException("Found a " + value.getClass().getSimpleName() + " in the array under key " + jsonKey + ", but a JSON object is required here."));
+                  }
+               }
+            }
+            else
+            {
+               throw (new QBadRequestException("Found a " + value.getClass().getSimpleName() + " at key " + jsonKey + ", but a JSON array is required here."));
             }
          }
          else

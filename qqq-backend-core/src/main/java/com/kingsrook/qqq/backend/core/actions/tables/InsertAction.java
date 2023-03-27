@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,12 +41,16 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -75,15 +80,16 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       setAutomationStatusField(insertInput);
 
-      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
-      // todo - need to handle records with errors coming out of here...
-
       QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
       // todo pre-customization - just get to modify the request?
 
+      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
       setErrorsIfUniqueKeyErrors(insertInput, table);
 
       InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
+
+      manageAssociations(table, insertOutput.getRecords());
+
       // todo post-customization - can do whatever w/ the result if you want
 
       new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
@@ -96,6 +102,43 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       return insertOutput;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords) throws QException
+   {
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         // e.g., order -> orderLine
+         QJoinMetaData join = QContext.getQInstance().getJoin(association.getJoinName()); // todo ... ever need to flip?
+         // just assume this, at least for now... if(BooleanUtils.isTrue(association.getDoInserts()))
+
+         List<QRecord> nextLevelInserts = new ArrayList<>();
+         for(QRecord record : insertedRecords)
+         {
+            if(record.getAssociatedRecords() != null && record.getAssociatedRecords().containsKey(association.getName()))
+            {
+               for(QRecord associatedRecord : CollectionUtils.nonNullList(record.getAssociatedRecords().get(association.getName())))
+               {
+                  for(JoinOn joinOn : join.getJoinOns())
+                  {
+                     associatedRecord.setValue(joinOn.getRightField(), record.getValue(joinOn.getLeftField()));
+                  }
+                  nextLevelInserts.add(associatedRecord);
+               }
+            }
+         }
+
+         InsertInput nextLevelInsertInput = new InsertInput();
+         nextLevelInsertInput.setTableName(association.getAssociatedTableName());
+         nextLevelInsertInput.setRecords(nextLevelInserts);
+         InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
+      }
+   }
+
 
 
    /*******************************************************************************

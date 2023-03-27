@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,8 @@ public class QRecord implements Serializable
    private Map<String, String>       displayValues  = new LinkedHashMap<>();
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
    private List<String>              errors         = new ArrayList<>();
+
+   private Map<String, List<QRecord>> associatedRecords = new HashMap<>();
 
    public static final String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT = "jsonSourceObject";
 
@@ -102,6 +105,7 @@ public class QRecord implements Serializable
       this.displayValues = doDeepCopy(record.displayValues);
       this.backendDetails = doDeepCopy(record.backendDetails);
       this.errors = doDeepCopy(record.errors);
+      this.associatedRecords = doDeepCopy(record.associatedRecords);
    }
 
 
@@ -573,6 +577,68 @@ public class QRecord implements Serializable
    public <T extends QRecordEntity> T toEntity(Class<T> c) throws QException
    {
       return (QRecordEntity.fromQRecord(c, this));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for associatedRecords
+    *******************************************************************************/
+   public Map<String, List<QRecord>> getAssociatedRecords()
+   {
+      return (this.associatedRecords);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for associatedRecords
+    *******************************************************************************/
+   public void setAssociatedRecords(Map<String, List<QRecord>> associatedRecords)
+   {
+      this.associatedRecords = associatedRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associatedRecords
+    *******************************************************************************/
+   public QRecord withAssociatedRecords(Map<String, List<QRecord>> associatedRecords)
+   {
+      this.associatedRecords = associatedRecords;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associatedRecords
+    *******************************************************************************/
+   public QRecord withAssociatedRecords(String name, List<QRecord> associatedRecords)
+   {
+      if(this.associatedRecords == null)
+      {
+         this.associatedRecords = new HashMap<>();
+      }
+      this.associatedRecords.put(name, associatedRecords);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associatedRecord
+    *******************************************************************************/
+   public QRecord withAssociatedRecord(String name, QRecord associatedRecord)
+   {
+      if(this.associatedRecords == null)
+      {
+         this.associatedRecords = new HashMap<>();
+      }
+      this.associatedRecords.putIfAbsent(name, new ArrayList<>());
+      this.associatedRecords.get(name).add(associatedRecord);
+      return (this);
    }
 
 }

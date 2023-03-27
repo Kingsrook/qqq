@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -59,6 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -407,8 +409,51 @@ class QJavalinApiHandlerTest extends BaseTest
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(1, jsonObject.getInt("id"));
 
-      QRecord record = getPersonRecord(1);
+      QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("Moe", record.getValueString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInsert201WithAssociatedRecords() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/order/")
+         .body("""
+            {"orderNo": "ORD123", "storeId": 47, "orderLines":
+               [
+                  {"lineNumber": 1, "sku": "BASIC1", "quantity": 17, "extrinsics": [{"key": "size", "value": "Large"}]},
+                  {"lineNumber": 2, "sku": "BASIC2", "quantity": 23}
+               ], "extrinsics":
+               [
+                  {"key": "storeName", "value": "My Shopify"},
+                  {"key": "shopifyOrderNo", "value": "#2820503"}
+               ]
+            }
+            """)
+         .asString();
+      System.out.println(response.getBody());
+      assertEquals(HttpStatus.CREATED_201, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(1, jsonObject.getInt("id"));
+
+      QRecord record = getRecord(TestUtils.TABLE_NAME_ORDER, 1);
+      assertEquals("ORD123", record.getValueString("orderNo"));
+
+      List<QRecord> lines = queryTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      assertEquals(2, lines.size());
+      assertTrue(lines.stream().allMatch(r -> r.getValueInteger("orderId").equals(1)));
+      assertTrue(lines.stream().anyMatch(r -> r.getValueString("sku").equals("BASIC1")));
+      assertTrue(lines.stream().anyMatch(r -> r.getValueString("sku").equals("BASIC2")));
+
+      List<QRecord> orderExtrinsics = queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC);
+      assertEquals(2, orderExtrinsics.size());
+      assertTrue(orderExtrinsics.stream().allMatch(r -> r.getValueInteger("orderId").equals(1)));
+      assertTrue(orderExtrinsics.stream().anyMatch(r -> r.getValueString("key").equals("storeName") && r.getValueString("value").equals("My Shopify")));
+      assertTrue(orderExtrinsics.stream().anyMatch(r -> r.getValueString("key").equals("shopifyOrderNo") && r.getValueString("value").equals("#2820503")));
    }
 
 
@@ -462,7 +507,7 @@ class QJavalinApiHandlerTest extends BaseTest
       ///////////////////////////////////
       // assert it didn't get inserted //
       ///////////////////////////////////
-      QRecord personRecord = getPersonRecord(1);
+      QRecord personRecord = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertNull(personRecord);
 
       ///////////////////////////////////////////
@@ -511,16 +556,16 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(3).getInt("statusCode"));
       assertEquals("Error inserting Person: Another record already exists with this Email", jsonArray.getJSONObject(3).getString("error"));
 
-      QRecord record = getPersonRecord(1);
+      QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("Moe", record.getValueString("firstName"));
 
-      record = getPersonRecord(2);
+      record = getRecord(TestUtils.TABLE_NAME_PERSON, 2);
       assertEquals("Barney", record.getValueString("firstName"));
 
-      record = getPersonRecord(3);
+      record = getRecord(TestUtils.TABLE_NAME_PERSON, 3);
       assertEquals("CM", record.getValueString("firstName"));
 
-      record = getPersonRecord(4);
+      record = getRecord(TestUtils.TABLE_NAME_PERSON, 4);
       assertNull(record);
    }
 
@@ -559,7 +604,7 @@ class QJavalinApiHandlerTest extends BaseTest
       /////////////////////////////////
       // assert nothing got inserted //
       /////////////////////////////////
-      QRecord personRecord = getPersonRecord(1);
+      QRecord personRecord = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertNull(personRecord);
 
       //////////////////////////////////////////
@@ -592,7 +637,7 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
       assertFalse(StringUtils.hasContent(response.getBody()));
 
-      QRecord record = getPersonRecord(1);
+      QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("Charles", record.getValueString("firstName"));
    }
 
@@ -665,7 +710,7 @@ class QJavalinApiHandlerTest extends BaseTest
       ///////////////////////////////////
       // assert it didn't get updated. //
       ///////////////////////////////////
-      QRecord personRecord = getPersonRecord(1);
+      QRecord personRecord = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("Mo", personRecord.getValueString("firstName"));
 
       response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/person/1")
@@ -706,10 +751,10 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(2).getInt("statusCode"));
       assertEquals("Error updating Person: Missing value in primary key field", jsonArray.getJSONObject(2).getString("error"));
 
-      QRecord record = getPersonRecord(1);
+      QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("homer@simpson.com", record.getValueString("email"));
 
-      record = getPersonRecord(2);
+      record = getRecord(TestUtils.TABLE_NAME_PERSON, 2);
       assertEquals("marge@simpson.com", record.getValueString("email"));
 
       QueryInput queryInput = new QueryInput();
@@ -754,7 +799,7 @@ class QJavalinApiHandlerTest extends BaseTest
       ////////////////////////////////
       // assert nothing got updated //
       ////////////////////////////////
-      QRecord personRecord = getPersonRecord(1);
+      QRecord personRecord = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertNull(personRecord);
 
       //////////////////////////////////////////
@@ -834,7 +879,7 @@ class QJavalinApiHandlerTest extends BaseTest
       ////////////////////////////////
       // assert nothing got deleted //
       ////////////////////////////////
-      QRecord personRecord = getPersonRecord(1);
+      QRecord personRecord = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertNull(personRecord);
 
       //////////////////////////////////////////
@@ -877,7 +922,7 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
       assertFalse(StringUtils.hasContent(response.getBody()));
 
-      QRecord record = getPersonRecord(1);
+      QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertNull(record);
    }
 
@@ -891,6 +936,43 @@ class QJavalinApiHandlerTest extends BaseTest
    {
       HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/1").asString();
       assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find Person with Id of 1", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeleteAssociations() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "ORD123").withValue("storeId", 47)
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 1).withValue("sku", "BASIC1").withValue("quantity", 42)
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Discount").withValue("value", "3.50"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Color").withValue("value", "Red")))
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 2).withValue("sku", "BASIC2").withValue("quantity", 42)
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium")))
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 3).withValue("sku", "BASIC3").withValue("quantity", 42))
+         .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "shopifyOrderNo").withValue("value", "#1032"))
+      ));
+      new InsertAction().execute(insertInput);
+
+      assertEquals(1, queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      assertEquals(4, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
+      assertEquals(3, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
+      assertEquals(1, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
+
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/order/1").asString();
+      assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+      assertFalse(StringUtils.hasContent(response.getBody()));
+
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
    }
 
 
@@ -919,14 +1001,28 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QRecord getPersonRecord(Integer id) throws QException
+   private static QRecord getRecord(String tableName, Integer id) throws QException
    {
       GetInput getInput = new GetInput();
-      getInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      getInput.setTableName(tableName);
       getInput.setPrimaryKey(id);
       GetOutput getOutput = new GetAction().execute(getInput);
       QRecord   record    = getOutput.getRecord();
       return record;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QRecord> queryTable(String tableName) throws QException
+   {
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      return (queryOutput.getRecords());
    }
 
 

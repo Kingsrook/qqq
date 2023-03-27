@@ -31,7 +31,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -147,6 +150,147 @@ class DeleteActionTest extends BaseTest
       List<QRecord> audits = TestUtils.queryTable("audit");
       assertEquals(2, audits.size());
       assertTrue(audits.stream().allMatch(r -> r.getValueString("message").equals("Record was Deleted")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAssociatedDeletes() throws QException
+   {
+      {
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         insertInput.setRecords(List.of(
+            new QRecord().withValue("id", 1),
+            new QRecord().withValue("id", 2),
+            new QRecord().withValue("id", 3)
+         ));
+         new InsertAction().execute(insertInput);
+      }
+
+      {
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(TestUtils.TABLE_NAME_ORDER_EXTRINSIC);
+         insertInput.setRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("orderId", 1),
+            new QRecord().withValue("id", 2).withValue("orderId", 1),
+            new QRecord().withValue("id", 3).withValue("orderId", 1),
+            new QRecord().withValue("id", 4).withValue("orderId", 1),
+            new QRecord().withValue("id", 5).withValue("orderId", 3),
+            new QRecord().withValue("id", 6).withValue("orderId", 3),
+            new QRecord().withValue("id", 7).withValue("orderId", 3)
+         ));
+         new InsertAction().execute(insertInput);
+      }
+
+      {
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
+         insertInput.setRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("orderId", 1),
+            new QRecord().withValue("id", 2).withValue("orderId", 1),
+            new QRecord().withValue("id", 3).withValue("orderId", 2),
+            new QRecord().withValue("id", 4).withValue("orderId", 3),
+            new QRecord().withValue("id", 5).withValue("orderId", 3),
+            new QRecord().withValue("id", 6).withValue("orderId", 3)
+         ));
+         new InsertAction().execute(insertInput);
+      }
+
+      {
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+         insertInput.setRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("lineItemId", 1), // orderId: 1
+            new QRecord().withValue("id", 2).withValue("lineItemId", 1), // orderId: 1
+            new QRecord().withValue("id", 3).withValue("lineItemId", 2), // orderId: 1
+            new QRecord().withValue("id", 4).withValue("lineItemId", 2), // orderId: 1
+            new QRecord().withValue("id", 5).withValue("lineItemId", 3), // orderId: 2
+            new QRecord().withValue("id", 6).withValue("lineItemId", 3), // orderId: 2
+            new QRecord().withValue("id", 7).withValue("lineItemId", 4), // orderId: 3
+            new QRecord().withValue("id", 8).withValue("lineItemId", 5), // orderId: 3
+            new QRecord().withValue("id", 9).withValue("lineItemId", 6)  // orderId: 3
+         ));
+         new InsertAction().execute(insertInput);
+      }
+
+      /////////////////////////////////////////////////////////
+      // assert about how many things we originally inserted //
+      /////////////////////////////////////////////////////////
+      assertEquals(3, queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      assertEquals(7, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
+      assertEquals(6, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
+      assertEquals(9, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
+
+      ////////////////////////////////
+      // delete (cascading) order 1 //
+      ////////////////////////////////
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      deleteInput.setPrimaryKeys(List.of(1));
+      new DeleteAction().execute(deleteInput);
+
+      //////////////////////////////////////////////////
+      // assert that the associated data were deleted //
+      //////////////////////////////////////////////////
+      assertEquals(2, queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      assertEquals(3, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
+      assertEquals(4, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
+      assertEquals(5, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
+
+      ////////////////////
+      // delete order 2 //
+      ////////////////////
+      deleteInput.setPrimaryKeys(List.of(2));
+      new DeleteAction().execute(deleteInput);
+
+      //////////////////////////////////////////////////
+      // assert that the associated data were deleted //
+      //////////////////////////////////////////////////
+      assertEquals(1, queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      assertEquals(3, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
+      assertEquals(3, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
+      assertEquals(3, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
+
+      ////////////////////
+      // delete order 3 //
+      ////////////////////
+      deleteInput.setPrimaryKeys(List.of(3));
+      new DeleteAction().execute(deleteInput);
+
+      ///////////////////////////////
+      // everything is deleted now //
+      ///////////////////////////////
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
+      assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
+
+      ////////////////////////////////////////////////
+      // make sure no errors if we try more deletes //
+      ////////////////////////////////////////////////
+      deleteInput.setPrimaryKeys(List.of(3));
+      new DeleteAction().execute(deleteInput);
+
+      deleteInput.setPrimaryKeys(List.of(1, 2, 3, 4));
+      new DeleteAction().execute(deleteInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QRecord> queryTable(String tableName) throws QException
+   {
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      return (queryOutput.getRecords());
    }
 
 }
