@@ -23,15 +23,22 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -41,8 +48,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -75,6 +87,8 @@ public class UpdateAction
       UpdateOutput updateResult = qModule.getUpdateInterface().execute(updateInput);
       // todo post-customization - can do whatever w/ the result if you want
 
+      manageAssociations(updateInput);
+
       if(updateInput.getOmitDmlAudit())
       {
          LOG.debug("Requested to omit DML audit");
@@ -85,6 +99,121 @@ public class UpdateAction
       }
 
       return updateResult;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void manageAssociations(UpdateInput updateInput) throws QException
+   {
+      QTableMetaData table = updateInput.getTable();
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         // e.g., order -> orderLine
+         QTableMetaData associatedTable = QContext.getQInstance().getTable(association.getAssociatedTableName());
+         QJoinMetaData  join            = QContext.getQInstance().getJoin(association.getJoinName()); // todo ... ever need to flip?
+         // just assume this, at least for now... if(BooleanUtils.isTrue(association.getDoInserts()))
+
+         for(List<QRecord> page : CollectionUtils.getPages(updateInput.getRecords(), 500))
+         {
+            List<QRecord> nextLevelUpdates  = new ArrayList<>();
+            List<QRecord> nextLevelInserts  = new ArrayList<>();
+            QQueryFilter  findDeletesFilter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
+            boolean       lookForDeletes    = false;
+
+            //////////////////////////////////////////////////////
+            // for each updated record, look at as associations //
+            //////////////////////////////////////////////////////
+            for(QRecord record : page)
+            {
+               if(record.getAssociatedRecords() != null && record.getAssociatedRecords().containsKey(association.getName()))
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // build a sub-query to find the children of this record - and we'll exclude (below) any whose ids are given //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  QQueryFilter subFilter = new QQueryFilter();
+                  findDeletesFilter.addSubFilter(subFilter);
+                  lookForDeletes = true;
+                  List<Serializable> idsBeingUpdated = new ArrayList<>();
+                  for(JoinOn joinOn : join.getJoinOns())
+                  {
+                     subFilter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, record.getValue(joinOn.getLeftField())));
+                  }
+
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // for any associated records present here, figure out if they're being inserted (no primaryKey) or updated //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  for(QRecord associatedRecord : CollectionUtils.nonNullList(record.getAssociatedRecords().get(association.getName())))
+                  {
+                     Serializable associatedId = associatedRecord.getValue(associatedTable.getPrimaryKeyField());
+                     if(associatedId == null)
+                     {
+                        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // if inserting, add to the inserts list, and propagate values from the header record down to the child //
+                        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        for(JoinOn joinOn : join.getJoinOns())
+                        {
+                           associatedRecord.setValue(joinOn.getRightField(), record.getValue(joinOn.getLeftField()));
+                        }
+                        nextLevelInserts.add(associatedRecord);
+                     }
+                     else
+                     {
+                        ///////////////////////////////////////////////////////////////////////////////
+                        // if updating, add to the updates list, and add the id as one to not delete //
+                        ///////////////////////////////////////////////////////////////////////////////
+                        idsBeingUpdated.add(associatedId);
+                        nextLevelUpdates.add(associatedRecord);
+                     }
+                  }
+
+                  if(!idsBeingUpdated.isEmpty())
+                  {
+                     ///////////////////////////////////////////////////////////////////////////////
+                     // if any records are being updated, add them to the query to NOT be deleted //
+                     ///////////////////////////////////////////////////////////////////////////////
+                     subFilter.addCriteria(new QFilterCriteria(associatedTable.getPrimaryKeyField(), QCriteriaOperator.NOT_IN, idsBeingUpdated));
+                  }
+               }
+            }
+
+            if(lookForDeletes)
+            {
+               QueryInput queryInput = new QueryInput();
+               queryInput.setTableName(associatedTable.getName());
+               queryInput.setFilter(findDeletesFilter);
+               QueryOutput queryOutput = new QueryAction().execute(queryInput);
+               if(!queryOutput.getRecords().isEmpty())
+               {
+                  LOG.debug("Deleting associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", queryOutput.getRecords().size()));
+                  DeleteInput deleteInput = new DeleteInput();
+                  deleteInput.setTableName(association.getAssociatedTableName());
+                  deleteInput.setPrimaryKeys(queryOutput.getRecords().stream().map(r -> r.getValue(associatedTable.getPrimaryKeyField())).collect(Collectors.toList()));
+                  DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+               }
+            }
+
+            if(CollectionUtils.nullSafeHasContents(nextLevelUpdates))
+            {
+               LOG.debug("Updating associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", nextLevelUpdates.size()));
+               UpdateInput nextLevelUpdateInput = new UpdateInput();
+               nextLevelUpdateInput.setTableName(association.getAssociatedTableName());
+               nextLevelUpdateInput.setRecords(nextLevelUpdates);
+               UpdateOutput nextLevelUpdateOutput = new UpdateAction().execute(nextLevelUpdateInput);
+            }
+
+            if(CollectionUtils.nullSafeHasContents(nextLevelInserts))
+            {
+               LOG.debug("Inserting associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", nextLevelUpdates.size()));
+               InsertInput nextLevelInsertInput = new InsertInput();
+               nextLevelInsertInput.setTableName(association.getAssociatedTableName());
+               nextLevelInsertInput.setRecords(nextLevelInserts);
+               InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
+            }
+         }
+      }
    }
 
 
