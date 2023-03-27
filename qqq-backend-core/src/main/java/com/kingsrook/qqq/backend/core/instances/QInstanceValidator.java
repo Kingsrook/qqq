@@ -67,6 +67,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -456,7 +457,33 @@ public class QInstanceValidator
             validateAssociatedScripts(table);
             validateTableCacheOf(qInstance, table);
             validateTableRecordSecurityLocks(qInstance, table);
+            validateTableAssociations(qInstance, table);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateTableAssociations(QInstance qInstance, QTableMetaData table)
+   {
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         if(assertCondition(StringUtils.hasContent(association.getName()), "missing a name for an Association on table " + table.getName()))
+         {
+            String messageSuffix = " for Association " + association.getName() + " on table " + table.getName();
+            if(assertCondition(StringUtils.hasContent(association.getAssociatedTableName()), "missing associatedTableName" + messageSuffix))
+            {
+               assertCondition(qInstance.getTable(association.getAssociatedTableName()) != null, "unrecognized associatedTableName " + association.getAssociatedTableName() + messageSuffix);
+            }
+
+            if(assertCondition(StringUtils.hasContent(association.getJoinName()), "missing joinName" + messageSuffix))
+            {
+               assertCondition(qInstance.getJoin(association.getJoinName()) != null, "unrecognized joinName " + association.getJoinName() + messageSuffix);
+            }
+         }
       }
    }
 

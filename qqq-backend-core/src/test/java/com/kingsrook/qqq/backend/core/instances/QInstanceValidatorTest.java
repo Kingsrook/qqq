@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -1624,6 +1625,31 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setDefaultBehavior(null)), "missing a defaultBehavior");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setOverrideValues(null)), "missing overrideValues");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setOverrideValues(Collections.emptyList())), "missing overrideValues");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAssociations()
+   {
+      assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association())),
+         "missing a name for an Association on table " + TestUtils.TABLE_NAME_ORDER);
+
+      assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation"))),
+         "missing joinName for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER,
+         "missing associatedTableName for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
+      );
+
+      assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation").withJoinName("notAJoin").withAssociatedTableName(TestUtils.TABLE_NAME_LINE_ITEM))),
+         "unrecognized joinName notAJoin for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
+      );
+
+      assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation").withJoinName("orderLineItem").withAssociatedTableName("notATable"))),
+         "unrecognized associatedTableName notATable for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
+      );
    }
 
 
