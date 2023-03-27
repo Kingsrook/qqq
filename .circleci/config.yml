@@ -44,7 +44,8 @@ commands:
       - run:
           name: Run Maven Verify
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 verify
+            ## temp turn off T4 to try to trace errors... mvn -s .circleci/mvn-settings.xml -T4 verify
+            mvn -s .circleci/mvn-settings.xml verify
       - store_jacoco_site:
           module: qqq-backend-core
       - store_jacoco_site:
