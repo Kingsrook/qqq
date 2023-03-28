@@ -126,6 +126,8 @@ class ParentWidgetRendererTest extends BaseTest
       qInstance.addWidget(widget);
       reInitInstanceInContext(qInstance);
 
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
          new QRecord().withValue("id", 1)
       ));
@@ -156,6 +158,8 @@ class ParentWidgetRendererTest extends BaseTest
          .getWidgetMetaData();
       qInstance.addWidget(widget);
       reInitInstanceInContext(qInstance);
+
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
          new QRecord().withValue("id", 1),

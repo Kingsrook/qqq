@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -47,15 +48,26 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -85,6 +97,8 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
       setErrorsIfUniqueKeyErrors(insertInput, table);
+      validateRequiredFields(insertInput);
+      validateSecurityFields(insertInput);
 
       InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
 
@@ -101,6 +115,234 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       }
 
       return insertOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateRequiredFields(InsertInput insertInput)
+   {
+      QTableMetaData table = insertInput.getTable();
+      Set<QFieldMetaData> requiredFields = table.getFields().values().stream()
+         .filter(f -> f.getIsRequired())
+         .collect(Collectors.toSet());
+
+      if(!requiredFields.isEmpty())
+      {
+         for(QRecord record : insertInput.getRecords())
+         {
+            for(QFieldMetaData requiredField : requiredFields)
+            {
+               if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
+               {
+                  record.addError("Missing value in required field: " + requiredField.getLabel());
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateSecurityFields(InsertInput insertInput) throws QException
+   {
+      QTableMetaData           table               = insertInput.getTable();
+      List<RecordSecurityLock> recordSecurityLocks = table.getRecordSecurityLocks();
+      List<RecordSecurityLock> locksToCheck        = new ArrayList<>();
+
+      ////////////////////////////////////////
+      // if there are no locks, just return //
+      ////////////////////////////////////////
+      if(CollectionUtils.nullSafeIsEmpty(recordSecurityLocks))
+      {
+         return;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // decide if any locks need checked - where one may not need checked if it has an all-access key, and the user has all-access //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(RecordSecurityLock recordSecurityLock : recordSecurityLocks)
+      {
+         QSecurityKeyType securityKeyType = QContext.getQInstance().getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
+         if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()) && QContext.getQSession().hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
+         {
+            LOG.debug("Session has " + securityKeyType.getAllAccessKeyName() + " - not checking this lock.");
+         }
+         else
+         {
+            locksToCheck.add(recordSecurityLock);
+         }
+      }
+
+      /////////////////////////////////////////////////
+      // if there are no locks to check, just return //
+      /////////////////////////////////////////////////
+      if(locksToCheck.isEmpty())
+      {
+         return;
+      }
+
+      ////////////////////////////////
+      // actually check lock values //
+      ////////////////////////////////
+      for(RecordSecurityLock recordSecurityLock : locksToCheck)
+      {
+         if(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()))
+         {
+            for(QRecord record : insertInput.getRecords())
+            {
+               /////////////////////////////////////////////////////////////////////////
+               // handle the value being in the table we're inserting (e.g., no join) //
+               /////////////////////////////////////////////////////////////////////////
+               QFieldMetaData field               = table.getField(recordSecurityLock.getFieldName());
+               Serializable   recordSecurityValue = record.getValue(recordSecurityLock.getFieldName());
+               validateRecordSecurityValue(table, record, recordSecurityLock, recordSecurityValue, field.getType());
+            }
+         }
+         else
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // else look for the joined record - if it isn't found, assume a fail - else validate security value if found //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            QJoinMetaData  join      = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(0)); // todo - many joins...
+            QTableMetaData joinTable = QContext.getQInstance().getTable(join.getLeftTable());
+
+            for(List<QRecord> inputRecordPage : CollectionUtils.getPages(insertInput.getRecords(), 500))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // set up a query for joined records                                                          //
+               // query will be like (fkey1=? and fkey2=?) OR (fkey1=? and fkey2=?) OR (fkey1=? and fkey2=?) //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               QueryInput queryInput = new QueryInput();
+               queryInput.setTableName(join.getLeftTable());
+               QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
+               queryInput.setFilter(filter);
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // foreach input record (in this page), put it in a listing hash, with key = list of join-values //
+               // e.g., (17,47)=(QRecord1), (18,48)=(QRecord2,QRecord3)                                         //
+               // also build up the query's sub-filters here (only adding them if they're unique).              //
+               // e.g., 2 order-lines referencing the same orderId don't need to be added to the query twice    //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               ListingHash<List<Serializable>, QRecord> inputRecordMapByJoinFields = new ListingHash<>();
+               for(QRecord inputRecord : inputRecordPage)
+               {
+                  List<Serializable> inputRecordJoinValues = new ArrayList<>();
+                  QQueryFilter       subFilter             = new QQueryFilter();
+
+                  for(JoinOn joinOn : join.getJoinOns())
+                  {
+                     Serializable inputRecordValue = inputRecord.getValue(joinOn.getRightField());
+                     inputRecordJoinValues.add(inputRecordValue);
+
+                     subFilter.addCriteria(inputRecordValue == null
+                        ? new QFilterCriteria(joinOn.getLeftField(), QCriteriaOperator.IS_BLANK)
+                        : new QFilterCriteria(joinOn.getLeftField(), QCriteriaOperator.EQUALS, inputRecordValue));
+                  }
+
+                  if(!inputRecordMapByJoinFields.containsKey(inputRecordJoinValues))
+                  {
+                     ////////////////////////////////////////////////////////////////////////////////
+                     // only add this sub-filter if it's for a list of keys we haven't seen before //
+                     ////////////////////////////////////////////////////////////////////////////////
+                     filter.addSubFilter(subFilter);
+                  }
+
+                  inputRecordMapByJoinFields.add(inputRecordJoinValues, inputRecord);
+               }
+
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // execute the query for joined records - then put them in a map with keys corresponding to the join values //
+               // e.g., (17,47)=(JoinRecord), (18,48)=(JoinRecord)                                                         //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               QueryOutput                      queryOutput               = new QueryAction().execute(queryInput);
+               Map<List<Serializable>, QRecord> joinRecordMapByJoinFields = new HashMap<>();
+               for(QRecord joinRecord : queryOutput.getRecords())
+               {
+                  List<Serializable> joinRecordValues = new ArrayList<>();
+                  for(JoinOn joinOn : join.getJoinOns())
+                  {
+                     Serializable inputRecordValue = joinRecord.getValue(joinOn.getLeftField());
+                     joinRecordValues.add(inputRecordValue);
+                  }
+                  joinRecordMapByJoinFields.put(joinRecordValues, joinRecord);
+               }
+
+               //////////////////////////////////////////////////////////////////////////////////////////////////
+               // now for each input record, look for its joinRecord - if it isn't found, then this insert     //
+               // isn't allowed.  if it is found, then validate its value matches this session's security keys //
+               //////////////////////////////////////////////////////////////////////////////////////////////////
+               for(Map.Entry<List<Serializable>, List<QRecord>> entry : inputRecordMapByJoinFields.entrySet())
+               {
+                  List<Serializable> inputRecordJoinValues = entry.getKey();
+                  List<QRecord>      inputRecords          = entry.getValue();
+                  if(joinRecordMapByJoinFields.containsKey(inputRecordJoinValues))
+                  {
+                     QRecord joinRecord = joinRecordMapByJoinFields.get(inputRecordJoinValues);
+
+                     String         fieldName           = recordSecurityLock.getFieldName().replaceFirst(".*\\.", "");
+                     QFieldMetaData field               = joinTable.getField(fieldName);
+                     Serializable   recordSecurityValue = joinRecord.getValue(fieldName);
+
+                     for(QRecord inputRecord : inputRecords)
+                     {
+                        validateRecordSecurityValue(table, inputRecord, recordSecurityLock, recordSecurityValue, field.getType());
+                     }
+                  }
+                  else
+                  {
+                     for(QRecord inputRecord : inputRecords)
+                     {
+                        inputRecord.addError("You do not have permission to insert this record - the referenced " + joinTable.getLabel() + " was not found.");
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void validateRecordSecurityValue(QTableMetaData table, QRecord record, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType)
+   {
+      if(recordSecurityValue == null)
+      {
+         /////////////////////////////////////////////////////////////////
+         // handle null values - error if the NullValueBehavior is DENY //
+         /////////////////////////////////////////////////////////////////
+         if(RecordSecurityLock.NullValueBehavior.DENY.equals(recordSecurityLock.getNullValueBehavior()))
+         {
+            String lockLabel = CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()) ? recordSecurityLock.getSecurityKeyType() : table.getField(recordSecurityLock.getFieldName()).getLabel();
+            record.addError("You do not have permission to insert a record without a value in the field: " + lockLabel);
+         }
+      }
+      else
+      {
+         if(!QContext.getQSession().hasSecurityKeyValue(recordSecurityLock.getSecurityKeyType(), recordSecurityValue, fieldType))
+         {
+            if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()))
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////
+               // avoid telling the user a value from a foreign record that they didn't pass in themselves. //
+               ///////////////////////////////////////////////////////////////////////////////////////////////
+               record.addError("You do not have permission to insert this record.");
+            }
+            else
+            {
+               QFieldMetaData field = table.getField(recordSecurityLock.getFieldName());
+               record.addError("You do not have permission to insert a record with a value of " + recordSecurityValue + " in the field: " + field.getLabel());
+            }
+         }
+      }
    }
 
 

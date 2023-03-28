@@ -383,8 +383,6 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logStart("apiGet", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          getInput.setTableName(tableName);
-         // i think not for api... getInput.setShouldGenerateDisplayValues(true);
-         getInput.setShouldTranslatePossibleValues(true);
 
          PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
@@ -441,8 +439,6 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logStart("apiQuery", logPair("table", tableName));
 
          queryInput.setTableName(tableName);
-         //? queryInput.setShouldGenerateDisplayValues(true);
-         //? queryInput.setShouldTranslatePossibleValues(true);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 

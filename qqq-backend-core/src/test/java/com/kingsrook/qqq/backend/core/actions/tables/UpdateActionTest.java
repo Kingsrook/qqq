@@ -75,7 +75,7 @@ class UpdateActionTest extends BaseTest
    void testUpdateAssociationsUpdateOneChild() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      QContext.getQSession().withSecurityKeyValue("storeId", 1);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
 
@@ -115,7 +115,7 @@ class UpdateActionTest extends BaseTest
    void testUpdateAssociationsUpdateOneGrandChild() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      QContext.getQSession().withSecurityKeyValue("storeId", 1);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
 
@@ -156,7 +156,7 @@ class UpdateActionTest extends BaseTest
    void testUpdateAssociationsDeleteOneChild() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      QContext.getQSession().withSecurityKeyValue("storeId", 1);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
 
@@ -195,7 +195,7 @@ class UpdateActionTest extends BaseTest
    void testUpdateAssociationsDeleteGrandchildren() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      QContext.getQSession().withSecurityKeyValue("storeId", 1);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
 
@@ -234,7 +234,7 @@ class UpdateActionTest extends BaseTest
    void testUpdateAssociationsInsertOneChild() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      QContext.getQSession().withSecurityKeyValue("storeId", 1);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
 
@@ -276,7 +276,7 @@ class UpdateActionTest extends BaseTest
    void testUpdateAssociationsDeleteAllChildren() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      QContext.getQSession().withSecurityKeyValue("storeId", 1);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
 
       insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
 

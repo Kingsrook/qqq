@@ -103,6 +103,7 @@ class ProcessWidgetRendererTest extends BaseTest
    void testNoChildRecordsFound() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();
@@ -133,6 +134,7 @@ class ProcessWidgetRendererTest extends BaseTest
    void testChildRecordsFound() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
       QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
          .withLabel("Line Items")
          .getWidgetMetaData();

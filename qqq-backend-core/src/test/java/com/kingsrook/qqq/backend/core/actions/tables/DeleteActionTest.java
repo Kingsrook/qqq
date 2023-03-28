@@ -160,6 +160,8 @@ class DeleteActionTest extends BaseTest
    @Test
    void testAssociatedDeletes() throws QException
    {
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+
       {
          InsertInput insertInput = new InsertInput();
          insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
