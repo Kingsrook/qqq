@@ -23,6 +23,7 @@ package com.kingsrook.qqq.api.actions;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
@@ -68,7 +69,9 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       ///////////////////////////////////////////////////////
       // get fields on the table which are in this version //
       ///////////////////////////////////////////////////////
-      for(QFieldMetaData field : table.getFields().values())
+      List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
+      fieldList.sort(Comparator.comparing(QFieldMetaData::getLabel));
+      for(QFieldMetaData field : fieldList)
       {
          if(!isExcluded(field) && getApiVersionRange(field).includes(version))
          {
