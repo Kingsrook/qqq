@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
@@ -36,6 +38,9 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
  *******************************************************************************/
 public class FullyAnonymousAuthenticationModule implements QAuthenticationModuleInterface
 {
+   public static final String TEST_ACCESS_TOKEN = "b0a88d00-8439-48e8-8b48-e0ef40c40ed9";
+
+
 
    /*******************************************************************************
     **
@@ -71,4 +76,16 @@ public class FullyAnonymousAuthenticationModule implements QAuthenticationModule
    {
       return session != null;
    }
+
+
+
+   /*******************************************************************************
+    ** Load an instance of the appropriate state provider
+    **
+    *******************************************************************************/
+   public String createAccessToken(QAuthenticationMetaData metaData, String clientId, String clientSecret) throws AccessTokenException
+   {
+      return (TEST_ACCESS_TOKEN);
+   }
+
 }

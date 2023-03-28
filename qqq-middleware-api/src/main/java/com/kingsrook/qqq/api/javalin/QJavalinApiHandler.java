@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
@@ -74,9 +75,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -129,6 +133,11 @@ public class QJavalinApiHandler
    {
       return (() ->
       {
+         /////////////////////////////
+         // authentication endpoint //
+         /////////////////////////////
+         ApiBuilder.post("/api/oauth/token", QJavalinApiHandler::handleAuthorization);
+
          ApiBuilder.path("/api/{version}", () -> // todo - configurable, that /api/ bit?
          {
             ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
@@ -238,6 +247,78 @@ public class QJavalinApiHandler
       catch(Exception e)
       {
          handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void handleAuthorization(Context context)
+   {
+      try
+      {
+         //////////////////////////////
+         // validate required inputs //
+         //////////////////////////////
+         String clientId = context.formParam("client_id");
+         if(clientId == null)
+         {
+            context.status(HttpStatus.BAD_REQUEST_400);
+            context.result("'client_id' must be provided.");
+            return;
+         }
+         String clientSecret = context.formParam("client_secret");
+         if(clientSecret == null)
+         {
+            context.status(HttpStatus.BAD_REQUEST_400);
+            context.result("'client_secret' must be provided.");
+            return;
+         }
+
+         ////////////////////////////////////////////////////////
+         // get the auth0 authentication module from qInstance //
+         ////////////////////////////////////////////////////////
+         Auth0AuthenticationMetaData     metaData                        = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
+         QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
+         QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
+
+         try
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // make call to get access token data, if no exception thrown, assume 200OK and return //
+            /////////////////////////////////////////////////////////////////////////////////////////
+            QContext.init(qInstance, null); // hmm...
+            String accessToken = authenticationModule.createAccessToken(metaData, clientId, clientSecret);
+            context.status(io.javalin.http.HttpStatus.OK);
+            context.result(accessToken);
+            QJavalinAccessLogger.logEndSuccess();
+            return;
+         }
+         catch(AccessTokenException aae)
+         {
+            ///////////////////////////////////////////////////////////////////////////
+            // if the exception has a status code, then return that code and message //
+            ///////////////////////////////////////////////////////////////////////////
+            if(aae.getStatusCode() != null)
+            {
+               context.status(aae.getStatusCode());
+               context.result(aae.getMessage());
+               QJavalinAccessLogger.logEndSuccess();
+               return;
+            }
+
+            ////////////////////////////////////////////////////////
+            // if no code, throw and handle like other exceptions //
+            ////////////////////////////////////////////////////////
+            throw (aae);
+         }
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+         QJavalinAccessLogger.logEndFail(e);
       }
    }
 

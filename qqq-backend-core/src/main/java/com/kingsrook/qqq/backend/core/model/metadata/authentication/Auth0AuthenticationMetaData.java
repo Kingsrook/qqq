@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.authentication;
 
 
+import java.io.Serializable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
@@ -42,6 +43,31 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    ////////////////////////////////////////////////////////////////////////////////////////
    @JsonIgnore
    private String clientSecret;
+
+   ///////////////////////////////////////////////////////////////////////////////////////////
+   // these tables and fields are used to store auth0 application data and access data, the //
+   // access token can potentially be too large to send to qqq because of size limiations,  //
+   // so we need to hash it and send the qqq user a version mapped to a smaller token       //
+   ///////////////////////////////////////////////////////////////////////////////////////////
+   private String clientAuth0ApplicationTableName;
+   private String accessTokenTableName;
+
+   /////////////////////////////////////////
+   // fields on the auth0ApplicationTable //
+   /////////////////////////////////////////
+   private String       applicationNameField;
+   private String       auth0ClientIdField;
+   private String       auth0ClientSecretMaskedField;
+   private Serializable qqqRecordIdField;
+
+
+   /////////////////////////////////////
+   // fields on the accessToken table //
+   /////////////////////////////////////
+   private String clientAuth0ApplicationIdField;
+   private String auth0AccessTokenField;
+   private String qqqAccessTokenField;
+   private String expiresInSecondsField;
 
 
 
@@ -186,6 +212,346 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    public Auth0AuthenticationMetaData withAudience(String audience)
    {
       this.audience = audience;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for clientAuth0ApplicationTableName
+    **
+    *******************************************************************************/
+   public String getClientAuth0ApplicationTableName()
+   {
+      return clientAuth0ApplicationTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clientAuth0ApplicationTableName
+    **
+    *******************************************************************************/
+   public void setClientAuth0ApplicationTableName(String clientAuth0ApplicationTableName)
+   {
+      this.clientAuth0ApplicationTableName = clientAuth0ApplicationTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for clientAuth0ApplicationTableName
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withClientAuth0ApplicationTableName(String clientAuth0ApplicationTableName)
+   {
+      this.clientAuth0ApplicationTableName = clientAuth0ApplicationTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for accessTokenTableName
+    **
+    *******************************************************************************/
+   public String getAccessTokenTableName()
+   {
+      return accessTokenTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for accessTokenTableName
+    **
+    *******************************************************************************/
+   public void setAccessTokenTableName(String accessTokenTableName)
+   {
+      this.accessTokenTableName = accessTokenTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for accessTokenTableName
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withAccessTokenTableName(String accessTokenTableName)
+   {
+      this.accessTokenTableName = accessTokenTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for applicationNameField
+    **
+    *******************************************************************************/
+   public String getApplicationNameField()
+   {
+      return applicationNameField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for applicationNameField
+    **
+    *******************************************************************************/
+   public void setApplicationNameField(String applicationNameField)
+   {
+      this.applicationNameField = applicationNameField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for applicationNameField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withApplicationNameField(String applicationNameField)
+   {
+      this.applicationNameField = applicationNameField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auth0ClientIdField
+    **
+    *******************************************************************************/
+   public String getAuth0ClientIdField()
+   {
+      return auth0ClientIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auth0ClientIdField
+    **
+    *******************************************************************************/
+   public void setAuth0ClientIdField(String auth0ClientIdField)
+   {
+      this.auth0ClientIdField = auth0ClientIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auth0ClientIdField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withAuth0ClientIdField(String auth0ClientIdField)
+   {
+      this.auth0ClientIdField = auth0ClientIdField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qqqRecordIdField
+    **
+    *******************************************************************************/
+   public Serializable getQqqRecordIdField()
+   {
+      return qqqRecordIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qqqRecordIdField
+    **
+    *******************************************************************************/
+   public void setQqqRecordIdField(Serializable qqqRecordIdField)
+   {
+      this.qqqRecordIdField = qqqRecordIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qqqRecordIdField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withQqqRecordIdField(Serializable qqqRecordIdField)
+   {
+      this.qqqRecordIdField = qqqRecordIdField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auth0ClientSecretMaskedField
+    **
+    *******************************************************************************/
+   public String getAuth0ClientSecretMaskedField()
+   {
+      return auth0ClientSecretMaskedField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auth0ClientSecretMaskedField
+    **
+    *******************************************************************************/
+   public void setAuth0ClientSecretMaskedField(String auth0ClientSecretMaskedField)
+   {
+      this.auth0ClientSecretMaskedField = auth0ClientSecretMaskedField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auth0ClientSecretMaskedField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withAuth0ClientSecretMaskedField(String auth0ClientSecretMaskedField)
+   {
+      this.auth0ClientSecretMaskedField = auth0ClientSecretMaskedField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for clientAuth0ApplicationIdField
+    **
+    *******************************************************************************/
+   public String getClientAuth0ApplicationIdField()
+   {
+      return clientAuth0ApplicationIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clientAuth0ApplicationIdField
+    **
+    *******************************************************************************/
+   public void setClientAuth0ApplicationIdField(String clientAuth0ApplicationIdField)
+   {
+      this.clientAuth0ApplicationIdField = clientAuth0ApplicationIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for clientAuth0ApplicationIdField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withClientAuth0ApplicationIdField(String clientAuth0ApplicationIdField)
+   {
+      this.clientAuth0ApplicationIdField = clientAuth0ApplicationIdField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auth0AccessTokenField
+    **
+    *******************************************************************************/
+   public String getAuth0AccessTokenField()
+   {
+      return auth0AccessTokenField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auth0AccessTokenField
+    **
+    *******************************************************************************/
+   public void setAuth0AccessTokenField(String auth0AccessTokenField)
+   {
+      this.auth0AccessTokenField = auth0AccessTokenField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auth0AccessTokenField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withAuth0AccessTokenField(String auth0AccessTokenField)
+   {
+      this.auth0AccessTokenField = auth0AccessTokenField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qqqAccessTokenField
+    **
+    *******************************************************************************/
+   public String getQqqAccessTokenField()
+   {
+      return qqqAccessTokenField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qqqAccessTokenField
+    **
+    *******************************************************************************/
+   public void setQqqAccessTokenField(String qqqAccessTokenField)
+   {
+      this.qqqAccessTokenField = qqqAccessTokenField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qqqAccessTokenField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withQqqAccessTokenField(String qqqAccessTokenField)
+   {
+      this.qqqAccessTokenField = qqqAccessTokenField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for expiresInSecondsField
+    **
+    *******************************************************************************/
+   public String getExpiresInSecondsField()
+   {
+      return expiresInSecondsField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for expiresInSecondsField
+    **
+    *******************************************************************************/
+   public void setExpiresInSecondsField(String expiresInSecondsField)
+   {
+      this.expiresInSecondsField = expiresInSecondsField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for expiresInSecondsField
+    **
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withExpiresInSecondsField(String expiresInSecondsField)
+   {
+      this.expiresInSecondsField = expiresInSecondsField;
       return (this);
    }
 

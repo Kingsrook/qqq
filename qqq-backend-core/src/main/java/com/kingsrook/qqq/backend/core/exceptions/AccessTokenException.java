@@ -19,51 +19,95 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.authentication;
-
-
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
-import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import org.apache.commons.lang.NotImplementedException;
+package com.kingsrook.qqq.backend.core.exceptions;
 
 
 /*******************************************************************************
- ** Interface that a QAuthenticationModule must implement.
- **
+ * Exception thrown doing authentication
+ *
  *******************************************************************************/
-public interface QAuthenticationModuleInterface
+public class AccessTokenException extends QAuthenticationException
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   QSession createSession(QInstance qInstance, Map<String, String> context) throws QAuthenticationException;
+   private Integer statusCode;
+
 
 
    /*******************************************************************************
+    ** Constructor of message
     **
     *******************************************************************************/
-   boolean isSessionValid(QInstance instance, QSession session);
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default boolean usesSessionIdCookie()
+   public AccessTokenException(String message)
    {
-      return (false);
+      super(message);
    }
 
 
+
    /*******************************************************************************
+    ** Constructor of message
     **
     *******************************************************************************/
-   default String createAccessToken(QAuthenticationMetaData metaData, String clientId, String clientSecret) throws AccessTokenException
+   public AccessTokenException(String message, int statusCode)
    {
-      throw (new NotImplementedException("The method createAccessToken() is not implemented in the class: " + this.getClass().getSimpleName()));
+      super(message);
+      this.statusCode = statusCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor of message & cause
+    **
+    *******************************************************************************/
+   public AccessTokenException(String message, Throwable cause)
+   {
+      super(message, cause);
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor of message & cause
+    **
+    *******************************************************************************/
+   public AccessTokenException(String message, Throwable cause, int statusCode)
+   {
+      super(message, cause);
+      this.statusCode = statusCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for statusCode
+    **
+    *******************************************************************************/
+   public Integer getStatusCode()
+   {
+      return statusCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for statusCode
+    **
+    *******************************************************************************/
+   public void setStatusCode(Integer statusCode)
+   {
+      this.statusCode = statusCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for statusCode
+    **
+    *******************************************************************************/
+   public AccessTokenException withStatusCode(Integer statusCode)
+   {
+      this.statusCode = statusCode;
+      return (this);
    }
 
 }

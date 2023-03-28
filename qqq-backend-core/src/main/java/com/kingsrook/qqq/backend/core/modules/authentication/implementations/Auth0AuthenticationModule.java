@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
@@ -46,18 +47,42 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.JWTVerifier;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -83,7 +108,32 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    public static final String INVALID_TOKEN_ERROR      = "An invalid token was provided";
 
 
-   private Instant now;
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // this is how we allow the actions within this class to work without themselves having a logged-in user. //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private static QSession chickenAndEggSession = new QSession()
+   {
+
+   };
+
+
+
+   /*******************************************************************************
+    ** Getter for special session
+    **
+    *******************************************************************************/
+   private QSession getChickenAndEggSession()
+   {
+      for(String typeName : QContext.getQInstance().getSecurityKeyTypes().keySet())
+      {
+         QSecurityKeyType keyType = QContext.getQInstance().getSecurityKeyType(typeName);
+         if(StringUtils.hasContent(keyType.getAllAccessKeyName()))
+         {
+            chickenAndEggSession = chickenAndEggSession.withSecurityKeyValue(keyType.getAllAccessKeyName(), true);
+         }
+      }
+      return (chickenAndEggSession);
+   }
 
 
 
@@ -93,13 +143,14 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    @Override
    public QSession createSession(QInstance qInstance, Map<String, String> context) throws QAuthenticationException
    {
+      Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
+
       ///////////////////////////////////////////////////////////
       // check if we are processing a Basic Auth Session first //
       ///////////////////////////////////////////////////////////
       if(context.containsKey(BASIC_AUTH_KEY))
       {
-         Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
-         AuthAPI                     auth     = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
+         AuthAPI auth = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
          try
          {
             /////////////////////////////////////////////////
@@ -120,10 +171,19 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          }
       }
 
-      //////////////////////////////////////////////////////
-      // get the jwt access token from the context object //
-      //////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////
+      // get the jwt id or qqq translated token from the context object //
+      ////////////////////////////////////////////////////////////////////
       String accessToken = context.get(AUTH0_ACCESS_TOKEN_KEY);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // check to see if the session id is a UUID, if so, that means we need to look up the 'actual' token in the access_token table //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(accessToken != null && StringUtils.isUUID(accessToken))
+      {
+         accessToken = lookupActualAccessToken(metaData, accessToken);
+      }
+
       if(accessToken == null)
       {
          LOG.warn(TOKEN_NOT_PROVIDED_ERROR);
@@ -149,7 +209,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // if we make it here it means we have never validated this token or its been a long //
          // enough duration so we need to re-verify the token                                 //
          ///////////////////////////////////////////////////////////////////////////////////////
-         qSession = revalidateToken(qInstance, accessToken);
+         qSession = revalidateTokenAndBuildSession(qInstance, accessToken);
 
          ////////////////////////////////////////////////////////////////////
          // put now into state so we dont check until next interval passes //
@@ -253,6 +313,14 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    @Override
    public boolean isSessionValid(QInstance instance, QSession session)
    {
+      if(session == chickenAndEggSession)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // this is how we allow the actions within this class to work without themselves having a logged-in user. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
+      }
+
       if(session == null)
       {
          return (false);
@@ -283,7 +351,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          try
          {
             LOG.debug("Re-validating token due to validation interval being passed: " + session.getIdReference());
-            revalidateToken(instance, session.getIdReference());
+            revalidateTokenAndBuildSession(instance, session.getIdReference());
 
             //////////////////////////////////////////////////////////////////
             // update the timestamp in state provider, to avoid re-checking //
@@ -308,24 +376,33 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     ** makes request to check if a token is still valid and build new qSession if it is
     **
     *******************************************************************************/
-   private QSession revalidateToken(QInstance qInstance, String accessToken) throws JwkException
+   private QSession revalidateTokenAndBuildSession(QInstance qInstance, String accessToken) throws JwkException
    {
-      Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
-
-      DecodedJWT  jwt       = JWT.decode(accessToken);
-      JwkProvider provider  = new UrlJwkProvider(metaData.getBaseUrl());
-      Jwk         jwk       = provider.get(jwt.getKeyId());
-      Algorithm   algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
-      JWTVerifier verifier = JWT.require(algorithm)
-         .withIssuer(metaData.getBaseUrl())
-         .build();
-
       ///////////////////////////////////
       // make call to verify the token //
       ///////////////////////////////////
-      verifier.verify(accessToken);
-
+      validateToken(qInstance, accessToken);
       return (buildQSessionFromToken(accessToken, qInstance));
+   }
+
+
+
+   /*******************************************************************************
+    ** tests validity of a token
+    **
+    *******************************************************************************/
+   private void validateToken(QInstance qInstance, String tokenString) throws JwkException
+   {
+      Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
+
+      DecodedJWT  idToken   = JWT.decode(tokenString);
+      JwkProvider provider  = new UrlJwkProvider(metaData.getBaseUrl());
+      Jwk         jwk       = provider.get(idToken.getKeyId());
+      Algorithm   algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+      JWT.require(algorithm)
+         .withIssuer(idToken.getIssuer())
+         .build()
+         .verify(idToken);
    }
 
 
@@ -499,10 +576,13 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       }
       else
       {
-         String value = securityKeyValues.optString(jsonKey);
-         if(value != null)
+         String values = securityKeyValues.optString(jsonKey);
+         if(StringUtils.hasContent(values))
          {
-            qSession.withSecurityKeyValue(securityKeyName, value);
+            for(String v : values.split(","))
+            {
+               qSession.withSecurityKeyValue(securityKeyName, v);
+            }
          }
       }
    }
@@ -517,6 +597,187 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    {
       // TODO - read this from somewhere in meta data eh?
       return (InMemoryStateProvider.getInstance());
+   }
+
+
+
+   /*******************************************************************************
+    ** Load an instance of the appropriate state provider
+    **
+    *******************************************************************************/
+   public String createAccessToken(QAuthenticationMetaData metaData, String clientId, String clientSecret) throws AccessTokenException
+   {
+      QSession                    sessionBefore = QContext.getQSession();
+      Auth0AuthenticationMetaData auth0MetaData = (Auth0AuthenticationMetaData) metaData;
+
+      try
+      {
+         QContext.setQSession(getChickenAndEggSession());
+
+         ///////////////////////////////////////////////////////////////////////////////////////
+         // fetch the application from database, will throw accesstokenexception if not found //
+         ///////////////////////////////////////////////////////////////////////////////////////
+         QRecord clientAuth0Application = getClientAuth0Application(auth0MetaData, clientId);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // request access token from auth0 if exception is not thrown, that means 200OK, we want to    //
+         // store the actual access token in the database, and return a unique value                    //
+         // back to the user which will be what they use on subseqeunt requests (because token too big) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         JSONObject accessTokenData = requestAccessTokenFromAuth0(auth0MetaData, clientId, clientSecret);
+
+         Integer expiresInSeconds = accessTokenData.getInt("expires_in");
+         String  accessToken      = accessTokenData.getString("access_token");
+         String  uuid             = UUID.randomUUID().toString();
+
+         /////////////////////////////////
+         // store the details in the db //
+         /////////////////////////////////
+         QRecord accessTokenRecord = new QRecord()
+            .withValue(auth0MetaData.getClientAuth0ApplicationIdField(), clientAuth0Application.getValue("id"))
+            .withValue(auth0MetaData.getAuth0AccessTokenField(), accessToken)
+            .withValue(auth0MetaData.getQqqAccessTokenField(), uuid)
+            .withValue(auth0MetaData.getExpiresInSecondsField(), expiresInSeconds);
+         InsertInput input = new InsertInput();
+         input.setTableName(auth0MetaData.getAccessTokenTableName());
+         input.setRecords(List.of(accessTokenRecord));
+         new InsertAction().execute(input);
+
+         //////////////////////////////////
+         // update and send the response //
+         //////////////////////////////////
+         accessTokenData.put("access_token", uuid);
+         accessTokenData.remove("scope");
+         return (accessTokenData.toString());
+      }
+      catch(AccessTokenException ate)
+      {
+         throw (ate);
+      }
+      catch(Exception e)
+      {
+         throw (new AccessTokenException(e.getMessage(), e));
+      }
+      finally
+      {
+         QContext.setQSession(sessionBefore);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** make http request to Auth0 for a new access token
+    **
+    *******************************************************************************/
+   public JSONObject requestAccessTokenFromAuth0(Auth0AuthenticationMetaData auth0MetaData, String clientId, String clientSecret) throws AccessTokenException
+   {
+      ///////////////////////////////////////////////////////////////////
+      // make a request to Auth0 using the client_id and client_secret //
+      ///////////////////////////////////////////////////////////////////
+      try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+      {
+         UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(List.of(
+            new BasicNameValuePair("content-type", "application/x-www-form-urlencoded"),
+            new BasicNameValuePair("grant_type", "client_credentials"),
+            new BasicNameValuePair("audience", auth0MetaData.getAudience()),
+            new BasicNameValuePair("client_id", clientId),
+            new BasicNameValuePair("client_secret", clientSecret)));
+
+         HttpPost request = new HttpPost(auth0MetaData.getBaseUrl() + "oauth/token");
+         request.setEntity(urlEncodedFormEntity);
+
+         try(CloseableHttpResponse response = httpClient.execute(request))
+         {
+            int    statusCode = response.getStatusLine().getStatusCode();
+            String content    = EntityUtils.toString(response.getEntity());
+
+            //////////////////////////////////////
+            // if 200OK, return the json object //
+            //////////////////////////////////////
+            if(statusCode == 200)
+            {
+               return (JsonUtils.toJSONObject(content));
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if not 200, throw an access token exception with the message and status code of the non-200 response //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            throw (new AccessTokenException(content, statusCode));
+         }
+      }
+      catch(AccessTokenException ate)
+      {
+         throw (ate);
+      }
+      catch(Exception e)
+      {
+         throw (new AccessTokenException(e.getMessage(), e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Look up access_token record, return if found.
+    **
+    *******************************************************************************/
+   String lookupActualAccessToken(Auth0AuthenticationMetaData metaData, String qqqAccessToken)
+   {
+      String   accessToken   = null;
+      QSession beforeSession = QContext.getQSession();
+
+      try
+      {
+         QContext.setQSession(getChickenAndEggSession());
+
+         //////////////////////////////////////////////////////////////////////////////////////
+         // try to look up existing auth0 application from database, insert one if not found //
+         //////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(metaData.getAccessTokenTableName());
+         queryInput.setFilter(new QQueryFilter(new QFilterCriteria(metaData.getQqqAccessTokenField(), QCriteriaOperator.EQUALS, qqqAccessToken)));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+         if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
+         {
+            accessToken = queryOutput.getRecords().get(0).getValueString(metaData.getAuth0AccessTokenField());
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Could not find Auth0 access token for provided qqq access token", e);
+      }
+      finally
+      {
+         QContext.setQSession(beforeSession);
+      }
+
+      return (accessToken);
+   }
+
+
+
+   /*******************************************************************************
+    ** Look up client_auth0_application record, return if found.
+    **
+    *******************************************************************************/
+   QRecord getClientAuth0Application(Auth0AuthenticationMetaData metaData, String clientId) throws QException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////
+      // try to look up existing auth0 application from database, insert one if not found //
+      //////////////////////////////////////////////////////////////////////////////////////
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(metaData.getClientAuth0ApplicationTableName());
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria(metaData.getAuth0ClientIdField(), QCriteriaOperator.EQUALS, clientId)));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
+      {
+         return (queryOutput.getRecords().get(0));
+      }
+
+      throw (new AccessTokenException("This client has not been configured to use the API.", HttpStatus.SC_UNAUTHORIZED));
    }
 
 }
