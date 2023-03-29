@@ -41,6 +41,9 @@ public class Schema
    private Object              example;
    private String              ref;
    private List<Schema>        allOf;
+   private Boolean             readOnly;
+   private Boolean             nullable;
+   private Integer             maxLength;
 
 
 
@@ -341,6 +344,99 @@ public class Schema
    public Schema withEnumValues(List<String> enumValues)
    {
       this.enumValues = enumValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for readOnly
+    *******************************************************************************/
+   public Boolean getReadOnly()
+   {
+      return (this.readOnly);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for readOnly
+    *******************************************************************************/
+   public void setReadOnly(Boolean readOnly)
+   {
+      this.readOnly = readOnly;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for readOnly
+    *******************************************************************************/
+   public Schema withReadOnly(Boolean readOnly)
+   {
+      this.readOnly = readOnly;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for nullable
+    *******************************************************************************/
+   public Boolean getNullable()
+   {
+      return (this.nullable);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for nullable
+    *******************************************************************************/
+   public void setNullable(Boolean nullable)
+   {
+      this.nullable = nullable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for nullable
+    *******************************************************************************/
+   public Schema withNullable(Boolean nullable)
+   {
+      this.nullable = nullable;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxLength
+    *******************************************************************************/
+   public Integer getMaxLength()
+   {
+      return (this.maxLength);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxLength
+    *******************************************************************************/
+   public void setMaxLength(Integer maxLength)
+   {
+      this.maxLength = maxLength;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxLength
+    *******************************************************************************/
+   public Schema withMaxLength(Integer maxLength)
+   {
+      this.maxLength = maxLength;
       return (this);
    }
 

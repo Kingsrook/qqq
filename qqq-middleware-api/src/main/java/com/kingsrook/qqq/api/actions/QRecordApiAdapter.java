@@ -117,7 +117,7 @@ public class QRecordApiAdapter
          if(apiFieldsMap.containsKey(jsonKey))
          {
             QFieldMetaData field = apiFieldsMap.get(jsonKey);
-            Object         value = jsonObject.get(jsonKey);
+            Object         value = jsonObject.isNull(jsonKey) ? null : jsonObject.get(jsonKey);
 
             ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(field);
             if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))

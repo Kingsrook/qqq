@@ -22,12 +22,16 @@
 package com.kingsrook.qqq.api.model.openapi;
 
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class Example
+public class Example
 {
    private String summary;
+   private String ref;
 
 
 
@@ -57,6 +61,38 @@ public abstract class Example
    public Example withSummary(String summary)
    {
       this.summary = summary;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for ref
+    *******************************************************************************/
+   @JsonGetter("$ref")
+   public String getRef()
+   {
+      return (this.ref);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for ref
+    *******************************************************************************/
+   public void setRef(String ref)
+   {
+      this.ref = ref;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for ref
+    *******************************************************************************/
+   public Example withRef(String ref)
+   {
+      this.ref = ref;
       return (this);
    }
 

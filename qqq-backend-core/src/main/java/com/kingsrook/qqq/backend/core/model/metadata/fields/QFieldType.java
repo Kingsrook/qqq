@@ -98,4 +98,14 @@ public enum QFieldType
    {
       return this == QFieldType.STRING || this == QFieldType.TEXT || this == QFieldType.HTML || this == QFieldType.PASSWORD;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isNumeric()
+   {
+      return this == QFieldType.INTEGER || this == QFieldType.DECIMAL;
+   }
 }

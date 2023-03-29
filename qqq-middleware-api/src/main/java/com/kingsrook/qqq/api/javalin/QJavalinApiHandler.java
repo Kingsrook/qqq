@@ -23,8 +23,10 @@ package com.kingsrook.qqq.api.javalin;
 
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,6 +78,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -142,6 +145,7 @@ public class QJavalinApiHandler
          {
             ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
             ApiBuilder.get("/openapi.json", QJavalinApiHandler::doSpecJson);
+            ApiBuilder.get("/openapi.html", QJavalinApiHandler::doSpecHtml);
 
             ApiBuilder.path("/{tableName}", () ->
             {
@@ -167,6 +171,7 @@ public class QJavalinApiHandler
          });
 
          ApiBuilder.get("/api/versions.json", QJavalinApiHandler::doVersions);
+         ApiBuilder.get("/api/qqq-api-styles.css", QJavalinApiHandler::doStyles);
 
          ApiBuilder.before("/*", QJavalinApiHandler::setupCORS);
 
@@ -177,6 +182,18 @@ public class QJavalinApiHandler
          ApiBuilder.delete("/api/*", QJavalinApiHandler::doPathNotFound);
          ApiBuilder.patch("/api/*", QJavalinApiHandler::doPathNotFound);
          ApiBuilder.post("/api/*", QJavalinApiHandler::doPathNotFound);
+
+         ///////////////////////////////////////////////////////////////////////////////////
+         // if the main implementation class has a hot-swapper installed, use it here too //
+         ///////////////////////////////////////////////////////////////////////////////////
+         if(QJavalinImplementation.getQInstanceHotSwapSupplier() != null)
+         {
+            ApiBuilder.before((context) ->
+            {
+               QJavalinImplementation.hotSwapQInstance(context);
+               QJavalinApiHandler.qInstance = QJavalinImplementation.getQInstance();
+            });
+         }
       });
    }
 
@@ -239,8 +256,24 @@ public class QJavalinApiHandler
       try
       {
          QContext.init(qInstance, null);
-         String                    version = context.pathParam("version");
-         GenerateOpenApiSpecOutput output  = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(version));
+         String version = context.pathParam("version");
+
+         GenerateOpenApiSpecInput input = new GenerateOpenApiSpecInput().withVersion(version);
+         try
+         {
+            if(StringUtils.hasContent(context.pathParam("tableName")))
+            {
+               input.setTableName(context.pathParam("tableName"));
+            }
+         }
+         catch(Exception e)
+         {
+            ///////////////////////////
+            // leave table param out //
+            ///////////////////////////
+         }
+
+         GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(input);
          context.contentType(ContentType.APPLICATION_YAML);
          context.result(output.getYaml());
       }
@@ -259,22 +292,45 @@ public class QJavalinApiHandler
    {
       try
       {
-         //////////////////////////////
-         // validate required inputs //
-         //////////////////////////////
-         String clientId = context.formParam("client_id");
-         if(clientId == null)
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // clientId & clientSecret may either be provided as formParams, or in an Authorization: Basic header //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         String clientId;
+         String clientSecret;
+         String authorizationHeader = context.header("Authorization");
+         if(authorizationHeader != null && authorizationHeader.startsWith("Basic "))
          {
-            context.status(HttpStatus.BAD_REQUEST_400);
-            context.result("'client_id' must be provided.");
-            return;
+            try
+            {
+               byte[]   credDecoded = Base64.getDecoder().decode(authorizationHeader.replace("Basic ", ""));
+               String   credentials = new String(credDecoded, StandardCharsets.UTF_8);
+               String[] parts       = credentials.split(":", 2);
+               clientId = parts[0];
+               clientSecret = parts[1];
+            }
+            catch(Exception e)
+            {
+               context.status(HttpStatus.BAD_REQUEST_400);
+               context.result("Could not parse client_id and client_secret from Basic Authorization header.");
+               return;
+            }
          }
-         String clientSecret = context.formParam("client_secret");
-         if(clientSecret == null)
+         else
          {
-            context.status(HttpStatus.BAD_REQUEST_400);
-            context.result("'client_secret' must be provided.");
-            return;
+            clientId = context.formParam("client_id");
+            if(clientId == null)
+            {
+               context.status(HttpStatus.BAD_REQUEST_400);
+               context.result("'client_id' must be provided.");
+               return;
+            }
+            clientSecret = context.formParam("client_secret");
+            if(clientSecret == null)
+            {
+               context.status(HttpStatus.BAD_REQUEST_400);
+               context.result("'client_secret' must be provided.");
+               return;
+            }
          }
 
          ////////////////////////////////////////////////////////
@@ -286,12 +342,12 @@ public class QJavalinApiHandler
 
          try
          {
-            /////////////////////////////////////////////////////////////////////////////////////////
-            // make call to get access token data, if no exception thrown, assume 200OK and return //
-            /////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // make call to get access token data, if no exception thrown, assume 200 OK and return //
+            //////////////////////////////////////////////////////////////////////////////////////////
             QContext.init(qInstance, null); // hmm...
             String accessToken = authenticationModule.createAccessToken(metaData, clientId, clientSecret);
-            context.status(io.javalin.http.HttpStatus.OK);
+            context.status(HttpStatus.Code.OK.getCode());
             context.result(accessToken);
             QJavalinAccessLogger.logEndSuccess();
             return;
@@ -335,14 +391,156 @@ public class QJavalinApiHandler
          String                   version = context.pathParam("version");
          GenerateOpenApiSpecInput input   = new GenerateOpenApiSpecInput().withVersion(version);
 
-         if(StringUtils.hasContent(context.pathParam("tableName")))
+         try
          {
-            input.setTableName(context.pathParam("tableName"));
+            if(StringUtils.hasContent(context.pathParam("tableName")))
+            {
+               input.setTableName(context.pathParam("tableName"));
+            }
+         }
+         catch(Exception e)
+         {
+            ///////////////////////////
+            // leave table param out //
+            ///////////////////////////
          }
 
          GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(input);
          context.contentType(ContentType.JSON);
          context.result(output.getJson());
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doSpecHtml(Context context)
+   {
+      try
+      {
+         QContext.init(qInstance, null);
+
+         QBrandingMetaData branding = QContext.getQInstance().getBranding();
+         String html = """
+            <!doctype html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+                <link rel="stylesheet" href="/api/qqq-api-styles.css">
+              </head>
+              <body>
+                <rapi-doc
+                  id="the-rapi-doc"
+                  spec-url="/api/{version}/openapi.json"
+                  regular-font="Roboto,Helvetica,Arial,sans-serif"
+                  mono-font="Monaco, Menlo, Consolas, source-code-pro, monospace"
+                  font-size="large"
+                  show-header="false"
+                  allow-server-selection="false"
+                  allow-spec-file-download="true"
+                  primary-color="{primaryColor}"
+                  sort-endpoints-by="method"
+                  persist-auth="true"
+                  render-style="focused"
+                  show-method-in-nav-bar="as-colored-block"
+                  nav-item-spacing="relaxed"
+                  css-file="qqq-api-styles.css"
+                  css-classes="qqqApi"
+                  info-description-headings-in-navbar="true"
+                >
+                  {navLogoImg}
+                </rapi-doc>
+                <script>
+                  window.addEventListener('DOMContentLoaded', (event) => {
+                    const rapidocEl = document.getElementById('the-rapi-doc');
+                    rapidocEl.addEventListener('spec-loaded', (e) => {
+                      console.log("rapidoc el: " + rapidocEl);
+                      const shadowRoot = rapidocEl.shadowRoot;
+                      console.log("shadowRoot: " + shadowRoot);
+                      const collapseButton = shadowRoot.querySelector(".nav-bar-collapse-all")
+                      collapseButton.click();
+                    });
+                   });
+                </script>
+              </body>
+            </html>
+            """
+            .replace("{version}", context.pathParam("version"))
+            .replace("{primaryColor}", branding == null ? "#FF791A" : branding.getAccentColor());
+
+         if(branding != null && StringUtils.hasContent(branding.getLogo()))
+         {
+            html = html.replace("{navLogoImg}", "<img slot=\"nav-logo\" src=\"" + branding.getLogo() + "\" style=\"width: fit-content; max-width: 280px; margin: auto;\"/>");
+         }
+
+         context.contentType(ContentType.HTML);
+         context.result(html);
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doStyles(Context context)
+   {
+      try
+      {
+         QContext.init(qInstance, null);
+
+         String css = """
+            #api-info
+            {
+               margin-left: 0px !important;
+            }
+                        
+            #api-info button
+            {
+               width: auto !important;
+            }
+                        
+            #api-title span
+            {
+               font-size: 24px !important;
+               margin-left: 8px;
+            }
+                       
+            .nav-scroll
+            {
+               padding-left: 16px;
+            }
+                        
+            .tag-description.expanded
+            {
+               max-height: initial !important;
+            }
+                        
+            .tag-description .m-markdown p
+            {
+               margin-block-end: 0.5em !important;
+            }
+                        
+            api-response
+            {
+               margin-bottom: 50vh;
+               display: inline-block;
+            }
+            """;
+
+         context.contentType(ContentType.CSS);
+         context.result(css);
       }
       catch(Exception e)
       {
@@ -548,6 +746,10 @@ public class QJavalinApiHandler
                }
             }
          }
+         else
+         {
+            filter.withOrderBy(new QFilterOrderBy(table.getPrimaryKeyField(), false));
+         }
 
          Set<String> nonFilterParams = Set.of("pageSize", "pageNo", "orderBy", "booleanOperator", "includeCount");
 
@@ -610,19 +812,9 @@ public class QJavalinApiHandler
          queryInput.setFilter(filter);
          QueryOutput queryOutput = queryAction.execute(queryInput);
 
-         Map<String, Serializable> output = new HashMap<>();
-         output.put("pageSize", pageSize);
+         Map<String, Serializable> output = new LinkedHashMap<>();
          output.put("pageNo", pageNo);
-
-         ///////////////////////////////
-         // map record fields for api //
-         ///////////////////////////////
-         ArrayList<Map<String, Serializable>> records = new ArrayList<>();
-         for(QRecord record : queryOutput.getRecords())
-         {
-            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, version));
-         }
-         output.put("records", records);
+         output.put("pageSize", pageSize);
 
          /////////////////////////////
          // optionally do the count //
@@ -635,6 +827,16 @@ public class QJavalinApiHandler
             CountOutput countOutput = new CountAction().execute(countInput);
             output.put("count", countOutput.getCount());
          }
+
+         ///////////////////////////////
+         // map record fields for api //
+         ///////////////////////////////
+         ArrayList<Map<String, Serializable>> records = new ArrayList<>();
+         for(QRecord record : queryOutput.getRecords())
+         {
+            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, version));
+         }
+         output.put("records", records);
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), QJavalinAccessLogger.logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
          context.result(JsonUtils.toJson(output));

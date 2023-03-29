@@ -22,7 +22,11 @@
 package com.kingsrook.qqq.api.actions;
 
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,8 +115,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withVersion(version)
          )
          .withServers(ListBuilder.of(new Server()
-            .withDescription("Localhost development")
-            .withUrl("http://localhost:8000/api/" + version)
+            .withDescription("This server")
+            .withUrl("/api/" + version)
          ));
 
       openAPI.setTags(new ArrayList<>());
@@ -125,17 +129,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withSchemas(componentSchemas)
          .withResponses(componentResponses)
          .withSecuritySchemes(securitySchemes)
+         .withExamples(getComponentExamples())
       );
 
-      LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
-      securitySchemes.put("OAuth2", new OAuth2()
-         .withFlows(MapBuilder.of("authorizationCode", new OAuth2Flow()
-            // todo - get from auth metadata
-            .withAuthorizationUrl("https://nutrifresh-one-development.us.auth0.com/authorize")
-            .withTokenUrl("https://nutrifresh-one-development.us.auth0.com/oauth/token")
-            .withScopes(scopes)
-         ))
-      );
       securitySchemes.put("bearerAuth", new SecurityScheme()
          .withType("http")
          .withScheme("bearer")
@@ -147,6 +143,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withScheme("basic")
       );
 
+      LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
+      securitySchemes.put("OAuth2", new OAuth2()
+         .withFlows(MapBuilder.of("clientCredentials", new OAuth2Flow()
+               .withTokenUrl("/api/oauth/token")
+            // .withScopes(scopes)
+         ))
+      );
       componentSchemas.put("baseSearchResultFields", new Schema()
          .withType("object")
          .withProperties(MapBuilder.of(
@@ -165,7 +168,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       ///////////////////
       // foreach table //
       ///////////////////
-      for(QTableMetaData table : qInstance.getTables().values())
+      List<QTableMetaData> tables = new ArrayList<>(qInstance.getTables().values());
+      tables.sort(Comparator.comparing(t -> t.getLabel()));
+      for(QTableMetaData table : tables)
       {
          String tableName = table.getName();
 
@@ -262,39 +267,25 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withName(tableLabel)
             .withDescription("Operations on the " + tableLabel + " table."));
 
-         //////////////////////////////////////////////////////////////////
-         // build the schemas for this table                             //
-         // start with the full table minus its pkey (e.g., for posting) //
-         //////////////////////////////////////////////////////////////////
-         LinkedHashMap<String, Schema> tableFieldsWithoutPrimaryKey = new LinkedHashMap<>();
-         Schema tableWithoutPrimaryKeySchema = new Schema()
+         //////////////////////////////////////
+         // build the schemas for this table //
+         //////////////////////////////////////
+         LinkedHashMap<String, Schema> tableFields = new LinkedHashMap<>();
+         Schema tableSchema = new Schema()
             .withType("object")
-            .withProperties(tableFieldsWithoutPrimaryKey);
-         componentSchemas.put(tableApiName + "WithoutPrimaryKey", tableWithoutPrimaryKeySchema);
+            .withProperties(tableFields);
+         componentSchemas.put(tableApiName, tableSchema);
 
          for(QFieldMetaData field : tableApiFields)
          {
-            if(primaryKeyName.equals(field.getName()))
-            {
-               continue;
-            }
-
             Schema fieldSchema = getFieldSchema(table, field);
-            tableFieldsWithoutPrimaryKey.put(ApiFieldMetaData.getEffectiveApiFieldName(field), fieldSchema);
+            tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(field), fieldSchema);
          }
 
          //////////////////////////////////
          // recursively add associations //
          //////////////////////////////////
-         addAssociations(table, tableWithoutPrimaryKeySchema);
-
-         /////////////////////////////////////////////////
-         // full version of table (w/o pkey + the pkey) //
-         /////////////////////////////////////////////////
-         componentSchemas.put(tableApiName, new Schema()
-            .withType("object")
-            .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/" + tableApiName + "WithoutPrimaryKey")))
-            .withProperties(MapBuilder.of(primaryKeyApiName, getFieldSchema(table, table.getField(primaryKeyName)))));
+         addAssociations(table, tableSchema);
 
          //////////////////////////////////////////////////////////////////////////////
          // table as a search result (the base search result, plus the table itself) //
@@ -307,19 +298,37 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withType("array")
                   .withItems(new Schema()
                      .withAllOf(ListBuilder.of(
-                        new Schema().withRef("#/components/schemas/" + tableApiName),
-                        new Schema().withRef("#/components/schemas/" + tableApiName + "WithoutPrimaryKey")
-                     ))
-                  )
-            ))
-         );
+                        new Schema().withRef("#/components/schemas/" + tableApiName)))))));
 
          //////////////////////////////////////
          // paths and methods for this table //
          //////////////////////////////////////
          Method queryGet = new Method()
-            .withSummary("Search the " + tableLabel + " table using multiple query string fields.")
-            .withDescription("TODO")
+            .withSummary("Search for " + tableLabel + " records by query string")
+            .withDescription("""
+               Execute a query on this table, using query criteria as specified in query string parameters.
+                              
+               * Pagination is managed via the `pageNo` & `pageSize` query string parameters.  pageNo starts at 1.  pageSize defaults to 50.
+               * By default, the response includes the total count of records that match the query criteria.  The count can be omitted by specifying `includeCount=false`
+               * By default, results are sorted by the table's primary key, descending.  This can be changed by specifying the `orderBy` query string parameter, following SQL ORDER BY syntax (e.g., `fieldName1 ASC, fieldName2 DESC`)
+               * By default, all given query criteria are combined using logical AND.  This can be changed by specifying the query string parameter `booleanOperator=OR`.
+               * Each field on the table can be used as a query criteria.  Each query criteria field can be specified on the query string any number of times.
+               * By default, all criteria use the equals operator (e.g., `myField=value` means records will be returned where myField equals value).  Alternative operators can be used as follows:
+                 * Equals: `myField=value`
+                 * Not Equals: `myField=!value`
+                 * Less Than: `myField=&lt;value`
+                 * Greater Than: `myField=&gt;value`
+                 * Less Than or Equals: `myField=&lt;=value`
+                 * Greater Than or Equals: `myField=&gt;=value`
+                 * Empty (or null): `myField=EMPTY`
+                 * Not Empty: `myField=!EMPTY`
+                 * Between: `myField=BETWEEN value1,value2` (two values must be given, separated by commas)
+                 * Not Between: `myField=!BETWEEN value1,value2` (two values must be given, separated by commas)
+                 * In: `myField=IN value1,value2,...,valueN` (one or more values must be given, separated by commas)
+                 * Not In: `myField=!IN value1,value2,...,valueN` (one or more values must be given, separated by commas)
+                 * Like: `myField=LIKE value` (using standard SQL % and _ wildcards)
+                 * Not Like: `myField=!LIKE value` (using standard SQL % and _ wildcards)
+               """)
             .withOperationId("query" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -330,20 +339,17 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withType("integer")),
                new Parameter()
                   .withName("pageSize")
-                  .withDescription("Max number of records to include in a page.  Defaults to 50.")
+                  .withDescription("Max number of records to include in a page.  Defaults to 50.  Must be between 1 and 1000.")
                   .withIn("query")
                   .withSchema(new Schema().withType("integer")),
                new Parameter()
                   .withName("includeCount")
                   .withDescription("Whether or not to include the count (total matching records) in the result. Default is true.")
                   .withIn("query")
-                  .withSchema(new Schema().withType("boolean")),
+                  .withSchema(new Schema().withType("boolean").withEnumValues(ListBuilder.of("true", "false"))),
                new Parameter()
                   .withName("orderBy")
-                  .withDescription("""
-                     How the results of the query should be sorted.<br/>
-                     SQL-style, comma-separated list of field names, each optionally followed by ASC or DESC (defaults to ASC).
-                     """)
+                  .withDescription("How the results of the query should be sorted. SQL-style, comma-separated list of field names, each optionally followed by ASC or DESC (defaults to ASC).")
                   .withIn("query")
                   .withSchema(new Schema().withType("string"))
                   .withExamples(buildOrderByExamples(primaryKeyApiName, tableApiFields)),
@@ -351,14 +357,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withName("booleanOperator")
                   .withDescription("Whether to combine query field as an AND or an OR.  Default is AND.")
                   .withIn("query")
-                  .withSchema(new Schema().withType("string").withEnumValues(ListBuilder.of("AND", "OR")))
-            ))
+                  .withSchema(new Schema().withType("string").withEnumValues(ListBuilder.of("AND", "OR")))))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.OK.getCode(), new Response()
                .withDescription("Successfully searched the " + tableLabel + " table (though may have found 0 records).")
                .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName + "SearchResult"))
-               )))
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName + "SearchResult")))))
             .withSecurity(getSecurity(tableReadPermissionName));
 
          for(QFieldMetaData tableApiField : tableApiFields)
@@ -371,13 +375,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withSchema(new Schema()
                   .withType("array")
                   .withItems(new Schema().withType("string")))
-               .withExamples(MapBuilder.of(
-                  // todo - multiple examples, and different per-type, and as components
-                  "notQueried", new ExampleWithListValue().withSummary("no query on this field").withValue(ListBuilder.of("")),
-                  "equals", new ExampleWithListValue().withSummary("equal to 47").withValue(ListBuilder.of("47")),
-                  "complex", new ExampleWithListValue().withSummary("between 42 and 47 and not equal to 45").withValue(ListBuilder.of("BETWEEN 42,47", "!=45"))
-               ))
-            );
+               .withExamples(getCriteriaExamples(openAPI.getComponents().getExamples(), tableApiField)));
          }
 
          Method queryPost = new Method()
@@ -395,7 +393,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method idGet = new Method()
             .withSummary("Get one " + tableLabel + " by " + primaryKeyLabel)
-            .withDescription("TODO")
+            .withDescription("""
+               Get one record from this table, by specifying its primary key as a path parameter.
+               """)
             .withOperationId("get" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -404,20 +404,27 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withDescription(primaryKeyLabel + " of the " + tableLabel + " to get.")
                   .withIn("path")
                   .withRequired(true)
-                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
-            ))
+                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
             .withResponse(HttpStatus.OK.getCode(), new Response()
                .withDescription("Successfully got the requested " + tableLabel)
                .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
-               )))
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName)))))
             .withSecurity(getSecurity(tableReadPermissionName));
 
          Method idPatch = new Method()
-            .withSummary("Update one " + tableLabel + ".")
-            .withDescription("TODO")
+            .withSummary("Update one " + tableLabel)
+            .withDescription("""
+               Update one record in this table, by specifying its primary key as a path parameter, and by supplying values to be updated in the request body.
+                              
+               * Only the fields provided in the request body will be updated.
+               * To remove a value from a field, supply the key for the field, with a null value.
+               * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
+               * Note that if the request body includes the primary key, it will be ignored.  Only the primary key value path parameter will be used.
+                              
+               Upon success, a status code of 204 (`No Content`) is returned, with no response body.
+               """)
             .withOperationId("update" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -426,22 +433,24 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withDescription(primaryKeyLabel + " of the " + tableLabel + " to update.")
                   .withIn("path")
                   .withRequired(true)
-                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
-            ))
+                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))))
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Field values to update in the " + tableLabel + " record.")
                .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
-               )))
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName)))))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
             .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully updated the requested " + tableLabel))
             .withSecurity(getSecurity(tableUpdatePermissionName));
 
          Method idDelete = new Method()
-            .withSummary("Delete one " + tableLabel + ".")
-            .withDescription("TODO")
+            .withSummary("Delete one " + tableLabel)
+            .withDescription("""
+               Delete one record from this table, by specifying its primary key as a path parameter.
+                              
+               Upon success, a status code of 204 (`No Content`) is returned, with no response body.
+               """)
             .withOperationId("delete" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -450,8 +459,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withDescription(primaryKeyLabel + " of the " + tableLabel + " to delete.")
                   .withIn("path")
                   .withRequired(true)
-                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))
-            ))
+                  .withSchema(new Schema().withType(getFieldType(primaryKeyField)))))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
             .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully deleted the requested " + tableLabel))
@@ -467,12 +475,18 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          }
 
          Method slashPost = new Method()
-            .withSummary("Create one " + tableLabel + " record.")
+            .withSummary("Create one " + tableLabel)
+            .withDescription("""
+               Insert one record into this table by supplying the values to be inserted in the request body.
+               * The request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body.
+                              
+               Upon success, a status code of 201 (`Created`) is returned, and the generated value for the primary key will be returned in the response body object.
+               """)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " record to create.")
                .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName + "WithoutPrimaryKey"))
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
                )))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.CREATED.getCode(), new Response()
@@ -482,10 +496,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                      .withType("object")
                      .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
                         .withType(getFieldType(primaryKeyField))
-                        .withExample("47")
-                     ))
-                  )
-               )))
+                        .withExample("47")))))))
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(tableInsertPermissionName));
 
@@ -500,35 +511,64 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          // bulk paths //
          ////////////////
          Method bulkPost = new Method()
-            .withSummary("Create multiple " + tableLabel + " records.")
+            .withSummary("Create multiple " + tableLabel + " records")
+            .withDescription("""
+               Insert one or more records into this table by supplying array of records with values to be inserted, in the request body.
+               * The objects in the request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body
+                              
+               An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
+               * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
+               * For sub-status codes of 201 (`Created`), and the generated value for the primary key will be returned in the response body object.
+               """)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " records to create.")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
                      .withType("array")
-                     .withItems(new Schema().withRef("#/components/schemas/" + tableApiName + "WithoutPrimaryKey"))))))
+                     .withItems(new Schema().withRef("#/components/schemas/" + tableApiName))))))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyApiName, primaryKeyField, "post"))
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(tableInsertPermissionName));
 
          Method bulkPatch = new Method()
-            .withSummary("Update multiple " + tableLabel + " records.")
+            .withSummary("Update multiple " + tableLabel + " records")
+            .withDescription("""
+               Update one or more records in this table, by supplying an array of records, with primary keys and values to be updated, in the request body.
+               * Only the fields provided in the request body will be updated.
+               * To remove a value from a field, supply the key for the field, with a null value.
+               * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
+                             
+               An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
+               * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
+               """)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " records to update.")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema()
                      .withType("array")
-                     .withItems(new Schema().withRef("#/components/schemas/" + tableApiName))))))
+                     .withItems(new Schema()
+                        .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/" + tableApiName)))
+                        .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
+                           .withType(getFieldType(primaryKeyField))
+                           .withReadOnly(false)
+                           .withNullable(false)
+                           .withExample("47"))))))))
             .withResponses(buildStandardErrorResponses())
             .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyApiName, primaryKeyField, "patch"))
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(tableUpdatePermissionName));
 
          Method bulkDelete = new Method()
-            .withSummary("Delete multiple " + tableLabel + " records.")
+            .withSummary("Delete multiple " + tableLabel + " records")
+            .withDescription("""
+               Delete one or more records from this table, by supplying an array of primary key values in the request body.
+                              
+               An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
+               * The 1st primary key in the request will have its response in the 1st object in the response, and so-forth.
+               """)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription(primaryKeyLabel + " values for the " + tableLabel + " records to delete.")
@@ -554,12 +594,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       componentResponses.put("error" + HttpStatus.BAD_REQUEST.getCode(), buildStandardErrorResponse("Bad Request.  Some portion of the request's content was not acceptable to the server.  See error message in body for details.", "Parameter id should be given an integer value, but received string: \"Foo\""));
       componentResponses.put("error" + HttpStatus.UNAUTHORIZED.getCode(), buildStandardErrorResponse("Unauthorized.  The required authentication credentials were missing or invalid.", "The required authentication credentials were missing or invalid."));
       componentResponses.put("error" + HttpStatus.FORBIDDEN.getCode(), buildStandardErrorResponse("Forbidden.  You do not have permission to access the requested resource.", "You do not have permission to access the requested resource."));
-      componentResponses.put("error" + HttpStatus.INTERNAL_SERVER_ERROR.getCode(), buildStandardErrorResponse("Internal Server Error.  An error occurred in the server processing the request.", "Database connection error.  Try again later."));
+      componentResponses.put("error" + HttpStatus.INTERNAL_SERVER_ERROR.getCode(), buildStandardErrorResponse("Internal Server Error.  An error occurred in the server while processing the request.", "Database connection error.  Try again later."));
 
       GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecOutput();
       output.setOpenAPI(openAPI);
       output.setYaml(YamlUtils.toYaml(openAPI));
-      output.setJson(JsonUtils.toJson(openAPI));
+      output.setJson(JsonUtils.toPrettyJson(openAPI));
       return (output);
    }
 
@@ -568,7 +608,130 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void addAssociations(QTableMetaData table, Schema tableWithoutPrimaryKeySchema)
+   private static Map<String, Example> getComponentExamples()
+   {
+      Map<String, Example> rs = new LinkedHashMap<>();
+      rs.put("criteriaNotQueried", new ExampleWithListValue().withSummary("no query on this field").withValue(ListBuilder.of("")));
+
+      rs.put("criteriaNumberEquals", new ExampleWithListValue().withSummary("equal to 47").withValue(ListBuilder.of("47")));
+      rs.put("criteriaNumberNotEquals", new ExampleWithListValue().withSummary("not equal to 47").withValue(ListBuilder.of("!47")));
+      rs.put("criteriaNumberLessThan", new ExampleWithListValue().withSummary("less than 47").withValue(ListBuilder.of("<47")));
+      rs.put("criteriaNumberGreaterThan", new ExampleWithListValue().withSummary("greater than 47").withValue(ListBuilder.of(">47")));
+      rs.put("criteriaNumberLessThanOrEquals", new ExampleWithListValue().withSummary("less than or equal to 47").withValue(ListBuilder.of("<=47")));
+      rs.put("criteriaNumberGreaterThanOrEquals", new ExampleWithListValue().withSummary("greater than or equal to 47").withValue(ListBuilder.of(">=47")));
+      rs.put("criteriaNumberEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaNumberNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+      rs.put("criteriaNumberBetween", new ExampleWithListValue().withSummary("between 42 and 47").withValue(ListBuilder.of("BETWEEN 42,47")));
+      rs.put("criteriaNumberNotBetween", new ExampleWithListValue().withSummary("not between 42 and 47").withValue(ListBuilder.of("!BETWEEN 42,47")));
+      rs.put("criteriaNumberIn", new ExampleWithListValue().withSummary("any of 1701, 74205, or 74656").withValue(ListBuilder.of("IN 1701,74205,74656")));
+      rs.put("criteriaNumberNotIn", new ExampleWithListValue().withSummary("not any of 1701, 74205, or 74656").withValue(ListBuilder.of("!IN 1701,74205,74656")));
+      rs.put("criteriaNumberMultiple", new ExampleWithListValue().withSummary("multiple criteria: between 42 and 47 and not equal to 45").withValue(ListBuilder.of("BETWEEN 42,47", "!45")));
+
+      rs.put("criteriaBooleanEquals", new ExampleWithListValue().withSummary("equal to true").withValue(ListBuilder.of("true")));
+      rs.put("criteriaBooleanNotEquals", new ExampleWithListValue().withSummary("not equal to true").withValue(ListBuilder.of("!true")));
+      rs.put("criteriaBooleanEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaBooleanNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+
+      String now  = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString();
+      String then = Instant.now().minus(90, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).toString();
+      String when = Instant.now().plus(90, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).toString();
+      rs.put("criteriaDateTimeEquals", new ExampleWithListValue().withSummary("equal to " + now).withValue(ListBuilder.of(now)));
+      rs.put("criteriaDateTimeNotEquals", new ExampleWithListValue().withSummary("not equal to " + now).withValue(ListBuilder.of("!" + now)));
+      rs.put("criteriaDateTimeLessThan", new ExampleWithListValue().withSummary("less than " + now).withValue(ListBuilder.of("<" + now)));
+      rs.put("criteriaDateTimeGreaterThan", new ExampleWithListValue().withSummary("greater than " + now).withValue(ListBuilder.of(">" + now)));
+      rs.put("criteriaDateTimeLessThanOrEquals", new ExampleWithListValue().withSummary("less than or equal to " + now).withValue(ListBuilder.of("<=" + now)));
+      rs.put("criteriaDateTimeGreaterThanOrEquals", new ExampleWithListValue().withSummary("greater than or equal to " + now).withValue(ListBuilder.of(">=" + now)));
+      rs.put("criteriaDateTimeEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaDateTimeNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+      rs.put("criteriaDateTimeBetween", new ExampleWithListValue().withSummary("between " + then + " and " + now).withValue(ListBuilder.of("BETWEEN " + then + "," + now)));
+      rs.put("criteriaDateTimeNotBetween", new ExampleWithListValue().withSummary("not between " + then + " and " + now).withValue(ListBuilder.of("!BETWEEN " + then + "," + now)));
+      rs.put("criteriaDateTimeIn", new ExampleWithListValue().withSummary("any of " + then + ", " + now + ", or " + when).withValue(ListBuilder.of("IN " + then + "," + now + "," + when)));
+      rs.put("criteriaDateTimeNotIn", new ExampleWithListValue().withSummary("not any of " + then + ", " + now + ", or " + when).withValue(ListBuilder.of("!IN " + then + "," + now + "," + when)));
+      rs.put("criteriaDateTimeMultiple", new ExampleWithListValue().withSummary("multiple criteria: between " + then + " and " + when + " and not equal to " + now).withValue(ListBuilder.of("BETWEEN " + then + "," + when, "!" + now)));
+
+      now = LocalDate.now().toString();
+      then = LocalDate.now().minus(90, ChronoUnit.DAYS).toString();
+      when = LocalDate.now().plus(90, ChronoUnit.DAYS).toString();
+      rs.put("criteriaDateEquals", new ExampleWithListValue().withSummary("equal to " + now).withValue(ListBuilder.of(now)));
+      rs.put("criteriaDateNotEquals", new ExampleWithListValue().withSummary("not equal to " + now).withValue(ListBuilder.of("!" + now)));
+      rs.put("criteriaDateLessThan", new ExampleWithListValue().withSummary("less than " + now).withValue(ListBuilder.of("<" + now)));
+      rs.put("criteriaDateGreaterThan", new ExampleWithListValue().withSummary("greater than " + now).withValue(ListBuilder.of(">" + now)));
+      rs.put("criteriaDateLessThanOrEquals", new ExampleWithListValue().withSummary("less than or equal to " + now).withValue(ListBuilder.of("<=" + now)));
+      rs.put("criteriaDateGreaterThanOrEquals", new ExampleWithListValue().withSummary("greater than or equal to " + now).withValue(ListBuilder.of(">=" + now)));
+      rs.put("criteriaDateEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaDateNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+      rs.put("criteriaDateBetween", new ExampleWithListValue().withSummary("between " + then + " and " + now).withValue(ListBuilder.of("BETWEEN " + then + "," + now)));
+      rs.put("criteriaDateNotBetween", new ExampleWithListValue().withSummary("not between " + then + " and " + now).withValue(ListBuilder.of("!BETWEEN " + then + "," + now)));
+      rs.put("criteriaDateIn", new ExampleWithListValue().withSummary("any of " + then + ", " + now + ", or " + when).withValue(ListBuilder.of("IN " + then + "," + now + "," + when)));
+      rs.put("criteriaDateNotIn", new ExampleWithListValue().withSummary("not any of " + then + ", " + now + ", or " + when).withValue(ListBuilder.of("!IN " + then + "," + now + "," + when)));
+      rs.put("criteriaDateMultiple", new ExampleWithListValue().withSummary("multiple criteria: between " + then + " and " + when + " and not equal to " + now).withValue(ListBuilder.of("BETWEEN " + then + "," + when, "!" + now)));
+
+      rs.put("criteriaStringEquals", new ExampleWithListValue().withSummary("equal to foo").withValue(ListBuilder.of("foo")));
+      rs.put("criteriaStringNotEquals", new ExampleWithListValue().withSummary("not equal to foo").withValue(ListBuilder.of("!foo")));
+      rs.put("criteriaStringLessThan", new ExampleWithListValue().withSummary("less than foo").withValue(ListBuilder.of("<foo")));
+      rs.put("criteriaStringGreaterThan", new ExampleWithListValue().withSummary("greater than foo").withValue(ListBuilder.of(">foo")));
+      rs.put("criteriaStringLessThanOrEquals", new ExampleWithListValue().withSummary("less than or equal to foo").withValue(ListBuilder.of("<=foo")));
+      rs.put("criteriaStringGreaterThanOrEquals", new ExampleWithListValue().withSummary("greater than or equal to foo").withValue(ListBuilder.of(">=foo")));
+      rs.put("criteriaStringEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaStringNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+      rs.put("criteriaStringBetween", new ExampleWithListValue().withSummary("between bar and foo").withValue(ListBuilder.of("BETWEEN bar,foo")));
+      rs.put("criteriaStringNotBetween", new ExampleWithListValue().withSummary("not between bar and foo").withValue(ListBuilder.of("!BETWEEN bar,foo")));
+      rs.put("criteriaStringIn", new ExampleWithListValue().withSummary("any of foo, bar, or baz").withValue(ListBuilder.of("IN foo,bar,baz")));
+      rs.put("criteriaStringNotIn", new ExampleWithListValue().withSummary("not any of foo, bar, or baz").withValue(ListBuilder.of("!IN foo,bar,baz")));
+      rs.put("criteriaStringLike", new ExampleWithListValue().withSummary("starting with f").withValue(ListBuilder.of("LIKE f%")));
+      rs.put("criteriaStringNotLike", new ExampleWithListValue().withSummary("not starting with f").withValue(ListBuilder.of("!LIKE f%")));
+      rs.put("criteriaStringMultiple", new ExampleWithListValue().withSummary("multiple criteria: between bar and foo and not equal to baz").withValue(ListBuilder.of("BETWEEN bar,foo", "!baz")));
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Map<String, Example> getCriteriaExamples(Map<String, Example> componentExamples, QFieldMetaData tableApiField)
+   {
+      List<String> exampleRefs = new ArrayList<>();
+      exampleRefs.add("criteriaNotQueried");
+
+      if(tableApiField.getType().isStringLike())
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaString")).forEach(exampleRefs::add);
+      }
+      else if(tableApiField.getType().isNumeric())
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaNumber")).forEach(exampleRefs::add);
+      }
+      else if(tableApiField.getType().equals(QFieldType.DATE_TIME))
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaDateTime")).forEach(exampleRefs::add);
+      }
+      else if(tableApiField.getType().equals(QFieldType.DATE))
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaDate") && !s.startsWith("criteriaDateTime")).forEach(exampleRefs::add);
+      }
+      else if(tableApiField.getType().equals(QFieldType.BOOLEAN))
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaBoolean")).forEach(exampleRefs::add);
+      }
+
+      Map<String, Example> rs = new LinkedHashMap<>();
+
+      for(String exampleRef : exampleRefs)
+      {
+         rs.put(exampleRef, new Example().withRef("#components/examples/" + exampleRef));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void addAssociations(QTableMetaData table, Schema tableSchema)
    {
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -577,7 +740,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          ApiTableMetaData associatedApiTableMetaData = Objects.requireNonNullElse(ApiTableMetaData.of(associatedTable), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
 
-         tableWithoutPrimaryKeySchema.getProperties().put(association.getName(), new Schema()
+         tableSchema.getProperties().put(association.getName(), new Schema()
             .withType("array")
             .withItems(new Schema().withRef("#/components/schemas/" + associatedTableApiName)));
       }
@@ -595,17 +758,35 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withFormat(getFieldFormat(table.getField(field.getName())))
          .withDescription(field.getLabel() + " for the " + table.getLabel() + ".");
 
+      if(!field.getIsEditable())
+      {
+         fieldSchema.setReadOnly(true);
+      }
+
+      if(!field.getIsRequired())
+      {
+         fieldSchema.setNullable(true);
+      }
+
+      if(field.getType().isStringLike() && field.getMaxLength() != null)
+      {
+         fieldSchema.setMaxLength(field.getMaxLength());
+      }
+
       if(StringUtils.hasContent(field.getPossibleValueSourceName()))
       {
          QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
          if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
          {
-            List<String> enumValues = new ArrayList<>();
+            List<String> enumValues  = new ArrayList<>();
+            List<String> enumMapping = new ArrayList<>();
             for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
             {
-               enumValues.add(enumValue.getId() + "=" + enumValue.getLabel());
+               enumValues.add(String.valueOf(enumValue.getId()));
+               enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
             }
             fieldSchema.setEnumValues(enumValues);
+            fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
          }
          else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
          {
@@ -672,7 +853,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          };
 
       Map<String, Schema> properties = new LinkedHashMap<>();
-      properties.put("status", new Schema().withType("integer"));
+      properties.put("statusCode", new Schema().withType("integer"));
+      properties.put("statusText", new Schema().withType("string"));
       properties.put("error", new Schema().withType("string"));
       if(method.equalsIgnoreCase("post"))
       {
@@ -726,17 +908,21 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          }
       }
 
+      rs.put("default", new ExampleWithListValue()
+         .withSummary("default:  order by " + primaryKeyApiName + " descending")
+         .withValue(ListBuilder.of("")));
+
       rs.put(primaryKeyApiName, new ExampleWithSingleValue()
-         .withSummary("order by " + primaryKeyApiName + " (by default is ascending)")
+         .withSummary("order by " + primaryKeyApiName + " (ascending, since ASC/DESC was not specified)")
          .withValue("id"));
 
       rs.put(primaryKeyApiName + "Desc", new ExampleWithSingleValue()
-         .withSummary("order by " + primaryKeyApiName + " (descending)")
-         .withValue("id desc"));
+         .withSummary("order by " + primaryKeyApiName + " descending")
+         .withValue("id DESC"));
 
       rs.put(primaryKeyApiName + "Asc", new ExampleWithSingleValue()
-         .withSummary("order by " + primaryKeyApiName + " (explicitly ascending)")
-         .withValue("id asc"));
+         .withSummary("order by " + primaryKeyApiName + " ascending")
+         .withValue("id ASC"));
 
       if(fieldsForExample4.size() == 2)
       {
@@ -758,7 +944,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          String name = a + "And" + StringUtils.ucFirst(b) + "And" + StringUtils.ucFirst(c);
          rs.put(name, new ExampleWithSingleValue()
             .withSummary("order by " + a + " descending, then by " + b + " ascending, then by " + c)
-            .withValue(a + " desc, " + b + " asc, " + c));
+            .withValue(a + " DESC, " + b + " ASC, " + c));
       }
 
       return (rs);

@@ -187,7 +187,7 @@ public class QJavalinImplementation
       QJavalinImplementation.qInstance = qInstance;
       QJavalinImplementation.javalinMetaData = javalinMetaData;
       new QInstanceValidator().validate(qInstance);
-      this.startTime = System.currentTimeMillis();
+      startTime = System.currentTimeMillis();
    }
 
 
@@ -1465,4 +1465,25 @@ public class QJavalinImplementation
    {
       QJavalinImplementation.javalinMetaData = javalinMetaData;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for qInstanceHotSwapSupplier
+    *******************************************************************************/
+   public static Supplier<QInstance> getQInstanceHotSwapSupplier()
+   {
+      return (QJavalinImplementation.qInstanceHotSwapSupplier);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qInstanceHotSwapSupplier
+    *******************************************************************************/
+   public static QInstance getQInstance()
+   {
+      return (QJavalinImplementation.qInstance);
+   }
+
 }
