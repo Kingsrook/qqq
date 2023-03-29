@@ -401,6 +401,7 @@ public class ScriptsMetaDataProvider
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptLog.TABLE_NAME, ScriptLog.class)
          .withRecordLabelFields(List.of("id"))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
          .withSection(new QFieldSection("script", new QIcon().withName("data_object"), Tier.T2, List.of("scriptId", "scriptRevisionId")))
          .withSection(new QFieldSection("timing", new QIcon().withName("schedule"), Tier.T2, List.of("startTimestamp", "endTimestamp", "runTimeMillis", "createDate", "modifyDate")))
@@ -424,6 +425,7 @@ public class ScriptsMetaDataProvider
    private QTableMetaData defineScriptLogLineTable(String backendName) throws QException
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptLogLine.TABLE_NAME, ScriptLogLine.class)
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE)
          .withRecordLabelFields(List.of("id"));
 
       tableMetaData.getField("text").withFieldAdornment(AdornmentType.Size.XLARGE.toAdornment());

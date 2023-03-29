@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
@@ -176,7 +177,8 @@ public class AuditsMetaDataProvider
          .withField(new QFieldMetaData("name", QFieldType.STRING))
          .withField(new QFieldMetaData("label", QFieldType.STRING))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME));
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
    }
 
 
@@ -197,7 +199,8 @@ public class AuditsMetaDataProvider
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("name", QFieldType.STRING))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME));
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
    }
 
 
@@ -219,7 +222,8 @@ public class AuditsMetaDataProvider
          .withField(new QFieldMetaData("auditUserId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT_USER))
          .withField(new QFieldMetaData("recordId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
-         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME));
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
    }
 
 
@@ -241,7 +245,8 @@ public class AuditsMetaDataProvider
          .withField(new QFieldMetaData("message", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
          .withField(new QFieldMetaData("fieldName", QFieldType.STRING).withMaxLength(100).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
          .withField(new QFieldMetaData("oldValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
-         .withField(new QFieldMetaData("newValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS));
+         .withField(new QFieldMetaData("newValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
    }
 
 }
