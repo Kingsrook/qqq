@@ -82,7 +82,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             .toList();
 
          String columns = insertableFields.stream()
-            .map(this::getColumnName)
+            .map(f -> "`" + getColumnName(f) + "`")
             .collect(Collectors.joining(", "));
          String questionMarks = insertableFields.stream()
             .map(x -> "?")

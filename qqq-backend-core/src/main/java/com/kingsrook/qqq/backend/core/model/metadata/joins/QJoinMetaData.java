@@ -50,6 +50,7 @@ public class QJoinMetaData
    public QJoinMetaData flip()
    {
       return (new QJoinMetaData()
+         .withName(name) // does this need to be different?, e.g., + "Flipped"?
          .withLeftTable(rightTable)
          .withRightTable(leftTable)
          .withType(type.flip())

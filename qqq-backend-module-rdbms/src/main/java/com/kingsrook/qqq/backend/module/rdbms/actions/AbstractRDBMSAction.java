@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.ImplicitQueryJoinForSecurityLock;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -218,7 +219,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          String       baseTableName  = Objects.requireNonNullElse(joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias()), tableName);
          QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
          {
-            QJoinMetaData found = findJoinMetaData(instance, joinsContext, baseTableName, queryJoin.getJoinTable());
+            QJoinMetaData found = joinsContext.findJoinMetaData(instance, baseTableName, queryJoin.getJoinTable());
             if(found == null)
             {
                throw (new RuntimeException("Could not find a join between tables [" + baseTableName + "][" + queryJoin.getJoinTable() + "]"));
@@ -259,69 +260,6 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
 
       return (rs.toString());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private QJoinMetaData findJoinMetaData(QInstance instance, JoinsContext joinsContext, String baseTableName, String joinTableName)
-   {
-      List<QJoinMetaData> matches = new ArrayList<>();
-      if(baseTableName != null)
-      {
-         ///////////////////////////////////////////////////////////////////////////
-         // if query specified a left-table, look for a join between left & right //
-         ///////////////////////////////////////////////////////////////////////////
-         for(QJoinMetaData join : instance.getJoins().values())
-         {
-            if(join.getLeftTable().equals(baseTableName) && join.getRightTable().equals(joinTableName))
-            {
-               matches.add(join);
-            }
-
-            //////////////////////////////
-            // look in both directions! //
-            //////////////////////////////
-            if(join.getRightTable().equals(baseTableName) && join.getLeftTable().equals(joinTableName))
-            {
-               matches.add(join.flip());
-            }
-         }
-      }
-      else
-      {
-         /////////////////////////////////////////////////////////////////////////////////////
-         // if query didn't specify a left-table, then look for any join to the right table //
-         /////////////////////////////////////////////////////////////////////////////////////
-         for(QJoinMetaData join : instance.getJoins().values())
-         {
-            if(join.getRightTable().equals(joinTableName) && joinsContext.hasTable(join.getLeftTable()))
-            {
-               matches.add(join);
-            }
-
-            //////////////////////////////
-            // look in both directions! //
-            //////////////////////////////
-            if(join.getLeftTable().equals(joinTableName) && joinsContext.hasTable(join.getRightTable()))
-            {
-               matches.add(join.flip());
-            }
-         }
-      }
-
-      if(matches.size() == 1)
-      {
-         return (matches.get(0));
-      }
-      else if(matches.size() > 1)
-      {
-         throw (new RuntimeException("More than 1 join was found between [" + baseTableName + "] and [" + joinTableName + "].  Specify which one in your QueryJoin."));
-      }
-
-      return (null);
    }
 
 
@@ -403,6 +341,16 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
       for(QueryJoin queryJoin : CollectionUtils.nonNullList(joinsContext.getQueryJoins()))
       {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // for user-added joins, we want to add their security-locks to the query                                 //
+         // but if a join was implicitly added because it's needed to find a security lock on table being queried, //
+         // don't add additional layers of locks for each join table.  that's the idea here at least.              //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(queryJoin instanceof ImplicitQueryJoinForSecurityLock)
+         {
+            continue;
+         }
+
          QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
          for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
          {
@@ -436,43 +384,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          }
       }
 
-      String fieldName                   = tableNameOrAlias + "." + recordSecurityLock.getFieldName();
-      String fieldNameWithoutTablePrefix = recordSecurityLock.getFieldName().replaceFirst(".*\\.", "");
-      String fieldNameTablePrefix        = recordSecurityLock.getFieldName().replaceFirst("\\..*", "");
+      String fieldName = tableNameOrAlias + "." + recordSecurityLock.getFieldName();
       if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()))
       {
-         for(String joinName : recordSecurityLock.getJoinNameChain())
-         {
-            QJoinMetaData joinMetaData = instance.getJoin(joinName);
-
-            /*
-            for(QueryJoin queryJoin : joinsContext.getQueryJoins())
-            {
-               if(queryJoin.getJoinMetaData().getName().equals(joinName))
-               {
-                  joinMetaData = queryJoin.getJoinMetaData();
-                  break;
-               }
-            }
-            */
-
-            if(joinMetaData == null)
-            {
-               throw (new RuntimeException("Could not find joinMetaData for recordSecurityLock with joinChain member [" + joinName + "]"));
-            }
-
-            if(fieldNameTablePrefix.equals(joinMetaData.getLeftTable()))
-            {
-               table = instance.getTable(joinMetaData.getLeftTable());
-            }
-            else
-            {
-               table = instance.getTable(joinMetaData.getRightTable());
-            }
-
-            tableNameOrAlias = table.getName();
-            fieldName = tableNameOrAlias + "." + fieldNameWithoutTablePrefix;
-         }
+         fieldName = recordSecurityLock.getFieldName();
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////
@@ -481,7 +396,19 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       QQueryFilter          lockFilter   = new QQueryFilter();
       List<QFilterCriteria> lockCriteria = new ArrayList<>();
       lockFilter.setCriteria(lockCriteria);
-      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), table.getField(fieldNameWithoutTablePrefix).getType());
+
+      QFieldType type = QFieldType.INTEGER;
+      try
+      {
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(fieldName);
+         type = fieldAndTableNameOrAlias.field().getType();
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error getting field type...  Trying Integer", e);
+      }
+
+      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), type);
       if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
       {
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

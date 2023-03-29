@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -71,6 +72,21 @@ public class BackendQueryFilterUtils
       {
          String       fieldName = criterion.getFieldName();
          Serializable value     = qRecord.getValue(fieldName);
+         if(value == null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the value isn't in the record - check, if it looks like a table.fieldName, but none of the //
+            // field names in the record are fully qualified, then just use the field-name portion...        //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            if(fieldName.contains("."))
+            {
+               Map<String, Serializable> values = qRecord.getValues();
+               if(values.keySet().stream().noneMatch(n -> n.contains(".")))
+               {
+                  value = qRecord.getValue(fieldName.substring(fieldName.indexOf(".") + 1));
+               }
+            }
+         }
 
          boolean criterionMatches = doesCriteriaMatch(criterion, fieldName, value);
 

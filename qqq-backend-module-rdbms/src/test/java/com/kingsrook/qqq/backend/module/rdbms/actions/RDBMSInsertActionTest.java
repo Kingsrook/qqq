@@ -24,6 +24,9 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
@@ -34,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -136,6 +140,50 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
       assertAnInsertedPersonRecord("Jean-Luc", "Picard", 6);
       assertAnInsertedPersonRecord("William", "Riker", 7);
       assertAnInsertedPersonRecord("Beverly", "Crusher", 8);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInsertAssociations() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1);
+
+      int originalNoOfOrderLineExtrinsics = TestUtils.queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size();
+      int originalNoOfOrderLines          = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER_LINE).size();
+      int originalNoOfOrders              = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).size();
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("storeId", 1).withValue("billToPersonId", 100).withValue("shipToPersonId", 200)
+
+            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC1").withValue("quantity", 1)
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-1.1").withValue("value", "LINE-VAL-1")))
+
+            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC2").withValue("quantity", 2)
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.1").withValue("value", "LINE-VAL-2"))
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.2").withValue("value", "LINE-VAL-3")))
+      ));
+      new InsertAction().execute(insertInput);
+
+      List<QRecord> orders = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER);
+      assertEquals(originalNoOfOrders + 1, orders.size());
+      assertTrue(orders.stream().anyMatch(r -> Objects.equals(r.getValue("billToPersonId"), 100) && Objects.equals(r.getValue("shipToPersonId"), 200)));
+
+      List<QRecord> orderLines = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER_LINE);
+      assertEquals(originalNoOfOrderLines + 2, orderLines.size());
+      assertTrue(orderLines.stream().anyMatch(r -> Objects.equals(r.getValue("sku"), "BASIC1") && Objects.equals(r.getValue("quantity"), 1)));
+      assertTrue(orderLines.stream().anyMatch(r -> Objects.equals(r.getValue("sku"), "BASIC2") && Objects.equals(r.getValue("quantity"), 2)));
+
+      List<QRecord> lineItemExtrinsics = TestUtils.queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      assertEquals(originalNoOfOrderLineExtrinsics + 3, lineItemExtrinsics.size());
+      assertTrue(lineItemExtrinsics.stream().anyMatch(r -> Objects.equals(r.getValue("key"), "LINE-EXT-1.1") && Objects.equals(r.getValue("value"), "LINE-VAL-1")));
+      assertTrue(lineItemExtrinsics.stream().anyMatch(r -> Objects.equals(r.getValue("key"), "LINE-EXT-2.1") && Objects.equals(r.getValue("value"), "LINE-VAL-2")));
+      assertTrue(lineItemExtrinsics.stream().anyMatch(r -> Objects.equals(r.getValue("key"), "LINE-EXT-2.2") && Objects.equals(r.getValue("value"), "LINE-VAL-3")));
    }
 
 

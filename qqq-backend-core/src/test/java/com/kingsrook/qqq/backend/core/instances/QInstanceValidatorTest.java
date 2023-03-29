@@ -1605,8 +1605,25 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("notAField")), "unrecognized field");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setNullValueBehavior(null)), "missing a nullValueBehavior");
 
-      // todo - remove once implemented
-      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("join.field")), "does not yet support finding a field that looks like a join field");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("join.field")), "Table order recordSecurityLock (of key type store) field name join.field looks like a join (has a dot), but no joinNameChain was given");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRecordSecurityLockJoinChains()
+   {
+      Function<QInstance, RecordSecurityLock> lockExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).getRecordSecurityLocks().get(0);
+
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(null)), "looks like a join (has a dot), but no joinNameChain was given");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(new ArrayList<>())), "looks like a join (has a dot), but no joinNameChain was given");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("storeId")), "does not look like a join (does not have a dot), but a joinNameChain was given");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("order.wrongId")), "unrecognized fieldName: order.wrongId");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(List.of("notAJoin"))), "an unrecognized join");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(List.of("orderLineItem"))), "joinNameChain could not be followed through join");
    }
 
 

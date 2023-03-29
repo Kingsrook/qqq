@@ -24,19 +24,24 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -134,10 +139,15 @@ public class MemoryRecordStore
    {
       incrementStatistic(input);
 
-      Map<Serializable, QRecord> tableData = getTableData(input.getTable());
-      List<QRecord>              records   = new ArrayList<>();
+      Collection<QRecord> tableData = getTableData(input.getTable()).values();
+      List<QRecord>       records   = new ArrayList<>();
 
-      for(QRecord qRecord : tableData.values())
+      if(CollectionUtils.nullSafeHasContents(input.getQueryJoins()))
+      {
+         tableData = buildJoinCrossProduct(input);
+      }
+
+      for(QRecord qRecord : tableData)
       {
          boolean recordMatches = BackendQueryFilterUtils.doesRecordMatch(input.getFilter(), qRecord);
 
@@ -151,6 +161,87 @@ public class MemoryRecordStore
       records = BackendQueryFilterUtils.applySkipAndLimit(input, records);
 
       return (records);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Collection<QRecord> buildJoinCrossProduct(QueryInput input)
+   {
+      List<QRecord>  crossProduct = new ArrayList<>();
+      QTableMetaData leftTable    = input.getTable();
+      for(QRecord record : getTableData(leftTable).values())
+      {
+         QRecord productRecord = new QRecord();
+         addRecordToProduct(productRecord, record, leftTable.getName());
+         crossProduct.add(productRecord);
+      }
+
+      for(QueryJoin queryJoin : input.getQueryJoins())
+      {
+         QTableMetaData      nextTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+         Collection<QRecord> nextTableRecords = getTableData(nextTable).values();
+
+         List<QRecord> nextLevelProduct = new ArrayList<>();
+         for(QRecord productRecord : crossProduct)
+         {
+            boolean matchFound = false;
+            for(QRecord nextTableRecord : nextTableRecords)
+            {
+               if(joinMatches(productRecord, nextTableRecord, queryJoin))
+               {
+                  QRecord joinRecord = new QRecord(productRecord);
+                  addRecordToProduct(joinRecord, nextTableRecord, queryJoin.getJoinTableOrItsAlias());
+                  nextLevelProduct.add(joinRecord);
+                  matchFound = true;
+               }
+            }
+
+            if(!matchFound)
+            {
+               // todo - Left & Right joins
+            }
+         }
+
+         crossProduct = nextLevelProduct;
+      }
+
+      return (crossProduct);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean joinMatches(QRecord productRecord, QRecord nextTableRecord, QueryJoin queryJoin)
+   {
+      for(JoinOn joinOn : queryJoin.getJoinMetaData().getJoinOns())
+      {
+         Serializable leftValue  = productRecord.getValue(queryJoin.getBaseTableOrAlias() + "." + joinOn.getLeftField());
+         Serializable rightValue = nextTableRecord.getValue(joinOn.getRightField());
+         if(!Objects.equals(leftValue, rightValue))
+         {
+            return (false);
+         }
+      }
+
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void addRecordToProduct(QRecord productRecord, QRecord record, String tableNameOrAlias)
+   {
+      for(Map.Entry<String, Serializable> entry : record.getValues().entrySet())
+      {
+         productRecord.withValue(tableNameOrAlias + "." + entry.getKey(), entry.getValue());
+      }
    }
 
 

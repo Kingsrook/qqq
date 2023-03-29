@@ -329,8 +329,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       aggregateResult = aggregateOutput.getResults().get(0);
-      // note - this would be 33, except for that one order line that has a contradictory store id...
-      Assertions.assertEquals(32, aggregateResult.getAggregateValue(sumOfQuantity));
+      Assertions.assertEquals(33, aggregateResult.getAggregateValue(sumOfQuantity));
    }
 
 

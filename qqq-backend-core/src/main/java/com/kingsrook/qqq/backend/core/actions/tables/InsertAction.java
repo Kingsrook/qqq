@@ -52,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -68,6 +69,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -101,6 +103,11 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       validateSecurityFields(insertInput);
 
       InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
+      List<String> errors       = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
+      if(CollectionUtils.nullSafeHasContents(errors))
+      {
+         LOG.warn("Errors in insertAction", logPair("tableName", table.getName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
+      }
 
       manageAssociations(table, insertOutput.getRecords());
 
@@ -209,8 +216,9 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // else look for the joined record - if it isn't found, assume a fail - else validate security value if found //
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            QJoinMetaData  join      = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(0)); // todo - many joins...
-            QTableMetaData joinTable = QContext.getQInstance().getTable(join.getLeftTable());
+            QJoinMetaData  leftMostJoin      = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(0));
+            QJoinMetaData  rightMostJoin     = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(recordSecurityLock.getJoinNameChain().size() - 1));
+            QTableMetaData leftMostJoinTable = QContext.getQInstance().getTable(leftMostJoin.getLeftTable());
 
             for(List<QRecord> inputRecordPage : CollectionUtils.getPages(insertInput.getRecords(), 500))
             {
@@ -219,9 +227,20 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                // query will be like (fkey1=? and fkey2=?) OR (fkey1=? and fkey2=?) OR (fkey1=? and fkey2=?) //
                ////////////////////////////////////////////////////////////////////////////////////////////////
                QueryInput queryInput = new QueryInput();
-               queryInput.setTableName(join.getLeftTable());
+               queryInput.setTableName(leftMostJoin.getLeftTable());
                QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
                queryInput.setFilter(filter);
+
+               for(String joinName : recordSecurityLock.getJoinNameChain())
+               {
+                  ///////////////////////////////////////
+                  // we don't need the right-most join //
+                  ///////////////////////////////////////
+                  if(!joinName.equals(rightMostJoin.getName()))
+                  {
+                     queryInput.withQueryJoin(new QueryJoin().withJoinMetaData(QContext.getQInstance().getJoin(joinName)).withSelect(true));
+                  }
+               }
 
                ///////////////////////////////////////////////////////////////////////////////////////////////////
                // foreach input record (in this page), put it in a listing hash, with key = list of join-values //
@@ -235,14 +254,14 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                   List<Serializable> inputRecordJoinValues = new ArrayList<>();
                   QQueryFilter       subFilter             = new QQueryFilter();
 
-                  for(JoinOn joinOn : join.getJoinOns())
+                  for(JoinOn joinOn : rightMostJoin.getJoinOns())
                   {
                      Serializable inputRecordValue = inputRecord.getValue(joinOn.getRightField());
                      inputRecordJoinValues.add(inputRecordValue);
 
                      subFilter.addCriteria(inputRecordValue == null
-                        ? new QFilterCriteria(joinOn.getLeftField(), QCriteriaOperator.IS_BLANK)
-                        : new QFilterCriteria(joinOn.getLeftField(), QCriteriaOperator.EQUALS, inputRecordValue));
+                        ? new QFilterCriteria(rightMostJoin.getLeftTable() + "." + joinOn.getLeftField(), QCriteriaOperator.IS_BLANK)
+                        : new QFilterCriteria(rightMostJoin.getLeftTable() + "." + joinOn.getLeftField(), QCriteriaOperator.EQUALS, inputRecordValue));
                   }
 
                   if(!inputRecordMapByJoinFields.containsKey(inputRecordJoinValues))
@@ -265,11 +284,16 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                for(QRecord joinRecord : queryOutput.getRecords())
                {
                   List<Serializable> joinRecordValues = new ArrayList<>();
-                  for(JoinOn joinOn : join.getJoinOns())
+                  for(JoinOn joinOn : rightMostJoin.getJoinOns())
                   {
-                     Serializable inputRecordValue = joinRecord.getValue(joinOn.getLeftField());
-                     joinRecordValues.add(inputRecordValue);
+                     Serializable joinValue = joinRecord.getValue(rightMostJoin.getLeftTable() + "." + joinOn.getLeftField());
+                     if(joinValue == null && joinRecord.getValues().keySet().stream().anyMatch(n -> !n.contains(".")))
+                     {
+                        joinValue = joinRecord.getValue(joinOn.getLeftField());
+                     }
+                     joinRecordValues.add(joinValue);
                   }
+
                   joinRecordMapByJoinFields.put(joinRecordValues, joinRecord);
                }
 
@@ -286,8 +310,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                      QRecord joinRecord = joinRecordMapByJoinFields.get(inputRecordJoinValues);
 
                      String         fieldName           = recordSecurityLock.getFieldName().replaceFirst(".*\\.", "");
-                     QFieldMetaData field               = joinTable.getField(fieldName);
+                     QFieldMetaData field               = leftMostJoinTable.getField(fieldName);
                      Serializable   recordSecurityValue = joinRecord.getValue(fieldName);
+                     if(recordSecurityValue == null && joinRecord.getValues().keySet().stream().anyMatch(n -> n.contains(".")))
+                     {
+                        recordSecurityValue = joinRecord.getValue(recordSecurityLock.getFieldName());
+                     }
 
                      for(QRecord inputRecord : inputRecords)
                      {
@@ -298,7 +326,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                   {
                      for(QRecord inputRecord : inputRecords)
                      {
-                        inputRecord.addError("You do not have permission to insert this record - the referenced " + joinTable.getLabel() + " was not found.");
+                        inputRecord.addError("You do not have permission to insert this record - the referenced " + leftMostJoinTable.getLabel() + " was not found.");
                      }
                   }
                }

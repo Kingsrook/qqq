@@ -79,6 +79,7 @@ INSERT INTO carrier (id, name, company_code, service_level) VALUES (9, 'USPS Sup
 INSERT INTO carrier (id, name, company_code, service_level) VALUES (10, 'DHL International', 'DHL', 'I');
 INSERT INTO carrier (id, name, company_code, service_level) VALUES (11, 'GSO', 'GSO', 'G');
 
+DROP TABLE IF EXISTS line_item_extrinsic;
 DROP TABLE IF EXISTS order_line;
 DROP TABLE IF EXISTS item;
 DROP TABLE IF EXISTS `order`;
@@ -138,7 +139,7 @@ CREATE TABLE order_line
    id INT AUTO_INCREMENT PRIMARY KEY,
    order_id INT REFERENCES `order`,
    sku VARCHAR(80),
-   store_id INT REFERENCES store, -- todo - as a challenge, if this field wasn't here, so we had to join through order...
+   store_id INT REFERENCES store,
    quantity INT
 );
 
@@ -177,3 +178,12 @@ CREATE TABLE warehouse_store_int
 INSERT INTO warehouse_store_int (warehouse_id, store_id) VALUES (1, 1);
 INSERT INTO warehouse_store_int (warehouse_id, store_id) VALUES (1, 2);
 INSERT INTO warehouse_store_int (warehouse_id, store_id) VALUES (1, 3);
+
+CREATE TABLE line_item_extrinsic
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   order_line_id INT REFERENCES order_line,
+   `key` VARCHAR(80),
+   `value` VARCHAR(80)
+);
+

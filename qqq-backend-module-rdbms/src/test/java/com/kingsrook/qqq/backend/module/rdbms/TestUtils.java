@@ -25,6 +25,11 @@ package com.kingsrook.qqq.backend.module.rdbms;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
@@ -38,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
@@ -61,6 +67,7 @@ public class TestUtils
    public static final String TABLE_NAME_ORDER               = "order";
    public static final String TABLE_NAME_ITEM                = "item";
    public static final String TABLE_NAME_ORDER_LINE          = "orderLine";
+   public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_WAREHOUSE           = "warehouse";
    public static final String TABLE_NAME_WAREHOUSE_STORE_INT = "warehouseStoreInt";
 
@@ -231,6 +238,7 @@ public class TestUtils
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER, "order")
          .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
+         .withAssociation(new Association().withName("orderLine").withAssociatedTableName(TABLE_NAME_ORDER_LINE).withJoinName("orderJoinOrderLine"))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
@@ -243,11 +251,26 @@ public class TestUtils
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER_LINE, "order_line")
-         .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
+         .withRecordSecurityLock(new RecordSecurityLock()
+            .withSecurityKeyType(TABLE_NAME_STORE)
+            .withFieldName("order.storeId")
+            .withJoinNameChain(List.of("orderJoinOrderLine")))
+         .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_LINE_ITEM_EXTRINSIC).withJoinName("orderLineJoinLineItemExtrinsic"))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("quantity", QFieldType.INTEGER))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_LINE_ITEM_EXTRINSIC, "line_item_extrinsic")
+         .withRecordSecurityLock(new RecordSecurityLock()
+            .withSecurityKeyType(TABLE_NAME_STORE)
+            .withFieldName("order.storeId")
+            .withJoinNameChain(List.of("orderJoinOrderLine", "orderLineJoinLineItemExtrinsic")))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("orderLineId", QFieldType.INTEGER).withBackendName("order_line_id"))
+         .withField(new QFieldMetaData("key", QFieldType.STRING))
+         .withField(new QFieldMetaData("value", QFieldType.STRING))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_WAREHOUSE_STORE_INT, "warehouse_store_int")
@@ -321,6 +344,14 @@ public class TestUtils
          .withJoinOn(new JoinOn("storeId", "storeId"))
       );
 
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderLineJoinLineItemExtrinsic")
+         .withLeftTable(TABLE_NAME_ORDER_LINE)
+         .withRightTable(TABLE_NAME_LINE_ITEM_EXTRINSIC)
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "orderLineId"))
+      );
+
       qInstance.addPossibleValueSource(new QPossibleValueSource()
          .withName("store")
          .withType(QPossibleValueSourceType.TABLE)
@@ -349,4 +380,16 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<QRecord> queryTable(String tableName) throws QException
+   {
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(tableName);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      return (queryOutput.getRecords());
+   }
 }

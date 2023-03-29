@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -162,6 +163,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
          .withDataSource(new QReportDataSource()
             .withSourceTable(TestUtils.TABLE_NAME_ORDER_LINE)
             .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ITEM).withAlias("i").withSelect(true))
+            .withQueryFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id")))
          )
          .withView(new QReportView()
             .withType(ReportType.TABLE)
@@ -179,13 +181,13 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
       assertEquals("""
          "Line Item Id","Item SKU","Item Store Id","Item Store Name"
          "1","QM-1","1","Q-Mart"
-         "5","QM-1","1","Q-Mart"
          "2","QM-2","1","Q-Mart"
          "3","QM-3","1","Q-Mart"
          "4","QRU-1","2","QQQ 'R' Us"
+         "5","QM-1","1","Q-Mart"
          "6","QRU-1","2","QQQ 'R' Us"
-         "8","QRU-1","2","QQQ 'R' Us"
          "7","QRU-2","2","QQQ 'R' Us"
+         "8","QRU-1","2","QQQ 'R' Us"
          "9","QD-1","3","QDepot"
          "10","QD-1","3","QDepot"
          "11","QD-1","3","QDepot"

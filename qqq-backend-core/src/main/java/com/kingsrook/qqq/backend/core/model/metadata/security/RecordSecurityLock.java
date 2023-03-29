@@ -28,13 +28,18 @@ import java.util.List;
 /*******************************************************************************
  ** Define (for a table) a lock that applies to records in the table - e.g.,
  ** a key type, and a field that has values for that key.
- *
+ **
+ ** Here's an example of how the joinNameChain should be set up:
+ ** given a table:  orderLineItemExtrinsic (that's 2 away from order, where the security field is):
+ ** - recordSecurityLock.fieldName = order.clientId
+ ** - recordSecurityLock.joinNameChain = [orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic]
+ ** that is - what's the chain that takes us FROM the security fieldName TO the table with the lock.
  *******************************************************************************/
 public class RecordSecurityLock
 {
    private String            securityKeyType;
    private String            fieldName;
-   private List<String>      joinNameChain; // todo - add validation in validator!!
+   private List<String>      joinNameChain;
    private NullValueBehavior nullValueBehavior = NullValueBehavior.DENY;
 
 
