@@ -426,7 +426,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       QUser qUser = new QUser();
       qUser.setFullName("Unknown");
-      for(String key : List.of("name", "com.kingsrook.qqq.name"))
+      for(String key : List.of("name", "com.kingsrook.qqq.name", "com.kingsrook.qqq.client_name"))
       {
          if(payload.has(key))
          {
