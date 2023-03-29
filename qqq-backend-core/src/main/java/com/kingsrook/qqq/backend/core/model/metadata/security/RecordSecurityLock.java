@@ -60,6 +60,7 @@ public class RecordSecurityLock
    public enum NullValueBehavior
    {
       ALLOW,
+      ALLOW_WRITE_ONLY, // not common - but see Audit, where you can do a thing that inserts them into a generic table, even though you can't later read them yourself...
       DENY
    }
 

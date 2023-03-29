@@ -326,7 +326,10 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                   {
                      for(QRecord inputRecord : inputRecords)
                      {
-                        inputRecord.addError("You do not have permission to insert this record - the referenced " + leftMostJoinTable.getLabel() + " was not found.");
+                        if(RecordSecurityLock.NullValueBehavior.DENY.equals(recordSecurityLock.getNullValueBehavior()))
+                        {
+                           inputRecord.addError("You do not have permission to insert this record - the referenced " + leftMostJoinTable.getLabel() + " was not found.");
+                        }
                      }
                   }
                }
