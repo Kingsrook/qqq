@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
@@ -74,7 +75,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    {
       UpdateInput updateInput = initUpdateRequest();
       updateInput.setRecords(null);
-      UpdateOutput updateResult = new RDBMSUpdateAction().execute(updateInput);
+      UpdateOutput updateResult = new UpdateAction().execute(updateInput);
       assertEquals(0, updateResult.getRecords().size());
    }
 
@@ -88,8 +89,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    {
       UpdateInput updateInput = initUpdateRequest();
       updateInput.setRecords(Collections.emptyList());
-      new RDBMSUpdateAction().execute(updateInput);
-      UpdateOutput updateResult = new RDBMSUpdateAction().execute(updateInput);
+      new UpdateAction().execute(updateInput);
+      UpdateOutput updateResult = new UpdateAction().execute(updateInput);
       assertEquals(0, updateResult.getRecords().size());
    }
 
@@ -110,9 +111,9 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("birthDate", "2210-05-20");
       updateInput.setRecords(List.of(record));
 
-      UpdateOutput         updateResult = new RDBMSUpdateAction().execute(updateInput);
+      UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
       Map<String, Integer> statistics   = QueryManager.getStatistics();
-      assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
+      assertEquals(2, statistics.get(QueryManager.STAT_QUERIES_RAN));
 
       assertEquals(1, updateResult.getRecords().size(), "Should return 1 row");
       assertEquals(2, updateResult.getRecords().get(0).getValue("id"), "Should have id=2 in the row");
@@ -163,12 +164,12 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
       updateInput.setRecords(List.of(record1, record2, record3));
 
-      UpdateOutput updateResult = new RDBMSUpdateAction().execute(updateInput);
+      UpdateOutput updateResult = new UpdateAction().execute(updateInput);
 
       // this test runs one batch and one regular query
       Map<String, Integer> statistics = QueryManager.getStatistics();
       assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
-      assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
+      assertEquals(2, statistics.get(QueryManager.STAT_QUERIES_RAN));
 
       assertEquals(3, updateResult.getRecords().size(), "Should return 3 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
@@ -234,7 +235,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
       updateInput.setRecords(List.of(record1, record2));
 
-      UpdateOutput         updateResult = new RDBMSUpdateAction().execute(updateInput);
+      UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
       Map<String, Integer> statistics   = QueryManager.getStatistics();
       assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
 
@@ -287,9 +288,9 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
       updateInput.setRecords(records);
 
-      UpdateOutput         updateResult = new RDBMSUpdateAction().execute(updateInput);
+      UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
       Map<String, Integer> statistics   = QueryManager.getStatistics();
-      assertEquals(1, statistics.get(QueryManager.STAT_QUERIES_RAN));
+      assertEquals(2, statistics.get(QueryManager.STAT_QUERIES_RAN));
 
       assertEquals(5, updateResult.getRecords().size(), "Should return 5 rows");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
@@ -320,7 +321,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("id", 1)
          .withValue("firstName", "Johnny Updated"));
       updateInput.setRecords(records);
-      new RDBMSUpdateAction().execute(updateInput);
+      new UpdateAction().execute(updateInput);
 
       String updatedModifyDate = selectModifyDate(1);
 
@@ -345,7 +346,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          .withValue("createDate", "2022-10-03T10:29:35Z")
          .withValue("firstName", "Johnny Updated"));
       updateInput.setRecords(records);
-      new RDBMSUpdateAction().execute(updateInput);
+      new UpdateAction().execute(updateInput);
    }
 
 
@@ -362,7 +363,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          records.add(new QRecord()
             .withValue("firstName", "Johnny Updated"));
          updateInput.setRecords(records);
-         UpdateOutput updateOutput = new RDBMSUpdateAction().execute(updateInput);
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
          assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
       }
@@ -374,7 +375,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
             .withValue("id", null)
             .withValue("firstName", "Johnny Updated"));
          updateInput.setRecords(records);
-         UpdateOutput updateOutput = new RDBMSUpdateAction().execute(updateInput);
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
          assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
       }
@@ -389,7 +390,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
             .withValue("id", 2)
             .withValue("firstName", "Johnny Updated"));
          updateInput.setRecords(records);
-         UpdateOutput updateOutput = new RDBMSUpdateAction().execute(updateInput);
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
 
          assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
          assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));

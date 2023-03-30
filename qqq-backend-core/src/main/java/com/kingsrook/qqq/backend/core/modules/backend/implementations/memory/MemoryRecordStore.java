@@ -30,7 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -54,6 +57,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class MemoryRecordStore
 {
+   private static final QLogger LOG = QLogger.getLogger(MemoryRecordStore.class);
+
    private static MemoryRecordStore instance;
 
    private Map<String, Map<Serializable, QRecord>> data;
@@ -135,7 +140,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> query(QueryInput input)
+   public List<QRecord> query(QueryInput input) throws QException
    {
       incrementStatistic(input);
 
@@ -153,7 +158,20 @@ public class MemoryRecordStore
 
          if(recordMatches)
          {
-            records.add(qRecord);
+            qRecord.setErrors(new ArrayList<>());
+            ValidateRecordSecurityLockHelper.validateSecurityFields(input.getTable(), List.of(qRecord), ValidateRecordSecurityLockHelper.Action.SELECT);
+            if(CollectionUtils.nullSafeHasContents(qRecord.getErrors()))
+            {
+               //////////////////////////////////////////////////////////////////////////////////////////////////////
+               // security error!  no record for you.  but remove the error, so future generations won't see it... //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////
+               qRecord.setErrors(new ArrayList<>());
+               LOG.trace("Error selecting record (presumably security?): " + qRecord.getErrors());
+            }
+            else
+            {
+               records.add(qRecord);
+            }
          }
       }
 
@@ -175,7 +193,7 @@ public class MemoryRecordStore
       for(QRecord record : getTableData(leftTable).values())
       {
          QRecord productRecord = new QRecord();
-         addRecordToProduct(productRecord, record, leftTable.getName());
+         addRecordToProduct(productRecord, record, null);
          crossProduct.add(productRecord);
       }
 
@@ -220,7 +238,9 @@ public class MemoryRecordStore
    {
       for(JoinOn joinOn : queryJoin.getJoinMetaData().getJoinOns())
       {
-         Serializable leftValue  = productRecord.getValue(queryJoin.getBaseTableOrAlias() + "." + joinOn.getLeftField());
+         Serializable leftValue = productRecord.getValues().containsKey(queryJoin.getBaseTableOrAlias() + "." + joinOn.getLeftField())
+            ? productRecord.getValue(queryJoin.getBaseTableOrAlias() + "." + joinOn.getLeftField())
+            : productRecord.getValue(joinOn.getLeftField());
          Serializable rightValue = nextTableRecord.getValue(joinOn.getRightField());
          if(!Objects.equals(leftValue, rightValue))
          {
@@ -240,7 +260,7 @@ public class MemoryRecordStore
    {
       for(Map.Entry<String, Serializable> entry : record.getValues().entrySet())
       {
-         productRecord.withValue(tableNameOrAlias + "." + entry.getKey(), entry.getValue());
+         productRecord.withValue(tableNameOrAlias == null ? entry.getKey() : tableNameOrAlias + "." + entry.getKey(), entry.getValue());
       }
    }
 
@@ -249,7 +269,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Integer count(CountInput input)
+   public Integer count(CountInput input) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
@@ -349,9 +369,8 @@ public class MemoryRecordStore
       {
          Serializable primaryKeyValue = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), record.getValue(primaryKeyField.getName()));
 
-         if(primaryKeyValue == null)
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
          {
-            record.addError("Missing value in primary key field");
             outputRecords.add(record);
             continue;
          }

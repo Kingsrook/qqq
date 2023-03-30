@@ -76,9 +76,6 @@ class QJavalinApiHandlerTest extends BaseTest
 
    protected static QJavalinImplementation qJavalinImplementation;
 
-   private static final String OAUTH_CLIENT_ID     = "test-oauth-client-id";
-   private static final String OAUTH_CLIENT_SECRET = "test-oauth-client-secret";
-
 
 
    /*******************************************************************************

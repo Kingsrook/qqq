@@ -341,7 +341,7 @@ class InsertActionTest extends BaseTest
          insertLineItemExtrinsicInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          insertLineItemExtrinsicInput.setRecords(List.of(new QRecord().withValue("lineItemId", 4200).withValue("key", "kidsCanCallYou").withValue("value", "HoJu")));
          InsertOutput insertLineItemExtrinsicOutput = new InsertAction().execute(insertLineItemExtrinsicInput);
-         assertEquals("You do not have permission to insert this record.", insertLineItemExtrinsicOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertLineItemExtrinsicOutput.getRecords().get(0).getErrors().get(0));
       }
 
       {
@@ -373,7 +373,7 @@ class InsertActionTest extends BaseTest
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(2).getErrors().get(0));
          assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
          assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
       }
@@ -397,12 +397,12 @@ class InsertActionTest extends BaseTest
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(2).getErrors().get(0));
          assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
          assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(4).getErrors().get(0));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(5).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(6).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(6).getErrors().get(0));
          assertEquals(0, insertOutput.getRecords().get(7).getErrors().size());
          assertNotNull(insertOutput.getRecords().get(7).getValueInteger("id"));
       }
@@ -457,7 +457,7 @@ class InsertActionTest extends BaseTest
          insertLineItemInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          insertLineItemInput.setRecords(List.of(new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1)));
          InsertOutput insertLineItemOutput = new InsertAction().execute(insertLineItemInput);
-         assertEquals("You do not have permission to insert this record.", insertLineItemOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertLineItemOutput.getRecords().get(0).getErrors().get(0));
       }
 
       {
@@ -482,7 +482,7 @@ class InsertActionTest extends BaseTest
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(2).getErrors().get(0));
          assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
          assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
       }
@@ -506,12 +506,12 @@ class InsertActionTest extends BaseTest
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(2).getErrors().get(0));
          assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
          assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(4).getErrors().get(0));
          assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(5).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(6).getErrors().get(0));
+         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(6).getErrors().get(0));
          assertEquals(0, insertOutput.getRecords().get(7).getErrors().size());
          assertNotNull(insertOutput.getRecords().get(7).getValueInteger("id"));
       }

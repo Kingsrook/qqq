@@ -893,6 +893,16 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
 
    /*******************************************************************************
+    ** Make it easy (e.g., for tests) to turn on logging of SQL
+    *******************************************************************************/
+   public static void setLogSQL(boolean on)
+   {
+      System.setProperty("qqq.rdbms.logSQL", String.valueOf(on));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    protected void logSQL(CharSequence sql, List<?> params, Long mark)

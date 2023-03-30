@@ -24,13 +24,16 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -57,6 +60,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -86,7 +90,10 @@ public class UpdateAction
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
 
+      validatePrimaryKeysAreGiven(updateInput);
+      validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList);
       validateRequiredFields(updateInput);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(updateInput.getTable(), updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
 
       // todo pre-customization - just get to modify the request?
       UpdateOutput updateOutput = qModule.getUpdateInterface().execute(updateInput);
@@ -117,6 +124,86 @@ public class UpdateAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private void validatePrimaryKeysAreGiven(UpdateInput updateInput)
+   {
+      QTableMetaData table = updateInput.getTable();
+      for(QRecord record : CollectionUtils.nonNullList(updateInput.getRecords()))
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // to update a record, we must have its primary key value - so - check - if it's missing, mark it as an error //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(record.getValue(table.getPrimaryKeyField()) == null)
+         {
+            record.addError("Missing value in primary key field");
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Note - the "can be accessed" part of this method name - it implies that
+    ** records that you can't see because of security - that they won't be found
+    ** by the query here, so it's the same to you as if they don't exist at all!
+    *******************************************************************************/
+   private void validateRecordsExistAndCanBeAccessed(UpdateInput updateInput, List<QRecord> oldRecordList) throws QException
+   {
+      QTableMetaData table           = updateInput.getTable();
+      QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
+
+      for(List<QRecord> page : CollectionUtils.getPages(updateInput.getRecords(), 1000))
+      {
+         List<Serializable> primaryKeysToLookup = new ArrayList<>();
+         for(QRecord record : page)
+         {
+            Serializable primaryKeyValue = record.getValue(table.getPrimaryKeyField());
+            if(primaryKeyValue != null)
+            {
+               primaryKeysToLookup.add(primaryKeyValue);
+            }
+         }
+
+         Map<Serializable, QRecord> lookedUpRecords = new HashMap<>();
+         if(CollectionUtils.nullSafeHasContents(oldRecordList))
+         {
+            for(QRecord record : oldRecordList)
+            {
+               lookedUpRecords.put(record.getValue(table.getPrimaryKeyField()), record);
+            }
+         }
+         else if(!primaryKeysToLookup.isEmpty())
+         {
+            QueryInput queryInput = new QueryInput();
+            queryInput.setTableName(table.getName());
+            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeysToLookup)));
+            QueryOutput queryOutput = new QueryAction().execute(queryInput);
+            for(QRecord record : queryOutput.getRecords())
+            {
+               lookedUpRecords.put(record.getValue(table.getPrimaryKeyField()), record);
+            }
+         }
+
+         for(QRecord record : page)
+         {
+            Serializable value = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), record.getValue(table.getPrimaryKeyField()));
+            if(value == null)
+            {
+               continue;
+            }
+
+            if(!lookedUpRecords.containsKey(value))
+            {
+               record.addError("No record was found to update for " + primaryKeyField.getLabel() + " = " + value);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void validateRequiredFields(UpdateInput updateInput)
    {
       QTableMetaData table = updateInput.getTable();
@@ -126,7 +213,7 @@ public class UpdateAction
 
       if(!requiredFields.isEmpty())
       {
-         for(QRecord record : updateInput.getRecords())
+         for(QRecord record : CollectionUtils.nonNullList(updateInput.getRecords()))
          {
             for(QFieldMetaData requiredField : requiredFields)
             {
@@ -279,7 +366,7 @@ public class UpdateAction
          if(AuditLevel.FIELD.equals(auditLevel))
          {
             String             primaryKeyField   = updateInput.getTable().getPrimaryKeyField();
-            List<Serializable> pkeysBeingUpdated = updateInput.getRecords().stream().map(r -> r.getValue(primaryKeyField)).toList();
+            List<Serializable> pkeysBeingUpdated = CollectionUtils.nonNullList(updateInput.getRecords()).stream().map(r -> r.getValue(primaryKeyField)).toList();
 
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(updateInput.getTableName());

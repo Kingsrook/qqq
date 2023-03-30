@@ -325,7 +325,7 @@ public class TableBasedAuthenticationModuleTest extends BaseTest
       MemoryRecordStore.setCollectStatistics(true);
       assertTrue(new TableBasedAuthenticationModule().isSessionValid(qInstance, session));
       Map<String, Integer> statistics = MemoryRecordStore.getStatistics();
-      assertEquals(3, statistics.get(MemoryRecordStore.STAT_QUERIES_RAN));
+      assertEquals(4, statistics.get(MemoryRecordStore.STAT_QUERIES_RAN));
    }
 
 

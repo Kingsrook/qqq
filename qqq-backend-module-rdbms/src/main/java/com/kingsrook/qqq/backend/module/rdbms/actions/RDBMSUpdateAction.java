@@ -104,14 +104,6 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             .toList();
          recordsByFieldBeingUpdated.add(updatableFields, record);
 
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // to update a record, we must have its primary key value - so - check - if it's missing, mark it as an error //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(record.getValue(table.getPrimaryKeyField()) == null)
-         {
-            record.addError("Missing value in primary key field");
-         }
-
          if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
          {
             haveAnyWithoutErorrs = true;
