@@ -76,6 +76,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
@@ -169,7 +170,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       // foreach table //
       ///////////////////
       List<QTableMetaData> tables = new ArrayList<>(qInstance.getTables().values());
-      tables.sort(Comparator.comparing(t -> t.getLabel()));
+      tables.sort(Comparator.comparing(t -> ObjectUtils.requireNonNullElse(t.getLabel(), t.getName(), "")));
       for(QTableMetaData table : tables)
       {
          String tableName = table.getName();
