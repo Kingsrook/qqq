@@ -50,6 +50,8 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    private List<APIVersion> pastVersions;
    private List<APIVersion> futureVersions;
 
+   private boolean includeErrorTooManyRequests = true;
+
 
 
    /*******************************************************************************
@@ -120,6 +122,7 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
          }
       }
 
+      // todo - find duplicate tableApiNames!!
    }
 
 
@@ -336,6 +339,37 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    public ApiInstanceMetaData withContactEmail(String contactEmail)
    {
       this.contactEmail = contactEmail;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for includeErrorTooManyRequests
+    *******************************************************************************/
+   public boolean getIncludeErrorTooManyRequests()
+   {
+      return (this.includeErrorTooManyRequests);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for includeErrorTooManyRequests
+    *******************************************************************************/
+   public void setIncludeErrorTooManyRequests(boolean includeErrorTooManyRequests)
+   {
+      this.includeErrorTooManyRequests = includeErrorTooManyRequests;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for includeErrorTooManyRequests
+    *******************************************************************************/
+   public ApiInstanceMetaData withIncludeErrorTooManyRequests(boolean includeErrorTooManyRequests)
+   {
+      this.includeErrorTooManyRequests = includeErrorTooManyRequests;
       return (this);
    }
 
