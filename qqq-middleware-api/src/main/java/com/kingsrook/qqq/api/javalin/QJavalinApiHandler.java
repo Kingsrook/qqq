@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.javalin;
 
 
+import java.io.InputStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -90,12 +91,14 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
@@ -141,8 +144,24 @@ public class QJavalinApiHandler
          /////////////////////////////
          ApiBuilder.post("/api/oauth/token", QJavalinApiHandler::handleAuthorization);
 
+         ///////////////////////////////////////////////
+         // static endpoints to support rapidoc pages //
+         ///////////////////////////////////////////////
+         ApiBuilder.get("/api/docs/js/rapidoc.min.js", (context) -> QJavalinApiHandler.serveResource(context, "rapidoc/rapidoc-9.3.4.min.js", MapBuilder.of("Content-Type", ContentType.JAVASCRIPT)));
+         ApiBuilder.get("/api/docs/css/qqq-api-styles.css", (context) -> QJavalinApiHandler.serveResource(context, "rapidoc/rapidoc-overrides.css", MapBuilder.of("Content-Type", ContentType.CSS)));
+
+         //////////////////////////////////////////////
+         // default page is the current version spec //
+         //////////////////////////////////////////////
+         ApiBuilder.get("/api/", QJavalinApiHandler::doSpecHtml);
+
          ApiBuilder.path("/api/{version}", () -> // todo - configurable, that /api/ bit?
          {
+            ////////////////////////////////////////////
+            // default page for a version is its spec //
+            ////////////////////////////////////////////
+            ApiBuilder.get("/", QJavalinApiHandler::doSpecHtml);
+
             ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
             ApiBuilder.get("/openapi.json", QJavalinApiHandler::doSpecJson);
             ApiBuilder.get("/openapi.html", QJavalinApiHandler::doSpecHtml);
@@ -171,7 +190,6 @@ public class QJavalinApiHandler
          });
 
          ApiBuilder.get("/api/versions.json", QJavalinApiHandler::doVersions);
-         ApiBuilder.get("/api/qqq-api-styles.css", QJavalinApiHandler::doStyles);
 
          ApiBuilder.before("/*", QJavalinApiHandler::setupCORS);
 
@@ -195,6 +213,21 @@ public class QJavalinApiHandler
             });
          }
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void serveResource(Context context, String resourcePath, Map<String, String> headers)
+   {
+      InputStream resourceAsStream = QJavalinApiHandler.class.getClassLoader().getResourceAsStream(resourcePath);
+      for(Map.Entry<String, String> entry : CollectionUtils.nonNullMap(headers).entrySet())
+      {
+         context.header(entry.getKey(), entry.getValue());
+      }
+      context.result(resourceAsStream);
    }
 
 
@@ -244,43 +277,6 @@ public class QJavalinApiHandler
    private static void doPathNotFound(Context context)
    {
       handleException(context, new QNotFoundException("Could not find any resources at path " + context.path()));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void doSpecYaml(Context context)
-   {
-      try
-      {
-         QContext.init(qInstance, null);
-         String version = context.pathParam("version");
-
-         GenerateOpenApiSpecInput input = new GenerateOpenApiSpecInput().withVersion(version);
-         try
-         {
-            if(StringUtils.hasContent(context.pathParam("tableName")))
-            {
-               input.setTableName(context.pathParam("tableName"));
-            }
-         }
-         catch(Exception e)
-         {
-            ///////////////////////////
-            // leave table param out //
-            ///////////////////////////
-         }
-
-         GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(input);
-         context.contentType(ContentType.APPLICATION_YAML);
-         context.result(output.getYaml());
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-      }
    }
 
 
@@ -383,6 +379,43 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void doSpecYaml(Context context)
+   {
+      try
+      {
+         QContext.init(qInstance, null);
+         String version = context.pathParam("version");
+
+         GenerateOpenApiSpecInput input = new GenerateOpenApiSpecInput().withVersion(version);
+         try
+         {
+            if(StringUtils.hasContent(context.pathParam("tableName")))
+            {
+               input.setTableName(context.pathParam("tableName"));
+            }
+         }
+         catch(Exception e)
+         {
+            ///////////////////////////
+            // leave table param out //
+            ///////////////////////////
+         }
+
+         GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(input);
+         context.contentType(ContentType.APPLICATION_YAML);
+         context.result(output.getYaml());
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void doSpecJson(Context context)
    {
       try
@@ -422,71 +455,19 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doSpecHtml(Context context)
    {
+      String version;
+
       try
       {
-         QContext.init(qInstance, null);
-
-         QBrandingMetaData branding = QContext.getQInstance().getBranding();
-         String html = """
-            <!doctype html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
-                <link rel="stylesheet" href="/api/qqq-api-styles.css">
-              </head>
-              <body>
-                <rapi-doc
-                  id="the-rapi-doc"
-                  spec-url="/api/{version}/openapi.json"
-                  regular-font="Roboto,Helvetica,Arial,sans-serif"
-                  mono-font="Monaco, Menlo, Consolas, source-code-pro, monospace"
-                  font-size="large"
-                  show-header="false"
-                  allow-server-selection="false"
-                  allow-spec-file-download="true"
-                  primary-color="{primaryColor}"
-                  sort-endpoints-by="method"
-                  persist-auth="true"
-                  render-style="focused"
-                  show-method-in-nav-bar="as-colored-block"
-                  nav-item-spacing="relaxed"
-                  css-file="qqq-api-styles.css"
-                  css-classes="qqqApi"
-                  info-description-headings-in-navbar="true"
-                >
-                  {navLogoImg}
-                </rapi-doc>
-                <script>
-                  window.addEventListener('DOMContentLoaded', (event) => {
-                    const rapidocEl = document.getElementById('the-rapi-doc');
-                    rapidocEl.addEventListener('spec-loaded', (e) => {
-                      console.log("rapidoc el: " + rapidocEl);
-                      const shadowRoot = rapidocEl.shadowRoot;
-                      console.log("shadowRoot: " + shadowRoot);
-                      const collapseButton = shadowRoot.querySelector(".nav-bar-collapse-all")
-                      collapseButton.click();
-                    });
-                   });
-                </script>
-              </body>
-            </html>
-            """
-            .replace("{version}", context.pathParam("version"))
-            .replace("{primaryColor}", branding == null ? "#FF791A" : branding.getAccentColor());
-
-         if(branding != null && StringUtils.hasContent(branding.getLogo()))
-         {
-            html = html.replace("{navLogoImg}", "<img slot=\"nav-logo\" src=\"" + branding.getLogo() + "\" style=\"width: fit-content; max-width: 280px; margin: auto;\"/>");
-         }
-
-         context.contentType(ContentType.HTML);
-         context.result(html);
+         version = context.pathParam("version");
       }
       catch(Exception e)
       {
-         handleException(context, e);
+         ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
+         version = apiInstanceMetaData.getCurrentVersion().toString();
       }
+
+      doSpecHtml(context, version);
    }
 
 
@@ -494,53 +475,45 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doStyles(Context context)
+   private static void doSpecHtml(Context context, String version)
    {
       try
       {
-         QContext.init(qInstance, null);
+         QBrandingMetaData   branding            = qInstance.getBranding();
+         ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
 
-         String css = """
-            #api-info
-            {
-               margin-left: 0px !important;
-            }
-                        
-            #api-info button
-            {
-               width: auto !important;
-            }
-                        
-            #api-title span
-            {
-               font-size: 24px !important;
-               margin-left: 8px;
-            }
-                       
-            .nav-scroll
-            {
-               padding-left: 16px;
-            }
-                        
-            .tag-description.expanded
-            {
-               max-height: initial !important;
-            }
-                        
-            .tag-description .m-markdown p
-            {
-               margin-block-end: 0.5em !important;
-            }
-                        
-            api-response
-            {
-               margin-bottom: 50vh;
-               display: inline-block;
-            }
-            """;
+         //////////////////////////////////
+         // read html from resource file //
+         //////////////////////////////////
+         InputStream resourceAsStream = QJavalinApiHandler.class.getClassLoader().getResourceAsStream("rapidoc/rapidoc-container.html");
+         String      html             = IOUtils.toString(resourceAsStream, StandardCharsets.UTF_8.name());
 
-         context.contentType(ContentType.CSS);
-         context.result(css);
+         /////////////////////////////////
+         // do replacements in the html //
+         /////////////////////////////////
+         html = html.replace("{version}", version);
+         html = html.replace("{primaryColor}", branding == null ? "#FF791A" : branding.getAccentColor());
+
+         if(branding != null && StringUtils.hasContent(branding.getLogo()))
+         {
+            html = html.replace("{navLogoImg}", "<img id=\"navLogo\" slot=\"nav-logo\" src=\"" + branding.getLogo() + "\" />");
+         }
+         else
+         {
+            html = html.replace("{navLogoImg}", "");
+         }
+
+         html = html.replace("{title}", apiInstanceMetaData.getName() + " - " + version);
+
+         StringBuilder otherVersionOptions = new StringBuilder();
+         for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
+         {
+            otherVersionOptions.append("<option value=\"/api/").append(supportedVersion).append("/openapi.html\">").append(supportedVersion).append("</option>");
+         }
+         html = html.replace("{otherVersionOptions}", otherVersionOptions.toString());
+
+         context.contentType(ContentType.HTML);
+         context.result(html);
       }
       catch(Exception e)
       {
