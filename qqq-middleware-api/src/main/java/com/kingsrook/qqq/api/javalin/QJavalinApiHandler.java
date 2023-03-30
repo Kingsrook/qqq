@@ -482,6 +482,12 @@ public class QJavalinApiHandler
          QBrandingMetaData   branding            = qInstance.getBranding();
          ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
 
+         if(!apiInstanceMetaData.getSupportedVersions().contains(new APIVersion(version)))
+         {
+            doPathNotFound(context);
+            return;
+         }
+
          //////////////////////////////////
          // read html from resource file //
          //////////////////////////////////
@@ -1634,6 +1640,24 @@ public class QJavalinApiHandler
    public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage)
    {
       context.status(statusCode.getCode());
+
+      try
+      {
+         String accept = context.header("accept");
+         if(accept != null && accept.toLowerCase().startsWith(ContentType.HTML))
+         {
+            context.contentType(ContentType.HTML);
+            context.result("Error: " + errorMessage);
+            return;
+         }
+      }
+      catch(Exception e)
+      {
+         ///////////////////////////
+         // just do default thing //
+         ///////////////////////////
+      }
+
       context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
    }
 

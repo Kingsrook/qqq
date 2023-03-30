@@ -104,6 +104,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       QInstance qInstance = QContext.getQInstance();
 
       ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
+      if(!apiInstanceMetaData.getSupportedVersions().contains(new APIVersion(version)))
+      {
+         throw (new QException("[" + version + "] is not a supported API Version."));
+      }
 
       OpenAPI openAPI = new OpenAPI()
          .withVersion("3.0.3")

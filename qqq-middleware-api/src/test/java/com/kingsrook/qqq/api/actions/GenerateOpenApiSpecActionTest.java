@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -156,6 +157,19 @@ class GenerateOpenApiSpecActionTest extends BaseTest
       Set<String>               apiPaths = output.getOpenAPI().getPaths().keySet();
       assertTrue(apiPaths.stream().anyMatch(s -> s.contains("/externalName/")));
       assertTrue(apiPaths.stream().noneMatch(s -> s.contains("/internalName/")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBadVersion()
+   {
+      assertThatThrownBy(() -> new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion("NotAVersion")))
+         .isInstanceOf(QException.class)
+         .hasMessageContaining("not a supported API Version");
    }
 
 }
