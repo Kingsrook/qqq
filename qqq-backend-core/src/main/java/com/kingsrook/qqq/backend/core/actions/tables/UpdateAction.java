@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
@@ -48,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
@@ -83,9 +85,18 @@ public class UpdateAction
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
+
+      validateRequiredFields(updateInput);
+
       // todo pre-customization - just get to modify the request?
-      UpdateOutput updateResult = qModule.getUpdateInterface().execute(updateInput);
+      UpdateOutput updateOutput = qModule.getUpdateInterface().execute(updateInput);
       // todo post-customization - can do whatever w/ the result if you want
+
+      List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
+      if(CollectionUtils.nullSafeHasContents(errors))
+      {
+         LOG.warn("Errors in updateAction", logPair("tableName", updateInput.getTableName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
+      }
 
       manageAssociations(updateInput);
 
@@ -95,10 +106,43 @@ public class UpdateAction
       }
       else
       {
-         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateResult.getRecords()).withOldRecordList(oldRecordList));
+         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateOutput.getRecords()).withOldRecordList(oldRecordList));
       }
 
-      return updateResult;
+      return updateOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateRequiredFields(UpdateInput updateInput)
+   {
+      QTableMetaData table = updateInput.getTable();
+      Set<QFieldMetaData> requiredFields = table.getFields().values().stream()
+         .filter(f -> f.getIsRequired())
+         .collect(Collectors.toSet());
+
+      if(!requiredFields.isEmpty())
+      {
+         for(QRecord record : updateInput.getRecords())
+         {
+            for(QFieldMetaData requiredField : requiredFields)
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               // only consider fields that were set in the record to be updated (e.g., "patch" semantic) //
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               if(record.getValues().containsKey(requiredField.getName()))
+               {
+                  if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
+                  {
+                     record.addError("Missing value in required field: " + requiredField.getLabel());
+                  }
+               }
+            }
+         }
+      }
    }
 
 

@@ -22,12 +22,14 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -332,5 +334,67 @@ class UpdateActionTest extends BaseTest
             .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "YOUR-FIELD-1").withValue("value", "YOUR-VALUE-1"))
       ));
       new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRequiredFields() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("orderNo").setIsRequired(true);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+
+      ///////////////////////////////////////////////////
+      // insert records that we'll later try to update //
+      ///////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("storeId", 999).withValue("orderNo", "ORD1"),
+         new QRecord().withValue("id", 2).withValue("storeId", 999).withValue("orderNo", "ORD2"),
+         new QRecord().withValue("id", 3).withValue("storeId", 999).withValue("orderNo", "ORD3"),
+         new QRecord().withValue("id", 4).withValue("storeId", 999).withValue("orderNo", "ORD4")
+      ));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+      //////////////////////////////////////////////////
+      // do our update that we'll test the results of //
+      //////////////////////////////////////////////////
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      updateInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("orderNo", null),
+         new QRecord().withValue("id", 2).withValue("total", new BigDecimal("3.50")),
+         new QRecord().withValue("id", 3).withValue("orderNo", "ORD3B"),
+         new QRecord().withValue("id", 4).withValue("orderNo", "   ")
+      ));
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+
+      ////////////////////////////////////////////////////////////////
+      // 1st record tried to set a null orderNo - assert it errored //
+      ////////////////////////////////////////////////////////////////
+      assertEquals(1, updateOutput.getRecords().get(0).getErrors().size());
+      assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(0).getErrors().get(0));
+
+      ////////////////////////////////////////////////////////////////
+      // 2nd record didn't try to change orderNo, so should be fine //
+      ////////////////////////////////////////////////////////////////
+      assertEquals(0, updateOutput.getRecords().get(1).getErrors().size());
+
+      ///////////////////////////////////////////////////////////////////
+      // 3rd record should have actually set a new order no - no error //
+      ///////////////////////////////////////////////////////////////////
+      assertEquals(0, updateOutput.getRecords().get(2).getErrors().size());
+
+      ///////////////////////////////////////////////////////////////////////
+      // 4th record tried to set orderNo to all spaces - assert it errored //
+      ///////////////////////////////////////////////////////////////////////
+      assertEquals(1, updateOutput.getRecords().get(3).getErrors().size());
+      assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(3).getErrors().get(0));
+
    }
 }
