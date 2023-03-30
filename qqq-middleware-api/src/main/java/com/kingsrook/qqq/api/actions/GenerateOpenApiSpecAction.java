@@ -144,10 +144,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       );
 
       LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
+      // todo, or not todo? .withScopes(scopes)
       securitySchemes.put("OAuth2", new OAuth2()
          .withFlows(MapBuilder.of("clientCredentials", new OAuth2Flow()
-               .withTokenUrl("/api/oauth/token")
-            // .withScopes(scopes)
+            .withTokenUrl("/api/oauth/token")
          ))
       );
       componentSchemas.put("baseSearchResultFields", new Schema()
