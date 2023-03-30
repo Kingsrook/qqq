@@ -329,6 +329,8 @@ public class GetAction
          }
 
          queryInput.setFilter(filter);
+         queryInput.setIncludeAssociations(getInput.getIncludeAssociations());
+         queryInput.setAssociationNamesToInclude(getInput.getAssociationNamesToInclude());
          queryInput.setShouldFetchHeavyFields(getInput.getShouldFetchHeavyFields());
 
          QueryOutput queryOutput = new QueryAction().execute(queryInput);

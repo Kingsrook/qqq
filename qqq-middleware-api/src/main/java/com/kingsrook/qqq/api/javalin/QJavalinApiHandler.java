@@ -567,6 +567,7 @@ public class QJavalinApiHandler
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
 
          getInput.setPrimaryKey(primaryKey);
+         getInput.setIncludeAssociations(true);
 
          GetAction getAction = new GetAction();
          GetOutput getOutput = getAction.execute(getInput);
@@ -616,6 +617,7 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logStart("apiQuery", logPair("table", tableName));
 
          queryInput.setTableName(tableName);
+         queryInput.setIncludeAssociations(true);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -795,6 +797,16 @@ public class QJavalinApiHandler
          output.put("pageNo", pageNo);
          output.put("pageSize", pageSize);
 
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // map record fields for api                                                                                  //
+         // note - don't put them in the output until after the count, just because that looks a little nicer, i think //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         ArrayList<Map<String, Serializable>> records = new ArrayList<>();
+         for(QRecord record : queryOutput.getRecords())
+         {
+            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, version));
+         }
+
          /////////////////////////////
          // optionally do the count //
          /////////////////////////////
@@ -807,14 +819,6 @@ public class QJavalinApiHandler
             output.put("count", countOutput.getCount());
          }
 
-         ///////////////////////////////
-         // map record fields for api //
-         ///////////////////////////////
-         ArrayList<Map<String, Serializable>> records = new ArrayList<>();
-         for(QRecord record : queryOutput.getRecords())
-         {
-            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, version));
-         }
          output.put("records", records);
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), QJavalinAccessLogger.logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));

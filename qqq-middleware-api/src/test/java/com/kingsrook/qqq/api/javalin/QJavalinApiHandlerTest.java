@@ -199,6 +199,29 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testGetAssociations() throws QException
+   {
+      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/1").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      System.out.println(jsonObject.toString(3));
+      JSONArray orderLines = jsonObject.getJSONArray("orderLines");
+      assertEquals(3, orderLines.length());
+      JSONObject orderLine0     = orderLines.getJSONObject(0);
+      JSONArray  lineExtrinsics = orderLine0.getJSONArray("extrinsics");
+      assertEquals(3, lineExtrinsics.length());
+      assertEquals("Size", lineExtrinsics.getJSONObject(0).getString("key"));
+      assertEquals("Medium", lineExtrinsics.getJSONObject(0).getString("value"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQuery404()
    {
       assertError(HttpStatus.NOT_FOUND_404, BASE_URL + "/api/" + VERSION + "/notATable/query?");
@@ -402,6 +425,30 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(0, jsonObject.getInt("count"));
       assertEquals(2, jsonObject.getInt("pageNo"));
       assertEquals(49, jsonObject.getInt("pageSize"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryAssociations() throws QException
+   {
+      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/query?id=1").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      System.out.println(jsonObject.toString(3));
+      JSONObject order0     = jsonObject.getJSONArray("records").getJSONObject(0);
+      JSONArray  orderLines = order0.getJSONArray("orderLines");
+      assertEquals(3, orderLines.length());
+      JSONObject orderLine0     = orderLines.getJSONObject(0);
+      JSONArray  lineExtrinsics = orderLine0.getJSONArray("extrinsics");
+      assertEquals(3, lineExtrinsics.length());
+      assertEquals("Size", lineExtrinsics.getJSONObject(0).getString("key"));
+      assertEquals("Medium", lineExtrinsics.getJSONObject(0).getString("value"));
    }
 
 
@@ -958,19 +1005,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testDeleteAssociations() throws QException
    {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "ORD123").withValue("storeId", 47)
-         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 1).withValue("sku", "BASIC1").withValue("quantity", 42)
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium"))
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Discount").withValue("value", "3.50"))
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Color").withValue("value", "Red")))
-         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 2).withValue("sku", "BASIC2").withValue("quantity", 42)
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium")))
-         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 3).withValue("sku", "BASIC3").withValue("quantity", 42))
-         .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "shopifyOrderNo").withValue("value", "#1032"))
-      ));
-      new InsertAction().execute(insertInput);
+      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
 
       assertEquals(1, queryTable(TestUtils.TABLE_NAME_ORDER).size());
       assertEquals(4, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
@@ -985,6 +1020,28 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
       assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
       assertEquals(0, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "ORD123").withValue("storeId", 47)
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 1).withValue("sku", "BASIC1").withValue("quantity", 42)
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Discount").withValue("value", "3.50"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Color").withValue("value", "Red")))
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 2).withValue("sku", "BASIC2").withValue("quantity", 42)
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium")))
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 3).withValue("sku", "BASIC3").withValue("quantity", 42))
+         .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "shopifyOrderNo").withValue("value", "#1032"))
+      ));
+      new InsertAction().execute(insertInput);
    }
 
 

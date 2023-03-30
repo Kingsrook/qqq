@@ -170,6 +170,10 @@ public class MemoryRecordStore
             }
             else
             {
+               //////////////////////////////////////////////////////////////////////////////////
+               // make sure we're not giving back records that are all full of associations... //
+               //////////////////////////////////////////////////////////////////////////////////
+               qRecord.setAssociatedRecords(new HashMap<>());
                records.add(qRecord);
             }
          }

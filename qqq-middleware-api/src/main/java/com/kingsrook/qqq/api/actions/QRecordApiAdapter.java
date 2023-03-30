@@ -70,8 +70,6 @@ public class QRecordApiAdapter
       {
          ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(field);
 
-         // todo - what about display values / possible values?
-
          String apiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(field);
          if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
          {
@@ -82,6 +80,23 @@ public class QRecordApiAdapter
             outputRecord.put(apiFieldName, record.getValue(field.getName()));
          }
       }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - should probably define in meta-data if an association is included in the api or not!! //
+      //  and what its name is too...                                                                 //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      QTableMetaData table = QContext.getQInstance().getTable(tableName);
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         ArrayList<Map<String, Serializable>> associationList = new ArrayList<>();
+         outputRecord.put(association.getName(), associationList);
+
+         for(QRecord associatedRecord : CollectionUtils.nonNullList(CollectionUtils.nonNullMap(record.getAssociatedRecords()).get(association.getName())))
+         {
+            associationList.add(qRecordToApiMap(associatedRecord, association.getAssociatedTableName(), apiVersion));
+         }
+      }
+
       return (outputRecord);
    }
 

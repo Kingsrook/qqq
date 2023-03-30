@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -55,6 +56,14 @@ public class QueryInput extends AbstractTableActionInput
    private Set<String> fieldsToTranslatePossibleValues;
 
    private List<QueryJoin> queryJoins = null;
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // if you say you want to includeAssociations, you can limit which ones by passing them in associationNamesToInclude. //
+   // if you leave it null, you get all associations defined on the table.  if you pass it as empty, you get none.       //
+   // to go to a recursive level of associations, you need to dot-qualify the names.  e.g., A, B, A.C, A.D, A.C.E        //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private boolean            includeAssociations       = false;
+   private Collection<String> associationNamesToInclude = null;
 
 
 
@@ -425,4 +434,67 @@ public class QueryInput extends AbstractTableActionInput
       super.withTableName(tableName);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for includeAssociations
+    *******************************************************************************/
+   public boolean getIncludeAssociations()
+   {
+      return (this.includeAssociations);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for includeAssociations
+    *******************************************************************************/
+   public void setIncludeAssociations(boolean includeAssociations)
+   {
+      this.includeAssociations = includeAssociations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for includeAssociations
+    *******************************************************************************/
+   public QueryInput withIncludeAssociations(boolean includeAssociations)
+   {
+      this.includeAssociations = includeAssociations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for associationNamesToInclude
+    *******************************************************************************/
+   public Collection<String> getAssociationNamesToInclude()
+   {
+      return (this.associationNamesToInclude);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for associationNamesToInclude
+    *******************************************************************************/
+   public void setAssociationNamesToInclude(Collection<String> associationNamesToInclude)
+   {
+      this.associationNamesToInclude = associationNamesToInclude;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for associationNamesToInclude
+    *******************************************************************************/
+   public QueryInput withAssociationNamesToInclude(Collection<String> associationNamesToInclude)
+   {
+      this.associationNamesToInclude = associationNamesToInclude;
+      return (this);
+   }
+
 }

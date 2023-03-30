@@ -22,8 +22,13 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -31,13 +36,23 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 
 
 /*******************************************************************************
@@ -70,6 +85,14 @@ public class QueryAction
          queryInput.getRecordPipe().setPostRecordActions(this::postRecordActions);
       }
 
+      if(queryInput.getIncludeAssociations() && queryInput.getRecordPipe() != null)
+      {
+         //////////////////////////////////////////////
+         // todo - support this in the future maybe? //
+         //////////////////////////////////////////////
+         throw (new QException("Associations may not be fetched into a RecordPipe."));
+      }
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
       // todo pre-customization - just get to modify the request?
@@ -86,7 +109,115 @@ public class QueryAction
          postRecordActions(queryOutput.getRecords());
       }
 
+      if(queryInput.getIncludeAssociations())
+      {
+         manageAssociations(queryInput, queryOutput);
+      }
+
       return queryOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void manageAssociations(QueryInput queryInput, QueryOutput queryOutput) throws QException
+   {
+      QTableMetaData table = queryInput.getTable();
+      for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
+      {
+         if(queryInput.getAssociationNamesToInclude() == null || queryInput.getAssociationNamesToInclude().contains(association.getName()))
+         {
+            // e.g., order -> orderLine
+            QJoinMetaData join = QContext.getQInstance().getJoin(association.getJoinName()); // todo ... ever need to flip?
+            // just assume this, at least for now... if(BooleanUtils.isTrue(association.getDoInserts()))
+
+            QueryInput nextLevelQueryInput = new QueryInput();
+            nextLevelQueryInput.setTableName(association.getAssociatedTableName());
+            nextLevelQueryInput.setIncludeAssociations(true);
+            nextLevelQueryInput.setAssociationNamesToInclude(buildNextLevelAssociationNamesToInclude(association.getName(), queryInput.getAssociationNamesToInclude()));
+
+            QQueryFilter filter = new QQueryFilter();
+            nextLevelQueryInput.setFilter(filter);
+
+            ListingHash<List<Serializable>, QRecord> outerResultMap = new ListingHash<>();
+
+            if(join.getJoinOns().size() == 1)
+            {
+               JoinOn            joinOn = join.getJoinOns().get(0);
+               Set<Serializable> values = new HashSet<>();
+               for(QRecord record : queryOutput.getRecords())
+               {
+                  Serializable value = record.getValue(joinOn.getLeftField());
+                  values.add(value);
+                  outerResultMap.add(List.of(value), record);
+               }
+               filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.IN, new ArrayList<>(values)));
+            }
+            else
+            {
+               filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
+
+               for(QRecord record : queryOutput.getRecords())
+               {
+                  QQueryFilter subFilter = new QQueryFilter();
+                  filter.addSubFilter(subFilter);
+                  List<Serializable> values = new ArrayList<>();
+                  for(JoinOn joinOn : join.getJoinOns())
+                  {
+                     Serializable value = record.getValue(joinOn.getLeftField());
+                     values.add(value);
+                     subFilter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, value));
+                  }
+                  outerResultMap.add(values, record);
+               }
+            }
+
+            QueryOutput nextLevelQueryOutput = new QueryAction().execute(nextLevelQueryInput);
+            for(QRecord record : nextLevelQueryOutput.getRecords())
+            {
+               List<Serializable> values = new ArrayList<>();
+               for(JoinOn joinOn : join.getJoinOns())
+               {
+                  Serializable value = record.getValue(joinOn.getRightField());
+                  values.add(value);
+               }
+
+               if(outerResultMap.containsKey(values))
+               {
+                  for(QRecord outerRecord : outerResultMap.get(values))
+                  {
+                     outerRecord.withAssociatedRecord(association.getName(), record);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Collection<String> buildNextLevelAssociationNamesToInclude(String name, Collection<String> associationNamesToInclude)
+   {
+      if(associationNamesToInclude == null)
+      {
+         return (associationNamesToInclude);
+      }
+
+      Set<String> rs = new HashSet<>();
+      for(String nextLevelCandidateName : associationNamesToInclude)
+      {
+         if(nextLevelCandidateName.startsWith(name + "."))
+         {
+            rs.add(nextLevelCandidateName.replaceFirst(name + ".", ""));
+         }
+      }
+
+      return (rs);
    }
 
 
