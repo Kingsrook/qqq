@@ -64,7 +64,7 @@ public class QFieldSection
       this.label = label;
       this.icon = icon;
       this.tier = tier;
-      this.fieldNames = new MutableList<>(fieldNames);
+      this.fieldNames = fieldNames == null ? null : new MutableList<>(fieldNames);
    }
 
 
@@ -77,7 +77,7 @@ public class QFieldSection
       this.name = name;
       this.icon = icon;
       this.tier = tier;
-      this.fieldNames = new MutableList<>(fieldNames);
+      this.fieldNames = fieldNames == null ? null : new MutableList<>(fieldNames);
    }
 
 
@@ -213,7 +213,7 @@ public class QFieldSection
     *******************************************************************************/
    public void setFieldNames(List<String> fieldNames)
    {
-      this.fieldNames = fieldNames;
+      this.fieldNames = fieldNames == null ? null : new MutableList<>(fieldNames);
    }
 
 
