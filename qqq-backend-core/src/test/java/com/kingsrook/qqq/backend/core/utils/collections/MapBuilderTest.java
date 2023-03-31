@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.utils.collections;
 
 
 import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -50,6 +52,7 @@ class MapBuilderTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -61,9 +64,22 @@ class MapBuilderTest
       ///////////////////////////////
       Map<String, Object> map = MapBuilder.of("1", null);
 
+      ///////////////////////////////////////
       // this too, doesn't freaking throw. //
       ///////////////////////////////////////
       map.put("2", null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTypeYouRequest()
+   {
+      Map<String, Integer> myTreeMap = MapBuilder.<String, Integer>of(TreeMap::new).with("1", 1).with("2", 2).build();
+      assertTrue(myTreeMap instanceof TreeMap);
    }
 
 }

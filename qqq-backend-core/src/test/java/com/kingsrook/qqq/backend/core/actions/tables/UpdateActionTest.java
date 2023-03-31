@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -33,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
@@ -393,237 +395,114 @@ class UpdateActionTest extends BaseTest
       assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(3).getErrors().get(0));
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   /*
-   @Test
-   void testInsertMultiLevelSecurityJoins() throws QException
-   {
-      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
 
-      //////////////////////////////////////////////////////////////////////////////////////
-      // null value in the foreign key to the join-table that provides the security value //
-      //////////////////////////////////////////////////////////////////////////////////////
-      {
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
-         insertInput.setRecords(List.of(new QRecord().withValue("lineItemId", null).withValue("key", "kidsCanCallYou").withValue("value", "HoJu")));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-      }
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // value in the foreign key to the join-table that provides the security value, but the referenced record isn't found //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      {
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
-         insertInput.setRecords(List.of(new QRecord().withValue("lineItemId", 1701).withValue("key", "kidsCanCallYou").withValue("value", "HoJu")));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-      }
-
-      {
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // insert an order and lineItem with storeId=2 - then, reset our session to only have storeId=1 in it - and try to insert an order-line referencing that order. //
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(2));
-         InsertInput insertOrderInput = new InsertInput();
-         insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-         insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 42).withValue("storeId", 2)));
-         InsertOutput insertOrderOutput = new InsertAction().execute(insertOrderInput);
-         assertEquals(42, insertOrderOutput.getRecords().get(0).getValueInteger("id"));
-
-         InsertInput insertLineItemInput = new InsertInput();
-         insertLineItemInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertLineItemInput.setRecords(List.of(new QRecord().withValue("id", 4200).withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 24)));
-         InsertOutput insertLineItemOutput = new InsertAction().execute(insertLineItemInput);
-         assertEquals(4200, insertLineItemOutput.getRecords().get(0).getValueInteger("id"));
-
-         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
-         InsertInput insertLineItemExtrinsicInput = new InsertInput();
-         insertLineItemExtrinsicInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
-         insertLineItemExtrinsicInput.setRecords(List.of(new QRecord().withValue("lineItemId", 4200).withValue("key", "kidsCanCallYou").withValue("value", "HoJu")));
-         InsertOutput insertLineItemExtrinsicOutput = new InsertAction().execute(insertLineItemExtrinsicInput);
-         assertEquals("You do not have permission to insert this record.", insertLineItemExtrinsicOutput.getRecords().get(0).getErrors().get(0));
-      }
-
-      {
-         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
-         InsertInput insertOrderInput = new InsertInput();
-         insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-         insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("storeId", 1)));
-         InsertOutput insertOrderOutput = new InsertAction().execute(insertOrderInput);
-         assertEquals(47, insertOrderOutput.getRecords().get(0).getValueInteger("id"));
-
-         InsertInput insertLineItemInput = new InsertInput();
-         insertLineItemInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertLineItemInput.setRecords(List.of(new QRecord().withValue("id", 4700).withValue("orderId", 47).withValue("sku", "BASIC1").withValue("quantity", 74)));
-         InsertOutput insertLineItemOutput = new InsertAction().execute(insertLineItemInput);
-         assertEquals(4700, insertLineItemOutput.getRecords().get(0).getValueInteger("id"));
-
-         ///////////////////////////////////////////////////////
-         // combine all the above, plus one record that works //
-         ///////////////////////////////////////////////////////
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
-         insertInput.setRecords(List.of(
-            new QRecord().withValue("lineItemId", null).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 1701).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 4200).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 4700).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu")
-         ));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
-         assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
-         assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
-      }
-
-      {
-         /////////////////////////////////////////////////////////////////////////////////
-         // one more time, but with multiple input records referencing each foreign key //
-         /////////////////////////////////////////////////////////////////////////////////
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
-         insertInput.setRecords(List.of(
-            new QRecord().withValue("lineItemId", null).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 1701).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 4200).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 4700).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", null).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 1701).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 4200).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu"),
-            new QRecord().withValue("lineItemId", 4700).withValue("key", "theKidsCanCallYou").withValue("value", "HoJu")
-         ));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
-         assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
-         assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(4).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(5).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(6).getErrors().get(0));
-         assertEquals(0, insertOutput.getRecords().get(7).getErrors().size());
-         assertNotNull(insertOutput.getRecords().get(7).getValueInteger("id"));
-      }
-   }
-    */
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   /*
    @Test
-   void testInsertSingleLevelSecurityJoins() throws QException
+   void testUpdateSecurityJoins() throws QException
    {
-      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1, 2)));
 
-      //////////////////////////////////////////////////////////////////////////////////////
-      // null value in the foreign key to the join-table that provides the security value //
-      //////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////
+      // insert an order in each of store 1 and store 2 //
+      // with some lines and line-extrinsics            //
+      ////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("orderNo", "O1").withValue("storeId", 1),
+         new QRecord().withValue("id", 2).withValue("orderNo", "O2").withValue("storeId", 2)
+      ));
+      new InsertAction().execute(insertInput);
+
+      insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 10).withValue("orderId", 1).withValue("sku", "BASIC1"),
+         new QRecord().withValue("id", 20).withValue("orderId", 2).withValue("sku", "BASIC2")
+      ));
+      new InsertAction().execute(insertInput);
+
+      insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 100).withValue("lineItemId", 10).withValue("key", "Key1").withValue("value", "Value1"),
+         new QRecord().withValue("id", 200).withValue("lineItemId", 20).withValue("key", "Key2").withValue("value", "Value2")
+      ));
+      new InsertAction().execute(insertInput);
+
+      ///////////////////////////////////////////////////////////
+      // try to remove the value that provides the foreign key //
+      ///////////////////////////////////////////////////////////
       {
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertInput.setRecords(List.of(new QRecord().withValue("orderId", null).withValue("sku", "BASIC1").withValue("quantity", 1)));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
+         updateInput.setRecords(List.of(new QRecord().withValue("id", 10).withValue("orderId", null).withValue("sku", "BASIC2")));
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
       }
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // value in the foreign key to the join-table that provides the security value, but the referenced record isn't found //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////
+      // with a session that can only access store 1, try to update the line in store 2 //
+      // should fail as a not-found - you can't see that record.                        //
+      ////////////////////////////////////////////////////////////////////////////////////
       {
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertInput.setRecords(List.of(new QRecord().withValue("orderId", 1701).withValue("sku", "BASIC1").withValue("quantity", 1)));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-      }
-      {
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // insert an order with storeId=2 - then, reset our session to only have storeId=1 in it - and try to insert an order-line referencing that order. //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(2));
-         InsertInput insertOrderInput = new InsertInput();
-         insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-         insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 42).withValue("storeId", 2)));
-         InsertOutput insertOrderOutput = new InsertAction().execute(insertOrderInput);
-         assertEquals(42, insertOrderOutput.getRecords().get(0).getValueInteger("id"));
-
-         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
-         InsertInput insertLineItemInput = new InsertInput();
-         insertLineItemInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertLineItemInput.setRecords(List.of(new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1)));
-         InsertOutput insertLineItemOutput = new InsertAction().execute(insertLineItemInput);
-         assertEquals("You do not have permission to insert this record.", insertLineItemOutput.getRecords().get(0).getErrors().get(0));
+         QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1)));
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
+         updateInput.setRecords(List.of(new QRecord().withValue("id", 20).withValue("sku", "BASIC3")));
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+         assertEquals("No record was found to update for Id = 20", updateOutput.getRecords().get(0).getErrors().get(0));
       }
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // with a session that can only access store 1, try to update the line from the order in store 1 to be in store 2 //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       {
-         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
-         InsertInput insertOrderInput = new InsertInput();
-         insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-         insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("storeId", 1)));
-         new InsertAction().execute(insertOrderInput);
-
-         ///////////////////////////////////////////////////////
-         // combine all the above, plus one record that works //
-         ///////////////////////////////////////////////////////
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertInput.setRecords(List.of(
-            new QRecord().withValue("orderId", null).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 1701).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 47).withValue("sku", "BASIC1").withValue("quantity", 1)
-         ));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
-         assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
-         assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
+         QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1)));
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
+         updateInput.setRecords(List.of(new QRecord().withValue("id", 10).withValue("orderId", 2).withValue("sku", "BASIC3")));
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
       }
 
+      ///////////////////////////////////////////////////////////
+      // try to remove the value that provides the foreign key //
+      ///////////////////////////////////////////////////////////
       {
-         /////////////////////////////////////////////////////////////////////////////////
-         // one more time, but with multiple input records referencing each foreign key //
-         /////////////////////////////////////////////////////////////////////////////////
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
-         insertInput.setRecords(List.of(
-            new QRecord().withValue("orderId", null).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 1701).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 47).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", null).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 1701).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1),
-            new QRecord().withValue("orderId", 47).withValue("sku", "BASIC1").withValue("quantity", 1)
-         ));
-         InsertOutput insertOutput = new InsertAction().execute(insertInput);
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(0).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(1).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(2).getErrors().get(0));
-         assertEquals(0, insertOutput.getRecords().get(3).getErrors().size());
-         assertNotNull(insertOutput.getRecords().get(3).getValueInteger("id"));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(4).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record - the referenced Order was not found.", insertOutput.getRecords().get(5).getErrors().get(0));
-         assertEquals("You do not have permission to insert this record.", insertOutput.getRecords().get(6).getErrors().get(0));
-         assertEquals(0, insertOutput.getRecords().get(7).getErrors().size());
-         assertNotNull(insertOutput.getRecords().get(7).getValueInteger("id"));
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+         updateInput.setRecords(List.of(new QRecord().withValue("id", 100).withValue("lineItemId", null).withValue("key", "updatedKey")));
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // with a session that can only access store 1, try to update the line-extrinsic in store 2 //
+      // should fail as a not-found - you can't see that record.                                  //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1)));
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+         updateInput.setRecords(List.of(new QRecord().withValue("id", 200).withValue("key", "updatedKey")));
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+         assertEquals("No record was found to update for Id = 200", updateOutput.getRecords().get(0).getErrors().get(0));
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // with a session that can only access store 1, try to update the line-extrinsic from the order in store 1 to be in store 2 //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1)));
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+         updateInput.setRecords(List.of(new QRecord().withValue("id", 100).withValue("lineItemId", 20).withValue("key", "updatedKey")));
+         UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
       }
    }
-    */
 
 
 
@@ -690,62 +569,101 @@ class UpdateActionTest extends BaseTest
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER)).anyMatch(r -> r.getValueString("orderNo").equals("original"));
    }
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   /*
    @Test
    void testSecurityKeyNullDenied() throws QException
    {
-      QInstance qInstance = QContext.getQInstance();
+      ////////////////////////////////
+      // insert an order in store 1 //
+      ////////////////////////////////
       QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-      insertInput.setRecords(List.of(new QRecord()));
-      InsertOutput insertOutput = new InsertAction().execute(insertInput);
-      assertEquals("You do not have permission to insert a record without a value in the field: Store Id", insertOutput.getRecords().get(0).getErrors().get(0));
-      assertEquals(0, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "original").withValue("storeId", 1)));
+      new InsertAction().execute(insertInput);
+
+      ///////////////////////////////////////////
+      // try to update its storeId to null now //
+      ///////////////////////////////////////////
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("storeId", null)));
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+      assertEquals("You do not have permission to update a record without a value in the field: Store Id", updateOutput.getRecords().get(0).getErrors().get(0));
+      assertEquals(0, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> r.getValue("storeId") == null).count());
    }
-   */
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   /*
    @Test
    void testSecurityKeyNullAllowed() throws QException
    {
+      /////////////////////////////////////
+      // change storeId to be allow-null //
+      /////////////////////////////////////
       QInstance qInstance = QContext.getQInstance();
       qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().get(0).setNullValueBehavior(RecordSecurityLock.NullValueBehavior.ALLOW);
+
+      ////////////////////////////////
+      // insert an order in store 1 //
+      ////////////////////////////////
       QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-      insertInput.setRecords(List.of(new QRecord()));
-      InsertOutput insertOutput = new InsertAction().execute(insertInput);
-      assertEquals(0, insertOutput.getRecords().get(0).getErrors().size());
-      assertEquals(1, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "original").withValue("storeId", 1)));
+      new InsertAction().execute(insertInput);
+
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("storeId", null)));
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+      assertEquals(0, updateOutput.getRecords().get(0).getErrors().size());
+      assertEquals(1, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> r.getValue("storeId") == null).count());
    }
-   */
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   /*
    @Test
    void testSecurityKeyAllAccess() throws QException
    {
-      QInstance qInstance = QContext.getQInstance();
-      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getRecordSecurityLocks().get(0).setNullValueBehavior(RecordSecurityLock.NullValueBehavior.ALLOW);
-      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      ////////////////////////////////
+      // insert 2 orders in store 1 //
+      ////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       insertInput.setRecords(List.of(
-         new QRecord().withValue("storeId", 999),
-         new QRecord().withValue("storeId", null)
+         new QRecord().withValue("id", 1).withValue("orderNo", "O1").withValue("storeId", 1),
+         new QRecord().withValue("id", 2).withValue("orderNo", "O2").withValue("storeId", 1)
       ));
-      InsertOutput insertOutput = new InsertAction().execute(insertInput);
-      assertEquals(2, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).size());
+      new InsertAction().execute(insertInput);
+
+      /////////////////////////////////////////////////////////
+      // make sure with all-access key we can update however //
+      /////////////////////////////////////////////////////////
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, ListBuilder.of(true)));
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      updateInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("storeId", 999),
+         new QRecord().withValue("id", 2).withValue("storeId", null)
+      ));
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+      assertEquals(0, updateOutput.getRecords().get(0).getErrors().size());
+      assertEquals(0, updateOutput.getRecords().get(1).getErrors().size());
+      assertEquals(1, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> Objects.equals(r.getValue("storeId"), 999)).count());
+      assertEquals(1, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> r.getValue("storeId") == null).count());
    }
-   */
 
 }

@@ -92,6 +92,95 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 {
    private static final QLogger LOG = QLogger.getLogger(GenerateOpenApiSpecAction.class);
 
+   public static final String GET_DESCRIPTION = """
+      Get one record from this table, by specifying its primary key as a path parameter.
+      """;
+
+   public static final String QUERY_DESCRIPTION = """
+      Execute a query on this table, using query criteria as specified in query string parameters.
+                     
+      * Pagination is managed via the `pageNo` & `pageSize` query string parameters.  pageNo starts at 1.  pageSize defaults to 50.
+      * By default, the response includes the total count of records that match the query criteria.  The count can be omitted by specifying `includeCount=false`
+      * By default, results are sorted by the table's primary key, descending.  This can be changed by specifying the `orderBy` query string parameter, following SQL ORDER BY syntax (e.g., `fieldName1 ASC, fieldName2 DESC`)
+      * By default, all given query criteria are combined using logical AND.  This can be changed by specifying the query string parameter `booleanOperator=OR`.
+      * Each field on the table can be used as a query criteria.  Each query criteria field can be specified on the query string any number of times.
+      * By default, all criteria use the equals operator (e.g., `myField=value` means records will be returned where myField equals value).  Alternative operators can be used as follows:
+        * Equals: `myField=value`
+        * Not Equals: `myField=!value`
+        * Less Than: `myField=&lt;value`
+        * Greater Than: `myField=&gt;value`
+        * Less Than or Equals: `myField=&lt;=value`
+        * Greater Than or Equals: `myField=&gt;=value`
+        * Empty (or null): `myField=EMPTY`
+        * Not Empty: `myField=!EMPTY`
+        * Between: `myField=BETWEEN value1,value2` (two values must be given, separated by commas)
+        * Not Between: `myField=!BETWEEN value1,value2` (two values must be given, separated by commas)
+        * In: `myField=IN value1,value2,...,valueN` (one or more values must be given, separated by commas)
+        * Not In: `myField=!IN value1,value2,...,valueN` (one or more values must be given, separated by commas)
+        * Like: `myField=LIKE value` (using standard SQL % and _ wildcards)
+        * Not Like: `myField=!LIKE value` (using standard SQL % and _ wildcards)
+      """;
+
+   public static final String INSERT_DESCRIPTION = """
+      Insert one record into this table by supplying the values to be inserted in the request body.
+      * The request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body.
+      * Any unrecognized field names in the body will cause a 400 error.
+      * Any read-only (non-editable) fields provided in the body will be silently ignored.
+                     
+      Upon success, a status code of 201 (`Created`) is returned, and the generated value for the primary key will be returned in the response body object.
+      """;
+
+   public static final String UPDATE_DESCRIPTION = """
+      Update one record in this table, by specifying its primary key as a path parameter, and by supplying values to be updated in the request body.
+                     
+      * Only the fields provided in the request body will be updated.
+      * To remove a value from a field, supply the key for the field, with a null value.
+      * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
+      * Any unrecognized field names in the body will cause a 400 error.
+      * Any read-only (non-editable) fields provided in the body will be silently ignored.
+      * Note that if the request body includes the primary key, it will be ignored.  Only the primary key value path parameter will be used.
+                     
+      Upon success, a status code of 204 (`No Content`) is returned, with no response body.
+      """;
+
+   public static final String DELETE_DESCRIPTION = """
+      Delete one record from this table, by specifying its primary key as a path parameter.
+                     
+      Upon success, a status code of 204 (`No Content`) is returned, with no response body.
+      """;
+
+   public static final String BULK_INSERT_DESCRIPTION = """
+      Insert one or more records into this table by supplying array of records with values to be inserted, in the request body.
+      * The objects in the request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body
+      * Any unrecognized field names in the body will cause a 400 error.
+      * Any read-only (non-editable) fields provided in the body will be silently ignored.
+                     
+      An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
+      * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
+      * For sub-status codes of 201 (`Created`), and the generated value for the primary key will be returned in the response body object.
+      """;
+
+   public static final String BULK_UPDATE_DESCRIPTION = """
+      Update one or more records in this table, by supplying an array of records, with primary keys and values to be updated, in the request body.
+      * Only the fields provided in the request body will be updated.
+      * To remove a value from a field, supply the key for the field, with a null value.
+      * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
+      * Any unrecognized field names in the body will cause a 400 error.
+      * Any read-only (non-editable) fields provided in the body will be silently ignored.
+                    
+      An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
+      * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
+      * Each input object's primary key will also be included in the corresponding response object.
+      """;
+
+   public static final String BULK_DELETE_DESCRIPTION = """
+      Delete one or more records from this table, by supplying an array of primary key values in the request body.
+                     
+      An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
+      * The 1st primary key in the request will have its response in the 1st object in the response, and so-forth.
+      * Each input primary key will also be included in the corresponding response object.
+      """;
+
 
 
    /*******************************************************************************
@@ -144,6 +233,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
       LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
       // todo, or not todo? .withScopes(scopes)
+      // seems to make a lot of "noise" on the Auth page, and for no obvious benefit...
       securitySchemes.put("OAuth2", new OAuth2()
          .withFlows(MapBuilder.of("clientCredentials", new OAuth2Flow()
             .withTokenUrl("/api/oauth/token"))));
@@ -297,35 +387,20 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                      .withAllOf(ListBuilder.of(
                         new Schema().withRef("#/components/schemas/" + tableApiName)))))));
 
+         // todo...?
+         // includeAssociatedOrderLines=false&includeAssociatedExtrinsics=false&includeAssociatedOrderLinesExtrinsics
+         // includeAssociatedRecords=none
+         // includeAssociatedRecords=all
+         // includeAssociatedRecords=orderLines
+         // includeAssociatedRecords=orderLines,orderLines.extrinsics
+         // includeAssociatedRecords=extrinsics,orderLines,orderLines.extrinsics
+
          //////////////////////////////////////
          // paths and methods for this table //
          //////////////////////////////////////
          Method queryGet = new Method()
             .withSummary("Search for " + tableLabel + " records by query string")
-            .withDescription("""
-               Execute a query on this table, using query criteria as specified in query string parameters.
-                              
-               * Pagination is managed via the `pageNo` & `pageSize` query string parameters.  pageNo starts at 1.  pageSize defaults to 50.
-               * By default, the response includes the total count of records that match the query criteria.  The count can be omitted by specifying `includeCount=false`
-               * By default, results are sorted by the table's primary key, descending.  This can be changed by specifying the `orderBy` query string parameter, following SQL ORDER BY syntax (e.g., `fieldName1 ASC, fieldName2 DESC`)
-               * By default, all given query criteria are combined using logical AND.  This can be changed by specifying the query string parameter `booleanOperator=OR`.
-               * Each field on the table can be used as a query criteria.  Each query criteria field can be specified on the query string any number of times.
-               * By default, all criteria use the equals operator (e.g., `myField=value` means records will be returned where myField equals value).  Alternative operators can be used as follows:
-                 * Equals: `myField=value`
-                 * Not Equals: `myField=!value`
-                 * Less Than: `myField=&lt;value`
-                 * Greater Than: `myField=&gt;value`
-                 * Less Than or Equals: `myField=&lt;=value`
-                 * Greater Than or Equals: `myField=&gt;=value`
-                 * Empty (or null): `myField=EMPTY`
-                 * Not Empty: `myField=!EMPTY`
-                 * Between: `myField=BETWEEN value1,value2` (two values must be given, separated by commas)
-                 * Not Between: `myField=!BETWEEN value1,value2` (two values must be given, separated by commas)
-                 * In: `myField=IN value1,value2,...,valueN` (one or more values must be given, separated by commas)
-                 * Not In: `myField=!IN value1,value2,...,valueN` (one or more values must be given, separated by commas)
-                 * Like: `myField=LIKE value` (using standard SQL % and _ wildcards)
-                 * Not Like: `myField=!LIKE value` (using standard SQL % and _ wildcards)
-               """)
+            .withDescription(QUERY_DESCRIPTION)
             .withOperationId("query" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -390,9 +465,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method idGet = new Method()
             .withSummary("Get one " + tableLabel + " by " + primaryKeyLabel)
-            .withDescription("""
-               Get one record from this table, by specifying its primary key as a path parameter.
-               """)
+            .withDescription(GET_DESCRIPTION)
             .withOperationId("get" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -412,16 +485,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method idPatch = new Method()
             .withSummary("Update one " + tableLabel)
-            .withDescription("""
-               Update one record in this table, by specifying its primary key as a path parameter, and by supplying values to be updated in the request body.
-                              
-               * Only the fields provided in the request body will be updated.
-               * To remove a value from a field, supply the key for the field, with a null value.
-               * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
-               * Note that if the request body includes the primary key, it will be ignored.  Only the primary key value path parameter will be used.
-                              
-               Upon success, a status code of 204 (`No Content`) is returned, with no response body.
-               """)
+            .withDescription(UPDATE_DESCRIPTION)
             .withOperationId("update" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -443,11 +507,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method idDelete = new Method()
             .withSummary("Delete one " + tableLabel)
-            .withDescription("""
-               Delete one record from this table, by specifying its primary key as a path parameter.
-                              
-               Upon success, a status code of 204 (`No Content`) is returned, with no response body.
-               """)
+            .withDescription(DELETE_DESCRIPTION)
             .withOperationId("delete" + tableApiNameUcFirst)
             .withTags(ListBuilder.of(tableLabel))
             .withParameters(ListBuilder.of(
@@ -473,12 +533,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method slashPost = new Method()
             .withSummary("Create one " + tableLabel)
-            .withDescription("""
-               Insert one record into this table by supplying the values to be inserted in the request body.
-               * The request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body.
-                              
-               Upon success, a status code of 201 (`Created`) is returned, and the generated value for the primary key will be returned in the response body object.
-               """)
+            .withDescription(INSERT_DESCRIPTION)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " record to create.")
@@ -508,14 +563,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          ////////////////
          Method bulkPost = new Method()
             .withSummary("Create multiple " + tableLabel + " records")
-            .withDescription("""
-               Insert one or more records into this table by supplying array of records with values to be inserted, in the request body.
-               * The objects in the request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body
-                              
-               An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
-               * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
-               * For sub-status codes of 201 (`Created`), and the generated value for the primary key will be returned in the response body object.
-               """)
+            .withDescription(BULK_INSERT_DESCRIPTION)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " records to create.")
@@ -530,15 +578,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method bulkPatch = new Method()
             .withSummary("Update multiple " + tableLabel + " records")
-            .withDescription("""
-               Update one or more records in this table, by supplying an array of records, with primary keys and values to be updated, in the request body.
-               * Only the fields provided in the request body will be updated.
-               * To remove a value from a field, supply the key for the field, with a null value.
-               * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
-                             
-               An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
-               * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
-               """)
+            .withDescription(BULK_UPDATE_DESCRIPTION)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " records to update.")
@@ -559,12 +599,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          Method bulkDelete = new Method()
             .withSummary("Delete multiple " + tableLabel + " records")
-            .withDescription("""
-               Delete one or more records from this table, by supplying an array of primary key values in the request body.
-                              
-               An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
-               * The 1st primary key in the request will have its response in the 1st object in the response, and so-forth.
-               """)
+            .withDescription(BULK_DELETE_DESCRIPTION)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription(primaryKeyLabel + " values for the " + tableLabel + " records to delete.")
@@ -835,20 +870,34 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             case "patch" -> ListBuilder.of(
                MapBuilder.of(LinkedHashMap::new)
                   .with("statusCode", HttpStatus.NO_CONTENT.getCode())
-                  .with("statusText", HttpStatus.NO_CONTENT.getMessage()).build(),
+                  .with("statusText", HttpStatus.NO_CONTENT.getMessage())
+                  .with(primaryKeyApiName, "47").build(),
                MapBuilder.of(LinkedHashMap::new)
                   .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
                   .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
-                  .with("error", "Could not update " + tableLabel + ": Duplicate value in unique key field.").build()
+                  .with("error", "Could not update " + tableLabel + ": Missing value in required field: My Field.")
+                  .with(primaryKeyApiName, "47").build(),
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.NOT_FOUND.getCode())
+                  .with("statusText", HttpStatus.NOT_FOUND.getMessage())
+                  .with("error", "The requested " + tableLabel + " to update was not found.")
+                  .with(primaryKeyApiName, "47").build()
             );
             case "delete" -> ListBuilder.of(
                MapBuilder.of(LinkedHashMap::new)
                   .with("statusCode", HttpStatus.NO_CONTENT.getCode())
-                  .with("statusText", HttpStatus.NO_CONTENT.getMessage()).build(),
+                  .with("statusText", HttpStatus.NO_CONTENT.getMessage())
+                  .with(primaryKeyApiName, "47").build(),
                MapBuilder.of(LinkedHashMap::new)
                   .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
                   .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
-                  .with("error", "Could not delete " + tableLabel + ": Foreign key constraint violation.").build()
+                  .with("error", "Could not delete " + tableLabel + ": Foreign key constraint violation.")
+                  .with(primaryKeyApiName, "47").build(),
+               MapBuilder.of(LinkedHashMap::new)
+                  .with("statusCode", HttpStatus.NOT_FOUND.getCode())
+                  .with("statusText", HttpStatus.NOT_FOUND.getMessage())
+                  .with("error", "The requested " + tableLabel + " to delete was not found.")
+                  .with(primaryKeyApiName, "47").build()
             );
             default -> throw (new IllegalArgumentException("Unrecognized method: " + method));
          };
@@ -857,10 +906,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       properties.put("statusCode", new Schema().withType("integer"));
       properties.put("statusText", new Schema().withType("string"));
       properties.put("error", new Schema().withType("string"));
-      if(method.equalsIgnoreCase("post"))
-      {
-         properties.put(primaryKeyApiName, new Schema().withType(getFieldType(primaryKeyField)));
-      }
+      properties.put(primaryKeyApiName, new Schema().withType(getFieldType(primaryKeyField)));
 
       return new Response()
          .withDescription("Multiple statuses.  See body for details.")
@@ -870,9 +916,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withItems(new Schema()
                   .withType("object")
                   .withProperties(properties))
-               .withExample(example)
-            )
-         ));
+               .withExample(example))));
    }
 
 

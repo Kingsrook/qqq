@@ -348,7 +348,7 @@ public class BackendQueryFilterUtils
          }
       }
 
-      if(!criterion.getValues().contains(value))
+      if(value == null || !criterion.getValues().contains(value))
       {
          return (false);
       }

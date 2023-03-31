@@ -34,6 +34,7 @@ import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
@@ -50,6 +51,8 @@ import org.json.JSONObject;
  *******************************************************************************/
 public class QRecordApiAdapter
 {
+   private static final QLogger LOG = QLogger.getLogger(QRecordApiAdapter.class);
+
    private static Map<Pair<String, String>, List<QFieldMetaData>>        fieldListCache = new HashMap<>();
    private static Map<Pair<String, String>, Map<String, QFieldMetaData>> fieldMapCache  = new HashMap<>();
 
@@ -105,7 +108,7 @@ public class QRecordApiAdapter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QRecord apiJsonObjectToQRecord(JSONObject jsonObject, String tableName, String apiVersion) throws QException
+   public static QRecord apiJsonObjectToQRecord(JSONObject jsonObject, String tableName, String apiVersion, boolean includePrimaryKey) throws QException
    {
       ////////////////////////////////////////////////////////////////////////////////
       // make map of apiFieldNames (e.g., names as api uses them) to QFieldMetaData //
@@ -134,6 +137,22 @@ public class QRecordApiAdapter
             QFieldMetaData field = apiFieldsMap.get(jsonKey);
             Object         value = jsonObject.isNull(jsonKey) ? null : jsonObject.get(jsonKey);
 
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // generally, omit non-editable fields -                                                              //
+            // however - if we're asked to include the primary key (and this is the primary key), then include it //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!field.getIsEditable())
+            {
+               if(includePrimaryKey && field.getName().equals(table.getPrimaryKeyField()))
+               {
+                  LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because it's the primary key, and we've been asked to include primary keys");
+               }
+               else
+               {
+                  continue;
+               }
+            }
+
             ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(field);
             if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
             {
@@ -146,6 +165,11 @@ public class QRecordApiAdapter
          }
          else if(associationMap.containsKey(jsonKey))
          {
+            //////////////////////////////////////////////////////////////////////////////////////////////////
+            // else, if it's an association - process that (recursively as a list of other records)         //
+            // todo - should probably define in meta-data if an association is included in the api or not!! //
+            // and what its name is too...                                                                  //
+            //////////////////////////////////////////////////////////////////////////////////////////////////
             Association association = associationMap.get(jsonKey);
             Object      value       = jsonObject.get(jsonKey);
             if(value instanceof JSONArray jsonArray)
@@ -154,7 +178,7 @@ public class QRecordApiAdapter
                {
                   if(subObject instanceof JSONObject subJsonObject)
                   {
-                     QRecord subRecord = apiJsonObjectToQRecord(subJsonObject, association.getAssociatedTableName(), apiVersion);
+                     QRecord subRecord = apiJsonObjectToQRecord(subJsonObject, association.getAssociatedTableName(), apiVersion, includePrimaryKey);
                      qRecord.withAssociatedRecord(association.getName(), subRecord);
                   }
                   else

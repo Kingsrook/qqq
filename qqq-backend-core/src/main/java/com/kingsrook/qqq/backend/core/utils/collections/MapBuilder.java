@@ -27,10 +27,15 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 
+@SuppressWarnings({ "checkstyle:javadoc", "DanglingJavadoc" })
 /*******************************************************************************
  ** Map.of is "great", but annoying because it makes unmodifiable maps, and it
- ** NPE's on nulls...  So, replace it with this, which returns HashMaps, which
- ** "don't suck"
+ ** NPE's on nulls...  So, replace it with this, which returns HashMaps (or maps
+ ** of the type you choose).
+ **
+ ** Can use it 2 ways:
+ ** MapBuilder.of(key, value, key2, value2, ...) => Map (a HashMap)
+ ** MapBuilder.<KeyType ValueType>of(SomeMap::new).with(key, value).with(key2, value2)...build() => SomeMap (the type you specify)
  *******************************************************************************/
 public class MapBuilder<K, V>
 {

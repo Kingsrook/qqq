@@ -1066,7 +1066,7 @@ public class QJavalinApiHandler
             JSONTokener jsonTokener = new JSONTokener(context.body().trim());
             JSONObject  jsonObject  = new JSONObject(jsonTokener);
 
-            insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version)));
+            insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, false)));
 
             if(jsonTokener.more())
             {
@@ -1142,7 +1142,7 @@ public class QJavalinApiHandler
             for(int i = 0; i < jsonArray.length(); i++)
             {
                JSONObject jsonObject = jsonArray.getJSONObject(i);
-               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version));
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, false));
             }
 
             if(jsonTokener.more())
@@ -1248,7 +1248,7 @@ public class QJavalinApiHandler
             for(int i = 0; i < jsonArray.length(); i++)
             {
                JSONObject jsonObject = jsonArray.getJSONObject(i);
-               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version));
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, true));
             }
 
             if(jsonTokener.more())
@@ -1280,23 +1280,47 @@ public class QJavalinApiHandler
          // process records to build response //
          ///////////////////////////////////////
          List<Map<String, Serializable>> response = new ArrayList<>();
+         int                             i        = 0;
          for(QRecord record : updateOutput.getRecords())
          {
             LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
             response.add(outputRecord);
 
+            try
+            {
+               QRecord      inputRecord = updateInput.getRecords().get(i);
+               Serializable primaryKey  = inputRecord.getValue(table.getPrimaryKeyField());
+               outputRecord.put(table.getPrimaryKeyField(), primaryKey);
+            }
+            catch(Exception e)
+            {
+               //////////
+               // omit //
+               //////////
+            }
+
             List<String> errors = record.getErrors();
             if(CollectionUtils.nullSafeHasContents(errors))
             {
-               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
-               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
                outputRecord.put("error", "Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+               if(areAnyErrorsNotFound(errors))
+               {
+                  outputRecord.put("statusCode", HttpStatus.Code.NOT_FOUND.getCode());
+                  outputRecord.put("statusText", HttpStatus.Code.NOT_FOUND.getMessage());
+               }
+               else
+               {
+                  outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+                  outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               }
             }
             else
             {
                outputRecord.put("statusCode", HttpStatus.Code.NO_CONTENT.getCode());
                outputRecord.put("statusText", HttpStatus.Code.NO_CONTENT.getMessage());
             }
+
+            i++;
          }
 
          QJavalinAccessLogger.logEndSuccess();
@@ -1308,6 +1332,16 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logEndFail(e);
          handleException(context, e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean areAnyErrorsNotFound(List<String> errors)
+   {
+      return errors.stream().anyMatch(e -> e.startsWith(UpdateAction.NOT_FOUND_ERROR_PREFIX) || e.startsWith(DeleteAction.NOT_FOUND_ERROR_PREFIX));
    }
 
 
@@ -1390,25 +1424,35 @@ public class QJavalinApiHandler
          ///////////////////////////////////////
          List<Map<String, Serializable>> response = new ArrayList<>();
 
-         List<QRecord>       recordsWithErrors    = deleteOutput.getRecordsWithErrors();
-         Map<String, String> primaryKeyToErrorMap = new HashMap<>();
+         List<QRecord>             recordsWithErrors     = deleteOutput.getRecordsWithErrors();
+         Map<String, List<String>> primaryKeyToErrorsMap = new HashMap<>();
          for(QRecord recordWithError : CollectionUtils.nonNullList(recordsWithErrors))
          {
             String primaryKey = recordWithError.getValueString(table.getPrimaryKeyField());
-            primaryKeyToErrorMap.put(primaryKey, StringUtils.join(", ", recordWithError.getErrors()));
+            primaryKeyToErrorsMap.put(primaryKey, recordWithError.getErrors());
          }
 
          for(Serializable primaryKey : deleteInput.getPrimaryKeys())
          {
             LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
             response.add(outputRecord);
+            outputRecord.put(table.getPrimaryKeyField(), primaryKey);
 
-            String primaryKeyString = ValueUtils.getValueAsString((primaryKey));
-            if(primaryKeyToErrorMap.containsKey(primaryKeyString))
+            String       primaryKeyString = ValueUtils.getValueAsString(primaryKey);
+            List<String> errors           = primaryKeyToErrorsMap.get(primaryKeyString);
+            if(CollectionUtils.nullSafeHasContents(errors))
             {
-               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
-               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
-               outputRecord.put("error", "Error deleting " + table.getLabel() + ": " + primaryKeyToErrorMap.get(primaryKeyString));
+               outputRecord.put("error", "Error deleting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+               if(areAnyErrorsNotFound(errors))
+               {
+                  outputRecord.put("statusCode", HttpStatus.Code.NOT_FOUND.getCode());
+                  outputRecord.put("statusText", HttpStatus.Code.NOT_FOUND.getMessage());
+               }
+               else
+               {
+                  outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+                  outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               }
             }
             else
             {
@@ -1453,20 +1497,6 @@ public class QJavalinApiHandler
 
          PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
 
-         ///////////////////////////////////////////////////////
-         // throw a not found error if the record isn't found //
-         ///////////////////////////////////////////////////////
-         GetInput getInput = new GetInput();
-         getInput.setTableName(tableName);
-         getInput.setPrimaryKey(primaryKey);
-         GetAction getAction = new GetAction();
-         GetOutput getOutput = getAction.execute(getInput);
-         if(getOutput.getRecord() == null)
-         {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
-         }
-
          try
          {
             if(!StringUtils.hasContent(context.body()))
@@ -1477,7 +1507,7 @@ public class QJavalinApiHandler
             JSONTokener jsonTokener = new JSONTokener(context.body().trim());
             JSONObject  jsonObject  = new JSONObject(jsonTokener);
 
-            QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version);
+            QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, false);
             qRecord.setValue(table.getPrimaryKeyField(), primaryKey);
             updateInput.setRecords(List.of(qRecord));
 
@@ -1501,7 +1531,17 @@ public class QJavalinApiHandler
          List<String> errors = updateOutput.getRecords().get(0).getErrors();
          if(CollectionUtils.nullSafeHasContents(errors))
          {
-            throw (new QException("Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors)));
+            if(areAnyErrorsNotFound(errors))
+            {
+               throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+            }
+            else
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // todo - could be smarter here, about some of these errors being 400, not 500...  e.g., a missing required field //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               throw (new QException("Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors)));
+            }
          }
 
          QJavalinAccessLogger.logEndSuccess();
@@ -1540,20 +1580,6 @@ public class QJavalinApiHandler
 
          PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);
 
-         ///////////////////////////////////////////////////////
-         // throw a not found error if the record isn't found //
-         ///////////////////////////////////////////////////////
-         GetInput getInput = new GetInput();
-         getInput.setTableName(tableName);
-         getInput.setPrimaryKey(primaryKey);
-         GetAction getAction = new GetAction();
-         GetOutput getOutput = getAction.execute(getInput);
-         if(getOutput.getRecord() == null)
-         {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
-         }
-
          ///////////////////
          // do the delete //
          ///////////////////
@@ -1561,7 +1587,14 @@ public class QJavalinApiHandler
          DeleteOutput deleteOutput = deleteAction.execute(deleteInput);
          if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
          {
-            throw (new QException("Error deleting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(deleteOutput.getRecordsWithErrors().get(0).getErrors())));
+            if(areAnyErrorsNotFound(deleteOutput.getRecordsWithErrors().get(0).getErrors()))
+            {
+               throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+            }
+            else
+            {
+               throw (new QException("Error deleting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(deleteOutput.getRecordsWithErrors().get(0).getErrors())));
+            }
          }
 
          QJavalinAccessLogger.logEndSuccess();

@@ -97,7 +97,7 @@ class QRecordApiAdapterTest extends BaseTest
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       QRecord recordFromOldApi = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "shoeCount": 2}
-         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2022_Q4);
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2022_Q4, true);
       assertEquals(2, recordFromOldApi.getValueInteger("noOfShoes"));
 
       ///////////////////////////////////////////
@@ -105,7 +105,7 @@ class QRecordApiAdapterTest extends BaseTest
       ///////////////////////////////////////////
       QRecord recordFromCurrentApi = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "noOfShoes": 2}
-         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q1);
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q1, true);
       assertEquals(2, recordFromCurrentApi.getValueInteger("noOfShoes"));
 
       /////////////////////////////////////////////
@@ -113,7 +113,7 @@ class QRecordApiAdapterTest extends BaseTest
       /////////////////////////////////////////////
       QRecord recordFromFutureApi = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "noOfShoes": 2, "cost": 3.50}
-         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q2);
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q2, true);
       assertEquals(2, recordFromFutureApi.getValueInteger("noOfShoes"));
       assertEquals(new BigDecimal("3.50"), recordFromFutureApi.getValueBigDecimal("cost"));
 
@@ -122,7 +122,7 @@ class QRecordApiAdapterTest extends BaseTest
       ///////////////////////////////////////////////////////////////////
       QRecord recordWithApiFieldName = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "birthDay": "1976-05-28"}
-         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q2);
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q2, true);
       assertEquals("1976-05-28", recordWithApiFieldName.getValueString("birthDate"));
 
       ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +130,7 @@ class QRecordApiAdapterTest extends BaseTest
       ////////////////////////////////////////////////////////////////////////////////////////////////
       assertThatThrownBy(() -> QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "noOfShoes": 2}
-         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2022_Q4))
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2022_Q4, true))
          .isInstanceOf(QBadRequestException.class)
          .hasMessageContaining("unrecognized field name: noOfShoes");
 
@@ -139,7 +139,7 @@ class QRecordApiAdapterTest extends BaseTest
       /////////////////////////////////////////////////////////////////////////
       assertThatThrownBy(() -> QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "cost": 2}
-         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q1))
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q1, true))
          .isInstanceOf(QBadRequestException.class)
          .hasMessageContaining("unrecognized field name: cost");
 
@@ -150,10 +150,28 @@ class QRecordApiAdapterTest extends BaseTest
       {
          assertThatThrownBy(() -> QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
             {"firstName": "Tim", "price": 2}
-            """), TestUtils.TABLE_NAME_PERSON, version))
+            """), TestUtils.TABLE_NAME_PERSON, version, true))
             .isInstanceOf(QBadRequestException.class)
             .hasMessageContaining("unrecognized field name: price");
       }
+
+      ////////////////////////////////////////////
+      // assert non-editable fields are omitted //
+      ////////////////////////////////////////////
+      QRecord recordWithoutNonEditableFields = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
+         {"firstName": "Tim", "birthDay": "1976-05-28", "createDate": "2023-03-31T11:44:28Z", "id": 256}
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q1, false);
+      assertFalse(recordWithoutNonEditableFields.getValues().containsKey("createDate"));
+      assertFalse(recordWithoutNonEditableFields.getValues().containsKey("id"));
+
+      /////////////////////////////////////////////////////////////////////////
+      // assert non-editable primary key fields IS included, if so requested //
+      /////////////////////////////////////////////////////////////////////////
+      QRecord recordWithoutNonEditablePrimaryKeyFields = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
+         {"firstName": "Tim", "birthDay": "1976-05-28", "createDate": "2023-03-31T11:44:28Z", "id": 256}
+         """), TestUtils.TABLE_NAME_PERSON, TestUtils.V2023_Q1, true);
+      assertFalse(recordWithoutNonEditablePrimaryKeyFields.getValues().containsKey("createDate"));
+      assertEquals(256, recordWithoutNonEditablePrimaryKeyFields.getValues().get("id"));
 
    }
 

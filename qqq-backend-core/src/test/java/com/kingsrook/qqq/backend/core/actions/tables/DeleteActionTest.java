@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.util.List;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -40,8 +41,9 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -57,8 +59,6 @@ class DeleteActionTest extends BaseTest
 {
 
    /*******************************************************************************
-    ** At the core level, there isn't much that can be asserted, as it uses the
-    ** mock implementation - just confirming that all of the "wiring" works.
     **
     *******************************************************************************/
    @Test
@@ -66,11 +66,17 @@ class DeleteActionTest extends BaseTest
    {
       DeleteInput request = new DeleteInput();
       request.setTableName("person");
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the mock backend - it'll find a record for id=1, but not for id=2 - so we can test both a found & deleted, and a not-found here //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       request.setPrimaryKeys(List.of(1, 2));
       DeleteOutput result = new DeleteAction().execute(request);
       assertNotNull(result);
-      assertEquals(2, result.getDeletedRecordCount());
-      assertTrue(CollectionUtils.nullSafeIsEmpty(result.getRecordsWithErrors()));
+      assertEquals(1, result.getDeletedRecordCount());
+      assertEquals(1, result.getRecordsWithErrors().size());
+      assertEquals(2, result.getRecordsWithErrors().get(0).getValueInteger("id"));
+      assertEquals("No record was found to delete for Id = 2", result.getRecordsWithErrors().get(0).getErrors().get(0));
    }
 
 
@@ -293,6 +299,104 @@ class DeleteActionTest extends BaseTest
       queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id")));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecurityKeys() throws QException
+   {
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1)));
+      insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
+
+      ///////////////////////////////////////////////////////
+      // make sure we inserted the records we think we did //
+      ///////////////////////////////////////////////////////
+      assertIdsExist(TestUtils.TABLE_NAME_ORDER, List.of(1, 2));
+      assertIdsExist(TestUtils.TABLE_NAME_LINE_ITEM, List.of(1, 2, 3));
+      assertIdsExist(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC, List.of(1, 2, 3));
+      assertIdsExist(TestUtils.TABLE_NAME_ORDER_EXTRINSIC, List.of(1, 2, 3, 4));
+
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(2)));
+
+      //////////////////////////////////////////////////
+      // assert can't delete the records at any level //
+      //////////////////////////////////////////////////
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      deleteInput.setPrimaryKeys(List.of(1));
+      DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+      assertEquals(0, deleteOutput.getDeletedRecordCount());
+      assertEquals(1, deleteOutput.getRecordsWithErrors().size());
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+
+      deleteInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
+      deleteInput.setPrimaryKeys(List.of(1));
+      deleteOutput = new DeleteAction().execute(deleteInput);
+      assertEquals(0, deleteOutput.getDeletedRecordCount());
+      assertEquals(1, deleteOutput.getRecordsWithErrors().size());
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+
+      deleteInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      deleteInput.setPrimaryKeys(List.of(1));
+      deleteOutput = new DeleteAction().execute(deleteInput);
+      assertEquals(0, deleteOutput.getDeletedRecordCount());
+      assertEquals(1, deleteOutput.getRecordsWithErrors().size());
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+
+      deleteInput.setTableName(TestUtils.TABLE_NAME_ORDER_EXTRINSIC);
+      deleteInput.setPrimaryKeys(List.of(1));
+      deleteOutput = new DeleteAction().execute(deleteInput);
+      assertEquals(0, deleteOutput.getDeletedRecordCount());
+      assertEquals(1, deleteOutput.getRecordsWithErrors().size());
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void assertIdsExist(String tableName, List<Integer> ids) throws QException
+   {
+      List<QRecord> records = TestUtils.queryTable(tableName);
+      for(Integer id : ids)
+      {
+         assertTrue(records.stream().anyMatch(r -> Objects.equals(id, r.getValueInteger("id"))));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("storeId", 1).withValue("orderNo", "ORD123")
+
+            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC1").withValue("quantity", 1)
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-1.1").withValue("value", "LINE-VAL-1")))
+
+            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC2").withValue("quantity", 2)
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.1").withValue("value", "LINE-VAL-2"))
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.2").withValue("value", "LINE-VAL-3")))
+
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "MY-FIELD-1").withValue("value", "MY-VALUE-1"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "MY-FIELD-2").withValue("value", "MY-VALUE-2"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "MY-FIELD-3").withValue("value", "MY-VALUE-3")),
+
+         new QRecord().withValue("storeId", 1).withValue("orderNo", "ORD124")
+            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC3").withValue("quantity", 3))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "YOUR-FIELD-1").withValue("value", "YOUR-VALUE-1"))
+      ));
+      new InsertAction().execute(insertInput);
    }
 
 }

@@ -72,6 +72,8 @@ public class UpdateAction
 {
    private static final QLogger LOG = QLogger.getLogger(UpdateAction.class);
 
+   public static final String NOT_FOUND_ERROR_PREFIX = "No record was found to update";
+
 
 
    /*******************************************************************************
@@ -193,7 +195,7 @@ public class UpdateAction
 
             if(!lookedUpRecords.containsKey(value))
             {
-               record.addError("No record was found to update for " + primaryKeyField.getLabel() + " = " + value);
+               record.addError(NOT_FOUND_ERROR_PREFIX + " for " + primaryKeyField.getLabel() + " = " + value);
             }
          }
       }

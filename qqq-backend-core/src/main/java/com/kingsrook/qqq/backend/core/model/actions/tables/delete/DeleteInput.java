@@ -27,6 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 
 
 /*******************************************************************************
@@ -101,7 +102,10 @@ public class DeleteInput extends AbstractTableActionInput
     *******************************************************************************/
    public void setPrimaryKeys(List<Serializable> primaryKeys)
    {
-      this.primaryKeys = primaryKeys;
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // the action may edit this list (e.g., to remove keys w/ errors), so wrap it in MutableList //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      this.primaryKeys = new MutableList<>(primaryKeys);
    }
 
 
@@ -112,7 +116,7 @@ public class DeleteInput extends AbstractTableActionInput
     *******************************************************************************/
    public DeleteInput withPrimaryKeys(List<Serializable> primaryKeys)
    {
-      this.primaryKeys = primaryKeys;
+      setPrimaryKeys(primaryKeys);
       return (this);
    }
 

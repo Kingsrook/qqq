@@ -796,19 +796,29 @@ class QJavalinApiHandlerTest extends BaseTest
             [
                {"id": 1, "email": "homer@simpson.com"},
                {"id": 2, "email": "marge@simpson.com"},
-               {"email": "nobody@simpson.com"}
+               {"email": "nobody@simpson.com"},
+               {"id": 256, "email": "256@simpson.com"}
             ]
             """)
          .asString();
       assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
       JSONArray jsonArray = new JSONArray(response.getBody());
-      assertEquals(3, jsonArray.length());
+      System.out.println(jsonArray.toString(3));
+      assertEquals(4, jsonArray.length());
 
       assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertEquals(1, jsonArray.getJSONObject(0).getInt("id"));
+
       assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertEquals(2, jsonArray.getJSONObject(1).getInt("id"));
 
       assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(2).getInt("statusCode"));
       assertEquals("Error updating Person: Missing value in primary key field", jsonArray.getJSONObject(2).getString("error"));
+      assertFalse(jsonArray.getJSONObject(2).has("id"));
+
+      assertEquals(HttpStatus.NOT_FOUND_404, jsonArray.getJSONObject(3).getInt("statusCode"));
+      assertEquals("Error updating Person: No record was found to update for Id = 256", jsonArray.getJSONObject(3).getString("error"));
+      assertEquals(256, jsonArray.getJSONObject(3).getInt("id"));
 
       QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("homer@simpson.com", record.getValueString("email"));
@@ -818,7 +828,7 @@ class QJavalinApiHandlerTest extends BaseTest
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.EQUALS, "nobody@simpson.com")));
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.IN, List.of("nobody@simpson.com", "256@simpson.com"))));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(0, queryOutput.getRecords().size());
    }
@@ -885,16 +895,24 @@ class QJavalinApiHandlerTest extends BaseTest
 
       HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
          .body("""
-            [ 1, 3, 5 ]
+            [ 1, 3, 5, 7 ]
             """)
          .asString();
       assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
       JSONArray jsonArray = new JSONArray(response.getBody());
-      assertEquals(3, jsonArray.length());
+      assertEquals(4, jsonArray.length());
 
       assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertEquals(1, jsonArray.getJSONObject(0).getInt("id"));
+
       assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertEquals(3, jsonArray.getJSONObject(1).getInt("id"));
+
       assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(2).getInt("statusCode"));
+      assertEquals(5, jsonArray.getJSONObject(2).getInt("id"));
+
+      assertEquals(HttpStatus.NOT_FOUND_404, jsonArray.getJSONObject(3).getInt("statusCode"));
+      assertEquals(7, jsonArray.getJSONObject(3).getInt("id"));
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
