@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api.javalin;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
 import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
+import com.kingsrook.qqq.api.model.APILog;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
@@ -276,7 +278,21 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void doPathNotFound(Context context)
    {
-      handleException(context, new QNotFoundException("Could not find any resources at path " + context.path()));
+      APILog apiLog = newAPILog(context);
+
+      try
+      {
+         setupSession(context, null, null);
+      }
+      catch(Exception e)
+      {
+         //////////////////////////////////////////////////////////////////////////
+         // if we don't have a session, we won't be able to store the api log... //
+         //////////////////////////////////////////////////////////////////////////
+         LOG.debug("No session in a 404; will not create api log", e);
+      }
+
+      handleException(context, new QNotFoundException("Could not find any resources at path " + context.path()), apiLog);
    }
 
 
@@ -548,6 +564,7 @@ public class QJavalinApiHandler
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
       String primaryKey   = context.pathParam("primaryKey");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -585,12 +602,64 @@ public class QJavalinApiHandler
          Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordToApiMap(record, tableName, version);
 
          QJavalinAccessLogger.logEndSuccess();
-         context.result(JsonUtils.toJson(outputRecord));
+         String resultString = JsonUtils.toJson(outputRecord);
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static APILog newAPILog(Context context)
+   {
+      APILog apiLog = new APILog()
+         .withTimestamp(Instant.now())
+         .withMethod(context.req().getMethod())
+         .withPath(context.path())
+         .withQueryString(context.queryString())
+         .withRequestBody(context.body());
+
+      try
+      {
+         apiLog.setVersion(context.pathParam("version"));
+      }
+      catch(Exception e)
+      {
+         //////////////////////////////////////////////////////////////////////////////////
+         // pathParam throws if the param isn't found - in that case, just leave it null //
+         //////////////////////////////////////////////////////////////////////////////////
+      }
+
+      return (apiLog);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void storeApiLog(APILog apiLog)
+   {
+      try
+      {
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(APILog.TABLE_NAME);
+         // todo - security fields!!!!!
+         // todo - user!!!!
+         insertInput.setRecords(List.of(apiLog.toQRecord()));
+         new InsertAction().executeAsync(insertInput);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error storing API log", e);
       }
    }
 
@@ -604,6 +673,7 @@ public class QJavalinApiHandler
       String       version      = context.pathParam("version");
       String       tableApiName = context.pathParam("tableName");
       QQueryFilter filter       = null;
+      APILog       apiLog       = newAPILog(context);
 
       try
       {
@@ -822,12 +892,14 @@ public class QJavalinApiHandler
          output.put("records", records);
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), QJavalinAccessLogger.logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
-         context.result(JsonUtils.toJson(output));
+         String resultString = JsonUtils.toJson(output);
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
    }
 
@@ -1041,6 +1113,7 @@ public class QJavalinApiHandler
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -1090,12 +1163,14 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.CREATED.getCode());
-         context.result(JsonUtils.toJson(outputRecord));
+         String resultString = JsonUtils.toJson(outputRecord);
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
    }
 
@@ -1108,6 +1183,7 @@ public class QJavalinApiHandler
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -1196,12 +1272,14 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
-         context.result(JsonUtils.toJson(response));
+         String resultString = JsonUtils.toJson(response);
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
    }
 
@@ -1214,6 +1292,7 @@ public class QJavalinApiHandler
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -1325,12 +1404,14 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
-         context.result(JsonUtils.toJson(response));
+         String resultString = JsonUtils.toJson(response);
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
    }
 
@@ -1353,6 +1434,7 @@ public class QJavalinApiHandler
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -1463,12 +1545,14 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
-         context.result(JsonUtils.toJson(response));
+         String resultString = JsonUtils.toJson(response);
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
    }
 
@@ -1482,6 +1566,7 @@ public class QJavalinApiHandler
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
       String primaryKey   = context.pathParam("primaryKey");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -1546,11 +1631,12 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.NO_CONTENT.getCode());
+         storeApiLog(apiLog.withStatusCode(context.statusCode()));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
    }
 
@@ -1564,6 +1650,7 @@ public class QJavalinApiHandler
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
       String primaryKey   = context.pathParam("primaryKey");
+      APILog apiLog       = newAPILog(context);
 
       try
       {
@@ -1599,12 +1686,23 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.NO_CONTENT.getCode());
+         storeApiLog(apiLog.withStatusCode(context.statusCode()));
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
-         handleException(context, e);
+         handleException(context, e, apiLog);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void handleException(Context context, Exception e, APILog apiLog)
+   {
+      handleException(null, context, e, apiLog);
    }
 
 
@@ -1614,7 +1712,7 @@ public class QJavalinApiHandler
     *******************************************************************************/
    public static void handleException(Context context, Exception e)
    {
-      handleException(null, context, e);
+      handleException(null, context, e, null);
    }
 
 
@@ -1622,13 +1720,13 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void handleException(HttpStatus.Code statusCode, Context context, Exception e)
+   public static void handleException(HttpStatus.Code statusCode, Context context, Exception e, APILog apiLog)
    {
       QBadRequestException badRequestException = ExceptionUtils.findClassInRootChain(e, QBadRequestException.class);
       if(badRequestException != null)
       {
          statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.BAD_REQUEST); // 400
-         respondWithError(context, statusCode, badRequestException.getMessage());
+         respondWithError(context, statusCode, badRequestException.getMessage(), apiLog);
          return;
       }
 
@@ -1638,26 +1736,28 @@ public class QJavalinApiHandler
          if(userFacingException instanceof QNotFoundException)
          {
             statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND); // 404
-            respondWithError(context, statusCode, userFacingException.getMessage());
+            respondWithError(context, statusCode, userFacingException.getMessage(), apiLog);
+            return;
          }
          else
          {
             LOG.info("User-facing exception", e);
             statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR); // 500
-            respondWithError(context, statusCode, userFacingException.getMessage());
+            respondWithError(context, statusCode, userFacingException.getMessage(), apiLog);
+            return;
          }
       }
       else
       {
          if(e instanceof QAuthenticationException)
          {
-            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
+            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage(), apiLog); // 401
             return;
          }
 
          if(e instanceof QPermissionDeniedException)
          {
-            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage()); // 403
+            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage(), apiLog); // 403
             return;
          }
 
@@ -1665,7 +1765,8 @@ public class QJavalinApiHandler
          // default exception handling //
          ////////////////////////////////
          LOG.warn("Exception in javalin request", e);
-         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")"); // 500
+         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")", apiLog); // 500
+         return;
       }
    }
 
@@ -1674,7 +1775,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage)
+   public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage, APILog apiLog)
    {
       context.status(statusCode.getCode());
 
@@ -1695,7 +1796,17 @@ public class QJavalinApiHandler
          ///////////////////////////
       }
 
-      context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
+      String responseBody = JsonUtils.toJson(Map.of("error", errorMessage));
+      context.result(responseBody);
+
+      if(apiLog != null)
+      {
+         if(QContext.getQSession() != null && QContext.getQInstance() != null)
+         {
+            apiLog.withStatusCode(statusCode.getCode()).withResponseBody(responseBody);
+            storeApiLog(apiLog);
+         }
+      }
    }
 
 }
