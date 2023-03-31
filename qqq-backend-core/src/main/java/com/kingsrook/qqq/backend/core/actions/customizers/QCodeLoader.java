@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -101,7 +102,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer: " + codeReference);
+         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //
@@ -140,7 +141,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer: " + codeReference);
+         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //
@@ -179,7 +180,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer: " + codeReference);
+         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //

@@ -79,6 +79,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -497,7 +498,7 @@ public class BaseAPIActionUtil
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
       String errorMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
-      LOG.error(errorMessage);
+      LOG.error("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
 
       if("GET".equals(request.getMethod()))
       {
@@ -919,7 +920,7 @@ public class BaseAPIActionUtil
                throw (new QException(rle));
             }
 
-            LOG.warn("Caught RateLimitException [#" + rateLimitsCaught + "] during HTTP request to [" + request.getURI() + "] on table [" + table.getName() + "] - sleeping [" + sleepMillis + "]...");
+            LOG.info("Caught RateLimitException", logPair("rateLimitsCaught", rateLimitsCaught), logPair("uri", request.getURI()), logPair("table", table.getName()), logPair("sleeping", sleepMillis));
             SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
             sleepMillis *= 2;
          }
