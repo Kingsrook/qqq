@@ -183,21 +183,14 @@ public class DeleteAction
 
          if(CollectionUtils.nullSafeHasContents(primaryKeyList))
          {
-            if(CollectionUtils.nullSafeHasContents(deleteInput.getTable().getRecordSecurityLocks()))
-            {
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////
-               // if the table has any security locks, then we need full entities (to record the keys), not just ids //
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////
-               QueryInput queryInput = new QueryInput();
-               queryInput.setTableName(deleteInput.getTableName());
-               queryInput.setFilter(new QQueryFilter(new QFilterCriteria(deleteInput.getTable().getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeyList)));
-               QueryOutput queryOutput = new QueryAction().execute(queryInput);
-               recordListForAudit = queryOutput.getRecords();
-            }
-            else
-            {
-               recordListForAudit = primaryKeyList.stream().map(pk -> new QRecord().withValue(deleteInput.getTable().getPrimaryKeyField(), pk)).toList();
-            }
+            ////////////////////////////////////////////////////////////////////////////////////
+            // always fetch the records - we'll use them anyway for checking not-exist  below //
+            ////////////////////////////////////////////////////////////////////////////////////
+            QueryInput queryInput = new QueryInput();
+            queryInput.setTableName(deleteInput.getTableName());
+            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(deleteInput.getTable().getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeyList)));
+            QueryOutput queryOutput = new QueryAction().execute(queryInput);
+            recordListForAudit = queryOutput.getRecords();
          }
       }
 
@@ -241,7 +234,9 @@ public class DeleteAction
          {
             for(QRecord record : oldRecordList)
             {
-               lookedUpRecords.put(record.getValue(table.getPrimaryKeyField()), record);
+               Serializable primaryKeyValue = record.getValue(table.getPrimaryKeyField());
+               primaryKeyValue = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), primaryKeyValue);
+               lookedUpRecords.put(primaryKeyValue, record);
             }
          }
          else if(!primaryKeysToLookup.isEmpty())

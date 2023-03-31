@@ -81,6 +81,11 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       ActionHelper.validateSession(insertInput);
       QTableMetaData table = insertInput.getTable();
 
+      if(table == null)
+      {
+         throw (new QException("Error:  Undefined table: " + insertInput.getTableName()));
+      }
+
       Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       setAutomationStatusField(insertInput);
 

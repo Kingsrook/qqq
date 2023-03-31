@@ -650,12 +650,15 @@ public class QJavalinApiHandler
    {
       try
       {
-         InsertInput insertInput = new InsertInput();
-         insertInput.setTableName(APILog.TABLE_NAME);
-         // todo - security fields!!!!!
-         // todo - user!!!!
-         insertInput.setRecords(List.of(apiLog.toQRecord()));
-         new InsertAction().executeAsync(insertInput);
+         if(QContext.getQInstance().getTable(APILog.TABLE_NAME) != null)
+         {
+            InsertInput insertInput = new InsertInput();
+            insertInput.setTableName(APILog.TABLE_NAME);
+            // todo - security fields!!!!!
+            // todo - user!!!!
+            insertInput.setRecords(List.of(apiLog.toQRecord()));
+            new InsertAction().executeAsync(insertInput);
+         }
       }
       catch(Exception e)
       {

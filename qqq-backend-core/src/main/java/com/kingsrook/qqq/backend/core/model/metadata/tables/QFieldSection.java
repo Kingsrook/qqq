@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 
 
 /*******************************************************************************
@@ -63,7 +64,7 @@ public class QFieldSection
       this.label = label;
       this.icon = icon;
       this.tier = tier;
-      this.fieldNames = fieldNames;
+      this.fieldNames = new MutableList<>(fieldNames);
    }
 
 
@@ -76,7 +77,7 @@ public class QFieldSection
       this.name = name;
       this.icon = icon;
       this.tier = tier;
-      this.fieldNames = fieldNames;
+      this.fieldNames = new MutableList<>(fieldNames);
    }
 
 
