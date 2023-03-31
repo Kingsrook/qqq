@@ -173,8 +173,9 @@ public class MemoryRecordStore
                //////////////////////////////////////////////////////////////////////////////////
                // make sure we're not giving back records that are all full of associations... //
                //////////////////////////////////////////////////////////////////////////////////
-               qRecord.setAssociatedRecords(new HashMap<>());
-               records.add(qRecord);
+               QRecord recordToReturn = new QRecord(qRecord);
+               recordToReturn.setAssociatedRecords(new HashMap<>());
+               records.add(recordToReturn);
             }
          }
       }
