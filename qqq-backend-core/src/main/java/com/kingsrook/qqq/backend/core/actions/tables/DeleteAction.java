@@ -151,12 +151,14 @@ public class DeleteAction
          QTableMetaData associatedTable = QContext.getQInstance().getTable(association.getAssociatedTableName());
 
          QueryInput queryInput = new QueryInput();
+         queryInput.setTransaction(deleteInput.getTransaction());
          queryInput.setTableName(association.getAssociatedTableName());
          queryInput.setFilter(filter);
          QueryOutput        queryOutput    = new QueryAction().execute(queryInput);
          List<Serializable> associatedKeys = queryOutput.getRecords().stream().map(r -> r.getValue(associatedTable.getPrimaryKeyField())).toList();
 
          DeleteInput nextLevelDeleteInput = new DeleteInput();
+         nextLevelDeleteInput.setTransaction(deleteInput.getTransaction());
          nextLevelDeleteInput.setTableName(association.getAssociatedTableName());
          nextLevelDeleteInput.setPrimaryKeys(associatedKeys);
          DeleteOutput nextLevelDeleteOutput = new DeleteAction().execute(nextLevelDeleteInput);
@@ -187,6 +189,7 @@ public class DeleteAction
             // always fetch the records - we'll use them anyway for checking not-exist  below //
             ////////////////////////////////////////////////////////////////////////////////////
             QueryInput queryInput = new QueryInput();
+            queryInput.setTransaction(deleteInput.getTransaction());
             queryInput.setTableName(deleteInput.getTableName());
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(deleteInput.getTable().getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeyList)));
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -242,6 +245,7 @@ public class DeleteAction
          else if(!primaryKeysToLookup.isEmpty())
          {
             QueryInput queryInput = new QueryInput();
+            queryInput.setTransaction(deleteInput.getTransaction());
             queryInput.setTableName(table.getName());
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeysToLookup)));
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -292,6 +296,7 @@ public class DeleteAction
          QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
 
          QueryInput queryInput = new QueryInput();
+         queryInput.setTransaction(deleteInput.getTransaction());
          queryInput.setTableName(deleteInput.getTableName());
          queryInput.setFilter(deleteInput.getQueryFilter());
          QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);

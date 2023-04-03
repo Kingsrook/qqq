@@ -104,7 +104,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          LOG.warn("Errors in insertAction", logPair("tableName", table.getName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
       }
 
-      manageAssociations(table, insertOutput.getRecords());
+      manageAssociations(table, insertOutput.getRecords(), insertInput.getTransaction());
 
       // todo post-customization - can do whatever w/ the result if you want
 
@@ -151,7 +151,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords) throws QException
+   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords, QBackendTransaction transaction) throws QException
    {
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -176,6 +176,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          }
 
          InsertInput nextLevelInsertInput = new InsertInput();
+         nextLevelInsertInput.setTransaction(transaction);
          nextLevelInsertInput.setTableName(association.getAssociatedTableName());
          nextLevelInsertInput.setRecords(nextLevelInserts);
          InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);

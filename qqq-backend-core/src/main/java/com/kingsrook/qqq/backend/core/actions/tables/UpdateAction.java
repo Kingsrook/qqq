@@ -176,6 +176,7 @@ public class UpdateAction
          else if(!primaryKeysToLookup.isEmpty())
          {
             QueryInput queryInput = new QueryInput();
+            queryInput.setTransaction(updateInput.getTransaction());
             queryInput.setTableName(table.getName());
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeysToLookup)));
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -315,6 +316,7 @@ public class UpdateAction
             if(lookForDeletes)
             {
                QueryInput queryInput = new QueryInput();
+               queryInput.setTransaction(updateInput.getTransaction());
                queryInput.setTableName(associatedTable.getName());
                queryInput.setFilter(findDeletesFilter);
                QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -322,6 +324,7 @@ public class UpdateAction
                {
                   LOG.debug("Deleting associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", queryOutput.getRecords().size()));
                   DeleteInput deleteInput = new DeleteInput();
+                  deleteInput.setTransaction(updateInput.getTransaction());
                   deleteInput.setTableName(association.getAssociatedTableName());
                   deleteInput.setPrimaryKeys(queryOutput.getRecords().stream().map(r -> r.getValue(associatedTable.getPrimaryKeyField())).collect(Collectors.toList()));
                   DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
@@ -332,6 +335,7 @@ public class UpdateAction
             {
                LOG.debug("Updating associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", nextLevelUpdates.size()));
                UpdateInput nextLevelUpdateInput = new UpdateInput();
+               nextLevelUpdateInput.setTransaction(updateInput.getTransaction());
                nextLevelUpdateInput.setTableName(association.getAssociatedTableName());
                nextLevelUpdateInput.setRecords(nextLevelUpdates);
                UpdateOutput nextLevelUpdateOutput = new UpdateAction().execute(nextLevelUpdateInput);
@@ -341,6 +345,7 @@ public class UpdateAction
             {
                LOG.debug("Inserting associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", nextLevelUpdates.size()));
                InsertInput nextLevelInsertInput = new InsertInput();
+               nextLevelInsertInput.setTransaction(updateInput.getTransaction());
                nextLevelInsertInput.setTableName(association.getAssociatedTableName());
                nextLevelInsertInput.setRecords(nextLevelInserts);
                InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
@@ -371,6 +376,7 @@ public class UpdateAction
             List<Serializable> pkeysBeingUpdated = CollectionUtils.nonNullList(updateInput.getRecords()).stream().map(r -> r.getValue(primaryKeyField)).toList();
 
             QueryInput queryInput = new QueryInput();
+            queryInput.setTransaction(updateInput.getTransaction());
             queryInput.setTableName(updateInput.getTableName());
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, pkeysBeingUpdated)));
             // todo - need a limit?  what if too many??
