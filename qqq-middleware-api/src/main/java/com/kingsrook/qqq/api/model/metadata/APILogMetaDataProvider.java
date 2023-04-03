@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.api.model.metadata;
 
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.api.model.APILog;
+import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -33,7 +36,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -56,7 +61,7 @@ public class APILogMetaDataProvider
     *******************************************************************************/
    public static void defineAll(QInstance qInstance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
-      defineApiLogUserPvs(qInstance);
+      definePossibleValueSources(qInstance);
       defineAPILogTable(qInstance, backendName, backendDetailEnricher);
       defineAPILogUserTable(qInstance, backendName, backendDetailEnricher);
    }
@@ -66,11 +71,55 @@ public class APILogMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void defineApiLogUserPvs(QInstance instance)
+   private static void definePossibleValueSources(QInstance instance)
    {
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(TABLE_NAME_API_LOG_USER)
-         .withTableName(TABLE_NAME_API_LOG_USER));
+         .withTableName(TABLE_NAME_API_LOG_USER)
+         .withOrderByField("name"));
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("apiMethod")
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(List.of(
+            new QPossibleValue<>("GET"),
+            new QPossibleValue<>("POST"),
+            new QPossibleValue<>("PATCH"),
+            new QPossibleValue<>("DELETE")
+         )));
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("apiStatusCode")
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(List.of(
+            new QPossibleValue<>(200, "200 (OK)"),
+            new QPossibleValue<>(201, "201 (Created)"),
+            new QPossibleValue<>(204, "204 (No Content)"),
+            new QPossibleValue<>(207, "207 (Multi-Status)"),
+            new QPossibleValue<>(400, "400 (Bad Request)"),
+            new QPossibleValue<>(401, "401 (Not Authorized)"),
+            new QPossibleValue<>(403, "403 (Forbidden)"),
+            new QPossibleValue<>(404, "404 (Not Found)"),
+            new QPossibleValue<>(429, "429 (Too Many Requests)"),
+            new QPossibleValue<>(500, "500 (Internal Server Error)")
+         )));
+
+      List<QPossibleValue<?>>   apiVersionPossibleValues = new ArrayList<>();
+      ApiInstanceMetaData       apiInstanceMetaData      = ApiInstanceMetaData.of(instance);
+      LinkedHashSet<APIVersion> allVersions              = new LinkedHashSet<>();
+      allVersions.addAll(apiInstanceMetaData.getPastVersions());
+      allVersions.addAll(apiInstanceMetaData.getSupportedVersions());
+      allVersions.addAll(apiInstanceMetaData.getFutureVersions());
+
+      for(APIVersion version : allVersions)
+      {
+         apiVersionPossibleValues.add(new QPossibleValue<>(version.toString()));
+      }
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("apiVersion")
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(apiVersionPossibleValues));
    }
 
 

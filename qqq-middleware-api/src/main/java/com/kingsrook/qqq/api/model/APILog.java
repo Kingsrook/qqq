@@ -52,13 +52,13 @@ public class APILog extends QRecordEntity
    @QField(possibleValueSourceName = APILogMetaDataProvider.TABLE_NAME_API_LOG_USER, label = "User")
    private Integer apiLogUserId;
 
-   @QField()
+   @QField(possibleValueSourceName = "apiMethod")
    private String method;
 
-   @QField()
+   @QField(possibleValueSourceName = "apiStatusCode")
    private Integer statusCode;
 
-   @QField()
+   @QField(possibleValueSourceName = "apiVersion")
    private String version;
 
    @QField()
