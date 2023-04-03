@@ -102,8 +102,8 @@ class GetActionTest extends BaseTest
          new QRecord().withValue("id", 1).withValue("firstName", "George").withValue("lastName", "Washington").withValue("noOfShoes", 5),
          new QRecord().withValue("id", 2).withValue("firstName", "John").withValue("lastName", "Adams"),
          new QRecord().withValue("id", 3).withValue("firstName", "Thomas").withValue("lastName", "Jefferson"),
-         new QRecord().withValue("id", 3).withValue("firstName", "Thomas 503").withValue("lastName", "Jefferson"),
-         new QRecord().withValue("id", 3).withValue("firstName", "Thomas 999").withValue("lastName", "Jefferson")
+         new QRecord().withValue("id", 4).withValue("firstName", "Thomas 503").withValue("lastName", "Jefferson"),
+         new QRecord().withValue("id", 5).withValue("firstName", "Thomas 999").withValue("lastName", "Jefferson")
       ));
 
       /////////////////////////////////////////////////////////////////////////////
