@@ -42,6 +42,7 @@ import com.kingsrook.qqq.api.model.APILog;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
+import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
@@ -85,6 +86,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -120,6 +122,8 @@ public class QJavalinApiHandler
    private static QInstance qInstance;
 
    private static Map<String, Map<String, QTableMetaData>> tableApiNameMap = new HashMap<>();
+
+   private static Map<String, Integer> apiLogUserIdCache = new HashMap<>();
 
 
 
@@ -366,6 +370,8 @@ public class QJavalinApiHandler
          }
          catch(AccessTokenException aae)
          {
+            LOG.info("Error getting api access token", aae, logPair("clientId", clientId));
+
             ///////////////////////////////////////////////////////////////////////////
             // if the exception has a status code, then return that code and message //
             ///////////////////////////////////////////////////////////////////////////
@@ -652,10 +658,27 @@ public class QJavalinApiHandler
       {
          if(QContext.getQInstance().getTable(APILog.TABLE_NAME) != null)
          {
+            QSession qSession = QContext.getQSession();
+            if(qSession != null)
+            {
+               for(Map.Entry<String, List<Serializable>> entry : CollectionUtils.nonNullMap(qSession.getSecurityKeyValues()).entrySet())
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // put the 1st entry for this key in the api log record                                                                                             //
+                  // todo - might need revisited for users with multiple values...  e.g., look for the security key in records in the request?  or as part of the URL //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  if(CollectionUtils.nullSafeHasContents(entry.getValue()))
+                  {
+                     apiLog.withSecurityKeyValue(entry.getKey(), entry.getValue().get(0));
+                  }
+               }
+
+               Integer userId = getApiLogUserId(qSession);
+               apiLog.setApiLogUserId(userId);
+            }
+
             InsertInput insertInput = new InsertInput();
             insertInput.setTableName(APILog.TABLE_NAME);
-            // todo - security fields!!!!!
-            // todo - user!!!!
             insertInput.setRecords(List.of(apiLog.toQRecord()));
             new InsertAction().executeAsync(insertInput);
          }
@@ -664,6 +687,129 @@ public class QJavalinApiHandler
       {
          LOG.warn("Error storing API log", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Integer getApiLogUserId(QSession qSession) throws QException
+   {
+      String tableName = APILogMetaDataProvider.TABLE_NAME_API_LOG_USER;
+
+      if(qSession == null)
+      {
+         return (null);
+      }
+
+      QUser qUser = qSession.getUser();
+      if(qUser == null)
+      {
+         return (null);
+      }
+
+      String userName = qUser.getFullName();
+      if(!StringUtils.hasContent(userName))
+      {
+         return (null);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////
+      // if we haven't cached this username to an id, query and/or insert it now //
+      /////////////////////////////////////////////////////////////////////////////
+      if(!apiLogUserIdCache.containsKey(userName))
+      {
+         //////////////////////////////////////////////////////////////
+         // first try to get - if it's found, cache it and return it //
+         //////////////////////////////////////////////////////////////
+         Integer id = fetchApiLogUserIdFromName(userName);
+         if(id != null)
+         {
+            apiLogUserIdCache.put(userName, id);
+            return id;
+         }
+
+         try
+         {
+            ///////////////////////////////////////////////////////
+            // if it wasn't found from a Get, then try an Insert //
+            ///////////////////////////////////////////////////////
+            LOG.debug("Inserting " + tableName + " named " + userName);
+            InsertInput insertInput = new InsertInput();
+            insertInput.setTableName(tableName);
+            QRecord record = new QRecord().withValue("name", userName);
+
+            for(Map.Entry<String, List<Serializable>> entry : CollectionUtils.nonNullMap(qSession.getSecurityKeyValues()).entrySet())
+            {
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // put the 1st entry for this key in the api log user record                                                                                        //
+               // todo - might need revisited for users with multiple values...  e.g., look for the security key in records in the request?  or as part of the URL //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(CollectionUtils.nullSafeHasContents(entry.getValue()))
+               {
+                  record.withValue(entry.getKey(), entry.getValue().get(0));
+               }
+            }
+
+            insertInput.setRecords(List.of(record));
+            InsertOutput insertOutput = new InsertAction().execute(insertInput);
+            id = insertOutput.getRecords().get(0).getValueInteger("id");
+
+            ////////////////////////////////////////
+            // if we got an id, cache & return it //
+            ////////////////////////////////////////
+            if(id != null)
+            {
+               apiLogUserIdCache.put(userName, id);
+               return id;
+            }
+         }
+         catch(Exception e)
+         {
+            ////////////////////////////////////////////////////////////////////
+            // assume this may mean a dupe-key - so - try another fetch below //
+            ////////////////////////////////////////////////////////////////////
+            LOG.debug("Caught error inserting " + tableName + " named " + userName + " - will try to re-fetch", e);
+         }
+
+         //////////////////////////////////////////////////////////////////////////
+         // if the insert failed, try another fetch (e.g., after a UK violation) //
+         //////////////////////////////////////////////////////////////////////////
+         id = fetchApiLogUserIdFromName(userName);
+         if(id != null)
+         {
+            apiLogUserIdCache.put(userName, id);
+            return id;
+         }
+
+         /////////////
+         // give up //
+         /////////////
+         LOG.error("Unable to get id for " + tableName + " named " + userName);
+         return (null);
+      }
+
+      return (apiLogUserIdCache.get(userName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Integer fetchApiLogUserIdFromName(String name) throws QException
+   {
+      GetInput getInput = new GetInput();
+      getInput.setTableName(APILogMetaDataProvider.TABLE_NAME_API_LOG_USER);
+      getInput.setUniqueKey(Map.of("name", name));
+      GetOutput getOutput = new GetAction().execute(getInput);
+      if(getOutput.getRecord() != null)
+      {
+         return (getOutput.getRecord().getValueInteger("id"));
+      }
+
+      return (null);
    }
 
 

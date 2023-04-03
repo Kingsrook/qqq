@@ -29,12 +29,16 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
 
 /*******************************************************************************
@@ -42,13 +46,63 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
  *******************************************************************************/
 public class APILogMetaDataProvider
 {
+   public static final String TABLE_NAME_API_LOG      = "apiLog";
+   public static final String TABLE_NAME_API_LOG_USER = "apiLogUser";
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
    public static void defineAll(QInstance qInstance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
+      defineApiLogUserPvs(qInstance);
       defineAPILogTable(qInstance, backendName, backendDetailEnricher);
+      defineAPILogUserTable(qInstance, backendName, backendDetailEnricher);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineApiLogUserPvs(QInstance instance)
+   {
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(TABLE_NAME_API_LOG_USER)
+         .withTableName(TABLE_NAME_API_LOG_USER));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void defineAPILogUserTable(QInstance qInstance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   {
+      QTableMetaData tableMetaData = new QTableMetaData()
+         .withName(TABLE_NAME_API_LOG_USER)
+         .withLabel("API Log User")
+         .withIcon(new QIcon().withName("person"))
+         .withBackendName(backendName)
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("name")
+         .withPrimaryKeyField("id")
+         .withUniqueKey(new UniqueKey("name"))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("name", QFieldType.STRING).withIsRequired(true))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
+
+      if(backendDetailEnricher != null)
+      {
+         backendDetailEnricher.accept(tableMetaData);
+      }
+
+      qInstance.addTable(tableMetaData);
    }
 
 
@@ -59,14 +113,14 @@ public class APILogMetaDataProvider
    private static void defineAPILogTable(QInstance qInstance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       QTableMetaData tableMetaData = new QTableMetaData()
-         .withName("apiLog")
+         .withName(TABLE_NAME_API_LOG)
          .withLabel("API Log")
          .withIcon(new QIcon().withName("data_object"))
          .withBackendName(backendName)
          .withRecordLabelFormat("%s")
          .withPrimaryKeyField("id")
          .withFieldsFromEntity(APILog.class)
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "apiLogUserId")))
          .withSection(new QFieldSection("request", new QIcon().withName("arrow_upward"), Tier.T2, List.of("method", "version", "path", "queryString", "requestBody")))
          .withSection(new QFieldSection("response", new QIcon().withName("arrow_downward"), Tier.T2, List.of("statusCode", "responseBody")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("timestamp")))

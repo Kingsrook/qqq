@@ -22,15 +22,22 @@
 package com.kingsrook.qqq.api.model;
 
 
+import java.io.Serializable;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
- **
+ ** In addition to the standard/known fields in this entity, you can also add
+ ** name/value pairs of security key values - e.g., a clientId field
  *******************************************************************************/
 public class APILog extends QRecordEntity
 {
@@ -41,6 +48,9 @@ public class APILog extends QRecordEntity
 
    @QField(isEditable = false)
    private Instant timestamp;
+
+   @QField(possibleValueSourceName = APILogMetaDataProvider.TABLE_NAME_API_LOG_USER, label = "User")
+   private Integer apiLogUserId;
 
    @QField()
    private String method;
@@ -63,6 +73,8 @@ public class APILog extends QRecordEntity
    @QField()
    private String responseBody;
 
+   private Map<String, Serializable> securityKeyValues = new HashMap<>();
+
 
 
    /*******************************************************************************
@@ -71,6 +83,24 @@ public class APILog extends QRecordEntity
     *******************************************************************************/
    public APILog()
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QRecord toQRecord() throws QRuntimeException
+   {
+      QRecord qRecord = super.toQRecord();
+
+      for(Map.Entry<String, Serializable> entry : CollectionUtils.nonNullMap(this.securityKeyValues).entrySet())
+      {
+         qRecord.setValue(entry.getKey(), entry.getValue());
+      }
+
+      return (qRecord);
    }
 
 
@@ -387,6 +417,83 @@ public class APILog extends QRecordEntity
    public APILog withResponseBody(String responseBody)
    {
       this.responseBody = responseBody;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for securityKeyValues
+    *******************************************************************************/
+   public Map<String, Serializable> getSecurityKeyValues()
+   {
+      return (this.securityKeyValues);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for securityKeyValues
+    *******************************************************************************/
+   public void setSecurityKeyValues(Map<String, Serializable> securityKeyValues)
+   {
+      this.securityKeyValues = securityKeyValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securityKeyValues
+    *******************************************************************************/
+   public APILog withSecurityKeyValues(Map<String, Serializable> securityKeyValues)
+   {
+      this.securityKeyValues = securityKeyValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securityKeyValues
+    *******************************************************************************/
+   public APILog withSecurityKeyValue(String key, Serializable value)
+   {
+      if(this.securityKeyValues == null)
+      {
+         this.securityKeyValues = new HashMap<>();
+      }
+      this.securityKeyValues.put(key, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiLogUserId
+    *******************************************************************************/
+   public Integer getApiLogUserId()
+   {
+      return (this.apiLogUserId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiLogUserId
+    *******************************************************************************/
+   public void setApiLogUserId(Integer apiLogUserId)
+   {
+      this.apiLogUserId = apiLogUserId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiLogUserId
+    *******************************************************************************/
+   public APILog withApiLogUserId(Integer apiLogUserId)
+   {
+      this.apiLogUserId = apiLogUserId;
       return (this);
    }
 
