@@ -56,7 +56,6 @@ import com.kingsrook.qqq.api.model.openapi.RequestBody;
 import com.kingsrook.qqq.api.model.openapi.Response;
 import com.kingsrook.qqq.api.model.openapi.Schema;
 import com.kingsrook.qqq.api.model.openapi.SecurityScheme;
-import com.kingsrook.qqq.api.model.openapi.Server;
 import com.kingsrook.qqq.api.model.openapi.Tag;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
@@ -188,7 +187,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    public GenerateOpenApiSpecOutput execute(GenerateOpenApiSpecInput input) throws QException
    {
-      String version = input.getVersion();
+      String version  = input.getVersion();
+      String basePath = "/api/" + version + "/";
 
       QInstance qInstance = QContext.getQInstance();
 
@@ -205,10 +205,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withDescription(apiInstanceMetaData.getDescription())
             .withContact(new Contact()
                .withEmail(apiInstanceMetaData.getContactEmail()))
-            .withVersion(version))
-         .withServers(ListBuilder.of(new Server()
-            .withDescription("This server")
-            .withUrl("/api/" + version)));
+            .withVersion(version));
+
+      openAPI.withServers(apiInstanceMetaData.getServers());
 
       openAPI.setTags(new ArrayList<>());
       openAPI.setPaths(new LinkedHashMap<>());
@@ -457,7 +456,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(queryCapability)
          {
-            openAPI.getPaths().put("/" + tableApiName + "/query", new Path()
+            openAPI.getPaths().put(basePath + tableApiName + "/query", new Path()
                // todo!! .withPost(queryPost)
                .withGet(queryGet)
             );
@@ -524,7 +523,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(getCapability || updateCapability || deleteCapability)
          {
-            openAPI.getPaths().put("/" + tableApiName + "/{" + primaryKeyApiName + "}", new Path()
+            openAPI.getPaths().put(basePath + tableApiName + "/{" + primaryKeyApiName + "}", new Path()
                .withGet(getCapability ? idGet : null)
                .withPatch(updateCapability ? idPatch : null)
                .withDelete(deleteCapability ? idDelete : null)
@@ -534,6 +533,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          Method slashPost = new Method()
             .withSummary("Create one " + tableLabel)
             .withDescription(INSERT_DESCRIPTION)
+            .withOperationId("create" + tableApiNameUcFirst)
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " record to create.")
@@ -554,7 +554,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(insertCapability)
          {
-            openAPI.getPaths().put("/" + tableApiName + "/", new Path()
+            openAPI.getPaths().put(basePath + tableApiName + "/", new Path()
                .withPost(slashPost));
          }
 
@@ -564,6 +564,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          Method bulkPost = new Method()
             .withSummary("Create multiple " + tableLabel + " records")
             .withDescription(BULK_INSERT_DESCRIPTION)
+            .withOperationId("create" + tableApiNameUcFirst + "Bulk")
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " records to create.")
@@ -579,6 +580,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          Method bulkPatch = new Method()
             .withSummary("Update multiple " + tableLabel + " records")
             .withDescription(BULK_UPDATE_DESCRIPTION)
+            .withOperationId("update" + tableApiNameUcFirst + "Bulk")
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription("Values for the " + tableLabel + " records to update.")
@@ -600,6 +602,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          Method bulkDelete = new Method()
             .withSummary("Delete multiple " + tableLabel + " records")
             .withDescription(BULK_DELETE_DESCRIPTION)
+            .withOperationId("delete" + tableApiNameUcFirst + "Bulk")
             .withRequestBody(new RequestBody()
                .withRequired(true)
                .withDescription(primaryKeyLabel + " values for the " + tableLabel + " records to delete.")
@@ -615,7 +618,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(insertCapability || updateCapability || deleteCapability)
          {
-            openAPI.getPaths().put("/" + tableApiName + "/bulk", new Path()
+            openAPI.getPaths().put(basePath + tableApiName + "/bulk", new Path()
                .withPost(insertCapability ? bulkPost : null)
                .withPatch(updateCapability ? bulkPatch : null)
                .withDelete(deleteCapability ? bulkDelete : null));

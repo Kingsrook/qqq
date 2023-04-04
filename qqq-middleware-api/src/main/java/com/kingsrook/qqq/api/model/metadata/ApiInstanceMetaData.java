@@ -28,12 +28,14 @@ import java.util.Set;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.openapi.Server;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -49,6 +51,8 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    private List<APIVersion> supportedVersions;
    private List<APIVersion> pastVersions;
    private List<APIVersion> futureVersions;
+
+   private List<Server> servers;
 
    private boolean includeErrorTooManyRequests = true;
 
@@ -118,7 +122,10 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
          ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
          if(apiTableMetaData != null)
          {
-            validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version.");
+            if(BooleanUtils.isNotTrue(apiTableMetaData.getIsExcluded()))
+            {
+               validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version.");
+            }
          }
       }
 
@@ -370,6 +377,37 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    public ApiInstanceMetaData withIncludeErrorTooManyRequests(boolean includeErrorTooManyRequests)
    {
       this.includeErrorTooManyRequests = includeErrorTooManyRequests;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for servers
+    *******************************************************************************/
+   public List<Server> getServers()
+   {
+      return (this.servers);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for servers
+    *******************************************************************************/
+   public void setServers(List<Server> servers)
+   {
+      this.servers = servers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for servers
+    *******************************************************************************/
+   public ApiInstanceMetaData withServers(List<Server> servers)
+   {
+      this.servers = servers;
       return (this);
    }
 
