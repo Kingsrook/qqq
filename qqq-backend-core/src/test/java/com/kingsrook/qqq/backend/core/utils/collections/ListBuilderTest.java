@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.utils.collections;
 
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,4 +71,22 @@ class ListBuilderTest
       ///////////////////////////////////////
       list.add(4);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBuilderMode()
+   {
+      List<String> builtList = new ListBuilder<String>().with("A").with("B").build();
+      assertEquals(List.of("A", "B"), builtList);
+      assertEquals(ArrayList.class, builtList.getClass());
+
+      List<String> builtLinkedList = new ListBuilder<String>(new LinkedList<>()).with("A").with("B").build();
+      assertEquals(List.of("A", "B"), builtLinkedList);
+      assertEquals(LinkedList.class, builtLinkedList.getClass());
+   }
+
 }

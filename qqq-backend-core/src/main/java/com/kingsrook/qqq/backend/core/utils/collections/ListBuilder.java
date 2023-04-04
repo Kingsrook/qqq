@@ -29,9 +29,60 @@ import java.util.List;
 /*******************************************************************************
  ** List.of is "great", but annoying because it makes unmodifiable lists...
  ** So, replace it with this, which returns ArrayLists, which "don't suck"
+ **
+ ** Can use it 3 ways:
+ ** ListBuilder.of(value, value2, ...) => List (an ArrayList)
+ ** ListBuilder.<ElementType>of(SomeList::new).with(value).with(value2)...build() => SomeList (the type you specify)
+ ** new ListBuilder.<ElementType>.with(value).with(value2)...build() => List (an ArrayList - for when you have more than 10 values...)
  *******************************************************************************/
-public class ListBuilder
+public class ListBuilder<E>
 {
+   private List<E> list;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ListBuilder()
+   {
+      this.list = new ArrayList<>();
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ListBuilder(List<E> list)
+   {
+      this.list = list;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public ListBuilder<E> with(E value)
+   {
+      list.add(value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public List<E> build()
+   {
+      return (this.list);
+   }
+
+
 
    /*******************************************************************************
     **

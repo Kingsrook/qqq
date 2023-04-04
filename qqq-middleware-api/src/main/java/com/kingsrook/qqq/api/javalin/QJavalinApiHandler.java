@@ -162,6 +162,8 @@ public class QJavalinApiHandler
          ApiBuilder.get("/api/docs/js/rapidoc.min.js", (context) -> QJavalinApiHandler.serveResource(context, "rapidoc/rapidoc-9.3.4.min.js", MapBuilder.of("Content-Type", ContentType.JAVASCRIPT)));
          ApiBuilder.get("/api/docs/css/qqq-api-styles.css", (context) -> QJavalinApiHandler.serveResource(context, "rapidoc/rapidoc-overrides.css", MapBuilder.of("Content-Type", ContentType.CSS)));
 
+         ApiBuilder.get("/apis.json", QJavalinApiHandler::doGetApisJson);
+
          ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
          for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
          {
@@ -172,6 +174,7 @@ public class QJavalinApiHandler
             // default page is the current version spec //
             //////////////////////////////////////////////
             ApiBuilder.get(rootPath, context -> doSpecHtml(context, apiInstanceMetaData));
+            ApiBuilder.get(rootPath + "versions.json", context -> doVersions(context, apiInstanceMetaData));
 
             ApiBuilder.path(rootPath + "{version}", () ->
             {
@@ -248,7 +251,61 @@ public class QJavalinApiHandler
 
 
    /*******************************************************************************
-    **
+    ** list the apis supported in this instance
+    *******************************************************************************/
+   private static void doGetApisJson(Context context)
+   {
+      Map<String, Object>       rs   = new HashMap<>();
+      List<Map<String, Object>> apis = new ArrayList<>();
+      rs.put("apis", apis);
+
+      ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
+      for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
+      {
+         Map<String, Object> thisApi = new HashMap<>();
+
+         ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
+         thisApi.put("name", apiInstanceMetaData.getName());
+         thisApi.put("path", apiInstanceMetaData.getPath());
+         thisApi.put("label", apiInstanceMetaData.getLabel());
+
+         String tableName = context.queryParam("tableName");
+         if(tableName != null)
+         {
+            QTableMetaData table = qInstance.getTable(tableName);
+
+            ///////////////////////////////////////////////////////////////
+            // look for reasons we might exclude this api for this table //
+            ///////////////////////////////////////////////////////////////
+            ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+            if(apiTableMetaDataContainer == null)
+            {
+               continue;
+            }
+
+            ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiInstanceMetaData.getName());
+            if(apiTableMetaData == null)
+            {
+               continue;
+            }
+
+            if(BooleanUtils.isTrue(apiTableMetaData.getIsExcluded()))
+            {
+               continue;
+            }
+         }
+
+         apis.add(thisApi);
+      }
+
+      context.contentType(ContentType.APPLICATION_JSON);
+      context.result(JsonUtils.toJson(rs));
+   }
+
+
+
+   /*******************************************************************************
+    ** list the versions in this api
     *******************************************************************************/
    private static void doVersions(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
@@ -527,6 +584,7 @@ public class QJavalinApiHandler
          /////////////////////////////////
          // do replacements in the html //
          /////////////////////////////////
+         html = html.replace("{spec-url}", apiInstanceMetaData.getPath() + version + "/openapi.json");
          html = html.replace("{version}", version);
          html = html.replace("{primaryColor}", branding == null ? "#FF791A" : branding.getAccentColor());
 
@@ -539,7 +597,7 @@ public class QJavalinApiHandler
             html = html.replace("{navLogoImg}", "");
          }
 
-         html = html.replace("{title}", apiInstanceMetaData.getName() + " - " + version);
+         html = html.replace("{title}", apiInstanceMetaData.getLabel() + " - " + version);
 
          StringBuilder otherVersionOptions = new StringBuilder();
          for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
