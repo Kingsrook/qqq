@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+@SuppressWarnings({ "checkstyle:javadoc", "DanglingJavadoc" })
 /*******************************************************************************
  ** List.of is "great", but annoying because it makes unmodifiable lists...
  ** So, replace it with this, which returns ArrayLists, which "don't suck"
