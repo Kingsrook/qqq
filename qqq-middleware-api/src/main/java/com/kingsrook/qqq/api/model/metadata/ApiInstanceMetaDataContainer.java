@@ -19,111 +19,118 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.actions;
+package com.kingsrook.qqq.api.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GetTableApiFieldsInput extends AbstractActionInput
+public class ApiInstanceMetaDataContainer extends QMiddlewareInstanceMetaData
 {
-   private String apiName;
-   private String tableName;
-   private String version;
+   private Map<String, ApiInstanceMetaData> apis;
 
 
 
    /*******************************************************************************
-    ** Getter for version
+    ** Constructor
+    **
     *******************************************************************************/
-   public String getVersion()
+   public ApiInstanceMetaDataContainer()
    {
-      return (this.version);
+      setType(ApiMiddlewareType.NAME);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for version
+    **
     *******************************************************************************/
-   public void setVersion(String version)
+   public static ApiInstanceMetaDataContainer of(QInstance qInstance)
    {
-      this.version = version;
+      return ((ApiInstanceMetaDataContainer) qInstance.getMiddlewareMetaData(ApiMiddlewareType.NAME));
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for version
+    **
     *******************************************************************************/
-   public GetTableApiFieldsInput withVersion(String version)
+   @Override
+   public void validate(QInstance qInstance, QInstanceValidator validator)
    {
-      this.version = version;
+      for(Map.Entry<String, ApiInstanceMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
+      {
+         entry.getValue().validate(entry.getKey(), qInstance, validator);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apis
+    *******************************************************************************/
+   public Map<String, ApiInstanceMetaData> getApis()
+   {
+      return (this.apis);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apis
+    *******************************************************************************/
+   public ApiInstanceMetaData getApiInstanceMetaData(String apiName)
+   {
+      if(this.apis == null)
+      {
+         return (null);
+      }
+
+      return (this.apis.get(apiName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apis
+    *******************************************************************************/
+   public void setApis(Map<String, ApiInstanceMetaData> apis)
+   {
+      this.apis = apis;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apis
+    *******************************************************************************/
+   public ApiInstanceMetaDataContainer withApis(Map<String, ApiInstanceMetaData> apis)
+   {
+      this.apis = apis;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for tableName
+    ** Fluent setter for apis
     *******************************************************************************/
-   public String getTableName()
+   public ApiInstanceMetaDataContainer withApiInstanceMetaData(ApiInstanceMetaData apiInstanceMetaData)
    {
-      return (this.tableName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for tableName
-    *******************************************************************************/
-   public GetTableApiFieldsInput withTableName(String tableName)
-   {
-      this.tableName = tableName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for apiName
-    *******************************************************************************/
-   public String getApiName()
-   {
-      return (this.apiName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for apiName
-    *******************************************************************************/
-   public void setApiName(String apiName)
-   {
-      this.apiName = apiName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for apiName
-    *******************************************************************************/
-   public GetTableApiFieldsInput withApiName(String apiName)
-   {
-      this.apiName = apiName;
+      if(this.apis == null)
+      {
+         this.apis = new LinkedHashMap<>();
+      }
+      this.apis.put(apiInstanceMetaData.getName(), apiInstanceMetaData);
       return (this);
    }
 

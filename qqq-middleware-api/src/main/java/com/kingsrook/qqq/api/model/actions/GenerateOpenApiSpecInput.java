@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
  *******************************************************************************/
 public class GenerateOpenApiSpecInput extends AbstractActionInput
 {
+   private String apiName;
    private String version;
    private String tableName;
 
@@ -92,6 +93,37 @@ public class GenerateOpenApiSpecInput extends AbstractActionInput
    public GenerateOpenApiSpecInput withTableName(String tableName)
    {
       this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiName
+    *******************************************************************************/
+   public String getApiName()
+   {
+      return (this.apiName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiName
+    *******************************************************************************/
+   public void setApiName(String apiName)
+   {
+      this.apiName = apiName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiName
+    *******************************************************************************/
+   public GenerateOpenApiSpecInput withApiName(String apiName)
+   {
+      this.apiName = apiName;
       return (this);
    }
 

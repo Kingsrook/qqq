@@ -27,8 +27,8 @@ import java.util.List;
 import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiTableMetaData extends QMiddlewareTableMetaData
+public class ApiTableMetaData
 {
    private String initialVersion;
    private String finalVersion;
@@ -45,16 +45,6 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    private Boolean isExcluded;
 
    private List<QFieldMetaData> removedApiFields;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static ApiTableMetaData of(QTableMetaData table)
-   {
-      return ((ApiTableMetaData) table.getMiddlewareMetaData(ApiMiddlewareType.NAME));
-   }
 
 
 
@@ -78,16 +68,13 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public void enrich(QTableMetaData table)
+   public void enrich(String apiName, QTableMetaData table)
    {
-      super.enrich(table);
-
       if(initialVersion != null)
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(field);
+            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(apiName, field);
             if(apiFieldMetaData.getInitialVersion() == null)
             {
                apiFieldMetaData.setInitialVersion(initialVersion);
@@ -96,7 +83,7 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
 
          for(QFieldMetaData field : CollectionUtils.nonNullList(removedApiFields))
          {
-            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(field);
+            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(apiName, field);
             if(apiFieldMetaData.getInitialVersion() == null)
             {
                apiFieldMetaData.setInitialVersion(initialVersion);
@@ -110,25 +97,20 @@ public class ApiTableMetaData extends QMiddlewareTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static ApiFieldMetaData ensureFieldHasApiMiddlewareMetaData(QFieldMetaData field)
+   private static ApiFieldMetaData ensureFieldHasApiMiddlewareMetaData(String apiName, QFieldMetaData field)
    {
       if(field.getMiddlewareMetaData(ApiMiddlewareType.NAME) == null)
       {
-         field.withMiddlewareMetaData(new ApiFieldMetaData());
+         field.withMiddlewareMetaData(new ApiFieldMetaDataContainer());
       }
 
-      return (ApiFieldMetaData.of(field));
-   }
+      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.of(field);
+      if(apiFieldMetaDataContainer.getApiFieldMetaData(apiName) == null)
+      {
+         apiFieldMetaDataContainer.withApiFieldMetaData(apiName, new ApiFieldMetaData());
+      }
 
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public ApiTableMetaData()
-   {
-      setType("api");
+      return (apiFieldMetaDataContainer.getApiFieldMetaData(apiName));
    }
 
 

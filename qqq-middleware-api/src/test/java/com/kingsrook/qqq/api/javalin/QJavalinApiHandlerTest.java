@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.api.javalin;
 
 
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -49,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.FullyAnonymousAuthenticationModule;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import io.javalin.apibuilder.EndpointGroup;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import org.eclipse.jetty.http.HttpStatus;
@@ -91,13 +95,14 @@ class QJavalinApiHandlerTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaData()
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withApiTableName("externalName")
-            .withInitialVersion(TestUtils.V2022_Q4)));
+            .withInitialVersion(TestUtils.V2022_Q4))));
 
       qJavalinImplementation = new QJavalinImplementation(qInstance);
       qJavalinImplementation.startJavalinServer(PORT);
-      qJavalinImplementation.getJavalinService().routes(new QJavalinApiHandler(qInstance).getRoutes());
+      EndpointGroup routes = new QJavalinApiHandler(qInstance).getRoutes();
+      qJavalinImplementation.getJavalinService().routes(routes);
    }
 
 
@@ -124,7 +129,7 @@ class QJavalinApiHandlerTest extends BaseTest
       System.out.println(response.getBody());
       assertThat(response.getBody())
          .contains("""
-            title: "TestAPI"
+            title: "Test API"
             """)
          .contains("""
             /person/query:
@@ -270,6 +275,77 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(0, jsonObject.getInt("count"));
       assertEquals(1, jsonObject.getInt("pageNo"));
       assertEquals(50, jsonObject.getInt("pageSize"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQuery200AlternativeApi()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/person-api/" + VERSION + "/person/query").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(0, jsonObject.getInt("count"));
+      assertEquals(1, jsonObject.getInt("pageNo"));
+      assertEquals(50, jsonObject.getInt("pageSize"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableOnlyInOneApi()
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the person table (which most of our tests are against) is in both api's in this instance (/api/ and /person-api/). //
+      // do a request here for the order table, which is only in /api                                                       //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/query").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(0, jsonObject.getInt("count"));
+      assertEquals(1, jsonObject.getInt("pageNo"));
+      assertEquals(50, jsonObject.getInt("pageSize"));
+
+      ///////////////////////////////////////////////////////////////////////
+      // now make sure we get a 404 for it under the /person-api/ api path //
+      ///////////////////////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/person-api/" + VERSION + "/order/query").asString();
+      assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldDifferencesBetweenApis() throws QException
+   {
+      insertPersonRecord(1, "Homer", "Simpson", LocalDate.of(1970, Month.JANUARY, 1));
+
+      /////////////////////////////////////////////////////////////
+      // on the main api, birthDate has been renamed to birthDay //
+      /////////////////////////////////////////////////////////////
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals("1970-01-01", jsonObject.getString("birthDay"));
+      assertFalse(jsonObject.has("birthDate"));
+
+      ///////////////////////////////////////////
+      // but it's birthDate on the /person-api //
+      ///////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/person-api/" + VERSION + "/person/1").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      jsonObject = new JSONObject(response.getBody());
+      assertEquals("1970-01-01", jsonObject.getString("birthDate"));
+      assertFalse(jsonObject.has("birthDay"));
    }
 
 
@@ -1169,9 +1245,19 @@ class QJavalinApiHandlerTest extends BaseTest
     *******************************************************************************/
    private static void insertPersonRecord(Integer id, String firstName, String lastName) throws QException
    {
+      insertPersonRecord(id, firstName, lastName, null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void insertPersonRecord(Integer id, String firstName, String lastName, LocalDate birthDate) throws QException
+   {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName)));
+      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName).withValue("birthDate", birthDate)));
       new InsertAction().execute(insertInput);
    }
 

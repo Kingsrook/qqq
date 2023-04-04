@@ -22,16 +22,14 @@
 package com.kingsrook.qqq.api.model.metadata.fields;
 
 
-import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QMiddlewareFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiFieldMetaData extends QMiddlewareFieldMetaData
+public class ApiFieldMetaData
 {
    private String initialVersion;
    private String finalVersion;
@@ -44,35 +42,18 @@ public class ApiFieldMetaData extends QMiddlewareFieldMetaData
 
 
    /*******************************************************************************
-    ** Constructor
     **
     *******************************************************************************/
-   public ApiFieldMetaData()
+   public static String getEffectiveApiFieldName(String apiName, QFieldMetaData field)
    {
-      setType("api");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static ApiFieldMetaData of(QFieldMetaData field)
-   {
-      return ((ApiFieldMetaData) field.getMiddlewareMetaData(ApiMiddlewareType.NAME));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String getEffectiveApiFieldName(QFieldMetaData field)
-   {
-      ApiFieldMetaData apiFieldMetaData = ApiFieldMetaData.of(field);
-      if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.apiFieldName))
+      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.of(field);
+      if(apiFieldMetaDataContainer != null)
       {
-         return (apiFieldMetaData.apiFieldName);
+         ApiFieldMetaData apiFieldMetaData = apiFieldMetaDataContainer.getApiFieldMetaData(apiName);
+         if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.apiFieldName))
+         {
+            return (apiFieldMetaData.apiFieldName);
+         }
       }
 
       return (field.getName());

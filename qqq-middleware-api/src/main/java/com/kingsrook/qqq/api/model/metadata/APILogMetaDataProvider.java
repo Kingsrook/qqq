@@ -23,8 +23,9 @@ package com.kingsrook.qqq.api.model.metadata;
 
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.api.model.APILog;
 import com.kingsrook.qqq.api.model.APIVersion;
@@ -104,12 +105,20 @@ public class APILogMetaDataProvider
             new QPossibleValue<>(500, "500 (Internal Server Error)")
          )));
 
-      List<QPossibleValue<?>>   apiVersionPossibleValues = new ArrayList<>();
-      ApiInstanceMetaData       apiInstanceMetaData      = ApiInstanceMetaData.of(instance);
-      LinkedHashSet<APIVersion> allVersions              = new LinkedHashSet<>();
-      allVersions.addAll(apiInstanceMetaData.getPastVersions());
-      allVersions.addAll(apiInstanceMetaData.getSupportedVersions());
-      allVersions.addAll(apiInstanceMetaData.getFutureVersions());
+      List<QPossibleValue<?>> apiVersionPossibleValues = new ArrayList<>();
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo... this, this whole thing, should probably have "which api" as another field too...  ugh. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      TreeSet<APIVersion>          allVersions                  = new TreeSet<>();
+      ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(instance);
+      for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
+      {
+         ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
+         allVersions.addAll(apiInstanceMetaData.getPastVersions());
+         allVersions.addAll(apiInstanceMetaData.getSupportedVersions());
+         allVersions.addAll(apiInstanceMetaData.getFutureVersions());
+      }
 
       for(APIVersion version : allVersions)
       {

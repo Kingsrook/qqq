@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
@@ -48,4 +51,49 @@ public class ObjectUtils
 
       throw (new NullPointerException("all null objects"));
    }
+
+
+
+   /*******************************************************************************
+    ** Like Objects.requireNonNullElse, only use an (unsafe) supplier as the first
+    ** arg, and only if it throws, return the 2nd arg
+    *******************************************************************************/
+   public static <T> T tryElse(UnsafeSupplier<T, ?> supplier, T defaultIfThrew)
+   {
+      try
+      {
+         return (supplier.get());
+      }
+      catch(Exception e)
+      {
+         return (defaultIfThrew);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Like Objects.requireNonNullElse, only use an (unsafe) supplier as the first
+    ** arg, and if it throws or returns null, then return the 2nd arg
+    *******************************************************************************/
+   public static <T> T tryAndRequireNonNullElse(UnsafeSupplier<T, ?> supplier, T defaultIfThrew)
+   {
+      try
+      {
+         T t = supplier.get();
+         if(t != null)
+         {
+            return (t);
+         }
+      }
+      catch(Exception e)
+      {
+         //////////
+         // noop //
+         //////////
+      }
+
+      return (defaultIfThrew);
+   }
+
 }

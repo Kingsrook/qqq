@@ -30,15 +30,16 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.Components;
 import com.kingsrook.qqq.api.model.openapi.Contact;
 import com.kingsrook.qqq.api.model.openapi.Content;
@@ -187,21 +188,43 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    public GenerateOpenApiSpecOutput execute(GenerateOpenApiSpecInput input) throws QException
    {
-      String version  = input.getVersion();
-      String basePath = "/api/" + version + "/";
-
       QInstance qInstance = QContext.getQInstance();
+      String    version   = input.getVersion();
 
-      ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
+      ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
+      if(apiInstanceMetaDataContainer == null)
+      {
+         throw new QException("No ApiInstanceMetaDataContainer exists in this instance");
+      }
+
+      if(!StringUtils.hasContent(input.getApiName()))
+      {
+         throw new QException("Missing required input: apiName");
+      }
+
+      ApiInstanceMetaData apiInstanceMetaData = apiInstanceMetaDataContainer.getApiInstanceMetaData(input.getApiName());
+      if(apiInstanceMetaData == null)
+      {
+         throw new QException("Could not find apiInstanceMetaData named [" + input.getApiName() + "] in this instance");
+      }
+
+      if(!StringUtils.hasContent(input.getVersion()))
+      {
+         throw new QException("Missing required input: version");
+      }
+
       if(!apiInstanceMetaData.getSupportedVersions().contains(new APIVersion(version)))
       {
          throw (new QException("[" + version + "] is not a supported API Version."));
       }
 
+      String basePath = apiInstanceMetaData.getPath() + version + "/";
+      String apiName  = apiInstanceMetaData.getName();
+
       OpenAPI openAPI = new OpenAPI()
          .withVersion("3.0.3")
          .withInfo(new Info()
-            .withTitle(apiInstanceMetaData.getName())
+            .withTitle(apiInstanceMetaData.getLabel())
             .withDescription(apiInstanceMetaData.getDescription())
             .withContact(new Contact()
                .withEmail(apiInstanceMetaData.getContactEmail()))
@@ -272,7 +295,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             continue;
          }
 
-         ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
+         ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+         if(apiTableMetaDataContainer == null)
+         {
+            LOG.debug("Omitting table [" + tableName + "] because it does not have an apiTableMetaDataContainer");
+            continue;
+         }
+
+         ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiName);
          if(apiTableMetaData == null)
          {
             LOG.debug("Omitting table [" + tableName + "] because it does not have any apiTableMetaData");
@@ -312,8 +342,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          String               primaryKeyName      = table.getPrimaryKeyField();
          QFieldMetaData       primaryKeyField     = table.getField(table.getPrimaryKeyField());
          String               primaryKeyLabel     = primaryKeyField.getLabel();
-         String               primaryKeyApiName   = ApiFieldMetaData.getEffectiveApiFieldName(primaryKeyField);
-         List<QFieldMetaData> tableApiFields      = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
+         String               primaryKeyApiName   = ApiFieldMetaData.getEffectiveApiFieldName(apiName, primaryKeyField);
+         List<QFieldMetaData> tableApiFields      = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version).withApiName(apiName)).getFields();
 
          ///////////////////////////////
          // permissions for the table //
@@ -365,13 +395,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          for(QFieldMetaData field : tableApiFields)
          {
             Schema fieldSchema = getFieldSchema(table, field);
-            tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(field), fieldSchema);
+            tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(apiInstanceMetaData.getName(), field), fieldSchema);
          }
 
          //////////////////////////////////
          // recursively add associations //
          //////////////////////////////////
-         addAssociations(table, tableSchema);
+         addAssociations(apiName, table, tableSchema);
 
          //////////////////////////////////////////////////////////////////////////////
          // table as a search result (the base search result, plus the table itself) //
@@ -770,13 +800,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void addAssociations(QTableMetaData table, Schema tableSchema)
+   private static void addAssociations(String apiName, QTableMetaData table, Schema tableSchema)
    {
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
          String           associatedTableName        = association.getAssociatedTableName();
          QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
-         ApiTableMetaData associatedApiTableMetaData = Objects.requireNonNullElse(ApiTableMetaData.of(associatedTable), new ApiTableMetaData());
+         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
 
          tableSchema.getProperties().put(association.getName(), new Schema()

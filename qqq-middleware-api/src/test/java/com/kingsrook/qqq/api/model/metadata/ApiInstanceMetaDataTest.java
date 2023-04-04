@@ -23,8 +23,10 @@ package com.kingsrook.qqq.api.model.metadata;
 
 
 import java.util.List;
+import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -46,15 +48,7 @@ class ApiInstanceMetaDataTest
    @Test
    void testValidationPasses()
    {
-      assertValidationErrors(new ApiInstanceMetaData()
-            .withName("QQQ API")
-            .withDescription("Test API for QQQ")
-            .withContactEmail("contact@kingsrook.com")
-            .withCurrentVersion(new APIVersion("2023.Q1"))
-            .withSupportedVersions(List.of(new APIVersion("2022.Q3"), new APIVersion("2022.Q4"), new APIVersion("2023.Q1")))
-            .withPastVersions(List.of(new APIVersion("2022.Q2"), new APIVersion("2022.Q3"), new APIVersion("2022.Q4")))
-            .withFutureVersions(List.of(new APIVersion("2023.Q2"))),
-         List.of());
+      assertValidationErrors(makeBaselineValidApiInstanceMetaDataWithVersions(), List.of());
    }
 
 
@@ -67,6 +61,8 @@ class ApiInstanceMetaDataTest
    {
       assertValidationErrors(new ApiInstanceMetaData(), List.of(
          "Missing name",
+         "Missing label",
+         "Missing path",
          "Missing description",
          "Missing contactEmail",
          "Missing currentVersion",
@@ -118,11 +114,11 @@ class ApiInstanceMetaDataTest
 
       qInstance.addTable(new QTableMetaData()
          .withName("myValidTable")
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("2023.Q1")));
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2023.Q1"))));
 
       qInstance.addTable(new QTableMetaData()
          .withName("myInvalidTable")
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("2022.Q1")));
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("notAVersion"))));
 
       assertValidationErrors(qInstance, makeBaselineValidApiInstanceMetaData()
             .withCurrentVersion(new APIVersion("2023.Q1"))
@@ -131,7 +127,7 @@ class ApiInstanceMetaDataTest
 
       qInstance.addTable(new QTableMetaData()
          .withName("myFutureValidTable")
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("2024.Q1")));
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2024.Q1"))));
 
       assertValidationErrors(qInstance, makeBaselineValidApiInstanceMetaData()
             .withCurrentVersion(new APIVersion("2023.Q1"))
@@ -146,12 +142,39 @@ class ApiInstanceMetaDataTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testPathSlashes()
+   {
+      assertValidationErrors(makeBaselineValidApiInstanceMetaDataWithVersions().withPath("myPath/"), List.of("does not start with '/'"));
+      assertValidationErrors(makeBaselineValidApiInstanceMetaDataWithVersions().withPath("/yourPath"), List.of("does not end with '/'"));
+      assertValidationErrors(makeBaselineValidApiInstanceMetaDataWithVersions().withPath("any/path"), List.of("does not start with '/'", "does not end with '/'"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static ApiInstanceMetaData makeBaselineValidApiInstanceMetaData()
    {
       return (new ApiInstanceMetaData()
-         .withName("QQQ API")
+         .withName(TestUtils.API_NAME)
+         .withPath("/api/")
+         .withLabel("QQQ API")
          .withDescription("Test API for QQQ")
          .withContactEmail("contact@kingsrook.com"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static ApiInstanceMetaData makeBaselineValidApiInstanceMetaDataWithVersions()
+   {
+      return (makeBaselineValidApiInstanceMetaData()
+         .withCurrentVersion(new APIVersion("1"))
+         .withSupportedVersions(List.of(new APIVersion("1"))));
    }
 
 
@@ -172,10 +195,10 @@ class ApiInstanceMetaDataTest
     *******************************************************************************/
    private void assertValidationErrors(QInstance qInstance, ApiInstanceMetaData apiInstanceMetaData, List<String> expectedErrors)
    {
-      qInstance.withMiddlewareMetaData(apiInstanceMetaData);
+      qInstance.withMiddlewareMetaData(new ApiInstanceMetaDataContainer().withApiInstanceMetaData(apiInstanceMetaData));
 
       QInstanceValidator validator = new QInstanceValidator();
-      apiInstanceMetaData.validate(qInstance, validator);
+      apiInstanceMetaData.validate(apiInstanceMetaData.getName(), qInstance, validator);
 
       List<String> errors = validator.getErrors();
       assertEquals(expectedErrors.size(), errors.size(), "Expected # of validation errors (got: " + errors + ")");

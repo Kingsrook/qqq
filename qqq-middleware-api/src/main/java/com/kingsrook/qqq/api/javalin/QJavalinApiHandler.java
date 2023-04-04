@@ -44,7 +44,9 @@ import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
@@ -92,6 +94,7 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
@@ -121,7 +124,10 @@ public class QJavalinApiHandler
 
    private static QInstance qInstance;
 
-   private static Map<String, Map<String, QTableMetaData>> tableApiNameMap = new HashMap<>();
+   /////////////////////////////////////
+   // key:  Pair<apiName, apiVersion> //
+   /////////////////////////////////////
+   private static Map<Pair<String, String>, Map<String, QTableMetaData>> tableApiNameMap = new HashMap<>();
 
    private static Map<String, Integer> apiLogUserIdCache = new HashMap<>();
 
@@ -156,56 +162,59 @@ public class QJavalinApiHandler
          ApiBuilder.get("/api/docs/js/rapidoc.min.js", (context) -> QJavalinApiHandler.serveResource(context, "rapidoc/rapidoc-9.3.4.min.js", MapBuilder.of("Content-Type", ContentType.JAVASCRIPT)));
          ApiBuilder.get("/api/docs/css/qqq-api-styles.css", (context) -> QJavalinApiHandler.serveResource(context, "rapidoc/rapidoc-overrides.css", MapBuilder.of("Content-Type", ContentType.CSS)));
 
-         //////////////////////////////////////////////
-         // default page is the current version spec //
-         //////////////////////////////////////////////
-         ApiBuilder.get("/api/", QJavalinApiHandler::doSpecHtml);
-
-         ApiBuilder.path("/api/{version}", () -> // todo - configurable, that /api/ bit?
+         ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
+         for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
          {
-            ////////////////////////////////////////////
-            // default page for a version is its spec //
-            ////////////////////////////////////////////
-            ApiBuilder.get("/", QJavalinApiHandler::doSpecHtml);
+            ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
+            String              rootPath            = apiInstanceMetaData.getPath();
 
-            ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
-            ApiBuilder.get("/openapi.json", QJavalinApiHandler::doSpecJson);
-            ApiBuilder.get("/openapi.html", QJavalinApiHandler::doSpecHtml);
+            //////////////////////////////////////////////
+            // default page is the current version spec //
+            //////////////////////////////////////////////
+            ApiBuilder.get(rootPath, context -> doSpecHtml(context, apiInstanceMetaData));
 
-            ApiBuilder.path("/{tableName}", () ->
+            ApiBuilder.path(rootPath + "{version}", () ->
             {
-               ApiBuilder.get("/openapi.yaml", QJavalinApiHandler::doSpecYaml);
-               ApiBuilder.get("/openapi.json", QJavalinApiHandler::doSpecJson);
+               ////////////////////////////////////////////
+               // default page for a version is its spec //
+               ////////////////////////////////////////////
+               ApiBuilder.get("/", context -> doSpecHtml(context, apiInstanceMetaData));
 
-               ApiBuilder.post("/", QJavalinApiHandler::doInsert);
+               ApiBuilder.get("/openapi.yaml", context -> doSpecYaml(context, apiInstanceMetaData));
+               ApiBuilder.get("/openapi.json", context -> doSpecJson(context, apiInstanceMetaData));
+               ApiBuilder.get("/openapi.html", context -> doSpecHtml(context, apiInstanceMetaData));
 
-               ApiBuilder.get("/query", QJavalinApiHandler::doQuery);
-               // ApiBuilder.post("/query", QJavalinApiHandler::doQuery);
+               ApiBuilder.path("/{tableName}", () ->
+               {
+                  ApiBuilder.get("/openapi.yaml", context -> doSpecYaml(context, apiInstanceMetaData));
+                  ApiBuilder.get("/openapi.json", context -> doSpecJson(context, apiInstanceMetaData));
 
-               ApiBuilder.post("/bulk", QJavalinApiHandler::bulkInsert);
-               ApiBuilder.patch("/bulk", QJavalinApiHandler::bulkUpdate);
-               ApiBuilder.delete("/bulk", QJavalinApiHandler::bulkDelete);
+                  ApiBuilder.post("/", context -> doInsert(context, apiInstanceMetaData));
 
-               //////////////////////////////////////////////////////////////////
-               // remember to keep the wildcard paths after the specific paths //
-               //////////////////////////////////////////////////////////////////
-               ApiBuilder.get("/{primaryKey}", QJavalinApiHandler::doGet);
-               ApiBuilder.patch("/{primaryKey}", QJavalinApiHandler::doUpdate);
-               ApiBuilder.delete("/{primaryKey}", QJavalinApiHandler::doDelete);
+                  ApiBuilder.get("/query", context -> doQuery(context, apiInstanceMetaData));
+                  // ApiBuilder.post("/query", context -> doQuery(context, apiInstanceMetaData));
+
+                  ApiBuilder.post("/bulk", context -> bulkInsert(context, apiInstanceMetaData));
+                  ApiBuilder.patch("/bulk", context -> bulkUpdate(context, apiInstanceMetaData));
+                  ApiBuilder.delete("/bulk", context -> bulkDelete(context, apiInstanceMetaData));
+
+                  //////////////////////////////////////////////////////////////////
+                  // remember to keep the wildcard paths after the specific paths //
+                  //////////////////////////////////////////////////////////////////
+                  ApiBuilder.get("/{primaryKey}", context -> doGet(context, apiInstanceMetaData));
+                  ApiBuilder.patch("/{primaryKey}", context -> doUpdate(context, apiInstanceMetaData));
+                  ApiBuilder.delete("/{primaryKey}", context -> doDelete(context, apiInstanceMetaData));
+               });
             });
-         });
 
-         ApiBuilder.get("/api/versions.json", QJavalinApiHandler::doVersions);
-
-         ApiBuilder.before("/*", QJavalinApiHandler::setupCORS);
-
-         //////////////////////////////////////////////////////////////////////////////////////////////
-         // default all other /api/ requests (for the methods we support) to a standard 404 response //
-         //////////////////////////////////////////////////////////////////////////////////////////////
-         ApiBuilder.get("/api/*", QJavalinApiHandler::doPathNotFound);
-         ApiBuilder.delete("/api/*", QJavalinApiHandler::doPathNotFound);
-         ApiBuilder.patch("/api/*", QJavalinApiHandler::doPathNotFound);
-         ApiBuilder.post("/api/*", QJavalinApiHandler::doPathNotFound);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // default all other requests under the root path (for the methods we support) to a standard 404 response //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ApiBuilder.get(rootPath + "*", QJavalinApiHandler::doPathNotFound);
+            ApiBuilder.delete(rootPath + "*", QJavalinApiHandler::doPathNotFound);
+            ApiBuilder.patch(rootPath + "*", QJavalinApiHandler::doPathNotFound);
+            ApiBuilder.post(rootPath + "*", QJavalinApiHandler::doPathNotFound);
+         }
 
          ///////////////////////////////////////////////////////////////////////////////////
          // if the main implementation class has a hot-swapper installed, use it here too //
@@ -241,10 +250,8 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doVersions(Context context)
+   private static void doVersions(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
-      ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
-
       Map<String, Object> rs = new HashMap<>();
       rs.put("supportedVersions", apiInstanceMetaData.getSupportedVersions().stream().map(String::valueOf).collect(Collectors.toList()));
       rs.put("currentVersion", apiInstanceMetaData.getCurrentVersion().toString());
@@ -401,7 +408,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doSpecYaml(Context context)
+   private static void doSpecYaml(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       try
       {
@@ -409,6 +416,8 @@ public class QJavalinApiHandler
          String version = context.pathParam("version");
 
          GenerateOpenApiSpecInput input = new GenerateOpenApiSpecInput().withVersion(version);
+         input.setApiName(apiInstanceMetaData.getName());
+
          try
          {
             if(StringUtils.hasContent(context.pathParam("tableName")))
@@ -438,13 +447,14 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doSpecJson(Context context)
+   private static void doSpecJson(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       try
       {
          QContext.init(qInstance, null);
          String                   version = context.pathParam("version");
          GenerateOpenApiSpecInput input   = new GenerateOpenApiSpecInput().withVersion(version);
+         input.setApiName(apiInstanceMetaData.getName());
 
          try
          {
@@ -475,7 +485,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doSpecHtml(Context context)
+   private static void doSpecHtml(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version;
 
@@ -485,11 +495,10 @@ public class QJavalinApiHandler
       }
       catch(Exception e)
       {
-         ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
          version = apiInstanceMetaData.getCurrentVersion().toString();
       }
 
-      doSpecHtml(context, version);
+      doSpecHtml(context, version, apiInstanceMetaData);
    }
 
 
@@ -497,12 +506,11 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doSpecHtml(Context context, String version)
+   private static void doSpecHtml(Context context, String version, ApiInstanceMetaData apiInstanceMetaData)
    {
       try
       {
-         QBrandingMetaData   branding            = qInstance.getBranding();
-         ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaData.of(qInstance);
+         QBrandingMetaData branding = qInstance.getBranding();
 
          if(!apiInstanceMetaData.getSupportedVersions().contains(new APIVersion(version)))
          {
@@ -536,7 +544,7 @@ public class QJavalinApiHandler
          StringBuilder otherVersionOptions = new StringBuilder();
          for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
          {
-            otherVersionOptions.append("<option value=\"/api/").append(supportedVersion).append("/openapi.html\">").append(supportedVersion).append("</option>");
+            otherVersionOptions.append("<option value=\"").append(apiInstanceMetaData.getPath()).append(supportedVersion).append("/openapi.html\">").append(supportedVersion).append("</option>");
          }
          html = html.replace("{otherVersionOptions}", otherVersionOptions.toString());
 
@@ -565,7 +573,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doGet(Context context)
+   private static void doGet(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -574,7 +582,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          GetInput getInput = new GetInput();
@@ -605,7 +613,7 @@ public class QJavalinApiHandler
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordToApiMap(record, tableName, version);
+         Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordToApiMap(record, tableName, apiInstanceMetaData.getName(), version);
 
          QJavalinAccessLogger.logEndSuccess();
          String resultString = JsonUtils.toJson(outputRecord);
@@ -817,7 +825,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doQuery(Context context)
+   private static void doQuery(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String       version      = context.pathParam("version");
       String       tableApiName = context.pathParam("tableName");
@@ -828,7 +836,7 @@ public class QJavalinApiHandler
       {
          List<String> badRequestMessages = new ArrayList<>();
 
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          QueryInput queryInput = new QueryInput();
@@ -1023,7 +1031,7 @@ public class QJavalinApiHandler
          ArrayList<Map<String, Serializable>> records = new ArrayList<>();
          for(QRecord record : queryOutput.getRecords())
          {
-            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, version));
+            records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiInstanceMetaData.getName(), version));
          }
 
          /////////////////////////////
@@ -1057,11 +1065,11 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableMetaData validateTableAndVersion(Context context, String version, String tableApiName) throws QNotFoundException
+   private static QTableMetaData validateTableAndVersion(Context context, ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName) throws QNotFoundException
    {
       QNotFoundException qNotFoundException = new QNotFoundException("Could not find any resources at path " + context.path());
 
-      QTableMetaData table = getTableByApiName(version, tableApiName);
+      QTableMetaData table = getTableByApiName(apiInstanceMetaData.getName(), version, tableApiName);
 
       if(table == null)
       {
@@ -1073,7 +1081,13 @@ public class QJavalinApiHandler
          throw (qNotFoundException);
       }
 
-      ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
+      ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+      if(apiTableMetaDataContainer == null)
+      {
+         throw (qNotFoundException);
+      }
+
+      ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiInstanceMetaData.getName());
       if(apiTableMetaData == null)
       {
          throw (qNotFoundException);
@@ -1085,7 +1099,7 @@ public class QJavalinApiHandler
       }
 
       APIVersion       requestApiVersion = new APIVersion(version);
-      List<APIVersion> supportedVersions = ApiInstanceMetaData.of(qInstance).getSupportedVersions();
+      List<APIVersion> supportedVersions = apiInstanceMetaData.getSupportedVersions();
       if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
       {
          throw (qNotFoundException);
@@ -1104,27 +1118,40 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableMetaData getTableByApiName(String version, String tableApiName)
+   private static QTableMetaData getTableByApiName(String apiName, String version, String tableApiName)
    {
-      if(tableApiNameMap.get(version) == null)
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // tableApiNameMap is a map of (apiName,apiVersion) => Map<String, QTableMetaData>.        //
+      // that is to say, a 2-level map.  The first level is keyed by (apiName,apiVersion) pairs. //
+      // the second level is keyed by tableApiNames.                                             //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      Pair<String, String> key = new Pair<>(apiName, version);
+      if(tableApiNameMap.get(key) == null)
       {
          Map<String, QTableMetaData> map = new HashMap<>();
 
          for(QTableMetaData table : qInstance.getTables().values())
          {
-            ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
-            String           name             = table.getName();
-            if(apiTableMetaData != null && StringUtils.hasContent(apiTableMetaData.getApiTableName()))
+            ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+            if(apiTableMetaDataContainer != null)
             {
-               name = apiTableMetaData.getApiTableName();
+               ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiName);
+               if(apiTableMetaData != null)
+               {
+                  String name = table.getName();
+                  if(StringUtils.hasContent(apiTableMetaData.getApiTableName()))
+                  {
+                     name = apiTableMetaData.getApiTableName();
+                  }
+                  map.put(name, table);
+               }
             }
-            map.put(name, table);
          }
 
-         tableApiNameMap.put(version, map);
+         tableApiNameMap.put(key, map);
       }
 
-      return (tableApiNameMap.get(version).get(tableApiName));
+      return (tableApiNameMap.get(key).get(tableApiName));
    }
 
 
@@ -1258,7 +1285,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doInsert(Context context)
+   private static void doInsert(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -1266,7 +1293,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          InsertInput insertInput = new InsertInput();
@@ -1288,7 +1315,7 @@ public class QJavalinApiHandler
             JSONTokener jsonTokener = new JSONTokener(context.body().trim());
             JSONObject  jsonObject  = new JSONObject(jsonTokener);
 
-            insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, false)));
+            insertInput.setRecords(List.of(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false)));
 
             if(jsonTokener.more())
             {
@@ -1328,7 +1355,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void bulkInsert(Context context)
+   private static void bulkInsert(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -1336,7 +1363,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          InsertInput insertInput = new InsertInput();
@@ -1367,7 +1394,7 @@ public class QJavalinApiHandler
             for(int i = 0; i < jsonArray.length(); i++)
             {
                JSONObject jsonObject = jsonArray.getJSONObject(i);
-               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, false));
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false));
             }
 
             if(jsonTokener.more())
@@ -1437,7 +1464,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void bulkUpdate(Context context)
+   private static void bulkUpdate(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -1445,7 +1472,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          UpdateInput updateInput = new UpdateInput();
@@ -1476,7 +1503,7 @@ public class QJavalinApiHandler
             for(int i = 0; i < jsonArray.length(); i++)
             {
                JSONObject jsonObject = jsonArray.getJSONObject(i);
-               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, true));
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, true));
             }
 
             if(jsonTokener.more())
@@ -1579,7 +1606,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void bulkDelete(Context context)
+   private static void bulkDelete(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -1587,7 +1614,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          DeleteInput deleteInput = new DeleteInput();
@@ -1710,7 +1737,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doUpdate(Context context)
+   private static void doUpdate(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -1719,7 +1746,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          UpdateInput updateInput = new UpdateInput();
@@ -1741,7 +1768,7 @@ public class QJavalinApiHandler
             JSONTokener jsonTokener = new JSONTokener(context.body().trim());
             JSONObject  jsonObject  = new JSONObject(jsonTokener);
 
-            QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, version, false);
+            QRecord qRecord = QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false);
             qRecord.setValue(table.getPrimaryKeyField(), primaryKey);
             updateInput.setRecords(List.of(qRecord));
 
@@ -1794,7 +1821,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doDelete(Context context)
+   private static void doDelete(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
       String tableApiName = context.pathParam("tableName");
@@ -1803,7 +1830,7 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
          String         tableName = table.getName();
 
          DeleteInput deleteInput = new DeleteInput();

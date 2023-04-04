@@ -25,8 +25,11 @@ package com.kingsrook.qqq.api;
 import java.util.List;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -57,6 +60,9 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
 
+   public static final String API_NAME             = "test-api";
+   public static final String ALTERNATIVE_API_NAME = "person-api";
+
    public static final String V2022_Q4 = "2022.Q4";
    public static final String V2023_Q1 = "2023.Q1";
    public static final String V2023_Q2 = "2023.Q2";
@@ -85,14 +91,27 @@ public class TestUtils
 
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
-      qInstance.withMiddlewareMetaData(new ApiInstanceMetaData()
-         .withName("TestAPI")
-         .withDescription("QQQ Test API")
-         .withContactEmail("contact@kingsrook.com")
-         .withCurrentVersion(new APIVersion(CURRENT_API_VERSION))
-         .withSupportedVersions(List.of(new APIVersion(V2022_Q4), new APIVersion(V2023_Q1)))
-         .withPastVersions(List.of(new APIVersion(V2022_Q4)))
-         .withFutureVersions(List.of(new APIVersion(V2023_Q2)))
+      qInstance.withMiddlewareMetaData(new ApiInstanceMetaDataContainer()
+         .withApiInstanceMetaData(new ApiInstanceMetaData()
+            .withName(API_NAME)
+            .withPath("/api/")
+            .withLabel("Test API")
+            .withDescription("QQQ Test API")
+            .withContactEmail("contact@kingsrook.com")
+            .withCurrentVersion(new APIVersion(CURRENT_API_VERSION))
+            .withSupportedVersions(List.of(new APIVersion(V2022_Q4), new APIVersion(V2023_Q1)))
+            .withPastVersions(List.of(new APIVersion(V2022_Q4)))
+            .withFutureVersions(List.of(new APIVersion(V2023_Q2))))
+         .withApiInstanceMetaData(new ApiInstanceMetaData()
+            .withName(ALTERNATIVE_API_NAME)
+            .withPath("/person-api/")
+            .withLabel("Person-Only API")
+            .withDescription("QQQ Test API, that only has the Person table.")
+            .withContactEmail("contact@kingsrook.com")
+            .withCurrentVersion(new APIVersion(CURRENT_API_VERSION))
+            .withSupportedVersions(List.of(new APIVersion(V2022_Q4), new APIVersion(V2023_Q1)))
+            .withPastVersions(List.of(new APIVersion(V2022_Q4)))
+            .withFutureVersions(List.of(new APIVersion(V2023_Q2))))
       );
 
       return (qInstance);
@@ -117,20 +136,10 @@ public class TestUtils
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
    {
-      return new QTableMetaData()
+      QTableMetaData table = new QTableMetaData()
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData()
-            .withInitialVersion(V2022_Q4)
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // in 2022.Q4, this table had a "shoeCount" field. but for the 2023.Q1 version, we renamed it to noOfShoes! //
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            .withRemovedApiField(new QFieldMetaData("shoeCount", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS)
-               .withMiddlewareMetaData(new ApiFieldMetaData().withFinalVersion(V2022_Q4).withReplacedByFieldName("noOfShoes")))
-
-         )
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("email"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
@@ -138,24 +147,48 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("firstName", QFieldType.STRING))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
-         .withField(new QFieldMetaData("birthDate", QFieldType.DATE)
-            .withMiddlewareMetaData(new ApiFieldMetaData().withApiFieldName("birthDay"))
-         )
+         .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          // .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STATE))
          // .withField(new QFieldMetaData("favoriteShapeId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_SHAPE))
          // .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
-         .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS)
-            .withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion(V2023_Q1)))
+         .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
+         .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY));
 
-         /////////////////////////////////////////////////////////////////
-         // 2 new fields - they'll appear in future versions of the API //
-         /////////////////////////////////////////////////////////////////
-         .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY)
-            .withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion(V2023_Q2)))
-         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY)
-            .withMiddlewareMetaData(new ApiFieldMetaData().withIsExcluded(true)))
-         ;
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make some changes to this table in the "main" api (but leave it like the backend in the ALTERNATIVE_API_NAME) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      table.withMiddlewareMetaData(new ApiTableMetaDataContainer()
+         .withApiTableMetaData(API_NAME, new ApiTableMetaData()
+            .withInitialVersion(V2022_Q4)
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // in 2022.Q4, this table had a "shoeCount" field. but for the 2023.Q1 version, we renamed it to noOfShoes! //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            .withRemovedApiField(new QFieldMetaData("shoeCount", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS)
+               .withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME,
+                  new ApiFieldMetaData().withFinalVersion(V2022_Q4).withReplacedByFieldName("noOfShoes"))))
+         )
+         .withApiTableMetaData(ALTERNATIVE_API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)));
+
+      /////////////////////////////////////////////////////
+      // change the name for this field for the main api //
+      /////////////////////////////////////////////////////
+      table.getField("birthDate").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withApiFieldName("birthDay")));
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // See above - we renamed this field (in the backend) for the 2023_Q1 version //
+      ////////////////////////////////////////////////////////////////////////////////
+      table.getField("noOfShoes").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withInitialVersion(V2023_Q1)));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // 2 new fields - one will appear in a future version of the API, the other is always excluded //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      table.getField("cost").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withInitialVersion(V2023_Q2)));
+      table.getField("price").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withIsExcluded(true)));
+
+      return (table);
    }
 
 
@@ -168,7 +201,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_ORDER)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(V2022_Q4))
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withAssociation(new Association().withName("orderLines").withAssociatedTableName(TABLE_NAME_LINE_ITEM).withJoinName("orderLineItem"))
          .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_ORDER_EXTRINSIC).withJoinName("orderOrderExtrinsic"))
@@ -191,7 +224,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_LINE_ITEM)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(V2022_Q4))
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_LINE_ITEM_EXTRINSIC).withJoinName("lineItemLineItemExtrinsic"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
@@ -213,7 +246,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_LINE_ITEM_EXTRINSIC)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(V2022_Q4))
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -233,7 +266,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_ORDER_EXTRINSIC)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion(V2022_Q4))
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))

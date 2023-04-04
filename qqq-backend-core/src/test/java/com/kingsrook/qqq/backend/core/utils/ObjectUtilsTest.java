@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.utils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -36,8 +37,9 @@ class ObjectUtilsTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings({ "DataFlowIssue", "ConfusingArgumentToVarargsMethod" })
    @Test
-   void test()
+   void testRequireNonNullElse()
    {
       assertThatThrownBy(() -> ObjectUtils.requireNonNullElse(null)).isInstanceOf(NullPointerException.class);
       assertThatThrownBy(() -> ObjectUtils.requireNonNullElse(null, null)).isInstanceOf(NullPointerException.class);
@@ -45,6 +47,36 @@ class ObjectUtilsTest
       assertEquals("a", ObjectUtils.requireNonNullElse("a", "b"));
       assertEquals("b", ObjectUtils.requireNonNullElse(null, "b", "c"));
       assertEquals("c", ObjectUtils.requireNonNullElse(null, null, "c"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings({ "StringOperationCanBeSimplified", "DataFlowIssue" })
+   @Test
+   void testTryElse()
+   {
+      String nullString = null;
+      assertEquals("tried", ObjectUtils.tryElse(() -> "tried".toString(), "else"));
+      assertEquals("else", ObjectUtils.tryElse(() -> nullString.toString(), "else"));
+      assertNull(ObjectUtils.tryElse(() -> null, "else"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings({ "StringOperationCanBeSimplified", "DataFlowIssue" })
+   @Test
+   void testTryAndRequireNonNullElse()
+   {
+      String nullString = null;
+      assertEquals("tried", ObjectUtils.tryAndRequireNonNullElse(() -> "tried".toString(), "else"));
+      assertEquals("else", ObjectUtils.tryAndRequireNonNullElse(() -> nullString.toString(), "else"));
+      assertEquals("else", ObjectUtils.tryAndRequireNonNullElse(() -> null, "else"));
    }
 
 }

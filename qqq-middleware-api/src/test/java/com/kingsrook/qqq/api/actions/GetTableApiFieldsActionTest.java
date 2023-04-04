@@ -27,9 +27,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.BaseTest;
+import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
@@ -57,7 +60,7 @@ class GetTableApiFieldsActionTest extends BaseTest
     *******************************************************************************/
    private List<? extends QFieldMetaData> getFields(String tableName, String version) throws QException
    {
-      return new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version)).getFields();
+      return new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withApiName(TestUtils.API_NAME).withTableName(tableName).withVersion(version)).getFields();
    }
 
 
@@ -71,11 +74,11 @@ class GetTableApiFieldsActionTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("1"))
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("1")))
          .withField(new QFieldMetaData("a", STRING)) // inherit versionRange from the table
-         .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1")))
-         .withField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("2")))
-         .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("3")))
+         .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1"))))
+         .withField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("2"))))
+         .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("3"))))
       );
       new QInstanceEnricher(qInstance).enrich();
 
@@ -95,13 +98,13 @@ class GetTableApiFieldsActionTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaData().withInitialVersion("1")
-            .withRemovedApiField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1").withFinalVersion("2")))
-         )
+         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("1")
+            .withRemovedApiField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1").withFinalVersion("2"))))
+         ))
          .withField(new QFieldMetaData("a", STRING)) // inherit versionRange from the table
-         .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("1")))
+         .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1"))))
          // we used to have "c" here... now it's in the removed list above!
-         .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaData().withInitialVersion("3")))
+         .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("3"))))
       );
       new QInstanceEnricher(qInstance).enrich();
 

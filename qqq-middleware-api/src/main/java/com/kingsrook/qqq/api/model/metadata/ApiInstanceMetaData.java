@@ -24,14 +24,14 @@ package com.kingsrook.qqq.api.model.metadata;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.Server;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -41,9 +41,11 @@ import org.apache.commons.lang.BooleanUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
+public class ApiInstanceMetaData
 {
    private String name;
+   private String label;
+   private String path;
    private String description;
    private String contactEmail;
 
@@ -59,58 +61,45 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
 
 
    /*******************************************************************************
-    ** Constructor
     **
     *******************************************************************************/
-   public ApiInstanceMetaData()
+   public void validate(String apiName, QInstance qInstance, QInstanceValidator validator)
    {
-      setType(ApiMiddlewareType.NAME);
-   }
+      validator.assertCondition(Objects.equals(apiName, name), "Name mismatch for instance api (" + apiName + " != " + name + ")");
+      validator.assertCondition(StringUtils.hasContent(name), "Missing name for api " + apiName);
 
+      if(validator.assertCondition(StringUtils.hasContent(path), "Missing path for api " + apiName))
+      {
+         validator.assertCondition(path.startsWith("/"), "Path for api " + apiName + " does not start with '/' (but it needs to).");
+         validator.assertCondition(path.endsWith("/"), "Path for api " + apiName + " does not end with '/' (but it needs to).");
+      }
 
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static ApiInstanceMetaData of(QInstance qInstance)
-   {
-      return ((ApiInstanceMetaData) qInstance.getMiddlewareMetaData(ApiMiddlewareType.NAME));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void validate(QInstance qInstance, QInstanceValidator validator)
-   {
-      validator.assertCondition(StringUtils.hasContent(name), "Missing name for instance api");
-      validator.assertCondition(StringUtils.hasContent(description), "Missing description for instance api");
-      validator.assertCondition(StringUtils.hasContent(contactEmail), "Missing contactEmail for instance api");
+      validator.assertCondition(StringUtils.hasContent(label), "Missing label for api " + apiName);
+      validator.assertCondition(StringUtils.hasContent(description), "Missing description for api " + apiName);
+      validator.assertCondition(StringUtils.hasContent(contactEmail), "Missing contactEmail for api " + apiName);
 
       Set<APIVersion> allVersions = new HashSet<>();
 
-      if(validator.assertCondition(currentVersion != null, "Missing currentVersion for instance api"))
+      if(validator.assertCondition(currentVersion != null, "Missing currentVersion for api " + apiName))
       {
          allVersions.add(currentVersion);
       }
 
-      if(validator.assertCondition(supportedVersions != null, "Missing supportedVersions for instance api"))
+      if(validator.assertCondition(supportedVersions != null, "Missing supportedVersions for api " + apiName))
       {
-         validator.assertCondition(supportedVersions.contains(currentVersion), "supportedVersions [" + supportedVersions + "] does not contain currentVersion [" + currentVersion + "] for instance api");
+         validator.assertCondition(supportedVersions.contains(currentVersion), "supportedVersions [" + supportedVersions + "] does not contain currentVersion [" + currentVersion + "] for api " + apiName);
          allVersions.addAll(supportedVersions);
       }
 
       for(APIVersion pastVersion : CollectionUtils.nonNullList(pastVersions))
       {
-         validator.assertCondition(pastVersion.compareTo(currentVersion) < 0, "pastVersion [" + pastVersion + "] is not lexicographically before currentVersion [" + currentVersion + "] for instance api");
+         validator.assertCondition(pastVersion.compareTo(currentVersion) < 0, "pastVersion [" + pastVersion + "] is not lexicographically before currentVersion [" + currentVersion + "] for api " + apiName);
          allVersions.add(pastVersion);
       }
 
       for(APIVersion futureVersion : CollectionUtils.nonNullList(futureVersions))
       {
-         validator.assertCondition(futureVersion.compareTo(currentVersion) > 0, "futureVersion [" + futureVersion + "] is not lexicographically after currentVersion [" + currentVersion + "] for instance api");
+         validator.assertCondition(futureVersion.compareTo(currentVersion) > 0, "futureVersion [" + futureVersion + "] is not lexicographically after currentVersion [" + currentVersion + "] for api " + apiName);
          allVersions.add(futureVersion);
       }
 
@@ -119,12 +108,16 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
       /////////////////////////////////
       for(QTableMetaData table : qInstance.getTables().values())
       {
-         ApiTableMetaData apiTableMetaData = ApiTableMetaData.of(table);
-         if(apiTableMetaData != null)
+         ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+         if(apiTableMetaDataContainer != null)
          {
-            if(BooleanUtils.isNotTrue(apiTableMetaData.getIsExcluded()))
+            ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiName);
+            if(apiTableMetaData != null)
             {
-               validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version.");
+               if(BooleanUtils.isNotTrue(apiTableMetaData.getIsExcluded()))
+               {
+                  validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version for api " + apiName);
+               }
             }
          }
       }
@@ -408,6 +401,68 @@ public class ApiInstanceMetaData extends QMiddlewareInstanceMetaData
    public ApiInstanceMetaData withServers(List<Server> servers)
    {
       this.servers = servers;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return (this.label);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    *******************************************************************************/
+   public ApiInstanceMetaData withLabel(String label)
+   {
+      this.label = label;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for path
+    *******************************************************************************/
+   public String getPath()
+   {
+      return (this.path);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for path
+    *******************************************************************************/
+   public void setPath(String path)
+   {
+      this.path = path;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for path
+    *******************************************************************************/
+   public ApiInstanceMetaData withPath(String path)
+   {
+      this.path = path;
       return (this);
    }
 
