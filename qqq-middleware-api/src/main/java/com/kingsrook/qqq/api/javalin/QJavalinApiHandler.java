@@ -1504,7 +1504,7 @@ public class QJavalinApiHandler
             }
          }
 
-         QJavalinAccessLogger.logEndSuccess();
+         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", insertInput.getRecords().size()));
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
          String resultString = JsonUtils.toJson(response);
          context.result(resultString);
@@ -1636,7 +1636,7 @@ public class QJavalinApiHandler
             i++;
          }
 
-         QJavalinAccessLogger.logEndSuccess();
+         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", updateInput.getRecords().size()));
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
          String resultString = JsonUtils.toJson(response);
          context.result(resultString);
@@ -1777,7 +1777,7 @@ public class QJavalinApiHandler
             }
          }
 
-         QJavalinAccessLogger.logEndSuccess();
+         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", deleteInput.getPrimaryKeys().size()));
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
          String resultString = JsonUtils.toJson(response);
          context.result(resultString);

@@ -25,8 +25,11 @@ package com.kingsrook.qqq.api.actions;
 import java.util.Set;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -53,8 +56,46 @@ class GenerateOpenApiSpecActionTest extends BaseTest
    @Test
    void test() throws QException
    {
-      GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(TestUtils.CURRENT_API_VERSION).withApiName(TestUtils.API_NAME));
-      System.out.println(output.getYaml());
+      for(ApiInstanceMetaData apiInstanceMetaData : ApiInstanceMetaDataContainer.of(QContext.getQInstance()).getApis().values())
+      {
+         for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
+         {
+            //////////////////////////////////////////////////////////////////////
+            // just making sure we don't throw on any apis in the test instance //
+            //////////////////////////////////////////////////////////////////////
+            GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput()
+               .withVersion(supportedVersion.toString())
+               .withApiName(apiInstanceMetaData.getName()));
+            // System.out.println(output.getYaml());
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSingleTable() throws QException
+   {
+      for(ApiInstanceMetaData apiInstanceMetaData : ApiInstanceMetaDataContainer.of(QContext.getQInstance()).getApis().values())
+      {
+         for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
+         {
+            for(QTableMetaData table : QContext.getQInstance().getTables().values())
+            {
+               //////////////////////////////////////////////////////////////////////
+               // just making sure we don't throw on any apis in the test instance //
+               //////////////////////////////////////////////////////////////////////
+               GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput()
+                  .withTableName(table.getName())
+                  .withVersion(supportedVersion.toString())
+                  .withApiName(apiInstanceMetaData.getName()));
+               // System.out.println(output.getYaml());
+            }
+         }
+      }
    }
 
 

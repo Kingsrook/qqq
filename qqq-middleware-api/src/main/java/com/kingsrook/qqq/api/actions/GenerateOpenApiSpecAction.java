@@ -27,9 +27,11 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecInput;
@@ -180,6 +182,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       * The 1st primary key in the request will have its response in the 1st object in the response, and so-forth.
       * Each input primary key will also be included in the corresponding response object.
       """;
+
+   private Set<String> neededTableSchemas = new HashSet<>();
 
 
 
@@ -386,22 +390,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          //////////////////////////////////////
          // build the schemas for this table //
          //////////////////////////////////////
-         LinkedHashMap<String, Schema> tableFields = new LinkedHashMap<>();
-         Schema tableSchema = new Schema()
-            .withType("object")
-            .withProperties(tableFields);
+         Schema tableSchema = buildTableSchema(apiInstanceMetaData, table, tableApiFields);
          componentSchemas.put(tableApiName, tableSchema);
-
-         for(QFieldMetaData field : tableApiFields)
-         {
-            Schema fieldSchema = getFieldSchema(table, field);
-            tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(apiInstanceMetaData.getName(), field), fieldSchema);
-         }
-
-         //////////////////////////////////
-         // recursively add associations //
-         //////////////////////////////////
-         addAssociations(apiName, table, tableSchema);
 
          //////////////////////////////////////////////////////////////////////////////
          // table as a search result (the base search result, plus the table itself) //
@@ -665,11 +655,83 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          componentResponses.put("error" + HttpStatus.TOO_MANY_REQUESTS.getCode(), buildStandardErrorResponse("Too Many Requests.  Your application has issued too many API requests in too short of a time frame."));
       }
 
+      ensureAllNeededTableSchemasExist(apiInstanceMetaData, version, componentSchemas);
+
       GenerateOpenApiSpecOutput output = new GenerateOpenApiSpecOutput();
       output.setOpenAPI(openAPI);
       output.setYaml(YamlUtils.toYaml(openAPI));
       output.setJson(JsonUtils.toPrettyJson(openAPI));
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    ** written for the use-case of, generating a single table's api, but it has
+    ** associations that it references, so we need their schemas too - so, make
+    ** sure they are all added to the componentSchemas map.
+    *******************************************************************************/
+   private void ensureAllNeededTableSchemasExist(ApiInstanceMetaData apiInstanceMetaData, String version, LinkedHashMap<String, Schema> componentSchemas) throws QException
+   {
+      String apiName = apiInstanceMetaData.getName();
+
+      boolean addedAny;
+      do
+      {
+         //////////////////////////////////////////////////////////////////////////
+         // mmm, kinda odd loops, to avoid concurrent modification, and so-forth //
+         //////////////////////////////////////////////////////////////////////////
+         addedAny = false;
+         for(String neededTableSchema : neededTableSchemas)
+         {
+            if(!componentSchemas.containsKey(neededTableSchema))
+            {
+               LOG.debug("Adding needed schema: " + neededTableSchema);
+               QTableMetaData table = QContext.getQInstance().getTable(neededTableSchema);
+
+               ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+               ApiTableMetaData          apiTableMetaData          = apiTableMetaDataContainer.getApiTableMetaData(apiName);
+
+               String tableApiName = StringUtils.hasContent(apiTableMetaData.getApiTableName()) ? apiTableMetaData.getApiTableName() : table.getName();
+
+               List<QFieldMetaData> tableApiFields = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput()
+                  .withTableName(table.getName())
+                  .withVersion(version)
+                  .withApiName(apiName)).getFields();
+
+               componentSchemas.put(tableApiName, buildTableSchema(apiInstanceMetaData, table, tableApiFields));
+               addedAny = true;
+               break;
+            }
+         }
+      }
+      while(addedAny);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Schema buildTableSchema(ApiInstanceMetaData apiInstanceMetaData, QTableMetaData table, List<QFieldMetaData> tableApiFields)
+   {
+      LinkedHashMap<String, Schema> tableFields = new LinkedHashMap<>();
+      Schema tableSchema = new Schema()
+         .withType("object")
+         .withProperties(tableFields);
+
+      for(QFieldMetaData field : tableApiFields)
+      {
+         Schema fieldSchema = getFieldSchema(table, field);
+         tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(apiInstanceMetaData.getName(), field), fieldSchema);
+      }
+
+      //////////////////////////////////
+      // recursively add associations //
+      //////////////////////////////////
+      addAssociations(apiInstanceMetaData.getName(), table, tableSchema);
+
+      return (tableSchema);
    }
 
 
@@ -800,7 +862,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void addAssociations(String apiName, QTableMetaData table, Schema tableSchema)
+   private void addAssociations(String apiName, QTableMetaData table, Schema tableSchema)
    {
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -808,6 +870,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
          ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
+
+         neededTableSchemas.add(associatedTable.getName());
 
          tableSchema.getProperties().put(association.getName(), new Schema()
             .withType("array")
@@ -823,8 +887,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    private Schema getFieldSchema(QTableMetaData table, QFieldMetaData field)
    {
       Schema fieldSchema = new Schema()
-         .withType(getFieldType(table.getField(field.getName())))
-         .withFormat(getFieldFormat(table.getField(field.getName())))
+         .withType(getFieldType(field))
+         .withFormat(getFieldFormat(field))
          .withDescription(field.getLabel() + " for the " + table.getLabel() + ".");
 
       if(!field.getIsEditable())
