@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -111,7 +112,12 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          String   apiVersion = qSession.getValue("apiVersion");
          if(apiVersion != null)
          {
-            contextSuffix += (" via API Version: " + apiVersion);
+            String apiLabel = qSession.getValue("apiLabel");
+            if(!StringUtils.hasContent(apiLabel))
+            {
+               apiLabel = "API";
+            }
+            contextSuffix += (" via " + apiLabel + " Version: " + apiVersion);
          }
 
          AuditInput auditInput = new AuditInput();
