@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.model.metadata;
 
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +42,7 @@ import org.apache.commons.lang.BooleanUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiInstanceMetaData
+public class ApiInstanceMetaData implements ApiOperation.EnabledOperationsProvider
 {
    private String name;
    private String label;
@@ -55,6 +56,9 @@ public class ApiInstanceMetaData
    private List<APIVersion> futureVersions;
 
    private List<Server> servers;
+
+   private Set<ApiOperation> enabledOperations  = new HashSet<>();
+   private Set<ApiOperation> disabledOperations = new HashSet<>();
 
    private boolean includeErrorTooManyRequests = true;
 
@@ -463,6 +467,126 @@ public class ApiInstanceMetaData
    public ApiInstanceMetaData withPath(String path)
    {
       this.path = path;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Set<ApiOperation> getEnabledOperations()
+   {
+      return (enabledOperations);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Set<ApiOperation> getDisabledOperations()
+   {
+      return (disabledOperations);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for enabledOperations
+    *******************************************************************************/
+   public void setEnabledOperations(Set<ApiOperation> enabledOperations)
+   {
+      this.enabledOperations = enabledOperations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledOperations
+    *******************************************************************************/
+   public ApiInstanceMetaData withEnabledOperations(Set<ApiOperation> enabledOperations)
+   {
+      this.enabledOperations = enabledOperations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledOperations
+    *******************************************************************************/
+   public ApiInstanceMetaData withEnabledOperation(ApiOperation operation)
+   {
+      return withEnabledOperations(operation);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for enabledOperations
+    *******************************************************************************/
+   public ApiInstanceMetaData withEnabledOperations(ApiOperation... operations)
+   {
+      if(this.enabledOperations == null)
+      {
+         this.enabledOperations = new HashSet<>();
+      }
+      if(operations != null)
+      {
+         Collections.addAll(this.enabledOperations, operations);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for disabledOperations
+    *******************************************************************************/
+   public void setDisabledOperations(Set<ApiOperation> disabledOperations)
+   {
+      this.disabledOperations = disabledOperations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledOperations
+    *******************************************************************************/
+   public ApiInstanceMetaData withDisabledOperations(Set<ApiOperation> disabledOperations)
+   {
+      this.disabledOperations = disabledOperations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledOperations
+    *******************************************************************************/
+   public ApiInstanceMetaData withDisabledOperation(ApiOperation operation)
+   {
+      return withDisabledOperations(operation);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disabledOperations
+    *******************************************************************************/
+   public ApiInstanceMetaData withDisabledOperations(ApiOperation... operations)
+   {
+      if(this.disabledOperations == null)
+      {
+         this.disabledOperations = new HashSet<>();
+      }
+      if(operations != null)
+      {
+         Collections.addAll(this.disabledOperations, operations);
+      }
       return (this);
    }
 

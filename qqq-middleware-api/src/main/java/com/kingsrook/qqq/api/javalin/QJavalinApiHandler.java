@@ -45,6 +45,7 @@ import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
@@ -63,6 +64,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -350,14 +352,14 @@ public class QJavalinApiHandler
 
       try
       {
-         setupSession(context, null, null);
+         setupSession(context, null, null, null);
       }
       catch(Exception e)
       {
          //////////////////////////////////////////////////////////////////////////
          // if we don't have a session, we won't be able to store the api log... //
          //////////////////////////////////////////////////////////////////////////
-         LOG.debug("No session in a 404; will not create api log", e);
+         LOG.info("No session in a 404; will not create api log", e);
       }
 
       handleException(context, new QNotFoundException("Could not find any resources at path " + context.path()), apiLog);
@@ -620,10 +622,15 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void setupSession(Context context, AbstractActionInput input, String version) throws QModuleDispatchException, QAuthenticationException
+   public static void setupSession(Context context, AbstractActionInput input, String version, ApiInstanceMetaData apiInstanceMetaData) throws QModuleDispatchException, QAuthenticationException
    {
       QSession session = QJavalinImplementation.setupSession(context, input);
       session.setValue("apiVersion", version);
+      if(apiInstanceMetaData != null)
+      {
+         session.setValue("apiName", apiInstanceMetaData.getName());
+         session.setValue("apiLabel", apiInstanceMetaData.getLabel());
+      }
    }
 
 
@@ -640,12 +647,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.GET);
          String         tableName = table.getName();
 
          GetInput getInput = new GetInput();
 
-         setupSession(context, getInput, version);
+         setupSession(context, getInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiGet", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          getInput.setTableName(tableName);
@@ -801,7 +808,7 @@ public class QJavalinApiHandler
             ///////////////////////////////////////////////////////
             // if it wasn't found from a Get, then try an Insert //
             ///////////////////////////////////////////////////////
-            LOG.debug("Inserting " + tableName + " named " + userName);
+            LOG.info("Inserting " + tableName + " named " + userName);
             InsertInput insertInput = new InsertInput();
             insertInput.setTableName(tableName);
             QRecord record = new QRecord().withValue("name", userName);
@@ -836,7 +843,7 @@ public class QJavalinApiHandler
             ////////////////////////////////////////////////////////////////////
             // assume this may mean a dupe-key - so - try another fetch below //
             ////////////////////////////////////////////////////////////////////
-            LOG.debug("Caught error inserting " + tableName + " named " + userName + " - will try to re-fetch", e);
+            LOG.info("Caught error inserting " + tableName + " named " + userName + " - will try to re-fetch", e);
          }
 
          //////////////////////////////////////////////////////////////////////////
@@ -894,11 +901,11 @@ public class QJavalinApiHandler
       {
          List<String> badRequestMessages = new ArrayList<>();
 
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.QUERY_BY_QUERY_STRING);
          String         tableName = table.getName();
 
          QueryInput queryInput = new QueryInput();
-         setupSession(context, queryInput, version);
+         setupSession(context, queryInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiQuery", logPair("table", tableName));
 
          queryInput.setTableName(tableName);
@@ -1123,36 +1130,54 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableMetaData validateTableAndVersion(Context context, ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName) throws QNotFoundException
+   private static QTableMetaData validateTableAndVersion(Context context, ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, ApiOperation operation) throws QNotFoundException
    {
       QNotFoundException qNotFoundException = new QNotFoundException("Could not find any resources at path " + context.path());
 
-      QTableMetaData table = getTableByApiName(apiInstanceMetaData.getName(), version, tableApiName);
+      QTableMetaData table    = getTableByApiName(apiInstanceMetaData.getName(), version, tableApiName);
+      LogPair[]      logPairs = new LogPair[] { logPair("apiName", apiInstanceMetaData.getName()), logPair("version", version), logPair("tableApiName", tableApiName), logPair("operation", operation) };
 
       if(table == null)
       {
+         LOG.info("404 because table is null", logPairs);
          throw (qNotFoundException);
       }
 
       if(BooleanUtils.isTrue(table.getIsHidden()))
       {
+         LOG.info("404 because table isHidden", logPairs);
          throw (qNotFoundException);
       }
 
       ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
       if(apiTableMetaDataContainer == null)
       {
+         LOG.info("404 because table apiMetaDataContainer is null", logPairs);
          throw (qNotFoundException);
       }
 
       ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiInstanceMetaData.getName());
       if(apiTableMetaData == null)
       {
+         LOG.info("404 because table apiMetaData is null", logPairs);
          throw (qNotFoundException);
       }
 
       if(BooleanUtils.isTrue(apiTableMetaData.getIsExcluded()))
       {
+         LOG.info("404 because table is excluded", logPairs);
+         throw (qNotFoundException);
+      }
+
+      if(!operation.isOperationEnabled(List.of(apiInstanceMetaData, apiTableMetaData)))
+      {
+         LOG.info("404 because api operation is not enabled", logPairs);
+         throw (qNotFoundException);
+      }
+
+      if(!table.isCapabilityEnabled(qInstance.getBackendForTable(table.getName()), operation.getCapability()))
+      {
+         LOG.info("404 because table capability is not enabled", logPairs);
          throw (qNotFoundException);
       }
 
@@ -1160,11 +1185,13 @@ public class QJavalinApiHandler
       List<APIVersion> supportedVersions = apiInstanceMetaData.getSupportedVersions();
       if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
       {
+         LOG.info("404 because requested version is not supported", logPairs);
          throw (qNotFoundException);
       }
 
       if(!apiTableMetaData.getApiVersionRange().includes(requestApiVersion))
       {
+         LOG.info("404 because table version range does not include requested version", logPairs);
          throw (qNotFoundException);
       }
 
@@ -1351,12 +1378,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.INSERT);
          String         tableName = table.getName();
 
          InsertInput insertInput = new InsertInput();
 
-         setupSession(context, insertInput, version);
+         setupSession(context, insertInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiInsert", logPair("table", tableName));
 
          insertInput.setTableName(tableName);
@@ -1392,6 +1419,22 @@ public class QJavalinApiHandler
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
 
+         List<String> errors = insertOutput.getRecords().get(0).getErrors();
+         if(CollectionUtils.nullSafeHasContents(errors))
+         {
+            boolean isBadRequest = areAnyErrorsBadRequest(errors);
+
+            String message = "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors);
+            if(isBadRequest)
+            {
+               throw (new QBadRequestException(message));
+            }
+            else
+            {
+               throw (new QException(message));
+            }
+         }
+
          LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
          outputRecord.put(table.getPrimaryKeyField(), insertOutput.getRecords().get(0).getValue(table.getPrimaryKeyField()));
 
@@ -1413,6 +1456,20 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static boolean areAnyErrorsBadRequest(List<String> errors)
+   {
+      boolean isBadRequest = errors.stream().anyMatch(e ->
+         e.contains("Missing value in required field")
+            || e.contains("You do not have permission")
+      );
+      return isBadRequest;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void bulkInsert(Context context, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version      = context.pathParam("version");
@@ -1421,12 +1478,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_INSERT);
          String         tableName = table.getName();
 
          InsertInput insertInput = new InsertInput();
 
-         setupSession(context, insertInput, version);
+         setupSession(context, insertInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiBulkInsert", logPair("table", tableName));
 
          insertInput.setTableName(tableName);
@@ -1530,12 +1587,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_UPDATE);
          String         tableName = table.getName();
 
          UpdateInput updateInput = new UpdateInput();
 
-         setupSession(context, updateInput, version);
+         setupSession(context, updateInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiBulkUpdate", logPair("table", tableName));
 
          updateInput.setTableName(tableName);
@@ -1672,12 +1729,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_DELETE);
          String         tableName = table.getName();
 
          DeleteInput deleteInput = new DeleteInput();
 
-         setupSession(context, deleteInput, version);
+         setupSession(context, deleteInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiBulkDelete", logPair("table", tableName));
 
          deleteInput.setTableName(tableName);
@@ -1804,12 +1861,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.UPDATE);
          String         tableName = table.getName();
 
          UpdateInput updateInput = new UpdateInput();
 
-         setupSession(context, updateInput, version);
+         setupSession(context, updateInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiUpdate", logPair("table", tableName));
 
          updateInput.setTableName(tableName);
@@ -1856,10 +1913,17 @@ public class QJavalinApiHandler
             }
             else
             {
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               // todo - could be smarter here, about some of these errors being 400, not 500...  e.g., a missing required field //
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               throw (new QException("Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors)));
+               boolean isBadRequest = areAnyErrorsBadRequest(errors);
+
+               String message = "Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors);
+               if(isBadRequest)
+               {
+                  throw (new QBadRequestException(message));
+               }
+               else
+               {
+                  throw (new QException(message));
+               }
             }
          }
 
@@ -1888,12 +1952,12 @@ public class QJavalinApiHandler
 
       try
       {
-         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName);
+         QTableMetaData table     = validateTableAndVersion(context, apiInstanceMetaData, version, tableApiName, ApiOperation.DELETE);
          String         tableName = table.getName();
 
          DeleteInput deleteInput = new DeleteInput();
 
-         setupSession(context, deleteInput, version);
+         setupSession(context, deleteInput, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiDelete", logPair("table", tableName));
 
          deleteInput.setTableName(tableName);

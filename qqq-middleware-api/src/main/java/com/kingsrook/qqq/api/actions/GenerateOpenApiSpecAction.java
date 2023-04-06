@@ -39,6 +39,7 @@ import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
@@ -334,16 +335,26 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          boolean          insertCapability = table.isCapabilityEnabled(tableBackend, Capability.TABLE_INSERT);
          boolean          countCapability  = table.isCapabilityEnabled(tableBackend, Capability.TABLE_COUNT); // todo - look at this - if table doesn't have count, don't include it in its input/output, etc
 
-         if(!queryCapability && !getCapability && !updateCapability && !deleteCapability && !insertCapability)
+         List<ApiOperation.EnabledOperationsProvider> operationProviders = List.of(apiInstanceMetaData, apiTableMetaData);
+
+         boolean getEnabled                = ApiOperation.GET.isOperationEnabled(operationProviders) && getCapability;
+         boolean queryByQueryStringEnabled = ApiOperation.QUERY_BY_QUERY_STRING.isOperationEnabled(operationProviders) && queryCapability;
+         boolean insertEnabled             = ApiOperation.UPDATE.isOperationEnabled(operationProviders) && insertCapability;
+         boolean insertBulkEnabled         = ApiOperation.BULK_INSERT.isOperationEnabled(operationProviders) && insertCapability;
+         boolean updateEnabled             = ApiOperation.INSERT.isOperationEnabled(operationProviders) && updateCapability;
+         boolean updateBulkEnabled         = ApiOperation.BULK_UPDATE.isOperationEnabled(operationProviders) && updateCapability;
+         boolean deleteEnabled             = ApiOperation.DELETE.isOperationEnabled(operationProviders) && deleteCapability;
+         boolean deleteBulkEnabled         = ApiOperation.BULK_DELETE.isOperationEnabled(operationProviders) && deleteCapability;
+
+         if(!getEnabled && !queryByQueryStringEnabled && !insertEnabled && !insertBulkEnabled && !updateEnabled && !updateBulkEnabled && !deleteEnabled && !deleteBulkEnabled)
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have any supported capabilities");
+            LOG.debug("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations");
             continue;
          }
 
          String               tableApiName        = StringUtils.hasContent(apiTableMetaData.getApiTableName()) ? apiTableMetaData.getApiTableName() : tableName;
          String               tableApiNameUcFirst = StringUtils.ucFirst(tableApiName);
          String               tableLabel          = table.getLabel();
-         String               primaryKeyName      = table.getPrimaryKeyField();
          QFieldMetaData       primaryKeyField     = table.getField(table.getPrimaryKeyField());
          String               primaryKeyLabel     = primaryKeyField.getLabel();
          String               primaryKeyApiName   = ApiFieldMetaData.getEffectiveApiFieldName(apiName, primaryKeyField);
@@ -396,15 +407,18 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          //////////////////////////////////////////////////////////////////////////////
          // table as a search result (the base search result, plus the table itself) //
          //////////////////////////////////////////////////////////////////////////////
-         componentSchemas.put(tableApiName + "SearchResult", new Schema()
-            .withType("object")
-            .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/baseSearchResultFields")))
-            .withProperties(MapBuilder.of(
-               "records", new Schema()
-                  .withType("array")
-                  .withItems(new Schema()
-                     .withAllOf(ListBuilder.of(
-                        new Schema().withRef("#/components/schemas/" + tableApiName)))))));
+         if(queryByQueryStringEnabled)
+         {
+            componentSchemas.put(tableApiName + "SearchResult", new Schema()
+               .withType("object")
+               .withAllOf(ListBuilder.of(new Schema().withRef("#/components/schemas/baseSearchResultFields")))
+               .withProperties(MapBuilder.of(
+                  "records", new Schema()
+                     .withType("array")
+                     .withItems(new Schema()
+                        .withAllOf(ListBuilder.of(
+                           new Schema().withRef("#/components/schemas/" + tableApiName)))))));
+         }
 
          // todo...?
          // includeAssociatedOrderLines=false&includeAssociatedExtrinsics=false&includeAssociatedOrderLinesExtrinsics
@@ -474,7 +488,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(tableReadPermissionName));
 
-         if(queryCapability)
+         if(queryByQueryStringEnabled)
          {
             openAPI.getPaths().put(basePath + tableApiName + "/query", new Path()
                // todo!! .withPost(queryPost)
@@ -541,12 +555,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully deleted the requested " + tableLabel))
             .withSecurity(getSecurity(tableDeletePermissionName));
 
-         if(getCapability || updateCapability || deleteCapability)
+         if(getEnabled || updateEnabled || deleteEnabled)
          {
             openAPI.getPaths().put(basePath + tableApiName + "/{" + primaryKeyApiName + "}", new Path()
-               .withGet(getCapability ? idGet : null)
-               .withPatch(updateCapability ? idPatch : null)
-               .withDelete(deleteCapability ? idDelete : null)
+               .withGet(getEnabled ? idGet : null)
+               .withPatch(updateEnabled ? idPatch : null)
+               .withDelete(deleteEnabled ? idDelete : null)
             );
          }
 
@@ -572,7 +586,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(tableInsertPermissionName));
 
-         if(insertCapability)
+         if(insertEnabled)
          {
             openAPI.getPaths().put(basePath + tableApiName + "/", new Path()
                .withPost(slashPost));
@@ -636,12 +650,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(tableDeletePermissionName));
 
-         if(insertCapability || updateCapability || deleteCapability)
+         if(insertBulkEnabled || updateBulkEnabled || deleteBulkEnabled)
          {
             openAPI.getPaths().put(basePath + tableApiName + "/bulk", new Path()
-               .withPost(insertCapability ? bulkPost : null)
-               .withPatch(updateCapability ? bulkPatch : null)
-               .withDelete(deleteCapability ? bulkDelete : null));
+               .withPost(insertBulkEnabled ? bulkPost : null)
+               .withPatch(updateBulkEnabled ? bulkPatch : null)
+               .withDelete(deleteBulkEnabled ? bulkDelete : null));
          }
       }
 
