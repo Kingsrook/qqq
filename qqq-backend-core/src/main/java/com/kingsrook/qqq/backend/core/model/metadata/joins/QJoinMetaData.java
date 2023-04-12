@@ -25,13 +25,15 @@ package com.kingsrook.qqq.backend.core.model.metadata.joins;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
  ** Definition of how 2 tables join together within a QQQ Instance.
  *******************************************************************************/
-public class QJoinMetaData
+public class QJoinMetaData implements TopLevelMetaDataInterface
 {
    private String   name;
    private JoinType type;
@@ -316,5 +318,16 @@ public class QJoinMetaData
          throw (new IllegalStateException("Missing either a left or right table name when trying to set inferred name for join"));
       }
       return (leftTable + "Join" + StringUtils.ucFirst(rightTable));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addJoin(this);
    }
 }

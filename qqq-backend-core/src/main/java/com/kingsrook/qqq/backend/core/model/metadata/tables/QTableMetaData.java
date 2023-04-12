@@ -37,6 +37,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -53,7 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules
+public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
    private String name;
    private String label;
@@ -1284,4 +1286,14 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addTable(this);
+   }
 }

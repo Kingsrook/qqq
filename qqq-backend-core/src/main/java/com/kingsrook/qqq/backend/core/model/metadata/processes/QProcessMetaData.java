@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
@@ -43,7 +45,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Meta-Data to define a process in a QQQ instance.
  **
  *******************************************************************************/
-public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissionRules
+public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
    private String                name;
    private String                label;
@@ -529,6 +531,17 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    {
       this.permissionRules = permissionRules;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addProcess(this);
    }
 
 }

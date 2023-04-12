@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
@@ -34,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  ** table or an enum).
  **
  *******************************************************************************/
-public class QPossibleValueSource
+public class QPossibleValueSource implements TopLevelMetaDataInterface
 {
    private String                   name;
    private String                   label;
@@ -585,6 +587,17 @@ public class QPossibleValueSource
    {
       setValueFormatAndFields(valueFormatAndFields);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addPossibleValueSource(this);
    }
 
 }
