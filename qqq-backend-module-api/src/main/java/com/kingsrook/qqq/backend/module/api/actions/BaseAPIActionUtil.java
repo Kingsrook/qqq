@@ -447,11 +447,11 @@ public class BaseAPIActionUtil
          }
          else
          {
-            String tablePath = getBackendDetails(table).getTablePath();
+            String wrapperObjectName = getBackendDetails(table).getTableWrapperObjectName();
             jsonObject = JsonUtils.toJSONObject(resultString);
-            if(jsonObject.has(tablePath))
+            if(jsonObject.has(wrapperObjectName))
             {
-               Object o = jsonObject.get(tablePath);
+               Object o = jsonObject.get(wrapperObjectName);
                if(o instanceof JSONArray jsonArray)
                {
                   resultList = jsonArray;
@@ -463,7 +463,7 @@ public class BaseAPIActionUtil
                }
                else
                {
-                  throw (new QException("Unrecognized object until tablePath: " + o));
+                  throw (new QException("Unrecognized object until wrapperObjectName: " + o));
                }
             }
          }
@@ -731,11 +731,11 @@ public class BaseAPIActionUtil
       JSONObject body = recordToJsonObject(table, record);
       String     json = body.toString();
 
-      String tablePath = getBackendDetails(table).getTablePath();
-      if(tablePath != null)
+      String wrapperObjectName = getBackendDetails(table).getTableWrapperObjectName();
+      if(wrapperObjectName != null)
       {
          body = new JSONObject();
-         body.put(tablePath, new JSONObject(json));
+         body.put(wrapperObjectName, new JSONObject(json));
          json = body.toString();
       }
       return (new StringEntity(json));
@@ -759,12 +759,12 @@ public class BaseAPIActionUtil
             entityListJson.put(entityListJson.length(), recordToJsonObject(table, record));
          }
 
-         String json      = entityListJson.toString();
-         String tablePath = getBackendDetails(table).getTablePath();
-         if(tablePath != null)
+         String json              = entityListJson.toString();
+         String wrapperObjectName = getBackendDetails(table).getTableWrapperObjectName();
+         if(wrapperObjectName != null)
          {
             JSONObject body = new JSONObject();
-            body.put(tablePath, new JSONArray(json));
+            body.put(wrapperObjectName, new JSONArray(json));
             json = body.toString();
          }
          return (new StringEntity(json));
@@ -848,7 +848,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
+   public QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
       int     sleepMillis               = getInitialRateLimitBackoffMillis();
       int     rateLimitsCaught          = 0;
