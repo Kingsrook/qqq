@@ -39,6 +39,8 @@ public class InsertInput extends AbstractTableActionInput
 
    private boolean skipUniqueKeyCheck = false;
 
+   private boolean omitDmlAudit = false;
+
 
 
    /*******************************************************************************
@@ -135,6 +137,37 @@ public class InsertInput extends AbstractTableActionInput
    public InsertInput withSkipUniqueKeyCheck(boolean skipUniqueKeyCheck)
    {
       this.skipUniqueKeyCheck = skipUniqueKeyCheck;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitDmlAudit
+    *******************************************************************************/
+   public boolean getOmitDmlAudit()
+   {
+      return (this.omitDmlAudit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitDmlAudit
+    *******************************************************************************/
+   public void setOmitDmlAudit(boolean omitDmlAudit)
+   {
+      this.omitDmlAudit = omitDmlAudit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitDmlAudit
+    *******************************************************************************/
+   public InsertInput withOmitDmlAudit(boolean omitDmlAudit)
+   {
+      this.omitDmlAudit = omitDmlAudit;
       return (this);
    }
 

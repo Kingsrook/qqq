@@ -108,7 +108,14 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       // todo post-customization - can do whatever w/ the result if you want
 
-      new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
+      if(insertInput.getOmitDmlAudit())
+      {
+         LOG.debug("Requested to omit DML audit");
+      }
+      else
+      {
+         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
+      }
 
       if(postInsertCustomizer.isPresent())
       {
