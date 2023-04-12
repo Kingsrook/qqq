@@ -36,7 +36,7 @@ import org.apache.http.util.EntityUtils;
 public class QHttpResponse
 {
    private Integer      statusCode;
-   private String       statusProtocolVerson;
+   private String       statusProtocolVersion;
    private String       statusReasonPhrase;
    private List<Header> headerList;
    private String       content;
@@ -66,7 +66,7 @@ public class QHttpResponse
          this.statusReasonPhrase = httpResponse.getStatusLine().getReasonPhrase();
          if(httpResponse.getStatusLine().getProtocolVersion() != null)
          {
-            this.statusProtocolVerson = httpResponse.getStatusLine().getProtocolVersion().toString();
+            this.statusProtocolVersion = httpResponse.getStatusLine().getProtocolVersion().toString();
          }
       }
       this.content = EntityUtils.toString(httpResponse.getEntity());
@@ -97,23 +97,23 @@ public class QHttpResponse
 
 
    /*******************************************************************************
-    ** Getter for statusProtocolVerson
+    ** Getter for statusProtocolVersion
     **
     *******************************************************************************/
-   public String getStatusProtocolVerson()
+   public String getStatusProtocolVersion()
    {
-      return statusProtocolVerson;
+      return statusProtocolVersion;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for statusProtocolVerson
+    ** Setter for statusProtocolVersion
     **
     *******************************************************************************/
-   public void setStatusProtocolVerson(String statusProtocolVerson)
+   public void setStatusProtocolVersion(String statusProtocolVersion)
    {
-      this.statusProtocolVerson = statusProtocolVerson;
+      this.statusProtocolVersion = statusProtocolVersion;
    }
 
 
@@ -191,6 +191,50 @@ public class QHttpResponse
    public QHttpResponse withContent(String content)
    {
       this.content = content;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for statusCode
+    *******************************************************************************/
+   public QHttpResponse withStatusCode(Integer statusCode)
+   {
+      this.statusCode = statusCode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for statusProtocolVersion
+    *******************************************************************************/
+   public QHttpResponse withStatusProtocolVersion(String statusProtocolVersion)
+   {
+      this.statusProtocolVersion = statusProtocolVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for statusReasonPhrase
+    *******************************************************************************/
+   public QHttpResponse withStatusReasonPhrase(String statusReasonPhrase)
+   {
+      this.statusReasonPhrase = statusReasonPhrase;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for headerList
+    *******************************************************************************/
+   public QHttpResponse withHeaderList(List<Header> headerList)
+   {
+      this.headerList = headerList;
       return (this);
    }
 
