@@ -143,6 +143,7 @@ public class StreamedETLWithFrontendProcess
             .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
             .withField(new QFieldMetaData(FIELD_SUPPORTS_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, true)))
+            .withField(new QFieldMetaData(FIELD_DO_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.get(FIELD_DO_FULL_VALIDATION)))
             .withField(new QFieldMetaData(FIELD_DEFAULT_QUERY_FILTER, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
             .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(extractStepClass == null ? null : new QCodeReference(extractStepClass)))
             .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(transformStepClass == null ? null : new QCodeReference(transformStepClass)))
@@ -157,8 +158,6 @@ public class StreamedETLWithFrontendProcess
       QStepMetaData validateStep = new QBackendStepMetaData()
          .withName(STEP_NAME_VALIDATE)
          .withCode(new QCodeReference(StreamedETLValidateStep.class))
-         .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData(FIELD_DO_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.get(FIELD_DO_FULL_VALIDATION))))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withField(new QFieldMetaData(FIELD_VALIDATION_SUMMARY, QFieldType.STRING))
          );
