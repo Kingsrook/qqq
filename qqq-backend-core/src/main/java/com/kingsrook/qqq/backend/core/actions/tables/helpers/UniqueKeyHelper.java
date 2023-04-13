@@ -24,15 +24,14 @@ package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -55,10 +54,10 @@ public class UniqueKeyHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Set<List<Serializable>> getExistingKeys(AbstractActionInput actionInput, QBackendTransaction transaction, QTableMetaData table, List<QRecord> recordList, UniqueKey uniqueKey) throws QException
+   public static Map<List<Serializable>, Serializable> getExistingKeys(QBackendTransaction transaction, QTableMetaData table, List<QRecord> recordList, UniqueKey uniqueKey) throws QException
    {
-      List<String>            ukFieldNames    = uniqueKey.getFieldNames();
-      Set<List<Serializable>> existingRecords = new HashSet<>();
+      List<String>                          ukFieldNames    = uniqueKey.getFieldNames();
+      Map<List<Serializable>, Serializable> existingRecords = new HashMap<>();
       if(ukFieldNames != null)
       {
          QueryInput queryInput = new QueryInput();
@@ -114,8 +113,10 @@ public class UniqueKeyHelper
          for(QRecord record : queryOutput.getRecords())
          {
             Optional<List<Serializable>> keyValues = getKeyValues(table, uniqueKey, record);
-            keyValues.ifPresent(existingRecords::add);
-
+            if(keyValues.isPresent())
+            {
+               existingRecords.put(keyValues.get(), record.getValue(table.getPrimaryKeyField()));
+            }
          }
       }
 

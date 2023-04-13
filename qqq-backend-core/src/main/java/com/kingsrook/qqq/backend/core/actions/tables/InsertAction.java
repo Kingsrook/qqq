@@ -213,7 +213,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          List<UniqueKey>                         uniqueKeys   = CollectionUtils.nonNullList(table.getUniqueKeys());
          for(UniqueKey uniqueKey : uniqueKeys)
          {
-            existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(insertInput, insertInput.getTransaction(), table, insertInput.getRecords(), uniqueKey));
+            existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(insertInput.getTransaction(), table, insertInput.getRecords(), uniqueKey).keySet());
          }
 
          /////////////////////////////////////
