@@ -88,7 +88,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       List<UniqueKey>                         uniqueKeys   = CollectionUtils.nonNullList(table.getUniqueKeys());
       for(UniqueKey uniqueKey : uniqueKeys)
       {
-         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(runBackendStepInput, null, table, runBackendStepInput.getRecords(), uniqueKey));
+         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(null, table, runBackendStepInput.getRecords(), uniqueKey).keySet());
          ukErrorSummaries.computeIfAbsent(uniqueKey, x -> new ProcessSummaryLine(Status.ERROR));
       }
 
