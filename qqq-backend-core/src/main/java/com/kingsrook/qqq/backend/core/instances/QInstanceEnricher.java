@@ -332,14 +332,7 @@ public class QInstanceEnricher
    {
       if(!StringUtils.hasContent(field.getLabel()))
       {
-         if(configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels && StringUtils.hasContent(field.getPossibleValueSourceName()) && field.getName() != null && field.getName().endsWith("Id"))
-         {
-            field.setLabel(nameToLabel(field.getName().substring(0, field.getName().length() - 2)));
-         }
-         else
-         {
-            field.setLabel(nameToLabel(field.getName()));
-         }
+         fieldNameToLabel(field);
       }
 
       //////////////////////////////////////////////////////////////////////////
@@ -376,6 +369,23 @@ public class QInstanceEnricher
                }
             }
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void fieldNameToLabel(QFieldMetaData field)
+   {
+      if(configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels && StringUtils.hasContent(field.getPossibleValueSourceName()) && field.getName() != null && field.getName().endsWith("Id"))
+      {
+         field.setLabel(nameToLabel(field.getName().substring(0, field.getName().length() - 2)));
+      }
+      else
+      {
+         field.setLabel(nameToLabel(field.getName()));
       }
    }
 
