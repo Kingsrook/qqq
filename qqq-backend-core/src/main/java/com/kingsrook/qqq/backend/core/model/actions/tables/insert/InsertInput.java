@@ -171,4 +171,15 @@ public class InsertInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for records
+    *******************************************************************************/
+   public InsertInput withRecords(List<QRecord> records)
+   {
+      this.records = records;
+      return (this);
+   }
+
 }

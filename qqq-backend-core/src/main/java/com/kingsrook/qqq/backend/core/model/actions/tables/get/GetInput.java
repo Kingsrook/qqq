@@ -301,4 +301,26 @@ public class GetInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldTranslatePossibleValues
+    *******************************************************************************/
+   public GetInput withShouldTranslatePossibleValues(boolean shouldTranslatePossibleValues)
+   {
+      this.shouldTranslatePossibleValues = shouldTranslatePossibleValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldGenerateDisplayValues
+    *******************************************************************************/
+   public GetInput withShouldGenerateDisplayValues(boolean shouldGenerateDisplayValues)
+   {
+      this.shouldGenerateDisplayValues = shouldGenerateDisplayValues;
+      return (this);
+   }
+
 }

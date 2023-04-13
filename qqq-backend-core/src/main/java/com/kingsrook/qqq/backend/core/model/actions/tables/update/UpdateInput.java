@@ -165,4 +165,26 @@ public class UpdateInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for records
+    *******************************************************************************/
+   public UpdateInput withRecords(List<QRecord> records)
+   {
+      this.records = records;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for areAllValuesBeingUpdatedTheSame
+    *******************************************************************************/
+   public UpdateInput withAreAllValuesBeingUpdatedTheSame(Boolean areAllValuesBeingUpdatedTheSame)
+   {
+      this.areAllValuesBeingUpdatedTheSame = areAllValuesBeingUpdatedTheSame;
+      return (this);
+   }
+
 }
