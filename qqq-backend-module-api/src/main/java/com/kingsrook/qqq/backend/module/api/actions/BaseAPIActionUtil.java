@@ -26,11 +26,14 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -61,9 +64,12 @@ import com.kingsrook.qqq.backend.module.api.exceptions.OAuthCredentialsException
 import com.kingsrook.qqq.backend.module.api.exceptions.OAuthExpiredTokenException;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
 import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
+import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -878,6 +884,8 @@ public class BaseAPIActionUtil
             {
                QHttpResponse qResponse = new QHttpResponse(response);
 
+               logOutboundApiCall(request, qResponse);
+
                int statusCode = qResponse.getStatusCode();
                if(statusCode == HttpStatus.SC_TOO_MANY_REQUESTS)
                {
@@ -938,6 +946,46 @@ public class BaseAPIActionUtil
             throw (new QException(message, e));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void logOutboundApiCall(HttpRequestBase request, QHttpResponse response)
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(OutboundAPILog.TABLE_NAME);
+      if(table == null)
+      {
+         return;
+      }
+
+      String requestBody = null;
+      if(request instanceof HttpEntityEnclosingRequest entityRequest)
+      {
+         try
+         {
+            requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent()));
+         }
+         catch(Exception e)
+         {
+            // leave it null...
+         }
+      }
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(table.getName());
+      insertInput.setRecords(List.of(new OutboundAPILog()
+         .withMethod(request.getMethod())
+         .withUrl(request.getURI().toString()) // todo - does this have the query string?
+         .withTimestamp(Instant.now())
+         .withRequestBody(requestBody)
+         .withStatusCode(response.getStatusCode())
+         .withResponseBody(response.getContent())
+         .toQRecord()
+      ));
+      new InsertAction().executeAsync(insertInput);
    }
 
 
