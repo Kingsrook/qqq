@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 
@@ -181,6 +183,267 @@ public class JoinGraph
 
       return (rs);
    }
+
+
+
+   public record JoinConnection(String joinTable, String viaJoinName) implements Comparable<JoinConnection>
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public int compareTo(JoinConnection that)
+      {
+         Comparator<JoinConnection> comparator = Comparator.comparing((JoinConnection jc) -> jc.joinTable())
+            .thenComparing((JoinConnection jc) -> jc.viaJoinName());
+         return (comparator.compare(this, that));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public record JoinConnectionList(List<JoinConnection> list) implements Comparable<JoinConnectionList>
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public JoinConnectionList copy()
+      {
+         return new JoinConnectionList(new ArrayList<>(list));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public int compareTo(JoinConnectionList that)
+      {
+         if(this.equals(that))
+         {
+            return (0);
+         }
+
+         for(int i = 0; i < Math.min(this.list.size(), that.list.size()); i++)
+         {
+            int comp = this.list.get(i).compareTo(that.list.get(i));
+            if(comp != 0)
+            {
+               return (comp);
+            }
+         }
+
+         return (this.list.size() - that.list.size());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Set<JoinConnectionList> getJoinConnections(String tableName)
+   {
+      Set<JoinConnectionList> rs = new TreeSet<>();
+      doGetJoinConnections(rs, tableName, new ArrayList<>(), new JoinConnectionList(new ArrayList<>()));
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void doGetJoinConnections(Set<JoinConnectionList> joinConnections, String tableName, List<String> path, JoinConnectionList connectionList)
+   {
+      for(Edge edge : edges)
+      {
+         if(edge.leftTable.equals(tableName) || edge.rightTable.equals(tableName))
+         {
+            if(path.contains(edge.joinName))
+            {
+               continue;
+            }
+
+            List<String> newPath = new ArrayList<>(path);
+            newPath.add(edge.joinName);
+            if(!joinConnectionsContain(joinConnections, newPath))
+            {
+               String otherTableName = null;
+               if(!edge.leftTable.equals(tableName))
+               {
+                  otherTableName = edge.leftTable;
+               }
+               else if(!edge.rightTable.equals(tableName))
+               {
+                  otherTableName = edge.rightTable;
+               }
+
+               if(otherTableName != null)
+               {
+
+                  JoinConnectionList newConnectionList = connectionList.copy();
+                  JoinConnection     joinConnection    = new JoinConnection(otherTableName, edge.joinName);
+                  newConnectionList.list.add(joinConnection);
+                  joinConnections.add(newConnectionList);
+                  doGetJoinConnections(joinConnections, otherTableName, new ArrayList<>(newPath), newConnectionList);
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean joinConnectionsContain(Set<JoinConnectionList> joinPaths, List<String> newPath)
+   {
+      for(JoinConnectionList joinConnections : joinPaths)
+      {
+         List<String> joinConnectionJoins = joinConnections.list.stream().map(jc -> jc.viaJoinName).toList();
+         if(joinConnectionJoins.equals(newPath))
+         {
+            return (true);
+         }
+      }
+      return (false);
+   }
+
+
+
+   public record JoinPath(String joinTable, List<String> joinNames)
+   {
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Set<JoinPath> getJoinPaths(String tableName)
+   {
+      Set<JoinPath> rs = new HashSet<>();
+      doGetJoinPaths(rs, tableName, new ArrayList<>());
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void doGetJoinPaths(Set<JoinPath> joinPaths, String tableName, List<String> path)
+   {
+      for(Edge edge : edges)
+      {
+         if(edge.leftTable.equals(tableName) || edge.rightTable.equals(tableName))
+         {
+            if(path.contains(edge.joinName))
+            {
+               continue;
+            }
+
+            List<String> newPath = new ArrayList<>(path);
+            newPath.add(edge.joinName);
+            if(!joinPathsContain(joinPaths, newPath))
+            {
+               String otherTableName = null;
+               if(!edge.leftTable.equals(tableName))
+               {
+                  otherTableName = edge.leftTable;
+               }
+               else if(!edge.rightTable.equals(tableName))
+               {
+                  otherTableName = edge.rightTable;
+               }
+
+               if(otherTableName != null)
+               {
+                  joinPaths.add(new JoinPath(otherTableName, newPath));
+                  doGetJoinPaths(joinPaths, otherTableName, new ArrayList<>(newPath));
+               }
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean joinPathsContain(Set<JoinPath> joinPaths, List<String> newPath)
+   {
+      for(JoinPath joinPath : joinPaths)
+      {
+         if(joinPath.joinNames().equals(newPath))
+         {
+            return (true);
+         }
+      }
+      return (false);
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   /*
+   public Set<List<String>> getJoinPaths(String tableName)
+   {
+      Set<List<String>> rs = new HashSet<>();
+      doGetJoinPaths(rs, tableName, new ArrayList<>());
+      return (rs);
+   }
+   */
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   /*
+   private void doGetJoinPaths(Set<List<String>> joinPaths, String tableName, List<String> path)
+   {
+      for(Edge edge : edges)
+      {
+         if(edge.leftTable.equals(tableName) || edge.rightTable.equals(tableName))
+         {
+            if(path.contains(edge.joinName))
+            {
+               continue;
+            }
+
+            List<String> newPath = new ArrayList<>(path);
+            newPath.add(edge.joinName);
+            if(!joinPaths.contains(newPath))
+            {
+               joinPaths.add(newPath);
+
+               String otherTableName = null;
+               if(!edge.leftTable.equals(tableName))
+               {
+                  otherTableName = edge.leftTable;
+               }
+               else if(!edge.rightTable.equals(tableName))
+               {
+                  otherTableName = edge.rightTable;
+               }
+
+               if(otherTableName != null)
+               {
+                  doGetJoinPaths(joinPaths, otherTableName, new ArrayList<>(newPath));
+               }
+            }
+         }
+      }
+   }
+   */
 
 
 
