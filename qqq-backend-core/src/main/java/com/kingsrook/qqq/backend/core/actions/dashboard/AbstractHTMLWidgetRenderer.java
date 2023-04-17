@@ -55,7 +55,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String openTopLevelBulletList()
+   public static String openTopLevelBulletList()
    {
       return ("""
          <div style="padding-left: 2rem;">
@@ -67,7 +67,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String closeTopLevelBulletList()
+   public static String closeTopLevelBulletList()
    {
       return ("""
             </ul>
@@ -234,16 +234,34 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
     *******************************************************************************/
    public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
    {
+      return (aHrefTableFilterNoOfRecords(input, tableName, filter, noOfRecords, singularLabel, pluralLabel, false));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel, boolean onlyLinkCount) throws QException
+   {
       String plural      = StringUtils.plural(noOfRecords, singularLabel, pluralLabel);
-      String displayText = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords) + (StringUtils.hasContent(plural) ? (" " + plural) : "");
+      String countString = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords);
+      String displayText = StringUtils.hasContent(plural) ? (" " + plural) : "";
       String tablePath   = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
       {
-         return (displayText);
+         return (countString + displayText);
       }
 
       String href = linkTableFilter(input, tableName, filter);
-      return ("<a href=\"" + href + "\">" + displayText + "</a>");
+      if(onlyLinkCount)
+      {
+         return ("<a href=\"" + href + "\">" + countString + "</a>" + displayText);
+      }
+      else
+      {
+         return ("<a href=\"" + href + "\">" + countString + displayText + "</a>");
+      }
    }
 
 
