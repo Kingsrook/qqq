@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.io.IOException;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducer;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,7 +38,7 @@ class MetaDataProducerHelperTest
     **
     *******************************************************************************/
    @Test
-   void test()
+   void test() throws IOException
    {
       QInstance qInstance = new QInstance();
       MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, "com.kingsrook.qqq.backend.core.model.metadata.producers");
