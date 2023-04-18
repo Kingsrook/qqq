@@ -21,6 +21,7 @@ String allFieldNames = ""
 String dataFieldNames = ""
 List<String> fieldNameList = new ArrayList<>();
 List<String> fieldTypeList = new ArrayList<>();
+Map<String, String> fieldAttributesMap = new HashMap<>();
 
 StringBuilder output = new StringBuilder();
 if(writeWholeClass)
@@ -58,8 +59,8 @@ while((line = reader.readLine()) != null)
    String columnType = words[1];
 
    String fieldName = columNameToFieldName(columnName)
-   String fieldType = columTypeToFieldType(columnType)
-   String attributes = getFieldAttributes(fieldName);
+   String fieldType = columTypeToFieldType(fieldAttributesMap, fieldName, columnType)
+   String attributes = getFieldAttributes(fieldAttributesMap, fieldName);
 
    fieldNameList.add(fieldName);
    fieldTypeList.add(fieldType);
@@ -235,13 +236,19 @@ private static String columNameToFieldName(String columnName)
 
 
 
-private static String columTypeToFieldType(String columnType)
+private static String columTypeToFieldType(Map<String, String> fieldAttributesMap, String fieldName, String columnType)
 {
    if(columnType.toUpperCase().startsWith("INT"))
    {
       return ("Integer");
    }
-   if(columnType.toUpperCase().startsWith("VARCHAR") || columnType.toUpperCase().startsWith("TEXT"))
+   if(columnType.toUpperCase().startsWith("VARCHAR"))
+   {
+      String length = columnType.toUpperCase().replaceAll(".*VARCHAR *\\( *", "").replaceAll(" *\\).*", "");
+      fieldAttributesMap.put(fieldName, "maxLength = " + length + ", valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE");
+      return ("String");
+   }
+   if(columnType.toUpperCase().startsWith("TEXT"))
    {
       return ("String");
    }
@@ -266,12 +273,22 @@ private static String columTypeToFieldType(String columnType)
 
 
 
-private static String getFieldAttributes(String s)
+private static String getFieldAttributes(Map<String, String> fieldAttributesMap, String fieldName)
 {
    StringBuilder rs = new StringBuilder("");
-   if(s.equals("id") || s.equals("createDate") || s.equals("modifyDate"))
+   if(fieldName.equals("id") || fieldName.equals("createDate") || fieldName.equals("modifyDate"))
    {
       rs.append("isEditable = false");
    }
+
+   if(fieldAttributesMap.containsKey(fieldName))
+   {
+      if(rs.length() > 0)
+      {
+         rs.append(", ");
+      }
+      rs.append(fieldAttributesMap.get(fieldName));
+   }
+
    return (rs.toString());
 }
