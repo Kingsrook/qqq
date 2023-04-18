@@ -103,6 +103,7 @@ public class OutboundAPILogMetaDataProvider
          .withIcon(new QIcon().withName("data_object"))
          .withBackendName(backendName)
          .withRecordLabelFormat("%s")
+         .withRecordLabelFields("id")
          .withPrimaryKeyField("id")
          .withFieldsFromEntity(OutboundAPILog.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
@@ -142,6 +143,7 @@ public class OutboundAPILogMetaDataProvider
       // limit url to 250... //
       /////////////////////////
       tableMetaData.getField("url").withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
+      tableMetaData.getField("url").withFieldAdornment(AdornmentType.Size.XLARGE.toAdornment());
 
       if(backendDetailEnricher != null)
       {
