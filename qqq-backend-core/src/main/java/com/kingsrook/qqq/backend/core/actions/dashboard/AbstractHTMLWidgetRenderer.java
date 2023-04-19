@@ -394,7 +394,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       color = StringUtils.ucFirst(color);
 
       String html = "<span style='display: flex;'>";
-      html += "<div style='display: flex; align-content: flex-start; align-items: center; height: 24px; padding-right: 8px; font-size: 13px; font-weight: 500; border: 1px solid; border-radius: 16px; color: " + color + "'>";
+      html += "<div style='overflow: hidden; flex: none; display: flex; align-content: flex-start; align-items: center; height: 24px; padding-right: 8px; font-size: 13px; font-weight: 500; border: 1px solid; border-radius: 16px; color: " + color + "'>";
       if(icon != null)
       {
          html += "<span style='font-size: 16px; padding: 5px' class='material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit MuiChip-icon MuiChip-iconSmall MuiChip-iconColor" + color + "'>" + icon + "</span>";
