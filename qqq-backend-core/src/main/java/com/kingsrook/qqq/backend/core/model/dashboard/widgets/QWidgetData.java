@@ -33,6 +33,7 @@ import java.util.Map;
 public abstract class QWidgetData
 {
    private String       label;
+   private String       footerHTML;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
    private Boolean      hasPermission;
@@ -83,6 +84,40 @@ public abstract class QWidgetData
    public QWidgetData withLabel(String label)
    {
       this.label = label;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for footerHTML
+    **
+    *******************************************************************************/
+   public String getFooterHTML()
+   {
+      return footerHTML;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for footerHTML
+    **
+    *******************************************************************************/
+   public void setFooterHTML(String footerHTML)
+   {
+      this.footerHTML = footerHTML;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for footerHTML
+    **
+    *******************************************************************************/
+   public QWidgetData withFooterHTML(String footerHTML)
+   {
+      this.footerHTML = footerHTML;
       return (this);
    }
 

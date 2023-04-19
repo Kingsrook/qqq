@@ -52,6 +52,16 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
    QWidgetMetaDataInterface withName(String name);
 
    /*******************************************************************************
+    ** Getter for footerHTML
+    *******************************************************************************/
+   String getFooterHTML();
+
+   /*******************************************************************************
+    ** Setter for footerHTML
+    *******************************************************************************/
+   void setFooterHTML(String label);
+
+   /*******************************************************************************
     ** Getter for label
     *******************************************************************************/
    String getLabel();

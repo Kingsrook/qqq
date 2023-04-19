@@ -44,6 +44,7 @@ public class QFrontendWidgetMetaData
    private final String                   type;
    private final String                   icon;
    private final Integer                  gridColumns;
+   private final String                   footerHTML;
    private final boolean                  isCard;
    private final String                   minHeight;
    private final boolean                  storeDropdownSelections;
@@ -68,6 +69,7 @@ public class QFrontendWidgetMetaData
       this.icon = widgetMetaData.getIcon();
       this.gridColumns = widgetMetaData.getGridColumns();
       this.isCard = widgetMetaData.getIsCard();
+      this.footerHTML = widgetMetaData.getFooterHTML();
       this.minHeight = widgetMetaData.getMinHeight();
       this.dropdowns = widgetMetaData.getDropdowns();
       this.storeDropdownSelections = widgetMetaData.getStoreDropdownSelections();
@@ -117,6 +119,17 @@ public class QFrontendWidgetMetaData
    public Integer getGridColumns()
    {
       return gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for footerHTML
+    **
+    *******************************************************************************/
+   public String getFooterHTML()
+   {
+      return footerHTML;
    }
 
 

@@ -42,6 +42,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected String         label;
    protected String         type;
    protected String         minHeight;
+   protected String         footerHTML;
    protected boolean        isCard;
    protected Integer        gridColumns;
    protected QCodeReference codeReference;
@@ -491,6 +492,40 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withPermissionRules(QPermissionRules permissionRules)
    {
       this.permissionRules = permissionRules;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for footerHTML
+    **
+    *******************************************************************************/
+   public String getFooterHTML()
+   {
+      return footerHTML;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for footerHTML
+    **
+    *******************************************************************************/
+   public void setFooterHTML(String footerHTML)
+   {
+      this.footerHTML = footerHTML;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for footerHTML
+    **
+    *******************************************************************************/
+   public QWidgetMetaData withFooterHTML(String footerHTML)
+   {
+      this.footerHTML = footerHTML;
       return (this);
    }
 
