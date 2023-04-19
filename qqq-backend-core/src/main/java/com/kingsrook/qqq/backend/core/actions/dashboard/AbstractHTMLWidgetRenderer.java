@@ -312,11 +312,34 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static String linkProcessForFilter(AbstractActionInput input, String processName, QQueryFilter filter) throws QException
+   {
+      QProcessMetaData process = QContext.getQInstance().getProcess(processName);
+      if(process == null)
+      {
+         return (null);
+      }
+      String tableName = process.getTableName();
+      if(tableName == null)
+      {
+         return (null);
+      }
+
+      String tablePath = QContext.getQInstance().getTablePath(tableName);
+      return (tablePath + "/" + processName + "?recordsParam=filterJSON&filterJSON=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
    {
       QProcessMetaData process   = QContext.getQInstance().getProcess(processName);
       String           tableName = process.getTableName();
       String           tablePath = QContext.getQInstance().getTablePath(tableName);
+
       return (tablePath + "/" + recordId + "/" + processName);
    }
 
@@ -358,6 +381,26 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       return ("#/createChild=" + childTableName
          + "/defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), StandardCharsets.UTF_8).replaceAll("\\+", "%20")
          + "/disabledFields=" + URLEncoder.encode(JsonUtils.toJson(disabledFieldsMap), StandardCharsets.UTF_8).replaceAll("\\+", "%20"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getChipElement(String icon, String label, String color) throws QException
+   {
+      color = color != null ? color : "info";
+      color = StringUtils.ucFirst(color);
+
+      String html = "<span style='display: flex;'>";
+      html += "<div style='display: flex; align-content: flex-start; align-items: center; height: 24px; padding-right: 8px; font-size: 13px; font-weight: 500; border: 1px solid; border-radius: 16px; color: " + color + "'>";
+      if(icon != null)
+      {
+         html += "<span style='font-size: 16px; padding: 5px' class='material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit MuiChip-icon MuiChip-iconSmall MuiChip-iconColor" + color + "'>" + icon + "</span>";
+      }
+      html += "<span class='MuiChip-label MuiChip-labelSmall'>" + label + "</span></div></span>";
+      return (html);
    }
 
 
