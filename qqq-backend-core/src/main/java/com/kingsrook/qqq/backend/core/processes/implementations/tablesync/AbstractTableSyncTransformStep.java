@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablesync;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -216,6 +217,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          getTransaction().ifPresent(queryInput::setTransaction);
          QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
          queryInput.setFilter(filter);
+
+         Collection<String> associationNamesToInclude = getAssociationNamesToInclude();
+         if(CollectionUtils.nullSafeHasContents(associationNamesToInclude))
+         {
+            queryInput.setIncludeAssociations(true);
+            queryInput.setAssociationNamesToInclude(associationNamesToInclude);
+         }
+
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
          existingRecordsByForeignKey = CollectionUtils.recordsToMap(queryOutput.getRecords(), destinationTableForeignKeyField);
       }
@@ -292,6 +301,16 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Collection<String> getAssociationNamesToInclude()
+   {
+      return null;
    }
 
 

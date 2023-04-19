@@ -42,7 +42,8 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    private ProcessState processState;
    private Exception    exception; // todo - make optional
 
-   private List<AuditInput> auditInputList;
+   private List<AuditInput> auditInputList = new ArrayList<>();
+
 
 
    /*******************************************************************************
@@ -259,6 +260,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    }
 
 
+
    /*******************************************************************************
     ** Getter for auditInputList
     *******************************************************************************/
@@ -287,6 +289,5 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
       this.auditInputList = auditInputList;
       return (this);
    }
-
 
 }

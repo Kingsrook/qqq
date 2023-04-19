@@ -22,12 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import com.google.common.reflect.ClassPath;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -47,7 +48,7 @@ public class MetaDataProducerHelper
     **
     ** Note - they'll be sorted by the sortOrder they provide.
     *******************************************************************************/
-   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName)
+   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws IOException
    {
       ////////////////////////////////////////////////////////////
       // find all the meta data producer classes in the package //
@@ -111,40 +112,19 @@ public class MetaDataProducerHelper
 
 
    /*******************************************************************************
-    ** Thanks, Chat GPT.
+    ** from https://stackoverflow.com/questions/520328/can-you-find-all-classes-in-a-package-using-reflection
+    ** (since the original, from ChatGPT, didn't work in jars, despite GPT hallucinating that it would)
     *******************************************************************************/
-   private static List<Class<?>> getClassesInPackage(String packageName)
+   private static List<Class<?>> getClassesInPackage(String packageName) throws IOException
    {
       List<Class<?>> classes = new ArrayList<>();
+      ClassLoader    loader  = Thread.currentThread().getContextClassLoader();
 
-      String path      = packageName.replace('.', '/');
-      File   directory = new File(Thread.currentThread().getContextClassLoader().getResource(path).getFile());
-
-      if(directory.exists())
+      for(ClassPath.ClassInfo info : ClassPath.from(loader).getTopLevelClasses())
       {
-         File[] files = directory.listFiles();
-         if(files != null)
+         if(info.getName().startsWith(packageName))
          {
-            for(File file : files)
-            {
-               if(file.isFile() && file.getName().endsWith(".class"))
-               {
-                  String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-                  try
-                  {
-                     classes.add(Class.forName(className));
-                  }
-                  catch(ClassNotFoundException e)
-                  {
-                     // Ignore, class not found
-                  }
-               }
-               else if(file.isDirectory())
-               {
-                  List<Class<?>> subClasses = getClassesInPackage(packageName + "." + file.getName());
-                  classes.addAll(subClasses);
-               }
-            }
+            classes.add(info.load());
          }
       }
 
