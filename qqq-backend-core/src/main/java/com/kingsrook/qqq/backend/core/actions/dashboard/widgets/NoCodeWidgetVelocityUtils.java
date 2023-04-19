@@ -115,6 +115,18 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public String pendingIcon()
+   {
+      return ("""
+         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: #0062ff; position: relative; top: 6px;" aria-hidden="true">pending</span>
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public String spanColorGreen()
    {
       return ("""
