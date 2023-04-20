@@ -32,7 +32,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -59,6 +61,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -143,6 +146,77 @@ public class QInstanceEnricher
       if(qInstance.getWidgets() != null)
       {
          qInstance.getWidgets().values().forEach(this::enrichWidget);
+      }
+
+      if(CollectionUtils.nullSafeHasContents(qInstance.getJoins()))
+      {
+         //todo!  enrichJoins();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichJoins()
+   {
+      try
+      {
+         JoinGraph joinGraph = new JoinGraph(qInstance);
+
+         for(QTableMetaData table : qInstance.getTables().values())
+         {
+            Set<JoinGraph.JoinConnectionList> joinConnections = joinGraph.getJoinConnections(table.getName());
+            for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////////////////
+               // proceed with caution - remember, validator will fail the instance if things are missing/invalid //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(exposedJoin.getJoinTable() != null)
+               {
+                  QTableMetaData joinTable = qInstance.getTable(exposedJoin.getJoinTable());
+                  if(joinTable != null)
+                  {
+                     //////////////////////////////////////////////////////////////////////////////////
+                     // default the exposed join's label to the join table's label, if it wasn't set //
+                     //////////////////////////////////////////////////////////////////////////////////
+                     if(!StringUtils.hasContent(exposedJoin.getLabel()))
+                     {
+                        exposedJoin.setLabel(joinTable.getLabel());
+                     }
+
+                     ///////////////////////////////////////////////////////////////////////////////
+                     // default the exposed join's join-path from the joinGraph, if it wasn't set //
+                     ///////////////////////////////////////////////////////////////////////////////
+                     if(CollectionUtils.nullSafeIsEmpty(exposedJoin.getJoinPath()))
+                     {
+                        List<JoinGraph.JoinConnectionList> eligibleJoinConnections = new ArrayList<>();
+                        for(JoinGraph.JoinConnectionList joinConnection : joinConnections)
+                        {
+                           if(joinTable.getName().equals(joinConnection.list().get(0).joinTable()))
+                           {
+                              eligibleJoinConnections.add(joinConnection);
+                           }
+                        }
+
+                        if(eligibleJoinConnections.isEmpty())
+                        {
+                           throw (new QException("Could not infer a joinPath for table [" + table.getName() + "], exposedJoin to [" + exposedJoin.getJoinTable() + "] - no join connections exist in this instance."));
+                        }
+                        else if(eligibleJoinConnections.size() > 1)
+                        {
+                           throw (new QException("Could not infer a joinPath for table [" + table.getName() + "], exposedJoin to [" + exposedJoin.getJoinTable() + "] - multiple possible join connections exist in this instance: ")); // todo - list the paths so user can choose one!
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new RuntimeException("Error enriching instance joins", e));
       }
    }
 
