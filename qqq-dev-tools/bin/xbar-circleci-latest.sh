@@ -47,7 +47,7 @@ checkBuild()
     qqq)                             shortRepo="qqq";;
     qqq-frontend-core)               shortRepo="f'core";;
     qqq-frontend-material-dashboard) shortRepo="m-db";;
-    Nutrifresh-One)                  shortRepo="nf1";;
+    ColdTrack-Live)                  shortRepo="ctl";;
     Nutrifresh-One-Scripts)          shortRepo="nf1-scr";;
    esac
 

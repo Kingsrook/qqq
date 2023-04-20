@@ -24,7 +24,7 @@ if [ -z "$1" ]; then
    DO_QQQ=1
 else
    for arg in ${@}; do
-      if [ "$arg" == "--ct-live" -o "$arg" == "--nf-one" ]; then
+      if [ "$arg" == "--ct-live" -o "$arg" == "--ct-live" ]; then
          DO_CT_LIVE=1
       elif [ "$arg" == "--qqq" ]; then
          DO_QQQ=1
@@ -60,7 +60,7 @@ CTL_OP_LOCATION="op://NF-One-Development/"
 ##################################################
 QQQ_FRONTEND_MATERIAL_DASHBOARD_REPO_NAME="qqq-frontend-material-dashboard"
 QQQ_PROJECT_NAME="qqq"
-CT_LIVE_REPO_NAME="Nutrifresh-One"
+CT_LIVE_REPO_NAME="ColdTrack-Live"
 
 ########################################################
 ## qqq modules which need environments setup for them ##

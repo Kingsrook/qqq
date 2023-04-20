@@ -118,7 +118,7 @@ public class LogUtils
    {
       try
       {
-         String        packagesToKeep = "com.kingsrook|com.nutrifresh"; // todo - parameterize!!
+         String        packagesToKeep = "com.kingsrook|com.coldtrack"; // todo - parameterize!!
          StringBuilder rs             = new StringBuilder();
          String[]      lines          = stackTrace.split("\n");
 
