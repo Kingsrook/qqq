@@ -48,7 +48,7 @@ checkBuild()
     qqq-frontend-core)               shortRepo="f'core";;
     qqq-frontend-material-dashboard) shortRepo="m-db";;
     ColdTrack-Live)                  shortRepo="ctl";;
-    Nutrifresh-One-Scripts)          shortRepo="nf1-scr";;
+    ColdTrack-Live-Scripts)          shortRepo="ct1-scr";;
    esac
 
    timestamp=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" $(echo "$startDate" | sed 's/\....Z/+0000/') +%s)
