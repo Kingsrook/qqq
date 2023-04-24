@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
@@ -105,6 +106,8 @@ public class QInstance
 
    private Map<String, String> memoizedTablePaths   = new HashMap<>();
    private Map<String, String> memoizedProcessPaths = new HashMap<>();
+
+   private JoinGraph joinGraph;
 
 
 
@@ -1135,5 +1138,31 @@ public class QInstance
       }
       this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public JoinGraph getJoinGraph()
+   {
+      return (this.joinGraph);
+   }
+
+
+
+   /*******************************************************************************
+    ** Only the validation (and enrichment) code should set the instance's joinGraph
+    ** so, we take a package-only-constructable validation key as a param along with
+    ** the joinGraph - and we throw IllegalArgumentException if a non-null key is given.
+    *******************************************************************************/
+   public void setJoinGraph(QInstanceValidationKey key, JoinGraph joinGraph) throws IllegalArgumentException
+   {
+      if(key == null)
+      {
+         throw (new IllegalArgumentException("A ValidationKey must be provided"));
+      }
+      this.joinGraph = joinGraph;
    }
 }

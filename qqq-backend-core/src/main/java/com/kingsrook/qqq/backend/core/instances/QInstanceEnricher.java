@@ -90,6 +90,8 @@ public class QInstanceEnricher
 
    private final QInstance qInstance;
 
+   private JoinGraph joinGraph;
+
    //////////////////////////////////////////////////////////
    // todo - come up w/ a way for app devs to set configs! //
    //////////////////////////////////////////////////////////
@@ -148,10 +150,7 @@ public class QInstanceEnricher
          qInstance.getWidgets().values().forEach(this::enrichWidget);
       }
 
-      if(CollectionUtils.nullSafeHasContents(qInstance.getJoins()))
-      {
-         //todo!  enrichJoins();
-      }
+      enrichJoins();
    }
 
 
@@ -163,9 +162,9 @@ public class QInstanceEnricher
    {
       try
       {
-         JoinGraph joinGraph = new JoinGraph(qInstance);
+         joinGraph = new JoinGraph(qInstance);
 
-         for(QTableMetaData table : qInstance.getTables().values())
+         for(QTableMetaData table : CollectionUtils.nonNullMap(qInstance.getTables()).values())
          {
             Set<JoinGraph.JoinConnectionList> joinConnections = joinGraph.getJoinConnections(table.getName());
             for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
@@ -194,7 +193,7 @@ public class QInstanceEnricher
                         List<JoinGraph.JoinConnectionList> eligibleJoinConnections = new ArrayList<>();
                         for(JoinGraph.JoinConnectionList joinConnection : joinConnections)
                         {
-                           if(joinTable.getName().equals(joinConnection.list().get(0).joinTable()))
+                           if(joinTable.getName().equals(joinConnection.list().get(joinConnection.list().size() - 1).joinTable()))
                            {
                               eligibleJoinConnections.add(joinConnection);
                            }
@@ -202,11 +201,18 @@ public class QInstanceEnricher
 
                         if(eligibleJoinConnections.isEmpty())
                         {
-                           throw (new QException("Could not infer a joinPath for table [" + table.getName() + "], exposedJoin to [" + exposedJoin.getJoinTable() + "] - no join connections exist in this instance."));
+                           throw (new QException("Could not infer a joinPath for table [" + table.getName() + "], exposedJoin to [" + exposedJoin.getJoinTable() + "]:  No join connections between these tables exist in this instance."));
                         }
                         else if(eligibleJoinConnections.size() > 1)
                         {
-                           throw (new QException("Could not infer a joinPath for table [" + table.getName() + "], exposedJoin to [" + exposedJoin.getJoinTable() + "] - multiple possible join connections exist in this instance: ")); // todo - list the paths so user can choose one!
+                           throw (new QException("Could not infer a joinPath for table [" + table.getName() + "], exposedJoin to [" + exposedJoin.getJoinTable() + "]:  "
+                              + eligibleJoinConnections.size() + " join connections exist between these tables.  You need to specify one:\n"
+                              + StringUtils.join("\n", eligibleJoinConnections.stream().map(jcl -> jcl.getJoinNamesAsString()).toList()) + "."
+                           ));
+                        }
+                        else
+                        {
+                           exposedJoin.setJoinPath(eligibleJoinConnections.get(0).getJoinNamesAsList());
                         }
                      }
                   }
@@ -1089,4 +1095,13 @@ public class QInstanceEnricher
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public JoinGraph getJoinGraph()
+   {
+      return (this.joinGraph);
+   }
 }

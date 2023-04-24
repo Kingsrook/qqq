@@ -32,7 +32,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -41,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_GREETINGS;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_MISCELLANEOUS;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_PEOPLE;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -302,6 +307,133 @@ class QInstanceEnricherTest extends BaseTest
          FieldAdornment adornment = optionalAdornment.get();
          assertEquals("shape", adornment.getValues().get(AdornmentType.LinkValues.TO_RECORD_FROM_TABLE));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExposedJoinPaths()
+   {
+      //////////////////////////
+      // no join path => fail //
+      //////////////////////////
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B")));
+         qInstance.addTable(newTable("B", "id", "aId"));
+         assertThatThrownBy(() -> new QInstanceEnricher(qInstance).enrich())
+            .rootCause()
+            .hasMessageContaining("Could not infer a joinPath for table [A], exposedJoin to [B]")
+            .hasMessageContaining("No join connections between these tables exist in this instance.");
+      }
+
+      /////////////////////////////////
+      // multiple join paths => fail //
+      /////////////////////////////////
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B")));
+         qInstance.addTable(newTable("B", "id", "aId1", "aId2"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB1").withJoinOn(new JoinOn("id", "aId1")).withType(JoinType.ONE_TO_ONE));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB2").withJoinOn(new JoinOn("id", "aId2")).withType(JoinType.ONE_TO_ONE));
+         assertThatThrownBy(() -> new QInstanceEnricher(qInstance).enrich())
+            .rootCause()
+            .hasMessageContaining("Could not infer a joinPath for table [A], exposedJoin to [B]")
+            .hasMessageContaining("2 join connections exist")
+            .hasMessageContaining("\nAB1\n")
+            .hasMessageContaining("\nAB2.");
+
+         ////////////////////////////////////////////
+         // but if you specify a path, you're good //
+         ////////////////////////////////////////////
+         qInstance.getTable("A").getExposedJoins().get(0).setJoinPath(List.of("AB2"));
+         new QInstanceEnricher(qInstance).enrich();
+         assertEquals("B", qInstance.getTable("A").getExposedJoins().get(0).getLabel());
+      }
+
+      /////////////////////////////////
+      // multiple join paths => fail //
+      /////////////////////////////////
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("C")));
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addTable(newTable("C", "id", "bId", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withJoinOn(new JoinOn("id", "aId")).withType(JoinType.ONE_TO_ONE));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("B").withRightTable("C").withName("BC").withJoinOn(new JoinOn("id", "bId")).withType(JoinType.ONE_TO_ONE));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("C").withName("AC").withJoinOn(new JoinOn("id", "aId")).withType(JoinType.ONE_TO_ONE));
+         assertThatThrownBy(() -> new QInstanceEnricher(qInstance).enrich())
+            .rootCause()
+            .hasMessageContaining("Could not infer a joinPath for table [A], exposedJoin to [C]")
+            .hasMessageContaining("2 join connections exist")
+            .hasMessageContaining("\nAB, BC\n")
+            .hasMessageContaining("\nAC.");
+
+         ////////////////////////////////////////////
+         // but if you specify a path, you're good //
+         ////////////////////////////////////////////
+         qInstance.getTable("A").getExposedJoins().get(0).setJoinPath(List.of("AB", "BC"));
+         new QInstanceEnricher(qInstance).enrich();
+         assertEquals("C", qInstance.getTable("A").getExposedJoins().get(0).getLabel());
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////
+      // even if you specify a bogus path, Enricher doesn't care - see validator to care. //
+      //////////////////////////////////////////////////////////////////////////////////////
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withJoinPath(List.of("not-a-join"))));
+         qInstance.addTable(newTable("B", "id", "aId"));
+         new QInstanceEnricher(qInstance).enrich();
+      }
+
+      ////////////////////////////////////
+      // one join path => great success //
+      ////////////////////////////////////
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         qInstance.addTable(newTable("A", "id")
+            .withExposedJoin(new ExposedJoin().withJoinTable("B"))
+            .withExposedJoin(new ExposedJoin().withJoinTable("C")));
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addTable(newTable("C", "id", "bId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withJoinOn(new JoinOn("id", "aId")).withType(JoinType.ONE_TO_ONE));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("B").withRightTable("C").withName("BC").withJoinOn(new JoinOn("id", "bId")).withType(JoinType.ONE_TO_ONE));
+
+         new QInstanceEnricher(qInstance).enrich();
+
+         ExposedJoin exposedJoinAB = qInstance.getTable("A").getExposedJoins().get(0);
+         assertEquals("B", exposedJoinAB.getLabel());
+         assertEquals(List.of("AB"), exposedJoinAB.getJoinPath());
+
+         ExposedJoin exposedJoinAC = qInstance.getTable("A").getExposedJoins().get(1);
+         assertEquals("C", exposedJoinAC.getLabel());
+         assertEquals(List.of("AB", "BC"), exposedJoinAC.getJoinPath());
+      }
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData newTable(String tableName, String... fieldNames)
+   {
+      QTableMetaData tableMetaData = new QTableMetaData()
+         .withName(tableName)
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField(fieldNames[0]);
+
+      for(String fieldName : fieldNames)
+      {
+         tableMetaData.addField(new QFieldMetaData(fieldName, QFieldType.INTEGER));
+      }
+
+      return (tableMetaData);
    }
 
 }

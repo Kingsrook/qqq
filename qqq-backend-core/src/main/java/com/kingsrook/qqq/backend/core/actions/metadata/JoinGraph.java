@@ -31,26 +31,37 @@ import java.util.Set;
 import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- **
+ ** Object to represent the graph of joins in a QQQ Instance.  e.g., all of the
+ ** connections among tables through joins.
  *******************************************************************************/
 public class JoinGraph
 {
-   private record Node(String tableName)
-   {
-   }
+
+   private Set<Edge> edges = new HashSet<>();
 
 
 
+   /*******************************************************************************
+    ** Graph edge (no graph nodes needed in here)
+    *******************************************************************************/
    private record Edge(String joinName, String leftTable, String rightTable)
    {
    }
 
 
 
-   private static class CanonicalJoin
+   /*******************************************************************************
+    ** In this class, we are treating joins as non-directional graph edges - so -
+    ** use this class to "normalize" what may otherwise be duplicated joins in the
+    ** qInstance (e.g., A -> B and B -> A -- in the instance, those are valid, but
+    ** in our graph here, we want to consider those the same).
+    *******************************************************************************/
+   private static class NormalizedJoin
    {
       private String tableA;
       private String tableB;
@@ -62,7 +73,7 @@ public class JoinGraph
       /*******************************************************************************
        **
        *******************************************************************************/
-      public CanonicalJoin(QJoinMetaData joinMetaData)
+      public NormalizedJoin(QJoinMetaData joinMetaData)
       {
          boolean needFlip     = false;
          int     tableCompare = joinMetaData.getLeftTable().compareTo(joinMetaData.getRightTable());
@@ -106,7 +117,7 @@ public class JoinGraph
          {
             return false;
          }
-         CanonicalJoin that = (CanonicalJoin) o;
+         NormalizedJoin that = (NormalizedJoin) o;
          return Objects.equals(tableA, that.tableA) && Objects.equals(tableB, that.tableB) && Objects.equals(joinFieldA, that.joinFieldA) && Objects.equals(joinFieldB, that.joinFieldB);
       }
 
@@ -124,29 +135,22 @@ public class JoinGraph
 
 
 
-   private Set<Node> nodes = new HashSet<>();
-   private Set<Edge> edges = new HashSet<>();
-
-
-
    /*******************************************************************************
     ** Constructor
     **
     *******************************************************************************/
    public JoinGraph(QInstance qInstance)
    {
-      Set<CanonicalJoin> usedJoins = new HashSet<>();
-      for(QJoinMetaData join : qInstance.getJoins().values())
+      Set<NormalizedJoin> usedJoins = new HashSet<>();
+      for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
       {
-         CanonicalJoin canonicalJoin = new CanonicalJoin(join);
-         if(usedJoins.contains(canonicalJoin))
+         NormalizedJoin normalizedJoin = new NormalizedJoin(join);
+         if(usedJoins.contains(normalizedJoin))
          {
             continue;
          }
 
-         usedJoins.add(canonicalJoin);
-         nodes.add(new Node(join.getLeftTable()));
-         nodes.add(new Node(join.getRightTable()));
+         usedJoins.add(normalizedJoin);
          edges.add(new Edge(join.getName(), join.getLeftTable(), join.getRightTable()));
       }
    }
@@ -156,36 +160,6 @@ public class JoinGraph
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Set<String> getJoins(String tableName)
-   {
-      Set<String> rs     = new HashSet<>();
-      Set<String> tables = new HashSet<>();
-      tables.add(tableName);
-
-      boolean keepGoing = true;
-      while(keepGoing)
-      {
-         keepGoing = false;
-         for(Edge edge : edges)
-         {
-            if(tables.contains(edge.leftTable) || tables.contains(edge.rightTable))
-            {
-               if(!rs.contains(edge.joinName))
-               {
-                  tables.add(edge.leftTable);
-                  tables.add(edge.rightTable);
-                  rs.add(edge.joinName);
-                  keepGoing = true;
-               }
-            }
-         }
-      }
-
-      return (rs);
-   }
-
-
-
    public record JoinConnection(String joinTable, String viaJoinName) implements Comparable<JoinConnection>
    {
 
@@ -239,6 +213,49 @@ public class JoinGraph
          }
 
          return (this.list.size() - that.list.size());
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public boolean matchesJoinPath(List<String> joinPath)
+      {
+         if(list.size() != joinPath.size())
+         {
+            return (false);
+         }
+
+         for(int i = 0; i < list.size(); i++)
+         {
+            if(!list.get(i).viaJoinName().equals(joinPath.get(i)))
+            {
+               return (false);
+            }
+         }
+
+         return (true);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public String getJoinNamesAsString()
+      {
+         return (StringUtils.join(", ", list().stream().map(jc -> jc.viaJoinName()).toList()));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public List<String> getJoinNamesAsList()
+      {
+         return (list().stream().map(jc -> jc.viaJoinName()).toList());
       }
    }
 
@@ -314,183 +331,6 @@ public class JoinGraph
          }
       }
       return (false);
-   }
-
-
-
-   public record JoinPath(String joinTable, List<String> joinNames)
-   {
-
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Set<JoinPath> getJoinPaths(String tableName)
-   {
-      Set<JoinPath> rs = new HashSet<>();
-      doGetJoinPaths(rs, tableName, new ArrayList<>());
-      return (rs);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void doGetJoinPaths(Set<JoinPath> joinPaths, String tableName, List<String> path)
-   {
-      for(Edge edge : edges)
-      {
-         if(edge.leftTable.equals(tableName) || edge.rightTable.equals(tableName))
-         {
-            if(path.contains(edge.joinName))
-            {
-               continue;
-            }
-
-            List<String> newPath = new ArrayList<>(path);
-            newPath.add(edge.joinName);
-            if(!joinPathsContain(joinPaths, newPath))
-            {
-               String otherTableName = null;
-               if(!edge.leftTable.equals(tableName))
-               {
-                  otherTableName = edge.leftTable;
-               }
-               else if(!edge.rightTable.equals(tableName))
-               {
-                  otherTableName = edge.rightTable;
-               }
-
-               if(otherTableName != null)
-               {
-                  joinPaths.add(new JoinPath(otherTableName, newPath));
-                  doGetJoinPaths(joinPaths, otherTableName, new ArrayList<>(newPath));
-               }
-            }
-         }
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private boolean joinPathsContain(Set<JoinPath> joinPaths, List<String> newPath)
-   {
-      for(JoinPath joinPath : joinPaths)
-      {
-         if(joinPath.joinNames().equals(newPath))
-         {
-            return (true);
-         }
-      }
-      return (false);
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   /*
-   public Set<List<String>> getJoinPaths(String tableName)
-   {
-      Set<List<String>> rs = new HashSet<>();
-      doGetJoinPaths(rs, tableName, new ArrayList<>());
-      return (rs);
-   }
-   */
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   /*
-   private void doGetJoinPaths(Set<List<String>> joinPaths, String tableName, List<String> path)
-   {
-      for(Edge edge : edges)
-      {
-         if(edge.leftTable.equals(tableName) || edge.rightTable.equals(tableName))
-         {
-            if(path.contains(edge.joinName))
-            {
-               continue;
-            }
-
-            List<String> newPath = new ArrayList<>(path);
-            newPath.add(edge.joinName);
-            if(!joinPaths.contains(newPath))
-            {
-               joinPaths.add(newPath);
-
-               String otherTableName = null;
-               if(!edge.leftTable.equals(tableName))
-               {
-                  otherTableName = edge.leftTable;
-               }
-               else if(!edge.rightTable.equals(tableName))
-               {
-                  otherTableName = edge.rightTable;
-               }
-
-               if(otherTableName != null)
-               {
-                  doGetJoinPaths(joinPaths, otherTableName, new ArrayList<>(newPath));
-               }
-            }
-         }
-      }
-   }
-   */
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public record Something(String joinTable, List<String> joinPath)
-   {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Set<Something> getJoinsBetter(String tableName)
-   {
-      Set<Something> rs        = new HashSet<>();
-      Set<String>    usedEdges = new HashSet<>();
-      Set<String>    tables    = new HashSet<>();
-      tables.add(tableName);
-      doGetJoinsBetter(rs, tables, new ArrayList<>(), usedEdges);
-
-      return (rs);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void doGetJoinsBetter(Set<Something> rs, Set<String> tables, List<String> joinPath, Set<String> usedEdges)
-   {
-      for(Edge edge : edges)
-      {
-         if(usedEdges.contains(edge.joinName))
-         {
-            continue;
-         }
-
-         if(tables.contains(edge.leftTable) || tables.contains(edge.rightTable))
-         {
-            usedEdges.add(edge.joinName);
-            // todo - clone list here, then recurisiv call
-            rs.add(new Something(tables.contains(edge.leftTable) ? edge.rightTable : edge.leftTable, joinPath));
-         }
-      }
    }
 
 }

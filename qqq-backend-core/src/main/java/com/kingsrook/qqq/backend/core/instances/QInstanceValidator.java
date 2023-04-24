@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
@@ -69,6 +70,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -115,17 +117,26 @@ public class QInstanceValidator
          return;
       }
 
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the enricher will build a join graph (if there are any joins).  we'd like to only do that       //
+      // once, during the enrichment/validation work, so, capture it, and store it back in the instance. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      JoinGraph joinGraph = null;
       try
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////
          // before validation, enrich the object (e.g., to fill in values that the user doesn't have to //
          /////////////////////////////////////////////////////////////////////////////////////////////////
          // TODO - possible point of customization (use a different enricher, or none, or pass it options).
-         new QInstanceEnricher(qInstance).enrich();
+         QInstanceEnricher qInstanceEnricher = new QInstanceEnricher(qInstance);
+         qInstanceEnricher.enrich();
+         joinGraph = qInstanceEnricher.getJoinGraph();
       }
       catch(Exception e)
       {
+         System.out.println();
          LOG.error("Error enriching instance prior to validation", e);
+         System.out.println();
          throw (new QInstanceValidationException("Error enriching qInstance prior to validation.", e));
       }
 
@@ -136,7 +147,7 @@ public class QInstanceValidator
       {
          validateBackends(qInstance);
          validateAutomationProviders(qInstance);
-         validateTables(qInstance);
+         validateTables(qInstance, joinGraph);
          validateProcesses(qInstance);
          validateReports(qInstance);
          validateApps(qInstance);
@@ -158,7 +169,9 @@ public class QInstanceValidator
          throw (new QInstanceValidationException(errors));
       }
 
-      qInstance.setHasBeenValidated(new QInstanceValidationKey());
+      QInstanceValidationKey validationKey = new QInstanceValidationKey();
+      qInstance.setHasBeenValidated(validationKey);
+      qInstance.setJoinGraph(validationKey, joinGraph);
    }
 
 
@@ -366,7 +379,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTables(QInstance qInstance)
+   private void validateTables(QInstance qInstance, JoinGraph joinGraph)
    {
       if(assertCondition(CollectionUtils.nullSafeHasContents(qInstance.getTables()), "At least 1 table must be defined."))
       {
@@ -459,7 +472,56 @@ public class QInstanceValidator
             validateTableCacheOf(qInstance, table);
             validateTableRecordSecurityLocks(qInstance, table);
             validateTableAssociations(qInstance, table);
+            validateExposedJoins(qInstance, joinGraph, table);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateExposedJoins(QInstance qInstance, JoinGraph joinGraph, QTableMetaData table)
+   {
+      Set<JoinGraph.JoinConnectionList> joinConnectionsForTable = null;
+      Set<String>                       usedLabels              = new HashSet<>();
+      Set<List<String>>                 usedJoinPaths           = new HashSet<>();
+
+      String tablePrefix = "Table " + table.getName() + " ";
+      for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+      {
+         String joinPrefix = tablePrefix + "exposedJoin [missingJoinTableName] ";
+         if(assertCondition(StringUtils.hasContent(exposedJoin.getJoinTable()), tablePrefix + "has an exposedJoin that is missing a joinTable name."))
+         {
+            joinPrefix = tablePrefix + "exposedJoin " + exposedJoin.getJoinTable() + " ";
+            if(assertCondition(qInstance.getTable(exposedJoin.getJoinTable()) != null, joinPrefix + "is referencing an unrecognized table"))
+            {
+               if(assertCondition(CollectionUtils.nullSafeHasContents(exposedJoin.getJoinPath()), joinPrefix + "is missing a joinPath."))
+               {
+                  joinConnectionsForTable = Objects.requireNonNullElseGet(joinConnectionsForTable, () -> joinGraph.getJoinConnections(table.getName()));
+
+                  boolean foundJoinConnection = false;
+                  for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
+                  {
+                     if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                     {
+                        foundJoinConnection = true;
+                     }
+                  }
+                  assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
+
+                  assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one join with the joinPath: " + exposedJoin.getJoinPath());
+                  usedJoinPaths.add(exposedJoin.getJoinPath());
+               }
+            }
+         }
+
+         if(assertCondition(StringUtils.hasContent(exposedJoin.getLabel()), joinPrefix + "is missing a label."))
+         {
+            assertCondition(!usedLabels.contains(exposedJoin.getLabel()), tablePrefix + "has more than one join labeled: " + exposedJoin.getLabel());
+            usedLabels.add(exposedJoin.getLabel());
+         }
       }
    }
 

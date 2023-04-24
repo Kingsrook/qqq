@@ -23,6 +23,12 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -30,9 +36,16 @@ import java.util.List;
  *******************************************************************************/
 public class ExposedJoin
 {
+   private static final QLogger LOG = QLogger.getLogger(ExposedJoin.class);
+
    private String       label;
    private String       joinTable;
    private List<String> joinPath;
+
+   //////////////////////////////////////////////////////////////////
+   // no setter for this - derive it the first time it's requested //
+   //////////////////////////////////////////////////////////////////
+   private Boolean isMany = null;
 
 
 
@@ -42,6 +55,71 @@ public class ExposedJoin
    public String getLabel()
    {
       return (this.label);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Boolean getIsMany()
+   {
+      if(isMany == null)
+      {
+         if(CollectionUtils.nullSafeHasContents(joinPath))
+         {
+            try
+            {
+               QInstance qInstance = QContext.getQInstance();
+
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // loop backward through the joinPath, starting at the join table (since we don't know the table that this exposedJoin is attached to!) //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               String currentTable = joinTable;
+               for(int i = joinPath.size() - 1; i >= 0; i--)
+               {
+                  String        joinName = joinPath.get(i);
+                  QJoinMetaData join     = qInstance.getJoin(joinName);
+                  if(join.getRightTable().equals(currentTable))
+                  {
+                     currentTable = join.getLeftTable();
+                     if(join.getType().equals(JoinType.ONE_TO_MANY) || join.getType().equals(JoinType.MANY_TO_MANY))
+                     {
+                        isMany = true;
+                        break;
+                     }
+                  }
+                  else if(join.getLeftTable().equals(currentTable))
+                  {
+                     currentTable = join.getRightTable();
+                     if(join.getType().equals(JoinType.MANY_TO_ONE) || join.getType().equals(JoinType.MANY_TO_MANY))
+                     {
+                        isMany = true;
+                        break;
+                     }
+                  }
+                  else
+                  {
+                     throw (new IllegalStateException("Current join table [" + currentTable + "] in path traversal was not found at element [" + joinName + "]"));
+                  }
+               }
+
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if we successfully got through the loop, and never found a reason to mark this join as "many", then it must not be, so set isMany to false //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(isMany == null)
+               {
+                  isMany = false;
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error deriving if ExposedJoin through [" + joinPath + "] to [" + joinTable + "] isMany", e);
+            }
+         }
+      }
+
+      return (isMany);
    }
 
 
