@@ -37,7 +37,8 @@ public class CountInput extends AbstractTableActionInput
 {
    private QQueryFilter filter;
 
-   private List<QueryJoin> queryJoins = null;
+   private List<QueryJoin> queryJoins           = null;
+   private Boolean         includeDistinctCount = false;
 
 
 
@@ -117,6 +118,37 @@ public class CountInput extends AbstractTableActionInput
          this.queryJoins = new ArrayList<>();
       }
       this.queryJoins.add(queryJoin);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for includeDistinctCount
+    *******************************************************************************/
+   public Boolean getIncludeDistinctCount()
+   {
+      return (this.includeDistinctCount);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for includeDistinctCount
+    *******************************************************************************/
+   public void setIncludeDistinctCount(Boolean includeDistinctCount)
+   {
+      this.includeDistinctCount = includeDistinctCount;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for includeDistinctCount
+    *******************************************************************************/
+   public CountInput withIncludeDistinctCount(Boolean includeDistinctCount)
+   {
+      this.includeDistinctCount = includeDistinctCount;
       return (this);
    }
 

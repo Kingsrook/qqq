@@ -788,6 +788,7 @@ public class QJavalinImplementation
          }
 
          countInput.setQueryJoins(processQueryJoinsParam(context));
+         countInput.setIncludeDistinctCount(QJavalinUtils.queryParamIsTrue(context, "includeDistinct"));
 
          CountAction countAction = new CountAction();
          CountOutput countOutput = countAction.execute(countInput);
@@ -861,6 +862,11 @@ public class QJavalinImplementation
 
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
+         int         rowIndex    = 0;
+         for(QRecord record : queryOutput.getRecords())
+         {
+            record.setValue("__qRowIndex", rowIndex++);
+         }
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
          context.result(JsonUtils.toJson(queryOutput));
