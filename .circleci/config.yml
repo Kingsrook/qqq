@@ -26,6 +26,7 @@ commands:
             sudo rm /etc/alternatives/java
             sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
       - run:
+          ## used by jacoco uncovered class reporting in pom.xml
           name: Install html2text
           command: |
             sudo apt-get update
@@ -65,11 +66,6 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
-      - run:
-          name: Find Un-tested Classes
-          command: |
-            set +o pipefail && for i in */target/site/jacoco/*/index.html; do html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1; done
-          when: always
       - save_cache:
           paths:
             - ~/.m2
