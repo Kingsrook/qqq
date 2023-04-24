@@ -23,21 +23,16 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
@@ -45,7 +40,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMe
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
@@ -220,149 +214,6 @@ public class MetaDataAction
 
       return metaDataOutput;
    }
-
-   ////////////////////////////////////// start v1 //////////////////////////////////////
-
-
-
-   private record JoinedTable(String joinedTableName, List<String> joinPath)
-   {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void addJoinedTablesToTables(Map<String, QFrontendTableMetaData> tables)
-   {
-      for(QFrontendTableMetaData table : tables.values())
-      {
-         List<JoinedTable> joinedTables = new ArrayList<>();
-         addJoinedTablesToTable(tables, table, joinedTables, new ArrayList<>());
-
-         if(joinedTables.size() > 0)
-         {
-            System.out.println("For [" + table.getName() + "] we have:\n   " + joinedTables.stream().map(String::valueOf).collect(Collectors.joining("\n   ")) + "\n");
-         }
-         else
-         {
-            System.out.println("No joins for [" + table.getName() + "]\n");
-         }
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void addJoinedTablesToTable(Map<String, QFrontendTableMetaData> tables, QFrontendTableMetaData table, List<JoinedTable> joinedTables, List<String> joinPath)
-   {
-      QInstance qInstance = QContext.getQInstance();
-      for(QJoinMetaData join : qInstance.getJoins().values())
-      {
-         if(join.getLeftTable().equals(table.getName()))
-         {
-            String      joinName    = join.getName();
-            JoinedTable joinedTable = new JoinedTable(join.getRightTable(), joinPath);
-            System.out.println("Adding to [" + table.getName() + "]: " + joinedTable);
-            joinedTables.add(joinedTable);
-
-            ArrayList<String> subJoinPath = new ArrayList<>(joinPath);
-            subJoinPath.add(joinName);
-            addJoinedTablesToTable(tables, tables.get(join.getRightTable()), joinedTables, subJoinPath);
-         }
-         if(join.getRightTable().equals(table.getName()))
-         {
-            String      joinName    = join.getName() + ".flipped";
-            JoinedTable joinedTable = new JoinedTable(join.getLeftTable(), joinPath);
-            System.out.println("Adding to [" + table.getName() + "]: " + joinedTable);
-            joinedTables.add(joinedTable);
-
-            ArrayList<String> subJoinPath = new ArrayList<>(joinPath);
-            subJoinPath.add(joinName);
-            addJoinedTablesToTable(tables, tables.get(join.getLeftTable()), joinedTables, subJoinPath);
-         }
-      }
-   }
-
-   ////////////////////////////////////// end v1 //////////////////////////////////////
-
-   ////////////////////////////////////// start v0 //////////////////////////////////////
-
-
-
-   private record Something(String joinName, List<String> joinPath)
-   {
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void addJoinsToTables(Map<String, QFrontendTableMetaData> tables)
-   {
-      for(QFrontendTableMetaData table : tables.values())
-      {
-         List<Something> something = new ArrayList<>();
-         addJoinsToTable(tables, table, something, new ArrayList<>(), new HashSet<>());
-         if(something.size() > 0)
-         {
-            System.out.println("For [" + table.getName() + "] we have:\n   " + something.stream().map(String::valueOf).collect(Collectors.joining("\n   ")) + "\n");
-         }
-         else
-         {
-            System.out.println("No joins for [" + table.getName() + "]\n");
-         }
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void addJoinsToTable(Map<String, QFrontendTableMetaData> tables, QFrontendTableMetaData table, List<Something> something, List<String> joinPath, Set<String> usedJoins)
-   {
-      QInstance qInstance = QContext.getQInstance();
-      for(QJoinMetaData join : qInstance.getJoins().values())
-      {
-         if(join.getLeftTable().equals(table.getName()))
-         {
-            String joinName = join.getName();
-            if(!usedJoins.contains(joinName))
-            {
-               usedJoins.add(joinName);
-               something.add(new Something(joinName, joinPath));
-
-               ArrayList<String> subJoinPath = new ArrayList<>(joinPath);
-               subJoinPath.add(joinName);
-
-               QFrontendTableMetaData rightTable = tables.get(join.getRightTable());
-               addJoinsToTable(tables, rightTable, something, subJoinPath, usedJoins);
-            }
-         }
-         else if(join.getRightTable().equals(table.getName()))
-         {
-            String joinName = join.getName() + ".flipped";
-            if(!usedJoins.contains(joinName))
-            {
-               usedJoins.add(joinName);
-               something.add(new Something(joinName, joinPath));
-
-               ArrayList<String> subJoinPath = new ArrayList<>(joinPath);
-               subJoinPath.add(joinName);
-
-               QFrontendTableMetaData leftTable = tables.get(join.getLeftTable());
-               addJoinsToTable(tables, leftTable, something, subJoinPath, usedJoins);
-            }
-         }
-      }
-   }
-
-   ////////////////////////////////////// end v0 //////////////////////////////////////
 
 
 
