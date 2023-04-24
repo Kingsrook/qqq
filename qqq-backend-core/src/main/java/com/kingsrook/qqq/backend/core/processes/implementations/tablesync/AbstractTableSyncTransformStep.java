@@ -72,6 +72,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
    private ProcessSummaryLine okToInsert           = StandardProcessSummaryLineProducer.getOkToInsertLine();
    private ProcessSummaryLine okToUpdate           = StandardProcessSummaryLineProducer.getOkToUpdateLine();
+   private ProcessSummaryLine willNotInsert        = new ProcessSummaryLine(Status.INFO)
+      .withMessageSuffix("because of this process' configuration.")
+      .withSingularFutureMessage("will not be inserted ")
+      .withPluralFutureMessage("will not be inserted ")
+      .withSingularPastMessage("was not inserted ")
+      .withPluralPastMessage("were not inserted ");
+   private ProcessSummaryLine willNotUpdate        = new ProcessSummaryLine(Status.INFO)
+      .withMessageSuffix("because of this process' configuration.")
+      .withSingularFutureMessage("will not be updated ")
+      .withPluralFutureMessage("will not be updated ")
+      .withSingularPastMessage("was not updated ")
+      .withPluralPastMessage("were not updated ");
    private ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
       .withMessageSuffix("missing a value for the key field.")
       .withSingularFutureMessage("will not be synced, because it is ")
@@ -92,7 +104,16 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      return (StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField));
+      ArrayList<ProcessSummaryLineInterface> processSummaryLineList = StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField);
+      if(willNotInsert.getCount() > 0)
+      {
+         processSummaryLineList.add(willNotInsert);
+      }
+      if(willNotUpdate.getCount() > 0)
+      {
+         processSummaryLineList.add(willNotUpdate);
+      }
+      return (processSummaryLineList);
    }
 
 
@@ -145,6 +166,11 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     *******************************************************************************/
    public record SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
    {
+      public static boolean performUpdates = true;
+      public static boolean performInserts = true;
+
+
+
       /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
@@ -153,6 +179,75 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       {
          System.out.println("noop");
       }
+
+
+
+      /*******************************************************************************
+       ** Getter for performUpdates
+       **
+       *******************************************************************************/
+      public boolean getPerformUpdates()
+      {
+         return performUpdates;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for performUpdates
+       **
+       *******************************************************************************/
+      public void setPerformUpdates(boolean performUpdates)
+      {
+         SyncProcessConfig.performUpdates = performUpdates;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for performUpdates
+       **
+       *******************************************************************************/
+      public SyncProcessConfig withPerformUpdates(boolean performUpdates)
+      {
+         SyncProcessConfig.performUpdates = performUpdates;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for performInserts
+       **
+       *******************************************************************************/
+      public boolean getPerformInserts()
+      {
+         return performInserts;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for performInserts
+       **
+       *******************************************************************************/
+      public void setPerformInserts(boolean performInserts)
+      {
+         SyncProcessConfig.performInserts = performInserts;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for performInserts
+       **
+       *******************************************************************************/
+      public SyncProcessConfig withPerformInserts(boolean performInserts)
+      {
+         SyncProcessConfig.performInserts = performInserts;
+         return (this);
+      }
+
    }
 
 
@@ -271,15 +366,29 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          QRecord      existingRecord                  = existingRecordsByForeignKey.get(sourceKeyValueInTargetFieldType);
 
          QRecord recordToStore;
-         if(existingRecord != null)
+         if(existingRecord != null && config.getPerformUpdates())
          {
             recordToStore = existingRecord;
             okToUpdate.incrementCount();
          }
-         else
+         else if(existingRecord == null && config.getPerformInserts())
          {
             recordToStore = new QRecord();
             okToInsert.incrementCount();
+         }
+         else
+         {
+            if(existingRecord != null)
+            {
+               LOG.info("Skipping storing existing record because this sync process is set to not perform updates");
+               willNotInsert.incrementCount();
+            }
+            else
+            {
+               LOG.info("Skipping storing new record because this sync process is set to not perform inserts");
+               willNotUpdate.incrementCount();
+            }
+            continue;
          }
 
          recordToStore = populateRecordToStore(runBackendStepInput, recordToStore, sourceRecord);

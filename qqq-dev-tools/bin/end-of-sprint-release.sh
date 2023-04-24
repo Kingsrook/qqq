@@ -68,7 +68,7 @@ gumBanner "Running mvn gitflow:release-start"
 mvn gitflow:release-start
 gumConfirmProceed "Can we Proceed, or were there errors from the gitflow:release-start?" "Proceed" "There were errors..."
 
-gumBanner "Pushining release branch to origin"
+gumBanner "Pushing release branch to origin"
 git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
 
 gumBanner "Please wait for a green run in CI on the release branch..."

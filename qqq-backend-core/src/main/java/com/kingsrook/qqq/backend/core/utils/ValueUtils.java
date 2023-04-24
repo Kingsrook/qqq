@@ -503,6 +503,11 @@ public class ValueUtils
          //////////////////////////
          return Instant.parse(s + ":00Z");
       }
+      else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.0$"))
+      {
+         s = s.replaceAll(" ", "T").replaceAll("\\..*$", "Z");
+         return Instant.parse(s);
+      }
       else
       {
          try
@@ -646,16 +651,16 @@ public class ValueUtils
    public static Serializable getValueAsFieldType(QFieldType type, Serializable value)
    {
       return switch(type)
-         {
-            case STRING, TEXT, HTML, PASSWORD -> getValueAsString(value);
-            case INTEGER -> getValueAsInteger(value);
-            case DECIMAL -> getValueAsBigDecimal(value);
-            case BOOLEAN -> getValueAsBoolean(value);
-            case DATE -> getValueAsLocalDate(value);
-            case TIME -> getValueAsLocalTime(value);
-            case DATE_TIME -> getValueAsInstant(value);
-            case BLOB -> getValueAsByteArray(value);
-         };
+      {
+         case STRING, TEXT, HTML, PASSWORD -> getValueAsString(value);
+         case INTEGER -> getValueAsInteger(value);
+         case DECIMAL -> getValueAsBigDecimal(value);
+         case BOOLEAN -> getValueAsBoolean(value);
+         case DATE -> getValueAsLocalDate(value);
+         case TIME -> getValueAsLocalTime(value);
+         case DATE_TIME -> getValueAsInstant(value);
+         case BLOB -> getValueAsByteArray(value);
+      };
    }
 
 
