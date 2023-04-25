@@ -204,7 +204,7 @@ class TableSyncProcessTest extends BaseTest
       @Override
       protected SyncProcessConfig getSyncProcessConfig()
       {
-         SyncProcessConfig syncProcessConfig = new SyncProcessConfig(TestUtils.TABLE_NAME_PERSON_MEMORY, "id", "peopleSync", "sourcePersonId");
+         SyncProcessConfig syncProcessConfig = new SyncProcessConfig(TestUtils.TABLE_NAME_PERSON_MEMORY, "id", "peopleSync", "sourcePersonId", true, true);
          syncProcessConfig.noop();
          return (syncProcessConfig);
       }

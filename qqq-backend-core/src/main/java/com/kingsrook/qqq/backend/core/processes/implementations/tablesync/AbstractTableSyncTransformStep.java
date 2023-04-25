@@ -164,12 +164,8 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    /*******************************************************************************
     ** Record to store the config for this process - e.g., what fields & tables are used.
     *******************************************************************************/
-   public record SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
+   public record SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey, boolean performInserts, boolean performUpdates)
    {
-      public static boolean performUpdates = true;
-      public static boolean performInserts = true;
-
-
 
       /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
@@ -178,74 +174,6 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       void noop()
       {
          System.out.println("noop");
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for performUpdates
-       **
-       *******************************************************************************/
-      public boolean getPerformUpdates()
-      {
-         return performUpdates;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for performUpdates
-       **
-       *******************************************************************************/
-      public void setPerformUpdates(boolean performUpdates)
-      {
-         SyncProcessConfig.performUpdates = performUpdates;
-      }
-
-
-
-      /*******************************************************************************
-       ** Fluent setter for performUpdates
-       **
-       *******************************************************************************/
-      public SyncProcessConfig withPerformUpdates(boolean performUpdates)
-      {
-         SyncProcessConfig.performUpdates = performUpdates;
-         return (this);
-      }
-
-
-
-      /*******************************************************************************
-       ** Getter for performInserts
-       **
-       *******************************************************************************/
-      public boolean getPerformInserts()
-      {
-         return performInserts;
-      }
-
-
-
-      /*******************************************************************************
-       ** Setter for performInserts
-       **
-       *******************************************************************************/
-      public void setPerformInserts(boolean performInserts)
-      {
-         SyncProcessConfig.performInserts = performInserts;
-      }
-
-
-
-      /*******************************************************************************
-       ** Fluent setter for performInserts
-       **
-       *******************************************************************************/
-      public SyncProcessConfig withPerformInserts(boolean performInserts)
-      {
-         SyncProcessConfig.performInserts = performInserts;
-         return (this);
       }
 
    }
@@ -366,12 +294,12 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          QRecord      existingRecord                  = existingRecordsByForeignKey.get(sourceKeyValueInTargetFieldType);
 
          QRecord recordToStore;
-         if(existingRecord != null && config.getPerformUpdates())
+         if(existingRecord != null && config.performUpdates)
          {
             recordToStore = existingRecord;
             okToUpdate.incrementCount();
          }
-         else if(existingRecord == null && config.getPerformInserts())
+         else if(existingRecord == null && config.performInserts)
          {
             recordToStore = new QRecord();
             okToInsert.incrementCount();
