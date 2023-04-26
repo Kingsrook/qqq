@@ -209,8 +209,7 @@ public class GeneralProcessUtils
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
-      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, fieldValue)));
-      queryInput.setLimit(1);
+      queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, fieldValue)).withLimit(1));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords().stream().findFirst());
    }

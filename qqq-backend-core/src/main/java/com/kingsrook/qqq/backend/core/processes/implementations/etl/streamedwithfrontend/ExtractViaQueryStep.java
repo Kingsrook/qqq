@@ -29,6 +29,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -52,6 +53,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class ExtractViaQueryStep extends AbstractExtractStep
 {
+   private static final QLogger LOG = QLogger.getLogger(ExtractViaQueryStep.class);
+
    public static final String FIELD_SOURCE_TABLE = "sourceTable";
 
    private QQueryFilter queryFilter;
@@ -77,11 +80,33 @@ public class ExtractViaQueryStep extends AbstractExtractStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      //////////////////////////////////////////////////////////////////
+      // clone the filter, since we're going to edit it (set a limit) //
+      //////////////////////////////////////////////////////////////////
+      QQueryFilter filterClone = queryFilter.clone();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's a limit in the extract step (e.g., the 20-record limit on the preview screen) //
+      // then set that limit in the filter - UNLESS - there's already a limit in the filter for   //
+      // a smaller number of records.                                                             //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      if(getLimit() != null)
+      {
+         if(filterClone.getLimit() != null && filterClone.getLimit() < getLimit())
+         {
+            LOG.trace("Using filter's limit [" + filterClone.getLimit() + "] rather than step's limit [" + getLimit() + "]");
+         }
+         else
+         {
+            filterClone.setLimit(getLimit());
+         }
+      }
+
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
-      queryInput.setFilter(queryFilter);
+      queryInput.setFilter(filterClone);
+      queryInput.setSelectDistinct(true);
       queryInput.setRecordPipe(getRecordPipe());
-      queryInput.setLimit(getLimit());
       queryInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
       new QueryAction().execute(queryInput);
 
@@ -101,8 +126,20 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       CountInput countInput = new CountInput();
       countInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
       countInput.setFilter(queryFilter);
+      countInput.setIncludeDistinctCount(true);
       CountOutput countOutput = new CountAction().execute(countInput);
-      return (countOutput.getCount());
+      Integer     count       = countOutput.getDistinctCount();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // in case the filter we're running has a limit, but the count found more than that limit, //
+      // well then, just return that limit - as the process won't run on more rows than that.    //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      if(count != null & queryFilter.getLimit() != null && count > queryFilter.getLimit())
+      {
+         count = queryFilter.getLimit();
+      }
+
+      return count;
    }
 
 

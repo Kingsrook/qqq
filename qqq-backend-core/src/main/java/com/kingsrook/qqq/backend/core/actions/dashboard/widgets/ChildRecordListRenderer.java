@@ -194,13 +194,13 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, List.of(record.getValue(joinOn.getLeftField()))));
       }
       filter.setOrderBys(join.getOrderBys());
+      filter.setLimit(maxRows);
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(join.getRightTable());
       queryInput.setShouldTranslatePossibleValues(true);
       queryInput.setShouldGenerateDisplayValues(true);
       queryInput.setFilter(filter);
-      queryInput.setLimit(maxRows);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
       QTableMetaData table       = input.getInstance().getTable(join.getRightTable());

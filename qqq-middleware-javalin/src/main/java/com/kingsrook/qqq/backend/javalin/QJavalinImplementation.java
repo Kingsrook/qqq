@@ -843,8 +843,6 @@ public class QJavalinImplementation
          queryInput.setTableName(table);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
-         queryInput.setSkip(QJavalinUtils.integerQueryParam(context, "skip"));
-         queryInput.setLimit(QJavalinUtils.integerQueryParam(context, "limit"));
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -858,15 +856,22 @@ public class QJavalinImplementation
             queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
+         Integer skip  = QJavalinUtils.integerQueryParam(context, "skip");
+         Integer limit = QJavalinUtils.integerQueryParam(context, "limit");
+         if(skip != null || limit != null)
+         {
+            if(queryInput.getFilter() == null)
+            {
+               queryInput.setFilter(new QQueryFilter());
+            }
+            queryInput.getFilter().setSkip(skip);
+            queryInput.getFilter().setLimit(limit);
+         }
+
          queryInput.setQueryJoins(processQueryJoinsParam(context));
 
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
-         int         rowIndex    = 0;
-         for(QRecord record : queryOutput.getRecords())
-         {
-            record.setValue("__qRowIndex", rowIndex++);
-         }
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
          context.result(JsonUtils.toJson(queryOutput));

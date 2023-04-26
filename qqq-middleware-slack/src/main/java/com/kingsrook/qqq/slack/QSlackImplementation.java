@@ -52,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
@@ -384,7 +385,7 @@ public class QSlackImplementation
       try
       {
          QueryInput queryInput = new QueryInput();
-         queryInput.setLimit(10);
+         queryInput.setFilter(new QQueryFilter().withLimit(10));
          queryInput.setTableName(tableName);
          setupSession(context, queryInput);
          QueryOutput output = new QueryAction().execute(queryInput);

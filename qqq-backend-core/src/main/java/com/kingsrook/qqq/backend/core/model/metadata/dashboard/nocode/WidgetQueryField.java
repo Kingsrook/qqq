@@ -62,8 +62,9 @@ public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
-      queryInput.setFilter(getEffectiveFilter(input));
-      queryInput.setLimit(1);
+      QQueryFilter effectiveFilter = getEffectiveFilter(input);
+      queryInput.setFilter(effectiveFilter);
+      effectiveFilter.setLimit(1);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
       {

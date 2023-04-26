@@ -341,14 +341,13 @@ class MemoryBackendModuleTest extends BaseTest
       {
          QueryInput queryInput = new QueryInput();
          queryInput.setTableName(table.getName());
-         queryInput.setLimit(2);
+         queryInput.setFilter(new QQueryFilter().withLimit(2));
          assertEquals(2, new QueryAction().execute(queryInput).getRecords().size());
 
-         queryInput.setLimit(1);
+         queryInput.setFilter(new QQueryFilter().withLimit(1));
          assertEquals(1, new QueryAction().execute(queryInput).getRecords().size());
 
-         queryInput.setSkip(4);
-         queryInput.setLimit(3);
+         queryInput.setFilter(new QQueryFilter().withSkip(4).withLimit(3));
          assertEquals(0, new QueryAction().execute(queryInput).getRecords().size());
       }
 

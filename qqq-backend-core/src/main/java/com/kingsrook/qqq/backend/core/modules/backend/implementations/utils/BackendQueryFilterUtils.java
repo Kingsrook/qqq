@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -129,42 +128,42 @@ public class BackendQueryFilterUtils
    public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
    {
       boolean criterionMatches = switch(criterion.getOperator())
+      {
+         case EQUALS -> testEquals(criterion, value);
+         case NOT_EQUALS -> !testEquals(criterion, value);
+         case IN -> testIn(criterion, value);
+         case NOT_IN -> !testIn(criterion, value);
+         case IS_BLANK -> testBlank(criterion, value);
+         case IS_NOT_BLANK -> !testBlank(criterion, value);
+         case CONTAINS -> testContains(criterion, fieldName, value);
+         case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
+         case IS_NULL_OR_IN -> testBlank(criterion, value) || testIn(criterion, value);
+         case LIKE -> testLike(criterion, fieldName, value);
+         case NOT_LIKE -> !testLike(criterion, fieldName, value);
+         case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
+         case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
+         case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
+         case NOT_ENDS_WITH -> !testEndsWith(criterion, fieldName, value);
+         case GREATER_THAN -> testGreaterThan(criterion, value);
+         case GREATER_THAN_OR_EQUALS -> testGreaterThan(criterion, value) || testEquals(criterion, value);
+         case LESS_THAN -> !testGreaterThan(criterion, value) && !testEquals(criterion, value);
+         case LESS_THAN_OR_EQUALS -> !testGreaterThan(criterion, value);
+         case BETWEEN ->
          {
-            case EQUALS -> testEquals(criterion, value);
-            case NOT_EQUALS -> !testEquals(criterion, value);
-            case IN -> testIn(criterion, value);
-            case NOT_IN -> !testIn(criterion, value);
-            case IS_BLANK -> testBlank(criterion, value);
-            case IS_NOT_BLANK -> !testBlank(criterion, value);
-            case CONTAINS -> testContains(criterion, fieldName, value);
-            case NOT_CONTAINS -> !testContains(criterion, fieldName, value);
-            case IS_NULL_OR_IN -> testBlank(criterion, value) || testIn(criterion, value);
-            case LIKE -> testLike(criterion, fieldName, value);
-            case NOT_LIKE -> !testLike(criterion, fieldName, value);
-            case STARTS_WITH -> testStartsWith(criterion, fieldName, value);
-            case NOT_STARTS_WITH -> !testStartsWith(criterion, fieldName, value);
-            case ENDS_WITH -> testEndsWith(criterion, fieldName, value);
-            case NOT_ENDS_WITH -> !testEndsWith(criterion, fieldName, value);
-            case GREATER_THAN -> testGreaterThan(criterion, value);
-            case GREATER_THAN_OR_EQUALS -> testGreaterThan(criterion, value) || testEquals(criterion, value);
-            case LESS_THAN -> !testGreaterThan(criterion, value) && !testEquals(criterion, value);
-            case LESS_THAN_OR_EQUALS -> !testGreaterThan(criterion, value);
-            case BETWEEN ->
-            {
-               QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
-               criteria1.getValues().remove(0);
-               yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
-            }
-            case NOT_BETWEEN ->
-            {
-               QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
-               QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
-               criteria1.getValues().remove(0);
-               boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
-               yield !between;
-            }
-         };
+            QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
+            QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
+            criteria1.getValues().remove(0);
+            yield (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
+         }
+         case NOT_BETWEEN ->
+         {
+            QFilterCriteria criteria0 = new QFilterCriteria().withValues(criterion.getValues());
+            QFilterCriteria criteria1 = new QFilterCriteria().withValues(new ArrayList<>(criterion.getValues()));
+            criteria1.getValues().remove(0);
+            boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
+            yield !between;
+         }
+      };
       return criterionMatches;
    }
 
@@ -524,9 +523,14 @@ public class BackendQueryFilterUtils
    /*******************************************************************************
     ** Apply skip & limit attributes from queryInput to a list of records.
     *******************************************************************************/
-   public static List<QRecord> applySkipAndLimit(QueryInput queryInput, List<QRecord> recordList)
+   public static List<QRecord> applySkipAndLimit(QQueryFilter queryFilter, List<QRecord> recordList)
    {
-      Integer skip = queryInput.getSkip();
+      if(queryFilter == null)
+      {
+         return (recordList);
+      }
+
+      Integer skip = queryFilter.getSkip();
       if(skip != null && skip > 0)
       {
          if(skip < recordList.size())
@@ -539,7 +543,7 @@ public class BackendQueryFilterUtils
          }
       }
 
-      Integer limit = queryInput.getLimit();
+      Integer limit = queryFilter.getLimit();
       if(limit != null && limit >= 0 && limit < recordList.size())
       {
          recordList = recordList.subList(0, limit);

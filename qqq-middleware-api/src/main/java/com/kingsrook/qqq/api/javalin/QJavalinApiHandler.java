@@ -913,6 +913,8 @@ public class QJavalinApiHandler
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
+         filter = new QQueryFilter();
+
          Integer pageSize = 50;
          if(StringUtils.hasContent(context.queryParam("pageSize")))
          {
@@ -947,12 +949,11 @@ public class QJavalinApiHandler
             badRequestMessages.add("pageNo must be greater than 0.");
          }
 
-         queryInput.setLimit(pageSize);
-         queryInput.setSkip((pageNo - 1) * pageSize);
+         filter.setLimit(pageSize);
+         filter.setSkip((pageNo - 1) * pageSize);
 
          // queryInput.setQueryJoins(processQueryJoinsParam(context));
 
-         filter = new QQueryFilter();
          if("and".equalsIgnoreCase(context.queryParam("booleanOperator")))
          {
             filter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);

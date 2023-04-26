@@ -83,14 +83,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             sql.append(" ORDER BY ").append(makeOrderByClause(table, filter.getOrderBys(), joinsContext));
          }
 
-         if(queryInput.getLimit() != null)
+         if(filter != null && filter.getLimit() != null)
          {
-            sql.append(" LIMIT ").append(queryInput.getLimit());
+            sql.append(" LIMIT ").append(filter.getLimit());
 
-            if(queryInput.getSkip() != null)
+            if(filter.getSkip() != null)
             {
                // todo - other sql grammars?
-               sql.append(" OFFSET ").append(queryInput.getSkip());
+               sql.append(" OFFSET ").append(filter.getSkip());
             }
          }
 
@@ -200,7 +200,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       List<QueryJoin> queryJoins = queryInput.getQueryJoins();
       QTableMetaData  table      = instance.getTable(tableName);
 
-      boolean requiresDistinct = doesSelectClauseRequireDistinct(table);
+      boolean requiresDistinct = queryInput.getSelectDistinct() || doesSelectClauseRequireDistinct(table);
       String  clausePrefix     = (requiresDistinct) ? "SELECT DISTINCT " : "SELECT ";
 
       List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());

@@ -247,7 +247,7 @@ public class SearchPossibleValueSourceAction
       queryFilter.setOrderBys(possibleValueSource.getOrderByFields());
 
       // todo - skip & limit as params
-      queryInput.setLimit(250);
+      queryFilter.setLimit(250);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       // if given a default filter, make it the 'top level' filter and the one we just created a subfilter //
