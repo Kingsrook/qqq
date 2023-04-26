@@ -211,14 +211,11 @@ public class BulkEditTransformStep extends AbstractTransformStep
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      if(isForResultScreen)
-      {
-         okSummary.setMessage(tableLabel + " records were edited.");
-      }
-      else
-      {
-         okSummary.setMessage(tableLabel + " records will be edited.");
-      }
+      okSummary.setSingularFutureMessage(tableLabel + " record will be edited.");
+      okSummary.setPluralFutureMessage(tableLabel + " records will be edited.");
+      okSummary.setSingularPastMessage(tableLabel + " record was edited.");
+      okSummary.setPluralPastMessage(tableLabel + " records were edited.");
+      okSummary.pickMessage(isForResultScreen);
 
       ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
       rs.add(okSummary);
