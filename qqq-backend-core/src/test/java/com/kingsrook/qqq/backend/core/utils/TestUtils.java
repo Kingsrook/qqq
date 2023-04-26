@@ -92,6 +92,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
@@ -547,6 +548,7 @@ public class TestUtils
             .withFieldName("storeId"))
          .withAssociation(new Association().withName("orderLine").withAssociatedTableName(TABLE_NAME_LINE_ITEM).withJoinName("orderLineItem"))
          .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_ORDER_EXTRINSIC).withJoinName("orderOrderExtrinsic"))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_LINE_ITEM))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -581,7 +583,7 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
-         .withField(new QFieldMetaData("sku", QFieldType.STRING))
+         .withField(new QFieldMetaData("sku", QFieldType.STRING).withLabel("SKU"))
          .withField(new QFieldMetaData("quantity", QFieldType.INTEGER));
    }
 

@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -36,16 +38,21 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -113,6 +120,68 @@ class ExportActionTest extends BaseTest
       File file = new File(filename);
 
       assertTrue(file.delete());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoins() throws QException, IOException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+
+      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
+         new QRecord().withValue("id", 1).withValue("orderNo", "ORD1").withValue("storeId", 1),
+         new QRecord().withValue("id", 2).withValue("orderNo", "ORD2").withValue("storeId", 1)
+      ));
+
+      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
+         new QRecord().withValue("id", 1).withValue("orderId", 1).withValue("sku", "A").withValue("quantity", 10),
+         new QRecord().withValue("id", 2).withValue("orderId", 1).withValue("sku", "B").withValue("quantity", 15),
+         new QRecord().withValue("id", 3).withValue("orderId", 2).withValue("sku", "A").withValue("quantity", 20)
+      ));
+
+      ExportInput exportInput = new ExportInput();
+      exportInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      exportInput.setReportFormat(ReportFormat.CSV);
+      ByteArrayOutputStream reportOutputStream = new ByteArrayOutputStream();
+      exportInput.setReportOutputStream(reportOutputStream);
+      exportInput.setQueryFilter(new QQueryFilter());
+      exportInput.setFieldNames(List.of("id", "orderNo", "storeId", "orderLine.id", "orderLine.sku", "orderLine.quantity"));
+      // exportInput.setFieldNames(List.of("id", "orderNo", "storeId"));
+      new ExportAction().execute(exportInput);
+
+      String              csv               = reportOutputStream.toString(StandardCharsets.UTF_8);
+      CSVParser           parse             = CSVParser.parse(csv, CSVFormat.DEFAULT.withFirstRecordAsHeader());
+      Iterator<CSVRecord> csvRecordIterator = parse.iterator();
+      assertFalse(parse.getHeaderMap().isEmpty());
+      assertTrue(parse.getHeaderMap().containsKey("Id"));
+      assertTrue(parse.getHeaderMap().containsKey("Order Line: Id"));
+      assertTrue(parse.getHeaderMap().containsKey("Order Line: SKU"));
+
+      CSVRecord csvRecord = csvRecordIterator.next();
+      assertEquals("1", csvRecord.get("Id"));
+      assertEquals("1", csvRecord.get("Order Line: Id"));
+      assertEquals("A", csvRecord.get("Order Line: SKU"));
+      assertEquals("10", csvRecord.get("Order Line: Quantity"));
+
+      csvRecord = csvRecordIterator.next();
+      assertEquals("1", csvRecord.get("Id"));
+      assertEquals("2", csvRecord.get("Order Line: Id"));
+      assertEquals("B", csvRecord.get("Order Line: SKU"));
+      assertEquals("15", csvRecord.get("Order Line: Quantity"));
+
+      csvRecord = csvRecordIterator.next();
+      assertEquals("2", csvRecord.get("Id"));
+      assertEquals("3", csvRecord.get("Order Line: Id"));
+      assertEquals("A", csvRecord.get("Order Line: SKU"));
+      assertEquals("20", csvRecord.get("Order Line: Quantity"));
+
+      assertFalse(csvRecordIterator.hasNext());
    }
 
 

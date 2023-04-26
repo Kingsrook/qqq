@@ -38,13 +38,16 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -181,7 +184,7 @@ public class MemoryRecordStore
       }
 
       BackendQueryFilterUtils.sortRecordList(input.getFilter(), records);
-      records = BackendQueryFilterUtils.applySkipAndLimit(input, records);
+      records = BackendQueryFilterUtils.applySkipAndLimit(input.getFilter(), records);
 
       return (records);
    }
@@ -191,8 +194,11 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Collection<QRecord> buildJoinCrossProduct(QueryInput input)
+   private Collection<QRecord> buildJoinCrossProduct(QueryInput input) throws QException
    {
+      QInstance    qInstance    = QContext.getQInstance();
+      JoinsContext joinsContext = new JoinsContext(qInstance, input.getTableName(), input.getQueryJoins(), input.getFilter());
+
       List<QRecord>  crossProduct = new ArrayList<>();
       QTableMetaData leftTable    = input.getTable();
       for(QRecord record : getTableData(leftTable).values())
@@ -204,8 +210,18 @@ public class MemoryRecordStore
 
       for(QueryJoin queryJoin : input.getQueryJoins())
       {
-         QTableMetaData      nextTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+         QTableMetaData      nextTable        = qInstance.getTable(queryJoin.getJoinTable());
          Collection<QRecord> nextTableRecords = getTableData(nextTable).values();
+
+         QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
+         {
+            QJoinMetaData found = joinsContext.findJoinMetaData(qInstance, input.getTableName(), queryJoin.getJoinTable());
+            if(found == null)
+            {
+               throw (new RuntimeException("Could not find a join between tables [" + input.getTableName() + "][" + queryJoin.getJoinTable() + "]"));
+            }
+            return (found);
+         });
 
          List<QRecord> nextLevelProduct = new ArrayList<>();
          for(QRecord productRecord : crossProduct)
@@ -213,7 +229,7 @@ public class MemoryRecordStore
             boolean matchFound = false;
             for(QRecord nextTableRecord : nextTableRecords)
             {
-               if(joinMatches(productRecord, nextTableRecord, queryJoin))
+               if(joinMatches(productRecord, nextTableRecord, queryJoin, joinMetaData))
                {
                   QRecord joinRecord = new QRecord(productRecord);
                   addRecordToProduct(joinRecord, nextTableRecord, queryJoin.getJoinTableOrItsAlias());
@@ -239,9 +255,9 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   private boolean joinMatches(QRecord productRecord, QRecord nextTableRecord, QueryJoin queryJoin)
+   private boolean joinMatches(QRecord productRecord, QRecord nextTableRecord, QueryJoin queryJoin, QJoinMetaData joinMetaData)
    {
-      for(JoinOn joinOn : queryJoin.getJoinMetaData().getJoinOns())
+      for(JoinOn joinOn : joinMetaData.getJoinOns())
       {
          Serializable leftValue = productRecord.getValues().containsKey(queryJoin.getBaseTableOrAlias() + "." + joinOn.getLeftField())
             ? productRecord.getValue(queryJoin.getBaseTableOrAlias() + "." + joinOn.getLeftField())
