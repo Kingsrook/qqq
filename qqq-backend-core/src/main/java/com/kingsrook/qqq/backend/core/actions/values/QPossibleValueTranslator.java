@@ -123,7 +123,7 @@ public class QPossibleValueTranslator
          return;
       }
 
-      LOG.debug("Translating possible values in [" + records.size() + "] records from the [" + table.getName() + "] table.");
+      LOG.trace("Translating possible values in [" + records.size() + "] records from the [" + table.getName() + "] table.");
       primePvsCache(table, records, queryJoins, limitedToFieldNames);
 
       for(QRecord record : records)
@@ -378,11 +378,11 @@ public class QPossibleValueTranslator
          for(String valueField : valueFields)
          {
             Object value = switch(valueField)
-               {
-                  case "id" -> id;
-                  case "label" -> label;
-                  default -> throw new IllegalArgumentException("Unexpected value field: " + valueField);
-               };
+            {
+               case "id" -> id;
+               case "label" -> label;
+               default -> throw new IllegalArgumentException("Unexpected value field: " + valueField);
+            };
             values.add(Objects.requireNonNullElse(value, ""));
          }
       }
@@ -427,7 +427,7 @@ public class QPossibleValueTranslator
          int size = entry.getValue().size();
          if(size > 50_000)
          {
-            LOG.debug("Found a big PVS cache - clearing it.", logPair("name", entry.getKey()), logPair("size", size));
+            LOG.info("Found a big PVS cache - clearing it.", logPair("name", entry.getKey()), logPair("size", size));
          }
       }
 
@@ -483,7 +483,7 @@ public class QPossibleValueTranslator
          {
             if(limitedToFieldNames != null && !limitedToFieldNames.contains(fieldNamePrefix + field.getName()))
             {
-               LOG.debug("Skipping cache priming for translation of possible value field [" + fieldNamePrefix + field.getName() + "] - it's not in the limitedToFieldNames set.");
+               LOG.trace("Skipping cache priming for translation of possible value field [" + fieldNamePrefix + field.getName() + "] - it's not in the limitedToFieldNames set.");
                continue;
             }
 
@@ -556,7 +556,7 @@ public class QPossibleValueTranslator
                queryInput.setFieldsToTranslatePossibleValues(possibleValueFieldsToTranslate);
             }
 
-            LOG.debug("Priming PVS cache for [" + page.size() + "] ids from [" + tableName + "] table.");
+            LOG.trace("Priming PVS cache for [" + page.size() + "] ids from [" + tableName + "] table.");
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
             ///////////////////////////////////////////////////////////////////////////////////

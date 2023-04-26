@@ -239,7 +239,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          // new AuditAction().executeAsync(auditInput); // todo async??? maybe get that from rules???
          new AuditAction().execute(auditInput);
          long end = System.currentTimeMillis();
-         LOG.debug("Audit performance", logPair("auditLevel", String.valueOf(auditLevel)), logPair("recordCount", recordList.size()), logPair("millis", (end - start)));
+         LOG.trace("Audit performance", logPair("auditLevel", String.valueOf(auditLevel)), logPair("recordCount", recordList.size()), logPair("millis", (end - start)));
       }
       catch(Exception e)
       {
