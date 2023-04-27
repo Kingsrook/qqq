@@ -45,6 +45,7 @@ import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
@@ -166,6 +167,8 @@ public class QJavalinApiHandler
 
          ApiBuilder.get("/apis.json", QJavalinApiHandler::doGetApisJson);
 
+         // todo not this? ApiBuilder.get("/api/", QJavalinApiHandler::doListApis);
+
          ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
          for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
          {
@@ -233,6 +236,32 @@ public class QJavalinApiHandler
             });
          }
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void doListApis(Context context)
+   {
+      ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
+
+      StringBuilder html = new StringBuilder("<h1>Select an API</h1>\n<ul>\n");
+      for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
+      {
+         html.append("""
+            <li><a href="{link}">{name}</a></li>
+            """
+            .replace("{link}", entry.getValue().getPath())
+            .replace("{name}", entry.getValue().getLabel())
+         );
+      }
+
+      html.append("</ul>");
+
+      context.header("Content-Type", ContentType.HTML);
+      context.result(html.toString());
    }
 
 
@@ -600,6 +629,14 @@ public class QJavalinApiHandler
          }
 
          html = html.replace("{title}", apiInstanceMetaData.getLabel() + " - " + version);
+
+         StringBuilder                otherApisOptions             = new StringBuilder();
+         ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
+         for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
+         {
+            otherApisOptions.append("<option value=\"").append(entry.getValue().getPath()).append("\">").append(entry.getValue().getLabel()).append("</option>");
+         }
+         html = html.replace("{otherApisOptions}", otherApisOptions.toString());
 
          StringBuilder otherVersionOptions = new StringBuilder();
          for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())

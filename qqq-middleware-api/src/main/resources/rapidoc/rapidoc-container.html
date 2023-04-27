@@ -49,7 +49,12 @@
 >
    {navLogoImg}
    <div slot="overview" id="otherVersions">
-      <label for="otherVersionsSelect">Other Versions:</label>
+      <label for="otherApisSelect">Other APIs:</label>
+      <select id="otherApisSelect" onchange=changeApi()>
+         <option value="/api/">--</option>
+         {otherApisOptions}
+      </select>
+      <label for="otherVersionsSelect">Other Versions of this API:</label>
       <select id="otherVersionsSelect" onchange=changeVersion()>
          <option value="/api/">--</option>
          {otherVersionOptions}
@@ -75,6 +80,11 @@
          }
       });
    });
+
+   function changeApi()
+   {
+      document.location.href = document.getElementById("otherApisSelect").value;
+   }
 
    function changeVersion()
    {
