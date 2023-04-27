@@ -32,6 +32,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.module.api.mocks.MockApiActionUtils;
 import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
@@ -42,7 +44,10 @@ import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetail
  *******************************************************************************/
 public class TestUtils
 {
+   public static final String MEMORY_BACKEND_NAME   = "memory";
    public static final String EASYPOST_BACKEND_NAME = "easypost";
+   public static final String MOCK_BACKEND_NAME     = "mock";
+   public static final String MOCK_TABLE_NAME       = "mock";
 
 
 
@@ -52,10 +57,65 @@ public class TestUtils
    public static QInstance defineInstance()
    {
       QInstance qInstance = new QInstance();
-      qInstance.addBackend(defineBackend());
-      qInstance.addTable(defineTableEasypostTracker());
       qInstance.setAuthentication(defineAuthentication());
+
+      qInstance.addBackend(defineMemoryBackend());
+
+      qInstance.addBackend(defineMockBackend());
+      qInstance.addTable(defineMockTable());
+
+      qInstance.addBackend(defineEasypostBackend());
+      qInstance.addTable(defineTableEasypostTracker());
+
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the in-memory backend used in standard tests
+    *******************************************************************************/
+   public static QBackendMetaData defineMemoryBackend()
+   {
+      return new QBackendMetaData()
+         .withName(MEMORY_BACKEND_NAME)
+         .withBackendType(MemoryBackendModule.class);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QBackendMetaData defineMockBackend()
+   {
+      return (new APIBackendMetaData()
+         .withName(MOCK_BACKEND_NAME)
+         .withAuthorizationType(AuthorizationType.API_KEY_HEADER)
+         .withBaseUrl("http://localhost:9999/mock")
+         .withContentType("application/json")
+         .withActionUtil(new QCodeReference(MockApiActionUtils.class, QCodeUsage.CUSTOMIZER))
+      );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QTableMetaData defineMockTable()
+   {
+      return (new QTableMetaData()
+         .withName(MOCK_TABLE_NAME)
+         .withBackendName(MOCK_BACKEND_NAME)
+         .withField(new QFieldMetaData("id", QFieldType.STRING))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+         .withPrimaryKeyField("id")
+         .withBackendDetails(new APITableBackendDetails()
+            .withTablePath("mock")
+            .withTableWrapperObjectName("mocks")
+         )
+      );
    }
 
 
@@ -76,7 +136,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QBackendMetaData defineBackend()
+   public static QBackendMetaData defineEasypostBackend()
    {
       String apiKey = new QMetaDataVariableInterpreter().interpret("${env.EASYPOST_API_KEY}");
 

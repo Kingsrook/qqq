@@ -34,10 +34,6 @@
    <properties>
       <!-- props specifically to this module -->
       <!-- none at this time -->
-
-      <!-- todo - remove this once module is further built out and we can hit standard ratio -->
-      <coverage.instructionCoveredRatioMinimum>0.00</coverage.instructionCoveredRatioMinimum>
-      <coverage.classCoveredRatioMinimum>0.00</coverage.classCoveredRatioMinimum>
    </properties>
 
    <dependencies>
