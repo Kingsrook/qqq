@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -126,7 +128,7 @@ public class RunAdHocRecordScriptAction
             executeCodeInput.getContext().put("scriptUtils", input.getScriptUtils());
          }
 
-         executeCodeInput.getContext().put("api", new ScriptApi());
+         addApiUtilityToContext(executeCodeInput.getContext(), scriptRevision);
 
          executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
 
@@ -153,6 +155,34 @@ public class RunAdHocRecordScriptAction
       catch(Exception e)
       {
          output.setException(Optional.of(e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Try to (dynamically) load the ApiScriptUtils object from the api middleware
+    ** module -- in case the runtime doesn't have that module deployed (e.g, not in
+    ** the project pom).
+    *******************************************************************************/
+   private void addApiUtilityToContext(Map<String, Serializable> context, ScriptRevision scriptRevision)
+   {
+      try
+      {
+         Class<?> apiScriptUtilsClass  = Class.forName("com.kingsrook.qqq.api.utils.ApiScriptUtils");
+         Object   apiScriptUtilsObject = apiScriptUtilsClass.getConstructor().newInstance();
+         context.put("api", (Serializable) apiScriptUtilsObject);
+      }
+      catch(ClassNotFoundException e)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // this is the only exception we're kinda expecting here - so catch for it specifically, and just log.trace - others, warn //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         LOG.trace("Couldn't load ApiScriptUtils class - qqq-middleware-api not on the classpath?");
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error adding api utility to script context", e, logPair("scriptRevisionId", scriptRevision.getId()));
       }
    }
 

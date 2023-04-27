@@ -26,7 +26,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
@@ -49,7 +49,7 @@ public class APILog extends QRecordEntity
    @QField(isEditable = false)
    private Instant timestamp;
 
-   @QField(possibleValueSourceName = APILogMetaDataProvider.TABLE_NAME_API_LOG_USER, label = "User")
+   @QField(possibleValueSourceName = ApiInstanceMetaDataProvider.TABLE_NAME_API_LOG_USER, label = "User")
    private Integer apiLogUserId;
 
    @QField(possibleValueSourceName = "apiMethod")
