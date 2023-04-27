@@ -47,6 +47,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.net.Response;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -297,12 +298,12 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       /////////////////////////////////////
       // call auth0 with a login request //
       /////////////////////////////////////
-      TokenHolder result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
+      Response<TokenHolder> result = auth.login(credentials.split(":")[0], credentials.split(":")[1].toCharArray())
          .setScope("openid email nickname")
          .setAudience(metaData.getAudience())
          .execute();
 
-      return (result.getAccessToken());
+      return (result.getBody().getAccessToken());
    }
 
 

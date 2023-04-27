@@ -57,6 +57,10 @@
          <artifactId>quicksight</artifactId>
       </dependency>
       <dependency>
+         <groupId>software.amazon.awssdk</groupId>
+         <artifactId>apigateway</artifactId>
+      </dependency>
+      <dependency>
          <groupId>com.amazonaws</groupId>
          <artifactId>aws-java-sdk-secretsmanager</artifactId>
          <version>1.12.385</version>
@@ -100,8 +104,18 @@
       </dependency>
       <dependency>
          <groupId>com.auth0</groupId>
-         <artifactId>mvc-auth-commons</artifactId>
-         <version>1.9.2</version>
+         <artifactId>auth0</artifactId>
+         <version>2.1.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.auth0</groupId>
+         <artifactId>java-jwt</artifactId>
+         <version>4.4.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.auth0</groupId>
+         <artifactId>jwks-rsa</artifactId>
+         <version>0.22.0</version>
       </dependency>
       <dependency>
          <groupId>io.github.cdimascio</groupId>
