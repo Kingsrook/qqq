@@ -50,4 +50,13 @@ public interface DeleteInterface
       return (false);
    }
 
+   /*******************************************************************************
+    ** Specify whether this particular module's delete action can & should fetch
+    ** records before deleting them, e.g., for audits or "not-found-checks"
+    *******************************************************************************/
+   default boolean supportsPreFetchQuery()
+   {
+      return (true);
+   }
+
 }

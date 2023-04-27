@@ -76,13 +76,13 @@ public class DeleteAction
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
+      DeleteInterface          deleteInterface          = qModule.getDeleteInterface();
 
       if(CollectionUtils.nullSafeHasContents(deleteInput.getPrimaryKeys()) && deleteInput.getQueryFilter() != null)
       {
          throw (new QException("A delete request may not contain both a list of primary keys and a query filter."));
       }
 
-      DeleteInterface deleteInterface = qModule.getDeleteInterface();
       if(deleteInput.getQueryFilter() != null && !deleteInterface.supportsQueryFilterInput())
       {
          LOG.info("Querying for primary keys, for backend module " + qModule.getBackendType() + " which does not support queryFilter input for deletes");
@@ -99,8 +99,8 @@ public class DeleteAction
          }
       }
 
-      List<QRecord> recordListForAudit          = getRecordListForAuditIfNeeded(deleteInput);
-      List<QRecord> recordsWithValidationErrors = validateRecordsExistAndCanBeAccessed(deleteInput, recordListForAudit);
+      List<QRecord> recordListForAudit          = deleteInterface.supportsPreFetchQuery() ? getRecordListForAuditIfNeeded(deleteInput) : new ArrayList<>();
+      List<QRecord> recordsWithValidationErrors = deleteInterface.supportsPreFetchQuery() ? validateRecordsExistAndCanBeAccessed(deleteInput, recordListForAudit) : new ArrayList<>();
 
       DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
 
