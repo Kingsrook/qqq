@@ -45,7 +45,6 @@ import com.kingsrook.qqq.api.model.actions.GenerateOpenApiSpecOutput;
 import com.kingsrook.qqq.api.model.metadata.APILogMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
-import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataProvider;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
