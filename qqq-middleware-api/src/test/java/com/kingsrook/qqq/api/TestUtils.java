@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api;
 
 
+import java.time.LocalDate;
 import java.util.List;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
@@ -30,7 +31,11 @@ import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -324,4 +329,40 @@ public class TestUtils
          .withOrderBy(new QFilterOrderBy("key"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertPersonRecord(Integer id, String firstName, String lastName) throws QException
+   {
+      insertPersonRecord(id, firstName, lastName, null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertPersonRecord(Integer id, String firstName, String lastName, LocalDate birthDate) throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName).withValue("birthDate", birthDate)));
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertSimpsons() throws QException
+   {
+      insertPersonRecord(1, "Homer", "Simpson");
+      insertPersonRecord(2, "Marge", "Simpson");
+      insertPersonRecord(3, "Bart", "Simpson");
+      insertPersonRecord(4, "Lisa", "Simpson");
+      insertPersonRecord(5, "Maggie", "Simpson");
+   }
 }
