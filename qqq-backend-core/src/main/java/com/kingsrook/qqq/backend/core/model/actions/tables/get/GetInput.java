@@ -43,6 +43,8 @@ public class GetInput extends AbstractTableActionInput
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
    private boolean shouldFetchHeavyFields        = true;
+   private boolean shouldOmitHiddenFields        = true;
+   private boolean shouldMaskPasswords           = true;
 
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -320,6 +322,68 @@ public class GetInput extends AbstractTableActionInput
    public GetInput withShouldGenerateDisplayValues(boolean shouldGenerateDisplayValues)
    {
       this.shouldGenerateDisplayValues = shouldGenerateDisplayValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldMaskPasswords
+    *******************************************************************************/
+   public boolean getShouldMaskPasswords()
+   {
+      return (this.shouldMaskPasswords);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldMaskPasswords
+    *******************************************************************************/
+   public void setShouldMaskPasswords(boolean shouldMaskPasswords)
+   {
+      this.shouldMaskPasswords = shouldMaskPasswords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldMaskPasswords
+    *******************************************************************************/
+   public GetInput withShouldMaskPasswords(boolean shouldMaskPasswords)
+   {
+      this.shouldMaskPasswords = shouldMaskPasswords;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldOmitHiddenFields
+    *******************************************************************************/
+   public boolean getShouldOmitHiddenFields()
+   {
+      return (this.shouldOmitHiddenFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldOmitHiddenFields
+    *******************************************************************************/
+   public void setShouldOmitHiddenFields(boolean shouldOmitHiddenFields)
+   {
+      this.shouldOmitHiddenFields = shouldOmitHiddenFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldOmitHiddenFields
+    *******************************************************************************/
+   public GetInput withShouldOmitHiddenFields(boolean shouldOmitHiddenFields)
+   {
+      this.shouldOmitHiddenFields = shouldOmitHiddenFields;
       return (this);
    }
 

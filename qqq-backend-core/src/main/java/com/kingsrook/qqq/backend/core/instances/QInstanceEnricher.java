@@ -955,7 +955,8 @@ public class QInstanceEnricher
       {
          for(String fieldName : table.getFields().keySet())
          {
-            if(!usedFieldNames.contains(fieldName))
+            QFieldMetaData field = table.getField(fieldName);
+            if(!field.getIsHidden() && !usedFieldNames.contains(fieldName))
             {
                otherSection.getFieldNames().add(fieldName);
                usedFieldNames.add(fieldName);

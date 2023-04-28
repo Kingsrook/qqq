@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -51,6 +52,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -370,6 +373,53 @@ public class GetAction
       if(getInput.getShouldGenerateDisplayValues())
       {
          QValueFormatter.setDisplayValuesInRecords(getInput.getTable(), List.of(returnRecord));
+      }
+
+      if(getInput.getShouldOmitHiddenFields() || getInput.getShouldMaskPasswords())
+      {
+         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(record.getTableName()).getFields();
+         for(String fieldName : fields.keySet())
+         {
+            QFieldType fieldType = fields.get(fieldName).getType();
+            if(fieldType != null && fieldType.needsMasked())
+            {
+               //////////////////////////////////////////////////////////////////////
+               // empty out the value completely first (which will remove from     //
+               // display fields as well) then update display value if flag is set //
+               //////////////////////////////////////////////////////////////////////
+               returnRecord.removeValue(fieldName);
+               returnRecord.setValue(fieldName, "************");
+               if(getInput.getShouldGenerateDisplayValues())
+               {
+                  returnRecord.setDisplayValue(fieldName, record.getValueString(fieldName));
+               }
+            }
+         }
+         QValueFormatter.setDisplayValuesInRecords(getInput.getTable(), List.of(returnRecord));
+      }
+
+      //////////////////////////////
+      // mask any password fields //
+      //////////////////////////////
+      Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(record.getTableName()).getFields();
+      for(String fieldName : fields.keySet())
+      {
+         QFieldMetaData field = fields.get(fieldName);
+         if(getInput.getShouldOmitHiddenFields())
+         {
+            if(field.getIsHidden())
+            {
+               returnRecord.removeValue(fieldName);
+            }
+         }
+         else if(getInput.getShouldMaskPasswords())
+         {
+            if(field.getType() != null && field.getType().needsMasked())
+            {
+               returnRecord.setValue(fieldName, "************");
+               returnRecord.setDisplayValue(fieldName, "************");
+            }
+         }
       }
 
       //////////////////////////////////////////////////////////////////////////////

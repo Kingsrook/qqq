@@ -437,7 +437,14 @@ public class QInstanceValidator
 
             for(String fieldName : CollectionUtils.nonNullMap(table.getFields()).keySet())
             {
-               assertCondition(fieldNamesInSections.contains(fieldName), "Table " + tableName + " field " + fieldName + " is not listed in any field sections.");
+               if(table.getField(fieldName).getIsHidden())
+               {
+                  assertCondition(!fieldNamesInSections.contains(fieldName), "Table " + tableName + " field " + fieldName + " is listed in a field section, but it is marked as hidden.");
+               }
+               else
+               {
+                  assertCondition(fieldNamesInSections.contains(fieldName), "Table " + tableName + " field " + fieldName + " is not listed in any field sections.");
+               }
             }
 
             if(table.getRecordLabelFields() != null && table.getFields() != null)

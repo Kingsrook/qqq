@@ -108,4 +108,14 @@ public enum QFieldType
    {
       return this == QFieldType.INTEGER || this == QFieldType.DECIMAL;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean needsMasked()
+   {
+      return this == QFieldType.PASSWORD;
+   }
 }

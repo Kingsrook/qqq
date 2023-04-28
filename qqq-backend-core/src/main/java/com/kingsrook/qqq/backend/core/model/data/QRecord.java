@@ -199,6 +199,17 @@ public class QRecord implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void removeValue(String fieldName)
+   {
+      values.remove(fieldName);
+      displayValues.remove(fieldName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void setValue(QFieldMetaData field, Serializable value)
    {
       values.put(field.getName(), value);

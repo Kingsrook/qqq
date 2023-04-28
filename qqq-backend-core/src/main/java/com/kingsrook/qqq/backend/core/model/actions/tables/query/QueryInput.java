@@ -47,6 +47,8 @@ public class QueryInput extends AbstractTableActionInput
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
    private boolean shouldFetchHeavyFields        = false;
+   private boolean shouldOmitHiddenFields        = true;
+   private boolean shouldMaskPasswords           = true;
 
    /////////////////////////////////////////////////////////////////////////////////////////
    // this field - only applies if shouldTranslatePossibleValues is true.                 //
@@ -494,6 +496,68 @@ public class QueryInput extends AbstractTableActionInput
    public QueryInput withAssociationNamesToInclude(Collection<String> associationNamesToInclude)
    {
       this.associationNamesToInclude = associationNamesToInclude;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldMaskPasswords
+    *******************************************************************************/
+   public boolean getShouldMaskPasswords()
+   {
+      return (this.shouldMaskPasswords);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldMaskPasswords
+    *******************************************************************************/
+   public void setShouldMaskPasswords(boolean shouldMaskPasswords)
+   {
+      this.shouldMaskPasswords = shouldMaskPasswords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldMaskPasswords
+    *******************************************************************************/
+   public QueryInput withShouldMaskPasswords(boolean shouldMaskPasswords)
+   {
+      this.shouldMaskPasswords = shouldMaskPasswords;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shouldOmitHiddenFields
+    *******************************************************************************/
+   public boolean getShouldOmitHiddenFields()
+   {
+      return (this.shouldOmitHiddenFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shouldOmitHiddenFields
+    *******************************************************************************/
+   public void setShouldOmitHiddenFields(boolean shouldOmitHiddenFields)
+   {
+      this.shouldOmitHiddenFields = shouldOmitHiddenFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shouldOmitHiddenFields
+    *******************************************************************************/
+   public QueryInput withShouldOmitHiddenFields(boolean shouldOmitHiddenFields)
+   {
+      this.shouldOmitHiddenFields = shouldOmitHiddenFields;
       return (this);
    }
 

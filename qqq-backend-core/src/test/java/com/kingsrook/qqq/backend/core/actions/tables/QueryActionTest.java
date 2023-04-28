@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -33,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockQueryAction;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -73,17 +75,40 @@ class QueryActionTest extends BaseTest
          // this SHOULD be empty, based on the default for the should //
          ///////////////////////////////////////////////////////////////
          assertThat(record.getDisplayValues()).isEmpty();
+
+         //////////////////////////////////////////
+         // hidden field should not be in record //
+         //////////////////////////////////////////
+         assertThat(record.getValue("superSecret")).isNull();
+
+         /////////////////////////////////////
+         // password field should be masked //
+         /////////////////////////////////////
+         assertThat(record.getValueString("ssn")).contains("****");
       }
 
-      ////////////////////////////////////
-      // now flip that field and re-run //
-      ////////////////////////////////////
+      ////////////////////////////////////////////////////////
+      // now flip some fields, re-run, and validate results //
+      ////////////////////////////////////////////////////////
       queryInput.setShouldGenerateDisplayValues(true);
+      queryInput.setShouldMaskPasswords(false);
+      queryInput.setShouldOmitHiddenFields(false);
       assertThat(queryOutput.getRecords()).isNotEmpty();
       queryOutput = new QueryAction().execute(queryInput);
       for(QRecord record : queryOutput.getRecords())
       {
          assertThat(record.getDisplayValues()).isNotEmpty();
+
+         //////////////////////////////////////////
+         // hidden field should now be in record //
+         //////////////////////////////////////////
+         assertThat(record.getValue("superSecret")).isNotNull();
+
+         /////////////////////////////////////
+         // password field should be masked //
+         /////////////////////////////////////
+         Serializable mockValue = MockQueryAction.getMockValue(QContext.getQInstance().getTable("person"), "ssn");
+         assertThat(record.getValueString("ssn")).isEqualTo(mockValue);
       }
    }
 
