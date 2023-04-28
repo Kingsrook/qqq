@@ -261,7 +261,7 @@ public class ValidateRecordSecurityLockHelper
          QSecurityKeyType securityKeyType = QContext.getQInstance().getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
          if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()) && QContext.getQSession().hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
          {
-            LOG.debug("Session has " + securityKeyType.getAllAccessKeyName() + " - not checking this lock.");
+            LOG.trace("Session has " + securityKeyType.getAllAccessKeyName() + " - not checking this lock.");
          }
          else
          {

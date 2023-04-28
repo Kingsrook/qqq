@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -204,6 +205,41 @@ class QueryActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testQueryManyRecordsAssociationsWithPipe() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      insertNOrdersWithAssociations(2500);
+
+      RecordPipe pipe       = new RecordPipe(1000);
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setRecordPipe(pipe);
+      queryInput.setIncludeAssociations(true);
+
+      int recordsConsumed = new AsyncRecordPipeLoop().run("Test", null, pipe, (callback) ->
+      {
+         new QueryAction().execute(queryInput);
+         return (true);
+      }, () ->
+      {
+         List<QRecord> records = pipe.consumeAvailableRecords();
+         for(QRecord record : records)
+         {
+            assertEquals(1, record.getAssociatedRecords().get("orderLine").size());
+            assertEquals(1, record.getAssociatedRecords().get("extrinsics").size());
+         }
+         return (records.size());
+      });
+
+      assertEquals(2500, recordsConsumed);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQueryAssociationsNoAssociationNamesToInclude() throws QException
    {
       QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
@@ -354,6 +390,27 @@ class QueryActionTest extends BaseTest
             .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC3").withValue("quantity", 3))
             .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "YOUR-FIELD-1").withValue("value", "YOUR-VALUE-1"))
       ));
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void insertNOrdersWithAssociations(int n) throws QException
+   {
+      List<QRecord> recordList = new ArrayList<>();
+      for(int i = 0; i < n; i++)
+      {
+         recordList.add(new QRecord().withValue("storeId", 1).withValue("orderNo", "ORD" + i)
+            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC1").withValue("quantity", 3))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "YOUR-FIELD").withValue("value", "YOUR-VALUE")));
+      }
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(recordList);
       new InsertAction().execute(insertInput);
    }
 }

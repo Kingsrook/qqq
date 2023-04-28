@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCusto
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -83,6 +84,15 @@ public class QueryAction
       if(queryInput.getRecordPipe() != null)
       {
          queryInput.getRecordPipe().setPostRecordActions(this::postRecordActions);
+
+         if(queryInput.getIncludeAssociations())
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // if the user requested to include associations, it's important that that is buffered, //
+            // (for performance reasons), so, wrap the user's pipe with a buffer                    //
+            //////////////////////////////////////////////////////////////////////////////////////////
+            queryInput.setRecordPipe(new RecordPipeBufferedWrapper(queryInput.getRecordPipe()));
+         }
       }
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -111,6 +121,7 @@ public class QueryAction
     *******************************************************************************/
    private void manageAssociations(QueryInput queryInput, List<QRecord> queryOutputRecords) throws QException
    {
+      LOG.info("In manageAssociations for " + queryInput.getTableName() + " with " + queryOutputRecords.size() + " records");
       QTableMetaData table = queryInput.getTable();
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {

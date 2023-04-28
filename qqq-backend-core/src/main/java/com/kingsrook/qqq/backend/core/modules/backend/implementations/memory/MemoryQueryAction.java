@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
@@ -43,7 +44,16 @@ public class MemoryQueryAction implements QueryInterface
       try
       {
          QueryOutput queryOutput = new QueryOutput(queryInput);
-         queryOutput.addRecords(MemoryRecordStore.getInstance().query(queryInput));
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // add the records to the output one-by-one -- this more closely matches how "real" backends perform //
+         // and works better w/ pipes                                                                         //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         for(QRecord qRecord : MemoryRecordStore.getInstance().query(queryInput))
+         {
+            queryOutput.addRecord(qRecord);
+         }
+
          return (queryOutput);
       }
       catch(Exception e)
