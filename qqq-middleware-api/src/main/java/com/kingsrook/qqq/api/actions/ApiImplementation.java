@@ -102,7 +102,7 @@ public class ApiImplementation
    {
       List<String> badRequestMessages = new ArrayList<>();
 
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.QUERY_BY_QUERY_STRING);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.QUERY_BY_QUERY_STRING);
       String         tableName = table.getName();
 
       QueryInput queryInput = new QueryInput();
@@ -326,7 +326,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static Map<String, Serializable> insert(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String body) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.INSERT);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.INSERT);
       String         tableName = table.getName();
 
       InsertInput insertInput = new InsertInput();
@@ -392,7 +392,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static List<Map<String, Serializable>> bulkInsert(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String body) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_INSERT);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_INSERT);
       String         tableName = table.getName();
 
       InsertInput insertInput = new InsertInput();
@@ -481,7 +481,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static Map<String, Serializable> get(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String primaryKey) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.GET);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.GET);
       String         tableName = table.getName();
 
       GetInput getInput = new GetInput();
@@ -516,7 +516,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static void update(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String primaryKey, String body) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.UPDATE);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.UPDATE);
       String         tableName = table.getName();
 
       UpdateInput updateInput = new UpdateInput();
@@ -586,7 +586,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static List<Map<String, Serializable>> bulkUpdate(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String body) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_UPDATE);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_UPDATE);
       String         tableName = table.getName();
 
       UpdateInput updateInput = new UpdateInput();
@@ -698,7 +698,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static void delete(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String primaryKey) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.DELETE);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.DELETE);
       String         tableName = table.getName();
 
       DeleteInput deleteInput = new DeleteInput();
@@ -732,7 +732,7 @@ public class ApiImplementation
     *******************************************************************************/
    public static List<Map<String, Serializable>> bulkDelete(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, String body) throws QException
    {
-      QTableMetaData table     = validateTableAndVersion(tableApiName, apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_DELETE);
+      QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.BULK_DELETE);
       String         tableName = table.getName();
 
       DeleteInput deleteInput = new DeleteInput();
@@ -982,55 +982,53 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QTableMetaData validateTableAndVersion(String path, ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, ApiOperation operation) throws QNotFoundException
+   public static QTableMetaData validateTableAndVersion(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, ApiOperation operation) throws QNotFoundException
    {
-      QNotFoundException qNotFoundException = new QNotFoundException("Could not find any resources at path " + path);
-
       QTableMetaData table    = getTableByApiName(apiInstanceMetaData.getName(), version, tableApiName);
       LogPair[]      logPairs = new LogPair[] { logPair("apiName", apiInstanceMetaData.getName()), logPair("version", version), logPair("tableApiName", tableApiName), logPair("operation", operation) };
 
       if(table == null)
       {
          LOG.info("404 because table is null (tableApiName=" + tableApiName + ")", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Could not find a table named " + tableApiName + " in this api."));
       }
 
       if(BooleanUtils.isTrue(table.getIsHidden()))
       {
          LOG.info("404 because table isHidden", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Could not find a table named " + tableApiName + " in this api."));
       }
 
       ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
       if(apiTableMetaDataContainer == null)
       {
          LOG.info("404 because table apiMetaDataContainer is null", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Could not find a table named " + tableApiName + " in this api."));
       }
 
       ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiInstanceMetaData.getName());
       if(apiTableMetaData == null)
       {
          LOG.info("404 because table apiMetaData is null", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Could not find a table named " + tableApiName + " in this api."));
       }
 
       if(BooleanUtils.isTrue(apiTableMetaData.getIsExcluded()))
       {
          LOG.info("404 because table is excluded", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Could not find a table named " + tableApiName + " in this api."));
       }
 
       if(!operation.isOperationEnabled(List.of(apiInstanceMetaData, apiTableMetaData)))
       {
          LOG.info("404 because api operation is not enabled", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Cannot perform operation [" + operation + "] on table named " + tableApiName + " in this api."));
       }
 
       if(!table.isCapabilityEnabled(QContext.getQInstance().getBackendForTable(table.getName()), operation.getCapability()))
       {
          LOG.info("404 because table capability is not enabled", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException("Cannot perform operation [" + operation + "] on table named " + tableApiName + " in this api."));
       }
 
       APIVersion       requestApiVersion = new APIVersion(version);
@@ -1038,13 +1036,13 @@ public class ApiImplementation
       if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
       {
          LOG.info("404 because requested version is not supported", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException(version + " is not a supported version in this api."));
       }
 
       if(!apiTableMetaData.getApiVersionRange().includes(requestApiVersion))
       {
          LOG.info("404 because table version range does not include requested version", logPairs);
-         throw (qNotFoundException);
+         throw (new QNotFoundException(version + " is not a supported version for table " + tableApiName + " in this api."));
       }
 
       return (table);

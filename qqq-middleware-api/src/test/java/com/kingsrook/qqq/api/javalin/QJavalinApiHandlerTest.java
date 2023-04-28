@@ -147,25 +147,29 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testRandom404s()
    {
-      for(String method : new String[] { "get", "post", "patch", "delete" })
-      {
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/notATable/").asString());
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("get", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("get", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("get", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("get", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.OK_200, null, Unirest.request("get", BASE_URL + "/api/").asString()); // this path returns the doc site for a GET
 
-         if(method.equals("get"))
-         {
-            //////////////////////////////////////////////
-            // this path returns the doc site for a GET //
-            //////////////////////////////////////////////
-            assertErrorResponse(HttpStatus.OK_200, null, Unirest.request(method, BASE_URL + "/api/").asString());
-         }
-         else
-         {
-            assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/").asString());
-         }
-      }
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("post", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/").asString());
+
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("patch", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/").asString());
+
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("delete", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/").asString());
    }
 
 

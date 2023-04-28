@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -47,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.module.api.BaseTest;
 import com.kingsrook.qqq.backend.module.api.TestUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
@@ -524,9 +526,20 @@ class BaseAPIActionUtilTest extends BaseTest
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(6, insertOutput.getRecords().get(0).getValueInteger("id"));
 
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(OutboundAPILog.TABLE_NAME);
-      QueryOutput apiLogRecords = new QueryAction().execute(queryInput);
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // the outbound api log is inserted async, so... do or do not, and sleep some if needed //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      QueryOutput apiLogRecords = null;
+      int         tries         = 0;
+      do
+      {
+         SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(OutboundAPILog.TABLE_NAME);
+         apiLogRecords = new QueryAction().execute(queryInput);
+      }
+      while(apiLogRecords.getRecords().isEmpty() && tries++ < 10);
+
       assertEquals(1, apiLogRecords.getRecords().size());
       assertEquals("POST", apiLogRecords.getRecords().get(0).getValueString("method"));
    }
