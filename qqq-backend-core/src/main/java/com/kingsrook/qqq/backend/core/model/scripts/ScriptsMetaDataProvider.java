@@ -382,13 +382,29 @@ public class ScriptsMetaDataProvider
          .withRecordLabelFormat("%s v%s")
          .withRecordLabelFields(List.of("scriptId", "sequenceNo"))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scriptId", "sequenceNo")))
-         .withSection(new QFieldSection("api", "API", new QIcon().withName("code"), Tier.T2, List.of("apiName", "apiVersion")))
          .withSection(new QFieldSection("code", new QIcon().withName("data_object"), Tier.T2, List.of("contents")))
          .withSection(new QFieldSection("changeManagement", new QIcon().withName("history"), Tier.T2, List.of("commitMessage", "author")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       tableMetaData.getField("contents").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("javascript")));
       tableMetaData.getField("scriptId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
+
+      try
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the api module is loaded, then add a section to the table for the api name & version fields //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         Class.forName("com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataProvider");
+         tableMetaData.getSections().add(1, new QFieldSection("api", "API", new QIcon().withName("code"), Tier.T2, List.of("apiName", "apiVersion")));
+      }
+      catch(ClassNotFoundException e)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the api module is not loaded, then make sure we don't have these fields in our scripts table //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         tableMetaData.getFields().remove("apiName");
+         tableMetaData.getFields().remove("apiVersion");
+      }
 
       return (tableMetaData);
    }
