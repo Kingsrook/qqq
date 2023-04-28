@@ -377,7 +377,7 @@ public class GetAction
 
       if(getInput.getShouldOmitHiddenFields() || getInput.getShouldMaskPasswords())
       {
-         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(record.getTableName()).getFields();
+         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(getInput.getTableName()).getFields();
          for(String fieldName : fields.keySet())
          {
             QFieldType fieldType = fields.get(fieldName).getType();
@@ -396,30 +396,6 @@ public class GetAction
             }
          }
          QValueFormatter.setDisplayValuesInRecords(getInput.getTable(), List.of(returnRecord));
-      }
-
-      //////////////////////////////
-      // mask any password fields //
-      //////////////////////////////
-      Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(record.getTableName()).getFields();
-      for(String fieldName : fields.keySet())
-      {
-         QFieldMetaData field = fields.get(fieldName);
-         if(getInput.getShouldOmitHiddenFields())
-         {
-            if(field.getIsHidden())
-            {
-               returnRecord.removeValue(fieldName);
-            }
-         }
-         else if(getInput.getShouldMaskPasswords())
-         {
-            if(field.getType() != null && field.getType().needsMasked())
-            {
-               returnRecord.setValue(fieldName, "************");
-               returnRecord.setDisplayValue(fieldName, "************");
-            }
-         }
       }
 
       //////////////////////////////////////////////////////////////////////////////
