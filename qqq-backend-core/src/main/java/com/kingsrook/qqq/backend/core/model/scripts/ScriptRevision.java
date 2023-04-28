@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 
 
 /*******************************************************************************
@@ -48,16 +49,22 @@ public class ScriptRevision extends QRecordEntity
    @QField(possibleValueSourceName = "script")
    private Integer scriptId;
 
+   @QField(possibleValueSourceName = "apiVersion", label = "API Version")
+   private String apiVersion;
+
+   @QField(possibleValueSourceName = "apiName", label = "API Name")
+   private String apiName;
+
    @QField()
    private String contents;
 
    @QField()
    private Integer sequenceNo;
 
-   @QField()
+   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
    private String commitMessage;
 
-   @QField()
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
    private String author;
 
 
@@ -350,6 +357,68 @@ public class ScriptRevision extends QRecordEntity
    public ScriptRevision withAuthor(String author)
    {
       this.author = author;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiVersion
+    *******************************************************************************/
+   public String getApiVersion()
+   {
+      return (this.apiVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiVersion
+    *******************************************************************************/
+   public void setApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiVersion
+    *******************************************************************************/
+   public ScriptRevision withApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiName
+    *******************************************************************************/
+   public String getApiName()
+   {
+      return (this.apiName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiName
+    *******************************************************************************/
+   public void setApiName(String apiName)
+   {
+      this.apiName = apiName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiName
+    *******************************************************************************/
+   public ScriptRevision withApiName(String apiName)
+   {
+      this.apiName = apiName;
       return (this);
    }
 

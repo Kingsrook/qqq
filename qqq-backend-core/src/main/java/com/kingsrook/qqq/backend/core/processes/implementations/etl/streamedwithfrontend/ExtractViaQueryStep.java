@@ -83,11 +83,24 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       queryInput.setRecordPipe(getRecordPipe());
       queryInput.setLimit(getLimit());
       queryInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
+
+      customizeInputPreQuery(queryInput);
+
       new QueryAction().execute(queryInput);
 
       ///////////////////////////////////////////////////////////////////
       // output is done into the pipe - so, nothing for us to do here. //
       ///////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    ** chance for sub-classes to change things about the query input, if they want.
+    *******************************************************************************/
+   protected void customizeInputPreQuery(QueryInput queryInput)
+   {
+
    }
 
 

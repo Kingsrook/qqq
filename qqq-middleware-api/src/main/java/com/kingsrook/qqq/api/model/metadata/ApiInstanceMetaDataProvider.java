@@ -118,7 +118,7 @@ public class ApiInstanceMetaDataProvider
       ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(instance);
       for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
       {
-         apiNamePossibleValues.add(new QPossibleValue<>(entry.getKey()));
+         apiNamePossibleValues.add(new QPossibleValue<>(entry.getKey(), entry.getValue().getLabel()));
 
          ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
          allVersions.addAll(apiInstanceMetaData.getPastVersions());

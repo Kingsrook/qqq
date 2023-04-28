@@ -28,11 +28,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
+import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
@@ -49,20 +51,30 @@ public class ApiScriptUtils implements Serializable
     ** Constructor
     **
     *******************************************************************************/
-   public ApiScriptUtils()
+   public ApiScriptUtils(String apiName, String apiVersion)
    {
+      setApiName(apiName);
+      setApiVersion(apiVersion);
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
     **
     *******************************************************************************/
-   public ApiScriptUtils(String apiName, String apiVersion)
+   public static ArrayList<Map<String, Serializable>> qRecordListToApiRecordList(List<QRecord> qRecordList, String tableName, String apiName, String apiVersion) throws QException
    {
-      setApiName(apiName);
-      setApiVersion(apiVersion);
+      if(qRecordList == null)
+      {
+         return (null);
+      }
+
+      ArrayList<Map<String, Serializable>> rs = new ArrayList<>();
+      for(QRecord qRecord : qRecordList)
+      {
+         rs.add(QRecordApiAdapter.qRecordToApiMap(qRecord, tableName, apiName, apiVersion));
+      }
+      return (rs);
    }
 
 

@@ -278,6 +278,7 @@ public class PollingAutomationPerTableRunner implements Runnable
                .withPriority(record.getValueInteger("priority"))
                .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
                .withValues(MapBuilder.of("scriptId", record.getValue("scriptId")))
+               .withIncludeRecordAssociations(true)
             );
          }
       }
@@ -391,6 +392,8 @@ public class PollingAutomationPerTableRunner implements Runnable
       filter.addOrderBy(new QFilterOrderBy().withFieldName(table.getPrimaryKeyField()));
 
       queryInput.setFilter(filter);
+
+      queryInput.setIncludeAssociations(action.getIncludeRecordAssociations());
 
       return (new QueryAction().execute(queryInput).getRecords());
    }

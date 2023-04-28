@@ -382,6 +382,7 @@ public class ScriptsMetaDataProvider
          .withRecordLabelFormat("%s v%s")
          .withRecordLabelFields(List.of("scriptId", "sequenceNo"))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scriptId", "sequenceNo")))
+         .withSection(new QFieldSection("api", "API", new QIcon().withName("code"), Tier.T2, List.of("apiName", "apiVersion")))
          .withSection(new QFieldSection("code", new QIcon().withName("data_object"), Tier.T2, List.of("contents")))
          .withSection(new QFieldSection("changeManagement", new QIcon().withName("history"), Tier.T2, List.of("commitMessage", "author")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));

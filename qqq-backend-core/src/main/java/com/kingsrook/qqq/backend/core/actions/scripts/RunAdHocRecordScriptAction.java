@@ -23,15 +23,13 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.ScriptExecutionLoggerInterface;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -50,13 +48,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -98,6 +93,7 @@ public class RunAdHocRecordScriptAction
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(input.getTableName());
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, input.getRecordPrimaryKeyList())));
+            queryInput.setIncludeAssociations(true);
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
             input.setRecordList(queryOutput.getRecords());
          }
@@ -114,43 +110,14 @@ public class RunAdHocRecordScriptAction
          /////////////
          // run it! //
          /////////////
-         ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
-         executeCodeInput.setInput(new HashMap<>(Objects.requireNonNullElseGet(input.getInputValues(), HashMap::new)));
-         executeCodeInput.getInput().put("records", new ArrayList<>(input.getRecordList()));
-         executeCodeInput.setContext(new HashMap<>());
-         if(input.getOutputObject() != null)
-         {
-            executeCodeInput.getContext().put("output", input.getOutputObject());
-         }
-
-         if(input.getScriptUtils() != null)
-         {
-            executeCodeInput.getContext().put("scriptUtils", input.getScriptUtils());
-         }
-
-         addApiUtilityToContext(executeCodeInput.getContext(), scriptRevision);
-
-         executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         // let caller supply a logger, or by default use StoreScriptLogAndScriptLogLineExecutionLogger //
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         QCodeExecutionLoggerInterface executionLogger = Objects.requireNonNullElseGet(input.getLogger(), () -> new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
-         executeCodeInput.setExecutionLogger(executionLogger);
-         if(executionLogger instanceof ScriptExecutionLoggerInterface scriptExecutionLoggerInterface)
-         {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////
-            // if logger is aware of scripts (as opposed to a generic CodeExecution logger), give it the ids. //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////
-            scriptExecutionLoggerInterface.setScriptId(scriptRevision.getScriptId());
-            scriptExecutionLoggerInterface.setScriptRevisionId(scriptRevision.getId());
-         }
+         ExecuteCodeInput executeCodeInput = ExecuteCodeAction.setupExecuteCodeInput(input, scriptRevision);
+         executeCodeInput.getInput().put("records", getRecordsForScript(input, scriptRevision));
 
          ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
          new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
 
          output.setOutput(executeCodeOutput.getOutput());
-         output.setLogger(executionLogger);
+         output.setLogger(executeCodeInput.getExecutionLogger());
       }
       catch(Exception e)
       {
@@ -161,17 +128,18 @@ public class RunAdHocRecordScriptAction
 
 
    /*******************************************************************************
-    ** Try to (dynamically) load the ApiScriptUtils object from the api middleware
-    ** module -- in case the runtime doesn't have that module deployed (e.g, not in
-    ** the project pom).
+    **
     *******************************************************************************/
-   private void addApiUtilityToContext(Map<String, Serializable> context, ScriptRevision scriptRevision)
+   private static ArrayList<? extends Serializable> getRecordsForScript(RunAdHocRecordScriptInput input, ScriptRevision scriptRevision)
    {
       try
       {
-         Class<?> apiScriptUtilsClass  = Class.forName("com.kingsrook.qqq.api.utils.ApiScriptUtils");
-         Object   apiScriptUtilsObject = apiScriptUtilsClass.getConstructor().newInstance();
-         context.put("api", (Serializable) apiScriptUtilsObject);
+         Class<?> apiScriptUtilsClass        = Class.forName("com.kingsrook.qqq.api.utils.ApiScriptUtils");
+         Method   qRecordListToApiRecordList = apiScriptUtilsClass.getMethod("qRecordListToApiRecordList", List.class, String.class, String.class, String.class);
+         Object   apiRecordList              = qRecordListToApiRecordList.invoke(null, input.getRecordList(), input.getTableName(), scriptRevision.getApiName(), scriptRevision.getApiVersion());
+
+         // noinspection unchecked
+         return (ArrayList<? extends Serializable>) apiRecordList;
       }
       catch(ClassNotFoundException e)
       {
@@ -182,8 +150,10 @@ public class RunAdHocRecordScriptAction
       }
       catch(Exception e)
       {
-         LOG.warn("Error adding api utility to script context", e, logPair("scriptRevisionId", scriptRevision.getId()));
+         LOG.warn("Error converting QRecord list to api record list", e);
       }
+
+      return (new ArrayList<>(input.getRecordList()));
    }
 
 

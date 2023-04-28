@@ -106,6 +106,7 @@ public class TestScriptProcessStep implements BackendStep
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordPrimaryKeyList.split(","))));
+            queryInput.setIncludeAssociations(true);
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
             if(CollectionUtils.nullSafeIsEmpty(queryOutput.getRecords()))
             {

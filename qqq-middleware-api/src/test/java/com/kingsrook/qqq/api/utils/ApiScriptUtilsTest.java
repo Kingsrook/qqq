@@ -267,10 +267,7 @@ class ApiScriptUtilsTest extends BaseTest
     *******************************************************************************/
    private static ApiScriptUtils newDefaultApiScriptUtils()
    {
-      ApiScriptUtils apiScriptUtils = new ApiScriptUtils();
-      apiScriptUtils.setApiName(TestUtils.API_NAME);
-      apiScriptUtils.setApiVersion(TestUtils.CURRENT_API_VERSION);
-      return apiScriptUtils;
+      return (new ApiScriptUtils(TestUtils.API_NAME, TestUtils.CURRENT_API_VERSION));
    }
 
 }
