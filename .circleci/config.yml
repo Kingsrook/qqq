@@ -52,9 +52,17 @@ commands:
       - store_jacoco_site:
           module: qqq-backend-module-rdbms
       - store_jacoco_site:
+          module: qqq-backend-module-api
+      - store_jacoco_site:
+          module: qqq-middleware-api
+      - store_jacoco_site:
           module: qqq-middleware-javalin
       - store_jacoco_site:
           module: qqq-middleware-picocli
+      - store_jacoco_site:
+          module: qqq-middleware-slack
+      - store_jacoco_site:
+          module: qqq-language-support-javascript
       - store_jacoco_site:
           module: qqq-sample-project
       - run:
