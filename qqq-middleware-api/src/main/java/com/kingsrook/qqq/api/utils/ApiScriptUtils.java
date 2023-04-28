@@ -62,7 +62,7 @@ public class ApiScriptUtils implements Serializable
    public ApiScriptUtils(String apiName, String apiVersion)
    {
       setApiName(apiName);
-      this.apiVersion = apiVersion;
+      setApiVersion(apiVersion);
    }
 
 
