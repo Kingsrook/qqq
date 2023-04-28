@@ -85,14 +85,6 @@ public class QueryAction
          queryInput.getRecordPipe().setPostRecordActions(this::postRecordActions);
       }
 
-      if(queryInput.getIncludeAssociations() && queryInput.getRecordPipe() != null)
-      {
-         //////////////////////////////////////////////
-         // todo - support this in the future maybe? //
-         //////////////////////////////////////////////
-         throw (new QException("Associations may not be fetched into a RecordPipe."));
-      }
-
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
       // todo pre-customization - just get to modify the request?
@@ -109,11 +101,6 @@ public class QueryAction
          postRecordActions(queryOutput.getRecords());
       }
 
-      if(queryInput.getIncludeAssociations())
-      {
-         manageAssociations(queryInput, queryOutput);
-      }
-
       return queryOutput;
    }
 
@@ -122,7 +109,7 @@ public class QueryAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void manageAssociations(QueryInput queryInput, QueryOutput queryOutput) throws QException
+   private void manageAssociations(QueryInput queryInput, List<QRecord> queryOutputRecords) throws QException
    {
       QTableMetaData table = queryInput.getTable();
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
@@ -147,7 +134,7 @@ public class QueryAction
             {
                JoinOn            joinOn = join.getJoinOns().get(0);
                Set<Serializable> values = new HashSet<>();
-               for(QRecord record : queryOutput.getRecords())
+               for(QRecord record : queryOutputRecords)
                {
                   Serializable value = record.getValue(joinOn.getLeftField());
                   values.add(value);
@@ -159,7 +146,7 @@ public class QueryAction
             {
                filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
 
-               for(QRecord record : queryOutput.getRecords())
+               for(QRecord record : queryOutputRecords)
                {
                   QQueryFilter subFilter = new QQueryFilter();
                   filter.addSubFilter(subFilter);
@@ -227,7 +214,7 @@ public class QueryAction
     ** not one created via List.of()).  This may include setting display values,
     ** translating possible values, and running post-record customizations.
     *******************************************************************************/
-   public void postRecordActions(List<QRecord> records)
+   public void postRecordActions(List<QRecord> records) throws QException
    {
       if(this.postQueryRecordCustomizer.isPresent())
       {
@@ -246,6 +233,11 @@ public class QueryAction
       if(queryInput.getShouldGenerateDisplayValues())
       {
          QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
+      }
+
+      if(queryInput.getIncludeAssociations())
+      {
+         manageAssociations(queryInput, records);
       }
    }
 }

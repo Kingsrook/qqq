@@ -222,7 +222,10 @@ class TableSyncProcessTest extends BaseTest
       public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
          List<QRecord> qRecords = TestUtils.queryTable(QContext.getQInstance(), TestUtils.TABLE_NAME_PERSON_MEMORY);
-         qRecords.forEach(r -> getRecordPipe().addRecord(r));
+         for(QRecord qRecord : qRecords)
+         {
+            getRecordPipe().addRecord(qRecord);
+         }
 
          ////////////////////////////////////////
          // re-add records 1 and 5 to the pipe //

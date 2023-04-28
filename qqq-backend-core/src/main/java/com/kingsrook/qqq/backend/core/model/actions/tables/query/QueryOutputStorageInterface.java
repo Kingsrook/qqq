@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -36,13 +37,13 @@ interface QueryOutputStorageInterface
    /*******************************************************************************
     ** add a records to this output
     *******************************************************************************/
-   void addRecord(QRecord record);
+   void addRecord(QRecord record) throws QException;
 
 
    /*******************************************************************************
     ** add a list of records to this output
     *******************************************************************************/
-   void addRecords(List<QRecord> records);
+   void addRecords(List<QRecord> records) throws QException;
 
    /*******************************************************************************
     ** Get all stored records

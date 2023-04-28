@@ -168,6 +168,42 @@ class QueryActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testQueryAssociationsWithPipe() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
+
+      RecordPipe pipe       = new RecordPipe();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setRecordPipe(pipe);
+      queryInput.setIncludeAssociations(true);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertNotNull(queryOutput);
+
+      List<QRecord> records = pipe.consumeAvailableRecords();
+      assertThat(records).isNotEmpty();
+
+      QRecord order0 = records.get(0);
+      assertEquals(2, order0.getAssociatedRecords().get("orderLine").size());
+      assertEquals(3, order0.getAssociatedRecords().get("extrinsics").size());
+
+      QRecord orderLine00 = order0.getAssociatedRecords().get("orderLine").get(0);
+      assertEquals(1, orderLine00.getAssociatedRecords().get("extrinsics").size());
+      QRecord orderLine01 = order0.getAssociatedRecords().get("orderLine").get(1);
+      assertEquals(2, orderLine01.getAssociatedRecords().get("extrinsics").size());
+
+      QRecord order1 = records.get(1);
+      assertEquals(1, order1.getAssociatedRecords().get("orderLine").size());
+      assertEquals(1, order1.getAssociatedRecords().get("extrinsics").size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQueryAssociationsNoAssociationNamesToInclude() throws QException
    {
       QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);

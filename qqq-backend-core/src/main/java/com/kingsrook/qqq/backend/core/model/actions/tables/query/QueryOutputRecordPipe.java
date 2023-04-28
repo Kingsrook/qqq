@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
@@ -53,7 +54,7 @@ class QueryOutputRecordPipe implements QueryOutputStorageInterface
     ** add a record to this output
     *******************************************************************************/
    @Override
-   public void addRecord(QRecord record)
+   public void addRecord(QRecord record) throws QException
    {
       recordPipe.addRecord(record);
    }
@@ -64,7 +65,7 @@ class QueryOutputRecordPipe implements QueryOutputStorageInterface
     ** add a list of records to this output
     *******************************************************************************/
    @Override
-   public void addRecords(List<QRecord> records)
+   public void addRecords(List<QRecord> records) throws QException
    {
       recordPipe.addRecords(records);
    }

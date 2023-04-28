@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -63,7 +64,7 @@ public class BufferedRecordPipe extends RecordPipe
     **
     *******************************************************************************/
    @Override
-   public void addRecord(QRecord record)
+   public void addRecord(QRecord record) throws QException
    {
       buffer.add(record);
       if(buffer.size() >= bufferSize)
@@ -78,7 +79,7 @@ public class BufferedRecordPipe extends RecordPipe
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void finalFlush()
+   public void finalFlush() throws QException
    {
       if(!buffer.isEmpty())
       {
