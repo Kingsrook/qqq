@@ -64,6 +64,11 @@ public class QRecordApiAdapter
     *******************************************************************************/
    public static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion) throws QException
    {
+      if(record == null)
+      {
+         return (null);
+      }
+
       List<QFieldMetaData>                tableApiFields = getTableApiFieldList(new ApiNameVersionAndTableName(apiName, apiVersion, tableName));
       LinkedHashMap<String, Serializable> outputRecord   = new LinkedHashMap<>();
 
