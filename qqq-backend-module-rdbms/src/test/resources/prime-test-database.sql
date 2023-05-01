@@ -102,19 +102,20 @@ CREATE TABLE item
 (
    id INT AUTO_INCREMENT PRIMARY KEY,
    sku VARCHAR(80) NOT NULL,
+   description VARCHAR(80),
    store_id INT NOT NULL REFERENCES store
 );
 
 -- three items for each store
-INSERT INTO item (id, sku, store_id) VALUES (1, 'QM-1', 1);
-INSERT INTO item (id, sku, store_id) VALUES (2, 'QM-2', 1);
-INSERT INTO item (id, sku, store_id) VALUES (3, 'QM-3', 1);
-INSERT INTO item (id, sku, store_id) VALUES (4, 'QRU-1', 2);
-INSERT INTO item (id, sku, store_id) VALUES (5, 'QRU-2', 2);
-INSERT INTO item (id, sku, store_id) VALUES (6, 'QRU-3', 2);
-INSERT INTO item (id, sku, store_id) VALUES (7, 'QD-1', 3);
-INSERT INTO item (id, sku, store_id) VALUES (8, 'QD-2', 3);
-INSERT INTO item (id, sku, store_id) VALUES (9, 'QD-3', 3);
+INSERT INTO item (id, sku, description, store_id) VALUES (1, 'QM-1', 'Q-Mart Item 1', 1);
+INSERT INTO item (id, sku, description, store_id) VALUES (2, 'QM-2', 'Q-Mart Item 2', 1);
+INSERT INTO item (id, sku, description, store_id) VALUES (3, 'QM-3', 'Q-Mart Item 3', 1);
+INSERT INTO item (id, sku, description, store_id) VALUES (4, 'QRU-1', 'QQQ R Us Item 4', 2);
+INSERT INTO item (id, sku, description, store_id) VALUES (5, 'QRU-2', 'QQQ R Us Item 5', 2);
+INSERT INTO item (id, sku, description, store_id) VALUES (6, 'QRU-3', 'QQQ R Us Item 6', 2);
+INSERT INTO item (id, sku, description, store_id) VALUES (7, 'QD-1', 'QDepot Item 7', 3);
+INSERT INTO item (id, sku, description, store_id) VALUES (8, 'QD-2', 'QDepot Item 8', 3);
+INSERT INTO item (id, sku, description, store_id) VALUES (9, 'QD-3', 'QDepot Item 9', 3);
 
 CREATE TABLE `order`
 (

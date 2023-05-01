@@ -32,12 +32,16 @@ import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -46,6 +50,8 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class JoinsContext
 {
+   private static final QLogger LOG = QLogger.getLogger(JoinsContext.class);
+
    private final QInstance       instance;
    private final String          mainTableName;
    private final List<QueryJoin> queryJoins;
@@ -65,7 +71,7 @@ public class JoinsContext
    {
       this.instance = instance;
       this.mainTableName = tableName;
-      this.queryJoins = CollectionUtils.nonNullList(queryJoins);
+      this.queryJoins = new MutableList<>(queryJoins);
 
       for(QueryJoin queryJoin : this.queryJoins)
       {
@@ -123,6 +129,8 @@ public class JoinsContext
 
       ensureFilterIsRepresented(filter);
 
+      addJoinsFromExposedJoinPaths();
+
       /* todo!!
       for(QueryJoin queryJoin : queryJoins)
       {
@@ -132,7 +140,147 @@ public class JoinsContext
             // addCriteriaForRecordSecurityLock(instance, session, joinTable, securityCriteria, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias());
          }
       }
-       */
+      */
+   }
+
+
+
+   /*******************************************************************************
+    ** If there are any joins in the context that don't have a join meta data, see
+    ** if we can find the JoinMetaData to use for them by looking at the main table's
+    ** exposed joins, and using their join paths.
+    *******************************************************************************/
+   private void addJoinsFromExposedJoinPaths() throws QException
+   {
+      ////////////////////////////////////////////////////////////////////////////////
+      // do a double-loop, to avoid concurrent modification on the queryJoins list. //
+      // that is to say, we'll loop over that list, but possibly add things to it,  //
+      // in which case we'll set this flag, and break the inner loop, to go again.  //
+      ////////////////////////////////////////////////////////////////////////////////
+      boolean addedJoin;
+      do
+      {
+         addedJoin = false;
+         for(QueryJoin queryJoin : queryJoins)
+         {
+            /////////////////////////////////////////////////////////////////////
+            // if the join has joinMetaData, then we don't need to process it. //
+            /////////////////////////////////////////////////////////////////////
+            if(queryJoin.getJoinMetaData() == null)
+            {
+               //////////////////////////////////////////////////////////////////////
+               // try to find a direct join between the main table and this table. //
+               // if one is found, then put it (the meta data) on the query join.  //
+               //////////////////////////////////////////////////////////////////////
+               String        baseTableName = Objects.requireNonNullElse(resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias()), mainTableName);
+               QJoinMetaData found         = findJoinMetaData(instance, baseTableName, queryJoin.getJoinTable());
+               if(found != null)
+               {
+                  queryJoin.setJoinMetaData(found);
+               }
+               else
+               {
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // else, the join must be indirect - so look for an exposedJoin that will have a joinPath that will connect us //
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  LOG.debug("Looking for an exposed join...", logPair("mainTable", mainTableName), logPair("joinTable", queryJoin.getJoinTable()));
+
+                  QTableMetaData mainTable          = instance.getTable(mainTableName);
+                  boolean        addedAnyQueryJoins = false;
+                  for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(mainTable.getExposedJoins()))
+                  {
+                     if(queryJoin.getJoinTable().equals(exposedJoin.getJoinTable()))
+                     {
+                        LOG.debug("Found an exposed join", logPair("mainTable", mainTableName), logPair("joinTable", queryJoin.getJoinTable()), logPair("joinPath", exposedJoin.getJoinPath()));
+
+                        /////////////////////////////////////////////////////////////////////////////////////
+                        // loop backward through the join path (from the joinTable back to the main table) //
+                        // adding joins to the table (if they aren't already in the query)                 //
+                        /////////////////////////////////////////////////////////////////////////////////////
+                        String tmpTable = queryJoin.getJoinTable();
+                        for(int i = exposedJoin.getJoinPath().size() - 1; i >= 0; i--)
+                        {
+                           String        joinName  = exposedJoin.getJoinPath().get(i);
+                           QJoinMetaData joinToAdd = instance.getJoin(joinName);
+
+                           /////////////////////////////////////////////////////////////////////////////
+                           // get the name from the opposite side of the join (flipping it if needed) //
+                           /////////////////////////////////////////////////////////////////////////////
+                           String nextTable;
+                           if(joinToAdd.getRightTable().equals(tmpTable))
+                           {
+                              nextTable = joinToAdd.getLeftTable();
+                           }
+                           else
+                           {
+                              nextTable = joinToAdd.getRightTable();
+                              joinToAdd = joinToAdd.flip();
+                           }
+
+                           if(doesJoinNeedAddedToQuery(joinName))
+                           {
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              // if this is the last element in the joinPath, then we want to set this joinMetaData on the outer queryJoin //
+                              // - else, we need to add a new queryJoin to this context                                                    //
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              if(i == exposedJoin.getJoinPath().size() - 1)
+                              {
+                                 if(queryJoin.getBaseTableOrAlias() == null)
+                                 {
+                                    queryJoin.setBaseTableOrAlias(nextTable);
+                                 }
+                                 queryJoin.setJoinMetaData(joinToAdd);
+                              }
+                              else
+                              {
+                                 QueryJoin queryJoinToAdd = makeQueryJoinFromJoinAndTableNames(nextTable, tmpTable, joinToAdd);
+                                 queryJoinToAdd.setType(queryJoin.getType());
+                                 addedAnyQueryJoins = true;
+                                 this.queryJoins.add(queryJoinToAdd); // todo something else with aliases?  probably.
+                                 processQueryJoin(queryJoinToAdd);
+                              }
+                           }
+
+                           tmpTable = nextTable;
+                        }
+                     }
+                  }
+
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  // break the inner loop (it would fail due to a concurrent modification), but continue the outer //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  if(addedAnyQueryJoins)
+                  {
+                     addedJoin = true;
+                     break;
+                  }
+               }
+            }
+         }
+      }
+      while(addedJoin);
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean doesJoinNeedAddedToQuery(String joinName)
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // look at all queryJoins already in context - if any have this join's name, then we don't need this join... //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QueryJoin queryJoin : queryJoins)
+      {
+         if(queryJoin.getJoinMetaData() != null && queryJoin.getJoinMetaData().getName().equals(joinName))
+         {
+            return (false);
+         }
+      }
+
+      return (true);
    }
 
 
@@ -256,30 +404,50 @@ public class JoinsContext
       {
          if(!aliasToTableNameMap.containsKey(filterTable) && !Objects.equals(mainTableName, filterTable))
          {
+            boolean found = false;
             for(QJoinMetaData join : CollectionUtils.nonNullMap(QContext.getQInstance().getJoins()).values())
             {
-               QueryJoin queryJoin = null;
-               if(join.getLeftTable().equals(mainTableName) && join.getRightTable().equals(filterTable))
-               {
-                  queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
-               }
-               else
-               {
-                  join = join.flip();
-                  if(join.getLeftTable().equals(mainTableName) && join.getRightTable().equals(filterTable))
-                  {
-                     queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
-                  }
-               }
-
+               QueryJoin queryJoin = makeQueryJoinFromJoinAndTableNames(mainTableName, filterTable, join);
                if(queryJoin != null)
                {
                   this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
                   processQueryJoin(queryJoin);
+                  found = true;
+                  break;
                }
+            }
+
+            if(!found)
+            {
+               QueryJoin queryJoin = new QueryJoin().withJoinTable(filterTable).withType(QueryJoin.Type.INNER);
+               this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
+               processQueryJoin(queryJoin);
             }
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QueryJoin makeQueryJoinFromJoinAndTableNames(String tableA, String tableB, QJoinMetaData join)
+   {
+      QueryJoin queryJoin = null;
+      if(join.getLeftTable().equals(tableA) && join.getRightTable().equals(tableB))
+      {
+         queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
+      }
+      else
+      {
+         join = join.flip();
+         if(join.getLeftTable().equals(tableA) && join.getRightTable().equals(tableB))
+         {
+            queryJoin = new QueryJoin().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
+         }
+      }
+      return queryJoin;
    }
 
 

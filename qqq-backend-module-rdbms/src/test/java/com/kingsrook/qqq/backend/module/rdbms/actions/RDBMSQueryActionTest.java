@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,20 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
+
+      // AbstractRDBMSAction.setLogSQL(true);
+      // AbstractRDBMSAction.setLogSQLOutput("system.out");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   void afterEach()
+   {
+      AbstractRDBMSAction.setLogSQL(false);
    }
 
 
@@ -1099,6 +1114,149 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       ));
       assertThatThrownBy(() -> new QueryAction().execute(queryInput))
          .hasRootCauseMessage("Duplicate table name or alias: shipToPerson");
+   }
+
+
+
+   /*******************************************************************************
+    ** Given tables:
+    **   order - orderLine - item
+    ** with exposedJoin on order to item
+    ** do a query on order, also selecting item.
+    *******************************************************************************/
+   @Test
+   void testTwoTableAwayExposedJoin() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+
+      QInstance  instance   = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      queryInput.withQueryJoins(List.of(
+         new QueryJoin(TestUtils.TABLE_NAME_ITEM).withType(QueryJoin.Type.INNER).withSelect(true)
+      ));
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      List<QRecord> records = queryOutput.getRecords();
+      assertThat(records).hasSize(11); // one per line item
+      assertThat(records).allMatch(r -> r.getValue("id") != null);
+      assertThat(records).allMatch(r -> r.getValue(TestUtils.TABLE_NAME_ITEM + ".description") != null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Given tables:
+    **   order - orderLine - item
+    ** with exposedJoin on item to order
+    ** do a query on item, also selecting order.
+    ** This is a reverse of the above, to make sure join flipping, etc, is good.
+    *******************************************************************************/
+   @Test
+   void testTwoTableAwayExposedJoinReversed() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+
+      QInstance  instance   = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ITEM);
+
+      queryInput.withQueryJoins(List.of(
+         new QueryJoin(TestUtils.TABLE_NAME_ORDER).withType(QueryJoin.Type.INNER).withSelect(true)
+      ));
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      List<QRecord> records = queryOutput.getRecords();
+      assertThat(records).hasSize(11); // one per line item
+      assertThat(records).allMatch(r -> r.getValue("description") != null);
+      assertThat(records).allMatch(r -> r.getValue(TestUtils.TABLE_NAME_ORDER + ".id") != null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Given tables:
+    **   order - orderLine - item
+    ** with exposedJoin on order to item
+    ** do a query on order, also selecting item, and also selecting orderLine...
+    *******************************************************************************/
+   @Test
+   void testTwoTableAwayExposedJoinAlsoSelectingInBetweenTable() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+
+      QInstance  instance   = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+
+      queryInput.withQueryJoins(List.of(
+         new QueryJoin(TestUtils.TABLE_NAME_ORDER_LINE).withType(QueryJoin.Type.INNER).withSelect(true),
+         new QueryJoin(TestUtils.TABLE_NAME_ITEM).withType(QueryJoin.Type.INNER).withSelect(true)
+      ));
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      List<QRecord> records = queryOutput.getRecords();
+      assertThat(records).hasSize(11); // one per line item
+      assertThat(records).allMatch(r -> r.getValue("id") != null);
+      assertThat(records).allMatch(r -> r.getValue(TestUtils.TABLE_NAME_ORDER_LINE + ".quantity") != null);
+      assertThat(records).allMatch(r -> r.getValue(TestUtils.TABLE_NAME_ITEM + ".description") != null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Given tables:
+    **   order - orderLine - item
+    ** with exposedJoin on order to item
+    ** do a query on order, filtered by item
+    *******************************************************************************/
+   @Test
+   void testTwoTableAwayExposedJoinWhereClauseOnly() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+
+      QInstance  instance   = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_ITEM + ".description", QCriteriaOperator.STARTS_WITH, "Q-Mart")));
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      List<QRecord> records = queryOutput.getRecords();
+      assertThat(records).hasSize(4);
+      assertThat(records).allMatch(r -> r.getValue("id") != null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Given tables:
+    **   order - orderLine - item
+    ** with exposedJoin on order to item
+    ** do a query on order, filtered by item
+    *******************************************************************************/
+   @Test
+   void testTwoTableAwayExposedJoinWhereClauseBothJoinTables() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+
+      QInstance  instance   = TestUtils.defineInstance();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria(TestUtils.TABLE_NAME_ITEM + ".description", QCriteriaOperator.STARTS_WITH, "Q-Mart"))
+         .withCriteria(new QFilterCriteria(TestUtils.TABLE_NAME_ORDER_LINE + ".quantity", QCriteriaOperator.IS_NOT_BLANK))
+      );
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      List<QRecord> records = queryOutput.getRecords();
+      assertThat(records).hasSize(4);
+      assertThat(records).allMatch(r -> r.getValue("id") != null);
    }
 
 

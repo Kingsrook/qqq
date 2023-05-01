@@ -30,9 +30,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -203,7 +206,8 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    {
       StringBuilder rs = new StringBuilder(escapeIdentifier(getTableName(instance.getTable(tableName))) + " AS " + escapeIdentifier(tableName));
 
-      for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+      List<QueryJoin> queryJoins = sortQueryJoinsForFromClause(tableName, joinsContext.getQueryJoins());
+      for(QueryJoin queryJoin : queryJoins)
       {
          QTableMetaData joinTable        = instance.getTable(queryJoin.getJoinTable());
          String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
@@ -260,6 +264,48 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
 
       return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
+    ** We've seen some SQL dialects (mysql, but not h2...) be unhappy if we have
+    ** the from/join-ons out of order.  This method resorts the joins, to start with
+    ** main table, then any tables attached to it, then fanning out from there.
+    *******************************************************************************/
+   private List<QueryJoin> sortQueryJoinsForFromClause(String mainTableName, List<QueryJoin> queryJoins)
+   {
+      List<QueryJoin> inputListCopy = new ArrayList<>(queryJoins);
+
+      List<QueryJoin> rs         = new ArrayList<>();
+      Set<String>     seenTables = new HashSet<>();
+      seenTables.add(mainTableName);
+
+      boolean keepGoing = true;
+      while(!inputListCopy.isEmpty() && keepGoing)
+      {
+         keepGoing = false;
+         Iterator<QueryJoin> iterator = inputListCopy.iterator();
+         while(iterator.hasNext())
+         {
+            QueryJoin next = iterator.next();
+            if((StringUtils.hasContent(next.getBaseTableOrAlias()) && seenTables.contains(next.getBaseTableOrAlias())) || seenTables.contains(next.getJoinTable()))
+            {
+               rs.add(next);
+               if(StringUtils.hasContent(next.getBaseTableOrAlias()))
+               {
+                  seenTables.add(next.getBaseTableOrAlias());
+               }
+               seenTables.add(next.getJoinTable());
+               iterator.remove();
+               keepGoing = true;
+            }
+         }
+      }
+
+      rs.addAll(inputListCopy);
+
+      return (rs);
    }
 
 
@@ -898,6 +944,16 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    public static void setLogSQL(boolean on)
    {
       System.setProperty("qqq.rdbms.logSQL", String.valueOf(on));
+   }
+
+
+
+   /*******************************************************************************
+    ** Make it easy (e.g., for tests) to turn on logging of SQL
+    *******************************************************************************/
+   public static void setLogSQLOutput(String loggerOrSystemOut)
+   {
+      System.setProperty("qqq.rdbms.logSQL.output", loggerOrSystemOut);
    }
 
 
