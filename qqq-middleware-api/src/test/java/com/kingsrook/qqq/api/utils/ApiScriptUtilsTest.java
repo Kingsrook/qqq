@@ -102,13 +102,13 @@ class ApiScriptUtilsTest extends BaseTest
    {
       ApiScriptUtils apiScriptUtils = newDefaultApiScriptUtils();
 
-      assertThatThrownBy(() -> apiScriptUtils.query(TestUtils.TABLE_NAME_PERSON + "?foo=bar"))
+      assertThatThrownBy(() -> apiScriptUtils.query(TestUtils.TABLE_NAME_PERSON, "foo=bar"))
          .isInstanceOf(QBadRequestException.class)
          .hasMessageContaining("Unrecognized filter criteria field: foo");
 
       insertSimpsons();
 
-      Map<String, Serializable> result = apiScriptUtils.query(TestUtils.TABLE_NAME_PERSON + "?id=2");
+      Map<String, Serializable> result = apiScriptUtils.query(TestUtils.TABLE_NAME_PERSON, "id=2");
       assertEquals(1, result.get("count"));
       assertEquals(1, ((List<?>) result.get("records")).size());
       assertEquals("Marge", ((Map<?, ?>) ((List<?>) result.get("records")).get(0)).get("firstName"));

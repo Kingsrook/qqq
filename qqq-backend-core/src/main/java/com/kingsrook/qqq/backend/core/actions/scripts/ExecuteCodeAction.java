@@ -127,19 +127,21 @@ public class ExecuteCodeAction
       ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setInput(new HashMap<>(Objects.requireNonNullElseGet(input.getInputValues(), HashMap::new)));
       executeCodeInput.setContext(new HashMap<>());
+
+      Map<String, Serializable> context = executeCodeInput.getContext();
       if(input.getOutputObject() != null)
       {
-         executeCodeInput.getContext().put("output", input.getOutputObject());
+         context.put("output", input.getOutputObject());
       }
 
       if(input.getScriptUtils() != null)
       {
-         executeCodeInput.getContext().put("scriptUtils", input.getScriptUtils());
+         context.put("scriptUtils", input.getScriptUtils());
       }
 
       executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
 
-      ExecuteCodeAction.addApiUtilityToContext(executeCodeInput.getContext(), scriptRevision);
+      ExecuteCodeAction.addApiUtilityToContext(context, scriptRevision);
       ExecuteCodeAction.setExecutionLoggerInExecuteCodeInput(input, scriptRevision, executeCodeInput);
 
       return (executeCodeInput);
@@ -152,7 +154,7 @@ public class ExecuteCodeAction
     ** module -- in case the runtime doesn't have that module deployed (e.g, not in
     ** the project pom).
     *******************************************************************************/
-   private static void addApiUtilityToContext(Map<String, Serializable> context, ScriptRevision scriptRevision)
+   public static void addApiUtilityToContext(Map<String, Serializable> context, ScriptRevision scriptRevision)
    {
       if(!StringUtils.hasContent(scriptRevision.getApiName()) || !StringUtils.hasContent(scriptRevision.getApiVersion()))
       {

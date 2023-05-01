@@ -59,6 +59,11 @@ public class RunAssociatedScriptAction
       ScriptRevision   scriptRevision   = getScriptRevision(input);
       ExecuteCodeInput executeCodeInput = ExecuteCodeAction.setupExecuteCodeInput(input, scriptRevision);
 
+      if(input.getAssociatedScriptContextPrimerInterface() != null)
+      {
+         input.getAssociatedScriptContextPrimerInterface().primeContext(executeCodeInput, scriptRevision);
+      }
+
       ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
 

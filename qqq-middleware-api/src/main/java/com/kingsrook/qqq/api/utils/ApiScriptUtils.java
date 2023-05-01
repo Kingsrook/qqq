@@ -150,12 +150,11 @@ public class ApiScriptUtils implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Map<String, Serializable> query(String urlPart) throws QException
+   public Map<String, Serializable> query(String tableName, String queryString) throws QException
    {
-      validateApiNameAndVersion("query(" + urlPart + ")");
-      String[]                  urlParts = urlPart.split("\\?", 2);
-      Map<String, List<String>> paramMap = parseQueryString(urlParts.length > 1 ? urlParts[1] : null);
-      return (ApiImplementation.query(getApiInstanceMetaData(), apiVersion, urlParts[0], paramMap));
+      validateApiNameAndVersion("query(" + tableName + ")");
+      Map<String, List<String>> paramMap = parseQueryString(queryString);
+      return (ApiImplementation.query(getApiInstanceMetaData(), apiVersion, tableName, paramMap));
    }
 
 

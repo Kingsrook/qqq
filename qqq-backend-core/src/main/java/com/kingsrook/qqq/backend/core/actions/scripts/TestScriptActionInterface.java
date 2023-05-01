@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 
 
 /*******************************************************************************
@@ -47,7 +48,7 @@ public interface TestScriptActionInterface
     ** Note - such a method may want or need to put an "output" object into the
     ** executeCodeInput's context map.
     *******************************************************************************/
-   void setupTestScriptInput(TestScriptInput testScriptInput, ExecuteCodeInput executeCodeInput);
+   void setupTestScriptInput(TestScriptInput testScriptInput, ExecuteCodeInput executeCodeInput) throws QException;
 
 
    /*******************************************************************************
@@ -87,12 +88,21 @@ public interface TestScriptActionInterface
       BuildScriptLogAndScriptLogLineExecutionLogger executionLogger = new BuildScriptLogAndScriptLogLineExecutionLogger(null, null);
       executeCodeInput.setExecutionLogger(executionLogger);
 
-      setupTestScriptInput(input, executeCodeInput);
-
-      ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
-
       try
       {
+         setupTestScriptInput(input, executeCodeInput);
+
+         ScriptRevision scriptRevision = new ScriptRevision().withApiName(input.getApiName()).withApiVersion(input.getApiVersion());
+
+         if(this instanceof AssociatedScriptContextPrimerInterface associatedScriptContextPrimerInterface)
+         {
+            associatedScriptContextPrimerInterface.primeContext(executeCodeInput, scriptRevision);
+         }
+
+         ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
+
+         ExecuteCodeAction.addApiUtilityToContext(executeCodeInput.getContext(), scriptRevision);
+
          new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
          output.setOutputObject(processTestScriptOutput(executeCodeOutput));
       }

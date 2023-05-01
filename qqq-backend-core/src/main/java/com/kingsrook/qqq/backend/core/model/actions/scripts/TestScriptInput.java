@@ -36,6 +36,9 @@ public class TestScriptInput extends AbstractTableActionInput
    private Map<String, Serializable> inputValues;
    private QCodeReference            codeReference;
 
+   private String apiName;
+   private String apiVersion;
+
 
 
    /*******************************************************************************
@@ -110,6 +113,68 @@ public class TestScriptInput extends AbstractTableActionInput
    public TestScriptInput withCodeReference(QCodeReference codeReference)
    {
       this.codeReference = codeReference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiName
+    *******************************************************************************/
+   public String getApiName()
+   {
+      return (this.apiName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiName
+    *******************************************************************************/
+   public void setApiName(String apiName)
+   {
+      this.apiName = apiName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiName
+    *******************************************************************************/
+   public TestScriptInput withApiName(String apiName)
+   {
+      this.apiName = apiName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiVersion
+    *******************************************************************************/
+   public String getApiVersion()
+   {
+      return (this.apiVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiVersion
+    *******************************************************************************/
+   public void setApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiVersion
+    *******************************************************************************/
+   public TestScriptInput withApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
       return (this);
    }
 

@@ -395,18 +395,18 @@ public class QJavalinScriptsHandler
             String key   = entry.getKey();
             String value = entry.getValue().get(0);
 
-            if(key.equals("code"))
+            switch(key)
             {
-               input.setCodeReference(new QCodeReference().withInlineCode(value).withCodeType(QCodeType.JAVA_SCRIPT));
-            }
-            else
-            {
-               inputValues.put(key, value);
+               case "code" -> input.setCodeReference(new QCodeReference().withInlineCode(value).withCodeType(QCodeType.JAVA_SCRIPT));
+               case "apiName" -> input.setApiName(value);
+               case "apiVersion" -> input.setApiVersion(value);
+               default -> inputValues.put(key, value);
             }
          }
 
          TestScriptActionInterface scriptTester = QCodeLoader.getAdHoc(TestScriptActionInterface.class, scriptTesterCodeRef);
          TestScriptOutput          output       = new TestScriptOutput();
+
          scriptTester.execute(input, output);
 
          QJavalinAccessLogger.logEndSuccess();
