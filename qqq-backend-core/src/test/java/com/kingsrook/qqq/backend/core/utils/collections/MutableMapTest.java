@@ -22,9 +22,11 @@
 package com.kingsrook.qqq.backend.core.utils.collections;
 
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -46,6 +48,24 @@ class MutableMapTest extends BaseTest
       map = new MutableMap<>(Map.of("a", 1));
       map.remove("a");
       map.putAll(Map.of("c", 3, "d", 4));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNullInput()
+   {
+      Map<Integer, String> map = new MutableMap<>(null);
+      map.put(1, "one");
+      assertEquals(1, map.size());
+
+      MutableMap<Integer, String> mutableMap = new MutableMap<>(null, LinkedHashMap::new);
+      mutableMap.put(1, "uno");
+      assertEquals(1, mutableMap.size());
+      assertEquals(LinkedHashMap.class, mutableMap.getUnderlyingMap().getClass());
    }
 
 }

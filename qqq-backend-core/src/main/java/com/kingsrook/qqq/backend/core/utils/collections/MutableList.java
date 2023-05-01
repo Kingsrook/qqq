@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.utils.lambdas.VoidVoidMethod;
 
@@ -38,8 +39,8 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.VoidVoidMethod;
  *******************************************************************************/
 public class MutableList<T> implements List<T>
 {
-   private List<T>                  sourceList;
-   private Class<? extends List<T>> mutableTypeIfNeeded;
+   private List<T>           sourceList;
+   private Supplier<List<T>> supplierIfNeeded;
 
 
 
@@ -49,7 +50,7 @@ public class MutableList<T> implements List<T>
     *******************************************************************************/
    public MutableList(List<T> sourceList)
    {
-      this(sourceList, (Class) ArrayList.class);
+      this(sourceList, ArrayList::new);
    }
 
 
@@ -58,10 +59,20 @@ public class MutableList<T> implements List<T>
     ** Constructor
     **
     *******************************************************************************/
-   public MutableList(List<T> sourceList, Class<? extends List<T>> mutableTypeIfNeeded)
+   public MutableList(List<T> sourceList, Supplier<List<T>> supplierIfNeeded)
    {
-      this.sourceList = sourceList;
-      this.mutableTypeIfNeeded = mutableTypeIfNeeded;
+      this.sourceList = Objects.requireNonNullElseGet(sourceList, supplierIfNeeded);
+      this.supplierIfNeeded = supplierIfNeeded;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   List<T> getUnderlyingList()
+   {
+      return (sourceList);
    }
 
 
@@ -73,13 +84,13 @@ public class MutableList<T> implements List<T>
    {
       try
       {
-         List<T> replacementList = mutableTypeIfNeeded.getConstructor().newInstance();
+         List<T> replacementList = supplierIfNeeded.get();
          replacementList.addAll(sourceList);
          sourceList = replacementList;
       }
       catch(Exception e)
       {
-         throw (new IllegalStateException("The mutable type provided for this MutableList [" + mutableTypeIfNeeded.getName() + "] could not be instantiated."));
+         throw (new IllegalStateException("Error getting from the supplier provided for this MutableList.", e));
       }
    }
 
@@ -88,7 +99,7 @@ public class MutableList<T> implements List<T>
    /*******************************************************************************
     **
     *******************************************************************************/
-   private <T> T doMutableOperationForValue(Supplier<T> supplier)
+   private <V> V doMutableOperationForValue(Supplier<V> supplier)
    {
       try
       {

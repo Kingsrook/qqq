@@ -22,9 +22,11 @@
 package com.kingsrook.qqq.backend.core.utils.collections;
 
 
+import java.util.LinkedList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -46,6 +48,24 @@ class MutableListTest extends BaseTest
       list = new MutableList<>(List.of(3));
       list.add(0, 4);
       list.remove(0);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNullInput()
+   {
+      List<Integer> list = new MutableList<>(null);
+      list.add(1);
+      assertEquals(1, list.size());
+
+      MutableList<Integer> mutableList = new MutableList<>(null, LinkedList::new);
+      mutableList.add(1);
+      assertEquals(1, mutableList.size());
+      assertEquals(LinkedList.class, mutableList.getUnderlyingList().getClass());
    }
 
 }
