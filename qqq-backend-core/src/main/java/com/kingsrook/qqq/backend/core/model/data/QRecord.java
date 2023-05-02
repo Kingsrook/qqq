@@ -65,6 +65,7 @@ public class QRecord implements Serializable
    private Map<String, String>       displayValues  = new LinkedHashMap<>();
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
    private List<String>              errors         = new ArrayList<>();
+   private List<String>              warnings       = new ArrayList<>();
 
    private Map<String, List<QRecord>> associatedRecords = new HashMap<>();
 
@@ -650,6 +651,48 @@ public class QRecord implements Serializable
       this.associatedRecords.putIfAbsent(name, new ArrayList<>());
       this.associatedRecords.get(name).add(associatedRecord);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for warnings
+    *******************************************************************************/
+   public List<String> getWarnings()
+   {
+      return (this.warnings);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for warnings
+    *******************************************************************************/
+   public void setWarnings(List<String> warnings)
+   {
+      this.warnings = warnings;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for warnings
+    *******************************************************************************/
+   public QRecord withWarnings(List<String> warnings)
+   {
+      this.warnings = warnings;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Add one warning to this record
+    **
+    *******************************************************************************/
+   public void addWarning(String warning)
+   {
+      this.warnings.add(warning);
    }
 
 }

@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -120,6 +121,11 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          InsertOutput      insertOutput           = new InsertAction().execute(insertInput);
          Iterator<QRecord> insertedRecordIterator = insertOutput.getRecords().iterator();
 
+         /////////////////////////////////////////////////////////////////////////////////
+         // check for any errors when inserting the children, if any errors were found, //
+         // then set a warning in the parent with the details of the problem            //
+         /////////////////////////////////////////////////////////////////////////////////
+
          //////////////////////////////////////////////////////////////////////////////////////////////////////
          // iterate over the original list of records again - for any that need a child (e.g., are missing   //
          // foreign key), set their foreign key to a newly inserted child's key, and add them to be updated. //
@@ -130,7 +136,21 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
             Serializable primaryKey = record.getValue(table.getPrimaryKeyField());
             if(record.getValue(getForeignKeyFieldName()) == null)
             {
-               Serializable foreignKey = insertedRecordIterator.next().getValue(childTable.getPrimaryKeyField());
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // get the corresponding child record, if it has any errors, set that as a warning in the parent //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               QRecord childRecord = insertedRecordIterator.next();
+               if(CollectionUtils.nullSafeHasContents(childRecord.getErrors()))
+               {
+                  for(String childWarning : childRecord.getErrors())
+                  {
+                     record.addWarning("Error creating child " + childTable.getLabel() + " (" + childWarning + ")");
+                  }
+                  rs.add(record);
+                  continue;
+               }
+
+               Serializable foreignKey = childRecord.getValue(childTable.getPrimaryKeyField());
                recordsToUpdate.add(new QRecord().withValue(table.getPrimaryKeyField(), primaryKey).withValue(getForeignKeyFieldName(), foreignKey));
                record.setValue(getForeignKeyFieldName(), foreignKey);
                rs.add(record);

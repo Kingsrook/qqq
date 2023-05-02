@@ -902,7 +902,93 @@ public class QJavalinApiHandler
 
          List<Map<String, Serializable>> response = ApiImplementation.bulkInsert(apiInstanceMetaData, version, tableApiName, context.body());
 
-         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", response.size()));
+         setupSession(context, insertInput, version, apiInstanceMetaData);
+         QJavalinAccessLogger.logStart("apiBulkInsert", logPair("table", tableName));
+
+         insertInput.setTableName(tableName);
+
+         PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+
+         /////////////////
+         // build input //
+         /////////////////
+         try
+         {
+            if(!StringUtils.hasContent(context.body()))
+            {
+               throw (new QBadRequestException("Missing required POST body"));
+            }
+
+            ArrayList<QRecord> recordList = new ArrayList<>();
+            insertInput.setRecords(recordList);
+
+            JSONTokener jsonTokener = new JSONTokener(context.body().trim());
+            JSONArray   jsonArray   = new JSONArray(jsonTokener);
+
+            for(int i = 0; i < jsonArray.length(); i++)
+            {
+               JSONObject jsonObject = jsonArray.getJSONObject(i);
+               recordList.add(QRecordApiAdapter.apiJsonObjectToQRecord(jsonObject, tableName, apiInstanceMetaData.getName(), version, false));
+            }
+
+            if(jsonTokener.more())
+            {
+               throw (new QBadRequestException("Body contained more than a single JSON array."));
+            }
+
+            if(recordList.isEmpty())
+            {
+               throw (new QBadRequestException("No records were found in the POST body"));
+            }
+         }
+         catch(QBadRequestException qbre)
+         {
+            throw (qbre);
+         }
+         catch(Exception e)
+         {
+            throw (new QBadRequestException("Body could not be parsed as a JSON array: " + e.getMessage(), e));
+         }
+
+         //////////////
+         // execute! //
+         //////////////
+         InsertAction insertAction = new InsertAction();
+         InsertOutput insertOutput = insertAction.execute(insertInput);
+
+         ///////////////////////////////////////
+         // process records to build response //
+         ///////////////////////////////////////
+         List<Map<String, Serializable>> response = new ArrayList<>();
+         for(QRecord record : insertOutput.getRecords())
+         {
+            LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
+            response.add(outputRecord);
+
+            List<String> errors   = record.getErrors();
+            List<String> warnings = record.getWarnings();
+            if(CollectionUtils.nullSafeHasContents(errors))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            }
+            else if(CollectionUtils.nullSafeHasContents(warnings))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               outputRecord.put("error", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + StringUtils.joinWithCommasAndAnd(warnings));
+            }
+            else
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.CREATED.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.CREATED.getMessage());
+               outputRecord.put(table.getPrimaryKeyField(), record.getValue(table.getPrimaryKeyField()));
+            }
+         }
+
+         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", insertInput.getRecords().size()));
+
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
          String resultString = JsonUtils.toJson(response);
          context.result(resultString);

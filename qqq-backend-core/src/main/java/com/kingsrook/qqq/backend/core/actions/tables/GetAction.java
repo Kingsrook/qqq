@@ -53,7 +53,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -380,8 +379,12 @@ public class GetAction
          Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(getInput.getTableName()).getFields();
          for(String fieldName : fields.keySet())
          {
-            QFieldType fieldType = fields.get(fieldName).getType();
-            if(fieldType != null && fieldType.needsMasked())
+            QFieldMetaData field = fields.get(fieldName);
+            if(getInput.getShouldOmitHiddenFields() && field.getIsHidden())
+            {
+               returnRecord.removeValue(fieldName);
+            }
+            else if(field.getType() != null && field.getType().needsMasked())
             {
                //////////////////////////////////////////////////////////////////////
                // empty out the value completely first (which will remove from     //
@@ -395,7 +398,6 @@ public class GetAction
                }
             }
          }
-         QValueFormatter.setDisplayValuesInRecords(getInput.getTable(), List.of(returnRecord));
       }
 
       //////////////////////////////////////////////////////////////////////////////
