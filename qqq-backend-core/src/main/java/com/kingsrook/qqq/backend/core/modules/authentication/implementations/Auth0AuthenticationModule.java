@@ -151,7 +151,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       ///////////////////////////////////////////////////////////
       if(context.containsKey(BASIC_AUTH_KEY))
       {
-         AuthAPI auth = new AuthAPI(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret());
+         AuthAPI auth = AuthAPI.newBuilder(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret()).build();
          try
          {
             /////////////////////////////////////////////////

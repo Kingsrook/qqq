@@ -687,6 +687,10 @@ public class QJavalinImplementation
          {
             throw (new QUserFacingException("Error inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
          }
+         if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getWarnings()))
+         {
+            throw (new QUserFacingException("Warning inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getWarnings().get(0)));
+         }
 
          QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (insertOutput.getRecords().get(0).getValue(qInstance.getTable(tableName).getPrimaryKeyField()))));
          context.result(JsonUtils.toJson(insertOutput));

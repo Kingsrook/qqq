@@ -1546,12 +1546,19 @@ public class QJavalinApiHandler
             LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
             response.add(outputRecord);
 
-            List<String> errors = record.getErrors();
+            List<String> errors   = record.getErrors();
+            List<String> warnings = record.getWarnings();
             if(CollectionUtils.nullSafeHasContents(errors))
             {
                outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
                outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
                outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            }
+            else if(CollectionUtils.nullSafeHasContents(warnings))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               outputRecord.put("error", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + StringUtils.joinWithCommasAndAnd(warnings));
             }
             else
             {

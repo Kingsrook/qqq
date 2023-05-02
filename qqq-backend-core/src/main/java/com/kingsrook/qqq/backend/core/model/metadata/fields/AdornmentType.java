@@ -39,6 +39,7 @@ public enum AdornmentType
    SIZE,
    CODE_EDITOR,
    RENDER_HTML,
+   REVEAL,
    ERROR;
    //////////////////////////////////////////////////////////////////////////
    // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
