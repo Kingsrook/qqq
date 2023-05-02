@@ -134,9 +134,10 @@ public class QJavalinImplementation
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinImplementation.class);
 
-   private static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
-   private static final String SESSION_ID_COOKIE_NAME = "sessionId";
-   private static final String BASIC_AUTH_NAME        = "basicAuthString";
+   public static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
+   public static final String SESSION_ID_COOKIE_NAME = "sessionId";
+   public static final String BASIC_AUTH_NAME        = "basicAuthString";
+   public static final String API_KEY_NAME           = "apiKey";
 
    static QInstance        qInstance;
    static QJavalinMetaData javalinMetaData;
@@ -422,6 +423,7 @@ public class QJavalinImplementation
 
          String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
          String authorizationHeaderValue = context.header("Authorization");
+         String apiKeyHeaderValue        = context.header("x-api-key");
 
          if(StringUtils.hasContent(sessionIdCookieValue))
          {
@@ -429,6 +431,14 @@ public class QJavalinImplementation
             // first, look for a sessionId cookie //
             ////////////////////////////////////////
             authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
+         }
+         else if(apiKeyHeaderValue != null)
+         {
+            /////////////////////////////////////////////////////////////////
+            // next, look for an api key header:                           //
+            // this will be used to look up auth0 values via an auth table //
+            /////////////////////////////////////////////////////////////////
+            authenticationContext.put(API_KEY_NAME, apiKeyHeaderValue);
          }
          else if(authorizationHeaderValue != null)
          {

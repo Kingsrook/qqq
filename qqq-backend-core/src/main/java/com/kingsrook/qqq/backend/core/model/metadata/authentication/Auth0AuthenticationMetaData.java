@@ -57,7 +57,7 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    /////////////////////////////////////////
    private String       applicationNameField;
    private String       auth0ClientIdField;
-   private String       auth0ClientSecretMaskedField;
+   private String       auth0ClientSecretField;
    private Serializable qqqRecordIdField;
 
 
@@ -67,6 +67,7 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    private String clientAuth0ApplicationIdField;
    private String auth0AccessTokenField;
    private String qqqAccessTokenField;
+   private String qqqApiKeyField;
    private String expiresInSecondsField;
 
 
@@ -388,40 +389,6 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
 
 
    /*******************************************************************************
-    ** Getter for auth0ClientSecretMaskedField
-    **
-    *******************************************************************************/
-   public String getAuth0ClientSecretMaskedField()
-   {
-      return auth0ClientSecretMaskedField;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for auth0ClientSecretMaskedField
-    **
-    *******************************************************************************/
-   public void setAuth0ClientSecretMaskedField(String auth0ClientSecretMaskedField)
-   {
-      this.auth0ClientSecretMaskedField = auth0ClientSecretMaskedField;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for auth0ClientSecretMaskedField
-    **
-    *******************************************************************************/
-   public Auth0AuthenticationMetaData withAuth0ClientSecretMaskedField(String auth0ClientSecretMaskedField)
-   {
-      this.auth0ClientSecretMaskedField = auth0ClientSecretMaskedField;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for clientAuth0ApplicationIdField
     **
     *******************************************************************************/
@@ -552,6 +519,68 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    public Auth0AuthenticationMetaData withExpiresInSecondsField(String expiresInSecondsField)
    {
       this.expiresInSecondsField = expiresInSecondsField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qqqApiKeyField
+    *******************************************************************************/
+   public String getQqqApiKeyField()
+   {
+      return (this.qqqApiKeyField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qqqApiKeyField
+    *******************************************************************************/
+   public void setQqqApiKeyField(String qqqApiKeyField)
+   {
+      this.qqqApiKeyField = qqqApiKeyField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qqqApiKeyField
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withQqqApiKeyField(String qqqApiKeyField)
+   {
+      this.qqqApiKeyField = qqqApiKeyField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auth0ClientSecretField
+    *******************************************************************************/
+   public String getAuth0ClientSecretField()
+   {
+      return (this.auth0ClientSecretField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auth0ClientSecretField
+    *******************************************************************************/
+   public void setAuth0ClientSecretField(String auth0ClientSecretField)
+   {
+      this.auth0ClientSecretField = auth0ClientSecretField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auth0ClientSecretField
+    *******************************************************************************/
+   public Auth0AuthenticationMetaData withAuth0ClientSecretField(String auth0ClientSecretField)
+   {
+      this.auth0ClientSecretField = auth0ClientSecretField;
       return (this);
    }
 
