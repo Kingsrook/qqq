@@ -151,12 +151,12 @@ public class ApiImplementation
          badRequestMessages.add("pageNo must be greater than 0.");
       }
 
-      queryInput.setLimit(pageSize);
-      queryInput.setSkip((pageNo - 1) * pageSize);
+      QQueryFilter filter = new QQueryFilter();
+      filter.setLimit(pageSize);
+      filter.setSkip((pageNo - 1) * pageSize);
 
       // queryInput.setQueryJoins(processQueryJoinsParam(context));
 
-      QQueryFilter filter = new QQueryFilter();
       if("and".equalsIgnoreCase(booleanOperator))
       {
          filter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
