@@ -39,8 +39,9 @@ public class ChildRecordListData extends QWidgetData
    private QueryOutput    queryOutput;
    private QTableMetaData childTableMetaData;
 
-   private String tablePath;
-   private String viewAllLink;
+   private String  tablePath;
+   private String  viewAllLink;
+   private Integer totalRows;
 
    private boolean                   canAddChildRecord = false;
    private Map<String, Serializable> defaultValuesForNewChildRecords;
@@ -51,13 +52,14 @@ public class ChildRecordListData extends QWidgetData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ChildRecordListData(String title, QueryOutput queryOutput, QTableMetaData childTableMetaData, String tablePath, String viewAllLink)
+   public ChildRecordListData(String title, QueryOutput queryOutput, QTableMetaData childTableMetaData, String tablePath, String viewAllLink, Integer totalRows)
    {
       this.title = title;
       this.queryOutput = queryOutput;
       this.childTableMetaData = childTableMetaData;
       this.tablePath = tablePath;
       this.viewAllLink = viewAllLink;
+      this.totalRows = totalRows;
    }
 
 
@@ -316,6 +318,37 @@ public class ChildRecordListData extends QWidgetData
    public ChildRecordListData withDisabledFieldsForNewChildRecords(Set<String> disabledFieldsForNewChildRecords)
    {
       this.disabledFieldsForNewChildRecords = disabledFieldsForNewChildRecords;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for totalRows
+    *******************************************************************************/
+   public Integer getTotalRows()
+   {
+      return (this.totalRows);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for totalRows
+    *******************************************************************************/
+   public void setTotalRows(Integer totalRows)
+   {
+      this.totalRows = totalRows;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for totalRows
+    *******************************************************************************/
+   public ChildRecordListData withTotalRows(Integer totalRows)
+   {
+      this.totalRows = totalRows;
       return (this);
    }
 

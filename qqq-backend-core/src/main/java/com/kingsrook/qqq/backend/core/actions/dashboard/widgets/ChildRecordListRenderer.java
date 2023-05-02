@@ -30,10 +30,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -168,6 +170,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       {
          maxRows = ValueUtils.getValueAsInteger(input.getQueryParams().get("maxRows"));
       }
+      else if(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"))
+      {
+         maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"));
+      }
 
       ////////////////////////////////////////////////////////
       // fetch the record that we're getting children for.  //
@@ -203,11 +209,24 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       queryInput.setFilter(filter);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
+      int totalRows = queryOutput.getRecords().size();
+      if(maxRows != null && (queryOutput.getRecords().size() == maxRows))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////
+         // if the input said to only do some max, and the # of results we got is that max, //
+         // then do a count query, for displaying 1-n of <count>                            //
+         /////////////////////////////////////////////////////////////////////////////////////
+         CountInput countInput = new CountInput();
+         countInput.setTableName(join.getRightTable());
+         countInput.setFilter(filter);
+         totalRows = new CountAction().execute(countInput).getCount();
+      }
+
       QTableMetaData table       = input.getInstance().getTable(join.getRightTable());
       String         tablePath   = input.getInstance().getTablePath(table.getName());
       String         viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
 
-      ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, table, tablePath, viewAllLink);
+      ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, table, tablePath, viewAllLink, totalRows);
 
       if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("canAddChildRecord"))))
       {
