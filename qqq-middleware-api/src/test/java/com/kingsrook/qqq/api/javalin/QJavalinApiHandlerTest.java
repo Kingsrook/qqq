@@ -560,6 +560,25 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testInsert201WithWarning() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
+         .body("""
+            {"firstName": "--"}
+            """)
+         .asString();
+      assertEquals(HttpStatus.CREATED_201, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      assertEquals(1, jsonObject.getInt("id"));
+      assertTrue(jsonObject.has("warning"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testInsert201WithAssociatedRecords() throws QException
    {
       HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/order/")
@@ -677,13 +696,14 @@ class QJavalinApiHandlerTest extends BaseTest
                {"firstName": "Moe", "email": "moe@moes.com"},
                {"firstName": "Barney", "email": "barney@moes.com"},
                {"firstName": "CM", "email": "boss@snpp.com"},
-               {"firstName": "Waylon", "email": "boss@snpp.com"}
+               {"firstName": "Waylon", "email": "boss@snpp.com"},
+               {"firstName": "--", "email": "dashdash@simpsons.com"}
             ]
             """)
          .asString();
       assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
       JSONArray jsonArray = new JSONArray(response.getBody());
-      assertEquals(4, jsonArray.length());
+      assertEquals(5, jsonArray.length());
 
       assertEquals(HttpStatus.CREATED_201, jsonArray.getJSONObject(0).getInt("statusCode"));
       assertEquals(1, jsonArray.getJSONObject(0).getInt("id"));
@@ -697,6 +717,10 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(3).getInt("statusCode"));
       assertEquals("Error inserting Person: Another record already exists with this Email", jsonArray.getJSONObject(3).getString("error"));
 
+      assertEquals(HttpStatus.CREATED_201, jsonArray.getJSONObject(4).getInt("statusCode"));
+      assertEquals(4, jsonArray.getJSONObject(4).getInt("id"));
+      assertTrue(jsonArray.getJSONObject(4).has("warning"));
+
       QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("Moe", record.getValueString("firstName"));
 
@@ -707,6 +731,9 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals("CM", record.getValueString("firstName"));
 
       record = getRecord(TestUtils.TABLE_NAME_PERSON, 4);
+      assertEquals("--", record.getValueString("firstName"));
+
+      record = getRecord(TestUtils.TABLE_NAME_PERSON, 5);
       assertNull(record);
    }
 

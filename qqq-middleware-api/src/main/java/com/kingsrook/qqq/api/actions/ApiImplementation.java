@@ -382,6 +382,13 @@ public class ApiImplementation
 
       LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
       outputRecord.put(table.getPrimaryKeyField(), insertOutput.getRecords().get(0).getValue(table.getPrimaryKeyField()));
+
+      List<String> warnings = insertOutput.getRecords().get(0).getWarnings();
+      if(CollectionUtils.nullSafeHasContents(warnings))
+      {
+         outputRecord.put("warning", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + StringUtils.joinWithCommasAndAnd(warnings));
+      }
+
       return (outputRecord);
    }
 
@@ -456,12 +463,20 @@ public class ApiImplementation
          LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
          response.add(outputRecord);
 
-         List<String> errors = record.getErrors();
+         List<String> errors   = record.getErrors();
+         List<String> warnings = record.getWarnings();
          if(CollectionUtils.nullSafeHasContents(errors))
          {
             outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
             outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
             outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+         }
+         else if(CollectionUtils.nullSafeHasContents(warnings))
+         {
+            outputRecord.put("statusCode", HttpStatus.Code.CREATED.getCode());
+            outputRecord.put("statusText", HttpStatus.Code.CREATED.getMessage());
+            outputRecord.put("warning", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + StringUtils.joinWithCommasAndAnd(warnings));
+            outputRecord.put(table.getPrimaryKeyField(), record.getValue(table.getPrimaryKeyField()));
          }
          else
          {

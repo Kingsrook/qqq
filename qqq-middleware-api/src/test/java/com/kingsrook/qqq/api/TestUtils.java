@@ -31,6 +31,8 @@ import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -40,6 +42,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -50,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -137,6 +142,33 @@ public class TestUtils
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonPreInsertCustomizer extends AbstractPreInsertCustomizer
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records)
+      {
+         for(QRecord record : CollectionUtils.nonNullList(records))
+         {
+            if(!record.getValueString("firstName").matches(".*[a-z].*"))
+            {
+               record.addWarning("First name does not contain any letters...");
+            }
+         }
+
+         return (records);
+      }
+
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
@@ -160,6 +192,8 @@ public class TestUtils
          .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY));
+
+      table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(PersonPreInsertCustomizer.class, QCodeUsage.CUSTOMIZER));
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // make some changes to this table in the "main" api (but leave it like the backend in the ALTERNATIVE_API_NAME) //
