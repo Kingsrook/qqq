@@ -334,6 +334,8 @@ public class GetAction
          queryInput.setIncludeAssociations(getInput.getIncludeAssociations());
          queryInput.setAssociationNamesToInclude(getInput.getAssociationNamesToInclude());
          queryInput.setShouldFetchHeavyFields(getInput.getShouldFetchHeavyFields());
+         queryInput.setShouldMaskPasswords(getInput.getShouldMaskPasswords());
+         queryInput.setShouldOmitHiddenFields(getInput.getShouldOmitHiddenFields());
 
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
