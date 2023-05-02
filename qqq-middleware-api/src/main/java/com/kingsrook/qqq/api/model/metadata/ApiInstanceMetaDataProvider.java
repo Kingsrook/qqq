@@ -50,7 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class APILogMetaDataProvider
+public class ApiInstanceMetaDataProvider
 {
    public static final String TABLE_NAME_API_LOG      = "apiLog";
    public static final String TABLE_NAME_API_LOG_USER = "apiLogUser";
@@ -105,20 +105,31 @@ public class APILogMetaDataProvider
             new QPossibleValue<>(500, "500 (Internal Server Error)")
          )));
 
+      ////////////////////////////////////////////////////////////////////////////
+      // loop over api names and versions, building out possible values sources //
+      ////////////////////////////////////////////////////////////////////////////
+      List<QPossibleValue<?>> apiNamePossibleValues    = new ArrayList<>();
       List<QPossibleValue<?>> apiVersionPossibleValues = new ArrayList<>();
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////////
-      // todo... this, this whole thing, should probably have "which api" as another field too...  ugh. //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////
+      // todo... apiName should maybe be a field on apiLog table, eh? //
+      //////////////////////////////////////////////////////////////////
       TreeSet<APIVersion>          allVersions                  = new TreeSet<>();
       ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(instance);
       for(Map.Entry<String, ApiInstanceMetaData> entry : apiInstanceMetaDataContainer.getApis().entrySet())
       {
+         apiNamePossibleValues.add(new QPossibleValue<>(entry.getKey(), entry.getValue().getLabel()));
+
          ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
          allVersions.addAll(apiInstanceMetaData.getPastVersions());
          allVersions.addAll(apiInstanceMetaData.getSupportedVersions());
          allVersions.addAll(apiInstanceMetaData.getFutureVersions());
       }
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName("apiName")
+         .withType(QPossibleValueSourceType.ENUM)
+         .withEnumValues(apiNamePossibleValues));
 
       for(APIVersion version : allVersions)
       {

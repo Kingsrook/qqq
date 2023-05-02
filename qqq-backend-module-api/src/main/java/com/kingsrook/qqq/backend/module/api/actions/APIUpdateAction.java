@@ -45,4 +45,16 @@ public class APIUpdateAction extends AbstractAPIAction implements UpdateInterfac
       return (apiActionUtil.doUpdate(table, updateInput));
    }
 
+
+
+   /*******************************************************************************
+    ** Specify whether this particular module's update action can & should fetch
+    ** records before updating them, e.g., for audits or "not-found-checks"
+    *******************************************************************************/
+   @Override
+   public boolean supportsPreFetchQuery()
+   {
+      return (false);
+   }
+
 }

@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCusto
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -85,14 +86,15 @@ public class QueryAction
       if(queryInput.getRecordPipe() != null)
       {
          queryInput.getRecordPipe().setPostRecordActions(this::postRecordActions);
-      }
 
-      if(queryInput.getIncludeAssociations() && queryInput.getRecordPipe() != null)
-      {
-         //////////////////////////////////////////////
-         // todo - support this in the future maybe? //
-         //////////////////////////////////////////////
-         throw (new QException("Associations may not be fetched into a RecordPipe."));
+         if(queryInput.getIncludeAssociations())
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // if the user requested to include associations, it's important that that is buffered, //
+            // (for performance reasons), so, wrap the user's pipe with a buffer                    //
+            //////////////////////////////////////////////////////////////////////////////////////////
+            queryInput.setRecordPipe(new RecordPipeBufferedWrapper(queryInput.getRecordPipe()));
+         }
       }
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -111,11 +113,6 @@ public class QueryAction
          postRecordActions(queryOutput.getRecords());
       }
 
-      if(queryInput.getIncludeAssociations())
-      {
-         manageAssociations(queryInput, queryOutput);
-      }
-
       return queryOutput;
    }
 
@@ -124,8 +121,9 @@ public class QueryAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void manageAssociations(QueryInput queryInput, QueryOutput queryOutput) throws QException
+   private void manageAssociations(QueryInput queryInput, List<QRecord> queryOutputRecords) throws QException
    {
+      LOG.info("In manageAssociations for " + queryInput.getTableName() + " with " + queryOutputRecords.size() + " records");
       QTableMetaData table = queryInput.getTable();
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -149,7 +147,7 @@ public class QueryAction
             {
                JoinOn            joinOn = join.getJoinOns().get(0);
                Set<Serializable> values = new HashSet<>();
-               for(QRecord record : queryOutput.getRecords())
+               for(QRecord record : queryOutputRecords)
                {
                   Serializable value = record.getValue(joinOn.getLeftField());
                   values.add(value);
@@ -161,7 +159,7 @@ public class QueryAction
             {
                filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
 
-               for(QRecord record : queryOutput.getRecords())
+               for(QRecord record : queryOutputRecords)
                {
                   QQueryFilter subFilter = new QQueryFilter();
                   filter.addSubFilter(subFilter);
@@ -229,7 +227,7 @@ public class QueryAction
     ** not one created via List.of()).  This may include setting display values,
     ** translating possible values, and running post-record customizations.
     *******************************************************************************/
-   public void postRecordActions(List<QRecord> records)
+   public void postRecordActions(List<QRecord> records) throws QException
    {
       if(this.postQueryRecordCustomizer.isPresent())
       {
@@ -248,6 +246,11 @@ public class QueryAction
       if(queryInput.getShouldGenerateDisplayValues())
       {
          QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
+      }
+
+      if(queryInput.getIncludeAssociations())
+      {
+         manageAssociations(queryInput, records);
       }
 
       //////////////////////////////

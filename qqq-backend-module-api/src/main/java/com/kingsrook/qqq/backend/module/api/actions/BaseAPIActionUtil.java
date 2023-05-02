@@ -634,7 +634,7 @@ public class BaseAPIActionUtil
             request.setEntity(new StringEntity(postBody));
             request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
 
-            HttpResponse response     = client.execute(request);
+            HttpResponse response     = executeOAuthTokenRequest(client, request);
             int          statusCode   = response.getStatusLine().getStatusCode();
             HttpEntity   entity       = response.getEntity();
             String       resultString = EntityUtils.toString(entity);
@@ -665,6 +665,16 @@ public class BaseAPIActionUtil
       }
 
       return (accessToken);
+   }
+
+
+
+   /*******************************************************************************
+    ** one-line method, factored out so mock/tests can override
+    *******************************************************************************/
+   protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpPost request) throws IOException
+   {
+      return client.execute(request);
    }
 
 
@@ -880,7 +890,7 @@ public class BaseAPIActionUtil
                LOG.info("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");
             }
 
-            try(CloseableHttpResponse response = httpClient.execute(request))
+            try(CloseableHttpResponse response = executeHttpRequest(request, httpClient))
             {
                QHttpResponse qResponse = new QHttpResponse(response);
 
@@ -924,7 +934,7 @@ public class BaseAPIActionUtil
             rateLimitsCaught++;
             if(rateLimitsCaught > getMaxAllowedRateLimitErrors())
             {
-               LOG.error("Giving up POST to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
+               LOG.error("Giving up " + request.getMethod() + " to [" + table.getName() + "] after too many rate-limit errors (" + getMaxAllowedRateLimitErrors() + ")");
                throw (new QException(rle));
             }
 
@@ -946,6 +956,16 @@ public class BaseAPIActionUtil
             throw (new QException(message, e));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** one-line method, factored out so mock/tests can override
+    *******************************************************************************/
+   protected CloseableHttpResponse executeHttpRequest(HttpRequestBase request, CloseableHttpClient httpClient) throws IOException
+   {
+      return httpClient.execute(request);
    }
 
 

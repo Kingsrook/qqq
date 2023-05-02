@@ -184,6 +184,8 @@ public class StoreAssociatedScriptAction
       QRecord scriptRevision = new QRecord()
          .withValue("scriptId", script.getValue("id"))
          .withValue("contents", input.getCode())
+         .withValue("apiName", input.getApiName())
+         .withValue("apiVersion", input.getApiVersion())
          .withValue("commitMessage", commitMessage)
          .withValue("sequenceNo", nextSequenceNo);
 

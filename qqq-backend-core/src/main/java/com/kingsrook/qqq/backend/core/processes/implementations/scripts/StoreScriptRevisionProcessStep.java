@@ -112,6 +112,8 @@ public class StoreScriptRevisionProcessStep implements BackendStep
       QRecord scriptRevision = new QRecord()
          .withValue("scriptId", script.getValue("id"))
          .withValue("contents", input.getValueString("contents"))
+         .withValue("apiName", input.getValueString("apiName"))
+         .withValue("apiVersion", input.getValueString("apiVersion"))
          .withValue("commitMessage", commitMessage)
          .withValue("sequenceNo", nextSequenceNo);
 

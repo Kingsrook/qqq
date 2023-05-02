@@ -61,6 +61,8 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.api.TestUtils.insertPersonRecord;
+import static com.kingsrook.qqq.api.TestUtils.insertSimpsons;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -145,25 +147,29 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testRandom404s()
    {
-      for(String method : new String[] { "get", "post", "patch", "delete" })
-      {
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/notATable/").asString());
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
-         assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("get", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("get", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("get", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("get", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.OK_200, null, Unirest.request("get", BASE_URL + "/api/").asString()); // this path returns the doc site for a GET
 
-         if(method.equals("get"))
-         {
-            //////////////////////////////////////////////
-            // this path returns the doc site for a GET //
-            //////////////////////////////////////////////
-            assertErrorResponse(HttpStatus.OK_200, null, Unirest.request(method, BASE_URL + "/api/").asString());
-         }
-         else
-         {
-            assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request(method, BASE_URL + "/api/").asString());
-         }
-      }
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("post", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("post", BASE_URL + "/api/").asString());
+
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("patch", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("patch", BASE_URL + "/api/").asString());
+
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/" + VERSION + "/notATable/").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find a table named notATable in this api", Unirest.request("delete", BASE_URL + "/api/" + VERSION + "/notATable/notAnId").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/" + VERSION + "/person/1/2").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/foo").asString());
+      assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find any resources at path", Unirest.request("delete", BASE_URL + "/api/").asString());
    }
 
 
@@ -1236,43 +1242,6 @@ class QJavalinApiHandlerTest extends BaseTest
       queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id")));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (queryOutput.getRecords());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void insertPersonRecord(Integer id, String firstName, String lastName) throws QException
-   {
-      insertPersonRecord(id, firstName, lastName, null);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void insertPersonRecord(Integer id, String firstName, String lastName, LocalDate birthDate) throws QException
-   {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName).withValue("birthDate", birthDate)));
-      new InsertAction().execute(insertInput);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void insertSimpsons() throws QException
-   {
-      insertPersonRecord(1, "Homer", "Simpson");
-      insertPersonRecord(2, "Marge", "Simpson");
-      insertPersonRecord(3, "Bart", "Simpson");
-      insertPersonRecord(4, "Lisa", "Simpson");
-      insertPersonRecord(5, "Maggie", "Simpson");
    }
 
 

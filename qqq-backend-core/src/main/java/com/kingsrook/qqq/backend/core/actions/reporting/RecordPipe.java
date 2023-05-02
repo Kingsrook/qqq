@@ -26,10 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 
 
 /*******************************************************************************
@@ -47,7 +48,7 @@ public class RecordPipe
 
    private boolean isTerminated = false;
 
-   private Consumer<List<QRecord>> postRecordActions = null;
+   private UnsafeConsumer<List<QRecord>, QException> postRecordActions = null;
 
    /////////////////////////////////////
    // See usage below for explanation //
@@ -93,7 +94,7 @@ public class RecordPipe
    /*******************************************************************************
     ** Add a record to the pipe.  Will block if the pipe is full.  Will noop if pipe is terminated.
     *******************************************************************************/
-   public void addRecord(QRecord record)
+   public void addRecord(QRecord record) throws QException
    {
       if(isTerminated)
       {
@@ -109,7 +110,7 @@ public class RecordPipe
          // (which we'll create as a field in this class, to avoid always re-constructing) //
          ////////////////////////////////////////////////////////////////////////////////////
          singleRecordListForPostRecordActions.add(record);
-         postRecordActions.accept(singleRecordListForPostRecordActions);
+         postRecordActions.run(singleRecordListForPostRecordActions);
          record = singleRecordListForPostRecordActions.remove(0);
       }
 
@@ -152,11 +153,11 @@ public class RecordPipe
    /*******************************************************************************
     ** Add a list of records to the pipe.  Will block if the pipe is full.  Will noop if pipe is terminated.
     *******************************************************************************/
-   public void addRecords(List<QRecord> records)
+   public void addRecords(List<QRecord> records) throws QException
    {
       if(postRecordActions != null)
       {
-         postRecordActions.accept(records);
+         postRecordActions.run(records);
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +208,7 @@ public class RecordPipe
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void setPostRecordActions(Consumer<List<QRecord>> postRecordActions)
+   public void setPostRecordActions(UnsafeConsumer<List<QRecord>, QException> postRecordActions)
    {
       this.postRecordActions = postRecordActions;
    }

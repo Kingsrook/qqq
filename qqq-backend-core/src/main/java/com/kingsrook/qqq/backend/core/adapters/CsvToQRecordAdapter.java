@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -61,7 +62,7 @@ public class CsvToQRecordAdapter
     ** using a given mapping.
     **
     *******************************************************************************/
-   public void buildRecordsFromCsv(RecordPipe recordPipe, String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping, Consumer<QRecord> recordCustomizer)
+   public void buildRecordsFromCsv(RecordPipe recordPipe, String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping, Consumer<QRecord> recordCustomizer) throws QException
    {
       buildRecordsFromCsv(new InputWrapper().withRecordPipe(recordPipe).withCsv(csv).withTable(table).withMapping(mapping).withRecordCustomizer(recordCustomizer));
    }
@@ -73,7 +74,7 @@ public class CsvToQRecordAdapter
     ** using a given mapping.
     **
     *******************************************************************************/
-   public List<QRecord> buildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping)
+   public List<QRecord> buildRecordsFromCsv(String csv, QTableMetaData table, AbstractQFieldMapping<?> mapping) throws QException
    {
       buildRecordsFromCsv(new InputWrapper().withCsv(csv).withTable(table).withMapping(mapping));
       return (recordList);
@@ -87,7 +88,7 @@ public class CsvToQRecordAdapter
     **
     ** todo - meta-data validation, type handling
     *******************************************************************************/
-   public void buildRecordsFromCsv(InputWrapper inputWrapper)
+   public void buildRecordsFromCsv(InputWrapper inputWrapper) throws QException
    {
       String                   csv              = inputWrapper.getCsv();
       AbstractQFieldMapping<?> mapping          = inputWrapper.getMapping();
@@ -297,7 +298,7 @@ public class CsvToQRecordAdapter
    /*******************************************************************************
     ** Add a record - either to the pipe, or list, whichever we're building.
     *******************************************************************************/
-   private void addRecord(QRecord record)
+   private void addRecord(QRecord record) throws QException
    {
       if(recordPipe != null)
       {

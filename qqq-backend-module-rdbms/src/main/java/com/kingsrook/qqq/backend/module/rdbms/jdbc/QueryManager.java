@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -87,7 +88,7 @@ public class QueryManager
       /*******************************************************************************
        **
        *******************************************************************************/
-      void processResultSet(ResultSet rs) throws SQLException;
+      void processResultSet(ResultSet rs) throws SQLException, QException;
    }
 
 
@@ -95,7 +96,7 @@ public class QueryManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void executeStatement(Connection connection, String sql, ResultSetProcessor processor, Object... params) throws SQLException
+   public static void executeStatement(Connection connection, String sql, ResultSetProcessor processor, Object... params) throws SQLException, QException
    {
       PreparedStatement statement = null;
       try
@@ -118,7 +119,7 @@ public class QueryManager
     ** Let the caller provide their own prepared statement (e.g., possibly with some
     ** customized settings/optimizations).
     *******************************************************************************/
-   public static void executeStatement(PreparedStatement statement, ResultSetProcessor processor, Object... params) throws SQLException
+   public static void executeStatement(PreparedStatement statement, ResultSetProcessor processor, Object... params) throws SQLException, QException
    {
       ResultSet resultSet = null;
 

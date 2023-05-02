@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -48,7 +49,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_nullInput()
+   public void test_buildRecordsFromCsv_nullInput() throws QException
    {
       testExpectedToThrow(null);
    }
@@ -59,7 +60,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_emptyStringInput()
+   public void test_buildRecordsFromCsv_emptyStringInput() throws QException
    {
       testExpectedToThrow("");
    }
@@ -69,7 +70,7 @@ class CsvToQRecordAdapterTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void testExpectedToThrow(String csv)
+   private void testExpectedToThrow(String csv) throws QException
    {
       try
       {
@@ -92,7 +93,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_emptyList()
+   public void test_buildRecordsFromCsv_emptyList() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
       List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader(), TestUtils.defineTablePerson(), null);
@@ -142,7 +143,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_oneRowStandardHeaderNoMapping()
+   public void test_buildRecordsFromCsv_oneRowStandardHeaderNoMapping() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
       List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader() + getPersonCsvRow1(), TestUtils.defineTablePerson(), null);
@@ -159,7 +160,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_twoRowsStandardHeaderNoMapping()
+   public void test_buildRecordsFromCsv_twoRowsStandardHeaderNoMapping() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
       List<QRecord>       qRecords            = csvToQRecordAdapter.buildRecordsFromCsv(getPersonCsvHeader() + getPersonCsvRow1() + getPersonCsvRow2(), TestUtils.defineTablePerson(), null);
@@ -179,7 +180,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_oneRowCustomKeyBasedMapping()
+   public void test_buildRecordsFromCsv_oneRowCustomKeyBasedMapping() throws QException
    {
       String csvCustomHeader = """
          "id","created","modified","first","last","birthday","email"\r
@@ -209,7 +210,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void test_buildRecordsFromCsv_twoRowsCustomIndexBasedMapping()
+   public void test_buildRecordsFromCsv_twoRowsCustomIndexBasedMapping() throws QException
    {
       int index = 1;
       QIndexBasedFieldMapping mapping = new QIndexBasedFieldMapping()
@@ -241,7 +242,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     ** header names on the RHS.
     *******************************************************************************/
    @Test
-   public void test_duplicatedColumnHeaders()
+   public void test_duplicatedColumnHeaders() throws QException
    {
       QKeyBasedFieldMapping mapping = new QKeyBasedFieldMapping()
          .withMapping("id", "id")
@@ -291,7 +292,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testByteOrderMarker()
+   void testByteOrderMarker() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
 
@@ -313,7 +314,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     ** Fix an IndexOutOfBounds that we used to throw.
     *******************************************************************************/
    @Test
-   void testTooFewBodyColumns()
+   void testTooFewBodyColumns() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
       List<QRecord> records = csvToQRecordAdapter.buildRecordsFromCsv("""
@@ -331,7 +332,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void testTooFewColumnsIndexMapping()
+   public void testTooFewColumnsIndexMapping() throws QException
    {
       int index = 1;
       QIndexBasedFieldMapping mapping = new QIndexBasedFieldMapping()
@@ -353,7 +354,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testCaseSensitiveHeaders()
+   void testCaseSensitiveHeaders() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
       csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
@@ -376,7 +377,7 @@ class CsvToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testCaseInsensitiveHeaders()
+   void testCaseInsensitiveHeaders() throws QException
    {
       CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
       csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()

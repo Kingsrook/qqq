@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.io.Serializable;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
@@ -63,7 +64,7 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
     ** that could be read asynchronously, at any time, by another thread - SO - only
     ** completely populated records should be passed into this method.
     *******************************************************************************/
-   public void addRecord(QRecord record)
+   public void addRecord(QRecord record) throws QException
    {
       storage.addRecord(record);
    }
@@ -73,7 +74,7 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
    /*******************************************************************************
     ** add a list of records to this output
     *******************************************************************************/
-   public void addRecords(List<QRecord> records)
+   public void addRecords(List<QRecord> records) throws QException
    {
       storage.addRecords(records);
    }

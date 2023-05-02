@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -87,18 +88,24 @@ public class UpdateAction
       ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), updateInput.getTable(), updateInput.getRecords());
       // todo - need to handle records with errors coming out of here...
 
-      List<QRecord> oldRecordList = getOldRecordListForAuditIfNeeded(updateInput);
-
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
+      UpdateInterface          updateInterface          = qModule.getUpdateInterface();
+
+      List<QRecord> oldRecordList = updateInterface.supportsPreFetchQuery() ? getOldRecordListForAuditIfNeeded(updateInput) : new ArrayList<>();
 
       validatePrimaryKeysAreGiven(updateInput);
-      validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList);
+
+      if(updateInterface.supportsPreFetchQuery())
+      {
+         validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList);
+      }
+
       validateRequiredFields(updateInput);
       ValidateRecordSecurityLockHelper.validateSecurityFields(updateInput.getTable(), updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
 
       // todo pre-customization - just get to modify the request?
-      UpdateOutput updateOutput = qModule.getUpdateInterface().execute(updateInput);
+      UpdateOutput updateOutput = updateInterface.execute(updateInput);
       // todo post-customization - can do whatever w/ the result if you want
 
       List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();

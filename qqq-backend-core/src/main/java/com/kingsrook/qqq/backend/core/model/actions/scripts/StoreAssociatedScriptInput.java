@@ -35,6 +35,8 @@ public class StoreAssociatedScriptInput extends AbstractTableActionInput
    private Serializable recordPrimaryKey;
 
    private String code;
+   private String apiName;
+   private String apiVersion;
    private String commitMessage;
 
 
@@ -180,6 +182,68 @@ public class StoreAssociatedScriptInput extends AbstractTableActionInput
    public StoreAssociatedScriptInput withCommitMessage(String commitMessage)
    {
       this.commitMessage = commitMessage;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiName
+    *******************************************************************************/
+   public String getApiName()
+   {
+      return (this.apiName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiName
+    *******************************************************************************/
+   public void setApiName(String apiName)
+   {
+      this.apiName = apiName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiName
+    *******************************************************************************/
+   public StoreAssociatedScriptInput withApiName(String apiName)
+   {
+      this.apiName = apiName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiVersion
+    *******************************************************************************/
+   public String getApiVersion()
+   {
+      return (this.apiVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiVersion
+    *******************************************************************************/
+   public void setApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiVersion
+    *******************************************************************************/
+   public StoreAssociatedScriptInput withApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
       return (this);
    }
 

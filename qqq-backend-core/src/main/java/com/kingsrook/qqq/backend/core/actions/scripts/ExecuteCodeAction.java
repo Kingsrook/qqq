@@ -25,13 +25,21 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.Log4jCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.ScriptExecutionLoggerInterface;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.AbstractRunScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -49,6 +57,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  *******************************************************************************/
 public class ExecuteCodeAction
 {
+   private static final QLogger LOG = QLogger.getLogger(ExecuteCodeAction.class);
+
+
 
    /*******************************************************************************
     **
@@ -68,10 +79,10 @@ public class ExecuteCodeAction
       try
       {
          String languageExecutor = switch(codeReference.getCodeType())
-            {
-               case JAVA -> "com.kingsrook.qqq.backend.core.actions.scripts.QJavaExecutor";
-               case JAVA_SCRIPT -> "com.kingsrook.qqq.languages.javascript.QJavaScriptExecutor";
-            };
+         {
+            case JAVA -> "com.kingsrook.qqq.backend.core.actions.scripts.QJavaExecutor";
+            case JAVA_SCRIPT -> "com.kingsrook.qqq.languages.javascript.QJavaScriptExecutor";
+         };
 
          @SuppressWarnings("unchecked")
          Class<? extends QCodeExecutor> executorClass = (Class<? extends QCodeExecutor>) Class.forName(languageExecutor);
@@ -103,6 +114,91 @@ public class ExecuteCodeAction
       {
          executionLogger.acceptException(e);
          throw (new QException("Error executing code [" + codeReference + "]", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ExecuteCodeInput setupExecuteCodeInput(AbstractRunScriptInput<?> input, ScriptRevision scriptRevision)
+   {
+      ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
+      executeCodeInput.setInput(new HashMap<>(Objects.requireNonNullElseGet(input.getInputValues(), HashMap::new)));
+      executeCodeInput.setContext(new HashMap<>());
+
+      Map<String, Serializable> context = executeCodeInput.getContext();
+      if(input.getOutputObject() != null)
+      {
+         context.put("output", input.getOutputObject());
+      }
+
+      if(input.getScriptUtils() != null)
+      {
+         context.put("scriptUtils", input.getScriptUtils());
+      }
+
+      executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
+
+      ExecuteCodeAction.addApiUtilityToContext(context, scriptRevision);
+      ExecuteCodeAction.setExecutionLoggerInExecuteCodeInput(input, scriptRevision, executeCodeInput);
+
+      return (executeCodeInput);
+   }
+
+
+
+   /*******************************************************************************
+    ** Try to (dynamically) load the ApiScriptUtils object from the api middleware
+    ** module -- in case the runtime doesn't have that module deployed (e.g, not in
+    ** the project pom).
+    *******************************************************************************/
+   public static void addApiUtilityToContext(Map<String, Serializable> context, ScriptRevision scriptRevision)
+   {
+      if(!StringUtils.hasContent(scriptRevision.getApiName()) || !StringUtils.hasContent(scriptRevision.getApiVersion()))
+      {
+         return;
+      }
+
+      try
+      {
+         Class<?> apiScriptUtilsClass  = Class.forName("com.kingsrook.qqq.api.utils.ApiScriptUtils");
+         Object   apiScriptUtilsObject = apiScriptUtilsClass.getConstructor(String.class, String.class).newInstance(scriptRevision.getApiName(), scriptRevision.getApiVersion());
+         context.put("api", (Serializable) apiScriptUtilsObject);
+      }
+      catch(ClassNotFoundException e)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // this is the only exception we're kinda expecting here - so catch for it specifically, and just log.trace - others, warn //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         LOG.trace("Couldn't load ApiScriptUtils class - qqq-middleware-api not on the classpath?");
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error adding api utility to script context", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setExecutionLoggerInExecuteCodeInput(AbstractRunScriptInput<?> input, ScriptRevision scriptRevision, ExecuteCodeInput executeCodeInput)
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // let caller supply a logger, or by default use StoreScriptLogAndScriptLogLineExecutionLogger //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      QCodeExecutionLoggerInterface executionLogger = Objects.requireNonNullElseGet(input.getLogger(), () -> new StoreScriptLogAndScriptLogLineExecutionLogger(scriptRevision.getScriptId(), scriptRevision.getId()));
+      executeCodeInput.setExecutionLogger(executionLogger);
+      if(executionLogger instanceof ScriptExecutionLoggerInterface scriptExecutionLoggerInterface)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if logger is aware of scripts (as opposed to a generic CodeExecution logger), give it the ids. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         scriptExecutionLoggerInterface.setScriptId(scriptRevision.getScriptId());
+         scriptExecutionLoggerInterface.setScriptRevisionId(scriptRevision.getId());
       }
    }
 

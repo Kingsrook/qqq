@@ -22,187 +22,46 @@
 package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 
-import java.io.Serializable;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.actions.scripts.AssociatedScriptContextPrimerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AssociatedScriptCodeReference;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunAssociatedScriptInput extends AbstractTableActionInput
+public class RunAssociatedScriptInput extends AbstractRunScriptInput<AssociatedScriptCodeReference>
 {
-   private AssociatedScriptCodeReference codeReference;
-   private Map<String, Serializable>     inputValues;
-   private QCodeExecutionLoggerInterface logger;
-
-   private Serializable outputObject;
-
-   private Serializable scriptUtils;
+   private AssociatedScriptContextPrimerInterface associatedScriptContextPrimerInterface;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for associatedScriptContextPrimerInterface
     *******************************************************************************/
-   public RunAssociatedScriptInput()
+   public AssociatedScriptContextPrimerInterface getAssociatedScriptContextPrimerInterface()
    {
+      return (this.associatedScriptContextPrimerInterface);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for codeReference
-    **
+    ** Setter for associatedScriptContextPrimerInterface
     *******************************************************************************/
-   public AssociatedScriptCodeReference getCodeReference()
+   public void setAssociatedScriptContextPrimerInterface(AssociatedScriptContextPrimerInterface associatedScriptContextPrimerInterface)
    {
-      return codeReference;
+      this.associatedScriptContextPrimerInterface = associatedScriptContextPrimerInterface;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeReference
-    **
+    ** Fluent setter for associatedScriptContextPrimerInterface
     *******************************************************************************/
-   public void setCodeReference(AssociatedScriptCodeReference codeReference)
+   public RunAssociatedScriptInput withAssociatedScriptContextPrimerInterface(AssociatedScriptContextPrimerInterface associatedScriptContextPrimerInterface)
    {
-      this.codeReference = codeReference;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for codeReference
-    **
-    *******************************************************************************/
-   public RunAssociatedScriptInput withCodeReference(AssociatedScriptCodeReference codeReference)
-   {
-      this.codeReference = codeReference;
+      this.associatedScriptContextPrimerInterface = associatedScriptContextPrimerInterface;
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for inputValues
-    **
-    *******************************************************************************/
-   public Map<String, Serializable> getInputValues()
-   {
-      return inputValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputValues
-    **
-    *******************************************************************************/
-   public void setInputValues(Map<String, Serializable> inputValues)
-   {
-      this.inputValues = inputValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for inputValues
-    **
-    *******************************************************************************/
-   public RunAssociatedScriptInput withInputValues(Map<String, Serializable> inputValues)
-   {
-      this.inputValues = inputValues;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for outputObject
-    **
-    *******************************************************************************/
-   public Serializable getOutputObject()
-   {
-      return outputObject;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for outputObject
-    **
-    *******************************************************************************/
-   public void setOutputObject(Serializable outputObject)
-   {
-      this.outputObject = outputObject;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for outputObject
-    **
-    *******************************************************************************/
-   public RunAssociatedScriptInput withOutputObject(Serializable outputObject)
-   {
-      this.outputObject = outputObject;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for logger
-    *******************************************************************************/
-   public QCodeExecutionLoggerInterface getLogger()
-   {
-      return (this.logger);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for logger
-    *******************************************************************************/
-   public void setLogger(QCodeExecutionLoggerInterface logger)
-   {
-      this.logger = logger;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for logger
-    *******************************************************************************/
-   public RunAssociatedScriptInput withLogger(QCodeExecutionLoggerInterface logger)
-   {
-      this.logger = logger;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for scriptUtils
-    **
-    *******************************************************************************/
-   public Serializable getScriptUtils()
-   {
-      return scriptUtils;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for scriptUtils
-    **
-    *******************************************************************************/
-   public void setScriptUtils(Serializable scriptUtils)
-   {
-      this.scriptUtils = scriptUtils;
-   }
 }

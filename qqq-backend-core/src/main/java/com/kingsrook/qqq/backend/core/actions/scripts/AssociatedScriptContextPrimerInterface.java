@@ -19,34 +19,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
-import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 
 
 /*******************************************************************************
- ** Interface used within QueryOutput, to handle diffrent ways we may store records
- ** (e.g., in a list (that holds them all), or a pipe, that streams them to a consumer thread))
+ **
  *******************************************************************************/
-interface QueryOutputStorageInterface
+public interface AssociatedScriptContextPrimerInterface
 {
 
    /*******************************************************************************
-    ** add a records to this output
+    **
     *******************************************************************************/
-   void addRecord(QRecord record) throws QException;
+   void primeContext(ExecuteCodeInput executeCodeInput, ScriptRevision scriptRevision) throws QException;
 
-
-   /*******************************************************************************
-    ** add a list of records to this output
-    *******************************************************************************/
-   void addRecords(List<QRecord> records) throws QException;
-
-   /*******************************************************************************
-    ** Get all stored records
-    *******************************************************************************/
-   List<QRecord> getRecords();
 }

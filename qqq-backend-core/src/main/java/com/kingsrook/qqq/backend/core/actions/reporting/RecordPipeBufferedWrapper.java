@@ -22,20 +22,24 @@
 package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
-import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- ** Subclass of RecordPipe, which uses a buffer in the addRecord method, to avoid
- ** sending single-records at a time through postRecordActions and to consumers.
+ ** Subclass of BufferedRecordPipe, which ultimately sends records down to an
+ ** original RecordPipe.
+ **
+ ** Meant to be used where: someone passed in a RecordPipe (so they have a reference
+ ** to it, and they are waiting to read from it), but the producer knows that
+ ** it will be better to buffer the records, so they want to use a buffered pipe
+ ** (but they still need the records to end up in the original pipe - thus -
+ ** it gets wrapped by an object of this class).
  *******************************************************************************/
-public class BufferedRecordPipe extends RecordPipe
+public class RecordPipeBufferedWrapper extends BufferedRecordPipe
 {
-   private List<QRecord> buffer     = new ArrayList<>();
-   private Integer       bufferSize = 100;
+   private RecordPipe wrappedPipe;
 
 
 
@@ -43,8 +47,9 @@ public class BufferedRecordPipe extends RecordPipe
     ** Constructor - uses default buffer size
     **
     *******************************************************************************/
-   public BufferedRecordPipe()
+   public RecordPipeBufferedWrapper(RecordPipe wrappedPipe)
    {
+      this.wrappedPipe = wrappedPipe;
    }
 
 
@@ -53,38 +58,22 @@ public class BufferedRecordPipe extends RecordPipe
     ** Constructor - customize buffer size.
     **
     *******************************************************************************/
-   public BufferedRecordPipe(Integer bufferSize)
+   public RecordPipeBufferedWrapper(Integer bufferSize, RecordPipe wrappedPipe)
    {
-      this.bufferSize = bufferSize;
+      super(bufferSize);
+      this.wrappedPipe = wrappedPipe;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** when it's time to actually add records into the pipe, actually add them
+    ** into the wrapped pipe!
     *******************************************************************************/
    @Override
-   public void addRecord(QRecord record) throws QException
+   public void addRecords(List<QRecord> records) throws QException
    {
-      buffer.add(record);
-      if(buffer.size() >= bufferSize)
-      {
-         addRecords(buffer);
-         buffer.clear();
-      }
+      wrappedPipe.addRecords(records);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void finalFlush() throws QException
-   {
-      if(!buffer.isEmpty())
-      {
-         addRecords(buffer);
-         buffer.clear();
-      }
-   }
 }

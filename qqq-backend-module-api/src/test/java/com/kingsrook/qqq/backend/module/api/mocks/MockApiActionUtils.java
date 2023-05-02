@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,92 +19,90 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.scripts;
+package com.kingsrook.qqq.backend.module.api.mocks;
 
 
-import java.io.Serializable;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
+import java.io.IOException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.module.api.actions.BaseAPIActionUtil;
+import com.kingsrook.qqq.backend.module.api.actions.QHttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunAdHocRecordScriptInput extends AbstractRunScriptInput<AdHocScriptCodeReference>
+public class MockApiActionUtils extends BaseAPIActionUtil
 {
-   private List<Serializable> recordPrimaryKeyList; // can either supply recordList, or recordPrimaryKeyList
-   private List<QRecord>      recordList;
+   public static MockApiUtilsHelper mockApiUtilsHelper;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RunAdHocRecordScriptInput()
+   @Override
+   public QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
+      return (mockApiUtilsHelper.defaultMockMakeRequest(mockApiUtilsHelper, table, request, () -> super.makeRequest(table, request)));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for recordList
+    **
     *******************************************************************************/
-   public List<QRecord> getRecordList()
+   @Override
+   protected CloseableHttpResponse executeHttpRequest(HttpRequestBase request, CloseableHttpClient httpClient) throws IOException
    {
-      return (this.recordList);
+      runMockAsserter(request);
+      return new MockHttpResponse(mockApiUtilsHelper);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordList
+    **
     *******************************************************************************/
-   public void setRecordList(List<QRecord> recordList)
+   private static void runMockAsserter(HttpRequestBase request)
    {
-      this.recordList = recordList;
+      if(mockApiUtilsHelper.getMockRequestAsserter() != null)
+      {
+         try
+         {
+            mockApiUtilsHelper.getMockRequestAsserter().run(request);
+         }
+         catch(Exception e)
+         {
+            throw (new RuntimeException("Error running mock request asserter", e));
+         }
+      }
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for recordList
+    **
     *******************************************************************************/
-   public RunAdHocRecordScriptInput withRecordList(List<QRecord> recordList)
+   @Override
+   protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpPost request) throws IOException
    {
-      this.recordList = recordList;
-      return (this);
+      runMockAsserter(request);
+      return new MockHttpResponse(mockApiUtilsHelper);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for recordPrimaryKeyList
+    **
     *******************************************************************************/
-   public List<Serializable> getRecordPrimaryKeyList()
+   protected int getInitialRateLimitBackoffMillis()
    {
-      return (this.recordPrimaryKeyList);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for recordPrimaryKeyList
-    *******************************************************************************/
-   public void setRecordPrimaryKeyList(List<Serializable> recordPrimaryKeyList)
-   {
-      this.recordPrimaryKeyList = recordPrimaryKeyList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for recordPrimaryKeyList
-    *******************************************************************************/
-   public RunAdHocRecordScriptInput withRecordPrimaryKeyList(List<Serializable> recordPrimaryKeyList)
-   {
-      this.recordPrimaryKeyList = recordPrimaryKeyList;
-      return (this);
+      return (1);
    }
 
 }

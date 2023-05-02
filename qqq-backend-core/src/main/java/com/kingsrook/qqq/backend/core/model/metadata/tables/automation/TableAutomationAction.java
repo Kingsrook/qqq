@@ -38,6 +38,12 @@ public class TableAutomationAction
    private Integer      priority = 500;
    private QQueryFilter filter;
 
+   ////////////////////////////////////////////////////////////////////////
+   // flag that will cause the records to cause their associations to be //
+   // fetched, when they are looked up for passing into the action       //
+   ////////////////////////////////////////////////////////////////////////
+   private boolean includeRecordAssociations = false;
+
    private Map<String, Serializable> values;
 
    ////////////////////////////////
@@ -289,6 +295,37 @@ public class TableAutomationAction
    public TableAutomationAction withValues(Map<String, Serializable> values)
    {
       this.values = values;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for includeRecordAssociations
+    *******************************************************************************/
+   public boolean getIncludeRecordAssociations()
+   {
+      return (this.includeRecordAssociations);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for includeRecordAssociations
+    *******************************************************************************/
+   public void setIncludeRecordAssociations(boolean includeRecordAssociations)
+   {
+      this.includeRecordAssociations = includeRecordAssociations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for includeRecordAssociations
+    *******************************************************************************/
+   public TableAutomationAction withIncludeRecordAssociations(boolean includeRecordAssociations)
+   {
+      this.includeRecordAssociations = includeRecordAssociations;
       return (this);
    }
 

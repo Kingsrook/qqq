@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -24,46 +24,67 @@ package com.kingsrook.qqq.backend.core.model.actions.scripts;
 
 import java.io.Serializable;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
- **
+ ** Base class for input wrappers that end up running scripts (ExecuteCodeAction)
  *******************************************************************************/
-public class TestScriptInput extends AbstractTableActionInput
+public class AbstractRunScriptInput<C extends QCodeReference> extends AbstractTableActionInput
 {
-   private Map<String, Serializable> inputValues;
-   private QCodeReference            codeReference;
-
-   private String apiName;
-   private String apiVersion;
+   private C                             codeReference;
+   private Map<String, Serializable>     inputValues;
+   private QCodeExecutionLoggerInterface logger;
+   private Serializable                  outputObject;
+   private Serializable                  scriptUtils;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for codeReference
     *******************************************************************************/
-   public TestScriptInput()
+   public C getCodeReference()
    {
+      return (this.codeReference);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for codeReference
+    *******************************************************************************/
+   public void setCodeReference(C codeReference)
+   {
+      this.codeReference = codeReference;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for codeReference
+    *******************************************************************************/
+   public AbstractRunScriptInput<C> withCodeReference(C codeReference)
+   {
+      this.codeReference = codeReference;
+      return (this);
    }
 
 
 
    /*******************************************************************************
     ** Getter for inputValues
-    **
     *******************************************************************************/
    public Map<String, Serializable> getInputValues()
    {
-      return inputValues;
+      return (this.inputValues);
    }
 
 
 
    /*******************************************************************************
     ** Setter for inputValues
-    **
     *******************************************************************************/
    public void setInputValues(Map<String, Serializable> inputValues)
    {
@@ -74,9 +95,8 @@ public class TestScriptInput extends AbstractTableActionInput
 
    /*******************************************************************************
     ** Fluent setter for inputValues
-    **
     *******************************************************************************/
-   public TestScriptInput withInputValues(Map<String, Serializable> inputValues)
+   public AbstractRunScriptInput<C> withInputValues(Map<String, Serializable> inputValues)
    {
       this.inputValues = inputValues;
       return (this);
@@ -85,96 +105,93 @@ public class TestScriptInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for codeReference
-    **
+    ** Getter for logger
     *******************************************************************************/
-   public QCodeReference getCodeReference()
+   public QCodeExecutionLoggerInterface getLogger()
    {
-      return codeReference;
+      return (this.logger);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for codeReference
-    **
+    ** Setter for logger
     *******************************************************************************/
-   public void setCodeReference(QCodeReference codeReference)
+   public void setLogger(QCodeExecutionLoggerInterface logger)
    {
-      this.codeReference = codeReference;
+      this.logger = logger;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for codeReference
-    **
+    ** Fluent setter for logger
     *******************************************************************************/
-   public TestScriptInput withCodeReference(QCodeReference codeReference)
+   public AbstractRunScriptInput<C> withLogger(QCodeExecutionLoggerInterface logger)
    {
-      this.codeReference = codeReference;
+      this.logger = logger;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for apiName
+    ** Getter for outputObject
     *******************************************************************************/
-   public String getApiName()
+   public Serializable getOutputObject()
    {
-      return (this.apiName);
+      return (this.outputObject);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for apiName
+    ** Setter for outputObject
     *******************************************************************************/
-   public void setApiName(String apiName)
+   public void setOutputObject(Serializable outputObject)
    {
-      this.apiName = apiName;
+      this.outputObject = outputObject;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for apiName
+    ** Fluent setter for outputObject
     *******************************************************************************/
-   public TestScriptInput withApiName(String apiName)
+   public AbstractRunScriptInput<C> withOutputObject(Serializable outputObject)
    {
-      this.apiName = apiName;
+      this.outputObject = outputObject;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for apiVersion
+    ** Getter for scriptUtils
     *******************************************************************************/
-   public String getApiVersion()
+   public Serializable getScriptUtils()
    {
-      return (this.apiVersion);
+      return (this.scriptUtils);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for apiVersion
+    ** Setter for scriptUtils
     *******************************************************************************/
-   public void setApiVersion(String apiVersion)
+   public void setScriptUtils(Serializable scriptUtils)
    {
-      this.apiVersion = apiVersion;
+      this.scriptUtils = scriptUtils;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for apiVersion
+    ** Fluent setter for scriptUtils
     *******************************************************************************/
-   public TestScriptInput withApiVersion(String apiVersion)
+   public AbstractRunScriptInput<C> withScriptUtils(Serializable scriptUtils)
    {
-      this.apiVersion = apiVersion;
+      this.scriptUtils = scriptUtils;
       return (this);
    }
 

@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -68,6 +69,18 @@ public class RunRecordScriptExtractStep extends ExtractViaQueryStep
       }
 
       super.preRun(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+
+   /*******************************************************************************
+    ** Make sure associations are fetched (so api records have children!)
+    *******************************************************************************/
+   @Override
+   protected void customizeInputPreQuery(QueryInput queryInput)
+   {
+      super.customizeInputPreQuery(queryInput);
+      queryInput.setIncludeAssociations(true);
    }
 
 }
