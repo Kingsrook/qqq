@@ -47,6 +47,13 @@ public class QQueryFilter implements Serializable, Cloneable
    private BooleanOperator    booleanOperator = BooleanOperator.AND;
    private List<QQueryFilter> subFilters      = new ArrayList<>();
 
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // skip & limit are meant to only apply to QueryAction (at least at the initial time they are added here) //
+   // e.g., they are ignored in CountAction, AggregateAction, etc, where their meanings may be less obvious  //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private Integer skip;
+   private Integer limit;
+
 
 
    /*******************************************************************************
@@ -396,6 +403,68 @@ public class QQueryFilter implements Serializable, Cloneable
             criterion.setValues(newValues);
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for skip
+    *******************************************************************************/
+   public Integer getSkip()
+   {
+      return (this.skip);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for skip
+    *******************************************************************************/
+   public void setSkip(Integer skip)
+   {
+      this.skip = skip;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for skip
+    *******************************************************************************/
+   public QQueryFilter withSkip(Integer skip)
+   {
+      this.skip = skip;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for limit
+    *******************************************************************************/
+   public Integer getLimit()
+   {
+      return (this.limit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for limit
+    *******************************************************************************/
+   public void setLimit(Integer limit)
+   {
+      this.limit = limit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for limit
+    *******************************************************************************/
+   public QQueryFilter withLimit(Integer limit)
+   {
+      this.limit = limit;
+      return (this);
    }
 
 }

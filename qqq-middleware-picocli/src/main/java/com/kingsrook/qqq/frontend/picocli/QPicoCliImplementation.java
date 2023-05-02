@@ -531,7 +531,6 @@ public class QPicoCliImplementation
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
-      queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
 
       // todo - think about these (e.g., based on user's requested output format?
       // queryInput.setShouldGenerateDisplayValues(true);
@@ -552,6 +551,8 @@ public class QPicoCliImplementation
             .withOperator(QCriteriaOperator.EQUALS)
             .withValues(List.of(primaryKeyValue)));
       queryInput.setFilter(filter);
+
+      filter.setSkip(subParseResult.matchedOptionValue("skip", null));
 
       QueryAction   queryAction = new QueryAction();
       QueryOutput   queryOutput = queryAction.execute(queryInput);
@@ -577,9 +578,9 @@ public class QPicoCliImplementation
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
-      queryInput.setSkip(subParseResult.matchedOptionValue("skip", null));
-      queryInput.setLimit(subParseResult.matchedOptionValue("limit", null));
       queryInput.setFilter(generateQueryFilter(subParseResult));
+      queryInput.getFilter().setSkip(subParseResult.matchedOptionValue("skip", null));
+      queryInput.getFilter().setLimit(subParseResult.matchedOptionValue("limit", null));
 
       // todo - think about these (e.g., based on user's requested output format?
       // queryInput.setShouldGenerateDisplayValues(true);

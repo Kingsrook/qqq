@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.utils.collections;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.utils.lambdas.VoidVoidMethod;
@@ -37,8 +38,8 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.VoidVoidMethod;
  *******************************************************************************/
 public class MutableMap<K, V> implements Map<K, V>
 {
-   private Map<K, V>                  sourceMap;
-   private Class<? extends Map<K, V>> mutableTypeIfNeeded;
+   private Map<K, V>           sourceMap;
+   private Supplier<Map<K, V>> supplierIfNeeded;
 
 
 
@@ -48,7 +49,7 @@ public class MutableMap<K, V> implements Map<K, V>
     *******************************************************************************/
    public MutableMap(Map<K, V> sourceMap)
    {
-      this(sourceMap, (Class) HashMap.class);
+      this(sourceMap, HashMap::new);
    }
 
 
@@ -57,10 +58,20 @@ public class MutableMap<K, V> implements Map<K, V>
     ** Constructor
     **
     *******************************************************************************/
-   public MutableMap(Map<K, V> sourceMap, Class<? extends Map<K, V>> mutableTypeIfNeeded)
+   public MutableMap(Map<K, V> sourceMap, Supplier<Map<K, V>> supplierIfNeeded)
    {
-      this.sourceMap = sourceMap;
-      this.mutableTypeIfNeeded = mutableTypeIfNeeded;
+      this.sourceMap = Objects.requireNonNullElseGet(sourceMap, supplierIfNeeded);
+      this.supplierIfNeeded = supplierIfNeeded;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   Map<K, V> getUnderlyingMap()
+   {
+      return (sourceMap);
    }
 
 
@@ -72,13 +83,13 @@ public class MutableMap<K, V> implements Map<K, V>
    {
       try
       {
-         Map<K, V> replacementMap = mutableTypeIfNeeded.getConstructor().newInstance();
+         Map<K, V> replacementMap = supplierIfNeeded.get();
          replacementMap.putAll(sourceMap);
          sourceMap = replacementMap;
       }
       catch(Exception e)
       {
-         throw (new IllegalStateException("The mutable type provided for this MutableMap [" + mutableTypeIfNeeded.getName() + "] could not be instantiated."));
+         throw (new IllegalStateException("Error getting from the supplier provided for this MutableMap.", e));
       }
    }
 

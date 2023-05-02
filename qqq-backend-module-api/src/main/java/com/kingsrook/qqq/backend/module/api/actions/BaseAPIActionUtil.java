@@ -228,10 +228,12 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public QueryOutput doQuery(QTableMetaData table, QueryInput queryInput) throws QException
    {
-      QueryOutput queryOutput   = new QueryOutput(queryInput);
-      Integer     originalLimit = queryInput.getLimit();
-      Integer     limit         = originalLimit;
-      Integer     skip          = queryInput.getSkip();
+      QueryOutput  queryOutput = new QueryOutput(queryInput);
+      QQueryFilter filter      = queryInput.getFilter();
+
+      Integer originalLimit = filter == null ? null : filter.getLimit();
+      Integer limit         = originalLimit;
+      Integer skip          = filter == null ? null : filter.getSkip();
 
       if(limit == null)
       {
@@ -243,10 +245,9 @@ public class BaseAPIActionUtil
       {
          try
          {
-            QQueryFilter filter      = queryInput.getFilter();
-            String       paramString = buildQueryStringForGet(filter, limit, skip, table.getFields());
-            String       url         = buildTableUrl(table) + paramString;
-            HttpGet      request     = new HttpGet(url);
+            String  paramString = buildQueryStringForGet(filter, limit, skip, table.getFields());
+            String  url         = buildTableUrl(table) + paramString;
+            HttpGet request     = new HttpGet(url);
 
             QHttpResponse response = makeRequest(table, request);
             int           count    = processGetResponse(table, response, queryOutput);

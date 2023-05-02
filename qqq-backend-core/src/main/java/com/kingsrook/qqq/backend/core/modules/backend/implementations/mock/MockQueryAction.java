@@ -27,7 +27,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.Objects;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -36,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 
 
 /*******************************************************************************
@@ -59,7 +59,8 @@ public class MockQueryAction implements QueryInterface
 
          QueryOutput queryOutput = new QueryOutput(queryInput);
 
-         int rows = Objects.requireNonNullElse(queryInput.getLimit(), 1);
+         @SuppressWarnings("UnnecessaryUnboxing") // force an un-boxing, to force an NPE if it's null, to get to the "else 1"
+         int rows = ObjectUtils.tryElse(() -> queryInput.getFilter().getLimit().intValue(), 1);
          for(int i = 0; i < rows; i++)
          {
             QRecord record = new QRecord();

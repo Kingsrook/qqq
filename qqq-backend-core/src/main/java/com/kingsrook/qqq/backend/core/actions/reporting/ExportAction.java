@@ -23,8 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
@@ -32,6 +36,7 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -41,10 +46,13 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -95,15 +103,25 @@ public class ExportAction
       ///////////////////////////////////
       if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
       {
-         QTableMetaData table         = exportInput.getTable();
-         List<String>   badFieldNames = new ArrayList<>();
+         QTableMetaData              table        = exportInput.getTable();
+         Map<String, QTableMetaData> joinTableMap = getJoinTableMap(table);
+
+         List<String> badFieldNames = new ArrayList<>();
          for(String fieldName : exportInput.getFieldNames())
          {
             try
             {
-               table.getField(fieldName);
+               if(fieldName.contains("."))
+               {
+                  String[] parts = fieldName.split("\\.", 2);
+                  joinTableMap.get(parts[0]).getField(parts[1]);
+               }
+               else
+               {
+                  table.getField(fieldName);
+               }
             }
-            catch(IllegalArgumentException iae)
+            catch(Exception e)
             {
                badFieldNames.add(fieldName);
             }
@@ -124,6 +142,21 @@ public class ExportAction
       verifyCountUnderMax(exportInput, backendModule, reportFormat);
 
       preExecuteRan = true;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Map<String, QTableMetaData> getJoinTableMap(QTableMetaData table)
+   {
+      Map<String, QTableMetaData> joinTableMap = new HashMap<>();
+      for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+      {
+         joinTableMap.put(exposedJoin.getJoinTable(), QContext.getQInstance().getTable(exposedJoin.getJoinTable()));
+      }
+      return joinTableMap;
    }
 
 
@@ -151,7 +184,33 @@ public class ExportAction
       QueryInput  queryInput  = new QueryInput();
       queryInput.setTableName(exportInput.getTableName());
       queryInput.setFilter(exportInput.getQueryFilter());
-      queryInput.setLimit(exportInput.getLimit());
+
+      List<QueryJoin> queryJoins     = new ArrayList<>();
+      Set<String>     addedJoinNames = new HashSet<>();
+      if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
+      {
+         for(String fieldName : exportInput.getFieldNames())
+         {
+            if(fieldName.contains("."))
+            {
+               String[] parts         = fieldName.split("\\.", 2);
+               String   joinTableName = parts[0];
+               if(!addedJoinNames.contains(joinTableName))
+               {
+                  queryJoins.add(new QueryJoin(joinTableName).withType(QueryJoin.Type.LEFT).withSelect(true));
+                  addedJoinNames.add(joinTableName);
+               }
+            }
+         }
+      }
+
+      queryInput.setQueryJoins(queryJoins);
+
+      if(queryInput.getFilter() == null)
+      {
+         queryInput.setFilter(new QQueryFilter());
+      }
+      queryInput.getFilter().setLimit(exportInput.getLimit());
       queryInput.setShouldTranslatePossibleValues(true);
 
       /////////////////////////////////////////////////////////////////
@@ -298,11 +357,29 @@ public class ExportAction
     *******************************************************************************/
    private List<QFieldMetaData> getFields(ExportInput exportInput)
    {
+      QTableMetaData              table        = exportInput.getTable();
+      Map<String, QTableMetaData> joinTableMap = getJoinTableMap(table);
+
       List<QFieldMetaData> fieldList;
-      QTableMetaData       table = exportInput.getTable();
       if(exportInput.getFieldNames() != null)
       {
-         fieldList = exportInput.getFieldNames().stream().map(table::getField).toList();
+         fieldList = new ArrayList<>();
+         for(String fieldName : exportInput.getFieldNames())
+         {
+            if(fieldName.contains("."))
+            {
+               String[]       parts     = fieldName.split("\\.", 2);
+               QTableMetaData joinTable = joinTableMap.get(parts[0]);
+               QFieldMetaData field     = joinTable.getField(parts[1]).clone();
+               field.setName(fieldName);
+               field.setLabel(joinTable.getLabel() + ": " + field.getLabel());
+               fieldList.add(field);
+            }
+            else
+            {
+               fieldList.add(table.getField(fieldName));
+            }
+         }
       }
       else
       {

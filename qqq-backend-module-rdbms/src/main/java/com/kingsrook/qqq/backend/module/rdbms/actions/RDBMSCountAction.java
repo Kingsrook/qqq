@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -63,6 +64,11 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          String  primaryKeyColumn = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(fieldAndTableNameOrAlias.field().getName());
          String  clausePrefix     = (requiresDistinct) ? "SELECT COUNT(DISTINCT (" + primaryKeyColumn + "))" : "SELECT COUNT(*)";
 
+         if(BooleanUtils.isTrue(countInput.getIncludeDistinctCount()))
+         {
+            clausePrefix = "SELECT COUNT(DISTINCT (" + primaryKeyColumn + ")) AS distinct_count, COUNT(*)";
+         }
+
          String sql = clausePrefix + " AS record_count FROM "
             + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);
 
@@ -81,6 +87,11 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
                if(resultSet.next())
                {
                   rs.setCount(resultSet.getInt("record_count"));
+
+                  if(BooleanUtils.isTrue(countInput.getIncludeDistinctCount()))
+                  {
+                     rs.setDistinctCount(resultSet.getInt("distinct_count"));
+                  }
                }
 
             }), params);

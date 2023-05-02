@@ -207,6 +207,63 @@
             </configuration>
          </plugin>
          <plugin>
+            <artifactId>exec-maven-plugin</artifactId>
+            <groupId>org.codehaus.mojo</groupId>
+            <version>3.0.0</version>
+            <executions>
+               <execution>
+                  <id>test-coverage-summary</id>
+                  <phase>verify</phase>
+                  <goals>
+                     <goal>exec</goal>
+                  </goals>
+                  <configuration>
+                     <executable>sh</executable>
+                     <arguments>
+                        <argument>-c</argument>
+                        <argument>
+                           <![CDATA[
+if [ ! -e target/site/jacoco/index.html ]; then
+   echo "No jacoco coverage report here.";
+   exit;
+fi
+
+echo
+echo "Jacoco coverage summary report:"
+echo "   See also target/site/jacoco/index.html"
+echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
+echo "------------------------------------------------------------"
+
+which xpath > /dev/null 2>&1
+if [ "$?" == "0" ]; then
+   echo "Element\nInstructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
+   xpath -n -q -e '/html/body/table/tfoot/tr[1]/td/text()' target/site/jacoco/index.html > /tmp/$$.values
+   paste /tmp/$$.headers /tmp/$$.values | tail +2 | awk -v FS='\t' '{printf("%-20s %s\n",$1,$2)}'
+   rm /tmp/$$.headers /tmp/$$.values
+else
+   echo "xpath is not installed.  Jacoco coverage summary will not be produced here...";
+fi
+
+which xpath > /dev/null 2>&1
+if [ "$?" == "0" ]; then
+   echo "Untested classes, per Jacoco:"
+   echo "-----------------------------"
+   for i in target/site/jacoco/*/index.html; do
+      html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1;
+   done;
+   echo
+else
+   echo "html2text is not installed.  Untested classes from Jacoco will not be printed here...";
+fi
+
+                           ]]>
+                        </argument>
+                     </arguments>
+                  </configuration>
+               </execution>
+            </executions>
+         </plugin>
+         <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.8.8</version>
@@ -249,53 +306,11 @@
                </execution>
                <execution>
                   <id>post-unit-test</id>
-                  <phase>verify</phase>
+                  <!-- <phase>verify</phase> -->
+                  <phase>post-integration-test</phase>
                   <goals>
                      <goal>report</goal>
                   </goals>
-               </execution>
-            </executions>
-         </plugin>
-         <plugin>
-            <artifactId>exec-maven-plugin</artifactId>
-            <groupId>org.codehaus.mojo</groupId>
-            <version>3.0.0</version>
-            <executions>
-               <execution>
-                  <id>test-coverage-summary</id>
-                  <phase>verify</phase>
-                  <goals>
-                     <goal>exec</goal>
-                  </goals>
-                  <configuration>
-                     <executable>sh</executable>
-                     <arguments>
-                        <argument>-c</argument>
-                        <argument>
-                           <![CDATA[
-if [ ! -e target/site/jacoco/index.html ]; then
-   echo "No jacoco coverage report here.";
-   exit;
-fi
-
-echo
-echo "Jacoco coverage summary report:"
-echo "   See also target/site/jacoco/index.html"
-echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
-echo "------------------------------------------------------------"
-which xpath > /dev/null 2>&1
-if [ "$?" == "0" ]; then
-   echo "Element\nInstructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
-   xpath -n -q -e '/html/body/table/tfoot/tr[1]/td/text()' target/site/jacoco/index.html > /tmp/$$.values
-   paste /tmp/$$.headers /tmp/$$.values | tail +2 | awk -v FS='\t' '{printf("%-20s %s\n",$1,$2)}'
-   rm /tmp/$$.headers /tmp/$$.values
-else
-   echo "xpath is not installed.  Jacoco coverage summary will not be produced here..";
-fi
-                           ]]>
-                        </argument>
-                     </arguments>
-                  </configuration>
                </execution>
             </executions>
          </plugin>

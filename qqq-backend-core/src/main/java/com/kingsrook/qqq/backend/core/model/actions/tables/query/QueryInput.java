@@ -39,8 +39,6 @@ public class QueryInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;
-   private Integer             skip;
-   private Integer             limit;
 
    private RecordPipe recordPipe;
 
@@ -57,7 +55,8 @@ public class QueryInput extends AbstractTableActionInput
    /////////////////////////////////////////////////////////////////////////////////////////
    private Set<String> fieldsToTranslatePossibleValues;
 
-   private List<QueryJoin> queryJoins = null;
+   private List<QueryJoin> queryJoins     = null;
+   private boolean         selectDistinct = false;
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // if you say you want to includeAssociations, you can limit which ones by passing them in associationNamesToInclude. //
@@ -96,50 +95,6 @@ public class QueryInput extends AbstractTableActionInput
    public void setFilter(QQueryFilter filter)
    {
       this.filter = filter;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for skip
-    **
-    *******************************************************************************/
-   public Integer getSkip()
-   {
-      return skip;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for skip
-    **
-    *******************************************************************************/
-   public void setSkip(Integer skip)
-   {
-      this.skip = skip;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for limit
-    **
-    *******************************************************************************/
-   public Integer getLimit()
-   {
-      return limit;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for limit
-    **
-    *******************************************************************************/
-   public void setLimit(Integer limit)
-   {
-      this.limit = limit;
    }
 
 
@@ -362,28 +317,6 @@ public class QueryInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Fluent setter for skip
-    *******************************************************************************/
-   public QueryInput withSkip(Integer skip)
-   {
-      this.skip = skip;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for limit
-    *******************************************************************************/
-   public QueryInput withLimit(Integer limit)
-   {
-      this.limit = limit;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Fluent setter for recordPipe
     *******************************************************************************/
    public QueryInput withRecordPipe(RecordPipe recordPipe)
@@ -558,6 +491,37 @@ public class QueryInput extends AbstractTableActionInput
    public QueryInput withShouldOmitHiddenFields(boolean shouldOmitHiddenFields)
    {
       this.shouldOmitHiddenFields = shouldOmitHiddenFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for selectDistinct
+    *******************************************************************************/
+   public boolean getSelectDistinct()
+   {
+      return (this.selectDistinct);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for selectDistinct
+    *******************************************************************************/
+   public void setSelectDistinct(boolean selectDistinct)
+   {
+      this.selectDistinct = selectDistinct;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for selectDistinct
+    *******************************************************************************/
+   public QueryInput withSelectDistinct(boolean selectDistinct)
+   {
+      this.selectDistinct = selectDistinct;
       return (this);
    }
 

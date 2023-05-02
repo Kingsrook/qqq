@@ -83,10 +83,13 @@ public class MetaDataAction
          }
 
          QBackendMetaData backendForTable = metaDataInput.getInstance().getBackendForTable(tableName);
-         tables.put(tableName, new QFrontendTableMetaData(metaDataInput, backendForTable, table, false));
+         tables.put(tableName, new QFrontendTableMetaData(metaDataInput, backendForTable, table, false, false));
          treeNodes.put(tableName, new AppTreeNode(table));
       }
       metaDataOutput.setTables(tables);
+
+      // addJoinsToTables(tables);
+      // addJoinedTablesToTables(tables);
 
       ////////////////////////////////////////
       // map processes to frontend metadata //

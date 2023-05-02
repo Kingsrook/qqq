@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,12 +33,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -58,6 +63,8 @@ public class QFrontendTableMetaData
    private Map<String, QFrontendFieldMetaData> fields;
    private List<QFieldSection>                 sections;
 
+   private List<QFrontendExposedJoin> exposedJoins;
+
    private Set<String> capabilities;
 
    private boolean readPermission;
@@ -74,7 +81,7 @@ public class QFrontendTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFields)
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFields, boolean includeJoins)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
@@ -90,6 +97,27 @@ public class QFrontendTableMetaData
          }
 
          this.sections = tableMetaData.getSections();
+      }
+
+      if(includeJoins)
+      {
+         QInstance qInstance = QContext.getQInstance();
+
+         this.exposedJoins = new ArrayList<>();
+         for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(tableMetaData.getExposedJoins()))
+         {
+            QFrontendExposedJoin frontendExposedJoin = new QFrontendExposedJoin();
+            this.exposedJoins.add(frontendExposedJoin);
+
+            QTableMetaData joinTable = qInstance.getTable(exposedJoin.getJoinTable());
+            frontendExposedJoin.setLabel(exposedJoin.getLabel());
+            frontendExposedJoin.setIsMany(exposedJoin.getIsMany());
+            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(actionInput, backendForTable, joinTable, includeFields, false));
+            for(String joinName : exposedJoin.getJoinPath())
+            {
+               frontendExposedJoin.addJoin(qInstance.getJoin(joinName));
+            }
+         }
       }
 
       if(tableMetaData.getIcon() != null)
@@ -258,5 +286,16 @@ public class QFrontendTableMetaData
    public boolean getDeletePermission()
    {
       return deletePermission;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for exposedJoins
+    **
+    *******************************************************************************/
+   public List<QFrontendExposedJoin> getExposedJoins()
+   {
+      return exposedJoins;
    }
 }

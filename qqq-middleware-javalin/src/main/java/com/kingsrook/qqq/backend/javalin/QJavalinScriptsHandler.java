@@ -254,8 +254,7 @@ public class QJavalinScriptsHandler
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria("scriptRevisionId", QCriteriaOperator.EQUALS, List.of(scriptRevisionId)))
             .withOrderBy(new QFilterOrderBy("id", false))
-         );
-         queryInput.setLimit(100);
+            .withLimit(100));
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
          if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))

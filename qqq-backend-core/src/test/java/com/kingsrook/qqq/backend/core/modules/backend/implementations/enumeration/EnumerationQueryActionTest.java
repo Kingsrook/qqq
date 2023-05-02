@@ -128,38 +128,31 @@ class EnumerationQueryActionTest extends BaseTest
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName("statesEnum");
-      queryInput.setSkip(0);
-      queryInput.setLimit(null);
+      queryInput.setFilter(new QQueryFilter().withSkip(0).withLimit(null));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
 
-      queryInput.setSkip(1);
-      queryInput.setLimit(null);
+      queryInput.setFilter(new QQueryFilter().withSkip(1).withLimit(null));
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of("Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
 
-      queryInput.setSkip(2);
-      queryInput.setLimit(null);
+      queryInput.setFilter(new QQueryFilter().withSkip(2).withLimit(null));
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of(), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
 
-      queryInput.setSkip(null);
-      queryInput.setLimit(1);
+      queryInput.setFilter(new QQueryFilter().withSkip(null).withLimit(1));
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of("Missouri"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
 
-      queryInput.setSkip(null);
-      queryInput.setLimit(2);
+      queryInput.setFilter(new QQueryFilter().withSkip(null).withLimit(2));
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
 
-      queryInput.setSkip(null);
-      queryInput.setLimit(3);
+      queryInput.setFilter(new QQueryFilter().withSkip(null).withLimit(3));
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of("Missouri", "Illinois"), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
 
-      queryInput.setSkip(null);
-      queryInput.setLimit(0);
+      queryInput.setFilter(new QQueryFilter().withSkip(null).withLimit(0));
       queryOutput = new QueryAction().execute(queryInput);
       assertEquals(List.of(), queryOutput.getRecords().stream().map(r -> r.getValueString("name")).toList());
    }

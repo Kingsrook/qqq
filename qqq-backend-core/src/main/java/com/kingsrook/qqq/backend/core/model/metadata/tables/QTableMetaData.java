@@ -101,6 +101,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private Map<String, QMiddlewareTableMetaData> middlewareMetaData;
 
+   private List<ExposedJoin> exposedJoins;
+
 
 
    /*******************************************************************************
@@ -1296,4 +1298,51 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    {
       qInstance.addTable(this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for exposedJoins
+    *******************************************************************************/
+   public List<ExposedJoin> getExposedJoins()
+   {
+      return (this.exposedJoins);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for exposedJoins
+    *******************************************************************************/
+   public void setExposedJoins(List<ExposedJoin> exposedJoins)
+   {
+      this.exposedJoins = exposedJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for exposedJoins
+    *******************************************************************************/
+   public QTableMetaData withExposedJoins(List<ExposedJoin> exposedJoins)
+   {
+      this.exposedJoins = exposedJoins;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for exposedJoins
+    *******************************************************************************/
+   public QTableMetaData withExposedJoin(ExposedJoin exposedJoin)
+   {
+      if(this.exposedJoins == null)
+      {
+         this.exposedJoins = new ArrayList<>();
+      }
+      this.exposedJoins.add(exposedJoin);
+      return (this);
+   }
+
 }

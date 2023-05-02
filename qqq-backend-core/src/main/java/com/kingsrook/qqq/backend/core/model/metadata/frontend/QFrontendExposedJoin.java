@@ -19,149 +19,159 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode;
+package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 
 
 /*******************************************************************************
- **
+ ** Version of an ExposedJoin for a frontend to see
  *******************************************************************************/
-public class WidgetQueryField extends AbstractWidgetValueSourceWithFilter
+public class QFrontendExposedJoin
 {
-   private String selectFieldName;
+   private String                 label;
+   private Boolean                isMany;
+   private QFrontendTableMetaData joinTable;
+   private List<QJoinMetaData>    joinPath;
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Getter for label
     *******************************************************************************/
-   public WidgetQueryField()
+   public String getLabel()
    {
-      setType(getClass().getSimpleName());
+      return (this.label);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for label
     *******************************************************************************/
-   @Override
-   public Object evaluate(Map<String, Object> context, RenderWidgetInput input) throws QException
+   public void setLabel(String label)
    {
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(tableName);
-      QQueryFilter effectiveFilter = getEffectiveFilter(input);
-      queryInput.setFilter(effectiveFilter);
-      effectiveFilter.setLimit(1);
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    *******************************************************************************/
+   public QFrontendExposedJoin withLabel(String label)
+   {
+      this.label = label;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for joinTable
+    *******************************************************************************/
+   public QFrontendTableMetaData getJoinTable()
+   {
+      return (this.joinTable);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for joinTable
+    *******************************************************************************/
+   public void setJoinTable(QFrontendTableMetaData joinTable)
+   {
+      this.joinTable = joinTable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for joinTable
+    *******************************************************************************/
+   public QFrontendExposedJoin withJoinTable(QFrontendTableMetaData joinTable)
+   {
+      this.joinTable = joinTable;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for joinPath
+    *******************************************************************************/
+   public List<QJoinMetaData> getJoinPath()
+   {
+      return (this.joinPath);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for joinPath
+    *******************************************************************************/
+   public void setJoinPath(List<QJoinMetaData> joinPath)
+   {
+      this.joinPath = joinPath;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for joinPath
+    *******************************************************************************/
+   public QFrontendExposedJoin withJoinPath(List<QJoinMetaData> joinPath)
+   {
+      this.joinPath = joinPath;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Add one join to the join path in here
+    *******************************************************************************/
+   public void addJoin(QJoinMetaData join)
+   {
+      if(this.joinPath == null)
       {
-         return (queryOutput.getRecords().get(0).getValue(selectFieldName));
+         this.joinPath = new ArrayList<>();
       }
-
-      return (null);
+      this.joinPath.add(join);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
+    ** Getter for isMany
     *******************************************************************************/
-   public WidgetQueryField withName(String name)
+   public Boolean getIsMany()
    {
-      setName(name);
-      return (this);
+      return (this.isMany);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for tableName
+    ** Setter for isMany
     *******************************************************************************/
-   public WidgetQueryField withTableName(String tableName)
+   public void setIsMany(Boolean isMany)
    {
-      this.tableName = tableName;
-      return (this);
+      this.isMany = isMany;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for filter
+    ** Fluent setter for isMany
     *******************************************************************************/
-   public WidgetQueryField withFilter(QQueryFilter filter)
+   public QFrontendExposedJoin withIsMany(Boolean isMany)
    {
-      this.filter = filter;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for selectFieldName
-    *******************************************************************************/
-   public String getSelectFieldName()
-   {
-      return (this.selectFieldName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for selectFieldName
-    *******************************************************************************/
-   public void setSelectFieldName(String selectFieldName)
-   {
-      this.selectFieldName = selectFieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for selectFieldName
-    *******************************************************************************/
-   public WidgetQueryField withSelectFieldName(String selectFieldName)
-   {
-      this.selectFieldName = selectFieldName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for conditionalFilterList
-    *******************************************************************************/
-   @Override
-   public WidgetQueryField withConditionalFilterList(List<AbstractConditionalFilter> conditionalFilterList)
-   {
-      this.conditionalFilterList = conditionalFilterList;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter to add a single conditionalFilter
-    *******************************************************************************/
-   public WidgetQueryField withConditionalFilter(AbstractConditionalFilter conditionalFilter)
-   {
-      if(this.conditionalFilterList == null)
-      {
-         this.conditionalFilterList = new ArrayList<>();
-      }
-      this.conditionalFilterList.add(conditionalFilter);
+      this.isMany = isMany;
       return (this);
    }
 

@@ -69,7 +69,7 @@ public class EnumerationQueryAction implements QueryInterface
          }
 
          BackendQueryFilterUtils.sortRecordList(queryInput.getFilter(), recordList);
-         recordList = BackendQueryFilterUtils.applySkipAndLimit(queryInput, recordList);
+         recordList = BackendQueryFilterUtils.applySkipAndLimit(queryInput.getFilter(), recordList);
 
          QueryOutput queryOutput = new QueryOutput(queryInput);
          queryOutput.addRecords(recordList);

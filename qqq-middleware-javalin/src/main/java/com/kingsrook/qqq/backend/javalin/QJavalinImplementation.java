@@ -788,6 +788,7 @@ public class QJavalinImplementation
          }
 
          countInput.setQueryJoins(processQueryJoinsParam(context));
+         countInput.setIncludeDistinctCount(QJavalinUtils.queryParamIsTrue(context, "includeDistinct"));
 
          CountAction countAction = new CountAction();
          CountOutput countOutput = countAction.execute(countInput);
@@ -842,8 +843,6 @@ public class QJavalinImplementation
          queryInput.setTableName(table);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
-         queryInput.setSkip(QJavalinUtils.integerQueryParam(context, "skip"));
-         queryInput.setLimit(QJavalinUtils.integerQueryParam(context, "limit"));
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -855,6 +854,18 @@ public class QJavalinImplementation
          if(filter != null)
          {
             queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+         }
+
+         Integer skip  = QJavalinUtils.integerQueryParam(context, "skip");
+         Integer limit = QJavalinUtils.integerQueryParam(context, "limit");
+         if(skip != null || limit != null)
+         {
+            if(queryInput.getFilter() == null)
+            {
+               queryInput.setFilter(new QQueryFilter());
+            }
+            queryInput.getFilter().setSkip(skip);
+            queryInput.getFilter().setLimit(limit);
          }
 
          queryInput.setQueryJoins(processQueryJoinsParam(context));

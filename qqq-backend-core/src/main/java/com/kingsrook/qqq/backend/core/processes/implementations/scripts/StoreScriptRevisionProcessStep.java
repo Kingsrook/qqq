@@ -85,8 +85,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
       queryInput.setFilter(new QQueryFilter()
          .withCriteria(new QFilterCriteria("scriptId", QCriteriaOperator.EQUALS, List.of(script.getValue("id"))))
          .withOrderBy(new QFilterOrderBy("sequenceNo", false))
-      );
-      queryInput.setLimit(1);
+         .withLimit(1));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       if(!queryOutput.getRecords().isEmpty())
       {

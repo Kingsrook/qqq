@@ -50,6 +50,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
@@ -65,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -1667,6 +1671,83 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation").withJoinName("orderLineItem").withAssociatedTableName("notATable"))),
          "unrecognized associatedTableName notATable for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
       );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExposedJoinPaths()
+   {
+      assertValidationFailureReasons(qInstance -> qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin())),
+         "Table A has an exposedJoin that is missing a joinTable name",
+         "Table A exposedJoin [missingJoinTableName] is missing a label");
+
+      assertValidationFailureReasons(qInstance -> qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B"))),
+         "Table A exposedJoin B is referencing an unrecognized table",
+         "Table A exposedJoin B is missing a label");
+
+      assertValidationFailureReasons(qInstance ->
+         {
+            qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B").withJoinPath(List.of("notAJoin"))));
+            qInstance.addTable(newTable("B", "id", "aId"));
+            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         },
+         "does not match a valid join connection in the instance");
+
+      assertValidationFailureReasons(qInstance ->
+         {
+            qInstance.addTable(newTable("A", "id")
+               .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("foo").withJoinPath(List.of("AB")))
+               .withExposedJoin(new ExposedJoin().withJoinTable("C").withLabel("foo").withJoinPath(List.of("AC")))
+            );
+            qInstance.addTable(newTable("B", "id", "aId"));
+            qInstance.addTable(newTable("C", "id", "aId"));
+            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("C").withName("AC").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         },
+         "more than one join labeled: foo");
+
+      assertValidationFailureReasons(qInstance ->
+         {
+            qInstance.addTable(newTable("A", "id")
+               .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B1").withJoinPath(List.of("AB")))
+               .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B2").withJoinPath(List.of("AB")))
+            );
+            qInstance.addTable(newTable("B", "id", "aId"));
+            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         },
+         "than one join with the joinPath: [AB]");
+
+      assertValidationSuccess(qInstance ->
+      {
+         qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B").withJoinPath(List.of("AB"))));
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+      });
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData newTable(String tableName, String... fieldNames)
+   {
+      QTableMetaData tableMetaData = new QTableMetaData()
+         .withName(tableName)
+         .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
+         .withPrimaryKeyField(fieldNames[0]);
+
+      for(String fieldName : fieldNames)
+      {
+         tableMetaData.addField(new QFieldMetaData(fieldName, QFieldType.INTEGER));
+      }
+
+      return (tableMetaData);
    }
 
 

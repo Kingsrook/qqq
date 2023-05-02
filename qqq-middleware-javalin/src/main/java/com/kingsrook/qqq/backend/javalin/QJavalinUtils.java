@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -48,6 +49,23 @@ public class QJavalinUtils
       }
 
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Returns true iff context has a valid query parameter by the given name, with
+    ** a value of "true".
+    *******************************************************************************/
+   public static boolean queryParamIsTrue(Context context, String name) throws QValueException
+   {
+      String value = context.queryParam(name);
+      if(Objects.equals(value, "true"))
+      {
+         return (true);
+      }
+
+      return (false);
    }
 
 

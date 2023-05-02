@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 public class CountOutput extends AbstractActionOutput
 {
    private Integer count;
+   private Integer distinctCount;
 
 
 
@@ -52,4 +53,47 @@ public class CountOutput extends AbstractActionOutput
    {
       this.count = count;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for distinctCount
+    *******************************************************************************/
+   public Integer getDistinctCount()
+   {
+      return (this.distinctCount);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for distinctCount
+    *******************************************************************************/
+   public void setDistinctCount(Integer distinctCount)
+   {
+      this.distinctCount = distinctCount;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for distinctCount
+    *******************************************************************************/
+   public CountOutput withDistinctCount(Integer distinctCount)
+   {
+      this.distinctCount = distinctCount;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for count
+    *******************************************************************************/
+   public CountOutput withCount(Integer count)
+   {
+      this.count = count;
+      return (this);
+   }
+
 }
