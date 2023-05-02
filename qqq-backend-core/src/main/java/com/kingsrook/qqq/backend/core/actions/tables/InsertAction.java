@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
@@ -86,6 +87,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          throw (new QException("Error:  Undefined table: " + insertInput.getTableName()));
       }
 
+      Optional<AbstractPreInsertCustomizer>  preInsertCustomizer  = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       setAutomationStatusField(insertInput);
 
@@ -96,6 +98,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       setErrorsIfUniqueKeyErrors(insertInput, table);
       validateRequiredFields(insertInput);
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
+
+      if(preInsertCustomizer.isPresent())
+      {
+         preInsertCustomizer.get().setInsertInput(insertInput);
+         insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
+      }
 
       InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
       List<String> errors       = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();

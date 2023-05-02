@@ -67,7 +67,7 @@ public class MockQueryAction implements QueryInterface
 
             for(String field : table.getFields().keySet())
             {
-               Serializable value = field.equals("id") ? (i + 1) : getValue(table, field);
+               Serializable value = field.equals("id") ? (i + 1) : getMockValue(table, field);
                record.setValue(field, value);
             }
 
@@ -95,7 +95,7 @@ public class MockQueryAction implements QueryInterface
     **
     *******************************************************************************/
    @SuppressWarnings("checkstyle:MagicNumber")
-   private Serializable getValue(QTableMetaData table, String field)
+   public static Serializable getMockValue(QTableMetaData table, String field)
    {
       // @formatter:off // IJ can't do new-style switch correctly yet...
       return switch(table.getField(field).getType())

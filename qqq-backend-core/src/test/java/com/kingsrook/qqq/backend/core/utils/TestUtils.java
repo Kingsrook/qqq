@@ -528,7 +528,8 @@ public class TestUtils
          .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
-         ;
+         .withField(new QFieldMetaData("ssn", QFieldType.STRING).withType(QFieldType.PASSWORD))
+         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true));
    }
 
 

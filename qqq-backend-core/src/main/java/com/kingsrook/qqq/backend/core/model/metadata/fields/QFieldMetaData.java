@@ -54,6 +54,7 @@ public class QFieldMetaData implements Cloneable
    private QFieldType type;
    private boolean    isRequired = false;
    private boolean    isEditable = true;
+   private boolean    isHidden   = false;
    private boolean    isHeavy    = false;
 
    private FieldSecurityLock fieldSecurityLock;
@@ -183,6 +184,7 @@ public class QFieldMetaData implements Cloneable
             QField fieldAnnotation = optionalFieldAnnotation.get();
             setIsRequired(fieldAnnotation.isRequired());
             setIsEditable(fieldAnnotation.isEditable());
+            setIsHidden(fieldAnnotation.isHidden());
 
             if(StringUtils.hasContent(fieldAnnotation.label()))
             {
@@ -851,4 +853,36 @@ public class QFieldMetaData implements Cloneable
       this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return (this.isHidden);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isHidden
+    *******************************************************************************/
+   public void setIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isHidden
+    *******************************************************************************/
+   public QFieldMetaData withIsHidden(boolean isHidden)
+   {
+      this.isHidden = isHidden;
+      return (this);
+   }
+
 }

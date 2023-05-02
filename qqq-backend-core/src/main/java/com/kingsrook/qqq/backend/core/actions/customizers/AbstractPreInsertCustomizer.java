@@ -22,72 +22,44 @@
 package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+
+
 /*******************************************************************************
- ** Enum definition of possible table customizers - "roles" for custom code that
- ** can be applied to tables.
  **
- ** Works with TableCustomizer (singular version of this name) objects, during
- ** instance validation, to provide validation of the referenced code (and to
- ** make such validation from sub-backend-modules possible in the future).
  *******************************************************************************/
-public enum TableCustomizers
+public abstract class AbstractPreInsertCustomizer
 {
-   PRE_INSERT_RECORD(new TableCustomizer("preInsertRecord", AbstractPreInsertCustomizer.class)),
-   POST_QUERY_RECORD(new TableCustomizer("postQueryRecord", AbstractPostQueryCustomizer.class)),
-   POST_INSERT_RECORD(new TableCustomizer("postInsertRecord", AbstractPostInsertCustomizer.class));
-
-
-   private final TableCustomizer tableCustomizer;
+   protected InsertInput insertInput;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   TableCustomizers(TableCustomizer tableCustomizer)
-   {
-      this.tableCustomizer = tableCustomizer;
-   }
+   public abstract List<QRecord> apply(List<QRecord> records);
 
 
 
    /*******************************************************************************
-    ** Get the TableCustomer for a given role (e.g., the role used in meta-data, not
-    ** the enum-constant name).
-    *******************************************************************************/
-   public static TableCustomizers forRole(String name)
-   {
-      for(TableCustomizers value : values())
-      {
-         if(value.tableCustomizer.getRole().equals(name))
-         {
-            return (value);
-         }
-      }
-
-      return (null);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for tableCustomizer
+    ** Getter for insertInput
     **
     *******************************************************************************/
-   public TableCustomizer getTableCustomizer()
+   public InsertInput getInsertInput()
    {
-      return tableCustomizer;
+      return insertInput;
    }
 
 
 
    /*******************************************************************************
-    ** get the role from the tableCustomizer
+    ** Setter for insertInput
     **
     *******************************************************************************/
-   public String getRole()
+   public void setInsertInput(InsertInput insertInput)
    {
-      return (tableCustomizer.getRole());
+      this.insertInput = insertInput;
    }
-
 }

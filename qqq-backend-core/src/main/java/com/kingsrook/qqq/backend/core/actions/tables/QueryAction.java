@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
@@ -45,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
@@ -246,6 +248,60 @@ public class QueryAction
       if(queryInput.getShouldGenerateDisplayValues())
       {
          QValueFormatter.setDisplayValuesInRecords(queryInput.getTable(), records);
+      }
+
+      //////////////////////////////
+      // mask any password fields //
+      //////////////////////////////
+      if(queryInput.getShouldOmitHiddenFields() || queryInput.getShouldMaskPasswords())
+      {
+         Set<String> maskedFields = new HashSet<>();
+         Set<String> hiddenFields = new HashSet<>();
+
+         //////////////////////////////////////////////////
+         // build up sets of passwords and hidden fields //
+         //////////////////////////////////////////////////
+         Map<String, QFieldMetaData> fields = QContext.getQInstance().getTable(queryInput.getTableName()).getFields();
+         for(String fieldName : fields.keySet())
+         {
+            QFieldMetaData field = fields.get(fieldName);
+            if(queryInput.getShouldOmitHiddenFields() && field.getIsHidden())
+            {
+               hiddenFields.add(fieldName);
+            }
+            else if(field.getType() != null && field.getType().needsMasked())
+            {
+               maskedFields.add(fieldName);
+            }
+         }
+
+         /////////////////////////////////////////////////////
+         // iterate over records replacing values with mask //
+         /////////////////////////////////////////////////////
+         for(QRecord record : records)
+         {
+            /////////////////////////
+            // clear hidden fields //
+            /////////////////////////
+            for(String hiddenFieldName : hiddenFields)
+            {
+               record.removeValue(hiddenFieldName);
+            }
+
+            for(String maskedFieldName : maskedFields)
+            {
+               //////////////////////////////////////////////////////////////////////
+               // empty out the value completely first (which will remove from     //
+               // display fields as well) then update display value if flag is set //
+               //////////////////////////////////////////////////////////////////////
+               record.removeValue(maskedFieldName);
+               record.setValue(maskedFieldName, "************");
+               if(queryInput.getShouldGenerateDisplayValues())
+               {
+                  record.setDisplayValue(maskedFieldName, record.getValueString(maskedFieldName));
+               }
+            }
+         }
       }
    }
 }
