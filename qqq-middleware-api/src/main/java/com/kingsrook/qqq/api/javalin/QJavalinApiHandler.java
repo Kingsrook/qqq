@@ -633,7 +633,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static APILog newAPILog(Context context)
+   public static APILog newAPILog(Context context)
    {
       APILog apiLog = new APILog()
          .withTimestamp(Instant.now())
@@ -661,7 +661,7 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void storeApiLog(APILog apiLog)
+   public static void storeApiLog(APILog apiLog)
    {
       try
       {
