@@ -812,8 +812,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             {
                DecodedJWT jwt     = JWT.decode(accessToken);
                String     payload = jwt.getPayload();
-               System.out.println("IOK");
-               needNewToken = false;
+               if(jwt.getExpiresAtAsInstant().isAfter(Instant.now()))
+               {
+                  needNewToken = false;
+               }
             }
 
             if(needNewToken)
@@ -833,7 +835,16 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                QRecord clientAuth0Application = new GetAction().execute(getInput).getRecord();
                String  clientId               = clientAuth0Application.getValueString(metaData.getAuth0ClientIdField());
                String  clientSecret           = clientAuth0Application.getValueString(metaData.getAuth0ClientSecretField());
-               accessToken = createAccessToken(metaData, clientId, clientSecret);
+
+               /////////////////////////////////////////////////////////////////////////////////////////////////
+               // request access token from auth0 if exception is not thrown, that means 200OK, we want to    //
+               // store the actual access token in the database, and return a unique value                    //
+               // back to the user which will be what they use on subsequent requests (because token too big) //
+               /////////////////////////////////////////////////////////////////////////////////////////////////
+               JSONObject accessTokenData = requestAccessTokenFromAuth0(metaData, clientId, clientSecret);
+
+               Integer expiresInSeconds = accessTokenData.getInt("expires_in");
+               accessToken = accessTokenData.getString("access_token");
 
                //////////////////////////////////////////////////////////
                // update the api key record and store new access token //
