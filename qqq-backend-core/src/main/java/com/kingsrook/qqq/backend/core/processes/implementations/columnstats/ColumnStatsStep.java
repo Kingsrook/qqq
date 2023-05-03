@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
@@ -47,10 +48,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrde
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -102,8 +105,34 @@ public class ColumnStatsStep implements BackendStep
             filter = new QQueryFilter();
          }
 
-         QTableMetaData table = QContext.getQInstance().getTable(tableName);
-         QFieldMetaData field = table.getField(fieldName);
+         QueryJoin      queryJoin = null;
+         QTableMetaData table     = QContext.getQInstance().getTable(tableName);
+         QFieldMetaData field     = null;
+         if(fieldName.contains("."))
+         {
+            String[] parts = fieldName.split("\\.", 2);
+            for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+            {
+               if(exposedJoin.getJoinTable().equals(parts[0]))
+               {
+                  field = QContext.getQInstance().getTable(exposedJoin.getJoinTable()).getField(parts[1]);
+                  queryJoin = new QueryJoin()
+                     .withJoinTable(exposedJoin.getJoinTable())
+                     .withSelect(true)
+                     .withType(QueryJoin.Type.INNER);
+                  break;
+               }
+            }
+         }
+         else
+         {
+            field = table.getField(fieldName);
+         }
+
+         if(field == null)
+         {
+            throw (new QException("Could not find field by name: " + fieldName));
+         }
 
          ////////////////////////////////////////////
          // do a count query grouped by this field //
@@ -148,6 +177,12 @@ public class ColumnStatsStep implements BackendStep
          aggregateInput.setTableName(tableName);
          aggregateInput.setFilter(filter);
          aggregateInput.setLimit(limit);
+
+         if(queryJoin != null)
+         {
+            aggregateInput.withQueryJoin(queryJoin);
+         }
+
          AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
 
          ArrayList<QRecord> valueCounts = new ArrayList<>();
@@ -160,8 +195,8 @@ public class ColumnStatsStep implements BackendStep
          QFieldMetaData countField = new QFieldMetaData("count", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS).withLabel("Count");
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator();
-         qPossibleValueTranslator.translatePossibleValuesInRecords(table, valueCounts, null, null);
-         QValueFormatter.setDisplayValuesInRecords(List.of(table.getField(fieldName), countField), valueCounts);
+         qPossibleValueTranslator.translatePossibleValuesInRecords(table, valueCounts, queryJoin == null ? null : List.of(queryJoin), null);
+         QValueFormatter.setDisplayValuesInRecords(Map.of(fieldName, field, "count", countField), valueCounts);
 
          runBackendStepOutput.addValue("valueCounts", valueCounts);
 
@@ -275,6 +310,10 @@ public class ColumnStatsStep implements BackendStep
             statsAggregateInput.setTableName(tableName);
             filter.setOrderBys(new ArrayList<>());
             statsAggregateInput.setFilter(filter);
+            if(queryJoin != null)
+            {
+               statsAggregateInput.withQueryJoin(queryJoin);
+            }
             AggregateOutput statsAggregateOutput = new AggregateAction().execute(statsAggregateInput);
             AggregateResult statsAggregateResult = statsAggregateOutput.getResults().get(0);
 

@@ -29,12 +29,16 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -292,9 +296,34 @@ public class QValueFormatter
          return;
       }
 
+      Map<String, QFieldMetaData> fieldMap = new HashMap<>();
+
       for(QRecord record : records)
       {
-         setDisplayValuesInRecord(table.getFields().values(), record);
+         for(String fieldName : record.getValues().keySet())
+         {
+            if(!fieldMap.containsKey(fieldName))
+            {
+               if(fieldName.contains("."))
+               {
+                  String[] nameParts = fieldName.split("\\.", 2);
+                  for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+                  {
+                     if(exposedJoin.getJoinTable().equals(nameParts[0]))
+                     {
+                        QTableMetaData joinTable = QContext.getQInstance().getTable(nameParts[0]);
+                        fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                     }
+                  }
+               }
+               else
+               {
+                  fieldMap.put(fieldName, table.getField(fieldName));
+               }
+            }
+         }
+
+         setDisplayValuesInRecord(fieldMap, record);
          record.setRecordLabel(formatRecordLabel(table, record));
       }
    }
@@ -320,6 +349,24 @@ public class QValueFormatter
 
 
    /*******************************************************************************
+    ** For a list of records, set their recordLabels and display values
+    *******************************************************************************/
+   public static void setDisplayValuesInRecords(Map<String, QFieldMetaData> fields, List<QRecord> records)
+   {
+      if(records == null)
+      {
+         return;
+      }
+
+      for(QRecord record : records)
+      {
+         setDisplayValuesInRecord(fields, record);
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** For a list of records, set their display values
     *******************************************************************************/
    public static void setDisplayValuesInRecord(Collection<QFieldMetaData> fields, QRecord record)
@@ -330,6 +377,26 @@ public class QValueFormatter
          {
             String formattedValue = formatValue(field, record.getValue(field.getName()));
             record.setDisplayValue(field.getName(), formattedValue);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of records, set their display values
+    *******************************************************************************/
+   public static void setDisplayValuesInRecord(Map<String, QFieldMetaData> fields, QRecord record)
+   {
+      for(Map.Entry<String, QFieldMetaData> entry : fields.entrySet())
+      {
+         String         fieldName = entry.getKey();
+         QFieldMetaData field     = entry.getValue();
+
+         if(record.getDisplayValue(fieldName) == null)
+         {
+            String formattedValue = formatValue(field, record.getValue(fieldName));
+            record.setDisplayValue(fieldName, formattedValue);
          }
       }
    }
