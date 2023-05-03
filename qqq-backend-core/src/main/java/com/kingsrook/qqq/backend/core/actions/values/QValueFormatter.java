@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -304,21 +305,32 @@ public class QValueFormatter
          {
             if(!fieldMap.containsKey(fieldName))
             {
-               if(fieldName.contains("."))
+               try
                {
-                  String[] nameParts = fieldName.split("\\.", 2);
-                  for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+                  if(fieldName.contains("."))
                   {
-                     if(exposedJoin.getJoinTable().equals(nameParts[0]))
+                     String[] nameParts = fieldName.split("\\.", 2);
+                     for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
                      {
-                        QTableMetaData joinTable = QContext.getQInstance().getTable(nameParts[0]);
-                        fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                        if(exposedJoin.getJoinTable().equals(nameParts[0]))
+                        {
+                           QTableMetaData joinTable = QContext.getQInstance().getTable(nameParts[0]);
+                           fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                        }
                      }
                   }
+                  else
+                  {
+                     fieldMap.put(fieldName, table.getField(fieldName));
+                  }
                }
-               else
+               catch(Exception e)
                {
-                  fieldMap.put(fieldName, table.getField(fieldName));
+                  ///////////////////////////////////////////////////////////
+                  // put an empty field in - so no formatting will be done //
+                  ///////////////////////////////////////////////////////////
+                  LOG.info("Error getting field for setting display value", e, logPair("fieldName", fieldName), logPair("tableName", table.getName()));
+                  fieldMap.put(fieldName, new QFieldMetaData());
                }
             }
          }
