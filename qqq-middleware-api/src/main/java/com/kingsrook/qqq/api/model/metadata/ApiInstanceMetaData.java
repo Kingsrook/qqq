@@ -24,12 +24,15 @@ package com.kingsrook.qqq.api.model.metadata;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.api.model.openapi.SecurityScheme;
 import com.kingsrook.qqq.api.model.openapi.Server;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -59,6 +62,8 @@ public class ApiInstanceMetaData implements ApiOperation.EnabledOperationsProvid
 
    private Set<ApiOperation> enabledOperations  = new HashSet<>();
    private Set<ApiOperation> disabledOperations = new HashSet<>();
+
+   private Map<String, SecurityScheme> securitySchemes = new LinkedHashMap<>();
 
    private boolean includeErrorTooManyRequests = true;
 
@@ -587,6 +592,52 @@ public class ApiInstanceMetaData implements ApiOperation.EnabledOperationsProvid
       {
          Collections.addAll(this.disabledOperations, operations);
       }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for securitySchemes
+    *******************************************************************************/
+   public Map<String, SecurityScheme> getSecuritySchemes()
+   {
+      return (this.securitySchemes);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for securitySchemes
+    *******************************************************************************/
+   public void setSecuritySchemes(Map<String, SecurityScheme> securitySchemes)
+   {
+      this.securitySchemes = securitySchemes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securitySchemes
+    *******************************************************************************/
+   public ApiInstanceMetaData withSecuritySchemes(Map<String, SecurityScheme> securitySchemes)
+   {
+      this.securitySchemes = securitySchemes;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securitySchemes
+    *******************************************************************************/
+   public ApiInstanceMetaData withSecurityScheme(String label, SecurityScheme securityScheme)
+   {
+      if(this.securitySchemes == null)
+      {
+         this.securitySchemes = new LinkedHashMap<>();
+      }
+      this.securitySchemes.put(label, securityScheme);
       return (this);
    }
 

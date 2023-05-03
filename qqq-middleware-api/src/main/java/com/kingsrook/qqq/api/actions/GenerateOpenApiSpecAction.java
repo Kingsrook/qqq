@@ -51,8 +51,6 @@ import com.kingsrook.qqq.api.model.openapi.ExampleWithListValue;
 import com.kingsrook.qqq.api.model.openapi.ExampleWithSingleValue;
 import com.kingsrook.qqq.api.model.openapi.Info;
 import com.kingsrook.qqq.api.model.openapi.Method;
-import com.kingsrook.qqq.api.model.openapi.OAuth2;
-import com.kingsrook.qqq.api.model.openapi.OAuth2Flow;
 import com.kingsrook.qqq.api.model.openapi.OpenAPI;
 import com.kingsrook.qqq.api.model.openapi.Parameter;
 import com.kingsrook.qqq.api.model.openapi.Path;
@@ -249,6 +247,15 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withSecuritySchemes(securitySchemes)
          .withExamples(getComponentExamples()));
 
+      securitySchemes.putAll(CollectionUtils.nonNullMap(apiInstanceMetaData.getSecuritySchemes()));
+
+      @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+      LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
+
+      /*
+      ////////////////////////////////////////////////////////////////////////////////
+      // these are moved to the app to define now, but, leaving here for references //
+      ////////////////////////////////////////////////////////////////////////////////
       securitySchemes.put("basicAuth", new SecurityScheme()
          .withType("http")
          .withScheme("basic"));
@@ -258,12 +265,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withScheme("bearer")
          .withBearerFormat("JWT"));
 
-      LinkedHashMap<String, String> scopes = new LinkedHashMap<>();
-      // todo, or not todo? .withScopes(scopes)
-      // seems to make a lot of "noise" on the Auth page, and for no obvious benefit...
       securitySchemes.put("OAuth2", new OAuth2()
          .withFlows(MapBuilder.of("clientCredentials", new OAuth2Flow()
             .withTokenUrl("/api/oauth/token"))));
+
+      // todo, or not todo? .withScopes(scopes)
+      // seems to make a lot of "noise" on the Auth page, and for no obvious benefit...
+       */
 
       componentSchemas.put("baseSearchResultFields", new Schema()
          .withType("object")
@@ -468,7 +476,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Successfully searched the " + tableLabel + " table (though may have found 0 records).")
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName + "SearchResult")))))
-            .withSecurity(getSecurity(tableReadPermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableReadPermissionName));
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
@@ -486,7 +494,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          Method queryPost = new Method()
             .withSummary("Search the " + tableLabel + " table by posting a QueryFilter object.")
             .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(tableReadPermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableReadPermissionName));
 
          if(queryByQueryStringEnabled)
          {
@@ -514,7 +522,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Successfully got the requested " + tableLabel)
                .withContent(MapBuilder.of("application/json", new Content()
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName)))))
-            .withSecurity(getSecurity(tableReadPermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableReadPermissionName));
 
          Method idPatch = new Method()
             .withSummary("Update one " + tableLabel)
@@ -536,7 +544,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
             .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully updated the requested " + tableLabel))
-            .withSecurity(getSecurity(tableUpdatePermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableUpdatePermissionName));
 
          Method idDelete = new Method()
             .withSummary("Delete one " + tableLabel)
@@ -553,7 +561,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.NOT_FOUND.getCode(), buildStandardErrorResponse("The requested " + tableLabel + " record was not found.", "Could not find " + tableLabel + " with " + primaryKeyLabel + " of 47."))
             .withResponse(HttpStatus.NO_CONTENT.getCode(), new Response().withDescription("Successfully deleted the requested " + tableLabel))
-            .withSecurity(getSecurity(tableDeletePermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableDeletePermissionName));
 
          if(getEnabled || updateEnabled || deleteEnabled)
          {
@@ -584,7 +592,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                         .withType(getFieldType(primaryKeyField))
                         .withExample("47")))))))
             .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(tableInsertPermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
 
          if(insertEnabled)
          {
@@ -609,7 +617,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyApiName, primaryKeyField, "post"))
             .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(tableInsertPermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
 
          Method bulkPatch = new Method()
             .withSummary("Update multiple " + tableLabel + " records")
@@ -631,7 +639,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyApiName, primaryKeyField, "patch"))
             .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(tableUpdatePermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableUpdatePermissionName));
 
          Method bulkDelete = new Method()
             .withSummary("Delete multiple " + tableLabel + " records")
@@ -648,7 +656,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
             .withResponse(HttpStatus.MULTI_STATUS.getCode(), buildMultiStatusResponse(tableLabel, primaryKeyApiName, primaryKeyField, "delete"))
             .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(tableDeletePermissionName));
+            .withSecurity(getSecurity(apiInstanceMetaData, tableDeletePermissionName));
 
          if(insertBulkEnabled || updateBulkEnabled || deleteBulkEnabled)
          {
@@ -949,13 +957,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<Map<String, List<String>>> getSecurity(String permissionName)
+   private static List<Map<String, List<String>>> getSecurity(ApiInstanceMetaData apiInstanceMetaData, String permissionName)
    {
-      return ListBuilder.of(
-         MapBuilder.of("OAuth2", List.of(permissionName)),
-         MapBuilder.of("bearerAuth", List.of(permissionName)),
-         MapBuilder.of("basicAuth", List.of(permissionName))
-      );
+      List<Map<String, List<String>>> rs = new ArrayList<>();
+      for(Map.Entry<String, SecurityScheme> entry : CollectionUtils.nonNullMap(apiInstanceMetaData.getSecuritySchemes()).entrySet())
+      {
+         rs.add(MapBuilder.of(entry.getKey(), List.of(permissionName)));
+      }
+      return (rs);
    }
 
 
@@ -967,51 +976,51 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    private Response buildMultiStatusResponse(String tableLabel, String primaryKeyApiName, QFieldMetaData primaryKeyField, String method)
    {
       List<Object> example = switch(method.toLowerCase())
-         {
-            case "post" -> ListBuilder.of(
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.CREATED.getCode())
-                  .with("statusText", HttpStatus.CREATED.getMessage())
-                  .with(primaryKeyApiName, "47").build(),
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
-                  .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
-                  .with("error", "Could not create " + tableLabel + ": Duplicate value in unique key field.").build()
-            );
-            case "patch" -> ListBuilder.of(
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.NO_CONTENT.getCode())
-                  .with("statusText", HttpStatus.NO_CONTENT.getMessage())
-                  .with(primaryKeyApiName, "47").build(),
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
-                  .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
-                  .with("error", "Could not update " + tableLabel + ": Missing value in required field: My Field.")
-                  .with(primaryKeyApiName, "47").build(),
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.NOT_FOUND.getCode())
-                  .with("statusText", HttpStatus.NOT_FOUND.getMessage())
-                  .with("error", "The requested " + tableLabel + " to update was not found.")
-                  .with(primaryKeyApiName, "47").build()
-            );
-            case "delete" -> ListBuilder.of(
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.NO_CONTENT.getCode())
-                  .with("statusText", HttpStatus.NO_CONTENT.getMessage())
-                  .with(primaryKeyApiName, "47").build(),
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
-                  .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
-                  .with("error", "Could not delete " + tableLabel + ": Foreign key constraint violation.")
-                  .with(primaryKeyApiName, "47").build(),
-               MapBuilder.of(LinkedHashMap::new)
-                  .with("statusCode", HttpStatus.NOT_FOUND.getCode())
-                  .with("statusText", HttpStatus.NOT_FOUND.getMessage())
-                  .with("error", "The requested " + tableLabel + " to delete was not found.")
-                  .with(primaryKeyApiName, "47").build()
-            );
-            default -> throw (new IllegalArgumentException("Unrecognized method: " + method));
-         };
+      {
+         case "post" -> ListBuilder.of(
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.CREATED.getCode())
+               .with("statusText", HttpStatus.CREATED.getMessage())
+               .with(primaryKeyApiName, "47").build(),
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
+               .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
+               .with("error", "Could not create " + tableLabel + ": Duplicate value in unique key field.").build()
+         );
+         case "patch" -> ListBuilder.of(
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.NO_CONTENT.getCode())
+               .with("statusText", HttpStatus.NO_CONTENT.getMessage())
+               .with(primaryKeyApiName, "47").build(),
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
+               .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
+               .with("error", "Could not update " + tableLabel + ": Missing value in required field: My Field.")
+               .with(primaryKeyApiName, "47").build(),
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.NOT_FOUND.getCode())
+               .with("statusText", HttpStatus.NOT_FOUND.getMessage())
+               .with("error", "The requested " + tableLabel + " to update was not found.")
+               .with(primaryKeyApiName, "47").build()
+         );
+         case "delete" -> ListBuilder.of(
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.NO_CONTENT.getCode())
+               .with("statusText", HttpStatus.NO_CONTENT.getMessage())
+               .with(primaryKeyApiName, "47").build(),
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.BAD_REQUEST.getCode())
+               .with("statusText", HttpStatus.BAD_REQUEST.getMessage())
+               .with("error", "Could not delete " + tableLabel + ": Foreign key constraint violation.")
+               .with(primaryKeyApiName, "47").build(),
+            MapBuilder.of(LinkedHashMap::new)
+               .with("statusCode", HttpStatus.NOT_FOUND.getCode())
+               .with("statusText", HttpStatus.NOT_FOUND.getMessage())
+               .with("error", "The requested " + tableLabel + " to delete was not found.")
+               .with(primaryKeyApiName, "47").build()
+         );
+         default -> throw (new IllegalArgumentException("Unrecognized method: " + method));
+      };
 
       Map<String, Schema> properties = new LinkedHashMap<>();
       properties.put("statusCode", new Schema().withType("integer"));
@@ -1125,12 +1134,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    private String getFieldType(QFieldType type)
    {
       return switch(type)
-         {
-            case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
-            case INTEGER -> "integer";
-            case DECIMAL -> "number";
-            case BOOLEAN -> "boolean";
-         };
+      {
+         case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
+         case INTEGER -> "integer";
+         case DECIMAL -> "number";
+         case BOOLEAN -> "boolean";
+      };
    }
 
 
@@ -1152,14 +1161,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    private String getFieldFormat(QFieldType type)
    {
       return switch(type)
-         {
-            case DATE -> "date";
-            case TIME -> "time"; // non-standard format...
-            case DATE_TIME -> "date-time";
-            case PASSWORD -> "password";
-            case BLOB -> "byte"; // base-64-encoded, per https://swagger.io/docs/specification/data-models/data-types/#file
-            default -> null;
-         };
+      {
+         case DATE -> "date";
+         case TIME -> "time"; // non-standard format...
+         case DATE_TIME -> "date-time";
+         case PASSWORD -> "password";
+         case BLOB -> "byte"; // base-64-encoded, per https://swagger.io/docs/specification/data-models/data-types/#file
+         default -> null;
+      };
    }
 
 

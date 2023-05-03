@@ -22,45 +22,20 @@
 package com.kingsrook.qqq.api.model.openapi;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
 public class SecurityScheme
 {
-   private String type;
+   private SecuritySchemeType type;
+
+   private String name;
+   private String in;
    private String scheme;
    private String bearerFormat;
-
-
-
-   /*******************************************************************************
-    ** Getter for type
-    *******************************************************************************/
-   public String getType()
-   {
-      return (this.type);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for type
-    *******************************************************************************/
-   public SecurityScheme withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
 
 
 
@@ -121,6 +96,110 @@ public class SecurityScheme
    public SecurityScheme withBearerFormat(String bearerFormat)
    {
       this.bearerFormat = bearerFormat;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    *******************************************************************************/
+   public String getType()
+   {
+      return (this.type.getType());
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    *******************************************************************************/
+   @JsonIgnore
+   public SecuritySchemeType getTypeEnum()
+   {
+      return (this.type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for type
+    *******************************************************************************/
+   public void setType(SecuritySchemeType type)
+   {
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    *******************************************************************************/
+   public SecurityScheme withType(SecuritySchemeType type)
+   {
+      this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for name
+    *******************************************************************************/
+   public String getName()
+   {
+      return (this.name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public SecurityScheme withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for in
+    *******************************************************************************/
+   public String getIn()
+   {
+      return (this.in);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for in
+    *******************************************************************************/
+   public void setIn(String in)
+   {
+      this.in = in;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for in
+    *******************************************************************************/
+   public SecurityScheme withIn(String in)
+   {
+      this.in = in;
       return (this);
    }
 

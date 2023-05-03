@@ -22,56 +22,41 @@
 package com.kingsrook.qqq.api.model.openapi;
 
 
-import java.util.Map;
-
-
 /*******************************************************************************
  **
  *******************************************************************************/
-public class OAuth2 extends SecurityScheme
+public enum SecuritySchemeType
 {
-   private Map<String, OAuth2Flow> flows;
+   API_KEY("apiKey"),
+   HTTP("http"),
+   ///////////////////////
+   // not yet supported //
+   ///////////////////////
+   // MUTUAL_TLS("mutualTLS"),
+   // OPEN_ID_CONNECT("openIdConnect"),
+   OAUTH2("oauth2");
+
+
+   private final String type;
 
 
 
    /*******************************************************************************
-    ** Constructor
     **
     *******************************************************************************/
-   public OAuth2()
+   SecuritySchemeType(String type)
    {
-      setType(SecuritySchemeType.OAUTH2);
+      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for flows
+    ** Getter for type
+    **
     *******************************************************************************/
-   public Map<String, OAuth2Flow> getFlows()
+   public String getType()
    {
-      return (this.flows);
+      return type;
    }
-
-
-
-   /*******************************************************************************
-    ** Setter for flows
-    *******************************************************************************/
-   public void setFlows(Map<String, OAuth2Flow> flows)
-   {
-      this.flows = flows;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for flows
-    *******************************************************************************/
-   public OAuth2 withFlows(Map<String, OAuth2Flow> flows)
-   {
-      this.flows = flows;
-      return (this);
-   }
-
 }
