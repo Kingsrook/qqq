@@ -785,9 +785,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       rs.put("criteriaBooleanEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
       rs.put("criteriaBooleanNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
 
-      String now  = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString();
-      String then = Instant.now().minus(90, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).toString();
-      String when = Instant.now().plus(90, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).toString();
+      String epoch = "2001-01-01T00:00:00Z";
+      String now   = Instant.parse(epoch).truncatedTo(ChronoUnit.SECONDS).toString();
+      String then  = Instant.parse(epoch).minus(90, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).toString();
+      String when  = Instant.parse(epoch).plus(90, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).toString();
       rs.put("criteriaDateTimeEquals", new ExampleWithListValue().withSummary("equal to " + now).withValue(ListBuilder.of(now)));
       rs.put("criteriaDateTimeNotEquals", new ExampleWithListValue().withSummary("not equal to " + now).withValue(ListBuilder.of("!" + now)));
       rs.put("criteriaDateTimeLessThan", new ExampleWithListValue().withSummary("less than " + now).withValue(ListBuilder.of("<" + now)));
@@ -802,9 +803,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       rs.put("criteriaDateTimeNotIn", new ExampleWithListValue().withSummary("not any of " + then + ", " + now + ", or " + when).withValue(ListBuilder.of("!IN " + then + "," + now + "," + when)));
       rs.put("criteriaDateTimeMultiple", new ExampleWithListValue().withSummary("multiple criteria: between " + then + " and " + when + " and not equal to " + now).withValue(ListBuilder.of("BETWEEN " + then + "," + when, "!" + now)));
 
-      now = LocalDate.now().toString();
-      then = LocalDate.now().minus(90, ChronoUnit.DAYS).toString();
-      when = LocalDate.now().plus(90, ChronoUnit.DAYS).toString();
+      epoch = "2001-01-01";
+      now = LocalDate.parse(epoch).toString();
+      then = LocalDate.parse(epoch).minus(90, ChronoUnit.DAYS).toString();
+      when = LocalDate.parse(epoch).plus(90, ChronoUnit.DAYS).toString();
       rs.put("criteriaDateEquals", new ExampleWithListValue().withSummary("equal to " + now).withValue(ListBuilder.of(now)));
       rs.put("criteriaDateNotEquals", new ExampleWithListValue().withSummary("not equal to " + now).withValue(ListBuilder.of("!" + now)));
       rs.put("criteriaDateLessThan", new ExampleWithListValue().withSummary("less than " + now).withValue(ListBuilder.of("<" + now)));
