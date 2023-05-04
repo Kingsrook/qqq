@@ -81,6 +81,9 @@ public interface TestScriptActionInterface
     *******************************************************************************/
    default void execute(TestScriptInput input, TestScriptOutput output) throws QException
    {
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - could this be merged with the various other script runners, to use ExecuteCodeAction.setupExecuteCodeInput?? //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setContext(new HashMap<>());
 

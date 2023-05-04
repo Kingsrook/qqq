@@ -142,6 +142,7 @@ public class ExecuteCodeAction
       executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
 
       ExecuteCodeAction.addApiUtilityToContext(context, scriptRevision);
+      context.put("qqq", new QqqScriptUtils());
       ExecuteCodeAction.setExecutionLoggerInExecuteCodeInput(input, scriptRevision, executeCodeInput);
 
       return (executeCodeInput);

@@ -49,11 +49,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  ** etc, plus object constructors).
  **
  ** Before scripts knew about the API, this class made sense and was used.
- ** But, now that scripts do know about the API, it feels like this class could
+ ** But, when scripts gained knowledge of the API, then it felt like this class could
  ** be deleted... but, what about, a QQQ deployment without the API module...
  ** In that case, we might still want this class... think about it.
+ **
+ ** And/Or - it turns out - sometimes using QQQ directly is "better" (?) than using
+ ** an api - so - this object may be available for other use cases (e.g., getting
+ ** a record's backendDetails (e.g., for full json from a source backend api)).
  *******************************************************************************/
-public class ScriptApi implements Serializable
+public class QqqScriptUtils implements Serializable
 {
 
    /*******************************************************************************

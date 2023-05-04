@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.actions.scripts.ScriptApi
  *******************************************************************************/
-class ScriptApiTest extends BaseTest
+class QqqScriptUtilsTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -49,7 +49,7 @@ class ScriptApiTest extends BaseTest
    @Test
    void test() throws QException
    {
-      ScriptApi api = new ScriptApi();
+      QqqScriptUtils api = new QqqScriptUtils();
       assertThat(api.newFilterCriteria()).isInstanceOf(QFilterCriteria.class);
       assertThat(api.newFilterOrderBy()).isInstanceOf(QFilterOrderBy.class);
       assertThat(api.newQueryFilter()).isInstanceOf(QQueryFilter.class);
