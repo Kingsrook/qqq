@@ -75,6 +75,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.StringEntity;
@@ -320,8 +321,8 @@ public class BaseAPIActionUtil
          {
             try
             {
-               String   url     = buildTableUrl(table);
-               HttpPost request = new HttpPost(url);
+               String  url     = buildTableUrl(table);
+               HttpPut request = new HttpPut(url);
                request.setEntity(recordsToEntity(table, recordList));
 
                QHttpResponse response = makeRequest(table, request);

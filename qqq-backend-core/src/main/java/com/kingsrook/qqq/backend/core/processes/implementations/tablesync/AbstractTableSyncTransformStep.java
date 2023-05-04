@@ -319,8 +319,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             continue;
          }
 
+         ////////////////////////////////////////////////////////////////
+         // if we received a record to store add to the output records //
+         ////////////////////////////////////////////////////////////////
          recordToStore = populateRecordToStore(runBackendStepInput, recordToStore, sourceRecord);
-         runBackendStepOutput.addRecord(recordToStore);
+         if(recordToStore != null)
+         {
+            runBackendStepOutput.addRecord(recordToStore);
+         }
       }
 
       ////////////////////////////////////////////////
