@@ -19,6 +19,8 @@ JQ=/opt/homebrew/bin/jq
 curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "https://circleci.com/api/v1.1/recent-builds?limit=10&shallow=true" > $FILE
 NOW=$(date +%s)
 
+needPipe=0
+
 checkBuild()
 {
    index=$1
@@ -86,9 +88,26 @@ checkBuild()
       color="gray"
    fi
 
+
+   ####################################################################################################
+   ## if this is the 1st build, or it was less than some-short-time ago, then put it in the menu bar ##
+   ####################################################################################################
    if [ $index -lt 1 -o $seconds -lt 600 ]; then
-      echo -n "${shortRepo}(${shortAge})${icon} "
+
+      ###########################################################################################
+      ## put a pipe (unicode special pipe, to not break things) before all but the first build ##
+      ###########################################################################################
+      if [ "$needPipe" == "1" ]; then
+         echo -n " ｜ "
+      fi
+      needPipe=1
+
+      echo -n "${shortRepo}(${shortAge})${icon}"
    fi
+
+   ########################################################
+   ## always append the build to the dropdown ($details) ##
+   ########################################################
    details="$details\n$repo/${branch}${tag}: $jobName: $buildStatus @ $age ago | color=$color | href=$url | image=$avatarB64"
 }
 
@@ -99,7 +118,9 @@ for i in $(seq 0 9); do
    checkBuild $i
 done
 
-echo "@$(date +%M:%S)"
+## echo "@$(date +%M:%S)"
+echo
+
 echo -e "$details"
 
 cp $FILE /tmp/cci-latest.json
