@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
@@ -56,6 +57,7 @@ class RunRecordScriptTest extends BaseTest
       new ScriptsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
 
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(new QRecord().withValue("id", 1)));
+      TestUtils.insertRecords(qInstance, qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", 1).withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)));
 
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(ScriptsMetaDataProvider.RUN_RECORD_SCRIPT_PROCESS_NAME);
