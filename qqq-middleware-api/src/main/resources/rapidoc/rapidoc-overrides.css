@@ -69,3 +69,8 @@ api-response
    margin-right: auto;
    visibility: hidden;
 }
+
+#otherVersions
+{
+   visibility: hidden;
+}
