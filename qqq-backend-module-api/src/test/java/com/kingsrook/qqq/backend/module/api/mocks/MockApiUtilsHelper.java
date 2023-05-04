@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 import com.kingsrook.qqq.backend.module.api.actions.QHttpResponse;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpRequestBase;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -221,6 +221,6 @@ public class MockApiUtilsHelper
    @SuppressWarnings("unchecked")
    public static String readRequestBody(HttpRequestBase request) throws IOException
    {
-      return (StringUtils.join("\n", IOUtils.readLines(((HttpPost) request).getEntity().getContent())));
+      return (StringUtils.join("\n", IOUtils.readLines(((HttpEntityEnclosingRequestBase) request).getEntity().getContent())));
    }
 }
