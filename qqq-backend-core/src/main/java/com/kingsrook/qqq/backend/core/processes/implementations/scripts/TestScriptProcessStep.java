@@ -117,6 +117,7 @@ public class TestScriptProcessStep implements BackendStep
             RunAdHocRecordScriptInput runAdHocRecordScriptInput = new RunAdHocRecordScriptInput();
             runAdHocRecordScriptInput.setRecordList(queryOutput.getRecords());
             runAdHocRecordScriptInput.setLogger(executionLogger);
+            runAdHocRecordScriptInput.setTableName(tableName);
             runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision.toQRecord()));
             RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
             new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);

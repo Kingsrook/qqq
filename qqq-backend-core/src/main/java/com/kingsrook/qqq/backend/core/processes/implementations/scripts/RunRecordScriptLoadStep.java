@@ -117,9 +117,19 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
       Integer                                       scriptId     = runBackendStepInput.getValueInteger("scriptId");
       StoreScriptLogAndScriptLogLineExecutionLogger scriptLogger = new StoreScriptLogAndScriptLogLineExecutionLogger(null, null); // downstream these will get set!
 
+      GetInput getInput = new GetInput();
+      getInput.setTableName(Script.TABLE_NAME);
+      getInput.setPrimaryKey(scriptId);
+      GetOutput getOutput = new GetAction().execute(getInput);
+      if(getOutput.getRecord() == null)
+      {
+         throw (new QException("Could not find script by id: " + scriptId));
+      }
+
       RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
       input.setRecordList(runBackendStepInput.getRecords());
       input.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
+      input.setTableName(getOutput.getRecord().getValueString("tableName"));
       input.setLogger(scriptLogger);
       RunAdHocRecordScriptOutput output          = new RunAdHocRecordScriptOutput();
       Exception                  caughtException = null;
