@@ -22,73 +22,44 @@
 package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
-import java.util.function.Consumer;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
- ** Object used by TableCustomizers enum (and similar enums in backend modules)
- ** to assist with definition and validation of Customizers applied to tables.
+ **
  *******************************************************************************/
-public class TableCustomizer
+public abstract class AbstractPostDeleteCustomizer
 {
-   private final String           role;
-   private final Class<?>         expectedType;
-   private final Consumer<Object> validationFunction;
+   protected DeleteInput deleteInput;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public TableCustomizer(String role, Class<?> expectedType, Consumer<Object> validationFunction)
+   public abstract List<QRecord> apply(List<QRecord> records);
+
+
+
+   /*******************************************************************************
+    ** Getter for deleteInput
+    **
+    *******************************************************************************/
+   public DeleteInput getDeleteInput()
    {
-      this.role = role;
-      this.expectedType = expectedType;
-      this.validationFunction = validationFunction;
+      return deleteInput;
    }
 
 
 
    /*******************************************************************************
+    ** Setter for deleteInput
     **
     *******************************************************************************/
-   public TableCustomizer(String role, Class<?> expectedType)
+   public void setDeleteInput(DeleteInput deleteInput)
    {
-      this.role = role;
-      this.expectedType = expectedType;
-      this.validationFunction = null;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for role
-    **
-    *******************************************************************************/
-   public String getRole()
-   {
-      return role;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for expectedType
-    **
-    *******************************************************************************/
-   public Class<?> getExpectedType()
-   {
-      return expectedType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for validationFunction
-    **
-    *******************************************************************************/
-   public Consumer<Object> getValidationFunction()
-   {
-      return validationFunction;
+      this.deleteInput = deleteInput;
    }
 }
