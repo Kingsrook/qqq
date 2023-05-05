@@ -28,9 +28,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -74,6 +78,8 @@ public class DeleteAction
    {
       ActionHelper.validateSession(deleteInput);
 
+      QTableMetaData table = deleteInput.getTable();
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
       DeleteInterface          deleteInterface          = qModule.getDeleteInterface();
@@ -101,6 +107,13 @@ public class DeleteAction
 
       List<QRecord> recordListForAudit          = deleteInterface.supportsPreFetchQuery() ? getRecordListForAuditIfNeeded(deleteInput) : new ArrayList<>();
       List<QRecord> recordsWithValidationErrors = deleteInterface.supportsPreFetchQuery() ? validateRecordsExistAndCanBeAccessed(deleteInput, recordListForAudit) : new ArrayList<>();
+
+      Optional<AbstractPreDeleteCustomizer> preDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPreDeleteCustomizer.class, table, TableCustomizers.PRE_DELETE_RECORD.getRole());
+      if(preDeleteCustomizer.isPresent())
+      {
+         preDeleteCustomizer.get().setDeleteInput(deleteInput);
+         preDeleteCustomizer.get().apply(null); // todo monday
+      }
 
       DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
 

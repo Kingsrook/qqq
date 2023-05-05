@@ -27,12 +27,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostUpdateCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
@@ -85,8 +90,9 @@ public class UpdateAction
       ActionHelper.validateSession(updateInput);
       setAutomationStatusField(updateInput);
 
-      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), updateInput.getTable(), updateInput.getRecords());
-      // todo - need to handle records with errors coming out of here...
+      QTableMetaData table = updateInput.getTable();
+
+      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), table, updateInput.getRecords());
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
@@ -102,11 +108,17 @@ public class UpdateAction
       }
 
       validateRequiredFields(updateInput);
-      ValidateRecordSecurityLockHelper.validateSecurityFields(updateInput.getTable(), updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
 
-      // todo pre-customization - just get to modify the request?
+      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      if(preUpdateCustomizer.isPresent())
+      {
+         preUpdateCustomizer.get().setUpdateInput(updateInput);
+         preUpdateCustomizer.get().setOldRecordList(oldRecordList);
+         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
+      }
+
       UpdateOutput updateOutput = updateInterface.execute(updateInput);
-      // todo post-customization - can do whatever w/ the result if you want
 
       List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
@@ -123,6 +135,14 @@ public class UpdateAction
       else
       {
          new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateOutput.getRecords()).withOldRecordList(oldRecordList));
+      }
+
+      Optional<AbstractPostUpdateCustomizer> postUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPostUpdateCustomizer.class, table, TableCustomizers.POST_UPDATE_RECORD.getRole());
+      if(postUpdateCustomizer.isPresent())
+      {
+         postUpdateCustomizer.get().setUpdateInput(updateInput);
+         postUpdateCustomizer.get().setOldRecordList(oldRecordList);
+         updateOutput.setRecords(postUpdateCustomizer.get().apply(updateOutput.getRecords()));
       }
 
       return updateOutput;

@@ -87,18 +87,16 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          throw (new QException("Error:  Undefined table: " + insertInput.getTableName()));
       }
 
-      Optional<AbstractPreInsertCustomizer>  preInsertCustomizer  = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
-      Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       setAutomationStatusField(insertInput);
 
       QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
-      // todo pre-customization - just get to modify the request?
 
       ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
       setErrorsIfUniqueKeyErrors(insertInput, table);
       validateRequiredFields(insertInput);
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
 
+      Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
          preInsertCustomizer.get().setInsertInput(insertInput);
@@ -114,8 +112,6 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       manageAssociations(table, insertOutput.getRecords(), insertInput.getTransaction());
 
-      // todo post-customization - can do whatever w/ the result if you want
-
       if(insertInput.getOmitDmlAudit())
       {
          LOG.debug("Requested to omit DML audit");
@@ -125,6 +121,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
       }
 
+      Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       if(postInsertCustomizer.isPresent())
       {
          postInsertCustomizer.get().setInsertInput(insertInput);
