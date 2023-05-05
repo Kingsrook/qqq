@@ -91,9 +91,13 @@ public class QFrontendTableMetaData
       {
          this.primaryKeyField = tableMetaData.getPrimaryKeyField();
          this.fields = new HashMap<>();
-         for(Map.Entry<String, QFieldMetaData> entry : tableMetaData.getFields().entrySet())
+         for(String fieldName : tableMetaData.getFields().keySet())
          {
-            this.fields.put(entry.getKey(), new QFrontendFieldMetaData(entry.getValue()));
+            QFieldMetaData field = tableMetaData.getField(fieldName);
+            if(!field.getIsHidden())
+            {
+               this.fields.put(fieldName, new QFrontendFieldMetaData(field));
+            }
          }
 
          this.sections = tableMetaData.getSections();

@@ -1131,13 +1131,13 @@ public class QJavalinApiHandler
       {
          if(e instanceof QAuthenticationException)
          {
-            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage(), apiLog); // 401
+            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, "The required authentication credentials were missing or invalid.", apiLog); // 401
             return;
          }
 
          if(e instanceof QPermissionDeniedException)
          {
-            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage(), apiLog); // 403
+            respondWithError(context, HttpStatus.Code.FORBIDDEN, "You do not have permission to access the requested resource.", apiLog); // 403
             return;
          }
 
