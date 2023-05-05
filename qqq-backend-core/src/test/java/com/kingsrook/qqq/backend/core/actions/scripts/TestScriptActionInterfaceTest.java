@@ -34,7 +34,6 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -60,7 +59,7 @@ class TestScriptActionInterfaceTest extends BaseTest
 
       TestScriptInput testScriptInput = new TestScriptInput();
       testScriptInput.setInputValues(Map.of("name", "Darin", "age", 42));
-      testScriptInput.setCodeReference(new QCodeReference(SampleScript.class, QCodeUsage.CUSTOMIZER));
+      testScriptInput.setCodeReference(new QCodeReference(SampleScript.class));
       TestScriptOutput testScriptOutput = new TestScriptOutput();
       new SampleTestAction().execute(testScriptInput, testScriptOutput);
 

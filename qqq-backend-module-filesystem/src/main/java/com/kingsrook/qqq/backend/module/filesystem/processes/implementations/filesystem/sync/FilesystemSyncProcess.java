@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -68,8 +67,7 @@ public class FilesystemSyncProcess
          .withName(FilesystemSyncStep.STEP_NAME)
          .withCode(new QCodeReference()
             .withName(FilesystemSyncStep.class.getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING))
             .addField(new QFieldMetaData(FIELD_ARCHIVE_TABLE, QFieldType.STRING))

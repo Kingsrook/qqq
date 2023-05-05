@@ -33,7 +33,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -99,7 +98,7 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
    private static void addPostInsertActionToTable(QInstance qInstance)
    {
       qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withCustomizer(TableCustomizers.POST_INSERT_RECORD.getTableCustomizer(), new QCodeReference(PersonPostInsertAddFavoriteShapeCustomizer.class, QCodeUsage.CUSTOMIZER));
+         .withCustomizer(TableCustomizers.POST_INSERT_RECORD.getRole(), new QCodeReference(PersonPostInsertAddFavoriteShapeCustomizer.class));
    }
 
 

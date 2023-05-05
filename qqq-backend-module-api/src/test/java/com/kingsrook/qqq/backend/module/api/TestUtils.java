@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -94,7 +93,7 @@ public class TestUtils
          .withAuthorizationType(AuthorizationType.API_KEY_HEADER)
          .withBaseUrl("http://localhost:9999/mock")
          .withContentType("application/json")
-         .withActionUtil(new QCodeReference(MockApiActionUtils.class, QCodeUsage.CUSTOMIZER))
+         .withActionUtil(new QCodeReference(MockApiActionUtils.class))
       );
    }
 
@@ -146,7 +145,7 @@ public class TestUtils
          .withAuthorizationType(AuthorizationType.BASIC_AUTH_API_KEY)
          .withBaseUrl("https://api.easypost.com/v2/")
          .withContentType("application/json")
-         .withActionUtil(new QCodeReference(EasyPostUtils.class, QCodeUsage.CUSTOMIZER))
+         .withActionUtil(new QCodeReference(EasyPostUtils.class))
       );
    }
 

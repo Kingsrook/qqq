@@ -42,7 +42,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -174,7 +173,7 @@ public class TestUtils
    {
       qInstance.addWidget(new QWidgetMetaData()
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
-         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class)));
    }
 
 
@@ -248,7 +247,7 @@ public class TestUtils
          .withAssociatedScript(new AssociatedScript()
             .withFieldName("testScriptId")
             .withScriptTypeId(1)
-            .withScriptTester(new QCodeReference(TestScriptAction.class, QCodeUsage.SCRIPT_TESTER)));
+            .withScriptTester(new QCodeReference(TestScriptAction.class)));
    }
 
 
@@ -280,8 +279,7 @@ public class TestUtils
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -319,8 +317,7 @@ public class TestUtils
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -441,8 +438,7 @@ public class TestUtils
             .withName(STEP_NAME_SLEEPER)
             .withCode(new QCodeReference()
                .withName(SleeperStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .addField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
@@ -499,8 +495,7 @@ public class TestUtils
             .withName(STEP_NAME_THROWER)
             .withCode(new QCodeReference()
                .withName(ThrowerStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .addField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }

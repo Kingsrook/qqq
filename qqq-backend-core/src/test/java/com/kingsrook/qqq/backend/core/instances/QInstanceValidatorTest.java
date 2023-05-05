@@ -46,7 +46,6 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
@@ -386,25 +385,25 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference()),
          "missing a code reference name", "missing a code type");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(null, QCodeType.JAVA, null)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(null, QCodeType.JAVA)),
          "missing a code reference name");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("", QCodeType.JAVA, null)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("", QCodeType.JAVA)),
          "missing a code reference name");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", null, null)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", null)),
          "missing a code type");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", QCodeType.JAVA, QCodeUsage.CUSTOMIZER)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference("Test", QCodeType.JAVA)),
          "Class for Test could not be found");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithNoVoidConstructor.class, QCodeUsage.CUSTOMIZER)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithNoVoidConstructor.class)),
          "Instance of " + CustomizerWithNoVoidConstructor.class.getSimpleName() + " could not be created");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotOfTheRightBaseClass.class, QCodeUsage.CUSTOMIZER)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerThatIsNotOfTheRightBaseClass.class)),
          "CodeReference is not of the expected type");
 
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithOnlyPrivateConstructor.class, QCodeUsage.CUSTOMIZER)),
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithOnlyPrivateConstructor.class)),
          "it does not have a public parameterless constructor");
 
       /////////////////////////////////////////////
@@ -413,7 +412,7 @@ class QInstanceValidatorTest extends BaseTest
       // assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerWithPrivateVisibility.class, QCodeUsage.CUSTOMIZER)),
       //    "it does not have a public parameterless constructor");
 
-      assertValidationSuccess((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerValid.class, QCodeUsage.CUSTOMIZER)));
+      assertValidationSuccess((qInstance) -> qInstance.getTable("person").withCustomizer(TableCustomizers.POST_QUERY_RECORD.getRole(), new QCodeReference(CustomizerValid.class)));
    }
 
 
@@ -912,7 +911,6 @@ class QInstanceValidatorTest extends BaseTest
          "is missing a customCodeReference");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM).setCustomCodeReference(new QCodeReference()),
-         "not a possibleValueProvider",
          "missing a code reference name",
          "missing a code type");
    }
@@ -1437,7 +1435,7 @@ class QInstanceValidatorTest extends BaseTest
          {
             QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
             dataSource.setSourceTable(null);
-            dataSource.setStaticDataSupplier(new QCodeReference(null, QCodeType.JAVA, null));
+            dataSource.setStaticDataSupplier(new QCodeReference(null, QCodeType.JAVA));
          },
          "missing a code reference name");
 
@@ -1445,7 +1443,7 @@ class QInstanceValidatorTest extends BaseTest
          {
             QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
             dataSource.setSourceTable(null);
-            dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class, null));
+            dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class));
          },
          "is not of the expected type");
    }

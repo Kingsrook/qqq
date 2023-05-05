@@ -39,7 +39,6 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
@@ -706,7 +705,7 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true)
          .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
 
       List<QFieldMetaData> editableFields = new ArrayList<>();
       for(QFieldSection section : CollectionUtils.nonNullList(table.getSections()))
@@ -770,7 +769,7 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true)
          .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
 
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
@@ -817,7 +816,7 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true)
          .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
 
       List<QFieldMetaData> tableFields = table.getFields().values().stream().toList();
       process.getFrontendStep("review").setRecordListFields(tableFields);

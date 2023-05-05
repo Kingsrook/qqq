@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
@@ -51,7 +50,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -909,9 +907,9 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableCustomizer(String tableName, String customizerName, QCodeReference codeReference)
+   private void validateTableCustomizer(String tableName, String roleName, QCodeReference codeReference)
    {
-      String prefix = "Table " + tableName + ", customizer " + customizerName + ": ";
+      String prefix = "Table " + tableName + ", customizer " + roleName + ": ";
 
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {
@@ -934,7 +932,7 @@ public class QInstanceValidator
             //////////////////////////////////////////////////
             Object customizerInstance = getInstanceOfCodeReference(prefix, customizerClass);
 
-            TableCustomizers tableCustomizer = TableCustomizers.forRole(customizerName);
+            TableCustomizers tableCustomizer = TableCustomizers.forRole(roleName);
             if(tableCustomizer == null)
             {
                ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -947,29 +945,9 @@ public class QInstanceValidator
                ////////////////////////////////////////////////////////////////////////
                // make sure the customizer instance can be cast to the expected type //
                ////////////////////////////////////////////////////////////////////////
-               if(customizerInstance != null && tableCustomizer.getTableCustomizer().getExpectedType() != null)
+               if(customizerInstance != null && tableCustomizer.getExpectedType() != null)
                {
-                  Object castedObject = getCastedObject(prefix, tableCustomizer.getTableCustomizer().getExpectedType(), customizerInstance);
-
-                  Consumer<Object> validationFunction = tableCustomizer.getTableCustomizer().getValidationFunction();
-                  if(castedObject != null && validationFunction != null)
-                  {
-                     try
-                     {
-                        validationFunction.accept(castedObject);
-                     }
-                     catch(ClassCastException e)
-                     {
-                        errors.add(prefix + "Error validating customizer type parameters: " + e.getMessage());
-                     }
-                     catch(Exception e)
-                     {
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        // mmm, calling customizers w/ random data is expected to often throw, so, this check is iffy at best... //
-                        // if we run into more trouble here, we might consider disabling the whole "validation function" check.  //
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-                     }
-                  }
+                  assertObjectCanBeCasted(prefix, tableCustomizer.getExpectedType(), customizerInstance);
                }
             }
          }
@@ -979,18 +957,18 @@ public class QInstanceValidator
 
 
    /*******************************************************************************
-    **
+    ** Make sure that a given object can be casted to an expected type.
     *******************************************************************************/
-   private <T> T getCastedObject(String prefix, Class<T> expectedType, Object customizerInstance)
+   private <T> T assertObjectCanBeCasted(String errorPrefix, Class<T> expectedType, Object object)
    {
       T castedObject = null;
       try
       {
-         castedObject = expectedType.cast(customizerInstance);
+         castedObject = expectedType.cast(object);
       }
       catch(ClassCastException e)
       {
-         errors.add(prefix + "CodeReference is not of the expected type: " + expectedType);
+         errors.add(errorPrefix + "CodeReference is not of the expected type: " + expectedType);
       }
       return castedObject;
    }
@@ -1504,7 +1482,6 @@ public class QInstanceValidator
 
                      if(assertCondition(possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
                      {
-                        assertCondition(QCodeUsage.POSSIBLE_VALUE_PROVIDER.equals(possibleValueSource.getCustomCodeReference().getCodeUsage()), "customCodeReference for possibleValueSource " + pvsName + " is not a possibleValueProvider.");
                         validateSimpleCodeReference("PossibleValueSource " + pvsName + " custom code reference: ", possibleValueSource.getCustomCodeReference(), QCustomPossibleValueProvider.class);
                      }
                   }
@@ -1548,7 +1525,7 @@ public class QInstanceValidator
             ////////////////////////////////////////////////////////////////////////
             if(classInstance != null)
             {
-               getCastedObject(prefix, expectedClass, classInstance);
+               assertObjectCanBeCasted(prefix, expectedClass, classInstance);
             }
          }
       }
