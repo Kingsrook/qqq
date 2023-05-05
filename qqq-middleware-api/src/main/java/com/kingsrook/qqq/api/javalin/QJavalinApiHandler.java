@@ -140,6 +140,8 @@ public class QJavalinApiHandler
             ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
             String              rootPath            = apiInstanceMetaData.getPath();
 
+            ApiBuilder.before(rootPath + "*", QJavalinApiHandler::setupCORS);
+
             //////////////////////////////////////////////
             // default page is the current version spec //
             //////////////////////////////////////////////
@@ -320,19 +322,19 @@ public class QJavalinApiHandler
     *******************************************************************************/
    private static void setupCORS(Context context)
    {
-      if(StringUtils.hasContent(context.header("Origin")))
+      if(StringUtils.hasContent(context.header("origin")))
       {
-         context.res().setHeader("Access-Control-Allow-Origin", context.header("Origin"));
-         context.res().setHeader("Vary", "Origin");
+         context.res().setHeader("access-control-allow-origin", context.header("origin"));
+         context.res().setHeader("vary", "Origin");
       }
       else
       {
-         context.res().setHeader("Access-Control-Allow-Origin", "*");
+         context.res().setHeader("access-control-allow-origin", "*");
       }
 
-      context.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS");
-      context.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization, Accept, content-type, authorization, accept");
-      context.header("Access-Control-Allow-Credentials", "true");
+      context.header("access-control-allow-methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS");
+      context.header("access-control-allow-headers", "x-requested-with, content-type, authorization, accept, content-type, authorization, accept, x-api-key");
+      context.header("access-control-allow-credentials", "true");
    }
 
 
