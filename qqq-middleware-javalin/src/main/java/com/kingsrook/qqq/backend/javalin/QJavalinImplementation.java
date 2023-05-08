@@ -882,12 +882,13 @@ public class QJavalinImplementation
             queryInput.getFilter().setLimit(limit);
          }
 
-         queryInput.setQueryJoins(processQueryJoinsParam(context));
+         List<QueryJoin> queryJoins = processQueryJoinsParam(context);
+         queryInput.setQueryJoins(queryJoins);
 
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
 
-         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
+         QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS), logPairIfSlow("joins", queryJoins, SLOW_LOG_THRESHOLD_MS));
          context.result(JsonUtils.toJson(queryOutput));
       }
       catch(Exception e)
