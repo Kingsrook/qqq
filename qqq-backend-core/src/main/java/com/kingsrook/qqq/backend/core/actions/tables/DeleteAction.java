@@ -151,7 +151,7 @@ public class DeleteAction
                recordsWithValidationErrors.add(record);
                primaryKeysToRemoveFromInput.add(record.getValue(primaryKeyField));
             }
-            else
+            else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
             {
                recordsWithValidationWarnings.add(record);
             }

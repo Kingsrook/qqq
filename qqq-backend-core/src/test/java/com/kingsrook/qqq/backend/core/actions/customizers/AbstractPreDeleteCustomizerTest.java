@@ -86,6 +86,27 @@ class AbstractPreDeleteCustomizerTest extends BaseTest
          getOutput = new GetAction().execute(getInput);
          assertNull(getOutput.getRecord());
       }
+
+      ////////////////////////////////////////////////////////////
+      // try a delete that the pre-customizer should warn about //
+      ////////////////////////////////////////////////////////////
+      {
+         DeleteInput deleteInput = new DeleteInput();
+         deleteInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+         deleteInput.setPrimaryKeys(List.of(3));
+         DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+         assertEquals(0, deleteOutput.getRecordsWithErrors().size());
+         assertEquals(1, deleteOutput.getRecordsWithWarnings().size());
+         assertEquals(3, deleteOutput.getRecordsWithWarnings().get(0).getValue("id"));
+         assertEquals(1, deleteOutput.getDeletedRecordCount());
+         assertEquals("It was a bad idea to delete Bart", deleteOutput.getRecordsWithWarnings().get(0).getWarnings().get(0));
+
+         GetInput getInput = new GetInput();
+         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+         getInput.setPrimaryKey(3);
+         GetOutput getOutput = new GetAction().execute(getInput);
+         assertNull(getOutput.getRecord());
+      }
    }
 
 
@@ -107,6 +128,10 @@ class AbstractPreDeleteCustomizerTest extends BaseTest
             if(record.getValue("firstName").equals("Homer"))
             {
                record.addError("You may not delete a Homer.");
+            }
+            else if(record.getValue("firstName").equals("Bart"))
+            {
+               record.addWarning("It was a bad idea to delete Bart");
             }
          }
 
