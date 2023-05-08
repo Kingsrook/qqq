@@ -219,8 +219,8 @@ public class ApiInstanceMetaDataProvider
       ///////////////////////////////////////////
       // these are the lengths of a MySQL TEXT //
       ///////////////////////////////////////////
-      tableMetaData.getField("requestBody").withMaxLength(65_535).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
-      tableMetaData.getField("responseBody").withMaxLength(65_535).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
+      tableMetaData.getField("requestBody").withMaxLength(16_777_215).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
+      tableMetaData.getField("responseBody").withMaxLength(16_777_215).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       // internet doesn't agree on max-length for a URL, but let's go with ... 4K on query string //

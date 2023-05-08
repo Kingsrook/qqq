@@ -119,7 +119,8 @@ public class OutboundAPILogMetaDataProvider
          .withValue(AdornmentType.ChipValues.colorValue("GET", AdornmentType.ChipValues.COLOR_INFO))
          .withValue(AdornmentType.ChipValues.colorValue("POST", AdornmentType.ChipValues.COLOR_SUCCESS))
          .withValue(AdornmentType.ChipValues.colorValue("DELETE", AdornmentType.ChipValues.COLOR_ERROR))
-         .withValue(AdornmentType.ChipValues.colorValue("PATCH", AdornmentType.ChipValues.COLOR_WARNING)));
+         .withValue(AdornmentType.ChipValues.colorValue("PATCH", AdornmentType.ChipValues.COLOR_WARNING))
+         .withValue(AdornmentType.ChipValues.colorValue("PUT", AdornmentType.ChipValues.COLOR_WARNING)));
 
       tableMetaData.getField("statusCode").withFieldAdornment(new FieldAdornment(AdornmentType.CHIP)
          .withValue(AdornmentType.ChipValues.colorValue(200, AdornmentType.ChipValues.COLOR_SUCCESS))
@@ -136,13 +137,13 @@ public class OutboundAPILogMetaDataProvider
       ///////////////////////////////////////////
       // these are the lengths of a MySQL TEXT //
       ///////////////////////////////////////////
-      tableMetaData.getField("requestBody").withMaxLength(65_535).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
-      tableMetaData.getField("responseBody").withMaxLength(65_535).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
+      tableMetaData.getField("requestBody").withMaxLength(16_777_215).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
+      tableMetaData.getField("responseBody").withMaxLength(16_777_215).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
 
       /////////////////////////
       // limit url to 250... //
       /////////////////////////
-      tableMetaData.getField("url").withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
+      tableMetaData.getField("url").withMaxLength(4096).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS);
       tableMetaData.getField("url").withFieldAdornment(AdornmentType.Size.XLARGE.toAdornment());
 
       if(backendDetailEnricher != null)
