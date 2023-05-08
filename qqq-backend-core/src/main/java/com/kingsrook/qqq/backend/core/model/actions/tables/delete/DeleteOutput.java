@@ -37,6 +37,7 @@ public class DeleteOutput extends AbstractActionOutput implements Serializable
 {
    private int           deletedRecordCount = 0;
    private List<QRecord> recordsWithErrors;
+   private List<QRecord> recordsWithWarnings;
 
 
 
@@ -81,6 +82,7 @@ public class DeleteOutput extends AbstractActionOutput implements Serializable
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -94,6 +96,7 @@ public class DeleteOutput extends AbstractActionOutput implements Serializable
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -101,4 +104,50 @@ public class DeleteOutput extends AbstractActionOutput implements Serializable
    {
       deletedRecordCount += i;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordsWithWarnings
+    *******************************************************************************/
+   public List<QRecord> getRecordsWithWarnings()
+   {
+      return (this.recordsWithWarnings);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordsWithWarnings
+    *******************************************************************************/
+   public void setRecordsWithWarnings(List<QRecord> recordsWithWarnings)
+   {
+      this.recordsWithWarnings = recordsWithWarnings;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordsWithWarnings
+    *******************************************************************************/
+   public DeleteOutput withRecordsWithWarnings(List<QRecord> recordsWithWarnings)
+   {
+      this.recordsWithWarnings = recordsWithWarnings;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addRecordWithWarning(QRecord recordWithWarning)
+   {
+      if(this.recordsWithWarnings == null)
+      {
+         this.recordsWithWarnings = new ArrayList<>();
+      }
+      this.recordsWithWarnings.add(recordWithWarning);
+   }
+
 }

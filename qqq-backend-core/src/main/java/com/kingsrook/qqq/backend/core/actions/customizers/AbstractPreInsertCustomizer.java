@@ -28,7 +28,18 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Abstract class that a table can specify an implementation of, to provide
+ ** custom actions before an insert takes place.
  **
+ ** General implementation would be, to iterate over the records (the inputs to
+ ** the insert action), and look at their values:
+ ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records
+ ** - possibly manipulating values (`setValue`)
+ ** - possibly throwing an exception - if you really don't want the insert operation to continue.
+ ** - doing "whatever else" you may want to do.
+ ** - returning the list of records (can be the input list) that you want to go on to the backend implementation class.
+ **
+ ** Note that the full insertInput is available as a field in this class.
  *******************************************************************************/
 public abstract class AbstractPreInsertCustomizer
 {

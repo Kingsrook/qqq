@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCust
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
@@ -89,13 +90,23 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       setAutomationStatusField(insertInput);
 
-      QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
+      //////////////////////////////////////////////////////
+      // load the backend module and its insert interface //
+      //////////////////////////////////////////////////////
+      QBackendModuleInterface qModule         = getBackendModuleInterface(insertInput);
+      InsertInterface         insertInterface = qModule.getInsertInterface();
 
+      /////////////////////////////
+      // run standard validators //
+      /////////////////////////////
       ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
       setErrorsIfUniqueKeyErrors(insertInput, table);
       validateRequiredFields(insertInput);
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
 
+      ///////////////////////////////////////////////////////////////////////////
+      // after all validations, run the pre-insert customizer, if there is one //
+      ///////////////////////////////////////////////////////////////////////////
       Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
@@ -103,15 +114,28 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
       }
 
-      InsertOutput insertOutput = qModule.getInsertInterface().execute(insertInput);
-      List<String> errors       = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
+      ////////////////////////////////////
+      // have the backend do the insert //
+      ////////////////////////////////////
+      InsertOutput insertOutput = insertInterface.execute(insertInput);
+
+      //////////////////////////////
+      // log if there were errors //
+      //////////////////////////////
+      List<String> errors = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          LOG.warn("Errors in insertAction", logPair("tableName", table.getName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
       }
 
+      //////////////////////////////////////////////////
+      // insert any associations in the input records //
+      //////////////////////////////////////////////////
       manageAssociations(table, insertOutput.getRecords(), insertInput.getTransaction());
 
+      //////////////////
+      // do the audit //
+      //////////////////
       if(insertInput.getOmitDmlAudit())
       {
          LOG.debug("Requested to omit DML audit");
@@ -121,11 +145,24 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
       }
 
+      /////////////////////////////////////////////////////////////
+      // finally, run the pre-insert customizer, if there is one //
+      /////////////////////////////////////////////////////////////
       Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       if(postInsertCustomizer.isPresent())
       {
-         postInsertCustomizer.get().setInsertInput(insertInput);
-         insertOutput.setRecords(postInsertCustomizer.get().apply(insertOutput.getRecords()));
+         try
+         {
+            postInsertCustomizer.get().setInsertInput(insertInput);
+            insertOutput.setRecords(postInsertCustomizer.get().apply(insertOutput.getRecords()));
+         }
+         catch(Exception e)
+         {
+            for(QRecord record : insertOutput.getRecords())
+            {
+               record.addWarning("An error occurred after the insert: " + e.getMessage());
+            }
+         }
       }
 
       return insertOutput;

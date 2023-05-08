@@ -276,12 +276,23 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
+   public static void insertRecords(QTableMetaData table, List<QRecord> records) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(records);
       new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Deprecated
+   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
+   {
+      insertRecords(table, records);
    }
 
 

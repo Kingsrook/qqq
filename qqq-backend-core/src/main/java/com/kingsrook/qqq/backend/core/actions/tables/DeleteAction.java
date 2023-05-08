@@ -30,8 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -48,7 +50,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
@@ -78,17 +79,24 @@ public class DeleteAction
    {
       ActionHelper.validateSession(deleteInput);
 
-      QTableMetaData table = deleteInput.getTable();
-
-      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
-      DeleteInterface          deleteInterface          = qModule.getDeleteInterface();
+      QTableMetaData table           = deleteInput.getTable();
+      String         primaryKeyField = table.getPrimaryKeyField();
 
       if(CollectionUtils.nullSafeHasContents(deleteInput.getPrimaryKeys()) && deleteInput.getQueryFilter() != null)
       {
          throw (new QException("A delete request may not contain both a list of primary keys and a query filter."));
       }
 
+      //////////////////////////////////////////////////////
+      // load the backend module and its delete interface //
+      //////////////////////////////////////////////////////
+      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(deleteInput.getBackend());
+      DeleteInterface          deleteInterface          = qModule.getDeleteInterface();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's a query filter, but the interface doesn't support using a query filter, then do a query for the filter, to get a list of primary keys instead //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(deleteInput.getQueryFilter() != null && !deleteInterface.supportsQueryFilterInput())
       {
          LOG.info("Querying for primary keys, for backend module " + qModule.getBackendType() + " which does not support queryFilter input for deletes");
@@ -105,16 +113,62 @@ public class DeleteAction
          }
       }
 
-      List<QRecord> recordListForAudit          = deleteInterface.supportsPreFetchQuery() ? getRecordListForAuditIfNeeded(deleteInput) : new ArrayList<>();
-      List<QRecord> recordsWithValidationErrors = deleteInterface.supportsPreFetchQuery() ? validateRecordsExistAndCanBeAccessed(deleteInput, recordListForAudit) : new ArrayList<>();
+      ////////////////////////////////////////////////////////////////////////////////
+      // fetch the old list of records (if the backend supports it), for audits,    //
+      // for "not-found detection", and for the pre-action to use (if there is one) //
+      ////////////////////////////////////////////////////////////////////////////////
+      Optional<List<QRecord>> oldRecordList = fetchOldRecords(deleteInput, deleteInterface);
 
-      Optional<AbstractPreDeleteCustomizer> preDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPreDeleteCustomizer.class, table, TableCustomizers.PRE_DELETE_RECORD.getRole());
-      if(preDeleteCustomizer.isPresent())
+      List<QRecord> recordsWithValidationErrors   = new ArrayList<>();
+      List<QRecord> recordsWithValidationWarnings = new ArrayList<>();
+      if(oldRecordList.isPresent())
       {
-         preDeleteCustomizer.get().setDeleteInput(deleteInput);
-         preDeleteCustomizer.get().apply(null); // todo monday
+         recordsWithValidationErrors = validateRecordsExistAndCanBeAccessed(deleteInput, oldRecordList.get());
       }
 
+      ///////////////////////////////////////////////////////////////////////////
+      // after all validations, run the pre-delete customizer, if there is one //
+      ///////////////////////////////////////////////////////////////////////////
+      Optional<AbstractPreDeleteCustomizer> preDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPreDeleteCustomizer.class, table, TableCustomizers.PRE_DELETE_RECORD.getRole());
+      if(preDeleteCustomizer.isPresent() && oldRecordList.isPresent())
+      {
+         ////////////////////////////////////////////////////////////////////////////
+         // make list of records that are still good - to pass into the customizer //
+         ////////////////////////////////////////////////////////////////////////////
+         List<QRecord> recordsForCustomizer = makeListOfRecordsNotInErrorList(primaryKeyField, oldRecordList.get(), recordsWithValidationErrors);
+
+         preDeleteCustomizer.get().setDeleteInput(deleteInput);
+         List<QRecord> customizerResult = preDeleteCustomizer.get().apply(recordsForCustomizer);
+
+         ///////////////////////////////////////////////////////
+         // check if any records got errors in the customizer //
+         ///////////////////////////////////////////////////////
+         Set<Serializable> primaryKeysToRemoveFromInput = new HashSet<>();
+         for(QRecord record : customizerResult)
+         {
+            if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+            {
+               recordsWithValidationErrors.add(record);
+               primaryKeysToRemoveFromInput.add(record.getValue(primaryKeyField));
+            }
+            else
+            {
+               recordsWithValidationWarnings.add(record);
+            }
+         }
+
+         /////////////////////////////////////////////////////////////////
+         // do one mass removal of any bad keys from the input key list //
+         /////////////////////////////////////////////////////////////////
+         if(!primaryKeysToRemoveFromInput.isEmpty())
+         {
+            deleteInput.getPrimaryKeys().removeAll(primaryKeysToRemoveFromInput);
+         }
+      }
+
+      ////////////////////////////////////
+      // have the backend do the delete //
+      ////////////////////////////////////
       DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,14 +180,90 @@ public class DeleteAction
          deleteOutput.setRecordsWithErrors(new ArrayList<>());
          outputRecordsWithErrors = deleteOutput.getRecordsWithErrors();
       }
-
       outputRecordsWithErrors.addAll(recordsWithValidationErrors);
 
+      List<QRecord> outputRecordsWithWarnings = deleteOutput.getRecordsWithWarnings();
+      if(outputRecordsWithWarnings == null)
+      {
+         deleteOutput.setRecordsWithWarnings(new ArrayList<>());
+         outputRecordsWithWarnings = deleteOutput.getRecordsWithWarnings();
+      }
+      outputRecordsWithWarnings.addAll(recordsWithValidationWarnings);
+
+      ////////////////////////////////////////
+      // delete associations, if applicable //
+      ////////////////////////////////////////
       manageAssociations(deleteInput);
 
-      new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(deleteInput).withRecordList(recordListForAudit));
+      ///////////////////////////////////
+      // do the audit                  //
+      // todo - add input.omitDmlAudit //
+      ///////////////////////////////////
+      DMLAuditInput dmlAuditInput = new DMLAuditInput().withTableActionInput(deleteInput);
+      oldRecordList.ifPresent(l -> dmlAuditInput.setRecordList(l));
+      new DMLAuditAction().execute(dmlAuditInput);
+
+      /////////////////////////////////////////////////////////////
+      // finally, run the pre-delete customizer, if there is one //
+      /////////////////////////////////////////////////////////////
+      Optional<AbstractPostDeleteCustomizer> postDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPostDeleteCustomizer.class, table, TableCustomizers.POST_DELETE_RECORD.getRole());
+      if(postDeleteCustomizer.isPresent() && oldRecordList.isPresent())
+      {
+         ////////////////////////////////////////////////////////////////////////////
+         // make list of records that are still good - to pass into the customizer //
+         ////////////////////////////////////////////////////////////////////////////
+         List<QRecord> recordsForCustomizer = makeListOfRecordsNotInErrorList(primaryKeyField, oldRecordList.get(), outputRecordsWithErrors);
+
+         try
+         {
+            postDeleteCustomizer.get().setDeleteInput(deleteInput);
+            List<QRecord> customizerResult = postDeleteCustomizer.get().apply(recordsForCustomizer);
+
+            ///////////////////////////////////////////////////////
+            // check if any records got errors in the customizer //
+            ///////////////////////////////////////////////////////
+            for(QRecord record : customizerResult)
+            {
+               if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+               {
+                  outputRecordsWithErrors.add(record);
+               }
+               else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
+               {
+                  outputRecordsWithWarnings.add(record);
+               }
+            }
+         }
+         catch(Exception e)
+         {
+            for(QRecord record : recordsForCustomizer)
+            {
+               record.addWarning("An error occurred after the delete: " + e.getMessage());
+               outputRecordsWithWarnings.add(record);
+            }
+         }
+      }
 
       return deleteOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QRecord> makeListOfRecordsNotInErrorList(String primaryKeyField, List<QRecord> oldRecordList, List<QRecord> outputRecordsWithErrors)
+   {
+      Map<Serializable, QRecord> recordsWithErrorsMap = outputRecordsWithErrors.stream().collect(Collectors.toMap(r -> r.getValue(primaryKeyField), r -> r));
+      List<QRecord>              recordsForCustomizer = new ArrayList<>();
+      for(QRecord record : oldRecordList)
+      {
+         if(!recordsWithErrorsMap.containsKey(record.getValue(primaryKeyField)))
+         {
+            recordsForCustomizer.add(record);
+         }
+      }
+      return recordsForCustomizer;
    }
 
 
@@ -183,12 +313,9 @@ public class DeleteAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<QRecord> getRecordListForAuditIfNeeded(DeleteInput deleteInput) throws QException
+   private static Optional<List<QRecord>> fetchOldRecords(DeleteInput deleteInput, DeleteInterface deleteInterface) throws QException
    {
-      List<QRecord> recordListForAudit = null;
-
-      AuditLevel auditLevel = DMLAuditAction.getAuditLevel(deleteInput);
-      if(AuditLevel.RECORD.equals(auditLevel) || AuditLevel.FIELD.equals(auditLevel))
+      if(deleteInterface.supportsPreFetchQuery())
       {
          List<Serializable> primaryKeyList = deleteInput.getPrimaryKeys();
          if(CollectionUtils.nullSafeIsEmpty(deleteInput.getPrimaryKeys()) && deleteInput.getQueryFilter() != null)
@@ -198,19 +325,16 @@ public class DeleteAction
 
          if(CollectionUtils.nullSafeHasContents(primaryKeyList))
          {
-            ////////////////////////////////////////////////////////////////////////////////////
-            // always fetch the records - we'll use them anyway for checking not-exist  below //
-            ////////////////////////////////////////////////////////////////////////////////////
             QueryInput queryInput = new QueryInput();
             queryInput.setTransaction(deleteInput.getTransaction());
             queryInput.setTableName(deleteInput.getTableName());
             queryInput.setFilter(new QQueryFilter(new QFilterCriteria(deleteInput.getTable().getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeyList)));
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
-            recordListForAudit = queryOutput.getRecords();
+            return (Optional.of(queryOutput.getRecords()));
          }
       }
 
-      return (recordListForAudit);
+      return (Optional.empty());
    }
 
 

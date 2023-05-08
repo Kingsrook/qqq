@@ -28,7 +28,24 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Abstract class that a table can specify an implementation of, to provide
+ ** custom actions before a delete takes place.
  **
+ ** General implementation would be, to iterate over the records (which the DeleteAction
+ ** would look up based on the inputs to the delete action), and look at their values:
+ ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records
+ ** - possibly throwing an exception - if you really don't want the delete operation to continue.
+ ** - doing "whatever else" you may want to do.
+ ** - returning the list of records (can be the input list) - this is how errors
+ **   and warnings are propagated to the DeleteAction.  Note that any records with
+ **   an error will NOT proceed to the backend's delete interface - but those with
+ **   warnings will.
+ **
+ ** Note that the full deleteInput is available as a field in this class.
+ **
+ ** A future enhancement here may be to take (as fields in this class) the list of
+ ** records that the delete action marked in error - the user might want to do
+ ** something special with them (idk, try some other way to delete them?)
  *******************************************************************************/
 public abstract class AbstractPreDeleteCustomizer
 {
@@ -62,4 +79,5 @@ public abstract class AbstractPreDeleteCustomizer
    {
       this.deleteInput = deleteInput;
    }
+
 }

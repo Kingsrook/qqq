@@ -31,7 +31,21 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Abstract class that a table can specify an implementation of, to provide
+ ** custom actions before an update takes place.
  **
+ ** General implementation would be, to iterate over the records (the inputs to
+ ** the update action), and look at their values:
+ ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records
+ ** - possibly manipulating values (`setValue`)
+ ** - possibly throwing an exception - if you really don't want the update operation to continue.
+ ** - doing "whatever else" you may want to do.
+ ** - returning the list of records (can be the input list) that you want to go on to the backend implementation class.
+ **
+ ** Note that the full updateInput is available as a field in this class, and the
+ ** "old records" (e.g., with values freshly fetched from the backend) will be
+ ** available (if the backend supports it) - both as a list (`getOldRecordList`)
+ ** and as a memoized (by this class) map of primaryKey to record (`getOldRecordMap`).
  *******************************************************************************/
 public abstract class AbstractPreUpdateCustomizer
 {

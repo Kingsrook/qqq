@@ -26,12 +26,27 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Abstract class that a table can specify an implementation of, to provide
+ ** custom actions after an update takes place.
  **
+ ** General implementation would be, to iterate over the records (the outputs of
+ ** the update action), and look at their values:
+ ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records?
+ ** - possibly throwing an exception - though doing so won't stop the update, and instead
+ **   will just set a warning on all of the updated records...
+ ** - doing "whatever else" you may want to do.
+ ** - returning the list of records (can be the input list) that you want to go back to the caller.
+ **
+ ** Note that the full updateInput is available as a field in this class, and the
+ ** "old records" (e.g., with values freshly fetched from the backend) will be
+ ** available (if the backend supports it) - both as a list (`getOldRecordList`)
+ ** and as a memoized (by this class) map of primaryKey to record (`getOldRecordMap`).
  *******************************************************************************/
 public abstract class AbstractPostUpdateCustomizer
 {
@@ -45,7 +60,7 @@ public abstract class AbstractPostUpdateCustomizer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract List<QRecord> apply(List<QRecord> records);
+   public abstract List<QRecord> apply(List<QRecord> records) throws QException;
 
 
 
