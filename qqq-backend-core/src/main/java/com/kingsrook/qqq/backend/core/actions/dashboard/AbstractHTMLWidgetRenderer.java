@@ -216,7 +216,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String linkTableFilter(RenderWidgetInput input, String tableName, QQueryFilter filter) throws QException
+   public static String linkTableFilter(String tableName, QQueryFilter filter) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
@@ -232,9 +232,9 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
+   public static String aHrefTableFilterNoOfRecords(String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel) throws QException
    {
-      return (aHrefTableFilterNoOfRecords(input, tableName, filter, noOfRecords, singularLabel, pluralLabel, false));
+      return (aHrefTableFilterNoOfRecords(tableName, filter, noOfRecords, singularLabel, pluralLabel, false));
    }
 
 
@@ -242,7 +242,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String aHrefTableFilterNoOfRecords(RenderWidgetInput input, String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel, boolean onlyLinkCount) throws QException
+   public static String aHrefTableFilterNoOfRecords(String tableName, QQueryFilter filter, Integer noOfRecords, String singularLabel, String pluralLabel, boolean onlyLinkCount) throws QException
    {
       String plural      = StringUtils.plural(noOfRecords, singularLabel, pluralLabel);
       String countString = QValueFormatter.formatValue(DisplayFormat.COMMAS, noOfRecords);
@@ -253,7 +253,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
          return (countString + displayText);
       }
 
-      String href = linkTableFilter(input, tableName, filter);
+      String href = linkTableFilter(tableName, filter);
       if(onlyLinkCount)
       {
          return ("<a href=\"" + href + "\">" + countString + "</a>" + displayText);

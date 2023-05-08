@@ -288,7 +288,7 @@ public class NoCodeWidgetVelocityUtils
          WidgetCount  widgetCount = (WidgetCount) context.get(countVariableName + ".source");
          Integer      count       = ValueUtils.getValueAsInteger(context.get(countVariableName));
          QQueryFilter filter      = widgetCount.getEffectiveFilter(input);
-         return (AbstractHTMLWidgetRenderer.aHrefTableFilterNoOfRecords(null, widgetCount.getTableName(), filter, count, singular, plural));
+         return (AbstractHTMLWidgetRenderer.aHrefTableFilterNoOfRecords(widgetCount.getTableName(), filter, count, singular, plural));
       }
       catch(Exception e)
       {
