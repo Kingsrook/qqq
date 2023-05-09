@@ -9,6 +9,34 @@ CURRENT_VERSION="$(cat $QQQ_DEV_TOOLS_DIR/CURRENT-SNAPSHOT-VERSION)"
 MODULE_LIST_FILE=$QQQ_DEV_TOOLS_DIR/MODULE_LIST
 . $QQQ_DEV_TOOLS_DIR/.env
 
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+SLUG=$(echo $BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+
+function checkForBranchBuild
+{
+   artifact=$1
+
+   #############################################################
+   ## on standard branches, don't look for branch deployments ##
+   #############################################################
+   if [ "$BRANCH" == "dev" ] || [ "$BRANCH" == "staging" ] || [ "$BRANCH" == "main" ]; then
+      echo 0;
+      return;
+   fi
+
+   ###################################################################
+   ## else, do look for a branch deployment, and return accordingly ##
+   ###################################################################
+   curl -s --user ${GITHUB_USER}:${GITHUB_TOKEN} https://maven.pkg.github.com/Kingsrook/qqq-maven-registry/com/kingsrook/qqq/${artifact}/${SLUG}-SNAPSHOT/maven-metadata.xml | grep unable.to.fetch
+   if [ "$?" == "1" ]; then
+      echo 1;
+      return;
+   fi
+
+   echo 0;
+   return;
+}
+
 function getLatestVersion
 {
    artifact=$1
@@ -23,10 +51,10 @@ function getLatestVersion
       return
    fi
 
-   timetsamp=$(xpath -q -e '/metadata/versioning/snapshot/timestamp/text()' /tmp/metadata.xml)
+   timestamp=$(xpath -q -e '/metadata/versioning/snapshot/timestamp/text()' /tmp/metadata.xml)
    buildNumber=$(xpath -q -e '/metadata/versioning/snapshot/buildNumber/text()' /tmp/metadata.xml)
 
-   echo "$version-$timetsamp-$buildNumber"
+   echo "$version-$timestamp-$buildNumber"
 }
 
 function promptForVersion
@@ -70,11 +98,18 @@ else
    artifact=$1
    version=$2
    if [ "$version" == "-l" ]; then
-      version=$CURRENT_VERSION
+      useSlug=$(checkForBranchBuild $artifact)
+      if [ "$useSlug" == "1" ]; then
+         version=$SLUG
+      else
+         version=$CURRENT_VERSION
+      fi
+      echo "Using $version for $artifact" >&2
    fi
 
-   if [ -z "$artifact" -o -z "$version" ]; then
+   if [ -z "$ar^tifact" -o -z "$version" ]; then
       echo "Usage: $0 artifact snapshot-version-prefix"
+      echo "   or: $0 artifact -l (latest of CURRENT_VERSION, or branch-slug, if it has been deployed)"
       echo "   or: $0 -i (interactive mode)"
       echo "   or: $0 -a [snapshot-version-prefix] (all mode)"
       echo "Ex: $0 qqq-backend-core $CURRENT_VERSION"
