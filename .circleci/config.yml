@@ -82,6 +82,10 @@ commands:
   mvn_jar_deploy:
     steps:
       - checkout
+      - run:
+          name: Adjust pom version
+          command: |
+            .circleci/adjust-pom-version.sh
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
