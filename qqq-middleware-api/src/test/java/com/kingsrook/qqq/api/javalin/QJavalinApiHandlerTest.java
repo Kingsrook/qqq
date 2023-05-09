@@ -1239,7 +1239,8 @@ class QJavalinApiHandlerTest extends BaseTest
       assertErrorResponse(HttpStatus.BAD_REQUEST_400, "You may not delete this person", response);
 
       response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/" + TestUtils.PersonPreDeleteCustomizer.DELETE_WARN_ID).asString();
-      assertErrorResponse(HttpStatus.NO_CONTENT_204, "It was bad that you deleted this person", response);
+      assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+      assertFalse(StringUtils.hasContent(response.getBody()));
    }
 
 
