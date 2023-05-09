@@ -15,7 +15,7 @@ MODULE_LIST_FILE=$QQQ_DEV_TOOLS_DIR/MODULE_LIST
 
 for module in $(cat $MODULE_LIST_FILE); do
    echo "Updating $module..."
-   version=$(get-latest-snapshot.sh $module $CURRENT_VERSION)
+   version=$(get-latest-snapshot.sh $module -l)
    update-dep.sh $module $version -q
 done
 

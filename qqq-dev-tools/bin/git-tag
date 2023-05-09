@@ -3,6 +3,11 @@
 ############################################################################
 ## git-tag
 ## Add (deleting, if it already exists) a git tag to a repo (both local & remote)
+##
+## Usage:
+## git-tag tag-name - make/update/push the specified tag-name.
+## git-tag -l - list tags.
+## git-tag snapshot-BRANCH_SLUG - make the tag name "snapshot-" + current branch name, in "slug" form
 ############################################################################
 
 TAG=$1
@@ -14,6 +19,12 @@ fi
 if [ "$TAG" == "-l" ]; then
    git tag -l;
    exit 0;
+fi
+
+if [ "$TAG" == "snapshot-BRANCH_SLUG" ]; then
+   BRANCH=$(git rev-parse --abbrev-ref HEAD)
+   SLUG=$(echo $BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+   TAG="snapshot-$SLUG"
 fi
 
 echo
