@@ -34,6 +34,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -142,9 +144,9 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
                QRecord childRecord = insertedRecordIterator.next();
                if(CollectionUtils.nullSafeHasContents(childRecord.getErrors()))
                {
-                  for(String childWarning : childRecord.getErrors())
+                  for(QStatusMessage error : childRecord.getErrors())
                   {
-                     record.addWarning("Error creating child " + childTable.getLabel() + " (" + childWarning + ")");
+                     record.addWarning(new QWarningMessage("Error creating child " + childTable.getLabel() + " (" + error.toString() + ")"));
                   }
                   rs.add(record);
                   continue;

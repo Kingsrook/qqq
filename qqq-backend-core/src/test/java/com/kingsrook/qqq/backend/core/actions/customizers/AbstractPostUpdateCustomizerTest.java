@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ class AbstractPostUpdateCustomizerTest extends BaseTest
          updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "Warning")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          assertTrue(CollectionUtils.nullSafeIsEmpty(updateOutput.getRecords().get(0).getErrors()));
-         assertTrue(updateOutput.getRecords().get(0).getWarnings().stream().anyMatch(s -> s.contains("updated to a warning value")));
+         assertTrue(updateOutput.getRecords().get(0).getWarnings().stream().anyMatch(s -> s.getMessage().contains("updated to a warning value")));
 
          GetInput getInput = new GetInput();
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -128,7 +129,7 @@ class AbstractPostUpdateCustomizerTest extends BaseTest
          updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "throw")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          assertTrue(CollectionUtils.nullSafeIsEmpty(updateOutput.getRecords().get(0).getErrors()));
-         assertTrue(updateOutput.getRecords().get(0).getWarnings().stream().anyMatch(s -> s.contains("Forced Exception")));
+         assertTrue(updateOutput.getRecords().get(0).getWarnings().stream().anyMatch(s -> s.getMessage().contains("Forced Exception")));
 
          GetInput getInput = new GetInput();
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -178,7 +179,7 @@ class AbstractPostUpdateCustomizerTest extends BaseTest
 
                if("warning".equalsIgnoreCase(record.getValueString("firstName")))
                {
-                  record.addWarning("Record was updated to a warning value");
+                  record.addWarning(new QWarningMessage("Record was updated to a warning value"));
                }
 
                if("throw".equalsIgnoreCase(record.getValueString("firstName")))

@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
@@ -202,7 +203,7 @@ public class BaseAPIActionUtil
             }
             catch(Exception e)
             {
-               record.addError("Error: " + e.getMessage());
+               record.addError(new SystemErrorStatusMessage("Error: " + e.getMessage()));
                insertOutput.addRecord(record);
             }
 
@@ -421,13 +422,13 @@ public class BaseAPIActionUtil
             JSONObject errorObject = jsonObject.getJSONObject("error");
             if(errorObject.has("message"))
             {
-               record.addError("Error: " + errorObject.getString("message"));
+               record.addError(new SystemErrorStatusMessage("Error: " + errorObject.getString("message")));
             }
          }
 
          if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
          {
-            record.addError("Unspecified error executing insert.");
+            record.addError(new SystemErrorStatusMessage("Unspecified error executing insert."));
          }
       }
 

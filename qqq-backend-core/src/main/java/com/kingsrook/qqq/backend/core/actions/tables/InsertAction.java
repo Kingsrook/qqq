@@ -58,6 +58,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -122,7 +124,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       //////////////////////////////
       // log if there were errors //
       //////////////////////////////
-      List<String> errors = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
+      List<String> errors = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream().map(Object::toString)).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          LOG.warn("Errors in insertAction", logPair("tableName", table.getName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
@@ -160,7 +162,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          {
             for(QRecord record : insertOutput.getRecords())
             {
-               record.addWarning("An error occurred after the insert: " + e.getMessage());
+               record.addWarning(new QWarningMessage("An error occurred after the insert: " + e.getMessage()));
             }
          }
       }
@@ -188,7 +190,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             {
                if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
                {
-                  record.addError("Missing value in required field: " + requiredField.getLabel());
+                  record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
                }
             }
          }
@@ -274,7 +276,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
                if(keyValues.isPresent() && (existingKeys.get(uniqueKey).contains(keyValues.get()) || keysInThisList.get(uniqueKey).contains(keyValues.get())))
                {
-                  record.addError("Another record already exists with this " + uniqueKey.getDescription(table));
+                  record.addError(new BadInputStatusMessage("Another record already exists with this " + uniqueKey.getDescription(table)));
                   foundDupe = true;
                   break;
                }

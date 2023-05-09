@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,7 +75,7 @@ class AbstractPostDeleteCustomizerTest extends BaseTest
          assertEquals(1, deleteOutput.getRecordsWithWarnings().size());
          assertEquals(1, deleteOutput.getRecordsWithWarnings().get(0).getValue("id"));
          assertEquals(2, deleteOutput.getDeletedRecordCount());
-         assertEquals("You shouldn't have deleted Homer...", deleteOutput.getRecordsWithWarnings().get(0).getWarnings().get(0));
+         assertEquals("You shouldn't have deleted Homer...", deleteOutput.getRecordsWithWarnings().get(0).getWarnings().get(0).getMessage());
 
          GetInput getInput = new GetInput();
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -107,7 +108,7 @@ class AbstractPostDeleteCustomizerTest extends BaseTest
          {
             if(record.getValue("firstName").equals("Homer"))
             {
-               record.addWarning("You shouldn't have deleted Homer...");
+               record.addWarning(new QWarningMessage("You shouldn't have deleted Homer..."));
             }
          }
 

@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -225,7 +226,7 @@ public class ValidateRecordSecurityLockHelper
                      {
                         if(RecordSecurityLock.NullValueBehavior.DENY.equals(recordSecurityLock.getNullValueBehavior()))
                         {
-                           inputRecord.addError("You do not have permission to " + action.name().toLowerCase() + " this record - the referenced " + leftMostJoinTable.getLabel() + " was not found.");
+                           inputRecord.addError(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " this record - the referenced " + leftMostJoinTable.getLabel() + " was not found."));
                         }
                      }
                   }
@@ -287,7 +288,7 @@ public class ValidateRecordSecurityLockHelper
          if(RecordSecurityLock.NullValueBehavior.DENY.equals(recordSecurityLock.getNullValueBehavior()))
          {
             String lockLabel = CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()) ? recordSecurityLock.getSecurityKeyType() : table.getField(recordSecurityLock.getFieldName()).getLabel();
-            record.addError("You do not have permission to " + action.name().toLowerCase() + " a record without a value in the field: " + lockLabel);
+            record.addError(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " a record without a value in the field: " + lockLabel));
          }
       }
       else
@@ -299,12 +300,12 @@ public class ValidateRecordSecurityLockHelper
                ///////////////////////////////////////////////////////////////////////////////////////////////
                // avoid telling the user a value from a foreign record that they didn't pass in themselves. //
                ///////////////////////////////////////////////////////////////////////////////////////////////
-               record.addError("You do not have permission to " + action.name().toLowerCase() + " this record.");
+               record.addError(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " this record."));
             }
             else
             {
                QFieldMetaData field = table.getField(recordSecurityLock.getFieldName());
-               record.addError("You do not have permission to " + action.name().toLowerCase() + " a record with a value of " + recordSecurityValue + " in the field: " + field.getLabel());
+               record.addError(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " a record with a value of " + recordSecurityValue + " in the field: " + field.getLabel()));
             }
          }
       }

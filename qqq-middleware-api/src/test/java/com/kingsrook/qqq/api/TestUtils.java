@@ -52,6 +52,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -156,7 +158,7 @@ public class TestUtils
          {
             if(!record.getValueString("firstName").matches(".*[a-z].*"))
             {
-               record.addWarning("First name does not contain any letters...");
+               record.addWarning(new QWarningMessage("First name does not contain any letters..."));
             }
          }
 
@@ -238,6 +240,7 @@ public class TestUtils
    {
       return new QTableMetaData()
          .withName(TABLE_NAME_ORDER)
+         .withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(OrderPreInsertCustomizer.class))
          .withBackendName(MEMORY_BACKEND_NAME)
          .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
@@ -397,5 +400,38 @@ public class TestUtils
       insertPersonRecord(3, "Bart", "Simpson");
       insertPersonRecord(4, "Lisa", "Simpson");
       insertPersonRecord(5, "Maggie", "Simpson");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class OrderPreInsertCustomizer extends AbstractPreInsertCustomizer
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         for(QRecord record : records)
+         {
+            for(QRecord orderLine : CollectionUtils.nonNullList(record.getAssociatedRecords().get("orderLines")))
+            {
+               if(orderLine.getValueInteger("quantity") != null && orderLine.getValueInteger("quantity") <= 0)
+               {
+                  record.addError(new BadInputStatusMessage("Quantity may not be less than 0.  See SKU " + orderLine.getValueString("sku")));
+               }
+            }
+
+            if("throw".equals(record.getValueString("orderNo")))
+            {
+               throw (new QException("Throwing error, as requested..."));
+            }
+         }
+
+         return (records);
+      }
    }
 }

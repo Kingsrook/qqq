@@ -376,7 +376,7 @@ class UpdateActionTest extends BaseTest
       // 1st record tried to set a null orderNo - assert it errored //
       ////////////////////////////////////////////////////////////////
       assertEquals(1, updateOutput.getRecords().get(0).getErrors().size());
-      assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(0).getErrors().get(0));
+      assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
 
       ////////////////////////////////////////////////////////////////
       // 2nd record didn't try to change orderNo, so should be fine //
@@ -392,7 +392,7 @@ class UpdateActionTest extends BaseTest
       // 4th record tried to set orderNo to all spaces - assert it errored //
       ///////////////////////////////////////////////////////////////////////
       assertEquals(1, updateOutput.getRecords().get(3).getErrors().size());
-      assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(3).getErrors().get(0));
+      assertEquals("Missing value in required field: Order No", updateOutput.getRecords().get(3).getErrors().get(0).getMessage());
    }
 
 
@@ -439,7 +439,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 10).withValue("orderId", null).withValue("sku", "BASIC2")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       ////////////////////////////////////////////////////////////////////////////////////
@@ -452,7 +452,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 20).withValue("sku", "BASIC3")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("No record was found to update for Id = 20", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("No record was found to update for Id = 20", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -464,7 +464,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 10).withValue("orderId", 2).withValue("sku", "BASIC3")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       ///////////////////////////////////////////////////////////
@@ -475,7 +475,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 100).withValue("lineItemId", null).withValue("key", "updatedKey")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////
@@ -488,7 +488,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 200).withValue("key", "updatedKey")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("No record was found to update for Id = 200", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("No record was found to update for Id = 200", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -500,7 +500,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 100).withValue("lineItemId", 20).withValue("key", "updatedKey")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
    }
 
@@ -518,7 +518,7 @@ class UpdateActionTest extends BaseTest
       updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       updateInput.setRecords(List.of(new QRecord().withValue("id", 999).withValue("orderNo", "updated")));
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-      assertEquals("No record was found to update for Id = 999", updateOutput.getRecords().get(0).getErrors().get(0));
+      assertEquals("No record was found to update for Id = 999", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
    }
 
 
@@ -548,7 +548,7 @@ class UpdateActionTest extends BaseTest
       updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "updated")));
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-      assertEquals("No record was found to update for Id = 1", updateOutput.getRecords().get(0).getErrors().get(0));
+      assertEquals("No record was found to update for Id = 1", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
 
       QContext.getQSession().withSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, ListBuilder.of(true)));
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER)).noneMatch(r -> r.getValueString("orderNo").equals("updated"));
@@ -562,7 +562,7 @@ class UpdateActionTest extends BaseTest
 
       updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "updated").withValue("storeId", 2)));
       updateOutput = new UpdateAction().execute(updateInput);
-      assertEquals("You do not have permission to update a record with a value of 2 in the field: Store Id", updateOutput.getRecords().get(0).getErrors().get(0));
+      assertEquals("You do not have permission to update a record with a value of 2 in the field: Store Id", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
 
       QContext.getQSession().withSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, ListBuilder.of(true)));
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER)).noneMatch(r -> r.getValueString("orderNo").equals("updated"));
@@ -593,7 +593,7 @@ class UpdateActionTest extends BaseTest
       updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
       updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("storeId", null)));
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-      assertEquals("You do not have permission to update a record without a value in the field: Store Id", updateOutput.getRecords().get(0).getErrors().get(0));
+      assertEquals("You do not have permission to update a record without a value in the field: Store Id", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       assertEquals(0, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> r.getValue("storeId") == null).count());
    }
 

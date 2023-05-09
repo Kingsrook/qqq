@@ -35,6 +35,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,7 +76,7 @@ class AbstractPreDeleteCustomizerTest extends BaseTest
          assertEquals(0, deleteOutput.getRecordsWithWarnings().size());
          assertEquals(1, deleteOutput.getRecordsWithErrors().get(0).getValue("id"));
          assertEquals(1, deleteOutput.getDeletedRecordCount());
-         assertEquals("You may not delete a Homer.", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+         assertEquals("You may not delete a Homer.", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
 
          GetInput getInput = new GetInput();
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -99,7 +101,7 @@ class AbstractPreDeleteCustomizerTest extends BaseTest
          assertEquals(1, deleteOutput.getRecordsWithWarnings().size());
          assertEquals(3, deleteOutput.getRecordsWithWarnings().get(0).getValue("id"));
          assertEquals(1, deleteOutput.getDeletedRecordCount());
-         assertEquals("It was a bad idea to delete Bart", deleteOutput.getRecordsWithWarnings().get(0).getWarnings().get(0));
+         assertEquals("It was a bad idea to delete Bart", deleteOutput.getRecordsWithWarnings().get(0).getWarnings().get(0).getMessage());
 
          GetInput getInput = new GetInput();
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -127,11 +129,11 @@ class AbstractPreDeleteCustomizerTest extends BaseTest
          {
             if(record.getValue("firstName").equals("Homer"))
             {
-               record.addError("You may not delete a Homer.");
+               record.addError(new BadInputStatusMessage("You may not delete a Homer."));
             }
             else if(record.getValue("firstName").equals("Bart"))
             {
-               record.addWarning("It was a bad idea to delete Bart");
+               record.addWarning(new QWarningMessage("It was a bad idea to delete Bart"));
             }
          }
 

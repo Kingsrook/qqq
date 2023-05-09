@@ -54,6 +54,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -67,8 +69,6 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 public class DeleteAction
 {
    private static final QLogger LOG = QLogger.getLogger(DeleteAction.class);
-
-   public static final String NOT_FOUND_ERROR_PREFIX = "No record was found to delete";
 
 
 
@@ -238,7 +238,7 @@ public class DeleteAction
          {
             for(QRecord record : recordsForCustomizer)
             {
-               record.addWarning("An error occurred after the delete: " + e.getMessage());
+               record.addWarning(new QWarningMessage("An error occurred after the delete: " + e.getMessage()));
                outputRecordsWithWarnings.add(record);
             }
          }
@@ -400,7 +400,7 @@ public class DeleteAction
                QRecord recordWithError = new QRecord();
                recordsWithErrors.add(recordWithError);
                recordWithError.setValue(primaryKeyField.getName(), primaryKeyValue);
-               recordWithError.addError(NOT_FOUND_ERROR_PREFIX + " for " + primaryKeyField.getLabel() + " = " + primaryKeyValue);
+               recordWithError.addError(new NotFoundStatusMessage("No record was found to delete for " + primaryKeyField.getLabel() + " = " + primaryKeyValue));
                primaryKeysToRemoveFromInput.add(primaryKeyValue);
             }
          }

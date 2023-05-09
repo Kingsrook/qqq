@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,59 +19,56 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.customizers;
+package com.kingsrook.qqq.backend.core.model.statusmessages;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Abstract class that a table can specify an implementation of, to provide
- ** custom actions before an insert takes place.
+ ** Abstract Base class for status messages (errors or warnings) that can be
+ ** attached to QRecords.
  **
- ** General implementation would be, to iterate over the records (the inputs to
- ** the insert action), and look at their values:
- ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records
- ** - possibly manipulating values (`setValue`)
- ** - possibly throwing an exception - if you really don't want the insert operation to continue.
- ** - doing "whatever else" you may want to do.
- ** - returning the list of records (can be the input list) that you want to go on to the backend implementation class.
- **
- ** Note that the full insertInput is available as a field in this class.
+ ** They look like exceptions, but they aren't throwable, and they are meant
+ ** to just be put in a record's error or warning list.  Those lists were originally
+ ** just Strings, but we wanted to have some type information communicated with
+ ** them, e.g., for marking an error as caused by bad-data (e.g., from a user, e.g.,
+ ** for an HTTP 400) vs. a server-side error, etc.
  *******************************************************************************/
-public abstract class AbstractPreInsertCustomizer
+public abstract class QStatusMessage implements Serializable
 {
-   protected InsertInput insertInput;
+   private String message;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public abstract List<QRecord> apply(List<QRecord> records) throws QException;
-
-
-
-   /*******************************************************************************
-    ** Getter for insertInput
-    **
-    *******************************************************************************/
-   public InsertInput getInsertInput()
+   public QStatusMessage(String message)
    {
-      return insertInput;
+      this.message = message;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for insertInput
+    ** Getter for message
     **
     *******************************************************************************/
-   public void setInsertInput(InsertInput insertInput)
+   public String getMessage()
    {
-      this.insertInput = insertInput;
+      return message;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return (message);
    }
 }

@@ -76,7 +76,7 @@ class DeleteActionTest extends BaseTest
       assertEquals(1, result.getDeletedRecordCount());
       assertEquals(1, result.getRecordsWithErrors().size());
       assertEquals(2, result.getRecordsWithErrors().get(0).getValueInteger("id"));
-      assertEquals("No record was found to delete for Id = 2", result.getRecordsWithErrors().get(0).getErrors().get(0));
+      assertEquals("No record was found to delete for Id = 2", result.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
    }
 
 
@@ -331,28 +331,28 @@ class DeleteActionTest extends BaseTest
       DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
       assertEquals(0, deleteOutput.getDeletedRecordCount());
       assertEquals(1, deleteOutput.getRecordsWithErrors().size());
-      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
 
       deleteInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
       deleteInput.setPrimaryKeys(List.of(1));
       deleteOutput = new DeleteAction().execute(deleteInput);
       assertEquals(0, deleteOutput.getDeletedRecordCount());
       assertEquals(1, deleteOutput.getRecordsWithErrors().size());
-      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
 
       deleteInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
       deleteInput.setPrimaryKeys(List.of(1));
       deleteOutput = new DeleteAction().execute(deleteInput);
       assertEquals(0, deleteOutput.getDeletedRecordCount());
       assertEquals(1, deleteOutput.getRecordsWithErrors().size());
-      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
 
       deleteInput.setTableName(TestUtils.TABLE_NAME_ORDER_EXTRINSIC);
       deleteInput.setPrimaryKeys(List.of(1));
       deleteOutput = new DeleteAction().execute(deleteInput);
       assertEquals(0, deleteOutput.getDeletedRecordCount());
       assertEquals(1, deleteOutput.getRecordsWithErrors().size());
-      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0));
+      assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
    }
 
 

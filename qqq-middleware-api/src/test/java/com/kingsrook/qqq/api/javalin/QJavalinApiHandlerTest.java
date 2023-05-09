@@ -688,6 +688,35 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testInsertErrorsFromCustomizer() throws QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/order/")
+         .body("""
+            {"orderNo": "ORD123", "storeId": 47, "orderLines":
+               [
+                  {"lineNumber": 1, "sku": "BASIC1", "quantity": 0},
+               ]
+            }
+            """)
+         .asString();
+      System.out.println(response.getBody());
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Quantity may not be less than 0", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/order/")
+         .body("""
+            {"orderNo": "throw", "storeId": 47}
+            """)
+         .asString();
+      System.out.println(response.getBody());
+      assertErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR_500, "Throwing error, as requested", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testBulkInsert207() throws QException
    {
       HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/bulk")

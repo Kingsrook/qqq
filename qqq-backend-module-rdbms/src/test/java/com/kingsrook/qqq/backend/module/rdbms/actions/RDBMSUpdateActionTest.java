@@ -365,7 +365,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          updateInput.setRecords(records);
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
-         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       {
@@ -377,7 +377,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          updateInput.setRecords(records);
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
-         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
       }
 
       {
@@ -393,7 +393,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
 
          assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
-         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0));
+         assertEquals("Missing value in primary key field", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
 
          assertTrue(updateOutput.getRecords().get(1).getErrors().isEmpty());
 

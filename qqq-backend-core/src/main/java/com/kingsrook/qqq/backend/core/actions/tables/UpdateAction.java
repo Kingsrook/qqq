@@ -62,6 +62,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -76,8 +79,6 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class UpdateAction
 {
    private static final QLogger LOG = QLogger.getLogger(UpdateAction.class);
-
-   public static final String NOT_FOUND_ERROR_PREFIX = "No record was found to update";
 
 
 
@@ -137,7 +138,7 @@ public class UpdateAction
       //////////////////////////////
       // log if there were errors //
       //////////////////////////////
-      List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
+      List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream().map(Object::toString)).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          LOG.warn("Errors in updateAction", logPair("tableName", updateInput.getTableName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
@@ -180,7 +181,7 @@ public class UpdateAction
          {
             for(QRecord record : updateOutput.getRecords())
             {
-               record.addWarning("An error occurred after the update: " + e.getMessage());
+               record.addWarning(new QWarningMessage("An error occurred after the update: " + e.getMessage()));
             }
          }
       }
@@ -228,7 +229,7 @@ public class UpdateAction
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(record.getValue(table.getPrimaryKeyField()) == null)
          {
-            record.addError("Missing value in primary key field");
+            record.addError(new BadInputStatusMessage("Missing value in primary key field"));
          }
       }
    }
@@ -288,7 +289,7 @@ public class UpdateAction
 
             if(!lookedUpRecords.containsKey(value))
             {
-               record.addError(NOT_FOUND_ERROR_PREFIX + " for " + primaryKeyField.getLabel() + " = " + value);
+               record.addError(new NotFoundStatusMessage("No record was found to update for " + primaryKeyField.getLabel() + " = " + value));
             }
          }
       }
@@ -319,7 +320,7 @@ public class UpdateAction
                {
                   if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
                   {
-                     record.addError("Missing value in required field: " + requiredField.getLabel());
+                     record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
                   }
                }
             }

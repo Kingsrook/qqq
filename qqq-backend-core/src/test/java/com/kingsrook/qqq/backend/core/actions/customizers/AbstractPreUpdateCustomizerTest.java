@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +71,7 @@ class AbstractPreUpdateCustomizerTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("firstName", "--")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertTrue(updateOutput.getRecords().get(0).getErrors().stream().anyMatch(s -> s.contains("must contain at least one letter")));
+         assertTrue(updateOutput.getRecords().get(0).getErrors().stream().anyMatch(s -> s.getMessage().contains("must contain at least one letter")));
 
          GetInput getInput = new GetInput();
          getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -146,7 +147,7 @@ class AbstractPreUpdateCustomizerTest extends BaseTest
                ////////////////////////////////////////////////////////////////
                if(!record.getValueString("firstName").matches(".*\\w.*"))
                {
-                  record.addError("First name must contain at least one letter.");
+                  record.addError(new BadInputStatusMessage("First name must contain at least one letter."));
                }
 
                //////////////////////////////////////////////////////////////
