@@ -473,8 +473,16 @@ public class ApiImplementation
          List<QWarningMessage> warnings = record.getWarnings();
          if(CollectionUtils.nullSafeHasContents(errors))
          {
-            outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
-            outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+            if(areAnyErrorsBadRequest(errors))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+            }
+            else
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.INTERNAL_SERVER_ERROR.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.INTERNAL_SERVER_ERROR.getMessage());
+            }
             outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors));
          }
          else if(CollectionUtils.nullSafeHasContents(warnings))
@@ -577,6 +585,7 @@ public class ApiImplementation
       UpdateOutput updateOutput = updateAction.execute(updateInput);
 
       List<QErrorMessage> errors = updateOutput.getRecords().get(0).getErrors();
+      // todo - do we want, if there were warnings, to return a 200 w/ a body w/ the warnings?  maybe...
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          if(areAnyErrorsNotFound(errors))
@@ -686,25 +695,37 @@ public class ApiImplementation
          }
 
          List<QErrorMessage> errors = record.getErrors();
+
+         HttpStatus.Code statusCode;
          if(CollectionUtils.nullSafeHasContents(errors))
          {
             outputRecord.put("error", "Error updating " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors));
             if(areAnyErrorsNotFound(errors))
             {
-               outputRecord.put("statusCode", HttpStatus.Code.NOT_FOUND.getCode());
-               outputRecord.put("statusText", HttpStatus.Code.NOT_FOUND.getMessage());
+               statusCode = HttpStatus.Code.NOT_FOUND;
+            }
+            else if(areAnyErrorsBadRequest(errors))
+            {
+               statusCode = HttpStatus.Code.BAD_REQUEST;
             }
             else
             {
-               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
-               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               statusCode = HttpStatus.Code.INTERNAL_SERVER_ERROR;
             }
          }
          else
          {
-            outputRecord.put("statusCode", HttpStatus.Code.NO_CONTENT.getCode());
-            outputRecord.put("statusText", HttpStatus.Code.NO_CONTENT.getMessage());
+            statusCode = HttpStatus.Code.NO_CONTENT;
+
+            List<QWarningMessage> warnings = record.getWarnings();
+            if(CollectionUtils.nullSafeHasContents(warnings))
+            {
+               outputRecord.put("warning", "Warning updating " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(warnings));
+            }
          }
+
+         outputRecord.put("statusCode", statusCode.getCode());
+         outputRecord.put("statusText", statusCode.getMessage());
 
          i++;
       }
@@ -740,6 +761,11 @@ public class ApiImplementation
          {
             throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
+         else if(areAnyErrorsBadRequest(errors))
+         {
+            throw (new QBadRequestException("Error deleting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors)));
+         }
+         // todo - do we want, if there were warnings, to return a 200 w/ a body w/ the warnings?  maybe...
          else
          {
             throw (new QException("Error deleting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors)));

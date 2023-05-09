@@ -31,7 +31,9 @@ import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -54,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -156,7 +159,7 @@ public class TestUtils
       {
          for(QRecord record : CollectionUtils.nonNullList(records))
          {
-            if(!record.getValueString("firstName").matches(".*[a-z].*"))
+            if(record.getValueString("firstName") != null && !record.getValueString("firstName").matches(".*[a-z].*"))
             {
                record.addWarning(new QWarningMessage("First name does not contain any letters..."));
             }
@@ -180,6 +183,7 @@ public class TestUtils
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("email"))
+         .withCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(PersonPreDeleteCustomizer.class))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -241,6 +245,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_ORDER)
          .withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(OrderPreInsertCustomizer.class))
+         .withCustomizer(TableCustomizers.PRE_UPDATE_RECORD.getRole(), new QCodeReference(OrderPreUpdateCustomizer.class))
          .withBackendName(MEMORY_BACKEND_NAME)
          .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
@@ -427,11 +432,63 @@ public class TestUtils
 
             if("throw".equals(record.getValueString("orderNo")))
             {
-               throw (new QException("Throwing error, as requested..."));
+               record.addError(new SystemErrorStatusMessage("Throwing error, as requested..."));
             }
          }
 
          return (records);
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class OrderPreUpdateCustomizer extends AbstractPreUpdateCustomizer
+   {
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         /////////////////////////////////////////////
+         // use same logic as pre-insert customizer //
+         /////////////////////////////////////////////
+         return new OrderPreInsertCustomizer().apply(records);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonPreDeleteCustomizer extends AbstractPreDeleteCustomizer
+   {
+      public static final Integer DELETE_ERROR_ID = 9999;
+      public static final Integer DELETE_WARN_ID  = 9998;
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records)
+      {
+         for(QRecord record : records)
+         {
+            if(DELETE_ERROR_ID.equals(record.getValue("id")))
+            {
+               record.addError(new BadInputStatusMessage("You may not delete this person"));
+            }
+            else if(DELETE_WARN_ID.equals(record.getValue("id")))
+            {
+               record.addWarning(new QWarningMessage("It was bad that you deleted this person"));
+            }
+         }
+
+         return (records);
+      }
+   }
+
 }

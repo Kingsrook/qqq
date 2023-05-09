@@ -128,7 +128,6 @@ class QJavalinApiHandlerTest extends BaseTest
    void testSpec()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/openapi.yaml").asString();
-      System.out.println(response.getBody());
       assertThat(response.getBody())
          .contains("""
             title: "Test API"
@@ -217,8 +216,7 @@ class QJavalinApiHandlerTest extends BaseTest
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/1").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
-      System.out.println(jsonObject.toString(3));
-      JSONArray orderLines = jsonObject.getJSONArray("orderLines");
+      JSONArray  orderLines = jsonObject.getJSONArray("orderLines");
       assertEquals(3, orderLines.length());
       JSONObject orderLine0     = orderLines.getJSONObject(0);
       JSONArray  lineExtrinsics = orderLine0.getJSONArray("extrinsics");
@@ -522,7 +520,6 @@ class QJavalinApiHandlerTest extends BaseTest
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/query?id=1").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
-      System.out.println(jsonObject.toString(3));
       JSONObject order0     = jsonObject.getJSONArray("records").getJSONObject(0);
       JSONArray  orderLines = order0.getJSONArray("orderLines");
       assertEquals(3, orderLines.length());
@@ -595,7 +592,6 @@ class QJavalinApiHandlerTest extends BaseTest
             }
             """)
          .asString();
-      System.out.println(response.getBody());
       assertEquals(HttpStatus.CREATED_201, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       assertEquals(1, jsonObject.getInt("id"));
@@ -699,7 +695,6 @@ class QJavalinApiHandlerTest extends BaseTest
             }
             """)
          .asString();
-      System.out.println(response.getBody());
       assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Quantity may not be less than 0", response);
 
       response = Unirest.post(BASE_URL + "/api/" + VERSION + "/order/")
@@ -707,8 +702,30 @@ class QJavalinApiHandlerTest extends BaseTest
             {"orderNo": "throw", "storeId": 47}
             """)
          .asString();
-      System.out.println(response.getBody());
       assertErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR_500, "Throwing error, as requested", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/order/bulk")
+         .body("""
+            [
+               {"orderNo": "ORD123", "storeId": 47, "orderLines":
+                  [
+                     {"lineNumber": 1, "sku": "BASIC1", "quantity": 0},
+                  ]
+               },
+               {"orderNo": "throw", "storeId": 47}
+            ]
+            """)
+         .asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(2, jsonArray.length());
+
+      assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertThat(jsonArray.getJSONObject(0).getString("error")).contains("Quantity may not be less than 0");
+
+      assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertThat(jsonArray.getJSONObject(1).getString("error")).contains("Throwing error, as requested");
+
    }
 
 
@@ -925,6 +942,57 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testUpdateErrorsFromCustomizer() throws QException
+   {
+      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
+         .body("""
+            {"orderNo": "ORD123", "storeId": 47, "orderLines":
+               [
+                  {"lineNumber": 1, "sku": "BASIC1", "quantity": 0},
+               ]
+            }
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Quantity may not be less than 0", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
+         .body("""
+            {"orderNo": "throw", "storeId": 47}
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR_500, "Throwing error, as requested", response);
+
+      response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/bulk")
+         .body("""
+            [
+               {"id": 1, "orderNo": "ORD123", "storeId": 47, "orderLines":
+                  [
+                     {"lineNumber": 1, "sku": "BASIC1", "quantity": 0},
+                  ]
+               },
+               {"id": 1, "orderNo": "throw", "storeId": 47}
+            ]
+            """)
+         .asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(2, jsonArray.length());
+
+      assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertThat(jsonArray.getJSONObject(0).getString("error")).contains("Quantity may not be less than 0");
+
+      assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertThat(jsonArray.getJSONObject(1).getString("error")).contains("Throwing error, as requested");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testBulkUpdate207() throws QException
    {
       insertSimpsons();
@@ -941,7 +1009,6 @@ class QJavalinApiHandlerTest extends BaseTest
          .asString();
       assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
       JSONArray jsonArray = new JSONArray(response.getBody());
-      System.out.println(jsonArray.toString(3));
       assertEquals(4, jsonArray.length());
 
       assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(0).getInt("statusCode"));
@@ -1151,6 +1218,57 @@ class QJavalinApiHandlerTest extends BaseTest
    {
       HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/1").asString();
       assertErrorResponse(HttpStatus.NOT_FOUND_404, "Could not find Person with Id of 1", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeleteErrorsFromCustomizer() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", TestUtils.PersonPreDeleteCustomizer.DELETE_ERROR_ID),
+         new QRecord().withValue("id", TestUtils.PersonPreDeleteCustomizer.DELETE_WARN_ID)));
+      new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/" + TestUtils.PersonPreDeleteCustomizer.DELETE_ERROR_ID).asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "You may not delete this person", response);
+
+      response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/" + TestUtils.PersonPreDeleteCustomizer.DELETE_WARN_ID).asString();
+      assertErrorResponse(HttpStatus.NO_CONTENT_204, "It was bad that you deleted this person", response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeleteBulkErrorsFromCustomizer() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", TestUtils.PersonPreDeleteCustomizer.DELETE_ERROR_ID),
+         new QRecord().withValue("id", TestUtils.PersonPreDeleteCustomizer.DELETE_WARN_ID)));
+      new InsertAction().execute(insertInput);
+
+      HttpResponse<String> response = Unirest.delete(BASE_URL + "/api/" + VERSION + "/person/bulk")
+         .body("[" + TestUtils.PersonPreDeleteCustomizer.DELETE_ERROR_ID + "," + TestUtils.PersonPreDeleteCustomizer.DELETE_WARN_ID + "]")
+         .asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(2, jsonArray.length());
+
+      assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(0).getInt("statusCode"));
+      assertThat(jsonArray.getJSONObject(0).getString("error")).contains("Error deleting Person: You may not delete this person");
+
+      assertEquals(HttpStatus.NO_CONTENT_204, jsonArray.getJSONObject(1).getInt("statusCode"));
+      assertFalse(jsonArray.getJSONObject(1).has("error"));
    }
 
 

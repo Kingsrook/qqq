@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
@@ -517,9 +518,23 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       {
          this.customizers = new HashMap<>();
       }
-      // todo - check for dupes?
+
+      if(this.customizers.containsKey(role))
+      {
+         throw (new IllegalArgumentException("Attempt to add a second customizer with role [" + role + "] to table [" + name + "]."));
+      }
       this.customizers.put(role, customizer);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData withCustomizer(TableCustomizers tableCustomizer, QCodeReference customizer)
+   {
+      return (withCustomizer(tableCustomizer.getRole(), customizer));
    }
 
 
