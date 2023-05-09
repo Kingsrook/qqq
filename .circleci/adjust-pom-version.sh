@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ -z "$CIRCLE_BRANCH" ]; then
-   echo "Error:  env var CIRCLE_BRANCH was not set."
+if [ -z "$CIRCLE_BRANCH" ] && [ -z "$CIRCLE_TAG" ]; then
+   echo "Error:  env vars CIRCLE_BRANCH and CIRCLE_TAG were not set."
    exit 1;
 fi
 
@@ -10,7 +10,12 @@ if [ "$CIRCLE_BRANCH" == "dev" ] || [ "$CIRCLE_BRANCH" == "staging" ] || [ "$CIR
    exit 0;
 fi
 
-SLUG=$(echo $CIRCLE_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+if [ -n "$CIRCLE_BRANCH" ]; then
+   SLUG=$(echo $CIRCLE_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+else
+   SLUG=$(echo $CIRCLE_TAG | sed 's/^snapshot-//g')
+fi
+
 POM=$(dirname $0)/../pom.xml
 
 echo "Updating $POM <revision> to: $SLUG-SNAPSHOT"
