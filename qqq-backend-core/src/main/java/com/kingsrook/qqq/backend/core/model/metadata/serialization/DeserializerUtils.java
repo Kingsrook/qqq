@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -282,6 +283,10 @@ public class DeserializerUtils
          else if(fieldNode instanceof TextNode textNode)
          {
             setterMap.get(fieldName).accept(textNode.asText());
+         }
+         else if(fieldNode instanceof BooleanNode booleanNode)
+         {
+            setterMap.get(fieldName).accept(booleanNode);
          }
          else if(fieldNode instanceof ObjectNode)
          {
