@@ -99,6 +99,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -601,20 +602,20 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void dataUpdate(Context context)
    {
-      String table      = context.pathParam("table");
+      String tableName  = context.pathParam("table");
       String primaryKey = context.pathParam("primaryKey");
 
       try
       {
          UpdateInput updateInput = new UpdateInput();
          setupSession(context, updateInput);
-         updateInput.setTableName(table);
+         updateInput.setTableName(tableName);
 
          PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
-         record.setTableName(table);
+         record.setTableName(tableName);
          recordList.add(record);
 
          Map<?, ?> map = context.bodyAsClass(Map.class);
@@ -638,18 +639,28 @@ public class QJavalinImplementation
             }
          }
 
-         QTableMetaData tableMetaData = qInstance.getTable(table);
+         QTableMetaData tableMetaData = qInstance.getTable(tableName);
          record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
 
-         QJavalinAccessLogger.logStart("update", logPair("table", table), logPair("primaryKey", primaryKey));
+         QJavalinAccessLogger.logStart("update", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
-         UpdateOutput updateResult = updateAction.execute(updateInput);
+         UpdateOutput updateOutput = updateAction.execute(updateInput);
+         QRecord      outputRecord = updateOutput.getRecords().get(0);
+
+         if(CollectionUtils.nullSafeHasContents(outputRecord.getErrors()))
+         {
+            throw (new QUserFacingException("Error updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getErrors())));
+         }
+         if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+         {
+            throw (new QUserFacingException("Warning updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
+         }
 
          QJavalinAccessLogger.logEndSuccess();
-         context.result(JsonUtils.toJson(updateResult));
+         context.result(JsonUtils.toJson(updateOutput));
       }
       catch(Exception e)
       {
@@ -692,17 +703,19 @@ public class QJavalinImplementation
 
          InsertAction insertAction = new InsertAction();
          InsertOutput insertOutput = insertAction.execute(insertInput);
+         QRecord      outputRecord = insertOutput.getRecords().get(0);
 
-         if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getErrors()))
+         QTableMetaData table = qInstance.getTable(tableName);
+         if(CollectionUtils.nullSafeHasContents(outputRecord.getErrors()))
          {
-            throw (new QUserFacingException("Error inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
+            throw (new QUserFacingException("Error inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getErrors())));
          }
-         if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getWarnings()))
+         if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
          {
-            throw (new QUserFacingException("Warning inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getWarnings().get(0)));
+            throw (new QUserFacingException("Warning inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
          }
 
-         QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (insertOutput.getRecords().get(0).getValue(qInstance.getTable(tableName).getPrimaryKeyField()))));
+         QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (outputRecord.getValue(table.getPrimaryKeyField()))));
          context.result(JsonUtils.toJson(insertOutput));
       }
       catch(Exception e)
@@ -1509,6 +1522,16 @@ public class QJavalinImplementation
    public static QInstance getQInstance()
    {
       return (QJavalinImplementation.qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static String joinErrorsWithCommasAndAnd(List<? extends QStatusMessage> errors)
+   {
+      return StringUtils.joinWithCommasAndAnd(errors.stream().map(QStatusMessage::getMessage).toList());
    }
 
 }
