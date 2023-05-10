@@ -123,12 +123,12 @@ public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSumm
          Serializable recordPrimaryKey = record.getValue(primaryKeyFieldName);
          QRecord      outputRecord     = outputRecordMap.get(recordPrimaryKey);
 
-         if(CollectionUtils.nullSafeHasContents(outputRecord.getErrors()))
+         if(outputRecord != null && CollectionUtils.nullSafeHasContents(outputRecord.getErrors()))
          {
             String message = outputRecord.getErrors().get(0).getMessage();
             processSummaryWarningsAndErrorsRollup.addError(message, recordPrimaryKey);
          }
-         else if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+         else if(outputRecord != null && CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
          {
             String message = outputRecord.getWarnings().get(0).getMessage();
             processSummaryWarningsAndErrorsRollup.addWarning(message, recordPrimaryKey);
