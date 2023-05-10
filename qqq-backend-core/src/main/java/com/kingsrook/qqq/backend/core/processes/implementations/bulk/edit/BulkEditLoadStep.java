@@ -38,7 +38,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import static com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep.buildInfoSummaryLines;
-import static com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep.getProcessSummaryWarningsAndErrorsRollup;
 
 
 /*******************************************************************************
@@ -51,7 +50,7 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
    private ProcessSummaryLine       okSummary     = new ProcessSummaryLine(Status.OK);
    private List<ProcessSummaryLine> infoSummaries = new ArrayList<>();
 
-   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = getProcessSummaryWarningsAndErrorsRollup();
+   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("edited");
 
    private String tableLabel;
 
@@ -104,9 +103,15 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
-
+      ////////////////////////////
+      // have base class update //
+      ////////////////////////////
       super.run(runBackendStepInput, runBackendStepOutput);
+
+      ////////////////////////////////////////////////////////
+      // roll up results based on output from update action //
+      ////////////////////////////////////////////////////////
+      QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
       for(QRecord record : runBackendStepOutput.getRecords())
       {
          Serializable recordPrimaryKey = record.getValue(table.getPrimaryKeyField());

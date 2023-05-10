@@ -101,20 +101,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       /////////////////////////////
       // run standard validators //
       /////////////////////////////
-      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
-      setErrorsIfUniqueKeyErrors(insertInput, table);
-      validateRequiredFields(insertInput);
-      ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
-
-      ///////////////////////////////////////////////////////////////////////////
-      // after all validations, run the pre-insert customizer, if there is one //
-      ///////////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
-      if(preInsertCustomizer.isPresent())
-      {
-         preInsertCustomizer.get().setInsertInput(insertInput);
-         insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
-      }
+      performValidations(insertInput, false);
 
       ////////////////////////////////////
       // have the backend do the insert //
@@ -168,6 +155,32 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       }
 
       return insertOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void performValidations(InsertInput insertInput, boolean isPreview) throws QException
+   {
+      QTableMetaData table = insertInput.getTable();
+
+      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
+      setErrorsIfUniqueKeyErrors(insertInput, table);
+      validateRequiredFields(insertInput);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
+
+      ///////////////////////////////////////////////////////////////////////////
+      // after all validations, run the pre-insert customizer, if there is one //
+      ///////////////////////////////////////////////////////////////////////////
+      Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
+      if(preInsertCustomizer.isPresent())
+      {
+         preInsertCustomizer.get().setInsertInput(insertInput);
+         preInsertCustomizer.get().setIsPreview(isPreview);
+         insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
+      }
    }
 
 

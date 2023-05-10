@@ -51,6 +51,36 @@ public class ProcessSummaryWarningsAndErrorsRollup
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static ProcessSummaryWarningsAndErrorsRollup build(String pastTenseVerb)
+   {
+      return new ProcessSummaryWarningsAndErrorsRollup()
+         .withErrorTemplate(new ProcessSummaryLine(Status.ERROR)
+            .withSingularFutureMessage("record has an error: ")
+            .withPluralFutureMessage("records have an error: ")
+            .withSingularPastMessage("record had an error: ")
+            .withPluralPastMessage("records had an error: "))
+         .withWarningTemplate(new ProcessSummaryLine(Status.WARNING)
+            .withSingularFutureMessage("record will be " + pastTenseVerb + ", but has a warning: ")
+            .withPluralFutureMessage("records will be " + pastTenseVerb + ", but have a warning: ")
+            .withSingularPastMessage("record was " + pastTenseVerb + ", but had a warning: ")
+            .withPluralPastMessage("records were " + pastTenseVerb + ", but had a warning: "))
+         .withOtherErrorsSummary(new ProcessSummaryLine(Status.ERROR)
+            .withSingularFutureMessage("record has an other error.")
+            .withPluralFutureMessage("records have other errors.")
+            .withSingularPastMessage("record had an other error.")
+            .withPluralPastMessage("records had other errors."))
+         .withOtherWarningsSummary(new ProcessSummaryLine(Status.WARNING)
+            .withSingularFutureMessage("record will be " + pastTenseVerb + ", but has an other warning.")
+            .withPluralFutureMessage("records will be " + pastTenseVerb + ", but have other warnings.")
+            .withSingularPastMessage("record was " + pastTenseVerb + ", but had other warnings.")
+            .withPluralPastMessage("records were " + pastTenseVerb + ", but had other warnings."));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void addToList(ArrayList<ProcessSummaryLineInterface> list)
    {
       addProcessSummaryLinesFromMap(list, errorSummaries);
@@ -164,7 +194,15 @@ public class ProcessSummaryWarningsAndErrorsRollup
             }
          }
       }
-      processSummaryLine.incrementCountAndAddPrimaryKey(primaryKey);
+
+      if(primaryKey == null)
+      {
+         processSummaryLine.incrementCount();
+      }
+      else
+      {
+         processSummaryLine.incrementCountAndAddPrimaryKey(primaryKey);
+      }
    }
 
 

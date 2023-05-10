@@ -59,7 +59,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
    private ProcessSummaryLine       okSummary     = new ProcessSummaryLine(Status.OK);
    private List<ProcessSummaryLine> infoSummaries = new ArrayList<>();
 
-   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = getProcessSummaryWarningsAndErrorsRollup();
+   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("edited");
 
    private QTableMetaData table;
    private String         tableLabel;
@@ -68,36 +68,6 @@ public class BulkEditTransformStep extends AbstractTransformStep
    private boolean isValidateStep;
    private boolean isExecuteStep;
    private boolean haveRecordCount;
-
-
-
-   /*******************************************************************************
-    ** used by Load step too
-    *******************************************************************************/
-   static ProcessSummaryWarningsAndErrorsRollup getProcessSummaryWarningsAndErrorsRollup()
-   {
-      return new ProcessSummaryWarningsAndErrorsRollup()
-         .withErrorTemplate(new ProcessSummaryLine(Status.ERROR)
-            .withSingularFutureMessage("record has an error: ")
-            .withPluralFutureMessage("records have an error: ")
-            .withSingularPastMessage("record had an error: ")
-            .withPluralPastMessage("records had an error: "))
-         .withWarningTemplate(new ProcessSummaryLine(Status.WARNING)
-            .withSingularFutureMessage("record will be edited, but has a warning: ")
-            .withPluralFutureMessage("records will be edited, but have a warning: ")
-            .withSingularPastMessage("record was edited, but had a warning: ")
-            .withPluralPastMessage("records were edited, but had a warning: "))
-         .withOtherErrorsSummary(new ProcessSummaryLine(Status.ERROR)
-            .withSingularFutureMessage("record has an other error.")
-            .withPluralFutureMessage("records have other errors.")
-            .withSingularPastMessage("record had an other error.")
-            .withPluralPastMessage("records had other errors."))
-         .withOtherWarningsSummary(new ProcessSummaryLine(Status.WARNING)
-            .withSingularFutureMessage("record will be edited, but has an other warning.")
-            .withPluralFutureMessage("records will be edited, but have other warnings.")
-            .withSingularPastMessage("record was edited, but had other warnings.")
-            .withPluralPastMessage("records were edited, but had other warnings."));
-   }
 
 
 
@@ -169,7 +139,8 @@ public class BulkEditTransformStep extends AbstractTransformStep
             setUpdatedFieldsInRecord(runBackendStepInput, enabledFields, recordToUpdate);
          }
 
-         okSummary.incrementCount(runBackendStepInput.getRecords().size());
+         // i think load step will do this.
+         // okSummary.incrementCount(runBackendStepInput.getRecords().size());
       }
       else
       {

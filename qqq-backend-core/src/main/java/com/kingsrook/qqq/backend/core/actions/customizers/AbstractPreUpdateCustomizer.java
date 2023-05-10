@@ -35,6 +35,11 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  ** Abstract class that a table can specify an implementation of, to provide
  ** custom actions before an update takes place.
  **
+ ** It's important for implementations to be aware of the isPreview field, which
+ ** is set to true when the code is running to give users advice, e.g., on a review
+ ** screen - vs. being false when the action is ACTUALLY happening.  So, if you're doing
+ ** things like storing data, you don't want to do that if isPreview is true!!
+ **
  ** General implementation would be, to iterate over the records (the inputs to
  ** the update action), and look at their values:
  ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records

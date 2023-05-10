@@ -22,16 +22,24 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -40,6 +48,8 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 public class BulkDeleteTransformStep extends AbstractTransformStep
 {
    private ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
+
+   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("deleted");
 
    private String tableLabel;
 
@@ -69,11 +79,15 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      QTableMetaData table           = runBackendStepInput.getTable();
+      String         primaryKeyField = table.getPrimaryKeyField();
+
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // on the validate step, we haven't read the full file, so we don't know how many rows there are - thus        //
       // record count is null, and the ValidateStep won't be setting status counters - so - do it here in that case. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE))
+      if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) ||
+         runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_PREVIEW))
       {
          if(runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT) == null)
          {
@@ -83,6 +97,42 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
          {
             runBackendStepInput.getAsyncJobCallback().updateStatus("Processing " + tableLabel + " record");
          }
+
+         ///////////////////////////////////////////////////////////////////////
+         // run the validation - critically - in preview mode (boolean param) //
+         ///////////////////////////////////////////////////////////////////////
+         DeleteAction deleteAction = new DeleteAction();
+         DeleteInput  deleteInput  = new DeleteInput();
+         deleteInput.setTableName(runBackendStepInput.getTableName());
+         deleteInput.setPrimaryKeys(runBackendStepInput.getRecords().stream().map(r -> r.getValue(primaryKeyField)).toList());
+         List<QRecord> validationResultRecords = deleteAction.performValidations(deleteInput, Optional.of(runBackendStepInput.getRecords()), true);
+
+         /////////////////////////////////////////////////////////////
+         // look at the update input to build process summary lines //
+         /////////////////////////////////////////////////////////////
+         List<QRecord> outputRecords = new ArrayList<>();
+         for(QRecord record : validationResultRecords)
+         {
+            Serializable recordPrimaryKey = record.getValue(table.getPrimaryKeyField());
+            if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+            {
+               String message = record.getErrors().get(0).getMessage();
+               processSummaryWarningsAndErrorsRollup.addError(message, recordPrimaryKey);
+            }
+            else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
+            {
+               String message = record.getWarnings().get(0).getMessage();
+               processSummaryWarningsAndErrorsRollup.addWarning(message, recordPrimaryKey);
+               outputRecords.add(record);
+            }
+            else
+            {
+               okSummary.incrementCountAndAddPrimaryKey(recordPrimaryKey);
+               outputRecords.add(record);
+            }
+         }
+
+         runBackendStepOutput.setRecords(outputRecords);
       }
       else if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_EXECUTE))
       {
@@ -94,13 +144,15 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
          {
             runBackendStepInput.getAsyncJobCallback().updateStatus("Deleting " + tableLabel + " records");
          }
-      }
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // no transformation needs done - just pass records through from input to output, and assume all are OK //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////
-      runBackendStepOutput.setRecords(runBackendStepInput.getRecords());
-      okSummary.incrementCount(runBackendStepInput.getRecords().size());
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // no transformation needs done - just pass records through from input to output, and assume errors & warnings will come from the delete action //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         runBackendStepOutput.setRecords(runBackendStepInput.getRecords());
+
+         // i think load step will do this.
+         // okSummary.incrementCount(runBackendStepInput.getRecords().size());
+      }
    }
 
 
@@ -111,17 +163,16 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      if(isForResultScreen)
-      {
-         okSummary.setMessage(tableLabel + " records were deleted.");
-      }
-      else
-      {
-         okSummary.setMessage(tableLabel + " records will be deleted.");
-      }
-
       ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
-      rs.add(okSummary);
+
+      String noWarningsSuffix = processSummaryWarningsAndErrorsRollup.countWarnings() == 0 ? "" : " with no warnings";
+      okSummary.setSingularFutureMessage(tableLabel + " record will be deleted" + noWarningsSuffix + ".");
+      okSummary.setPluralFutureMessage(tableLabel + " records will be deleted" + noWarningsSuffix + ".");
+      okSummary.pickMessage(isForResultScreen);
+      okSummary.addSelfToListIfAnyCount(rs);
+
+      processSummaryWarningsAndErrorsRollup.addToList(rs);
+
       return (rs);
    }
 }

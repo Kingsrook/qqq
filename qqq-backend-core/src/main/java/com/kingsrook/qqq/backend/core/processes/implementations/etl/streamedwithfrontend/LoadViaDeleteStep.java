@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
@@ -60,7 +61,9 @@ public class LoadViaDeleteStep extends AbstractLoadStep
       deleteInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
       // todo?  can make more efficient deletes, maybe? deleteInput.setQueryFilter();
       getTransaction().ifPresent(deleteInput::setTransaction);
-      new DeleteAction().execute(deleteInput);
+      DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+      runBackendStepOutput.getRecords().addAll(deleteOutput.getRecordsWithErrors());
+      runBackendStepOutput.getRecords().addAll(deleteOutput.getRecordsWithWarnings());
    }
 
 

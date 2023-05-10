@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
@@ -30,6 +31,11 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 /*******************************************************************************
  ** Abstract class that a table can specify an implementation of, to provide
  ** custom actions before a delete takes place.
+ **
+ ** It's important for implementations to be aware of the isPreview field, which
+ ** is set to true when the code is running to give users advice, e.g., on a review
+ ** screen - vs. being false when the action is ACTUALLY happening.  So, if you're doing
+ ** things like storing data, you don't want to do that if isPreview is true!!
  **
  ** General implementation would be, to iterate over the records (which the DeleteAction
  ** would look up based on the inputs to the delete action), and look at their values:
@@ -43,20 +49,19 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  **
  ** Note that the full deleteInput is available as a field in this class.
  **
- ** A future enhancement here may be to take (as fields in this class) the list of
- ** records that the delete action marked in error - the user might want to do
- ** something special with them (idk, try some other way to delete them?)
  *******************************************************************************/
 public abstract class AbstractPreDeleteCustomizer
 {
    protected DeleteInput deleteInput;
+
+   protected boolean isPreview = false;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract List<QRecord> apply(List<QRecord> records);
+   public abstract List<QRecord> apply(List<QRecord> records) throws QException;
 
 
 
@@ -78,6 +83,37 @@ public abstract class AbstractPreDeleteCustomizer
    public void setDeleteInput(DeleteInput deleteInput)
    {
       this.deleteInput = deleteInput;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isPreview
+    *******************************************************************************/
+   public boolean getIsPreview()
+   {
+      return (this.isPreview);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isPreview
+    *******************************************************************************/
+   public void setIsPreview(boolean isPreview)
+   {
+      this.isPreview = isPreview;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isPreview
+    *******************************************************************************/
+   public AbstractPreDeleteCustomizer withIsPreview(boolean isPreview)
+   {
+      this.isPreview = isPreview;
+      return (this);
    }
 
 }

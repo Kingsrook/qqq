@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
@@ -37,12 +38,14 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -51,7 +54,10 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class BulkInsertTransformStep extends AbstractTransformStep
 {
-   private ProcessSummaryLine                 okSummary        = new ProcessSummaryLine(Status.OK);
+   private ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
+
+   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted");
+
    private Map<UniqueKey, ProcessSummaryLine> ukErrorSummaries = new HashMap<>();
 
    private QTableMetaData table;
@@ -112,20 +118,24 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          }
       }
 
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // no transformation needs to be done - just pass records through from input to output, if they don't violate any UK's //
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Note, we want to do our own UK checking here, even though InsertAction also tries to do it, because InsertAction //
+      // will only be getting the records in pages, but in here, we'll track UK's across pages!!                          //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      ///////////////////////////////////////////////////
-      // if there are no UK's, just output all records //
-      ///////////////////////////////////////////////////
+      ////////////////////////////////////////////////////
+      // if there are no UK's, proceed with all records //
+      ////////////////////////////////////////////////////
+      List<QRecord> recordsWithoutUkErrors = new ArrayList<>();
       if(existingKeys.isEmpty())
       {
-         runBackendStepOutput.setRecords(runBackendStepInput.getRecords());
-         okSummary.incrementCount(runBackendStepInput.getRecords().size());
+         recordsWithoutUkErrors.addAll(runBackendStepInput.getRecords());
       }
       else
       {
+         /////////////////////////////////////////////////////////////
+         // else, only proceed with records that don't violate a UK //
+         /////////////////////////////////////////////////////////////
          for(UniqueKey uniqueKey : uniqueKeys)
          {
             keysInThisFile.computeIfAbsent(uniqueKey, x -> new HashSet<>());
@@ -162,11 +172,47 @@ public class BulkInsertTransformStep extends AbstractTransformStep
                   Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
                   keyValues.ifPresent(kv -> keysInThisFile.get(uniqueKey).add(kv));
                }
-               okSummary.incrementCount();
-               runBackendStepOutput.addRecord(record);
+               recordsWithoutUkErrors.add(record);
             }
          }
       }
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // run all validation from the insert action - in Preview mode (boolean param) //
+      /////////////////////////////////////////////////////////////////////////////////
+      InsertAction insertAction = new InsertAction();
+      InsertInput  insertInput  = new InsertInput();
+      insertInput.setTableName(runBackendStepInput.getTableName());
+      insertInput.setRecords(recordsWithoutUkErrors);
+      insertInput.setSkipUniqueKeyCheck(true);
+      insertAction.performValidations(insertInput, true);
+      List<QRecord> validationResultRecords = insertInput.getRecords();
+
+      /////////////////////////////////////////////////////////////////
+      // look at validation results to build process summary results //
+      /////////////////////////////////////////////////////////////////
+      List<QRecord> outputRecords = new ArrayList<>();
+      for(QRecord record : validationResultRecords)
+      {
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         {
+            String message = record.getErrors().get(0).getMessage();
+            processSummaryWarningsAndErrorsRollup.addError(message, null);
+         }
+         else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
+         {
+            String message = record.getWarnings().get(0).getMessage();
+            processSummaryWarningsAndErrorsRollup.addWarning(message, null);
+            outputRecords.add(record);
+         }
+         else
+         {
+            okSummary.incrementCountAndAddPrimaryKey(null);
+            outputRecords.add(record);
+         }
+      }
+
+      runBackendStepOutput.setRecords(outputRecords);
    }
 
 
@@ -177,22 +223,22 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      String tableLabel = table == null ? "" : table.getLabel();
+      ArrayList<ProcessSummaryLineInterface> rs         = new ArrayList<>();
+      String                                 tableLabel = table == null ? "" : table.getLabel();
 
-      okSummary
-         .withSingularFutureMessage(tableLabel + " record will be inserted")
-         .withPluralFutureMessage(tableLabel + " records will be inserted")
-         .withSingularPastMessage(tableLabel + " record was inserted")
-         .withPluralPastMessage(tableLabel + " records were inserted");
-
-      ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
+      String noWarningsSuffix = processSummaryWarningsAndErrorsRollup.countWarnings() == 0 ? "" : " with no warnings";
+      okSummary.setSingularFutureMessage(tableLabel + " record will be inserted" + noWarningsSuffix + ".");
+      okSummary.setPluralFutureMessage(tableLabel + " records will be inserted" + noWarningsSuffix + ".");
+      okSummary.setSingularPastMessage(tableLabel + " record was inserted" + noWarningsSuffix + ".");
+      okSummary.setPluralPastMessage(tableLabel + " records were inserted" + noWarningsSuffix + ".");
+      okSummary.pickMessage(isForResultScreen);
       okSummary.addSelfToListIfAnyCount(rs);
 
       for(Map.Entry<UniqueKey, ProcessSummaryLine> entry : ukErrorSummaries.entrySet())
       {
          UniqueKey          uniqueKey      = entry.getKey();
          ProcessSummaryLine ukErrorSummary = entry.getValue();
-         String             ukErrorSuffix  = " inserted, because they contain a duplicate key (" + uniqueKey.getDescription(table) + ")";
+         String             ukErrorSuffix  = " inserted, because of duplicate values in a unique key (" + uniqueKey.getDescription(table) + ")";
 
          ukErrorSummary
             .withSingularFutureMessage(tableLabel + " record will not be" + ukErrorSuffix)
@@ -202,6 +248,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
          ukErrorSummary.addSelfToListIfAnyCount(rs);
       }
+
+      processSummaryWarningsAndErrorsRollup.addToList(rs);
 
       return (rs);
    }
