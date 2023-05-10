@@ -52,6 +52,7 @@ public abstract class AbstractPreUpdateCustomizer
 {
    protected UpdateInput   updateInput;
    protected List<QRecord> oldRecordList;
+   protected boolean       isPreview = false;
 
    private Map<Serializable, QRecord> oldRecordMap = null;
 
@@ -121,6 +122,37 @@ public abstract class AbstractPreUpdateCustomizer
       }
 
       return (oldRecordMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isPreview
+    *******************************************************************************/
+   public boolean getIsPreview()
+   {
+      return (this.isPreview);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isPreview
+    *******************************************************************************/
+   public void setIsPreview(boolean isPreview)
+   {
+      this.isPreview = isPreview;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isPreview
+    *******************************************************************************/
+   public AbstractPreUpdateCustomizer withIsPreview(boolean isPreview)
+   {
+      this.isPreview = isPreview;
+      return (this);
    }
 
 }

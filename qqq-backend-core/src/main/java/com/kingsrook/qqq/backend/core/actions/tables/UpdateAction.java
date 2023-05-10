@@ -105,30 +105,7 @@ public class UpdateAction
       ////////////////////////////////////////////////////////////////////////////////
       Optional<List<QRecord>> oldRecordList = fetchOldRecords(updateInput, updateInterface);
 
-      /////////////////////////////
-      // run standard validators //
-      /////////////////////////////
-      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), table, updateInput.getRecords());
-      validatePrimaryKeysAreGiven(updateInput);
-
-      if(oldRecordList.isPresent())
-      {
-         validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList.get());
-      }
-
-      validateRequiredFields(updateInput);
-      ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
-
-      ///////////////////////////////////////////////////////////////////////////
-      // after all validations, run the pre-update customizer, if there is one //
-      ///////////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
-      if(preUpdateCustomizer.isPresent())
-      {
-         preUpdateCustomizer.get().setUpdateInput(updateInput);
-         oldRecordList.ifPresent(l -> preUpdateCustomizer.get().setOldRecordList(l));
-         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
-      }
+      performValidations(updateInput, oldRecordList, false);
 
       ////////////////////////////////////
       // have the backend do the update //
@@ -187,6 +164,42 @@ public class UpdateAction
       }
 
       return updateOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void performValidations(UpdateInput updateInput, Optional<List<QRecord>> oldRecordList, boolean isPreview) throws QException
+   {
+      QTableMetaData table = updateInput.getTable();
+
+      /////////////////////////////
+      // run standard validators //
+      /////////////////////////////
+      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), table, updateInput.getRecords());
+      validatePrimaryKeysAreGiven(updateInput);
+
+      if(oldRecordList.isPresent())
+      {
+         validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList.get());
+      }
+
+      validateRequiredFields(updateInput);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+
+      ///////////////////////////////////////////////////////////////////////////
+      // after all validations, run the pre-update customizer, if there is one //
+      ///////////////////////////////////////////////////////////////////////////
+      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      if(preUpdateCustomizer.isPresent())
+      {
+         preUpdateCustomizer.get().setUpdateInput(updateInput);
+         preUpdateCustomizer.get().setIsPreview(isPreview);
+         oldRecordList.ifPresent(l -> preUpdateCustomizer.get().setOldRecordList(l));
+         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
+      }
    }
 
 
@@ -318,7 +331,7 @@ public class UpdateAction
                /////////////////////////////////////////////////////////////////////////////////////////////
                if(record.getValues().containsKey(requiredField.getName()))
                {
-                  if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
+                  if(record.getValue(requiredField.getName()) == null || record.getValueString(requiredField.getName()).trim().equals(""))
                   {
                      record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
                   }

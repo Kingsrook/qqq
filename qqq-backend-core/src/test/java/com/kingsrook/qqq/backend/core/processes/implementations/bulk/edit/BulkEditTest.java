@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -37,6 +40,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -141,6 +148,233 @@ class BulkEditTest extends BaseTest
       assertNull(records.get(0).getValue("email"));
       assertNull(records.get(1).getValue("email"));
       assertEquals("james.maes@kingsrook.com", records.get(2).getValue("email"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWarningsAndErrors() throws QException
+   {
+      //////////////////////////////
+      // insert some test records //
+      //////////////////////////////
+      QInstance      qInstance     = QContext.getQInstance();
+      QTableMetaData table         = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      List<QRecord>  personsToLoad = new ArrayList<>();
+      for(int i = 0; i < 100; i++)
+      {
+         personsToLoad.add(new QRecord().withValue("id", i).withValue("firstName", "Darin" + i));
+      }
+      TestUtils.insertRecords(table, personsToLoad);
+
+      table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(PersonPreUpdateReusedMessages.class));
+
+      //////////////////////////////////
+      // set up the run-process input //
+      //////////////////////////////////
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkEdit");
+      runProcessInput.addValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER,
+         new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, 100)));
+
+      RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      String           processUUID      = runProcessOutput.getProcessUUID();
+
+      runProcessInput.addValue(BulkEditTransformStep.FIELD_ENABLED_FIELDS, "firstName");
+      runProcessInput.addValue("firstName", "Johnny");
+
+      runProcessInput.setProcessUUID(processUUID);
+      runProcessInput.setStartAfterStep("edit");
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      assertThat(runProcessOutput.getRecords()).hasSize(0);
+      assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("review");
+
+      runProcessInput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
+      runProcessInput.setStartAfterStep("review");
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      assertThat(runProcessOutput.getRecords()).hasSize(20);
+      assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("review");
+      assertThat(runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY)).isNotNull().isInstanceOf(List.class);
+
+      runProcessInput.setStartAfterStep("review");
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      assertThat(runProcessOutput.getRecords()).hasSize(20);
+      assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("result");
+      assertThat(runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY)).isNotNull().isInstanceOf(List.class);
+      assertThat(runProcessOutput.getException()).isEmpty();
+
+      @SuppressWarnings("unchecked")
+      List<ProcessSummaryLine> processSummaryLines = (List<ProcessSummaryLine>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY);
+      assertThat(processSummaryLines).hasSize(4);
+
+      assertThat(processSummaryLines.get(0))
+         .hasFieldOrPropertyWithValue("status", Status.OK)
+         .hasFieldOrPropertyWithValue("count", 10)
+         .matches(psl -> psl.getMessage().contains("edited with no warnings"), "expected message");
+
+      assertThat(processSummaryLines.get(1))
+         .hasFieldOrPropertyWithValue("status", Status.ERROR)
+         .hasFieldOrPropertyWithValue("count", 60)
+         .matches(psl -> psl.getMessage().contains("Id less than 60 is error"), "expected message");
+
+      assertThat(processSummaryLines.get(2))
+         .hasFieldOrPropertyWithValue("status", Status.WARNING)
+         .hasFieldOrPropertyWithValue("count", 30)
+         .matches(psl -> psl.getMessage().contains("Id less than 90 is warning"), "expected message");
+
+      List<ProcessSummaryLine> infoLines = processSummaryLines.stream().filter(psl -> psl.getStatus().equals(Status.INFO)).collect(Collectors.toList());
+      assertThat(infoLines).hasSize(1);
+      assertThat(infoLines.stream().map(ProcessSummaryLine::getMessage)).anyMatch(m -> m.matches("(?s).*First Name.*Johnny.*"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonPreUpdateReusedMessages extends AbstractPreUpdateCustomizer
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         for(QRecord record : records)
+         {
+            Integer id = record.getValueInteger("id");
+            if(id < 60)
+            {
+               record.addError(new BadInputStatusMessage("Id less than 60 is error."));
+            }
+            else if(id < 90)
+            {
+               record.addWarning(new QWarningMessage("Id less than 90 is warning."));
+            }
+         }
+
+         return (records);
+      }
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUniqueWarningsAndErrors() throws QException
+   {
+      //////////////////////////////
+      // insert some test records //
+      //////////////////////////////
+      QInstance      qInstance     = QContext.getQInstance();
+      QTableMetaData table         = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      List<QRecord>  personsToLoad = new ArrayList<>();
+      for(int i = 0; i < 100; i++)
+      {
+         personsToLoad.add(new QRecord().withValue("id", i).withValue("firstName", "Darin" + i));
+      }
+      TestUtils.insertRecords(table, personsToLoad);
+
+      table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(PersonPreUpdateUniqueMessages.class));
+
+      //////////////////////////////////
+      // set up the run-process input //
+      //////////////////////////////////
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkEdit");
+      runProcessInput.addValue(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER,
+         new QQueryFilter().withCriteria(new QFilterCriteria("id", QCriteriaOperator.LESS_THAN_OR_EQUALS, 100)));
+
+      RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      String           processUUID      = runProcessOutput.getProcessUUID();
+
+      runProcessInput.addValue(BulkEditTransformStep.FIELD_ENABLED_FIELDS, "firstName");
+      runProcessInput.addValue("firstName", "Johnny");
+
+      runProcessInput.setProcessUUID(processUUID);
+      runProcessInput.setStartAfterStep("edit");
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+
+      runProcessInput.addValue(StreamedETLWithFrontendProcess.FIELD_DO_FULL_VALIDATION, true);
+      runProcessInput.setStartAfterStep("review");
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+
+      runProcessInput.setStartAfterStep("review");
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+
+      @SuppressWarnings("unchecked")
+      List<ProcessSummaryLine> processSummaryLines = (List<ProcessSummaryLine>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY);
+      assertThat(processSummaryLines).hasSize(1 + 50 + 1 + 30 + 1);
+
+      int index = 0;
+      assertThat(processSummaryLines.get(index++))
+         .hasFieldOrPropertyWithValue("status", Status.OK)
+         .hasFieldOrPropertyWithValue("count", 10)
+         .matches(psl -> psl.getMessage().contains("edited with no warnings"), "expected message");
+
+      for(int i = 0; i < 50; i++)
+      {
+         assertThat(processSummaryLines.get(index++))
+            .hasFieldOrPropertyWithValue("status", Status.ERROR)
+            .hasFieldOrPropertyWithValue("count", 1)
+            .matches(psl -> psl.getMessage().contains("less than 60 is error"), "expected message");
+      }
+
+      assertThat(processSummaryLines.get(index++))
+         .hasFieldOrPropertyWithValue("status", Status.ERROR)
+         .hasFieldOrPropertyWithValue("count", 10)
+         .matches(psl -> psl.getMessage().contains("had other errors"), "expected message");
+
+      for(int i = 0; i < 30; i++)
+      {
+         assertThat(processSummaryLines.get(index++))
+            .hasFieldOrPropertyWithValue("status", Status.WARNING)
+            .hasFieldOrPropertyWithValue("count", 1)
+            .matches(psl -> psl.getMessage().contains("less than 90 is warning"), "expected message");
+      }
+
+      assertThat(processSummaryLines.get(index++))
+         .hasFieldOrPropertyWithValue("status", Status.INFO)
+         .matches(psl -> psl.getMessage().matches("(?s).*First Name.*Johnny.*"), "expected message");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonPreUpdateUniqueMessages extends AbstractPreUpdateCustomizer
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         for(QRecord record : records)
+         {
+            Integer id = record.getValueInteger("id");
+            if(id < 60)
+            {
+               record.addError(new BadInputStatusMessage("Id [" + id + "] less than 60 is error."));
+            }
+            else if(id < 90)
+            {
+               record.addWarning(new QWarningMessage("Id [" + id + "] less than 90 is warning."));
+            }
+         }
+
+         return (records);
+      }
+
    }
 
 }

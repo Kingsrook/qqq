@@ -289,7 +289,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Deprecated
+   @Deprecated(since = "better to call the one without qInstance param")
    public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
    {
       insertRecords(table, records);
