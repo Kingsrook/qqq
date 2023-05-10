@@ -83,7 +83,7 @@ public class RecordLookupHelper
       {
          if(disallowedOneOffLookups.isEmpty() || !disallowedOneOffLookups.contains(Pair.of(tableName, keyFieldName)))
          {
-            Optional<QRecord> optRecord = GeneralProcessUtils.getRecordByField(null, tableName, keyFieldName, key);
+            Optional<QRecord> optRecord = GeneralProcessUtils.getRecordByField(tableName, keyFieldName, key);
             recordMap.put(key, optRecord.orElse(null));
          }
       }
@@ -106,7 +106,7 @@ public class RecordLookupHelper
       String mapKey = tableName + "." + keyFieldName;
       if(!preloadedKeys.contains(mapKey))
       {
-         Map<Serializable, QRecord> recordMap = GeneralProcessUtils.loadTableToMap(null, tableName, keyFieldName);
+         Map<Serializable, QRecord> recordMap = GeneralProcessUtils.loadTableToMap(tableName, keyFieldName);
          recordMaps.put(mapKey, recordMap);
          preloadedKeys.add(mapKey);
       }
@@ -126,7 +126,7 @@ public class RecordLookupHelper
    {
       String                     mapKey   = tableName + "." + keyFieldName;
       Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
-      tableMap.putAll(GeneralProcessUtils.loadTableToMap(null, tableName, keyFieldName, filter));
+      tableMap.putAll(GeneralProcessUtils.loadTableToMap(tableName, keyFieldName, filter));
    }
 
 
@@ -148,7 +148,7 @@ public class RecordLookupHelper
       Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
 
       QQueryFilter filter = new QQueryFilter(new QFilterCriteria(keyFieldName, QCriteriaOperator.IN, inList));
-      tableMap.putAll(GeneralProcessUtils.loadTableToMap(null, tableName, keyFieldName, filter));
+      tableMap.putAll(GeneralProcessUtils.loadTableToMap(tableName, keyFieldName, filter));
 
       QFieldType type = QContext.getQInstance().getTable(tableName).getField(keyFieldName).getType();
       for(Serializable keyValue : inList)

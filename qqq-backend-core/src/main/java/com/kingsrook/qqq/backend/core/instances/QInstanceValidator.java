@@ -66,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMeta
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
@@ -1177,6 +1178,23 @@ public class QInstanceValidator
                   }
                }
             }
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // if the process has a schedule, make sure required schedule data populated //
+            ///////////////////////////////////////////////////////////////////////////////
+            if(process.getSchedule() != null)
+            {
+               QScheduleMetaData schedule = process.getSchedule();
+               assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
+
+               if(schedule.getBackendVariant() != null)
+               {
+                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant strategy was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+                  assertCondition(schedule.getVariantTableName() != null, "A variant table name was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+                  assertCondition(schedule.getVariantFieldName() != null, "A variant field name was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+               }
+            }
+
          });
       }
    }

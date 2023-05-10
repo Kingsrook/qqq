@@ -111,7 +111,7 @@ class MergeDuplicatesProcessTest extends BaseTest
       /////////////////////////////////////////////////
       // make sure records 4 and 5 have been deleted //
       /////////////////////////////////////////////////
-      Map<Serializable, QRecord> personMap = GeneralProcessUtils.loadTableToMap(runProcessInput, TestUtils.TABLE_NAME_PERSON_MEMORY, "id");
+      Map<Serializable, QRecord> personMap = GeneralProcessUtils.loadTableToMap(TestUtils.TABLE_NAME_PERSON_MEMORY, "id");
       assertEquals(5, personMap.size());
       assertNull(personMap.get(4));
       assertNull(personMap.get(5));
@@ -124,7 +124,7 @@ class MergeDuplicatesProcessTest extends BaseTest
       /////////////////////////////////////////////////////////////////////////////
       // make sure the shapes corresponding to records 4 and 5 have been deleted //
       /////////////////////////////////////////////////////////////////////////////
-      Map<Serializable, QRecord> shapesMap = GeneralProcessUtils.loadTableToMap(runProcessInput, TestUtils.TABLE_NAME_SHAPE, "id");
+      Map<Serializable, QRecord> shapesMap = GeneralProcessUtils.loadTableToMap(TestUtils.TABLE_NAME_SHAPE, "id");
       assertEquals(5, shapesMap.size());
       assertNull(shapesMap.get(4));
       assertNull(shapesMap.get(5));

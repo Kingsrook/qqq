@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,6 +54,9 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    private boolean               isHidden = false;
    private BasepullConfiguration basepullConfiguration;
    private QPermissionRules      permissionRules;
+
+   private String       backendVariant;
+   private Serializable backendVariantValue;
 
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
@@ -542,6 +546,68 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public void addSelfToInstance(QInstance qInstance)
    {
       qInstance.addProcess(this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendVariant
+    *******************************************************************************/
+   public String getBackendVariant()
+   {
+      return (this.backendVariant);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendVariant
+    *******************************************************************************/
+   public void setBackendVariant(String backendVariant)
+   {
+      this.backendVariant = backendVariant;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for backendVariant
+    *******************************************************************************/
+   public QProcessMetaData withBackendVariant(String backendVariant)
+   {
+      this.backendVariant = backendVariant;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendVariantValue
+    *******************************************************************************/
+   public Serializable getBackendVariantValue()
+   {
+      return (this.backendVariantValue);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendVariantValue
+    *******************************************************************************/
+   public void setBackendVariantValue(Serializable backendVariantValue)
+   {
+      this.backendVariantValue = backendVariantValue;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for backendVariantValue
+    *******************************************************************************/
+   public QProcessMetaData withBackendVariantValue(Serializable backendVariantValue)
+   {
+      this.backendVariantValue = backendVariantValue;
+      return (this);
    }
 
 }

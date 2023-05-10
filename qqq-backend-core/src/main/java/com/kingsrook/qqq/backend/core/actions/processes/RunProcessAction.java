@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.NoCodeWidgetRend
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
@@ -65,6 +66,7 @@ import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.apache.commons.lang.BooleanUtils;
 
 
@@ -111,6 +113,17 @@ public class RunProcessAction
          runProcessInput.setProcessUUID(UUID.randomUUID().toString());
       }
       runProcessOutput.setProcessUUID(runProcessInput.getProcessUUID());
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // if this process has defined backend variant data, put that into the session //
+      /////////////////////////////////////////////////////////////////////////////////
+      if(runProcessInput.getProcessMetaData() != null && runProcessInput.getProcessMetaData().getBackendVariant() != null)
+      {
+         String       backendVariant      = runProcessInput.getProcessMetaData().getBackendVariant();
+         Serializable backendVariantValue = runProcessInput.getProcessMetaData().getBackendVariantValue();
+         LOG.trace("Found Backend Variant [" + backendVariant + "] with a value of [" + backendVariantValue + "], putting into QSession.");
+         QContext.getQSession().setBackendVariants(MapBuilder.of(backendVariant, backendVariantValue));
+      }
 
       UUIDAndTypeStateKey stateKey     = new UUIDAndTypeStateKey(UUID.fromString(runProcessInput.getProcessUUID()), StateType.PROCESS_STATUS);
       ProcessState        processState = primeProcessState(runProcessInput, stateKey, process);

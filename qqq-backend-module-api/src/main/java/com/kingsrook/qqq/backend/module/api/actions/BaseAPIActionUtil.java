@@ -544,7 +544,7 @@ public class BaseAPIActionUtil
    protected String buildQueryStringForGet(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
    {
       // todo: reasonable default action
-      return (null);
+      return ("");
    }
 
 

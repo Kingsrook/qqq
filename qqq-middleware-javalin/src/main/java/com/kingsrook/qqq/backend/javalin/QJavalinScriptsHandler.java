@@ -143,7 +143,7 @@ public class QJavalinScriptsHandler
          QTableMetaData scriptTable         = QContext.getQInstance().getTable(Script.TABLE_NAME);
          if(scriptTypeTable != null && scriptTable != null && scriptRevisionTable != null)
          {
-            Map<Serializable, QRecord> scriptTypeMap = GeneralProcessUtils.loadTableToMap(getInput, ScriptType.TABLE_NAME, "id");
+            Map<Serializable, QRecord> scriptTypeMap = GeneralProcessUtils.loadTableToMap(ScriptType.TABLE_NAME, "id");
 
             ///////////////////////////////////////////////////////
             // process each associated script type for the table //
@@ -259,7 +259,7 @@ public class QJavalinScriptsHandler
 
          if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
          {
-            GeneralProcessUtils.addForeignRecordsListToRecordList(queryInput, queryOutput.getRecords(), "id", "scriptLogLine", "scriptLogId");
+            GeneralProcessUtils.addForeignRecordsListToRecordList(queryOutput.getRecords(), "id", "scriptLogLine", "scriptLogId");
          }
 
          Map<String, Serializable> rs = new HashMap<>();
