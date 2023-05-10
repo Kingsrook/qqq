@@ -86,8 +86,8 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
       // on the validate step, we haven't read the full file, so we don't know how many rows there are - thus        //
       // record count is null, and the ValidateStep won't be setting status counters - so - do it here in that case. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) ||
-         runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_PREVIEW))
+      if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE)
+         || runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_PREVIEW))
       {
          if(runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT) == null)
          {
