@@ -85,7 +85,8 @@ public class DeleteAction
       String         primaryKeyFieldName = table.getPrimaryKeyField();
       QFieldMetaData primaryKeyField     = table.getField(primaryKeyFieldName);
 
-      List<Serializable> primaryKeys = deleteInput.getPrimaryKeys();
+      List<Serializable> primaryKeys         = deleteInput.getPrimaryKeys();
+      List<Serializable> originalPrimaryKeys = primaryKeys == null ? null : new ArrayList<>(primaryKeys);
       if(CollectionUtils.nullSafeHasContents(primaryKeys) && deleteInput.getQueryFilter() != null)
       {
          throw (new QException("A delete request may not contain both a list of primary keys and a query filter."));
@@ -172,6 +173,11 @@ public class DeleteAction
       // have the backend do the delete //
       ////////////////////////////////////
       DeleteOutput deleteOutput = deleteInterface.execute(deleteInput);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // reset the input's list of primary keys -- callers may use & expect that to be what they had passed in!! //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      deleteInput.setPrimaryKeys(originalPrimaryKeys);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // merge the backend's output with any validation errors we found (whose pkeys wouldn't have gotten into the backend delete) //
