@@ -83,6 +83,25 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test getting serverInfo
+    **
+    *******************************************************************************/
+   @Test
+   public void test_serverInfo()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/serverInfo").asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("startTimeMillis"));
+      assertTrue(jsonObject.has("startTimeHuman"));
+      assertTrue(jsonObject.has("uptimeHuman"));
+      assertTrue(jsonObject.has("uptimeMillis"));
+   }
+
+
+
+   /*******************************************************************************
     ** test the table-level meta-data endpoint
     **
     *******************************************************************************/

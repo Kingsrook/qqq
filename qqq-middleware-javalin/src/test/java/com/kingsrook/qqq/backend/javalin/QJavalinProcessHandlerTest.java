@@ -561,6 +561,34 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test calling download file endpoint
+    **
+    *******************************************************************************/
+   @Test
+   public void test_downloadFile()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/download/myTestFile.txt?filePath=/dev/null").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("OK", response.getStatusText());
+   }
+
+
+
+   /*******************************************************************************
+    ** test calling download file with missing filePath
+    **
+    *******************************************************************************/
+   @Test
+   public void test_downloadFileMissingFilePath()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/download/myTestFile.txt").asString();
+      assertEquals(400, response.getStatus());
+      assertTrue(response.getBody().contains("A filePath was not provided"));
+   }
+
+
+
+   /*******************************************************************************
     ** test calling for possibleValue
     **
     *******************************************************************************/
