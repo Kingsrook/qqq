@@ -226,7 +226,18 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** OK - so - we will potentially make multiple GET calls to the backend, to
+    ** fetch up to the full limit from the filter (and, if there is no limit in the
+    ** filter, then we'll keep fetching until we stop getting results).
     **
+    ** This is managed internally here by copying the limit into the originalLimit
+    ** var.  Then "limit" in this method becomes the api's "how many to fetch per page"
+    ** parameter (either the originalLimit, or the api's standard limit).
+    **
+    ** Then we break the loop (return from the method) either when:
+    ** - we've fetch a total count >= the originalLimit
+    ** - we got back less than a page full (e.g., we're at the end of the result set).
+    ** - an async job was cancelled.
     *******************************************************************************/
    public QueryOutput doQuery(QTableMetaData table, QueryInput queryInput) throws QException
    {
