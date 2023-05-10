@@ -892,7 +892,8 @@ public class QPicoCliImplementation
 
       if(StringUtils.hasContent(primaryKeyOption))
       {
-         deleteInput.setPrimaryKeys(Arrays.asList(primaryKeyOption.split(",")));
+         List<Serializable> primaryKeys = new ArrayList<>(Arrays.asList(primaryKeyOption.split(",")));
+         deleteInput.setPrimaryKeys(primaryKeys);
       }
       else if(criteria.length > 0)
       {
