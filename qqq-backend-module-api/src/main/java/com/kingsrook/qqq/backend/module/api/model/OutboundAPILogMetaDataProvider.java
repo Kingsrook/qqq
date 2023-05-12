@@ -84,6 +84,7 @@ public class OutboundAPILogMetaDataProvider
             new QPossibleValue<>(401, "401 (Not Authorized)"),
             new QPossibleValue<>(403, "403 (Forbidden)"),
             new QPossibleValue<>(404, "404 (Not Found)"),
+            new QPossibleValue<>(422, "422 (Unprocessable Entity)"),
             new QPossibleValue<>(429, "429 (Too Many Requests)"),
             new QPossibleValue<>(500, "500 (Internal Server Error)")
          )));
@@ -131,6 +132,7 @@ public class OutboundAPILogMetaDataProvider
          .withValue(AdornmentType.ChipValues.colorValue(401, AdornmentType.ChipValues.COLOR_ERROR))
          .withValue(AdornmentType.ChipValues.colorValue(403, AdornmentType.ChipValues.COLOR_ERROR))
          .withValue(AdornmentType.ChipValues.colorValue(404, AdornmentType.ChipValues.COLOR_ERROR))
+         .withValue(AdornmentType.ChipValues.colorValue(422, AdornmentType.ChipValues.COLOR_ERROR))
          .withValue(AdornmentType.ChipValues.colorValue(429, AdornmentType.ChipValues.COLOR_ERROR))
          .withValue(AdornmentType.ChipValues.colorValue(500, AdornmentType.ChipValues.COLOR_ERROR)));
 

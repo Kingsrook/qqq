@@ -30,6 +30,7 @@ public enum QCriteriaOperator
 {
    EQUALS,
    NOT_EQUALS,
+   NOT_EQUALS_OR_IS_NULL,
    IN,
    NOT_IN,
    IS_NULL_OR_IN,

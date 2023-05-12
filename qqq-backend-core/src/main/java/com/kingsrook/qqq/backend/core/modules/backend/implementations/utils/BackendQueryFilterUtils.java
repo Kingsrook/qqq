@@ -131,6 +131,7 @@ public class BackendQueryFilterUtils
       {
          case EQUALS -> testEquals(criterion, value);
          case NOT_EQUALS -> !testEquals(criterion, value);
+         case NOT_EQUALS_OR_IS_NULL -> !testEquals(criterion, value) || testBlank(criterion, value);
          case IN -> testIn(criterion, value);
          case NOT_IN -> !testIn(criterion, value);
          case IS_BLANK -> testBlank(criterion, value);

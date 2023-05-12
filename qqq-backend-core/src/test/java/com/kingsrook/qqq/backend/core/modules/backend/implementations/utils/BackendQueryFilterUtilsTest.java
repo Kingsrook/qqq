@@ -113,6 +113,13 @@ class BackendQueryFilterUtilsTest
       assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_IN, "A", "B"), "f", "B"));
       assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_IN, List.of()), "f", "A"));
       assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_IN, ListBuilder.of(null)), "f", "A"));
+
+      ///////////////////////////
+      // NOT_EQUALS_OR_IS_NULL //
+      ///////////////////////////
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "A"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "B"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", null));
    }
 
 
