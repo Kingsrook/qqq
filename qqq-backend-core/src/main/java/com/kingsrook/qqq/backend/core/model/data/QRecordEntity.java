@@ -31,8 +31,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
@@ -48,6 +51,8 @@ public abstract class QRecordEntity
    private static final QLogger LOG = QLogger.getLogger(QRecordEntity.class);
 
    private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField> fieldMapping = new ListingHash<>();
+
+   private Map<String, Serializable> originalRecordValues;
 
 
 
@@ -80,11 +85,13 @@ public abstract class QRecordEntity
       try
       {
          List<QRecordEntityField> fieldList = getFieldList(this.getClass());
+         originalRecordValues = new HashMap<>();
          for(QRecordEntityField qRecordEntityField : fieldList)
          {
             Serializable value      = qRecord.getValue(qRecordEntityField.getFieldName());
             Object       typedValue = qRecordEntityField.convertValueType(value);
             qRecordEntityField.getSetter().invoke(this, typedValue);
+            originalRecordValues.put(qRecordEntityField.getFieldName(), value);
          }
       }
       catch(Exception e)
@@ -109,6 +116,41 @@ public abstract class QRecordEntity
          for(QRecordEntityField qRecordEntityField : fieldList)
          {
             qRecord.setValue(qRecordEntityField.getFieldName(), (Serializable) qRecordEntityField.getGetter().invoke(this));
+         }
+
+         return (qRecord);
+      }
+      catch(Exception e)
+      {
+         throw (new QRuntimeException("Error building qRecord from entity.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QRecord toQRecordOnlyChangedFields()
+   {
+      try
+      {
+         QRecord qRecord = new QRecord();
+
+         List<QRecordEntityField> fieldList = getFieldList(this.getClass());
+         for(QRecordEntityField qRecordEntityField : fieldList)
+         {
+            Serializable thisValue     = (Serializable) qRecordEntityField.getGetter().invoke(this);
+            Serializable originalValue = null;
+            if(originalRecordValues != null)
+            {
+               originalValue = originalRecordValues.get(qRecordEntityField.getFieldName());
+            }
+
+            if(!Objects.equals(thisValue, originalValue))
+            {
+               qRecord.setValue(qRecordEntityField.getFieldName(), thisValue);
+            }
          }
 
          return (qRecord);

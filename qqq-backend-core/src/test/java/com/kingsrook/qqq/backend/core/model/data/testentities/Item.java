@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 import java.math.BigDecimal;
 import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 
@@ -46,6 +47,27 @@ public class Item extends QRecordEntity
 
    @QField(backendName = "is_featured")
    private Boolean featured;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public Item()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public Item(QRecord qRecord)
+   {
+      populateFromQRecord(qRecord);
+   }
 
 
 

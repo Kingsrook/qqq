@@ -71,6 +71,35 @@ class QRecordEntityTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testItemToQRecordOnlyChangedFields() throws QException
+   {
+      Item item = new Item(new QRecord()
+         .withValue("sku", "ABC-123")
+         .withValue("description", null)
+         .withValue("quantity", 47)
+         .withValue("price", new BigDecimal("3.50"))
+         .withValue("isFeatured", true));
+
+      QRecord qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
+      assertTrue(qRecordOnlyChangedFields.getValues().isEmpty());
+
+      item.setDescription("My Changed Item");
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
+      assertEquals(1, qRecordOnlyChangedFields.getValues().size());
+      assertEquals("My Changed Item", qRecordOnlyChangedFields.getValueString("description"));
+
+      item.setPrice(null);
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
+      assertEquals(2, qRecordOnlyChangedFields.getValues().size());
+      assertNull(qRecordOnlyChangedFields.getValueString("price"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQRecordToItem() throws QException
    {
       QRecord qRecord = new QRecord()
