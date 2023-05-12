@@ -369,11 +369,14 @@ public class DeleteAction
          QueryOutput        queryOutput    = new QueryAction().execute(queryInput);
          List<Serializable> associatedKeys = queryOutput.getRecords().stream().map(r -> r.getValue(associatedTable.getPrimaryKeyField())).toList();
 
-         DeleteInput nextLevelDeleteInput = new DeleteInput();
-         nextLevelDeleteInput.setTransaction(deleteInput.getTransaction());
-         nextLevelDeleteInput.setTableName(association.getAssociatedTableName());
-         nextLevelDeleteInput.setPrimaryKeys(associatedKeys);
-         DeleteOutput nextLevelDeleteOutput = new DeleteAction().execute(nextLevelDeleteInput);
+         if(CollectionUtils.nullSafeHasContents(associatedKeys))
+         {
+            DeleteInput nextLevelDeleteInput = new DeleteInput();
+            nextLevelDeleteInput.setTransaction(deleteInput.getTransaction());
+            nextLevelDeleteInput.setTableName(association.getAssociatedTableName());
+            nextLevelDeleteInput.setPrimaryKeys(associatedKeys);
+            DeleteOutput nextLevelDeleteOutput = new DeleteAction().execute(nextLevelDeleteInput);
+         }
       }
    }
 

@@ -239,11 +239,14 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             }
          }
 
-         InsertInput nextLevelInsertInput = new InsertInput();
-         nextLevelInsertInput.setTransaction(transaction);
-         nextLevelInsertInput.setTableName(association.getAssociatedTableName());
-         nextLevelInsertInput.setRecords(nextLevelInserts);
-         InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
+         if(CollectionUtils.nullSafeHasContents(nextLevelInserts))
+         {
+            InsertInput nextLevelInsertInput = new InsertInput();
+            nextLevelInsertInput.setTransaction(transaction);
+            nextLevelInsertInput.setTableName(association.getAssociatedTableName());
+            nextLevelInsertInput.setRecords(nextLevelInserts);
+            InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
+         }
       }
    }
 
