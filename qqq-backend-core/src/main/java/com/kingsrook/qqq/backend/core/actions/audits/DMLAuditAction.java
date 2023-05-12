@@ -79,7 +79,6 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    {
       DMLAuditOutput           output           = new DMLAuditOutput();
       AbstractTableActionInput tableActionInput = input.getTableActionInput();
-      List<QRecord>            recordList       = input.getRecordList();
       List<QRecord>            oldRecordList    = input.getOldRecordList();
       QTableMetaData           table            = tableActionInput.getTable();
       long                     start            = System.currentTimeMillis();
@@ -87,6 +86,9 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
 
       try
       {
+         List<QRecord> recordList = CollectionUtils.nonNullList(input.getRecordList()).stream()
+            .filter(r -> CollectionUtils.nullSafeIsEmpty(r.getErrors())).toList();
+
          AuditLevel auditLevel = getAuditLevel(tableActionInput);
          if(auditLevel == null || auditLevel.equals(AuditLevel.NONE) || CollectionUtils.nullSafeIsEmpty(recordList))
          {
