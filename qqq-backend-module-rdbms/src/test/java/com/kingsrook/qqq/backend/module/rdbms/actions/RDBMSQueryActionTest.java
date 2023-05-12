@@ -152,6 +152,39 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   public void testNotEqualsOrIsNullQuery() throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////////
+      // 5 rows, 1 has a null salary, 1 has 1,000,000.                           //
+      // first confirm that query for != returns 3 (the null does NOT come back) //
+      // then, confirm that != or is null gives the (more humanly expected) 4.   //
+      /////////////////////////////////////////////////////////////////////////////
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("annualSalary")
+            .withOperator(QCriteriaOperator.NOT_EQUALS)
+            .withValues(List.of(1_000_000))));
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(3, queryOutput.getRecords().size(), "Expected # of rows");
+
+      queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria()
+            .withFieldName("annualSalary")
+            .withOperator(QCriteriaOperator.NOT_EQUALS_OR_IS_NULL)
+            .withValues(List.of(1_000_000))));
+      queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
+      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> Objects.equals(1_000_000, r.getValueInteger("annualSalary"))), "Should NOT find expected salary");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testInQuery() throws QException
    {
       QueryInput queryInput = initQueryRequest();

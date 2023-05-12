@@ -534,6 +534,12 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                expectedNoOfParams = 1;
                break;
             }
+            case NOT_EQUALS_OR_IS_NULL:
+            {
+               clause += " != ? OR " + column + " IS NULL ";
+               expectedNoOfParams = 1;
+               break;
+            }
             case IN:
             {
                if(values.isEmpty())
