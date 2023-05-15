@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
@@ -55,7 +56,7 @@ public abstract class AbstractPostDeleteCustomizer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract List<QRecord> apply(List<QRecord> records);
+   public abstract List<QRecord> apply(List<QRecord> records) throws QException;
 
 
 

@@ -98,8 +98,13 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             return (output);
          }
 
-         String                        contextSuffix = "";
-         Optional<AbstractActionInput> actionInput   = QContext.getFirstActionInStack();
+         String contextSuffix = "";
+         if(StringUtils.hasContent(input.getAuditContext()))
+         {
+            contextSuffix = " " + input.getAuditContext();
+         }
+
+         Optional<AbstractActionInput> actionInput = QContext.getFirstActionInStack();
          if(actionInput.isPresent() && actionInput.get() instanceof RunProcessInput runProcessInput)
          {
             String           processName = runProcessInput.getProcessName();

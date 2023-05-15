@@ -46,6 +46,7 @@ public class UpdateInput extends AbstractTableActionInput
    private Boolean areAllValuesBeingUpdatedTheSame = null;
 
    private boolean omitDmlAudit = false;
+   private String  auditContext = null;
 
 
 
@@ -184,6 +185,37 @@ public class UpdateInput extends AbstractTableActionInput
    public UpdateInput withAreAllValuesBeingUpdatedTheSame(Boolean areAllValuesBeingUpdatedTheSame)
    {
       this.areAllValuesBeingUpdatedTheSame = areAllValuesBeingUpdatedTheSame;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auditContext
+    *******************************************************************************/
+   public String getAuditContext()
+   {
+      return (this.auditContext);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditContext
+    *******************************************************************************/
+   public void setAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditContext
+    *******************************************************************************/
+   public UpdateInput withAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
       return (this);
    }
 

@@ -137,7 +137,8 @@ public class UpdateAction
       {
          DMLAuditInput dmlAuditInput = new DMLAuditInput()
             .withTableActionInput(updateInput)
-            .withRecordList(updateOutput.getRecords());
+            .withRecordList(updateOutput.getRecords())
+            .withAuditContext(updateInput.getAuditContext());
          oldRecordList.ifPresent(l -> dmlAuditInput.setOldRecordList(l));
          new DMLAuditAction().execute(dmlAuditInput);
       }
