@@ -131,10 +131,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             }
          }
 
+         Long mark = System.currentTimeMillis();
+
          try
          {
-            Long mark = System.currentTimeMillis();
-
             //////////////////////////////////////////////
             // execute the query - iterate over results //
             //////////////////////////////////////////////
@@ -172,6 +172,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             logSQL(sql, params, mark);
 
             return queryOutput;
+         }
+         catch(Exception e)
+         {
+            logSQL(sql, params, mark);
+            throw (e);
          }
          finally
          {

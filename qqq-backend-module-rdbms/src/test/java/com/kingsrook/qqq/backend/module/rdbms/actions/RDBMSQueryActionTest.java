@@ -1420,6 +1420,39 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   void testRecordSecurityFromJoinTableAlsoImplicitlyInQuery() throws QException
+   {
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER_LINE);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // orders 1, 2, and 3 are from store 1, so their lines (5 in total) should be found.     //
+      // note, order 2 has the line with mis-matched store id - but, that shouldn't apply here //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("order.id", QCriteriaOperator.IN, List.of(1, 2, 3, 4))));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(5);
+
+      ///////////////////////////////////////////////////////////////////
+      // order 4 should be the only one found this time (with 2 lines) //
+      ///////////////////////////////////////////////////////////////////
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("order.id", QCriteriaOperator.IN, List.of(1, 2, 3, 4))));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(2);
+
+      ////////////////////////////////////////////////////////////////
+      // make sure we're also good if we explicitly join this table //
+      ////////////////////////////////////////////////////////////////
+      queryInput.withQueryJoin(new QueryJoin().withJoinTable(TestUtils.TABLE_NAME_ORDER).withSelect(true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(2);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testRecordSecurityWithOrQueries() throws QException
    {
       QueryInput queryInput = new QueryInput();
