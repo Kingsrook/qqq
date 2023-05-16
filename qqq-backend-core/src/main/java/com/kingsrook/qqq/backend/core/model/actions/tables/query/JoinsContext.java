@@ -250,7 +250,7 @@ public class JoinsContext
                                  QueryJoin queryJoinToAdd = makeQueryJoinFromJoinAndTableNames(nextTable, tmpTable, joinToAdd);
                                  queryJoinToAdd.setType(queryJoin.getType());
                                  addedAnyQueryJoins = true;
-                                 this.addQueryJoin(queryJoin);
+                                 this.addQueryJoin(queryJoinToAdd);
                               }
                            }
 
