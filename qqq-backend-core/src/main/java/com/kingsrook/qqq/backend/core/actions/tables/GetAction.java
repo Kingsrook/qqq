@@ -129,29 +129,14 @@ public class GetAction
             ///////////////////////////////////////////////////////////////////////
             // if the record wasn't found, see if we should look in cache-source //
             ///////////////////////////////////////////////////////////////////////
-            QRecord recordFromSource = tryToGetFromCacheSource(getInput, getOutput);
+            QRecord recordFromSource = tryToGetFromCacheSource(getInput);
             if(recordFromSource != null)
             {
+               /////////////////////////////////////////////////////////////////////////////////////////////////
+               // good, we found a record from the source, make sure we should cache it, and if so, do it now //
+               /////////////////////////////////////////////////////////////////////////////////////////////////
                QRecord recordToCache     = mapSourceRecordToCacheRecord(table, recordFromSource);
-               boolean shouldCacheRecord = true;
-
-               ////////////////////////////////////////////////////////////////////////////////
-               // see if there are any exclustions that need to be considered for this table //
-               ////////////////////////////////////////////////////////////////////////////////
-               recordMatchExclusionLoop:
-               for(CacheUseCase useCase : CollectionUtils.nonNullList(table.getCacheOf().getUseCases()))
-               {
-                  for(QQueryFilter filter : CollectionUtils.nonNullList(useCase.getExcludeRecordsMatching()))
-                  {
-                     if(BackendQueryFilterUtils.doesRecordMatch(filter, recordToCache))
-                     {
-                        LOG.info("Not caching record because it matches a use case's filter exclusion", new LogPair("record", recordToCache), new LogPair("filter", filter));
-                        shouldCacheRecord = false;
-                        break recordMatchExclusionLoop;
-                     }
-                  }
-               }
-
+               boolean shouldCacheRecord = shouldCacheRecord(table, recordToCache);
                if(shouldCacheRecord)
                {
                   InsertInput insertInput = new InsertInput();
@@ -187,9 +172,47 @@ public class GetAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private boolean shouldCacheRecord(QTableMetaData table, QRecord recordToCache)
+   {
+      boolean shouldCacheRecord = true;
+      recordMatchExclusionLoop:
+      for(CacheUseCase useCase : CollectionUtils.nonNullList(table.getCacheOf().getUseCases()))
+      {
+         for(QQueryFilter filter : CollectionUtils.nonNullList(useCase.getExcludeRecordsMatching()))
+         {
+            if(BackendQueryFilterUtils.doesRecordMatch(filter, recordToCache))
+            {
+               LOG.info("Not caching record because it matches a use case's filter exclusion", new LogPair("record", recordToCache), new LogPair("filter", filter));
+               shouldCacheRecord = false;
+               break recordMatchExclusionLoop;
+            }
+         }
+      }
+
+      return (shouldCacheRecord);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static QRecord mapSourceRecordToCacheRecord(QTableMetaData table, QRecord recordFromSource)
    {
       QRecord cacheRecord = new QRecord(recordFromSource);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure every value in the qRecord is set, because we will possibly be doing an update //
+      // on this record and want to null out any fields not set, not leave them populated         //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      for(String fieldName : table.getFields().keySet())
+      {
+         if(!cacheRecord.getValues().containsKey(fieldName))
+         {
+            cacheRecord.setValue(fieldName, null);
+         }
+      }
+
       if(StringUtils.hasContent(table.getCacheOf().getCachedDateFieldName()))
       {
          cacheRecord.setValue(table.getCacheOf().getCachedDateFieldName(), Instant.now());
@@ -212,7 +235,8 @@ public class GetAction
          Instant cachedDate   = cachedRecord.getValueInstant(table.getCacheOf().getCachedDateFieldName());
          if(cachedDate == null || cachedDate.isBefore(Instant.now().minus(expirationSeconds, ChronoUnit.SECONDS)))
          {
-            QRecord recordFromSource = tryToGetFromCacheSource(getInput, getOutput);
+            QRecord recordFromSource         = tryToGetFromCacheSource(getInput);
+            boolean shouldDeleteCachedRecord = true;
             if(recordFromSource != null)
             {
                ///////////////////////////////////////////////////////////////////
@@ -220,15 +244,20 @@ public class GetAction
                ///////////////////////////////////////////////////////////////////
                QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
                recordToCache.setValue(table.getPrimaryKeyField(), cachedRecord.getValue(table.getPrimaryKeyField()));
+               getOutput.setRecord(recordToCache);
 
-               UpdateInput updateInput = new UpdateInput();
-               updateInput.setTableName(getInput.getTableName());
-               updateInput.setRecords(List.of(recordToCache));
-               UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-
-               getOutput.setRecord(updateOutput.getRecords().get(0));
+               if(shouldCacheRecord(table, recordToCache))
+               {
+                  UpdateInput updateInput = new UpdateInput();
+                  updateInput.setTableName(getInput.getTableName());
+                  updateInput.setRecords(List.of(recordToCache));
+                  UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+                  getOutput.setRecord(updateOutput.getRecords().get(0));
+                  shouldDeleteCachedRecord = false;
+               }
             }
-            else
+
+            if(shouldDeleteCachedRecord)
             {
                /////////////////////////////////////////////////////////////////////////////
                // if the record is no longer in the source, then remove it from the cache //
@@ -237,8 +266,6 @@ public class GetAction
                deleteInput.setTableName(getInput.getTableName());
                deleteInput.setPrimaryKeys(List.of(getOutput.getRecord().getValue(table.getPrimaryKeyField())));
                new DeleteAction().execute(deleteInput);
-
-               getOutput.setRecord(null);
             }
          }
       }
@@ -249,7 +276,7 @@ public class GetAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QRecord tryToGetFromCacheSource(GetInput getInput, GetOutput getOutput) throws QException
+   private QRecord tryToGetFromCacheSource(GetInput getInput) throws QException
    {
       QRecord        recordFromSource = null;
       QTableMetaData table            = getInput.getTable();
