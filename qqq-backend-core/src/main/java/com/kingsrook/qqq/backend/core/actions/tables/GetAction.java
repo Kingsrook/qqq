@@ -235,13 +235,23 @@ public class GetAction
          Instant cachedDate   = cachedRecord.getValueInstant(table.getCacheOf().getCachedDateFieldName());
          if(cachedDate == null || cachedDate.isBefore(Instant.now().minus(expirationSeconds, ChronoUnit.SECONDS)))
          {
-            QRecord recordFromSource         = tryToGetFromCacheSource(getInput);
-            boolean shouldDeleteCachedRecord = true;
+            //////////////////////////////////////////////////////////////////////////
+            // keep the serial key from the old record in case we need to delete it //
+            //////////////////////////////////////////////////////////////////////////
+            Serializable oldRecordPrimaryKey      = getOutput.getRecord().getValue(table.getPrimaryKeyField());
+            boolean      shouldDeleteCachedRecord = true;
+
+            ///////////////////////////////////////////
+            // fetch record from original source now //
+            ///////////////////////////////////////////
+            QRecord recordFromSource = tryToGetFromCacheSource(getInput);
             if(recordFromSource != null)
             {
-               ///////////////////////////////////////////////////////////////////
-               // if the record was found in the source, update it in the cache //
-               ///////////////////////////////////////////////////////////////////
+               //////////////////////////////////////////////////////////////////////
+               // if the record was found in the source, put it into the output    //
+               // object so returned back to caller, check that it should actually //
+               // be cached before doing so                                        //
+               //////////////////////////////////////////////////////////////////////
                QRecord recordToCache = mapSourceRecordToCacheRecord(table, recordFromSource);
                recordToCache.setValue(table.getPrimaryKeyField(), cachedRecord.getValue(table.getPrimaryKeyField()));
                getOutput.setRecord(recordToCache);
@@ -256,6 +266,13 @@ public class GetAction
                   shouldDeleteCachedRecord = false;
                }
             }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////
+               // if we did not get a record back from the source, empty out the getOutput's record //
+               ///////////////////////////////////////////////////////////////////////////////////////
+               getOutput.setRecord(null);
+            }
 
             if(shouldDeleteCachedRecord)
             {
@@ -264,7 +281,7 @@ public class GetAction
                /////////////////////////////////////////////////////////////////////////////
                DeleteInput deleteInput = new DeleteInput();
                deleteInput.setTableName(getInput.getTableName());
-               deleteInput.setPrimaryKeys(List.of(getOutput.getRecord().getValue(table.getPrimaryKeyField())));
+               deleteInput.setPrimaryKeys(List.of(oldRecordPrimaryKey));
                new DeleteAction().execute(deleteInput);
             }
          }
