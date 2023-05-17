@@ -111,13 +111,13 @@ public class JoinsContext
             if(join.getLeftTable().equals(tmpTable.getName()))
             {
                QueryJoin queryJoin = new ImplicitQueryJoinForSecurityLock().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
-               this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
+               this.addQueryJoin(queryJoin);
                tmpTable = instance.getTable(join.getRightTable());
             }
             else if(join.getRightTable().equals(tmpTable.getName()))
             {
                QueryJoin queryJoin = new ImplicitQueryJoinForSecurityLock().withJoinMetaData(join.flip()).withType(QueryJoin.Type.INNER);
-               this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
+               this.addQueryJoin(queryJoin); //
                tmpTable = instance.getTable(join.getLeftTable());
             }
             else
@@ -141,6 +141,20 @@ public class JoinsContext
          }
       }
       */
+   }
+
+
+
+   /*******************************************************************************
+    ** Add a query join to the list of query joins, and "process it"
+    **
+    ** use this method to add to the list, instead of ever adding directly, as it's
+    ** important do to that process step (and we've had bugs when it wasn't done).
+    *******************************************************************************/
+   private void addQueryJoin(QueryJoin queryJoin) throws QException
+   {
+      this.queryJoins.add(queryJoin);
+      processQueryJoin(queryJoin);
    }
 
 
@@ -236,8 +250,7 @@ public class JoinsContext
                                  QueryJoin queryJoinToAdd = makeQueryJoinFromJoinAndTableNames(nextTable, tmpTable, joinToAdd);
                                  queryJoinToAdd.setType(queryJoin.getType());
                                  addedAnyQueryJoins = true;
-                                 this.queryJoins.add(queryJoinToAdd); // todo something else with aliases?  probably.
-                                 processQueryJoin(queryJoinToAdd);
+                                 this.addQueryJoin(queryJoinToAdd);
                               }
                            }
 
@@ -410,8 +423,7 @@ public class JoinsContext
                QueryJoin queryJoin = makeQueryJoinFromJoinAndTableNames(mainTableName, filterTable, join);
                if(queryJoin != null)
                {
-                  this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
-                  processQueryJoin(queryJoin);
+                  this.addQueryJoin(queryJoin);
                   found = true;
                   break;
                }
@@ -420,8 +432,7 @@ public class JoinsContext
             if(!found)
             {
                QueryJoin queryJoin = new QueryJoin().withJoinTable(filterTable).withType(QueryJoin.Type.INNER);
-               this.queryJoins.add(queryJoin); // todo something else with aliases?  probably.
-               processQueryJoin(queryJoin);
+               this.addQueryJoin(queryJoin);
             }
          }
       }
