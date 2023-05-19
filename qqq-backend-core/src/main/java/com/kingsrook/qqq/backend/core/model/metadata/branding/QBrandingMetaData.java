@@ -35,6 +35,9 @@ public class QBrandingMetaData
    private String icon;
    private String accentColor;
 
+   private String environmentBannerText;
+   private String environmentBannerColor;
+
 
 
    /*******************************************************************************
@@ -241,6 +244,68 @@ public class QBrandingMetaData
    public QBrandingMetaData withAccentColor(String accentColor)
    {
       this.accentColor = accentColor;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for environmentBannerText
+    *******************************************************************************/
+   public String getEnvironmentBannerText()
+   {
+      return (this.environmentBannerText);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for environmentBannerText
+    *******************************************************************************/
+   public void setEnvironmentBannerText(String environmentBannerText)
+   {
+      this.environmentBannerText = environmentBannerText;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for environmentBannerText
+    *******************************************************************************/
+   public QBrandingMetaData withEnvironmentBannerText(String environmentBannerText)
+   {
+      this.environmentBannerText = environmentBannerText;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for environmentBannerColor
+    *******************************************************************************/
+   public String getEnvironmentBannerColor()
+   {
+      return (this.environmentBannerColor);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for environmentBannerColor
+    *******************************************************************************/
+   public void setEnvironmentBannerColor(String environmentBannerColor)
+   {
+      this.environmentBannerColor = environmentBannerColor;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for environmentBannerColor
+    *******************************************************************************/
+   public QBrandingMetaData withEnvironmentBannerColor(String environmentBannerColor)
+   {
+      this.environmentBannerColor = environmentBannerColor;
       return (this);
    }
 

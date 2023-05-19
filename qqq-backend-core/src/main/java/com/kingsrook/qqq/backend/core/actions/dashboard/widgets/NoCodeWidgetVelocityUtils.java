@@ -67,11 +67,21 @@ public class NoCodeWidgetVelocityUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public String icon(String iconName, String color)
+   {
+      return String.format("""
+         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: %s; position: relative; top: 6px;" aria-hidden="true">%s</span>
+         """, color, iconName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public String helpIcon()
    {
-      return ("""
-         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: blue; position: relative; top: 6px;" aria-hidden="true">help_outline</span>
-         """);
+      return (icon("help_outline", "blue"));
    }
 
 
@@ -81,9 +91,7 @@ public class NoCodeWidgetVelocityUtils
     *******************************************************************************/
    public String errorIcon()
    {
-      return ("""
-         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: red; position: relative; top: 6px;" aria-hidden="true">error_outline</span>
-         """);
+      return (icon("error_outline", "red"));
    }
 
 
@@ -93,9 +101,7 @@ public class NoCodeWidgetVelocityUtils
     *******************************************************************************/
    public String warningIcon()
    {
-      return ("""
-         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: orange; position: relative; top: 6px;" aria-hidden="true">warning</span>
-         """);
+      return (icon("warning", "orange"));
    }
 
 
@@ -105,9 +111,7 @@ public class NoCodeWidgetVelocityUtils
     *******************************************************************************/
    public String checkIcon()
    {
-      return ("""
-         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: green; position: relative; top: 6px;" aria-hidden="true">check</span>
-         """);
+      return (icon("check", "green"));
    }
 
 
@@ -117,9 +121,7 @@ public class NoCodeWidgetVelocityUtils
     *******************************************************************************/
    public String pendingIcon()
    {
-      return ("""
-         <span class="material-icons-round notranslate MuiIcon-root MuiIcon-fontSizeInherit" style="color: #0062ff; position: relative; top: 6px;" aria-hidden="true">pending</span>
-         """);
+      return (icon("pending", "#0062ff"));
    }
 
 

@@ -52,6 +52,9 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    private List<WidgetDropdownData> dropdowns;
    private boolean                  storeDropdownSelections;
 
+   private boolean showReloadButton = true;
+   private boolean showExportButton = true;
+
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
 
@@ -526,6 +529,68 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withFooterHTML(String footerHTML)
    {
       this.footerHTML = footerHTML;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for showReloadButton
+    *******************************************************************************/
+   public boolean getShowReloadButton()
+   {
+      return (this.showReloadButton);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for showReloadButton
+    *******************************************************************************/
+   public void setShowReloadButton(boolean showReloadButton)
+   {
+      this.showReloadButton = showReloadButton;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for showReloadButton
+    *******************************************************************************/
+   public QWidgetMetaData withShowReloadButton(boolean showReloadButton)
+   {
+      this.showReloadButton = showReloadButton;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for showExportButton
+    *******************************************************************************/
+   public boolean getShowExportButton()
+   {
+      return (this.showExportButton);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for showExportButton
+    *******************************************************************************/
+   public void setShowExportButton(boolean showExportButton)
+   {
+      this.showExportButton = showExportButton;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for showExportButton
+    *******************************************************************************/
+   public QWidgetMetaData withShowExportButton(boolean showExportButton)
+   {
+      this.showExportButton = showExportButton;
       return (this);
    }
 

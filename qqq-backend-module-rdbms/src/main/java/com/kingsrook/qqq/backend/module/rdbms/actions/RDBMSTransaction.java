@@ -24,9 +24,12 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -40,6 +43,9 @@ public class RDBMSTransaction extends QBackendTransaction
 
    private Connection connection;
 
+   private Instant openedAt                  = Instant.now();
+   private Integer logSlowTransactionSeconds = null;
+
 
 
    /*******************************************************************************
@@ -48,6 +54,17 @@ public class RDBMSTransaction extends QBackendTransaction
    public RDBMSTransaction(Connection connection) throws SQLException
    {
       connection.setAutoCommit(false);
+
+      String propertyName = "qqq.rdbms.logSlowTransactionSeconds";
+      try
+      {
+         logSlowTransactionSeconds = Integer.parseInt(System.getProperty(propertyName, "10"));
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error reading property [" + propertyName + "] value as integer", e);
+      }
+
       this.connection = connection;
    }
 
@@ -72,7 +89,18 @@ public class RDBMSTransaction extends QBackendTransaction
    {
       try
       {
-         LOG.debug("Committing transaction");
+         Instant commitAt = Instant.now();
+
+         Duration duration = Duration.between(openedAt, commitAt);
+         if(logSlowTransactionSeconds != null && duration.compareTo(Duration.ofSeconds(logSlowTransactionSeconds)) > 0)
+         {
+            LOG.info("Committing long-running transaction", logPair("durationSeconds", duration.getSeconds()));
+         }
+         else
+         {
+            LOG.debug("Committing transaction");
+         }
+
          connection.commit();
          LOG.debug("Commit complete");
       }
@@ -80,6 +108,13 @@ public class RDBMSTransaction extends QBackendTransaction
       {
          LOG.error("Error committing transaction", e);
          throw new QException("Error committing transaction: " + e.getMessage(), e);
+      }
+      finally
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // reset this - as after one commit, the transaction is essentially re-opened for any future statements that run on it //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         openedAt = Instant.now();
       }
    }
 
