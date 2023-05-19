@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
 
@@ -49,6 +50,9 @@ public class QFrontendWidgetMetaData
    private final String                   minHeight;
    private final boolean                  storeDropdownSelections;
    private final List<WidgetDropdownData> dropdowns;
+
+   private boolean showReloadButton = false;
+   private boolean showExportButton = false;
 
    private final boolean hasPermission;
 
@@ -73,6 +77,12 @@ public class QFrontendWidgetMetaData
       this.minHeight = widgetMetaData.getMinHeight();
       this.dropdowns = widgetMetaData.getDropdowns();
       this.storeDropdownSelections = widgetMetaData.getStoreDropdownSelections();
+
+      if(widgetMetaData instanceof QWidgetMetaData qWidgetMetaData)
+      {
+         this.showExportButton = qWidgetMetaData.getShowExportButton();
+         this.showReloadButton = qWidgetMetaData.getShowReloadButton();
+      }
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -198,4 +208,25 @@ public class QFrontendWidgetMetaData
       return storeDropdownSelections;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for showReloadButton
+    **
+    *******************************************************************************/
+   public boolean getShowReloadButton()
+   {
+      return showReloadButton;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for showExportButton
+    **
+    *******************************************************************************/
+   public boolean getShowExportButton()
+   {
+      return showExportButton;
+   }
 }
