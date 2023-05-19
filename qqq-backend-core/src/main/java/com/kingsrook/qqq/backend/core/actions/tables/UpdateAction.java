@@ -187,7 +187,11 @@ public class UpdateAction
          validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList.get());
       }
 
-      validateRequiredFields(updateInput);
+      if(updateInput.getInputSource().shouldValidateRequiredFields())
+      {
+         validateRequiredFields(updateInput);
+      }
+
       ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
 
       ///////////////////////////////////////////////////////////////////////////

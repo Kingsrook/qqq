@@ -31,6 +31,8 @@ import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -57,6 +59,16 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected InputSource getInputSource()
+   {
+      return (QInputSource.SYSTEM);
+   }
+
+
+
+   /*******************************************************************************
     ** Execute the backend step - using the request as input, and the result as output.
     **
     *******************************************************************************/
@@ -79,6 +91,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
       if(CollectionUtils.nullSafeHasContents(recordsToInsert))
       {
          InsertInput insertInput = new InsertInput();
+         insertInput.setInputSource(getInputSource());
          insertInput.setTableName(tableMetaData.getName());
          insertInput.setRecords(recordsToInsert);
          getTransaction().ifPresent(insertInput::setTransaction);
@@ -96,6 +109,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
       if(CollectionUtils.nullSafeHasContents(recordsToUpdate))
       {
          UpdateInput updateInput = new UpdateInput();
+         updateInput.setInputSource(getInputSource());
          updateInput.setTableName(tableMetaData.getName());
          updateInput.setRecords(recordsToUpdate);
          getTransaction().ifPresent(updateInput::setTransaction);

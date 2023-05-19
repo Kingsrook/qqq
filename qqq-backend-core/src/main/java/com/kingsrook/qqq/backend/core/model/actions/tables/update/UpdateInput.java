@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.update;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -36,6 +38,7 @@ public class UpdateInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
    private List<QRecord>       records;
+   private InputSource         inputSource = QInputSource.SYSTEM;
 
    ////////////////////////////////////////////////////////////////////////////////////////////
    // allow a caller to specify that they KNOW this optimization (e.g., in SQL) can be made. //
@@ -216,6 +219,37 @@ public class UpdateInput extends AbstractTableActionInput
    public UpdateInput withAuditContext(String auditContext)
    {
       this.auditContext = auditContext;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for inputSource
+    *******************************************************************************/
+   public InputSource getInputSource()
+   {
+      return (this.inputSource);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputSource
+    *******************************************************************************/
+   public void setInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputSource
+    *******************************************************************************/
+   public UpdateInput withInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
       return (this);
    }
 

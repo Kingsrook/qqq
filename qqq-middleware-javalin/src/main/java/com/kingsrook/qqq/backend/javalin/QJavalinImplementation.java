@@ -75,6 +75,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -573,6 +574,7 @@ public class QJavalinImplementation
          primaryKeys.add(primaryKey);
 
          DeleteInput deleteInput = new DeleteInput();
+         deleteInput.setInputSource(QInputSource.USER);
          setupSession(context, deleteInput);
 
          QJavalinAccessLogger.logStart("delete", logPair("table", table), logPair("primaryKey", primaryKey));
@@ -608,6 +610,7 @@ public class QJavalinImplementation
       try
       {
          UpdateInput updateInput = new UpdateInput();
+         updateInput.setInputSource(QInputSource.USER);
          setupSession(context, updateInput);
          updateInput.setTableName(tableName);
 
@@ -680,6 +683,7 @@ public class QJavalinImplementation
       try
       {
          InsertInput insertInput = new InsertInput();
+         insertInput.setInputSource(QInputSource.USER);
          setupSession(context, insertInput);
          insertInput.setTableName(tableName);
          QJavalinAccessLogger.logStart("insert", logPair("table", tableName));

@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -336,6 +337,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       InsertInput insertInput = new InsertInput();
+      insertInput.setInputSource(QInputSource.USER);
 
       insertInput.setTableName(tableName);
 
@@ -409,6 +411,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       InsertInput insertInput = new InsertInput();
+      insertInput.setInputSource(QInputSource.USER);
       insertInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
@@ -549,6 +552,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       UpdateInput updateInput = new UpdateInput();
+      updateInput.setInputSource(QInputSource.USER);
       updateInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
@@ -620,6 +624,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       UpdateInput updateInput = new UpdateInput();
+      updateInput.setInputSource(QInputSource.USER);
       updateInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
@@ -744,6 +749,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setInputSource(QInputSource.USER);
       deleteInput.setTableName(tableName);
       deleteInput.setPrimaryKeys(List.of(primaryKey));
 
@@ -784,6 +790,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setInputSource(QInputSource.USER);
       deleteInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);

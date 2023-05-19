@@ -36,6 +36,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -57,6 +59,17 @@ public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSumm
    private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("deleted");
 
    private String tableLabel;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   protected InputSource getInputSource()
+   {
+      return (QInputSource.USER);
+   }
 
 
 

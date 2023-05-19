@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -182,6 +183,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       /////////////////////////////////////////////////////////////////////////////////
       InsertAction insertAction = new InsertAction();
       InsertInput  insertInput  = new InsertInput();
+      insertInput.setInputSource(QInputSource.USER);
       insertInput.setTableName(runBackendStepInput.getTableName());
       insertInput.setRecords(recordsWithoutUkErrors);
       insertInput.setSkipUniqueKeyCheck(true);

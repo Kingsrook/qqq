@@ -31,6 +31,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
@@ -53,6 +55,17 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
    private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("edited");
 
    private String tableLabel;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   protected InputSource getInputSource()
+   {
+      return (QInputSource.USER);
+   }
 
 
 

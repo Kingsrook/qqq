@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -167,6 +168,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
          // run the validation - critically - in preview mode (boolean param) //
          ///////////////////////////////////////////////////////////////////////
          UpdateInput updateInput = new UpdateInput();
+         updateInput.setInputSource(QInputSource.USER);
          updateInput.setTableName(table.getName());
          updateInput.setRecords(recordsForValidation);
          new UpdateAction().performValidations(updateInput, Optional.of(runBackendStepInput.getRecords()), true);

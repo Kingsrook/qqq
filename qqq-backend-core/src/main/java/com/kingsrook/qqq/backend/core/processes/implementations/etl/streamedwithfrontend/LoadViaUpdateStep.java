@@ -29,6 +29,8 @@ import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
@@ -45,6 +47,16 @@ public class LoadViaUpdateStep extends AbstractLoadStep
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected InputSource getInputSource()
+   {
+      return (QInputSource.SYSTEM);
+   }
+
+
+
+   /*******************************************************************************
     ** Execute the backend step - using the request as input, and the result as output.
     **
     *******************************************************************************/
@@ -52,6 +64,7 @@ public class LoadViaUpdateStep extends AbstractLoadStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       UpdateInput updateInput = new UpdateInput();
+      updateInput.setInputSource(getInputSource());
       updateInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       updateInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(updateInput::setTransaction);

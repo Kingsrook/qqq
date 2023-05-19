@@ -70,9 +70,9 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -697,7 +697,7 @@ public class QInstanceEnricher
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
             BulkInsertExtractStep.class,
             BulkInsertTransformStep.class,
-            LoadViaInsertStep.class,
+            BulkInsertLoadStep.class,
             values
          )
          .withName(processName)

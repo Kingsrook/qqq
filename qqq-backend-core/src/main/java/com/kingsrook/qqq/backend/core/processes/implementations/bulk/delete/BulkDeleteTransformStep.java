@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -103,6 +104,7 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
          ///////////////////////////////////////////////////////////////////////
          DeleteAction deleteAction = new DeleteAction();
          DeleteInput  deleteInput  = new DeleteInput();
+         deleteInput.setInputSource(QInputSource.USER);
          deleteInput.setTableName(runBackendStepInput.getTableName());
          deleteInput.setPrimaryKeys(runBackendStepInput.getRecords().stream().map(r -> r.getValue(primaryKeyField)).toList());
          List<QRecord> validationResultRecords = deleteAction.performValidations(deleteInput, Optional.of(runBackendStepInput.getRecords()), true);

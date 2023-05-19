@@ -168,7 +168,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
       setErrorsIfUniqueKeyErrors(insertInput, table);
-      validateRequiredFields(insertInput);
+
+      if(insertInput.getInputSource().shouldValidateRequiredFields())
+      {
+         validateRequiredFields(insertInput);
+      }
+
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
 
       ///////////////////////////////////////////////////////////////////////////
