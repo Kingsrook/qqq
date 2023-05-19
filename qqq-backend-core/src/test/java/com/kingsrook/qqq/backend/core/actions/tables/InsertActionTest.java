@@ -28,6 +28,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -630,6 +631,65 @@ class InsertActionTest extends BaseTest
       //////////////////////////////////////////////////////////////////
       assertEquals(1, insertOutput.getRecords().get(2).getErrors().size());
       assertEquals("Missing value in required field: Order No", insertOutput.getRecords().get(2).getErrors().get(0).getMessage());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static class TestInputSource implements InputSource
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public boolean shouldValidateRequiredFields()
+      {
+         return false;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRequiredFieldsForInputSourceThatShouldntValidate() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getField("orderNo").setIsRequired(true);
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      InsertInput insertInput = new InsertInput();
+      insertInput.setInputSource(new TestInputSource());
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("storeId", 999),
+         new QRecord().withValue("storeId", 999).withValue("orderNo", "ORD1"),
+         new QRecord().withValue("storeId", 999).withValue("orderNo", "  ")
+      ));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+      ///////////////////////////////////////////////////////////////
+      // 1st record had no value in orderNo, but insert it anyway. //
+      ///////////////////////////////////////////////////////////////
+      assertEquals(0, insertOutput.getRecords().get(0).getErrors().size());
+
+      ///////////////////////////////////////////////
+      // 2nd record had a value - it should insert //
+      ///////////////////////////////////////////////
+      assertEquals(0, insertOutput.getRecords().get(1).getErrors().size());
+
+      ///////////////////////////////////////////////////////////////////
+      // 3rd record had spaces-only in orderNo - but insert it anyway. //
+      ///////////////////////////////////////////////////////////////////
+      assertEquals(0, insertOutput.getRecords().get(2).getErrors().size());
+
+      //////////////////////////
+      // all 3 should insert. //
+      //////////////////////////
+      assertEquals(3, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_ORDER).size());
    }
 
 }
