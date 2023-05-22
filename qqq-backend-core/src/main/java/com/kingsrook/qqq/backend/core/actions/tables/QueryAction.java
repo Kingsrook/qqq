@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -123,7 +124,6 @@ public class QueryAction
     *******************************************************************************/
    private void manageAssociations(QueryInput queryInput, List<QRecord> queryOutputRecords) throws QException
    {
-      LOG.info("In manageAssociations for " + queryInput.getTableName() + " with " + queryOutputRecords.size() + " records");
       QTableMetaData table = queryInput.getTable();
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -149,9 +149,10 @@ public class QueryAction
                Set<Serializable> values = new HashSet<>();
                for(QRecord record : queryOutputRecords)
                {
-                  Serializable value = record.getValue(joinOn.getLeftField());
-                  values.add(value);
-                  outerResultMap.add(List.of(value), record);
+                  Serializable value       = record.getValue(joinOn.getLeftField());
+                  Serializable valueAsType = ValueUtils.getValueAsFieldType(table.getField(joinOn.getLeftField()).getType(), value);
+                  values.add(valueAsType);
+                  outerResultMap.add(List.of(valueAsType), record);
                }
                filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.IN, new ArrayList<>(values)));
             }

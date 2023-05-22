@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
@@ -296,7 +297,8 @@ public class UpdateAction
                         //////////////////////////////////////////////////////////////////////////////////////////////////////////
                         for(JoinOn joinOn : join.getJoinOns())
                         {
-                           associatedRecord.setValue(joinOn.getRightField(), record.getValue(joinOn.getLeftField()));
+                           QFieldType type = table.getField(joinOn.getLeftField()).getType();
+                           associatedRecord.setValue(joinOn.getRightField(), ValueUtils.getValueAsFieldType(type, record.getValue(joinOn.getLeftField())));
                         }
                         nextLevelInserts.add(associatedRecord);
                      }
@@ -307,6 +309,16 @@ public class UpdateAction
                         ///////////////////////////////////////////////////////////////////////////////
                         idsBeingUpdated.add(associatedId);
                         nextLevelUpdates.add(associatedRecord);
+
+                        /////////////////////////////////////////////////////////////////////////////////////////////////
+                        // make sure the child record being updated has its join fields populated (same as an insert). //
+                        // this will make the next update action much happier                                          //
+                        /////////////////////////////////////////////////////////////////////////////////////////////////
+                        for(JoinOn joinOn : join.getJoinOns())
+                        {
+                           QFieldType type = table.getField(joinOn.getLeftField()).getType();
+                           associatedRecord.setValue(joinOn.getRightField(), ValueUtils.getValueAsFieldType(type, record.getValue(joinOn.getLeftField())));
+                        }
                      }
                   }
 

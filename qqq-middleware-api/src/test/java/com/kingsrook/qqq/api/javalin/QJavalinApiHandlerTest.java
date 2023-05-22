@@ -896,6 +896,42 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testUpdateAssociations() throws QException
+   {
+      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
+         .body("""
+            {"orderLines":
+               [
+                  {"id": 1, "lineNumber": 1, "sku": "BASIC1", "quantity": 47},
+                  {"id": 2},
+                  {"id": 3}
+               ]
+            }
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.NO_CONTENT_204, null, response);
+
+      QRecord       orderRecord = getRecord(TestUtils.TABLE_NAME_ORDER, 1);
+      List<QRecord> orderLines  = orderRecord.getAssociatedRecords().get("orderLines");
+      assertThat(orderLines)
+         .withFailMessage("order lines should be found on order").isNotNull().isNotEmpty()
+         .withFailMessage("Should have a line with id 1").filteredOn(r -> r.getValueInteger("id").equals(1)).hasSize(1)
+         .withFailMessage("line with id 1 should have quantity updated to 47").first().matches(r -> r.getValue("quantity").equals(47));
+
+      assertThat(orderLines)
+         .withFailMessage("order lines should be found on order").isNotNull().isNotEmpty()
+         .withFailMessage("Should have a line with id 2").filteredOn(r -> r.getValueInteger("id").equals(2)).hasSize(1)
+         .withFailMessage("line with id 2 should have original quantity (42)").first().matches(r -> r.getValue("quantity").equals(42));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testBulkUpdate207() throws QException
    {
       insertSimpsons();
@@ -1252,6 +1288,7 @@ class QJavalinApiHandlerTest extends BaseTest
       GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
       getInput.setPrimaryKey(id);
+      getInput.setIncludeAssociations(true);
       GetOutput getOutput = new GetAction().execute(getInput);
       QRecord   record    = getOutput.getRecord();
       return record;

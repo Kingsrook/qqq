@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -113,9 +114,10 @@ public class ValidateRecordSecurityLockHelper
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // else look for the joined record - if it isn't found, assume a fail - else validate security value if found //
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            QJoinMetaData  leftMostJoin      = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(0));
-            QJoinMetaData  rightMostJoin     = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(recordSecurityLock.getJoinNameChain().size() - 1));
-            QTableMetaData leftMostJoinTable = QContext.getQInstance().getTable(leftMostJoin.getLeftTable());
+            QJoinMetaData  leftMostJoin       = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(0));
+            QJoinMetaData  rightMostJoin      = QContext.getQInstance().getJoin(recordSecurityLock.getJoinNameChain().get(recordSecurityLock.getJoinNameChain().size() - 1));
+            QTableMetaData rightMostJoinTable = QContext.getQInstance().getTable(rightMostJoin.getRightTable());
+            QTableMetaData leftMostJoinTable  = QContext.getQInstance().getTable(leftMostJoin.getLeftTable());
 
             for(List<QRecord> inputRecordPage : CollectionUtils.getPages(records, 500))
             {
@@ -153,7 +155,8 @@ public class ValidateRecordSecurityLockHelper
 
                   for(JoinOn joinOn : rightMostJoin.getJoinOns())
                   {
-                     Serializable inputRecordValue = inputRecord.getValue(joinOn.getRightField());
+                     QFieldType   type             = rightMostJoinTable.getField(joinOn.getRightField()).getType();
+                     Serializable inputRecordValue = ValueUtils.getValueAsFieldType(type, inputRecord.getValue(joinOn.getRightField()));
                      inputRecordJoinValues.add(inputRecordValue);
 
                      subFilter.addCriteria(inputRecordValue == null

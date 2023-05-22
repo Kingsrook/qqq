@@ -183,7 +183,10 @@ public class QRecordApiAdapter
                {
                   if(subObject instanceof JSONObject subJsonObject)
                   {
-                     QRecord subRecord = apiJsonObjectToQRecord(subJsonObject, association.getAssociatedTableName(), apiName, apiVersion, includePrimaryKey);
+                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // make sure to always include primary keys (boolean param) on calls for children - to help determine insert/update cases //
+                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     QRecord subRecord = apiJsonObjectToQRecord(subJsonObject, association.getAssociatedTableName(), apiName, apiVersion, true);
                      qRecord.withAssociatedRecord(association.getName(), subRecord);
                   }
                   else
