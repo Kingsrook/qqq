@@ -112,7 +112,7 @@ public class UpdateAction
       List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
-         LOG.warn("Errors in updateAction", logPair("tableName", updateInput.getTableName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
+         LOG.info("Errors in updateAction", logPair("tableName", updateInput.getTableName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
       }
 
       manageAssociations(updateInput);
