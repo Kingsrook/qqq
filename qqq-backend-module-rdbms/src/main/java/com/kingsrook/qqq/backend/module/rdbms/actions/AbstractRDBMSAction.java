@@ -872,6 +872,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          {
             return (QueryManager.getBoolean(resultSet, i));
          }
+         case BLOB:
+         {
+            return (QueryManager.getByteArray(resultSet, i));
+         }
          default:
          {
             throw new IllegalStateException("Unexpected field type: " + type);

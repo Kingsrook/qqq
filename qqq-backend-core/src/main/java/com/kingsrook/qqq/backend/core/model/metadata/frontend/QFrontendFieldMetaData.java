@@ -43,6 +43,7 @@ public class QFrontendFieldMetaData
    private QFieldType type;
    private boolean    isRequired;
    private boolean    isEditable;
+   private boolean    isHeavy;
    private String     possibleValueSourceName;
    private String     displayFormat;
 
@@ -64,6 +65,7 @@ public class QFrontendFieldMetaData
       this.type = fieldMetaData.getType();
       this.isRequired = fieldMetaData.getIsRequired();
       this.isEditable = fieldMetaData.getIsEditable();
+      this.isHeavy = fieldMetaData.getIsHeavy();
       this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
       this.displayFormat = fieldMetaData.getDisplayFormat();
       this.adornments = fieldMetaData.getAdornments();
@@ -122,6 +124,17 @@ public class QFrontendFieldMetaData
    public boolean getIsEditable()
    {
       return isEditable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHeavy
+    **
+    *******************************************************************************/
+   public boolean getIsHeavy()
+   {
+      return isHeavy;
    }
 
 

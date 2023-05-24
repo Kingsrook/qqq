@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +54,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -95,7 +97,10 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -353,6 +358,9 @@ public class QJavalinImplementation
                patch("", QJavalinImplementation::dataUpdate);
                put("", QJavalinImplementation::dataUpdate); // todo - want different semantics??
                delete("", QJavalinImplementation::dataDelete);
+
+               get("/{fieldName}/{filename}", QJavalinImplementation::dataDownloadRecordField);
+               post("/{fieldName}/{filename}", QJavalinImplementation::dataDownloadRecordField);
 
                QJavalinScriptsHandler.defineRecordRoutes();
             });
@@ -733,11 +741,155 @@ public class QJavalinImplementation
          getInput.setTableName(tableName);
          getInput.setShouldGenerateDisplayValues(true);
          getInput.setShouldTranslatePossibleValues(true);
+         getInput.setShouldFetchHeavyFields(true);
 
          PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)
          //  and throw a 400-series error (tell the user bad-request), rather than, we're doing a 500 (server error)
+
+         getInput.setPrimaryKey(primaryKey);
+
+         GetAction getAction = new GetAction();
+         GetOutput getOutput = getAction.execute(getInput);
+
+         ///////////////////////////////////////////////////////
+         // throw a not found error if the record isn't found //
+         ///////////////////////////////////////////////////////
+         QRecord record = getOutput.getRecord();
+         if(record == null)
+         {
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
+               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+         }
+
+         setBlobValuesToDownloadUrls(table, List.of(record));
+
+         QJavalinAccessLogger.logEndSuccess();
+         context.result(JsonUtils.toJson(record));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** For any BLOB type fields in the list of records, change their value to
+    ** the URL where they can be downloaded, and set their display value to a file name.
+    *******************************************************************************/
+   private static void setBlobValuesToDownloadUrls(QTableMetaData table, List<QRecord> records)
+   {
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         if(field.getType().equals(QFieldType.BLOB))
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // file name comes from:                                                                                            //
+            // if there's a FILE_DOWNLOAD adornment, with a FILE_NAME_FIELD value, then the full filename comes from that field //
+            // - unless it was empty - then we do the "default thing":                                                          //
+            // else - the "default thing" is:                                                                                   //
+            // - tableLabel primaryKey fieldLabel                                                                               //
+            // - and - if the FILE_DOWNLOAD adornment had a DEFAULT_EXTENSION, then it gets added (preceded by a dot)           //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            Optional<FieldAdornment>  fileDownloadAdornment = field.getAdornments().stream().filter(a -> a.getType().equals(AdornmentType.FILE_DOWNLOAD)).findFirst();
+            Map<String, Serializable> adornmentValues       = Collections.emptyMap();
+
+            if(fileDownloadAdornment.isPresent())
+            {
+               adornmentValues = fileDownloadAdornment.get().getValues();
+            }
+
+            String fileNameField    = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));
+            String fileNameFormat   = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT));
+            String defaultExtension = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.DEFAULT_EXTENSION));
+
+            for(QRecord record : records)
+            {
+               Serializable primaryKey = record.getValue(table.getPrimaryKeyField());
+               String       fileName   = null;
+
+               //////////////////////////////////////////////////
+               // try to make file name from the fileNameField //
+               //////////////////////////////////////////////////
+               if(StringUtils.hasContent(fileNameField))
+               {
+                  fileName = record.getValueString(fileNameField);
+               }
+
+               if(!StringUtils.hasContent(fileName))
+               {
+                  if(StringUtils.hasContent(fileNameFormat))
+                  {
+                     @SuppressWarnings("unchecked") // instance validation should make this safe!
+                     List<String> fileNameFormatFields = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
+                     fileName = QValueFormatter.formatStringWithValues(fileNameFormat, fileNameFormatFields);
+                  }
+               }
+
+               if(!StringUtils.hasContent(fileName))
+               {
+                  //////////////////////////////////
+                  // make default name if missing //
+                  //////////////////////////////////
+                  fileName = table.getLabel() + " " + primaryKey + " " + field.getLabel();
+
+                  if(StringUtils.hasContent(defaultExtension))
+                  {
+                     //////////////////////////////////////////
+                     // add default extension if we have one //
+                     //////////////////////////////////////////
+                     fileName += "." + defaultExtension;
+                  }
+               }
+
+               record.setValue(field.getName(), "/data/" + table.getName() + "/" + primaryKey + "/" + field.getName() + "/" + fileName);
+               record.setDisplayValue(field.getName(), fileName);
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void dataDownloadRecordField(Context context)
+   {
+      String tableName  = context.pathParam("table");
+      String primaryKey = context.pathParam("primaryKey");
+      String fieldName  = context.pathParam("fieldName");
+      String filename   = context.pathParam("filename");
+
+      try
+      {
+         QTableMetaData table    = qInstance.getTable(tableName);
+         GetInput       getInput = new GetInput();
+
+         setupSession(context, getInput);
+         QJavalinAccessLogger.logStart("downloadRecordField", logPair("table", tableName), logPair("primaryKey", primaryKey), logPair("fieldName", fieldName));
+
+         ////////////////////////////////////////////
+         // validate field name - 404 if not found //
+         ////////////////////////////////////////////
+         QFieldMetaData fieldMetaData;
+         try
+         {
+            fieldMetaData = table.getField(fieldName);
+         }
+         catch(Exception e)
+         {
+            throw (new QNotFoundException("Could not find field named " + fieldName + " on table " + tableName));
+         }
+
+         getInput.setTableName(tableName);
+         getInput.setShouldFetchHeavyFields(true);
+
+         PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
          getInput.setPrimaryKey(primaryKey);
 
@@ -753,8 +905,27 @@ public class QJavalinImplementation
                + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
+         String                   mimeType              = null;
+         Optional<FieldAdornment> fileDownloadAdornment = fieldMetaData.getAdornments().stream().filter(a -> a.getType().equals(AdornmentType.FILE_DOWNLOAD)).findFirst();
+         if(fileDownloadAdornment.isPresent())
+         {
+            Map<String, Serializable> values = fileDownloadAdornment.get().getValues();
+            mimeType = ValueUtils.getValueAsString(values.get(AdornmentType.FileDownloadValues.DEFAULT_MIME_TYPE));
+         }
+
+         if(mimeType != null)
+         {
+            context.contentType(mimeType);
+         }
+
+         if(context.queryParamMap().containsKey("download") || context.formParamMap().containsKey("download"))
+         {
+            context.header("Content-Disposition", "attachment; filename=" + filename);
+         }
+
+         context.result(getOutput.getRecord().getValueByteArray(fieldName));
+
          QJavalinAccessLogger.logEndSuccess();
-         context.result(JsonUtils.toJson(getOutput.getRecord()));
       }
       catch(Exception e)
       {
@@ -887,6 +1058,8 @@ public class QJavalinImplementation
 
          QueryAction queryAction = new QueryAction();
          QueryOutput queryOutput = queryAction.execute(queryInput);
+
+         setBlobValuesToDownloadUrls(QContext.getQInstance().getTable(table), queryOutput.getRecords());
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", queryOutput.getRecords().size()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS), logPairIfSlow("joins", queryJoins, SLOW_LOG_THRESHOLD_MS));
          context.result(JsonUtils.toJson(queryOutput));
