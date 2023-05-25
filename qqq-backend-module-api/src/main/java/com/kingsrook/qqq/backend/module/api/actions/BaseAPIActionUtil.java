@@ -506,26 +506,23 @@ public class BaseAPIActionUtil
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
 
-      if("GET".equals(request.getMethod()))
-      {
-         ////////////////////////////////////////////////////////////////////////////////////////
-         // bad gateways are not our fault and don't happen often, so just log an info on them //
-         ////////////////////////////////////////////////////////////////////////////////////////
-         if(statusCode == HttpStatus.SC_BAD_GATEWAY)
-         {
-            LOG.info("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
-            return;
-         }
-      }
-
-      LOG.warn("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
-
+      boolean didLog = false;
       if("GET".equals(request.getMethod()))
       {
          if(statusCode == HttpStatus.SC_NOT_FOUND)
          {
             return;
          }
+         else if(statusCode == HttpStatus.SC_BAD_GATEWAY)
+         {
+            LOG.info("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
+            didLog = true;
+         }
+      }
+
+      if(!didLog)
+      {
+         LOG.warn("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
       }
 
       String warningMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
