@@ -97,7 +97,7 @@ else
 
    artifact=$1
    version=$2
-   if [ "$version" == "-l" ]; then
+   if [ "$version" == "-s" ]; then
       useSlug=$(checkForBranchBuild $artifact)
       if [ "$useSlug" == "1" ]; then
          version=$SLUG
@@ -105,9 +105,11 @@ else
          version=$CURRENT_VERSION
       fi
       echo "Using $version for $artifact" >&2
+   elif [ "$version" == "-l" ]; then
+      version=$CURRENT_VERSION
    fi
 
-   if [ -z "$ar^tifact" -o -z "$version" ]; then
+   if [ -z "$artifact" -o -z "$version" ]; then
       echo "Usage: $0 artifact snapshot-version-prefix"
       echo "   or: $0 artifact -l (latest of CURRENT_VERSION, or branch-slug, if it has been deployed)"
       echo "   or: $0 -i (interactive mode)"

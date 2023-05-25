@@ -13,9 +13,14 @@ fi
 CURRENT_VERSION="$(cat $QQQ_DEV_TOOLS_DIR/CURRENT-SNAPSHOT-VERSION)"
 MODULE_LIST_FILE=$QQQ_DEV_TOOLS_DIR/MODULE_LIST
 
+getLatestSnapshotArg="-l"
+if [[ "$1" == "snapshot-BRANCH_SLUG" ]]; then
+   getLatestSnapshotArg="-s"
+fi
+
 for module in $(cat $MODULE_LIST_FILE); do
    echo "Updating $module..."
-   version=$(get-latest-snapshot.sh $module -l)
+   version=$(get-latest-snapshot.sh $module $getLatestSnapshotArg)
    update-dep.sh $module $version -q
 done
 
