@@ -505,18 +505,28 @@ public class BaseAPIActionUtil
 
       int    statusCode   = response.getStatusCode();
       String resultString = response.getContent();
-      String errorMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
-      LOG.error("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
 
+      boolean didLog = false;
       if("GET".equals(request.getMethod()))
       {
          if(statusCode == HttpStatus.SC_NOT_FOUND)
          {
             return;
          }
+         else if(statusCode == HttpStatus.SC_BAD_GATEWAY)
+         {
+            LOG.info("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
+            didLog = true;
+         }
       }
 
-      throw (new QException(errorMessage));
+      if(!didLog)
+      {
+         LOG.warn("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
+      }
+
+      String warningMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
+      throw (new QException(warningMessage));
    }
 
 
