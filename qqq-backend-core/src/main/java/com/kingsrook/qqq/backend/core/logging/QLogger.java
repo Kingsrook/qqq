@@ -140,6 +140,16 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void log(Level level, String message, Throwable t, LogPair... logPairs)
+   {
+      logger.log(level, makeJsonString(message, t, logPairs));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void log(Level level, Throwable t)
    {
       logger.log(level, makeJsonString(null, t));

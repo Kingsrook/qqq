@@ -116,7 +116,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       List<String> errors = insertOutput.getRecords().stream().flatMap(r -> r.getErrors().stream().map(Object::toString)).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
-         LOG.warn("Errors in insertAction", logPair("tableName", table.getName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
+         LOG.info("Errors in insertAction", logPair("tableName", table.getName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
       }
 
       //////////////////////////////////////////////////

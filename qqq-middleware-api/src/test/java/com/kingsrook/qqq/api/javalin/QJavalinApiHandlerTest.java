@@ -201,6 +201,8 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(1, jsonObject.getInt("id"));
       assertEquals("Homer", jsonObject.getString("firstName"));
       assertEquals("Simpson", jsonObject.getString("lastName"));
+      assertTrue(jsonObject.isNull("noOfShoes"));
+      assertFalse(jsonObject.has("someNonField"));
    }
 
 
@@ -374,6 +376,8 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(1, jsonObject.getInt("id"));
       assertEquals("Homer", jsonObject.getString("firstName"));
       assertEquals("Simpson", jsonObject.getString("lastName"));
+      assertTrue(jsonObject.isNull("noOfShoes"));
+      assertFalse(jsonObject.has("someNonField"));
    }
 
 
@@ -942,42 +946,6 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testUpdateAssociations() throws QException
-   {
-      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
-
-      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
-         .body("""
-            {"orderLines":
-               [
-                  {"id": 1, "lineNumber": 1, "sku": "BASIC1", "quantity": 47},
-                  {"id": 2},
-                  {"id": 3}
-               ]
-            }
-            """)
-         .asString();
-      assertErrorResponse(HttpStatus.NO_CONTENT_204, null, response);
-
-      QRecord       orderRecord = getRecord(TestUtils.TABLE_NAME_ORDER, 1);
-      List<QRecord> orderLines  = orderRecord.getAssociatedRecords().get("orderLines");
-      assertThat(orderLines)
-         .withFailMessage("order lines should be found on order").isNotNull().isNotEmpty()
-         .withFailMessage("Should have a line with id 1").filteredOn(r -> r.getValueInteger("id").equals(1)).hasSize(1)
-         .withFailMessage("line with id 1 should have quantity updated to 47").first().matches(r -> r.getValue("quantity").equals(47));
-
-      assertThat(orderLines)
-         .withFailMessage("order lines should be found on order").isNotNull().isNotEmpty()
-         .withFailMessage("Should have a line with id 2").filteredOn(r -> r.getValueInteger("id").equals(2)).hasSize(1)
-         .withFailMessage("line with id 2 should have original quantity (42)").first().matches(r -> r.getValue("quantity").equals(42));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
    void testUpdateErrorsFromCustomizer() throws QException
    {
       insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
@@ -1029,6 +997,42 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testUpdateAssociations() throws QException
+   {
+      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
+         .body("""
+            {"orderLines":
+               [
+                  {"id": 1, "lineNumber": 1, "sku": "BASIC1", "quantity": 47},
+                  {"id": 2},
+                  {"id": 3}
+               ]
+            }
+            """)
+         .asString();
+      assertErrorResponse(HttpStatus.NO_CONTENT_204, null, response);
+
+      QRecord       orderRecord = getRecord(TestUtils.TABLE_NAME_ORDER, 1);
+      List<QRecord> orderLines  = orderRecord.getAssociatedRecords().get("orderLines");
+      assertThat(orderLines)
+         .withFailMessage("order lines should be found on order").isNotNull().isNotEmpty()
+         .withFailMessage("Should have a line with id 1").filteredOn(r -> r.getValueInteger("id").equals(1)).hasSize(1)
+         .withFailMessage("line with id 1 should have quantity updated to 47").first().matches(r -> r.getValue("quantity").equals(47));
+
+      assertThat(orderLines)
+         .withFailMessage("order lines should be found on order").isNotNull().isNotEmpty()
+         .withFailMessage("Should have a line with id 2").filteredOn(r -> r.getValueInteger("id").equals(2)).hasSize(1)
+         .withFailMessage("line with id 2 should have original quantity (42)").first().matches(r -> r.getValue("quantity").equals(42));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testBulkUpdate207() throws QException
    {
       insertSimpsons();
@@ -1055,7 +1059,7 @@ class QJavalinApiHandlerTest extends BaseTest
 
       assertEquals(HttpStatus.BAD_REQUEST_400, jsonArray.getJSONObject(2).getInt("statusCode"));
       assertEquals("Error updating Person: Missing value in primary key field", jsonArray.getJSONObject(2).getString("error"));
-      assertFalse(jsonArray.getJSONObject(2).has("id"));
+      assertTrue(jsonArray.getJSONObject(2).isNull("id"));
 
       assertEquals(HttpStatus.NOT_FOUND_404, jsonArray.getJSONObject(3).getInt("statusCode"));
       assertEquals("Error updating Person: No record was found to update for Id = 256", jsonArray.getJSONObject(3).getString("error"));

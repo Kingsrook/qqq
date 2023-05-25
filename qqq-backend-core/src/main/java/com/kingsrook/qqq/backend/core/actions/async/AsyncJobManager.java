@@ -33,11 +33,13 @@ import java.util.concurrent.TimeoutException;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
+import org.apache.logging.log4j.Level;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -151,7 +153,11 @@ public class AsyncJobManager
          asyncJobStatus.setState(AsyncJobState.ERROR);
          asyncJobStatus.setCaughtException(e);
          getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
-         LOG.warn("Job ended with an exception", e, logPair("jobId", uuidAndTypeStateKey.getUuid()));
+
+         //////////////////////////////////////////////////////
+         // if user facing, just log an info, warn otherwise //
+         //////////////////////////////////////////////////////
+         LOG.log((e instanceof QUserFacingException) ? Level.INFO : Level.WARN, "Job ended with an exception", e, logPair("jobId", uuidAndTypeStateKey.getUuid()));
          throw (new CompletionException(e));
       }
       finally
