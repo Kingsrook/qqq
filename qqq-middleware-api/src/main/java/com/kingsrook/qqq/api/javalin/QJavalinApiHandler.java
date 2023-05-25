@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.actions.GenerateOpenApiSpecAction;
 import com.kingsrook.qqq.api.model.APILog;
@@ -297,7 +298,7 @@ public class QJavalinApiHandler
       }
 
       context.contentType(ContentType.APPLICATION_JSON);
-      context.result(JsonUtils.toJson(rs));
+      context.result(toJson(rs));
    }
 
 
@@ -312,7 +313,7 @@ public class QJavalinApiHandler
       rs.put("currentVersion", apiInstanceMetaData.getCurrentVersion().toString());
 
       context.contentType(ContentType.APPLICATION_JSON);
-      context.result(JsonUtils.toJson(rs));
+      context.result(toJson(rs));
    }
 
 
@@ -655,7 +656,7 @@ public class QJavalinApiHandler
          Map<String, Serializable> outputRecord = ApiImplementation.get(apiInstanceMetaData, version, tableApiName, primaryKey);
 
          QJavalinAccessLogger.logEndSuccess();
-         String resultString = JsonUtils.toJson(outputRecord);
+         String resultString = toJson(outputRecord);
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
@@ -664,6 +665,21 @@ public class QJavalinApiHandler
          QJavalinAccessLogger.logEndFail(e);
          handleException(context, e, apiLog);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Define standard way we'll make JSON objects for the API.
+    **
+    ** Specifically, changes QQQ's default to include null values
+    *******************************************************************************/
+   private static String toJson(Object object)
+   {
+      return JsonUtils.toJson(object, mapper ->
+      {
+         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+      });
    }
 
 
@@ -880,7 +896,7 @@ public class QJavalinApiHandler
          Map<String, Serializable> output = ApiImplementation.query(apiInstanceMetaData, version, tableApiName, context.queryParamMap());
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", () -> ((List<?>) output.get("records")).size()), QJavalinAccessLogger.logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
-         String resultString = JsonUtils.toJson(output);
+         String resultString = toJson(output);
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
@@ -911,7 +927,7 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess();
          context.status(HttpStatus.Code.CREATED.getCode());
-         String resultString = JsonUtils.toJson(outputRecord);
+         String resultString = toJson(outputRecord);
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
@@ -941,7 +957,7 @@ public class QJavalinApiHandler
          List<Map<String, Serializable>> response = ApiImplementation.bulkInsert(apiInstanceMetaData, version, tableApiName, context.body());
 
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
-         String resultString = JsonUtils.toJson(response);
+         String resultString = toJson(response);
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
@@ -972,7 +988,7 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", response.size()));
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
-         String resultString = JsonUtils.toJson(response);
+         String resultString = toJson(response);
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
@@ -1003,7 +1019,7 @@ public class QJavalinApiHandler
 
          QJavalinAccessLogger.logEndSuccess(logPair("recordCount", response.size()));
          context.status(HttpStatus.Code.MULTI_STATUS.getCode());
-         String resultString = JsonUtils.toJson(response);
+         String resultString = toJson(response);
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
       }
@@ -1176,7 +1192,7 @@ public class QJavalinApiHandler
          ///////////////////////////
       }
 
-      String responseBody = JsonUtils.toJson(Map.of("error", errorMessage));
+      String responseBody = toJson(Map.of("error", errorMessage));
       context.result(responseBody);
 
       if(apiLog != null)

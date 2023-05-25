@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -63,10 +64,28 @@ public class JsonUtils
     *******************************************************************************/
    public static String toJson(Object object)
    {
+      return (toJson(object, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Serialize any object into a JSON String - with customizations on the Jackson
+    ** ObjectMapper.
+    **
+    ** Internally using jackson - so jackson annotations apply!
+    **
+    *******************************************************************************/
+   public static String toJson(Object object, Consumer<ObjectMapper> objectMapperCustomizer)
+   {
       try
       {
-         ObjectMapper mapper     = newObjectMapper();
-         String       jsonResult = mapper.writeValueAsString(object);
+         ObjectMapper mapper = newObjectMapper();
+         if(objectMapperCustomizer != null)
+         {
+            objectMapperCustomizer.accept(mapper);
+         }
+         String jsonResult = mapper.writeValueAsString(object);
          return (jsonResult);
       }
       catch(JsonProcessingException e)

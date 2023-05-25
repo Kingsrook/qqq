@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -38,6 +39,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -64,6 +66,24 @@ class JsonUtilsTest extends BaseTest
       String  json    = JsonUtils.toJson(qRecord);
       assertEquals("""
          {"tableName":"foo","values":{"foo":"Foo","bar":3.14159}}""", json);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_toJsonQRecordInputWithNullValues()
+   {
+      QRecord qRecord = getQRecord();
+      String json = JsonUtils.toJson(qRecord, objectMapper ->
+      {
+         objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+      });
+      
+      assertThat(json).contains("""
+         "values":{"foo":"Foo","bar":3.14159,"baz":null}""");
    }
 
 
@@ -213,6 +233,7 @@ class JsonUtilsTest extends BaseTest
       qRecord.setValues(values);
       values.put("foo", "Foo");
       values.put("bar", new BigDecimal("3.14159"));
+      values.put("baz", null);
       return qRecord;
    }
 
