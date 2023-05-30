@@ -391,11 +391,13 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
-    ** test an insert
+    ** test an insert - posting the data as a JSON object.
+    **
+    ** This was the original supported version, but multipart form was added in May 2023
     **
     *******************************************************************************/
    @Test
-   public void test_dataInsert()
+   public void test_dataInsertJson()
    {
       Map<String, Serializable> body = new HashMap<>();
       body.put("firstName", "Bobby");
@@ -425,11 +427,45 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
-    ** test an update
+    ** test an insert - posting a multipart form.
     **
     *******************************************************************************/
    @Test
-   public void test_dataUpdate()
+   public void test_dataInsertMultipartForm()
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
+         .header("Content-Type", "application/json")
+         .multiPartContent()
+         .field("firstName", "Bobby")
+         .field("lastName", "Hull")
+         .field("email", "bobby@hull.com")
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      assertEquals("person", record0.getString("tableName"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertTrue(values0.has("firstName"));
+      assertEquals("Bobby", values0.getString("firstName"));
+      assertTrue(values0.has("id"));
+      assertEquals(7, values0.getInt("id"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test an update - posting the data as a JSON object.
+    **
+    ** This was the original supported version, but multipart form was added in May 2023
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataUpdateJson()
    {
       Map<String, Serializable> body = new HashMap<>();
       body.put("firstName", "Free");
@@ -438,6 +474,44 @@ class QJavalinImplementationTest extends QJavalinTestBase
       HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
          .header("Content-Type", "application/json")
          .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      assertEquals("person", record0.getString("tableName"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals(4, values0.getInt("id"));
+      assertEquals("Free", values0.getString("firstName"));
+
+      ///////////////////////////////////////////////////////////////////
+      // re-GET the record, and validate that birthDate was nulled out //
+      ///////////////////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/4").asString();
+      assertEquals(200, response.getStatus());
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("values"));
+      JSONObject values = jsonObject.getJSONObject("values");
+      assertFalse(values.has("birthDate"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test an update - posting the data as a multipart form
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataUpdateMultipartForm()
+   {
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
+         .multiPartContent()
+         .field("firstName", "Free")
+         .field("birthDate", "")
          .asString();
 
       assertEquals(200, response.getStatus());

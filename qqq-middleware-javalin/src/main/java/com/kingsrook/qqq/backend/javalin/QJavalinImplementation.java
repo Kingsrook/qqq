@@ -654,6 +654,46 @@ public class QJavalinImplementation
     *******************************************************************************/
    private static void setRecordValuesForInsertOrUpdate(Context context, QTableMetaData tableMetaData, QRecord record) throws IOException
    {
+      String  contentType       = Objects.requireNonNullElse(context.header("content-type"), "");
+      boolean isContentTypeJson = contentType.toLowerCase().contains("json");
+
+      try
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the caller said they've sent JSON, or if they didn't supply a content-type, then try to read the body //
+         // as JSON.  if it throws, we'll continue by trying to read form params, but if it succeeds, we'll return.  //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(isContentTypeJson || !StringUtils.hasContent(contentType))
+         {
+            Map<?, ?> map = context.bodyAsClass(Map.class);
+            for(Map.Entry<?, ?> entry : map.entrySet())
+            {
+               String fieldName = ValueUtils.getValueAsString(entry.getKey());
+               Object value     = entry.getValue();
+
+               if(StringUtils.hasContent(String.valueOf(value)))
+               {
+                  record.setValue(fieldName, (Serializable) value);
+               }
+               else if("".equals(value))
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if frontend sent us an empty string - put a null in the record's value map.                   //
+                  // this could potentially be changed to be type-specific (e.g., store an empty-string for STRING //
+                  // fields, but null for INTEGER, etc) - but, who really wants empty-string in database anyway?   //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  record.setValue(fieldName, null);
+               }
+            }
+
+            return;
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error trying to read body as map", e, logPair("contentType", contentType));
+      }
+
       /////////////////////////
       // process form params //
       /////////////////////////
