@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
  *******************************************************************************/
 public class RenderTemplateInput extends AbstractActionInput
 {
+   private String       templateIdentifier;
    private String       code; // todo - TemplateReference, like CodeReference??
    private TemplateType templateType;
 
@@ -144,6 +145,37 @@ public class RenderTemplateInput extends AbstractActionInput
    public RenderTemplateInput withContext(Map<String, Object> context)
    {
       this.context = context;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for templateIdentifier
+    *******************************************************************************/
+   public String getTemplateIdentifier()
+   {
+      return (this.templateIdentifier);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for templateIdentifier
+    *******************************************************************************/
+   public void setTemplateIdentifier(String templateIdentifier)
+   {
+      this.templateIdentifier = templateIdentifier;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for templateIdentifier
+    *******************************************************************************/
+   public RenderTemplateInput withTemplateIdentifier(String templateIdentifier)
+   {
+      this.templateIdentifier = templateIdentifier;
       return (this);
    }
 

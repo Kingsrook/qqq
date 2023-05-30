@@ -26,20 +26,30 @@ import java.io.StringWriter;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateInput;
 import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
+import org.apache.velocity.app.event.EventCartridge;
+import org.apache.velocity.app.event.MethodExceptionEventHandler;
 import org.apache.velocity.context.Context;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  ** Basic action to render a template!
+ **
+ ** hard-coded built to only assume Velocity right now.  could expand (and refactor) in future.
  *******************************************************************************/
 public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplateInput, RenderTemplateOutput>
 {
+   private static final QLogger LOG = QLogger.getLogger(RenderTemplateAction.class);
+
+
 
    /*******************************************************************************
     **
@@ -52,9 +62,12 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
       if(TemplateType.VELOCITY.equals(input.getTemplateType()))
       {
          Velocity.init();
-         Context      context      = new VelocityContext(input.getContext());
+         Context context = new VelocityContext(input.getContext());
+
+         setupEventHandlers(context);
+
          StringWriter stringWriter = new StringWriter();
-         Velocity.evaluate(context, stringWriter, "logTag", input.getCode());
+         Velocity.evaluate(context, stringWriter, StringUtils.hasContent(input.getTemplateIdentifier()) ? input.getTemplateIdentifier() : "anonymous", input.getCode());
          output.setResult(stringWriter.getBuffer().toString());
       }
       else
@@ -68,11 +81,27 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void setupEventHandlers(Context context)
+   {
+      EventCartridge eventCartridge = new EventCartridge();
+      eventCartridge.addEventHandler((MethodExceptionEventHandler) (ctx, aClass, method, exception, info) ->
+      {
+         LOG.info("Exception in velocity template", exception, logPair("at", info.toString()));
+         return (null);
+      });
+      eventCartridge.attachToContext(context);
+   }
+
+
+
+   /*******************************************************************************
     ** Most convenient static wrapper to render a Velocity template.
     *******************************************************************************/
    public static String renderVelocity(AbstractActionInput parentActionInput, Map<String, Object> context, String code) throws QException
    {
-      return (render(parentActionInput, TemplateType.VELOCITY, context, code));
+      return (render(TemplateType.VELOCITY, context, code));
    }
 
 
@@ -80,7 +109,7 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
    /*******************************************************************************
     ** Convenient static wrapper to render a template of an arbitrary type (language).
     *******************************************************************************/
-   public static String render(AbstractActionInput parentActionInput, TemplateType templateType, Map<String, Object> context, String code) throws QException
+   public static String render(TemplateType templateType, Map<String, Object> context, String code) throws QException
    {
       RenderTemplateInput renderTemplateInput = new RenderTemplateInput();
       renderTemplateInput.setCode(code);
