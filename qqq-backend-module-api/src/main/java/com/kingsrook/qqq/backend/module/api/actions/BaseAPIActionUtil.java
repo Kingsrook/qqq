@@ -514,7 +514,7 @@ public class BaseAPIActionUtil
          {
             return;
          }
-         else if(statusCode == HttpStatus.SC_BAD_GATEWAY)
+         else if(statusCode == HttpStatus.SC_BAD_GATEWAY || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT)
          {
             LOG.info("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
             didLog = true;
@@ -918,7 +918,7 @@ public class BaseAPIActionUtil
                }
                else if(shouldBeRetryableServerErrorException(qResponse))
                {
-                  throw (new RetryableServerErrorException(qResponse.getContent()));
+                  throw (new RetryableServerErrorException(statusCode, qResponse.getContent()));
                }
                else if(statusCode >= 400)
                {
@@ -970,7 +970,7 @@ public class BaseAPIActionUtil
                throw (new QException(see));
             }
 
-            LOG.info("Caught Server-side error during API request", logPair("serverErrorsCaught", serverErrorsCaught), logPair("uri", request.getURI()), logPair("table", table.getName()), logPair("sleeping", serverErrorsSleepMillis));
+            LOG.info("Caught Server-side error during API request", logPair("serverErrorsCaught", serverErrorsCaught), logPair("uri", request.getURI()), logPair("code", see.getCode()), logPair("table", table.getName()), logPair("sleeping", serverErrorsSleepMillis));
             SleepUtils.sleep(serverErrorsSleepMillis, TimeUnit.MILLISECONDS);
             serverErrorsSleepMillis *= 2;
          }
@@ -995,7 +995,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   private boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
+   protected boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
    {
       return (qResponse.getStatusCode() != null && qResponse.getStatusCode() >= 500);
    }

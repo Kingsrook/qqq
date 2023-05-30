@@ -30,13 +30,48 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
  *******************************************************************************/
 public class RetryableServerErrorException extends QException
 {
+   private Integer code;
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RetryableServerErrorException(String message)
+   public RetryableServerErrorException(Integer code, String message)
    {
       super(message);
+      this.code = code;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for code
+    *******************************************************************************/
+   public Integer getCode()
+   {
+      return (this.code);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for code
+    *******************************************************************************/
+   public void setCode(Integer code)
+   {
+      this.code = code;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for code
+    *******************************************************************************/
+   public RetryableServerErrorException withCode(Integer code)
+   {
+      this.code = code;
+      return (this);
    }
 
 }
