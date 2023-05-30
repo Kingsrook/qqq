@@ -707,20 +707,4 @@ class BaseAPIActionUtilTest extends BaseTest
       return (new GetAction().execute(getInput));
    }
 
-
-
-   /*******************************************************************************
-    ** subclass of base api action utils that can be used to test overriding methods
-    *******************************************************************************/
-   private class BaseAPIActionUtilSubclass extends BaseAPIActionUtil
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      protected boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
-      {
-         return (false);
-      }
-
-   }
 }
