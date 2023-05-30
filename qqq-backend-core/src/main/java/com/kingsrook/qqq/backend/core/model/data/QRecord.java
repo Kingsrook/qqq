@@ -69,7 +69,11 @@ public class QRecord implements Serializable
 
    private Map<String, List<QRecord>> associatedRecords = new HashMap<>();
 
-   public static final String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT = "jsonSourceObject";
+   ////////////////////////////////////////////////
+   // well-known keys for the backendDetails map //
+   ////////////////////////////////////////////////
+   public static final String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT  = "jsonSourceObject"; // String of JSON
+   public static final String BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS = "heavyFieldLengths"; // Map<fieldName, length>
 
 
 

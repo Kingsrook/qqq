@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -530,6 +531,29 @@ public class QFieldMetaData implements Cloneable
    public List<FieldAdornment> getAdornments()
    {
       return adornments;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for adornments
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public Optional<FieldAdornment> getAdornment(AdornmentType adornmentType)
+   {
+      if(adornmentType != null && adornments != null)
+      {
+         for(FieldAdornment adornment : adornments)
+         {
+            if(adornmentType.equals(adornment.getType()))
+            {
+               return Optional.of((adornment));
+            }
+         }
+      }
+
+      return (Optional.empty());
    }
 
 

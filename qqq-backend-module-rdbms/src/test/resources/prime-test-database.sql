@@ -32,14 +32,15 @@ CREATE TABLE person
    email VARCHAR(250) NOT NULL,
    is_employed BOOLEAN,
    annual_salary DECIMAL(12,2),
-   days_worked INTEGER
+   days_worked INTEGER,
+   home_town VARCHAR(80)
 );
 
-INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 1, 25000, 27);
-INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com', 1, 26000, 124);
-INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com', 0, null, 0);
-INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com', 1, 30000, 99);
-INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com', 1, 1000000, 232);
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked, home_town) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 1, 25000, 27, 'Chester');
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked, home_town) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com', 1, 26000, 124, 'Chester');
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked, home_town) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com', 0, null, 0, 'Decatur');
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked, home_town) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com', 1, 30000, 99, 'Texas');
+INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked, home_town) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com', 1, 1000000, 232, null);
 
 DROP TABLE IF EXISTS personal_id_card;
 CREATE TABLE personal_id_card

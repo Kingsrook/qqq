@@ -134,6 +134,11 @@ public class ColumnStatsStep implements BackendStep
             throw (new QException("Could not find field by name: " + fieldName));
          }
 
+         if(field.getType().equals(QFieldType.BLOB))
+         {
+            throw (new QException("Column stats are not supported for this field's data type."));
+         }
+
          ////////////////////////////////////////////
          // do a count query grouped by this field //
          ////////////////////////////////////////////

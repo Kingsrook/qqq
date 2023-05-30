@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1661,6 +1663,37 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
 
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(1);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testHeavyFields() throws QException
+   {
+      //////////////////////////////////////////////////////////
+      // set homeTown field as heavy - so it won't be fetched //
+      //////////////////////////////////////////////////////////
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+         .getField("homeTown")
+         .withIsHeavy(true);
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_PERSON);
+      List<QRecord> records = new QueryAction().execute(queryInput).getRecords();
+      assertThat(records).describedAs("No records should have the heavy homeTown field set").noneMatch(r -> r.getValue("homeTown") != null);
+      assertThat(records).describedAs("Some records should have a homeTown length backend detail set").anyMatch(r -> ((Map<String, Serializable>) r.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS)).get("homeTown") != null);
+      assertThat(records).describedAs("Some records should have a null homeTown length backend").anyMatch(r -> ((Map<String, Serializable>) r.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS)).get("homeTown") == null);
+
+      //////////////////////////////////////////////
+      // re-do the query, requesting heavy fields //
+      //////////////////////////////////////////////
+      queryInput.setShouldFetchHeavyFields(true);
+      records = new QueryAction().execute(queryInput).getRecords();
+      assertThat(records).describedAs("Some records should have the heavy homeTown field set when heavies are requested").anyMatch(r -> r.getValue("homeTown") != null);
+
    }
 
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
@@ -116,6 +117,7 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
+import io.javalin.http.UploadedFile;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
@@ -619,38 +621,17 @@ public class QJavalinImplementation
          updateInput.setTableName(table);
 
          PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
+         QTableMetaData tableMetaData = qInstance.getTable(table);
+
+         QJavalinAccessLogger.logStart("update", logPair("table", table), logPair("primaryKey", primaryKey));
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(table);
          recordList.add(record);
 
-         Map<?, ?> map = context.bodyAsClass(Map.class);
-         for(Map.Entry<?, ?> entry : map.entrySet())
-         {
-            String fieldName = ValueUtils.getValueAsString(entry.getKey());
-            Object value     = entry.getValue();
-
-            if(StringUtils.hasContent(String.valueOf(value)))
-            {
-               record.setValue(fieldName, (Serializable) value);
-            }
-            else if("".equals(value))
-            {
-               ///////////////////////////////////////////////////////////////////////////////////////////////////
-               // if frontend sent us an empty string - put a null in the record's value map.                   //
-               // this could potentially be changed to be type-specific (e.g., store an empty-string for STRING //
-               // fields, but null for INTEGER, etc) - but, who really wants empty-string in database anyway?   //
-               ///////////////////////////////////////////////////////////////////////////////////////////////////
-               record.setValue(fieldName, null);
-            }
-         }
-
-         QTableMetaData tableMetaData = qInstance.getTable(table);
          record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
-
-         QJavalinAccessLogger.logStart("update", logPair("table", table), logPair("primaryKey", primaryKey));
-
+         setRecordValuesForInsertOrUpdate(context, tableMetaData, record);
          updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
@@ -671,6 +652,87 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void setRecordValuesForInsertOrUpdate(Context context, QTableMetaData tableMetaData, QRecord record) throws IOException
+   {
+      /////////////////////////
+      // process form params //
+      /////////////////////////
+      for(Map.Entry<String, List<String>> formParam : context.formParamMap().entrySet())
+      {
+         String       fieldName = formParam.getKey();
+         List<String> values    = formParam.getValue();
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            String value = values.get(0);
+            if(StringUtils.hasContent(value))
+            {
+               record.setValue(fieldName, value);
+            }
+            else
+            {
+               record.setValue(fieldName, null);
+            }
+         }
+         else
+         {
+            // is this ever hit?
+            record.setValue(fieldName, null);
+         }
+      }
+
+      ////////////////////////////
+      // process uploaded files //
+      ////////////////////////////
+      for(Map.Entry<String, List<UploadedFile>> entry : CollectionUtils.nonNullMap(context.uploadedFileMap()).entrySet())
+      {
+         String             fieldName     = entry.getKey();
+         List<UploadedFile> uploadedFiles = entry.getValue();
+         if(uploadedFiles.size() > 0)
+         {
+            UploadedFile uploadedFile = uploadedFiles.get(0);
+            try(InputStream content = uploadedFile.content())
+            {
+               record.setValue(fieldName, content.readAllBytes());
+            }
+
+            QFieldMetaData blobField = tableMetaData.getField(fieldName);
+            blobField.getAdornment(AdornmentType.FILE_DOWNLOAD).ifPresent(adornment ->
+            {
+               adornment.getValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD).ifPresent(fileNameFieldName ->
+               {
+                  record.setValue(ValueUtils.getValueAsString(fileNameFieldName), uploadedFile.filename());
+               });
+            });
+         }
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the record has any blob fields, and we're clearing them out (present in the values list, and set to null), //
+      // and they have a  file-name field associated with them, then also clear out that file-name field               //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QFieldMetaData field : tableMetaData.getFields().values())
+      {
+         if(field.getType().equals(QFieldType.BLOB))
+         {
+            field.getAdornment(AdornmentType.FILE_DOWNLOAD).ifPresent(adornment ->
+            {
+               adornment.getValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD).ifPresent(fileNameFieldName ->
+               {
+                  if(record.getValues().containsKey(field.getName()) && record.getValue(field.getName()) == null)
+                  {
+                     record.setValue(ValueUtils.getValueAsString(fileNameFieldName), null);
+                  }
+               });
+            });
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void dataInsert(Context context)
    {
       String tableName = context.pathParam("table");
@@ -682,20 +744,13 @@ public class QJavalinImplementation
          QJavalinAccessLogger.logStart("insert", logPair("table", tableName));
 
          PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+         QTableMetaData tableMetaData = qInstance.getTable(tableName);
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(tableName);
          recordList.add(record);
-
-         Map<?, ?> map = context.bodyAsClass(Map.class);
-         for(Map.Entry<?, ?> entry : map.entrySet())
-         {
-            if(StringUtils.hasContent(String.valueOf(entry.getValue())))
-            {
-               record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
-            }
-         }
+         setRecordValuesForInsertOrUpdate(context, tableMetaData, record);
          insertInput.setRecords(recordList);
 
          InsertAction insertAction = new InsertAction();
@@ -703,14 +758,14 @@ public class QJavalinImplementation
 
          if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getErrors()))
          {
-            throw (new QUserFacingException("Error inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
+            throw (new QUserFacingException("Error inserting " + tableMetaData.getLabel() + ": " + insertOutput.getRecords().get(0).getErrors().get(0)));
          }
          if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getWarnings()))
          {
-            throw (new QUserFacingException("Warning inserting " + qInstance.getTable(tableName).getLabel() + ": " + insertOutput.getRecords().get(0).getWarnings().get(0)));
+            throw (new QUserFacingException("Warning inserting " + tableMetaData.getLabel() + ": " + insertOutput.getRecords().get(0).getWarnings().get(0)));
          }
 
-         QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (insertOutput.getRecords().get(0).getValue(qInstance.getTable(tableName).getPrimaryKeyField()))));
+         QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (insertOutput.getRecords().get(0).getValue(tableMetaData.getPrimaryKeyField()))));
          context.result(JsonUtils.toJson(insertOutput));
       }
       catch(Exception e)
@@ -795,7 +850,7 @@ public class QJavalinImplementation
             // - tableLabel primaryKey fieldLabel                                                                               //
             // - and - if the FILE_DOWNLOAD adornment had a DEFAULT_EXTENSION, then it gets added (preceded by a dot)           //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            Optional<FieldAdornment>  fileDownloadAdornment = field.getAdornments().stream().filter(a -> a.getType().equals(AdornmentType.FILE_DOWNLOAD)).findFirst();
+            Optional<FieldAdornment>  fileDownloadAdornment = field.getAdornment(AdornmentType.FILE_DOWNLOAD);
             Map<String, Serializable> adornmentValues       = Collections.emptyMap();
 
             if(fileDownloadAdornment.isPresent())
@@ -809,6 +864,11 @@ public class QJavalinImplementation
 
             for(QRecord record : records)
             {
+               if(!doesFieldHaveValue(field, record))
+               {
+                  continue;
+               }
+
                Serializable primaryKey = record.getValue(table.getPrimaryKeyField());
                String       fileName   = null;
 
@@ -826,7 +886,8 @@ public class QJavalinImplementation
                   {
                      @SuppressWarnings("unchecked") // instance validation should make this safe!
                      List<String> fileNameFormatFields = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
-                     fileName = QValueFormatter.formatStringWithValues(fileNameFormat, fileNameFormatFields);
+                     List<String> values = fileNameFormatFields.stream().map(f -> ValueUtils.getValueAsString(record.getValue(f))).toList();
+                     fileName = QValueFormatter.formatStringWithValues(fileNameFormat, values);
                   }
                }
 
@@ -851,6 +912,45 @@ public class QJavalinImplementation
             }
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean doesFieldHaveValue(QFieldMetaData field, QRecord record)
+   {
+      boolean fieldHasValue = false;
+
+      try
+      {
+         if(record.getValue(field.getName()) != null)
+         {
+            fieldHasValue = true;
+         }
+         else if(field.getIsHeavy())
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // heavy fields that weren't fetched - they should have a backend-detail specifying their length (or null if null) //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            Map<String, Serializable> heavyFieldLengths = (Map<String, Serializable>) record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS);
+            if(heavyFieldLengths != null)
+            {
+               Integer fieldLength = ValueUtils.getValueAsInteger(heavyFieldLengths.get(field.getName()));
+               if(fieldLength != null && fieldLength > 0)
+               {
+                  fieldHasValue = true;
+               }
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error checking if field has value", e, logPair("fieldName", field.getName()), logPair("record", record));
+      }
+
+      return fieldHasValue;
    }
 
 

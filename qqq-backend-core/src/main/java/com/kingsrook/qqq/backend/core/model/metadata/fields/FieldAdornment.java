@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
@@ -112,6 +114,22 @@ public class FieldAdornment
    public Map<String, Serializable> getValues()
    {
       return values;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public Optional<Serializable> getValue(String key)
+   {
+      if(key != null && values != null)
+      {
+         return (Optional.ofNullable(values.get(key)));
+      }
+
+      return (Optional.empty());
    }
 
 
