@@ -717,7 +717,7 @@ class BaseAPIActionUtilTest extends BaseTest
       /*******************************************************************************
        **
        *******************************************************************************/
-      private boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
+      protected boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
       {
          return (false);
       }
