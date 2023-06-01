@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
+import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
@@ -70,6 +71,17 @@ public class MemoryBackendModule implements QBackendModuleInterface
    public QueryInterface getQueryInterface()
    {
       return new MemoryQueryAction();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public AggregateInterface getAggregateInterface()
+   {
+      return new MemoryAggregateAction();
    }
 
 
