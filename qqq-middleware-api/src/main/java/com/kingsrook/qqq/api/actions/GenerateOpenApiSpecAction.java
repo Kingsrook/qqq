@@ -480,9 +480,19 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
+            StringBuilder description = new StringBuilder("Query on the " + tableApiField.getLabel() + " field.  ");
+            if(tableApiField.getType().equals(QFieldType.BLOB))
+            {
+               description.append("Can only query for EMPTY or !EMPTY.");
+            }
+            else
+            {
+               description.append("Can prefix value with an operator, else defaults to = (equals).");
+            }
+
             queryGet.getParameters().add(new Parameter()
                .withName(tableApiField.getName())
-               .withDescription("Query on the " + tableApiField.getLabel() + " field.  Can prefix value with an operator, else defaults to = (equals).")
+               .withDescription(description.toString())
                .withIn("query")
                .withExplode(true)
                .withSchema(new Schema()
@@ -837,6 +847,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       rs.put("criteriaStringNotLike", new ExampleWithListValue().withSummary("not starting with f").withValue(ListBuilder.of("!LIKE f%")));
       rs.put("criteriaStringMultiple", new ExampleWithListValue().withSummary("multiple criteria: between bar and foo and not equal to baz").withValue(ListBuilder.of("BETWEEN bar,foo", "!baz")));
 
+      rs.put("criteriaBlobEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaBlobNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+
       return (rs);
    }
 
@@ -869,6 +882,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       else if(tableApiField.getType().equals(QFieldType.BOOLEAN))
       {
          componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaBoolean")).forEach(exampleRefs::add);
+      }
+      else if(tableApiField.getType().equals(QFieldType.BLOB))
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaBlob")).forEach(exampleRefs::add);
       }
 
       Map<String, Example> rs = new LinkedHashMap<>();
@@ -910,10 +927,16 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    private Schema getFieldSchema(QTableMetaData table, QFieldMetaData field)
    {
+      String description = field.getLabel() + " for the " + table.getLabel() + ".";
+      if(field.getType().equals(QFieldType.BLOB))
+      {
+         description = "Base64 encoded " + description;
+      }
+
       Schema fieldSchema = new Schema()
          .withType(getFieldType(field))
          .withFormat(getFieldFormat(field))
-         .withDescription(field.getLabel() + " for the " + table.getLabel() + ".");
+         .withDescription(description);
 
       if(!field.getIsEditable())
       {

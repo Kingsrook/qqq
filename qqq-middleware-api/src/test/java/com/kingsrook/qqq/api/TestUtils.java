@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.api;
 
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
@@ -191,7 +191,8 @@ public class TestUtils
          // .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
          .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
-         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY));
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("photo", QFieldType.BLOB));
 
       table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(PersonPreInsertCustomizer.class, QCodeUsage.CUSTOMIZER));
 
@@ -378,11 +379,16 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void insertPersonRecord(Integer id, String firstName, String lastName, LocalDate birthDate) throws QException
+   public static void insertPersonRecord(Integer id, String firstName, String lastName, Consumer<QRecord> recordCustomizer) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName).withValue("birthDate", birthDate)));
+      QRecord record = new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName);
+      if(recordCustomizer != null)
+      {
+         recordCustomizer.accept(record);
+      }
+      insertInput.setRecords(List.of(record));
       new InsertAction().execute(insertInput);
    }
 

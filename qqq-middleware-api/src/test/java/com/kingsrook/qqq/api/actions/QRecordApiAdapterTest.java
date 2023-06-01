@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -61,12 +62,14 @@ class QRecordApiAdapterTest extends BaseTest
          .withValue("noOfShoes", 2)
          .withValue("birthDate", LocalDate.of(1980, Month.MAY, 31))
          .withValue("cost", new BigDecimal("3.50"))
-         .withValue("price", new BigDecimal("9.99"));
+         .withValue("price", new BigDecimal("9.99"))
+         .withValue("photo", "ABCD".getBytes());
 
       Map<String, Serializable> pastApiRecord = QRecordApiAdapter.qRecordToApiMap(person, TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4);
       assertEquals(2, pastApiRecord.get("shoeCount")); // old field name - not currently in the QTable, but we can still get its value!
       assertFalse(pastApiRecord.containsKey("noOfShoes")); // current field name - doesn't appear in old api-version
       assertFalse(pastApiRecord.containsKey("cost")); // a current field name, but also not in this old api version
+      assertEquals("QUJDRA==", pastApiRecord.get("photo")); // base64 version of "ABCD".getBytes()
 
       Map<String, Serializable> currentApiRecord = QRecordApiAdapter.qRecordToApiMap(person, TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1);
       assertFalse(currentApiRecord.containsKey("shoeCount")); // old field name - not in this current api version
@@ -109,9 +112,10 @@ class QRecordApiAdapterTest extends BaseTest
       // past version took shoeCount - so we still take that, but now put it in noOfShoes field of qRecord //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       QRecord recordFromOldApi = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
-         {"firstName": "Tim", "shoeCount": 2}
+         {"firstName": "Tim", "shoeCount": 2, "photo": "QUJDRA=="}
          """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4, true);
       assertEquals(2, recordFromOldApi.getValueInteger("noOfShoes"));
+      assertArrayEquals("ABCD".getBytes(), recordFromOldApi.getValueByteArray("photo"));
 
       ///////////////////////////////////////////
       // current version takes it as noOfShoes //
