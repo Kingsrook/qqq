@@ -215,10 +215,13 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                }
             }
 
-            insertInput = new InsertInput();
-            insertInput.setTableName("auditDetail");
-            insertInput.setRecords(auditDetailRecords);
-            new InsertAction().execute(insertInput);
+            if(!auditDetailRecords.isEmpty())
+            {
+               insertInput = new InsertInput();
+               insertInput.setTableName("auditDetail");
+               insertInput.setRecords(auditDetailRecords);
+               new InsertAction().execute(insertInput);
+            }
          }
          catch(Exception e)
          {
