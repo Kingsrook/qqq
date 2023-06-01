@@ -95,6 +95,14 @@ class QRecordApiAdapterTest extends BaseTest
          Map<String, Serializable> alternativeApiRecord = QRecordApiAdapter.qRecordToApiMap(person, TestUtils.TABLE_NAME_PERSON, TestUtils.ALTERNATIVE_API_NAME, version);
          for(String key : person.getValues().keySet())
          {
+            if(key.equals("photo"))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////
+               // ok, well, skip the blob field (should be base64 version, and is covered elsewhere) //
+               ////////////////////////////////////////////////////////////////////////////////////////
+               continue;
+            }
+
             assertEquals(person.getValueString(key), ValueUtils.getValueAsString(alternativeApiRecord.get(key)));
          }
       }
