@@ -23,19 +23,24 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -98,11 +103,22 @@ public class QueryAction
          }
       }
 
+      QueryStat queryStat = new QueryStat();
+      queryStat.setTableName(queryInput.getTableName());
+      queryStat.setQQueryFilter(Objects.requireNonNullElse(queryInput.getFilter(), new QQueryFilter()));
+      queryStat.setStartTimestamp(Instant.now());
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
       // todo pre-customization - just get to modify the request?
-      QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
-      // todo post-customization - can do whatever w/ the result if you want
+
+      QueryInterface queryInterface = qModule.getQueryInterface();
+      queryInterface.setQueryStat(queryStat);
+      QueryOutput queryOutput = queryInterface.execute(queryInput);
+
+      // todo post-customization - can do whatever w/ the result if you want?
+
+      QueryStatManager.getInstance().add(queryStat);
 
       if(queryInput.getRecordPipe() instanceof BufferedRecordPipe bufferedRecordPipe)
       {

@@ -23,8 +23,12 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,6 +41,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 
 
@@ -47,7 +52,8 @@ public abstract class QRecordEntity
 {
    private static final QLogger LOG = QLogger.getLogger(QRecordEntity.class);
 
-   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField> fieldMapping = new ListingHash<>();
+   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityField>       fieldMapping       = new ListingHash<>();
+   private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityAssociation> associationMapping = new ListingHash<>();
 
 
 
@@ -75,16 +81,33 @@ public abstract class QRecordEntity
     ** Build an entity of this QRecord type from a QRecord
     **
     *******************************************************************************/
-   protected <T extends QRecordEntity> void populateFromQRecord(QRecord qRecord) throws QRuntimeException
+   protected void populateFromQRecord(QRecord qRecord) throws QRuntimeException
    {
       try
       {
-         List<QRecordEntityField> fieldList = getFieldList(this.getClass());
-         for(QRecordEntityField qRecordEntityField : fieldList)
+         for(QRecordEntityField qRecordEntityField : getFieldList(this.getClass()))
          {
             Serializable value      = qRecord.getValue(qRecordEntityField.getFieldName());
             Object       typedValue = qRecordEntityField.convertValueType(value);
             qRecordEntityField.getSetter().invoke(this, typedValue);
+         }
+
+         for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
+         {
+            List<QRecord> associatedRecords = qRecord.getAssociatedRecords().get(qRecordEntityAssociation.getAssociationAnnotation().name());
+            if(associatedRecords == null)
+            {
+               qRecordEntityAssociation.getSetter().invoke(this, (Object) null);
+            }
+            else
+            {
+               List<QRecordEntity> associatedEntityList = new ArrayList<>();
+               for(QRecord associatedRecord : CollectionUtils.nonNullList(associatedRecords))
+               {
+                  associatedEntityList.add(QRecordEntity.fromQRecord(qRecordEntityAssociation.getAssociatedType(), associatedRecord));
+               }
+               qRecordEntityAssociation.getSetter().invoke(this, associatedEntityList);
+            }
          }
       }
       catch(Exception e)
@@ -105,10 +128,28 @@ public abstract class QRecordEntity
       {
          QRecord qRecord = new QRecord();
 
-         List<QRecordEntityField> fieldList = getFieldList(this.getClass());
-         for(QRecordEntityField qRecordEntityField : fieldList)
+         for(QRecordEntityField qRecordEntityField : getFieldList(this.getClass()))
          {
             qRecord.setValue(qRecordEntityField.getFieldName(), (Serializable) qRecordEntityField.getGetter().invoke(this));
+         }
+
+         for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
+         {
+            List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
+            String                        associationName    = qRecordEntityAssociation.getAssociationAnnotation().name();
+
+            if(associatedEntities != null)
+            {
+               /////////////////////////////////////////////////////////////////////////////////
+               // do this so an empty list in the entity becomes an empty list in the QRecord //
+               /////////////////////////////////////////////////////////////////////////////////
+               qRecord.withAssociatedRecords(associationName, new ArrayList<>());
+            }
+
+            for(QRecordEntity associatedEntity : CollectionUtils.nonNullList(associatedEntities))
+            {
+               qRecord.withAssociatedRecord(associationName, associatedEntity.toQRecord());
+            }
          }
 
          return (qRecord);
@@ -157,12 +198,70 @@ public abstract class QRecordEntity
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static List<QRecordEntityAssociation> getAssociationList(Class<? extends QRecordEntity> c)
+   {
+      if(!associationMapping.containsKey(c))
+      {
+         List<QRecordEntityAssociation> associationList = new ArrayList<>();
+         for(Method possibleGetter : c.getMethods())
+         {
+            if(isGetter(possibleGetter))
+            {
+               Optional<Method> setter = getSetterForGetter(c, possibleGetter);
+
+               if(setter.isPresent())
+               {
+                  String                 fieldName             = getFieldNameFromGetter(possibleGetter);
+                  Optional<QAssociation> associationAnnotation = getQAssociationAnnotation(c, fieldName);
+
+                  if(associationAnnotation.isPresent())
+                  {
+                     Class<? extends QRecordEntity> listTypeParam = (Class<? extends QRecordEntity>) getListTypeParam(possibleGetter.getReturnType(), possibleGetter.getAnnotatedReturnType());
+                     associationList.add(new QRecordEntityAssociation(fieldName, possibleGetter, setter.get(), listTypeParam, associationAnnotation.orElse(null)));
+                  }
+               }
+               else
+               {
+                  LOG.info("Getter method [" + possibleGetter.getName() + "] does not have a corresponding setter.");
+               }
+            }
+         }
+         associationMapping.put(c, associationList);
+      }
+      return (associationMapping.get(c));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static Optional<QField> getQFieldAnnotation(Class<? extends QRecordEntity> c, String fieldName)
+   {
+      return (getAnnotationOnField(c, QField.class, fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Optional<QAssociation> getQAssociationAnnotation(Class<? extends QRecordEntity> c, String fieldName)
+   {
+      return (getAnnotationOnField(c, QAssociation.class, fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <A extends Annotation> Optional<A> getAnnotationOnField(Class<? extends QRecordEntity> c, Class<A> annotationClass, String fieldName)
    {
       try
       {
          Field field = c.getDeclaredField(fieldName);
-         return (Optional.ofNullable(field.getAnnotation(QField.class)));
+         return (Optional.ofNullable(field.getAnnotation(annotationClass)));
       }
       catch(NoSuchFieldException e)
       {
@@ -197,7 +296,7 @@ public abstract class QRecordEntity
    {
       if(method.getParameterTypes().length == 0 && method.getName().matches("^get[A-Z].*"))
       {
-         if(isSupportedFieldType(method.getReturnType()))
+         if(isSupportedFieldType(method.getReturnType()) || isSupportedAssociation(method.getReturnType(), method.getAnnotatedReturnType()))
          {
             return (true);
          }
@@ -259,6 +358,43 @@ public abstract class QRecordEntity
       // - QFieldType.fromClass                  //
       // - QRecordEntityField.convertValueType   //
       /////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean isSupportedAssociation(Class<?> returnType, AnnotatedType annotatedType)
+   {
+      Class<?> listTypeParam = getListTypeParam(returnType, annotatedType);
+      return (listTypeParam != null && QRecordEntity.class.isAssignableFrom(listTypeParam));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Class<?> getListTypeParam(Class<?> listType, AnnotatedType annotatedType)
+   {
+      if(listType.equals(List.class))
+      {
+         if(annotatedType instanceof AnnotatedParameterizedType apt)
+         {
+            AnnotatedType[] annotatedActualTypeArguments = apt.getAnnotatedActualTypeArguments();
+            for(AnnotatedType annotatedActualTypeArgument : annotatedActualTypeArguments)
+            {
+               Type type = annotatedActualTypeArgument.getType();
+               if(type instanceof Class<?> c)
+               {
+                  return (c);
+               }
+            }
+         }
+      }
+
+      return (null);
    }
 
 }
