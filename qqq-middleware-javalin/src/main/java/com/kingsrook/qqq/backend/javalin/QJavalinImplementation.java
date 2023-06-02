@@ -615,24 +615,18 @@ public class QJavalinImplementation
          updateInput.setTableName(tableName);
 
          PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
-         QTableMetaData tableMetaData = qInstance.getTable(table);
+         QTableMetaData tableMetaData = qInstance.getTable(tableName);
 
-         QJavalinAccessLogger.logStart("update", logPair("table", table), logPair("primaryKey", primaryKey));
+         QJavalinAccessLogger.logStart("update", logPair("table", tableName), logPair("primaryKey", primaryKey));
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(tableName);
          recordList.add(record);
+         updateInput.setRecords(recordList);
 
          record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
          setRecordValuesForInsertOrUpdate(context, tableMetaData, record);
-         updateInput.setRecords(recordList);
-
-         record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
-
-         QJavalinAccessLogger.logStart("update", logPair("table", tableName), logPair("primaryKey", primaryKey));
-
-         updateInput.setRecords(recordList);
 
          UpdateAction updateAction = new UpdateAction();
          UpdateOutput updateOutput = updateAction.execute(updateInput);
