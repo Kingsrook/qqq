@@ -221,9 +221,9 @@ public class DeleteAction
       oldRecordList.ifPresent(l -> dmlAuditInput.setRecordList(l));
       new DMLAuditAction().execute(dmlAuditInput);
 
-      /////////////////////////////////////////////////////////////
-      // finally, run the pre-delete customizer, if there is one //
-      /////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////
+      // finally, run the post-delete customizer, if there is one //
+      //////////////////////////////////////////////////////////////
       Optional<AbstractPostDeleteCustomizer> postDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPostDeleteCustomizer.class, table, TableCustomizers.POST_DELETE_RECORD.getRole());
       if(postDeleteCustomizer.isPresent() && oldRecordList.isPresent())
       {

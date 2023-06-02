@@ -144,9 +144,9 @@ public class UpdateAction
          new DMLAuditAction().execute(dmlAuditInput);
       }
 
-      /////////////////////////////////////////////////////////////
-      // finally, run the pre-update customizer, if there is one //
-      /////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////
+      // finally, run the post-update customizer, if there is one //
+      //////////////////////////////////////////////////////////////
       Optional<AbstractPostUpdateCustomizer> postUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPostUpdateCustomizer.class, table, TableCustomizers.POST_UPDATE_RECORD.getRole());
       if(postUpdateCustomizer.isPresent())
       {

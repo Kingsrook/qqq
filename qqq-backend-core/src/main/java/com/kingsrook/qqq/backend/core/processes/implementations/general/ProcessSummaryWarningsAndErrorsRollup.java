@@ -34,7 +34,10 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 
 
 /*******************************************************************************
- **
+ ** Helper class for process steps that want to roll up error summary and/or
+ ** warning summary lines.  e.g., if the process might have a handful of different
+ ** error messages.  Will record up to 50 unique errors, then throw the rest int
+ ** an "other" errors summary.
  *******************************************************************************/
 public class ProcessSummaryWarningsAndErrorsRollup
 {

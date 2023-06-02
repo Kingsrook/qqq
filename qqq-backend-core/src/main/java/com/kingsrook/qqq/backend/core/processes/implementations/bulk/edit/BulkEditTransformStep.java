@@ -139,9 +139,6 @@ public class BulkEditTransformStep extends AbstractTransformStep
             outputRecords.add(recordToUpdate);
             setUpdatedFieldsInRecord(runBackendStepInput, enabledFields, recordToUpdate);
          }
-
-         // i think load step will do this.
-         // okSummary.incrementCount(runBackendStepInput.getRecords().size());
       }
       else
       {

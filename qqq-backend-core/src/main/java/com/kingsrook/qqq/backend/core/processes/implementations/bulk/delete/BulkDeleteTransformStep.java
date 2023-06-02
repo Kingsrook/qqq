@@ -151,9 +151,6 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
          // no transformation needs done - just pass records through from input to output, and assume errors & warnings will come from the delete action //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          runBackendStepOutput.setRecords(runBackendStepInput.getRecords());
-
-         // i think load step will do this.
-         // okSummary.incrementCount(runBackendStepInput.getRecords().size());
       }
    }
 

@@ -26,10 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -38,7 +35,6 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
@@ -48,8 +44,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
- ** Generic implementation of a LoadStep - that runs a Delete action for a
- ** specified table.
+ ** Load step for bulk-delete.
  *******************************************************************************/
 public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSummaryProviderInterface
 {
@@ -153,17 +148,4 @@ public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSumm
       }
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
-   {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-
-      return (Optional.of(new InsertAction().openTransaction(insertInput)));
-   }
 }

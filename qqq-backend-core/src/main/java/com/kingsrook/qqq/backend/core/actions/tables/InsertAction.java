@@ -136,9 +136,9 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
       }
 
-      /////////////////////////////////////////////////////////////
-      // finally, run the pre-insert customizer, if there is one //
-      /////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////
+      // finally, run the post-insert customizer, if there is one //
+      //////////////////////////////////////////////////////////////
       Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
       if(postInsertCustomizer.isPresent())
       {
