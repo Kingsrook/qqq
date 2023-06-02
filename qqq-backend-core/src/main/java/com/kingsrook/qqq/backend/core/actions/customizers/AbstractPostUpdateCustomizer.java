@@ -114,9 +114,13 @@ public abstract class AbstractPostUpdateCustomizer
       if(oldRecordMap == null)
       {
          oldRecordMap = new HashMap<>();
-         for(QRecord qRecord : oldRecordList)
+
+         if(oldRecordList != null && updateInput != null)
          {
-            oldRecordMap.put(qRecord.getValue(updateInput.getTable().getPrimaryKeyField()), qRecord);
+            for(QRecord qRecord : oldRecordList)
+            {
+               oldRecordMap.put(qRecord.getValue(updateInput.getTable().getPrimaryKeyField()), qRecord);
+            }
          }
       }
 
