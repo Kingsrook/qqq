@@ -24,8 +24,13 @@ package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
@@ -45,7 +50,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOu
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -59,6 +64,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -140,6 +146,14 @@ public class ColumnStatsStep implements BackendStep
          Aggregate aggregate = new Aggregate(table.getPrimaryKeyField(), AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
          GroupBy   groupBy   = new GroupBy(field.getType(), fieldName);
 
+         // todo - something here about "by-date, not time"
+         if(field.getType().equals(QFieldType.DATE_TIME))
+         {
+            // groupBy = new GroupBy(field.getType(), fieldName, "DATE(%s)");
+            String sqlExpression = DateTimeGroupBy.HOUR.getSqlExpression();
+            groupBy = new GroupBy(QFieldType.STRING, fieldName, sqlExpression);
+         }
+
          if(StringUtils.hasContent(orderBy))
          {
             if(orderBy.equalsIgnoreCase("count.asc"))
@@ -152,11 +166,11 @@ public class ColumnStatsStep implements BackendStep
             }
             else if(orderBy.equalsIgnoreCase(fieldName + ".asc"))
             {
-               filter.withOrderBy(new QFilterOrderBy(fieldName, true));
+               filter.withOrderBy(new QFilterOrderByGroupBy(groupBy, true));
             }
             else if(orderBy.equalsIgnoreCase(fieldName + ".desc"))
             {
-               filter.withOrderBy(new QFilterOrderBy(fieldName, false));
+               filter.withOrderBy(new QFilterOrderByGroupBy(groupBy, false));
             }
             else
             {
@@ -168,7 +182,7 @@ public class ColumnStatsStep implements BackendStep
          // always add order by to break ties.  these will be the default too, if input didn't supply one //
          ///////////////////////////////////////////////////////////////////////////////////////////////////
          filter.withOrderBy(new QFilterOrderByAggregate(aggregate, false));
-         filter.withOrderBy(new QFilterOrderBy(fieldName));
+         filter.withOrderBy(new QFilterOrderByGroupBy(groupBy));
 
          Integer        limit          = 1000; // too big?
          AggregateInput aggregateInput = new AggregateInput();
@@ -192,6 +206,14 @@ public class ColumnStatsStep implements BackendStep
             Integer      count = ValueUtils.getValueAsInteger(result.getAggregateValue(aggregate));
             valueCounts.add(new QRecord().withValue(fieldName, value).withValue("count", count));
          }
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         // so... our json serialization causes both "" and null values to go to the frontend as null... //
+         // so we get 2 rows, but they look the same to the frontend.                                    //
+         // turns out, users (probably?) don't care about the difference, so let's merge "" and null!    //
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         Integer rowsWithAValueToDecrease = mergeEmptyStringAndNull(field, fieldName, valueCounts, orderBy);
+
          QFieldMetaData countField = new QFieldMetaData("count", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS).withLabel("Count");
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator();
@@ -315,28 +337,49 @@ public class ColumnStatsStep implements BackendStep
                statsAggregateInput.withQueryJoin(queryJoin);
             }
             AggregateOutput statsAggregateOutput = new AggregateAction().execute(statsAggregateInput);
-            AggregateResult statsAggregateResult = statsAggregateOutput.getResults().get(0);
+            if(CollectionUtils.nullSafeHasContents(statsAggregateOutput.getResults()))
+            {
+               AggregateResult statsAggregateResult = statsAggregateOutput.getResults().get(0);
 
-            statsRecord.setValue(countNonNullField.getName(), statsAggregateResult.getAggregateValue(countNonNullAggregate));
-            if(doCountDistinct)
-            {
-               statsRecord.setValue(countDistinctField.getName(), statsAggregateResult.getAggregateValue(countDistinctAggregate));
-            }
-            if(doSum)
-            {
-               statsRecord.setValue(sumField.getName(), statsAggregateResult.getAggregateValue(sumAggregate));
-            }
-            if(doAvg)
-            {
-               statsRecord.setValue(avgField.getName(), statsAggregateResult.getAggregateValue(avgAggregate));
-            }
-            if(doMin)
-            {
-               statsRecord.setValue(minField.getName(), statsAggregateResult.getAggregateValue(minAggregate));
-            }
-            if(doMax)
-            {
-               statsRecord.setValue(maxField.getName(), statsAggregateResult.getAggregateValue(maxAggregate));
+               statsRecord.setValue(countNonNullField.getName(), statsAggregateResult.getAggregateValue(countNonNullAggregate));
+               if(doCountDistinct)
+               {
+                  statsRecord.setValue(countDistinctField.getName(), statsAggregateResult.getAggregateValue(countDistinctAggregate));
+               }
+               if(doSum)
+               {
+                  statsRecord.setValue(sumField.getName(), statsAggregateResult.getAggregateValue(sumAggregate));
+               }
+               if(doAvg)
+               {
+                  statsRecord.setValue(avgField.getName(), statsAggregateResult.getAggregateValue(avgAggregate));
+               }
+               if(doMin)
+               {
+                  statsRecord.setValue(minField.getName(), statsAggregateResult.getAggregateValue(minAggregate));
+               }
+               if(doMax)
+               {
+                  statsRecord.setValue(maxField.getName(), statsAggregateResult.getAggregateValue(maxAggregate));
+               }
+
+               if(rowsWithAValueToDecrease != null)
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////
+                  // this is in case we merged any "" and null values -                                        //
+                  // we need to take away however many ""'s there were from countNonNull (treat those as null) //
+                  // and decrease unique values by 1                                                           //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////
+                  try
+                  {
+                     statsRecord.setValue(countNonNullField.getName(), statsRecord.getValueInteger(countNonNullField.getName()) - rowsWithAValueToDecrease);
+                     statsRecord.setValue(countDistinctField.getName(), statsRecord.getValueInteger(countDistinctField.getName()) - 1);
+                  }
+                  catch(Exception e)
+                  {
+                     LOG.warn("Error decreasing by non-null empty string count", e, logPair("fieldName", fieldName), logPair("tableName", tableName));
+                  }
+               }
             }
          }
 
@@ -352,6 +395,72 @@ public class ColumnStatsStep implements BackendStep
       {
          throw new QException("Error calculating stats", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Integer mergeEmptyStringAndNull(QFieldMetaData field, String fieldName, ArrayList<QRecord> valueCounts, String orderBy)
+   {
+      if(field.getType().isStringLike())
+      {
+         Integer nullCount        = null;
+         Integer emptyStringCount = null;
+         for(QRecord record : valueCounts)
+         {
+            if("".equals(record.getValue(fieldName)))
+            {
+               emptyStringCount = record.getValueInteger("count");
+            }
+            else if(record.getValue(fieldName) == null)
+            {
+               nullCount = record.getValueInteger("count");
+            }
+         }
+
+         if(nullCount != null && emptyStringCount != null)
+         {
+            Iterator<QRecord> iterator = valueCounts.iterator();
+            while(iterator.hasNext())
+            {
+               QRecord record = iterator.next();
+               if("".equals(record.getValue(fieldName)))
+               {
+                  iterator.remove();
+               }
+               else if(record.getValue(fieldName) == null)
+               {
+                  record.setValue("count", nullCount + emptyStringCount);
+               }
+            }
+
+            ///////////////////////////////////////////////////
+            // re-sort the records, as the counts may change //
+            ///////////////////////////////////////////////////
+            if(StringUtils.hasContent(orderBy))
+            {
+               if(orderBy.toLowerCase().startsWith("count."))
+               {
+                  valueCounts.sort(Comparator.comparing(r -> r.getValueInteger("count")));
+               }
+               else
+               {
+                  valueCounts.sort(Comparator.comparing(r -> Objects.requireNonNullElse(r.getValueString(fieldName), "")));
+               }
+
+               if(orderBy.toLowerCase().endsWith(".desc"))
+               {
+                  Collections.reverse(valueCounts);
+               }
+            }
+
+            return (emptyStringCount);
+         }
+      }
+
+      return (null);
    }
 
 }

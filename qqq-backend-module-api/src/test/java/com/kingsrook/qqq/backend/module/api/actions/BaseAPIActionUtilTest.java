@@ -124,9 +124,16 @@ class BaseAPIActionUtilTest extends BaseTest
       // avoid the fully mocked makeRequest //
       ////////////////////////////////////////
       mockApiUtilsHelper.setUseMock(false);
-      mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
-         {"error": "Server error"}
-         """));
+
+      //////////////////////////
+      // set to retry 3 times //
+      //////////////////////////
+      for(int i = 0; i < 4; i++)
+      {
+         mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
+            {"error": "Server error"}
+            """));
+      }
 
       CountInput countInput = new CountInput();
       countInput.setTableName(TestUtils.MOCK_TABLE_NAME);
@@ -290,9 +297,16 @@ class BaseAPIActionUtilTest extends BaseTest
       // avoid the fully mocked makeRequest //
       ////////////////////////////////////////
       mockApiUtilsHelper.setUseMock(false);
-      mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
-         {"error": "Server error"}
-         """));
+
+      //////////////////////////
+      // set to retry 3 times //
+      //////////////////////////
+      for(int i = 0; i < 4; i++)
+      {
+         mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
+            {"error": "Server error"}
+            """));
+      }
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.MOCK_TABLE_NAME);
@@ -344,9 +358,16 @@ class BaseAPIActionUtilTest extends BaseTest
       // avoid the fully mocked makeRequest //
       ////////////////////////////////////////
       mockApiUtilsHelper.setUseMock(false);
-      mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
-         {"error": "Server error"}
-         """));
+
+      //////////////////////////
+      // set to retry 3 times //
+      //////////////////////////
+      for(int i = 0; i < 4; i++)
+      {
+         mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
+            {"error": "Server error"}
+            """));
+      }
 
       InsertInput insertInput = new InsertInput();
       insertInput.setRecords(List.of(new QRecord().withValue("name", "Milhouse")));
@@ -411,9 +432,13 @@ class BaseAPIActionUtilTest extends BaseTest
       // avoid the fully mocked makeRequest //
       ////////////////////////////////////////
       mockApiUtilsHelper.setUseMock(false);
-      mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
-         {"error": "Server error"}
-         """));
+
+      for(int i = 0; i < 4; i++)
+      {
+         mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(500).withContent("""
+            {"error": "Server error"}
+            """));
+      }
 
       UpdateInput updateInput = new UpdateInput();
       updateInput.setRecords(List.of(new QRecord().withValue("name", "Milhouse")));

@@ -22,12 +22,14 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.tables.AggregateAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -35,6 +37,14 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
@@ -51,6 +61,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -58,6 +69,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -509,6 +521,139 @@ class MemoryBackendModuleTest extends BaseTest
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(1) && r.getValueInteger("tenTimesId").equals(10)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(2) && r.getValueInteger("tenTimesId").equals(20)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3) && r.getValueInteger("tenTimesId").equals(30)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAggregate() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("noOfShoes", 1).withValue("lastName", "Simpson"),
+         new QRecord().withValue("noOfShoes", 2).withValue("lastName", "Simpson"),
+         new QRecord().withValue("noOfShoes", 2).withValue("lastName", "Flanders"),
+         new QRecord().withValue("noOfShoes", 2).withValue("lastName", "Flanders"),
+         new QRecord().withValue("noOfShoes", 3).withValue("lastName", "Flanders"),
+         new QRecord().withValue("noOfShoes", null).withValue("lastName", "Flanders")
+      ));
+      new InsertAction().execute(insertInput);
+
+      {
+         ////////////////////////////////
+         // do some integer aggregates //
+         ////////////////////////////////
+         AggregateInput aggregateInput = new AggregateInput();
+         aggregateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.SUM));
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.COUNT));
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.COUNT_DISTINCT));
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.MIN));
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.MAX));
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.AVG));
+         AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
+         assertEquals(1, aggregateOutput.getResults().size());
+         AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+         assertEquals(10, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+         assertEquals(5, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.COUNT)));
+         assertEquals(3, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.COUNT_DISTINCT)));
+         assertEquals(1, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.MIN)));
+         assertEquals(3, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.MAX)));
+         assertEquals(new BigDecimal(2), aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.AVG)));
+      }
+
+      {
+         ///////////////////////////////
+         // do some string aggregates //
+         ///////////////////////////////
+         AggregateInput aggregateInput = new AggregateInput();
+         aggregateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+         aggregateInput.withAggregate(new Aggregate("lastName", AggregateOperator.COUNT));
+         aggregateInput.withAggregate(new Aggregate("lastName", AggregateOperator.COUNT_DISTINCT));
+         aggregateInput.withAggregate(new Aggregate("lastName", AggregateOperator.MIN));
+         aggregateInput.withAggregate(new Aggregate("lastName", AggregateOperator.MAX));
+
+         AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
+         assertEquals(1, aggregateOutput.getResults().size());
+         AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+         assertEquals(6, aggregateResult.getAggregateValue(new Aggregate("lastName", AggregateOperator.COUNT)));
+         assertEquals(2, aggregateResult.getAggregateValue(new Aggregate("lastName", AggregateOperator.COUNT_DISTINCT)));
+         assertEquals("Flanders", aggregateResult.getAggregateValue(new Aggregate("lastName", AggregateOperator.MIN)));
+         assertEquals("Simpson", aggregateResult.getAggregateValue(new Aggregate("lastName", AggregateOperator.MAX)));
+
+         assertThatThrownBy(() -> new AggregateAction().execute(aggregateInput.withAggregates(List.of(new Aggregate("lastName", AggregateOperator.SUM))))).hasStackTraceContaining("Cannot perform SUM");
+         assertThatThrownBy(() -> new AggregateAction().execute(aggregateInput.withAggregates(List.of(new Aggregate("lastName", AggregateOperator.AVG))))).hasStackTraceContaining("Cannot perform AVG");
+      }
+
+      {
+         ////////////////////
+         // do a group-bys //
+         ////////////////////
+         AggregateInput aggregateInput = new AggregateInput();
+         aggregateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+         aggregateInput.withAggregate(new Aggregate("noOfShoes", AggregateOperator.SUM));
+         aggregateInput.withGroupBy(new GroupBy(QFieldType.STRING, "lastName"));
+
+         {
+            aggregateInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderByAggregate(new Aggregate("noOfShoes", AggregateOperator.SUM))));
+
+            AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
+            assertEquals(2, aggregateOutput.getResults().size());
+            AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+            assertEquals(3, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Simpson", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+
+            aggregateResult = aggregateOutput.getResults().get(1);
+            assertEquals(7, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Flanders", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+         }
+         {
+            ///////////////////////////////////////////////////////////////////////////
+            // with all different versions of order-by (agg or groupBy, asc or desc) //
+            ///////////////////////////////////////////////////////////////////////////
+            aggregateInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderByAggregate(new Aggregate("noOfShoes", AggregateOperator.SUM)).withIsAscending(false)));
+
+            AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
+            assertEquals(2, aggregateOutput.getResults().size());
+            AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+            assertEquals(7, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Flanders", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+
+            aggregateResult = aggregateOutput.getResults().get(1);
+            assertEquals(3, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Simpson", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+         }
+         {
+            aggregateInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderByGroupBy(new GroupBy(QFieldType.STRING, "lastName"))));
+
+            AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
+            assertEquals(2, aggregateOutput.getResults().size());
+            AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+            assertEquals(7, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Flanders", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+
+            aggregateResult = aggregateOutput.getResults().get(1);
+            assertEquals(3, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Simpson", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+         }
+         {
+            aggregateInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderByGroupBy(new GroupBy(QFieldType.STRING, "lastName")).withIsAscending(false)));
+
+            AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
+            assertEquals(2, aggregateOutput.getResults().size());
+            AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+            assertEquals(3, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Simpson", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+
+            aggregateResult = aggregateOutput.getResults().get(1);
+            assertEquals(7, aggregateResult.getAggregateValue(new Aggregate("noOfShoes", AggregateOperator.SUM)));
+            assertEquals("Flanders", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
+         }
+      }
    }
 
 

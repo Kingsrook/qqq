@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.OAuthCredentialsException;
 import com.kingsrook.qqq.backend.module.api.exceptions.OAuthExpiredTokenException;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
+import com.kingsrook.qqq.backend.module.api.exceptions.RetryableServerErrorException;
 import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
@@ -525,7 +526,7 @@ public class BaseAPIActionUtil
          {
             return;
          }
-         else if(statusCode == HttpStatus.SC_BAD_GATEWAY)
+         else if(statusCode == HttpStatus.SC_BAD_GATEWAY || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT)
          {
             LOG.info("HTTP " + request.getMethod() + " failed", logPair("table", table.getName()), logPair("statusCode", statusCode), logPair("responseContent", StringUtils.safeTruncate(resultString, 1024, "...")));
             didLog = true;
@@ -890,8 +891,10 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
-      int     sleepMillis               = getInitialRateLimitBackoffMillis();
+      int     rateLimitSleepMillis      = getInitialRateLimitBackoffMillis();
+      int     serverErrorsSleepMillis   = getInitialServerErrorBackoffMillis();
       int     rateLimitsCaught          = 0;
+      int     serverErrorsCaught        = 0;
       boolean caughtAnOAuthExpiredToken = false;
 
       while(true)
@@ -925,7 +928,11 @@ public class BaseAPIActionUtil
                {
                   throw (new RateLimitException(qResponse.getContent()));
                }
-               if(statusCode >= 400)
+               else if(shouldBeRetryableServerErrorException(qResponse))
+               {
+                  throw (new RetryableServerErrorException(statusCode, qResponse.getContent()));
+               }
+               else if(statusCode >= 400)
                {
                   handleResponseError(table, request, qResponse);
                }
@@ -962,9 +969,22 @@ public class BaseAPIActionUtil
                throw (new QException(rle));
             }
 
-            LOG.info("Caught RateLimitException", logPair("rateLimitsCaught", rateLimitsCaught), logPair("uri", request.getURI()), logPair("table", table.getName()), logPair("sleeping", sleepMillis));
-            SleepUtils.sleep(sleepMillis, TimeUnit.MILLISECONDS);
-            sleepMillis *= 2;
+            LOG.info("Caught RateLimitException", logPair("rateLimitsCaught", rateLimitsCaught), logPair("uri", request.getURI()), logPair("table", table.getName()), logPair("sleeping", rateLimitSleepMillis));
+            SleepUtils.sleep(rateLimitSleepMillis, TimeUnit.MILLISECONDS);
+            rateLimitSleepMillis *= 2;
+         }
+         catch(RetryableServerErrorException see)
+         {
+            serverErrorsCaught++;
+            if(serverErrorsCaught > getMaxAllowedServerErrors())
+            {
+               LOG.error("Giving up " + request.getMethod() + " to [" + table.getName() + "] after too many server-side errors (" + getMaxAllowedServerErrors() + ")");
+               throw (new QException(see));
+            }
+
+            LOG.info("Caught Server-side error during API request", logPair("serverErrorsCaught", serverErrorsCaught), logPair("uri", request.getURI()), logPair("code", see.getCode()), logPair("table", table.getName()), logPair("sleeping", serverErrorsSleepMillis));
+            SleepUtils.sleep(serverErrorsSleepMillis, TimeUnit.MILLISECONDS);
+            serverErrorsSleepMillis *= 2;
          }
          catch(QException qe)
          {
@@ -980,6 +1000,16 @@ public class BaseAPIActionUtil
             throw (new QException(message, e));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
+   {
+      return (qResponse.getStatusCode() != null && qResponse.getStatusCode() >= 500);
    }
 
 
@@ -1156,7 +1186,27 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
+   protected int getInitialServerErrorBackoffMillis()
+   {
+      return (500);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    protected int getMaxAllowedRateLimitErrors()
+   {
+      return (3);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected int getMaxAllowedServerErrors()
    {
       return (3);
    }

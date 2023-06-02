@@ -23,22 +23,36 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateResult;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -525,4 +539,265 @@ public class MemoryRecordStore
       return (actionInputs);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AggregateOutput aggregate(AggregateInput aggregateInput) throws QException
+   {
+      //////////////////////
+      // first do a query //
+      //////////////////////
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(aggregateInput.getTableName());
+      queryInput.setFilter(aggregateInput.getFilter());
+      queryInput.setQueryJoins(aggregateInput.getQueryJoins());
+      List<QRecord> queryResult = query(queryInput);
+
+      List<AggregateResult> results    = new ArrayList<>();
+      List<GroupBy>         groupBys   = CollectionUtils.nonNullList(aggregateInput.getGroupBys());
+      List<Aggregate>       aggregates = CollectionUtils.nonNullList(aggregateInput.getAggregates());
+
+      /////////////////////
+      // do the group-by //
+      /////////////////////
+      ListingHash<List<Serializable>, QRecord> bins = new ListingHash<>();
+      for(QRecord record : queryResult)
+      {
+         List<Serializable> groupByValues = new ArrayList<>(groupBys.size());
+         for(GroupBy groupBy : groupBys)
+         {
+            Serializable groupByValue = record.getValue(groupBy.getFieldName());
+            if(groupBy.getType() != null)
+            {
+               groupByValue = ValueUtils.getValueAsFieldType(groupBy.getType(), groupByValue);
+            }
+            groupByValues.add(groupByValue);
+         }
+
+         bins.add(groupByValues, record);
+      }
+
+      ////////////////////////
+      // do the aggregating //
+      ////////////////////////
+      for(Map.Entry<List<Serializable>, List<QRecord>> entry : bins.entrySet())
+      {
+         List<Serializable> groupByValueList = entry.getKey();
+         List<QRecord>      records          = entry.getValue();
+
+         AggregateResult aggregateResult = new AggregateResult();
+         results.add(aggregateResult);
+
+         ////////////////////////////////////////////
+         // set the group-by values in this result //
+         ////////////////////////////////////////////
+         Map<GroupBy, Serializable> groupByValues = new HashMap<>();
+         aggregateResult.setGroupByValues(groupByValues);
+         for(int i = 0; i < groupBys.size(); i++)
+         {
+            GroupBy      groupBy = groupBys.get(i);
+            Serializable value   = groupByValueList.get(i);
+            groupByValues.put(groupBy, value);
+         }
+
+         ////////////////////////////
+         // compute the aggregates //
+         ////////////////////////////
+         Map<Aggregate, Serializable> aggregateValues = new HashMap<>();
+         aggregateResult.setAggregateValues(aggregateValues);
+
+         for(Aggregate aggregate : aggregates)
+         {
+            Serializable aggregateValue = computeAggregate(records, aggregate, aggregateInput.getTable());
+
+            aggregateValues.put(aggregate, aggregateValue);
+         }
+      }
+
+      /////////////////////
+      // sort the result //
+      /////////////////////
+      if(aggregateInput.getFilter() != null && CollectionUtils.nullSafeHasContents(aggregateInput.getFilter().getOrderBys()))
+      {
+         Comparator<AggregateResult> comparator = null;
+         Comparator<Serializable> serializableComparator = (Serializable a, Serializable b) ->
+         {
+            if(a == null && b == null)
+            {
+               return (0);
+            }
+            else if(a == null)
+            {
+               return (1);
+            }
+            else if(b == null)
+            {
+               return (-1);
+            }
+            return ((Comparable) a).compareTo(b);
+         };
+
+         ////////////////////////////////////////////////
+         // build a comparator out of all the orderBys //
+         ////////////////////////////////////////////////
+         for(QFilterOrderBy orderBy : aggregateInput.getFilter().getOrderBys())
+         {
+            Function<AggregateResult, Serializable> keyExtractor = aggregateResult ->
+            {
+               if(orderBy instanceof QFilterOrderByGroupBy orderByGroupBy)
+               {
+                  return aggregateResult.getGroupByValue(orderByGroupBy.getGroupBy());
+               }
+               else if(orderBy instanceof QFilterOrderByAggregate orderByAggregate)
+               {
+                  return aggregateResult.getAggregateValue(orderByAggregate.getAggregate());
+               }
+               else
+               {
+                  throw (new IllegalStateException("Unexpected orderBy [" + orderBy + "] in aggregate"));
+               }
+            };
+
+            if(comparator == null)
+            {
+               comparator = Comparator.comparing(keyExtractor, serializableComparator);
+            }
+            else
+            {
+               comparator = comparator.thenComparing(keyExtractor, serializableComparator);
+            }
+
+            if(!orderBy.getIsAscending())
+            {
+               comparator = comparator.reversed();
+            }
+         }
+
+         ///////////////////////////////////////
+         // sort the list with the comparator //
+         ///////////////////////////////////////
+         results.sort(comparator);
+      }
+
+      AggregateOutput aggregateOutput = new AggregateOutput();
+      aggregateOutput.setResults(results);
+      return (aggregateOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   private static Serializable computeAggregate(List<QRecord> records, Aggregate aggregate, QTableMetaData table)
+   {
+      String            fieldName = aggregate.getFieldName();
+      AggregateOperator operator  = aggregate.getOperator();
+      QFieldType        fieldType;
+      if(aggregate.getFieldType() == null)
+      {
+         // todo - joins probably?
+         QFieldMetaData field = table.getField(fieldName);
+         if(field.getType().equals(QFieldType.INTEGER) && (operator.equals(AggregateOperator.AVG)))
+         {
+            fieldType = QFieldType.DECIMAL;
+         }
+         else if(operator.equals(AggregateOperator.COUNT) || operator.equals(AggregateOperator.COUNT_DISTINCT))
+         {
+            fieldType = QFieldType.INTEGER;
+         }
+         else
+         {
+            fieldType = field.getType();
+         }
+      }
+      else
+      {
+         fieldType = aggregate.getFieldType();
+      }
+
+      Serializable aggregateValue = switch(operator)
+      {
+         case COUNT -> records.stream()
+            .filter(r -> r.getValue(fieldName) != null)
+            .count();
+
+         case COUNT_DISTINCT -> records.stream()
+            .filter(r -> r.getValue(fieldName) != null)
+            .map(r -> r.getValue(fieldName))
+            .collect(Collectors.toSet())
+            .size();
+
+         case SUM -> switch(fieldType)
+         {
+            case INTEGER -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToInt(r -> r.getValueInteger(fieldName))
+               .sum();
+            case DECIMAL -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .map(r -> r.getValueBigDecimal(fieldName))
+               .reduce(BigDecimal.ZERO, BigDecimal::add);
+            default -> throw (new IllegalArgumentException("Cannot perform " + operator + " aggregate on " + fieldType + " field."));
+         };
+
+         case MIN -> switch(fieldType)
+         {
+            case INTEGER -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToInt(r -> r.getValueInteger(fieldName))
+               .min()
+               .stream().boxed().findFirst().orElse(null);
+            case DECIMAL, STRING, DATE, DATE_TIME ->
+            {
+               Optional<Serializable> serializable = records.stream()
+                  .filter(r -> r.getValue(fieldName) != null)
+                  .map(r -> ((Comparable) ValueUtils.getValueAsFieldType(fieldType, r.getValue(fieldName))))
+                  .min(Comparator.naturalOrder())
+                  .map(c -> (Serializable) c);
+               yield serializable.orElse(null);
+            }
+            default -> throw (new IllegalArgumentException("Cannot perform " + operator + " aggregate on " + fieldType + " field."));
+         };
+
+         case MAX -> switch(fieldType)
+         {
+            case INTEGER -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToInt(r -> r.getValueInteger(fieldName))
+               .max()
+               .stream().boxed().findFirst().orElse(null);
+            case DECIMAL, STRING, DATE, DATE_TIME ->
+            {
+               Optional<Serializable> serializable = records.stream()
+                  .filter(r -> r.getValue(fieldName) != null)
+                  .map(r -> ((Comparable) ValueUtils.getValueAsFieldType(fieldType, r.getValue(fieldName))))
+                  .max(Comparator.naturalOrder())
+                  .map(c -> (Serializable) c);
+               yield serializable.orElse(null);
+            }
+            default -> throw (new IllegalArgumentException("Cannot perform " + operator + " aggregate on " + fieldType + " field."));
+         };
+
+         case AVG -> switch(fieldType)
+         {
+            case INTEGER -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToInt(r -> r.getValueInteger(fieldName))
+               .average()
+               .stream().boxed().findFirst().orElse(null);
+            case DECIMAL -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToDouble(r -> r.getValueBigDecimal(fieldName).doubleValue())
+               .average()
+               .stream().boxed().map(d -> new BigDecimal(d)).findFirst().orElse(null);
+            default -> throw (new IllegalArgumentException("Cannot perform " + operator + " aggregate on " + fieldType + " field."));
+         };
+      };
+
+      return ValueUtils.getValueAsFieldType(fieldType, aggregateValue);
+   }
 }

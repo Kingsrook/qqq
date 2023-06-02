@@ -615,34 +615,19 @@ public class QJavalinImplementation
          updateInput.setTableName(tableName);
 
          PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
+         QTableMetaData tableMetaData = qInstance.getTable(table);
+
+         QJavalinAccessLogger.logStart("update", logPair("table", table), logPair("primaryKey", primaryKey));
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(tableName);
          recordList.add(record);
 
-         Map<?, ?> map = context.bodyAsClass(Map.class);
-         for(Map.Entry<?, ?> entry : map.entrySet())
-         {
-            String fieldName = ValueUtils.getValueAsString(entry.getKey());
-            Object value     = entry.getValue();
+         record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
+         setRecordValuesForInsertOrUpdate(context, tableMetaData, record);
+         updateInput.setRecords(recordList);
 
-            if(StringUtils.hasContent(String.valueOf(value)))
-            {
-               record.setValue(fieldName, (Serializable) value);
-            }
-            else if("".equals(value))
-            {
-               ///////////////////////////////////////////////////////////////////////////////////////////////////
-               // if frontend sent us an empty string - put a null in the record's value map.                   //
-               // this could potentially be changed to be type-specific (e.g., store an empty-string for STRING //
-               // fields, but null for INTEGER, etc) - but, who really wants empty-string in database anyway?   //
-               ///////////////////////////////////////////////////////////////////////////////////////////////////
-               record.setValue(fieldName, null);
-            }
-         }
-
-         QTableMetaData tableMetaData = qInstance.getTable(tableName);
          record.setValue(tableMetaData.getPrimaryKeyField(), primaryKey);
 
          QJavalinAccessLogger.logStart("update", logPair("table", tableName), logPair("primaryKey", primaryKey));
@@ -677,6 +662,80 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void setRecordValuesForInsertOrUpdate(Context context, QTableMetaData tableMetaData, QRecord record) throws IOException
+   {
+      String  contentType       = Objects.requireNonNullElse(context.header("content-type"), "");
+      boolean isContentTypeJson = contentType.toLowerCase().contains("json");
+
+      try
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the caller said they've sent JSON, or if they didn't supply a content-type, then try to read the body //
+         // as JSON.  if it throws, we'll continue by trying to read form params, but if it succeeds, we'll return.  //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(isContentTypeJson || !StringUtils.hasContent(contentType))
+         {
+            Map<?, ?> map = context.bodyAsClass(Map.class);
+            for(Map.Entry<?, ?> entry : map.entrySet())
+            {
+               String fieldName = ValueUtils.getValueAsString(entry.getKey());
+               Object value     = entry.getValue();
+
+               if(StringUtils.hasContent(String.valueOf(value)))
+               {
+                  record.setValue(fieldName, (Serializable) value);
+               }
+               else if("".equals(value))
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if frontend sent us an empty string - put a null in the record's value map.                   //
+                  // this could potentially be changed to be type-specific (e.g., store an empty-string for STRING //
+                  // fields, but null for INTEGER, etc) - but, who really wants empty-string in database anyway?   //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  record.setValue(fieldName, null);
+               }
+            }
+
+            return;
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error trying to read body as map", e, logPair("contentType", contentType));
+      }
+
+      /////////////////////////
+      // process form params //
+      /////////////////////////
+      for(Map.Entry<String, List<String>> formParam : context.formParamMap().entrySet())
+      {
+         String       fieldName = formParam.getKey();
+         List<String> values    = formParam.getValue();
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            String value = values.get(0);
+            if(StringUtils.hasContent(value))
+            {
+               record.setValue(fieldName, value);
+            }
+            else
+            {
+               record.setValue(fieldName, null);
+            }
+         }
+         else
+         {
+            // is this ever hit?
+            record.setValue(fieldName, null);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void dataInsert(Context context)
    {
       String tableName = context.pathParam("table");
@@ -689,20 +748,13 @@ public class QJavalinImplementation
          QJavalinAccessLogger.logStart("insert", logPair("table", tableName));
 
          PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
+         QTableMetaData tableMetaData = qInstance.getTable(tableName);
 
          List<QRecord> recordList = new ArrayList<>();
          QRecord       record     = new QRecord();
          record.setTableName(tableName);
          recordList.add(record);
-
-         Map<?, ?> map = context.bodyAsClass(Map.class);
-         for(Map.Entry<?, ?> entry : map.entrySet())
-         {
-            if(StringUtils.hasContent(String.valueOf(entry.getValue())))
-            {
-               record.setValue(String.valueOf(entry.getKey()), (Serializable) entry.getValue());
-            }
-         }
+         setRecordValuesForInsertOrUpdate(context, tableMetaData, record);
          insertInput.setRecords(recordList);
 
          InsertAction insertAction = new InsertAction();
