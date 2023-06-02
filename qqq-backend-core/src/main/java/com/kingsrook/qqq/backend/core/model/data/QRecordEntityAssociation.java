@@ -19,70 +19,92 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.model.data;
 
 
-import java.time.Instant;
-import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import java.lang.reflect.Method;
 
 
 /*******************************************************************************
- ** Interface for the Query action.
- **
+ ** Reflective information about an association in a QRecordEntity
  *******************************************************************************/
-public interface QueryInterface
+public class QRecordEntityAssociation
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   QueryOutput execute(QueryInput queryInput) throws QException;
+   private final String fieldName;
+   private final Method getter;
+   private final Method setter;
+
+   private final Class<? extends QRecordEntity> associatedType;
+
+   private final QAssociation associationAnnotation;
+
+
 
    /*******************************************************************************
-    **
+    ** Constructor.
     *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
+   public QRecordEntityAssociation(String fieldName, Method getter, Method setter, Class<? extends QRecordEntity> associatedType, QAssociation associationAnnotation)
    {
-      //////////
-      // noop //
-      //////////
+      this.fieldName = fieldName;
+      this.getter = getter;
+      this.setter = setter;
+      this.associatedType = associatedType;
+      this.associationAnnotation = associationAnnotation;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
+
 
    /*******************************************************************************
+    ** Getter for fieldName
     **
     *******************************************************************************/
-   default void setQueryStatJoinTables(Set<String> joinTableNames)
+   public String getFieldName()
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         queryStat.setJoinTables(joinTableNames);
-      }
+      return fieldName;
    }
 
+
+
    /*******************************************************************************
+    ** Getter for getter
     **
     *******************************************************************************/
-   default void setQueryStatFirstResultTime()
+   public Method getGetter()
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
-      }
+      return getter;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for setter
+    **
+    *******************************************************************************/
+   public Method getSetter()
+   {
+      return setter;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for associatedType
+    **
+    *******************************************************************************/
+   public Class<? extends QRecordEntity> getAssociatedType()
+   {
+      return associatedType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for associationAnnotation
+    **
+    *******************************************************************************/
+   public QAssociation getAssociationAnnotation()
+   {
+      return associationAnnotation;
+   }
+
 }

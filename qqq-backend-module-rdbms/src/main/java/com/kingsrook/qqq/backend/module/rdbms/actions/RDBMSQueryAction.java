@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -59,6 +60,8 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaDat
 public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterface
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSQueryAction.class);
+
+   private QueryStat queryStat;
 
 
 
@@ -328,6 +331,28 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          statement = connection.prepareStatement(sql);
       }
       return (statement);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryStat
+    *******************************************************************************/
+   @Override
+   public QueryStat getQueryStat()
+   {
+      return (this.queryStat);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryStat
+    *******************************************************************************/
+   @Override
+   public void setQueryStat(QueryStat queryStat)
+   {
+      this.queryStat = queryStat;
    }
 
 }

@@ -19,70 +19,86 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
-import java.time.Instant;
-import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QAssociation;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Interface for the Query action.
- **
+ ** Sample of an entity that can be converted to & from a QRecord
  *******************************************************************************/
-public interface QueryInterface
+public class Order extends QRecordEntity
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   QueryOutput execute(QueryInput queryInput) throws QException;
+   @QField()
+   private String orderNo;
+
+   @QAssociation(name = "lineItems")
+   private List<LineItem> lineItems;
+
+
 
    /*******************************************************************************
-    **
+    ** Getter for orderNo
     *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
+   public String getOrderNo()
    {
-      //////////
-      // noop //
-      //////////
+      return (this.orderNo);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
+
 
    /*******************************************************************************
-    **
+    ** Setter for orderNo
     *******************************************************************************/
-   default void setQueryStatJoinTables(Set<String> joinTableNames)
+   public void setOrderNo(String orderNo)
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         queryStat.setJoinTables(joinTableNames);
-      }
+      this.orderNo = orderNo;
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Fluent setter for orderNo
     *******************************************************************************/
-   default void setQueryStatFirstResultTime()
+   public Order withOrderNo(String orderNo)
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
-      }
+      this.orderNo = orderNo;
+      return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for lineItems
+    *******************************************************************************/
+   public List<LineItem> getLineItems()
+   {
+      return (this.lineItems);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for lineItems
+    *******************************************************************************/
+   public void setLineItems(List<LineItem> lineItems)
+   {
+      this.lineItems = lineItems;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for lineItems
+    *******************************************************************************/
+   public Order withLineItems(List<LineItem> lineItems)
+   {
+      this.lineItems = lineItems;
+      return (this);
+   }
+
 }

@@ -19,70 +19,84 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
-import java.time.Instant;
-import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Interface for the Query action.
- **
+ ** Sample of an entity that can be converted to & from a QRecord
  *******************************************************************************/
-public interface QueryInterface
+public class LineItem extends QRecordEntity
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   QueryOutput execute(QueryInput queryInput) throws QException;
+   @QField()
+   private String sku;
+
+   @QField()
+   private Integer quantity;
+
+
 
    /*******************************************************************************
-    **
+    ** Getter for sku
     *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
+   public String getSku()
    {
-      //////////
-      // noop //
-      //////////
+      return (this.sku);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
+
 
    /*******************************************************************************
-    **
+    ** Setter for sku
     *******************************************************************************/
-   default void setQueryStatJoinTables(Set<String> joinTableNames)
+   public void setSku(String sku)
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         queryStat.setJoinTables(joinTableNames);
-      }
+      this.sku = sku;
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Fluent setter for sku
     *******************************************************************************/
-   default void setQueryStatFirstResultTime()
+   public LineItem withSku(String sku)
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
-      }
+      this.sku = sku;
+      return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for quantity
+    *******************************************************************************/
+   public Integer getQuantity()
+   {
+      return (this.quantity);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for quantity
+    *******************************************************************************/
+   public void setQuantity(Integer quantity)
+   {
+      this.quantity = quantity;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for quantity
+    *******************************************************************************/
+   public LineItem withQuantity(Integer quantity)
+   {
+      this.quantity = quantity;
+      return (this);
+   }
+
 }
