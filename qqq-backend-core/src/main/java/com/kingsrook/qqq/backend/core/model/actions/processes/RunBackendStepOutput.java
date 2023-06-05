@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -288,6 +289,27 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    {
       this.auditInputList = auditInputList;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addAuditSingleInput(AuditSingleInput auditSingleInput)
+   {
+      if(getAuditInputList() == null)
+      {
+         setAuditInputList(new ArrayList<>());
+      }
+
+      if(getAuditInputList().isEmpty())
+      {
+         getAuditInputList().add(new AuditInput());
+      }
+
+      AuditInput auditInput = getAuditInputList().get(0);
+      auditInput.addAuditSingleInput(auditSingleInput);
    }
 
 }

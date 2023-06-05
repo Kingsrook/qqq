@@ -716,7 +716,7 @@ public class QInstanceEnricher
             try
             {
                QFieldMetaData field = table.getField(fieldName);
-               if(field.getIsEditable())
+               if(field.getIsEditable() && !field.getType().equals(QFieldType.BLOB))
                {
                   editableFields.add(field);
                }
@@ -774,6 +774,7 @@ public class QInstanceEnricher
 
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
+         .filter(f -> !f.getType().equals(QFieldType.BLOB))
          .toList();
 
       QFrontendStepMetaData editScreen = new QFrontendStepMetaData()

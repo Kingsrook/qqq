@@ -73,6 +73,17 @@ public class AbstractProcessMetaDataBuilder
    /*******************************************************************************
     **
     *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withInputFieldDefaultValue(String fieldName, Serializable value)
+   {
+      setInputFieldDefaultValue(fieldName, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public AbstractProcessMetaDataBuilder withBasepullConfiguration(BasepullConfiguration basepullConfiguration)
    {
       processMetaData.setBasepullConfiguration(basepullConfiguration);

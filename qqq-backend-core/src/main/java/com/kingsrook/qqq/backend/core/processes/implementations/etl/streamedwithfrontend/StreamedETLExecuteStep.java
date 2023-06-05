@@ -73,6 +73,8 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
 
+         loadStep.setTransformStep(transformStep);
+
          /////////////////////////////////////////////////////////////////////////////
          // let the load step override the capacity for the record pipe.            //
          // this is useful for slower load steps - so that the extract step doesn't //
@@ -140,13 +142,17 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // get the process summary from the load step, if it's a summary-provider -- else, use the transform step (which is always a provider) //
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         ArrayList<ProcessSummaryLineInterface> processSummaryLines = null;
          if(loadStep instanceof ProcessSummaryProviderInterface provider)
          {
-            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, provider.doGetProcessSummary(runBackendStepOutput, true));
+            processSummaryLines = provider.doGetProcessSummary(runBackendStepOutput, true);
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryLines);
          }
-         else
+
+         if(CollectionUtils.nullSafeIsEmpty(processSummaryLines))
          {
-            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
+            processSummaryLines = transformStep.doGetProcessSummary(runBackendStepOutput, true);
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryLines);
          }
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
