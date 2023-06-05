@@ -38,8 +38,11 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  ** Access-Logger used for QJavalin handlers.
  **
- ** Can be disabled through the JavalinMetaData in the QJavalinImplementation -
- ** See one of those 2 places for details (e.g., system properties).
+ ** Can be fully disabled through the JavalinMetaData object, or via system property:
+ ** qqq.javalin.loggerDisabled
+ *
+ ** Alternatively, individual log types and even actions can be enabled or disabled
+ ** via the logFilter in JavalinMetaData.
  **
  ** Note - when working in this class - be overly aggressive with wrapping
  ** everything in try-catch, and not allowing exceptions to bubble.  There isn't
@@ -49,9 +52,35 @@ public class QJavalinAccessLogger
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinAccessLogger.class);
 
+   public static final String DISABLED_PROPERTY = "qqq.javalin.loggerDisabled";
+
    private static ThreadLocal<Long>      requestStartTime  = new ThreadLocal<>();
    private static ThreadLocal<String>    requestActionName = new ThreadLocal<>();
    private static ThreadLocal<LogPair[]> requestLogPairs   = new ThreadLocal<>();
+
+
+
+   /*******************************************************************************
+    ** Types of log entries - useful for a filter (from javalin meta data).
+    *******************************************************************************/
+   public enum LogType
+   {
+      START,
+      END_SUCCESS,
+      END_SUCCESS_SLOW,
+      END_FAIL,
+      PROCESS_SUMMARY
+   }
+
+
+
+   /*******************************************************************************
+    ** input to filter method (from javalin meta data), to decide if entry should be logged.
+    *******************************************************************************/
+   public record LogEntry(LogType logType, String actionName)
+   {
+
+   }
 
 
 
@@ -62,7 +91,7 @@ public class QJavalinAccessLogger
    {
       try
       {
-         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessStarts() && !QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(isLoggerDisabled())
          {
             /////////////////////////////////////////////////////
             // if we're not to log starts or ends, just return //
@@ -72,11 +101,12 @@ public class QJavalinAccessLogger
 
          setThreadLocals(actionName, logPairs);
 
-         if(QJavalinImplementation.javalinMetaData.getLogAllAccessStarts())
+         List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
+         pairList.add(0, logPair("action", actionName));
+         pairList.add(0, logPair("access", "start"));
+
+         if(shouldLog(new LogEntry(LogType.START, actionName)))
          {
-            List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
-            pairList.add(0, logPair("action", actionName));
-            pairList.add(0, logPair("access", "start"));
             LOG.info(pairList);
          }
       }
@@ -84,6 +114,49 @@ public class QJavalinAccessLogger
       {
          LOG.warn("Error in javalin access logger", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean shouldLog(LogEntry logEntry)
+   {
+      if(isLoggerDisabled())
+      {
+         return (false);
+      }
+
+      if(QJavalinImplementation.javalinMetaData != null && QJavalinImplementation.javalinMetaData.getLogFilter() != null)
+      {
+         return (QJavalinImplementation.javalinMetaData.getLogFilter().apply(logEntry));
+      }
+
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean isLoggerDisabled()
+   {
+      /////////////////////////////////////////////////////////////////////////////////////
+      // if there's no javalin metadata, then just read the disabled property ourselves, //
+      // and be disabled iff the property value is "true"                                //
+      /////////////////////////////////////////////////////////////////////////////////////
+      if(QJavalinImplementation.javalinMetaData == null)
+      {
+         return System.getProperty(QJavalinAccessLogger.DISABLED_PROPERTY, "false").equals("true");
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // else, there is javalinMetaData, then let IT say if we're disabled.                            //
+      // note that will use the same system property by default, but it may be overridden via app code //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      return QJavalinImplementation.javalinMetaData.getLoggerDisabled();
    }
 
 
@@ -105,10 +178,7 @@ public class QJavalinAccessLogger
    {
       try
       {
-         ////////////////////////////////////////////////////////
-         // only set the thread locals if we're doing log-ends //
-         ////////////////////////////////////////////////////////
-         if(QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(!isLoggerDisabled())
          {
             requestActionName.set(actionName);
             requestStartTime.set(System.currentTimeMillis());
@@ -130,7 +200,7 @@ public class QJavalinAccessLogger
    {
       try
       {
-         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(isLoggerDisabled())
          {
             return;
          }
@@ -145,7 +215,7 @@ public class QJavalinAccessLogger
 
          if(millis != null && millis > slowThreshold)
          {
-            logEnd("success", new ArrayList<>(Arrays.asList(logPairs)));
+            logEnd(LogType.END_SUCCESS_SLOW, "success", new ArrayList<>(Arrays.asList(logPairs)));
          }
       }
       catch(Exception e)
@@ -163,13 +233,13 @@ public class QJavalinAccessLogger
    {
       try
       {
-         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(isLoggerDisabled())
          {
             return;
          }
 
          List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
-         logEnd("success", pairList);
+         logEnd(LogType.END_SUCCESS, "success", pairList);
       }
       catch(Exception e)
       {
@@ -186,7 +256,7 @@ public class QJavalinAccessLogger
    {
       try
       {
-         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(isLoggerDisabled())
          {
             return;
          }
@@ -194,7 +264,7 @@ public class QJavalinAccessLogger
          List<LogPair> pairList = new ArrayList<>(Arrays.asList(logPairs));
          // pairList.add(0, logPair("exceptionMessage", t.getMessage()));
          // pairList.add(0, logPair("exceptionType", t.getClass().getSimpleName()));
-         logEnd("failure", pairList);
+         logEnd(LogType.END_FAIL, "failure", pairList);
       }
       catch(Exception e)
       {
@@ -207,11 +277,11 @@ public class QJavalinAccessLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void logEnd(String accessType, List<LogPair> pairList)
+   private static void logEnd(LogType logType, String accessType, List<LogPair> pairList)
    {
       try
       {
-         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(isLoggerDisabled())
          {
             return;
          }
@@ -266,7 +336,10 @@ public class QJavalinAccessLogger
             return (false);
          });
 
-         LOG.info(pairList);
+         if(shouldLog(new LogEntry(logType, actionName)))
+         {
+            LOG.info(pairList);
+         }
       }
       catch(Exception e)
       {
@@ -293,7 +366,7 @@ public class QJavalinAccessLogger
    {
       try
       {
-         if(!QJavalinImplementation.javalinMetaData.getLogAllAccessEnds())
+         if(isLoggerDisabled())
          {
             return;
          }
@@ -325,7 +398,7 @@ public class QJavalinAccessLogger
             }
          }
 
-         logEnd("processSummary", logPairs);
+         logEnd(LogType.PROCESS_SUMMARY, "processSummary", logPairs);
       }
       catch(Exception e)
       {

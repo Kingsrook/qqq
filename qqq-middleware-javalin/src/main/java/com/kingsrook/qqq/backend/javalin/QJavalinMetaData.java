@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.util.function.Function;
+
+
 /*******************************************************************************
  ** MetaData specific to a QQQ Javalin server.
  *******************************************************************************/
@@ -29,8 +32,9 @@ public class QJavalinMetaData
 {
    private String uploadedFileArchiveTableName;
 
-   private boolean logAllAccessStarts = true;
-   private boolean logAllAccessEnds   = true;
+   private boolean loggerDisabled = false;
+
+   private Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter;
 
 
 
@@ -40,8 +44,7 @@ public class QJavalinMetaData
     *******************************************************************************/
    public QJavalinMetaData()
    {
-      logAllAccessStarts = System.getProperty("qqq.javalin.logAllAccessStarts", "true").equals("true");
-      logAllAccessEnds = System.getProperty("qqq.javalin.logAllAccessEnds", "true").equals("true");
+      loggerDisabled = System.getProperty(QJavalinAccessLogger.DISABLED_PROPERTY, "false").equals("true");
    }
 
 
@@ -81,62 +84,62 @@ public class QJavalinMetaData
 
 
    /*******************************************************************************
-    ** Getter for logAllAccessStarts
+    ** Getter for loggerDisabled
     *******************************************************************************/
-   public boolean getLogAllAccessStarts()
+   public boolean getLoggerDisabled()
    {
-      return (this.logAllAccessStarts);
+      return (this.loggerDisabled);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for logAllAccessStarts
+    ** Setter for loggerDisabled
     *******************************************************************************/
-   public void setLogAllAccessStarts(boolean logAllAccessStarts)
+   public void setLoggerDisabled(boolean loggerDisabled)
    {
-      this.logAllAccessStarts = logAllAccessStarts;
+      this.loggerDisabled = loggerDisabled;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for logAllAccessStarts
+    ** Fluent setter for loggerDisabled
     *******************************************************************************/
-   public QJavalinMetaData withLogAllAccessStarts(boolean logAllAccessStarts)
+   public QJavalinMetaData withLoggerDisabled(boolean loggerDisabled)
    {
-      this.logAllAccessStarts = logAllAccessStarts;
+      this.loggerDisabled = loggerDisabled;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for logAllAccessEnds
+    ** Getter for logFilter
     *******************************************************************************/
-   public boolean getLogAllAccessEnds()
+   public Function<QJavalinAccessLogger.LogEntry, Boolean> getLogFilter()
    {
-      return (this.logAllAccessEnds);
+      return (this.logFilter);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for logAllAccessEnds
+    ** Setter for logFilter
     *******************************************************************************/
-   public void setLogAllAccessEnds(boolean logAllAccessEnds)
+   public void setLogFilter(Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter)
    {
-      this.logAllAccessEnds = logAllAccessEnds;
+      this.logFilter = logFilter;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for logAllAccessEnds
+    ** Fluent setter for logFilter
     *******************************************************************************/
-   public QJavalinMetaData withLogAllAccessEnds(boolean logAllAccessEnds)
+   public QJavalinMetaData withLogFilter(Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter)
    {
-      this.logAllAccessEnds = logAllAccessEnds;
+      this.logFilter = logFilter;
       return (this);
    }
 

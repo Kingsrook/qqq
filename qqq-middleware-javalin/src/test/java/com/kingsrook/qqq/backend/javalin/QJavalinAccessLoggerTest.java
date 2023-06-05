@@ -34,30 +34,138 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.javalin.QJavalinAccessLogger.DISABLED_PROPERTY;
 
 
 /*******************************************************************************
  ** Unit test for QJavalinAccessLogger
+ **
+ ** Note - we're not injecting any kind of logger mock, so we aren't making any
+ ** assertions here - we're just verifying we don't blow up - other than that,
+ ** manually verify results by reviewing log
  *******************************************************************************/
 class QJavalinAccessLoggerTest
 {
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
-   void testTurnedOff() throws QInstanceValidationException
+   void testDefaultOn() throws QInstanceValidationException
    {
       QInstance qInstance = TestUtils.defineInstance();
-      new QJavalinImplementation(qInstance, new QJavalinMetaData()
-         .withLogAllAccessStarts(false)
-         .withLogAllAccessEnds(false));
+      new QJavalinImplementation(qInstance, new QJavalinMetaData());
 
+      System.out.println("All should log");
       QJavalinAccessLogger.logStart("test");
       QJavalinAccessLogger.logEndSuccess();
       QJavalinAccessLogger.logEndFail(new Exception());
-      QJavalinAccessLogger.logEndSuccessIfSlow(1000);
+
+      QJavalinAccessLogger.logStart("testSlow");
+      QJavalinAccessLogger.logEndSuccessIfSlow(-1);
+
       QJavalinAccessLogger.logProcessSummary("testProcess", UUID.randomUUID().toString(), new RunProcessOutput());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTurnedOffByCode() throws QInstanceValidationException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      new QJavalinImplementation(qInstance, new QJavalinMetaData()
+         .withLoggerDisabled(true));
+
+      System.out.println("Nothing should log");
+      QJavalinAccessLogger.logStart("test");
+      QJavalinAccessLogger.logEndSuccess();
+      QJavalinAccessLogger.logEndFail(new Exception());
+
+      QJavalinAccessLogger.logStart("testSlow");
+      QJavalinAccessLogger.logEndSuccessIfSlow(-1);
+
+      QJavalinAccessLogger.logProcessSummary("testProcess", UUID.randomUUID().toString(), new RunProcessOutput());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTurnedOffBySystemPropertyWithJavalinMetaData() throws QInstanceValidationException
+   {
+      System.setProperty(DISABLED_PROPERTY, "true");
+      QInstance qInstance = TestUtils.defineInstance();
+      new QJavalinImplementation(qInstance, new QJavalinMetaData());
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logStart("test");
+      System.clearProperty(DISABLED_PROPERTY);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTurnedOffBySystemPropertyWithoutJavalinMetaData() throws QInstanceValidationException
+   {
+      System.setProperty(DISABLED_PROPERTY, "true");
+      QInstance qInstance = TestUtils.defineInstance();
+      new QJavalinImplementation(qInstance);
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logStart("test");
+      System.clearProperty(DISABLED_PROPERTY);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilter() throws QInstanceValidationException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      new QJavalinImplementation(qInstance, new QJavalinMetaData()
+         .withLoggerDisabled(false)
+         .withLogFilter(logEntry ->
+            switch(logEntry.logType())
+            {
+               case START, PROCESS_SUMMARY -> false;
+               case END_SUCCESS, END_SUCCESS_SLOW -> true;
+               case END_FAIL -> logEntry.actionName().startsWith("yes");
+            }));
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logStart("test"); // shouldn't log
+      System.out.println("should log");
+      QJavalinAccessLogger.logEndSuccess(); // SHOULD log
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logStart("no"); // shouldn't log
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logEndFail(new Exception()); // shouldn't log
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logStart("yes"); // shouldn't log
+      System.out.println("should log");
+      QJavalinAccessLogger.logEndFail(new Exception()); // SHOULD log
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logStart("testSlow"); // shouldn't log
+      System.out.println("should log");
+      QJavalinAccessLogger.logEndSuccessIfSlow(-1); // SHOULD log
+
+      System.out.println("shouldn't log");
+      QJavalinAccessLogger.logProcessSummary("testProcess", UUID.randomUUID().toString(), new RunProcessOutput()); // shouldn't log
    }
 
 
@@ -68,7 +176,10 @@ class QJavalinAccessLoggerTest
    @Test
    void testSlow()
    {
+      System.out.println("should log");
       QJavalinAccessLogger.logStart("test");
+
+      System.out.println("should log");
       SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
       QJavalinAccessLogger.logEndSuccessIfSlow(1);
    }
@@ -85,12 +196,14 @@ class QJavalinAccessLoggerTest
       runProcessOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, new ArrayList<>(List.of(
          new ProcessSummaryLine(Status.OK, 5, "Test")
       )));
+      System.out.println("should log");
       QJavalinAccessLogger.logProcessSummary("testProcess", UUID.randomUUID().toString(), runProcessOutput);
 
       runProcessOutput = new RunProcessOutput();
       runProcessOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, new ArrayList<>(List.of(
          new ProcessSummaryLine(Status.OK, 5, "Test")
       )));
+      System.out.println("should log");
       QJavalinAccessLogger.logProcessSummary("testProcess", UUID.randomUUID().toString(), runProcessOutput);
 
    }
