@@ -86,7 +86,10 @@ public class OutboundAPILogMetaDataProvider
             new QPossibleValue<>(404, "404 (Not Found)"),
             new QPossibleValue<>(422, "422 (Unprocessable Entity)"),
             new QPossibleValue<>(429, "429 (Too Many Requests)"),
-            new QPossibleValue<>(500, "500 (Internal Server Error)")
+            new QPossibleValue<>(500, "500 (Internal Server Error)"),
+            new QPossibleValue<>(502, "502 (Bad Gateway)"),
+            new QPossibleValue<>(503, "503 (Service Unavailable)"),
+            new QPossibleValue<>(504, "500 (Gateway Timeout)")
          )));
    }
 
@@ -134,7 +137,11 @@ public class OutboundAPILogMetaDataProvider
          .withValue(AdornmentType.ChipValues.colorValue(404, AdornmentType.ChipValues.COLOR_ERROR))
          .withValue(AdornmentType.ChipValues.colorValue(422, AdornmentType.ChipValues.COLOR_ERROR))
          .withValue(AdornmentType.ChipValues.colorValue(429, AdornmentType.ChipValues.COLOR_ERROR))
-         .withValue(AdornmentType.ChipValues.colorValue(500, AdornmentType.ChipValues.COLOR_ERROR)));
+         .withValue(AdornmentType.ChipValues.colorValue(500, AdornmentType.ChipValues.COLOR_ERROR))
+         .withValue(AdornmentType.ChipValues.colorValue(502, AdornmentType.ChipValues.COLOR_ERROR))
+         .withValue(AdornmentType.ChipValues.colorValue(503, AdornmentType.ChipValues.COLOR_ERROR))
+         .withValue(AdornmentType.ChipValues.colorValue(504, AdornmentType.ChipValues.COLOR_ERROR))
+      );
 
       ///////////////////////////////////////////
       // these are the lengths of a MySQL TEXT //
