@@ -1161,20 +1161,12 @@ public class QJavalinImplementation
 
       try
       {
-         //////////////////////////////////////////
-         // read params from the request context //
-         //////////////////////////////////////////
-         String  format = context.queryParam("format");
-         String  filter = context.queryParam("filter");
-         Integer limit  = QJavalinUtils.integerQueryParam(context, "limit");
-
+         String       format       = context.queryParam("format");
          ReportFormat reportFormat = getReportFormat(context, optionalFilename, format);
          if(reportFormat == null)
          {
             return;
          }
-
-         String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
 
          /////////////////////////////////////////////
          // set up the report action's input object //
@@ -1184,18 +1176,33 @@ public class QJavalinImplementation
 
          exportInput.setTableName(tableName);
          exportInput.setReportFormat(reportFormat);
+
+         String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
          exportInput.setFilename(filename);
+
+         Integer limit = QJavalinUtils.integerQueryParam(context, "limit");
          exportInput.setLimit(limit);
 
          PermissionsHelper.checkTablePermissionThrowing(exportInput, TablePermissionSubType.READ);
 
          String fields = QJavalinUtils.stringQueryParam(context, "fields");
+         if(!StringUtils.hasContent(fields))
+         {
+            fields = context.formParam("fields");
+         }
+
          if(StringUtils.hasContent(fields))
          {
             exportInput.setFieldNames(List.of(fields.split(",")));
          }
 
-         if(filter != null)
+         String filter = context.queryParam("filter");
+         if(!StringUtils.hasContent(filter))
+         {
+            filter = context.formParam("filter");
+         }
+
+         if(StringUtils.hasContent(filter))
          {
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
@@ -1209,17 +1216,18 @@ public class QJavalinImplementation
             return (exportAction);
          };
 
+         String finalFilter = filter;
          UnsafeConsumer<ExportAction, Exception> execute = (ExportAction exportAction) ->
          {
             QJavalinAccessLogger.logStart("export", logPair("table", tableName));
             try
             {
                ExportOutput exportOutput = exportAction.execute(exportInput);
-               QJavalinAccessLogger.logEndSuccess(logPair("recordCount", exportOutput.getRecordCount()), logPairIfSlow("filter", filter, SLOW_LOG_THRESHOLD_MS));
+               QJavalinAccessLogger.logEndSuccess(logPair("recordCount", exportOutput.getRecordCount()), logPairIfSlow("filter", finalFilter, SLOW_LOG_THRESHOLD_MS));
             }
             catch(Exception e)
             {
-               QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
+               QJavalinAccessLogger.logEndFail(e, logPair("filter", finalFilter));
                throw (e);
             }
          };
